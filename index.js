@@ -8,7 +8,7 @@ const routesProyectos=require("./routes/proyectos");
 dotenv.config();
 
 mongoose.connect(
-    process.env.DB_CONNECT,//"mongodb+srv://apiPepepe:U9j8OZqxsxHmpsaN@cluster0.ie6ke.mongodb.net/pepepe?retryWrites=true&w=majority",       
+    process.env.DB_CONNECT,    
     {useNewUrlParser : true,
     useUnifiedTopology: true },
     ()=>console.log("conexion exitosa a la b de datos")
@@ -20,6 +20,7 @@ db.once('open', function() {
   // we're connected!
 });
 
+app.use(express.static("public"));
 
 //Routes
 app.use(express.json());
