@@ -17,7 +17,6 @@ const esquemaActividad=new mongoose.Schema({
     }    
 });
 
-
 esquemaObjetivo.add({
     nombre:{
         type:String,

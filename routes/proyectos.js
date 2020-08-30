@@ -13,13 +13,13 @@ router.post("/listaCompleta", async(req, res) => {
 router.post("/crear", async (req, res) =>{
     console.log("creando proyecto nuevo");
     const newProyecto=new Proyecto({
-        nombre: req.body.nombre,
+        nombre: req.body.nombre ? req.body.nombre : "nuevo proyecto",
         descripcion: req.body.descripcion ? req.body.descripcion : "sin descripcion"
     });
 
     try {
         const upload = await newProyecto.save();
-        res.send(newProyecto);
+        res.send({proyecto:newProyecto});
     } catch (error) {
         res.status(400).send(error);
     }
@@ -44,8 +44,8 @@ router.post("/eliminar", (req, res) => {
 router.post("/objetivos/crear", (req, res) => {//Se espera un array de ids que señalan el path en el que se debe insertar el objetivo: [id de proyecto, id de objetivo, ide de objetivo, etc.]
     const pathId = req.body.pathId;
     if(!pathId[0]){
-        return console.log("retornando");
         res.status(400).send("wrong id");
+        return console.log("retornando");
     }
     console.log(`buscando el id: ${pathId[0]}`);
     Proyecto.findById(pathId[0], (err, elProyecto)=>{
@@ -54,7 +54,7 @@ router.post("/objetivos/crear", (req, res) => {//Se espera un array de ids que s
         }
         else{
             const nuevoObjetivo={
-                nombre: req.body.nombre,
+                nombre: req.body.nombre ? req.body.nombre : "nuevo objetivo",
                 descripcion:req.body.descripcion ? req.body.descripcion : ""
             }
 
@@ -87,7 +87,7 @@ router.post("/objetivos/crear", (req, res) => {//Se espera un array de ids que s
             futuroParent.objetivos.push(nuevoObjetivo);
             elProyecto.save(function(err, resultado){
                 if(err) res.status(400).send(err);
-                res.send(resultado);
+                res.send({objetivo: resultado});
             });
            
         }
@@ -128,6 +128,51 @@ router.post("/objetivos/eliminar", (req, res) => {//Se espera un array de ids qu
 
 });
 
+router.post("/elementosDiagrama/renombrar", (req, res) => { //se espera un array con el path de ids en el que se encuentra el elemento. Incluyendo el objetivo
+    const pathId =  req.body.pathId;
+    console.log("req: " + JSON.stringify(req.body));
+    console.log(`renombrando en ${pathId}`);
+    const nuevoN=req.body.nombre;
+    if(!pathId[0]){
+        res.status(400).send("wrong id");
+        return console.log("retornando");
+    }
+    Proyecto.findById(pathId[0], (err, elProyecto)=>{
+        if(err){
+            console.log("error en find by id");
+            return res.status(400).send(err);            
+        }
+        else{
+            var elementoPunta=elProyecto;
+            var i=1;
+            while(pathId[i]){
+                if(!elementoPunta.objetivos){
+                    res.status(400).send("wrong id");
+                    return;
+                }
+                if(elementoPunta.objetivos.find(elemento => elemento.id==pathId[i])) {
+                    elementoPunta=elementoPunta.objetivos.find(elemento => elemento.id==pathId[i]);
+                }
+                else{
+                    res.status(400).send("wrong id");
+                    return;
+                }
+                i++;
+            }
+            console.log(`elemento que se renombrará: ${elementoPunta.nombre}`);
+            elementoPunta.nombre=nuevoN;
+            console.log("subiendo "+ elProyecto);
+            console.log("elemento punta: "+elementoPunta);
+            elProyecto.save(function(err, resultado){                
+                if(err){
+                    console.log(err);
+                    return res.status(400).send(err);
+                }
+                res.send(resultado);
+            });
+        }
+    });
 
+});
 
 module.exports = router;
