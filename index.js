@@ -30,6 +30,6 @@ app.use("/api/proyectos", routesProyectos);
 app.post("", (req, res) => {
     res.send("hola");
 });
-
+const port=process.env.PORT || 3000;
 app.listen(3000, ()=>{console.log(`servidor Up en 3000`)});
 
