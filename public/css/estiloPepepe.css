@@ -3,6 +3,19 @@
 }
 body{
 }
+#contenedorLogin{
+    position: fixed;
+    right: 2vw;
+    top: 5vh;
+    border: 2px dotted #555b6eff;
+    padding: 1vw;
+    border-radius: 1vw;
+    background-color: #555b6eff;
+}
+.elemLogin{
+    display: block;
+    margin-top: 1vh;
+}
 #wrapper{
     position: absolute;
     left: 0;
@@ -11,14 +24,22 @@ body{
     height: 100vh;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 5vh 85vh 10vh;
+    grid-template-rows: 4vh 85vh 10vh;
     grid-column-gap: 20px;
     grid-row-gap: 10px;
 }
 #barraSuperior{
-    background-color:black;
+    background-color:#555b6e;
     grid-column: 1/3;
     grid-row: 1;
+}
+.botonBarraS{
+    float: right;
+    height: 100%;
+    vertical-align: center;
+    cursor: pointer;
+    font-size: 1.4rem;
+    margin-right: 1vw;
 }
 #contenedorDiagrama{
     grid-column: 1;

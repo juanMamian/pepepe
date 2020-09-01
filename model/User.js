@@ -1,17 +1,16 @@
 const mongoose=require("mongoose");
 
 const esquemaUsuario=mongoose.Schema({
+    login:{
+        type:String,
+        min:3,
+        max:50,
+        unique:true
+    },
     nombre:{
-        type: String,
-        required: true,
+        type: String,        
         max: 255,
         min: 3
-    },
-    email:{
-        type:String,
-        required:true,
-        max: 255,
-        min:6
     },
     password:{
         type:String,
@@ -19,6 +18,6 @@ const esquemaUsuario=mongoose.Schema({
         max: 1024,
         min:6
     }
-})
+});
 
 module.exports=mongoose.model("User", esquemaUsuario);
