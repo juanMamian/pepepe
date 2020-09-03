@@ -40,7 +40,11 @@ const esquemaProyecto=new mongoose.Schema({
     descripcion:{
         type:String        
     },
-    objetivos:[esquemaObjetivo]
+    objetivos:[esquemaObjetivo],
+    gestores:[
+        {type:String}
+    ]
+
    
 });
 

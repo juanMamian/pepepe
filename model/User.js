@@ -5,7 +5,7 @@ const esquemaUsuario=mongoose.Schema({
         type:String,
         min:3,
         max:50,
-        unique:true
+        unique: true
     },
     nombre:{
         type: String,        
@@ -20,4 +20,4 @@ const esquemaUsuario=mongoose.Schema({
     }
 });
 
-module.exports=mongoose.model("User", esquemaUsuario);
+module.exports=mongoose.model("Usuario", esquemaUsuario);

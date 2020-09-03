@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { route } = require("./auth");
 const router=require("express").Router();
 const Proyecto=require("../model/Proyecto").modeloProyecto;
+const {estaLogeado} = require("./loginStatus");
 
 router.post("/listaCompleta", async(req, res) => {
     console.log("enviando información completa de los proyectos");
@@ -10,11 +11,12 @@ router.post("/listaCompleta", async(req, res) => {
     });
 });
 
-router.post("/crear", async (req, res) =>{
+router.post("/crear", estaLogeado, async (req, res) =>{
     console.log("creando proyecto nuevo");
     const newProyecto=new Proyecto({
         nombre: req.body.nombre ? req.body.nombre : "nuevo proyecto",
-        descripcion: req.body.descripcion ? req.body.descripcion : "sin descripcion"
+        descripcion: req.body.descripcion ? req.body.descripcion : "sin descripcion",
+        gestores:[req.infoUsuario._id]
     });
 
     try {
@@ -24,21 +26,8 @@ router.post("/crear", async (req, res) =>{
         res.status(400).send(error);
     }
 });
+                                                                                        //Eliminar elemento                                                                 
 
-router.post("/eliminar", (req, res) => {
-    if(!req.body.id){
-        return res.status(400).send("wrong id");
-    }
-    const idProyecto=req.body.id;
-    Proyecto.findByIdAndDelete(idProyecto, function(err){
-        if(err){
-            res.status(400).send(err);
-        }
-        else{
-            res.send("ok");
-        }
-    });
-})
 
 
 router.post("/objetivos/crear", (req, res) => {//Se espera un array de ids que señalan el path en el que se debe insertar el objetivo: [id de proyecto, id de objetivo, ide de objetivo, etc.]
@@ -53,10 +42,7 @@ router.post("/objetivos/crear", (req, res) => {//Se espera un array de ids que s
             res.status(400).send(err);
         }
         else{
-            const nuevoObjetivo={
-                nombre: req.body.nombre ? req.body.nombre : "nuevo objetivo",
-                descripcion:req.body.descripcion ? req.body.descripcion : ""
-            }
+            
 
             var futuroParent=elProyecto;
             var rutaNombres=elProyecto.nombre;
@@ -83,18 +69,25 @@ router.post("/objetivos/crear", (req, res) => {//Se espera un array de ids que s
                 i++;
             }
             //Introducir el nuevo objetivo y guardar en base de datos
+            const nuevoObjetivo=futuroParent.objetivos.create({
+                nombre: req.body.nombre ? req.body.nombre : "nuevo objetivo",
+                descripcion:req.body.descripcion ? req.body.descripcion : ""
+            });
+
             console.log(`futuro parent es ${futuroParent.nombre}`);
+            console.log(`nuevo id es: ${nuevoObjetivo._id}`);
             futuroParent.objetivos.push(nuevoObjetivo);
             elProyecto.save(function(err, resultado){
                 if(err) res.status(400).send(err);
-                res.send({objetivo: resultado});
+
+                res.send({objetivo: nuevoObjetivo});
             });
            
         }
     });        
 });
 
-router.post("/objetivos/eliminar", (req, res) => {//Se espera un array de ids que señalan el path en el que se debe insertar el objetivo: [id de proyecto, id de objetivo, ide de objetivo, etc.]
+router.post("/elementos/eliminar", (req, res) => {//Se espera un array de ids que señalan el path en el que se debe insertar el objetivo: [id de proyecto, id de objetivo, ide de objetivo, etc.]
     const pathId =  req.body.pathId;
     if(!pathId[0]){
         res.status(400).send("wrong id");
@@ -102,10 +95,11 @@ router.post("/objetivos/eliminar", (req, res) => {//Se espera un array de ids qu
     }
     Proyecto.findById(pathId[0], (err, elProyecto)=>{
         if(err){
-            res.status(400).send(err);
+            return res.status(400).send(err);
         }
         else{
             var elementoPunta=elProyecto;
+            var elementoPadre=null;
             var i=1;
             while(pathId[i]){
                 if(!elementoPunta.objetivos){
@@ -113,6 +107,7 @@ router.post("/objetivos/eliminar", (req, res) => {//Se espera un array de ids qu
                     return;
                 }
                 if(elementoPunta.objetivos.find(elemento => elemento.id==pathId[i])) {
+                    elementoPadre=elementoPunta;
                     elementoPunta=elementoPunta.objetivos.find(elemento => elemento.id==pathId[i]);
                 }
                 else{
@@ -121,8 +116,24 @@ router.post("/objetivos/eliminar", (req, res) => {//Se espera un array de ids qu
                 }
                 i++;
             }
-            console.log(`elemento que se eliminará: ${elementoPunta.nombre}`);
-            res.send(elProyecto);
+            const idEliminado=elementoPunta._id;
+            console.log(`elemento que se eliminará: ${elementoPunta.nombre} hijo de `);
+            respuesta={idEliminado: idEliminado};
+            if(elementoPadre){
+                elementoPadre.objetivos.pull({_id:idEliminado});
+                elProyecto.save(function(err, resultado){
+                    if(err)return res.status(400).send("bad request");
+                    return res.send(respuesta);
+                });
+            }
+            else{
+                elProyecto.remove(function(err){
+                    if(err)return res.status(400).send("bad request");
+                    return res.send(respuesta);
+                });
+            }
+       
+            
         }
     });
 

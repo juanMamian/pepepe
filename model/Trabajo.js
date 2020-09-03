@@ -4,7 +4,7 @@ const esquemaTrabajo = new mongoose.Schema({
     nombre:{
         type:String,
         required: true,
-        min: 3
+        min: 3,
         max: 600
     },
     descripcion:{
@@ -22,7 +22,7 @@ const esquemaTrabajo = new mongoose.Schema({
                 type:String,
                 min:24,
                 max:24
-            }
+            },
             nombre:{
                 type:String,
                 min:2,
