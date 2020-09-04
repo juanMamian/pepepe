@@ -1,19 +1,19 @@
 loginToken = null;
 
-function eliminarElemento(pathId){
+function eliminarElemento(pathId) {
     jQuery.ajax({
         type: "POST",
         url: "api/proyectos/elementos/eliminar",
         dataType: "text",
-        contentType:"application/json",
+        contentType: "application/json",
         data: JSON.stringify({
-            pathId:pathId
+            pathId: pathId
         }),
         success: function (res) {
-            res=JSON.parse(res);
+            res = JSON.parse(res);
             const idEliminado = res.idEliminado;
             //Dibujar los proyectos.
-            $("#"+idEliminado).remove();
+            $("#" + idEliminado).remove();
         },
         error: function (xhr, ajaxOptions, thrownError) {
             console.log(thrownError);
@@ -33,19 +33,33 @@ function getPathIds(elElem) {
     });
     return idSel;
 }
+function getPathIdsDB(elElem) {
+    var esteId = elElem.attr("id");
+    var idSel = new Array();
+    var index = elElem.parents(".elementoDiagrama").length;
+    idSel[index] = esteId;
+    elElem.parents(".elementoDiagrama").each(function () {
+        index--;
+        idSel[index] = $(this).attr("id");
+    });
+    idSel.shift();
+    return idSel;
+}
 
 
 function dibujarElemento(element, tipo, parent) {
-    const padre = parent ? parent : $(".elementoDiagrama.activo:first");
-    console.log("dibujando elemento " + tipo + "conteniendo " + JSON.stringify(element).p + " en " + padre.attr("id"));
+    var claseLista="";
+    const padre = parent ? parent : $(".elementoDiagrama.activo:first"); claseLista = "enLista";
     var divElemento = "";
     switch (tipo) {
         case "proyecto":
-            divElemento = `<div id=${element._id} class="diagProyecto elementoDiagrama" nivel=1 ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
+            divElemento = `<div id=${element._id} class="diagProyecto elementoDiagrama  ${claseLista}" nivel=1 ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
             break;
         case "objetivo":
-            divElemento = `<div id=${element._id} class="diagObjetivo elementoDiagrama" nivel=1 ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
+            divElemento = `<div id=${element._id} class="diagObjetivo elementoDiagrama  ${claseLista}" nivel=1 ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
             break;
+        case "trabajo":
+            divElemento = `<div id=${element._id} class="diagTrabajo elementoDiagrama  ${claseLista}" nivel=1 ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
     }
 
     padre.append(divElemento);
@@ -70,11 +84,15 @@ function ubicarseEnDiagrama(nivel, aId) {
     $(".activo:first").children().addClass("enLista");
 }
 
+
+
 function dibujarObjetivos(element) {
     objs = element.objetivos.length > 0 ? element.objetivos : null;
-
+    trabajos = element.trabajos ? element.trabajos : [];
+    if (trabajos.length > 0) {
+        console.log(`encontrados ${trabajos.length} trabajos en ${element.nombre}`);
+    }
     if (objs) {
-        console.log("objetivos encontrados: " + objs);
         objs.forEach(objetivo => {
             dibujarElemento(objetivo, "objetivo", $(`#${element._id}`));
             dibujarObjetivos(objetivo);
@@ -115,8 +133,8 @@ $(document).ready(function () {
     $(".botonCrear").on("click", function (e) {                         //Crear un nuevo elemento en el diagrama
         const creacion = $(this).attr("id").substr(2).toLowerCase();
         const padre = $(".elementoDiagrama.activo:first");
-        const pathId = getPathIds(padre);
-        pathId.shift();
+        const pathIds = getPathIdsDB(padre);
+
         console.log("creacion: " + creacion + " en " + padre.attr("id"));
         console.log("token: " + loginToken);
         switch (creacion) {                                                 //Creando un objetivo
@@ -128,10 +146,12 @@ $(document).ready(function () {
                     contentType: "application/json",
 
                     data: JSON.stringify({
-                        pathId: pathId
+                        pathId: pathIds
                     }),
                     success: function (res) {
-                        nElemento = JSON.parse(res);
+                        console.log(res);
+                        nElemento = JSON.parse(res).objetivo;
+                        console.log(nElemento);
                         dibujarElemento(nElemento, "objetivo");
                     },
                     error: function (xhr, ajaxOptions, thrownError) {
@@ -166,8 +186,33 @@ $(document).ready(function () {
     
                     });*/
                 break;
-            case "tarea":
-                console.log("creando una tarea");
+            case "trabajo":
+                const padre = $(".elementoDiagrama.primerPlano.activo:first");
+                const pathId = getPathIdsDB(padre);
+                console.log("creando un trabajo en " + padre.attr("id") + ` con pathId: ${pathId}`);
+
+                jQuery.ajax({
+                    type: "POST",
+                    url: "api/proyectos/trabajos/crear",
+                    dataType: "text",
+                    contentType: "application/json",
+
+                    data: JSON.stringify({
+                        pathId: pathId,
+
+                    }),
+                    success: function (res) {
+                        console.log(res);
+                        nElemento = JSON.parse(res).trabajo;
+                        console.log("nuevo Elemento: " + nElemento);
+                        dibujarElemento(nElemento, "trabajo");
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        console.log(thrownError);
+                    }
+
+                });
+
                 break;
             case "proyecto":
                 console.log("creando un nuevo proyecto");
@@ -197,7 +242,6 @@ $(document).ready(function () {
     });
     //Seleccionar un elemento
     $("#contenedorDiagrama").on("click", ".elementoDiagrama.enLista", function (e) {
-        console.log("seleccionando");
         const seleccionado = $(this).hasClass("seleccionado");
         $(".seleccionado").removeClass("seleccionado");
         if (!seleccionado) {
@@ -209,7 +253,7 @@ $(document).ready(function () {
     $(document).on("keydown", function (e) {
 
         if ($(".elementoDiagrama.enLista.seleccionado").length > 0) {
-            const elElem=$(".elementoDiagrama.enLista.seleccionado:first");
+            const elElem = $(".elementoDiagrama.enLista.seleccionado:first");
             e.stopPropagation();
             //tecla supr
             if (e.keyCode == 46) {
@@ -228,8 +272,6 @@ $(document).ready(function () {
         var nivel = $(this).parents(".elementoDiagrama").length;
         var id = $(this).attr("id");
         var idElementoAnterior = $(`.itemNBDiagrama[nivel="${nivel - 1}"]`).attr("idSel");
-        console.log(`expandiendo a ${id} del nivel ${nivel} despues de ${idElementoAnterior}`);
-
         //Añadir un elemento a la barra de navegacion
 
         `.itemNBDiagrama:eq(${nivel})` ? $(`.itemNBDiagrama:eq(${nivel})`).remove() : console.log("");
@@ -240,7 +282,6 @@ $(document).ready(function () {
         var arrayId = new Array();
         for (var i = 0; i <= nivel; i++) {
             arrayId[i] = $(`.itemNBDiagrama[nivel="${i}"]`).attr("idSel");
-            console.log(`guardando ${$(`.itemNBDiagrama[nivel="${i}"]`).attr("idSel")} en el array`);
         }
 
         ubicarseEnDiagrama(nivel, arrayId);
@@ -269,7 +310,7 @@ $(document).ready(function () {
             pathId: pathId,
             nombre: nuevoN
         };
-        console.log("replaced: " + nuevoN);
+        console.log("replacing: " + nuevoN);
         jQuery.ajax({
             type: "POST",
             url: "api/proyectos/elementosDiagrama/renombrar",
@@ -288,7 +329,6 @@ $(document).ready(function () {
             }
 
         });
-        $(this).removeClass("editado");
     });
 
 

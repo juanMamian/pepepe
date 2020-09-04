@@ -16,7 +16,7 @@ const esquemaTrabajo = new mongoose.Schema({
             id:String
         }   
     ],
-    materiales[
+    materiales:[
         {
             id:{
                 type:String,
@@ -36,13 +36,22 @@ const esquemaTrabajo = new mongoose.Schema({
             valor_unitario: Number,            
         }
     ],
-    conocimientos[{
+    enlacesAtlas:[{
         id:{
             type:String,
             min: 24,
             max: 24
+        },
+        tipo:{
+            type:String
         }
     
 
+    }],
+    enlacesProyectos:[{
+        pathId: [String],
+        tipo: String
     }]
 });
+
+module.exports.modeloTrabajo=mongoose.model("Trabajo", esquemaTrabajo);
