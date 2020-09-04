@@ -89,8 +89,12 @@ function ubicarseEnDiagrama(nivel, aId) {
 function dibujarObjetivos(element) {
     objs = element.objetivos.length > 0 ? element.objetivos : null;
     trabajos = element.trabajos ? element.trabajos : [];
-    if (trabajos.length > 0) {
+    if (trabajos.length > 0) {//Buscar y dibujar los trabajos
         console.log(`encontrados ${trabajos.length} trabajos en ${element.nombre}`);
+        trabajos.forEach(trabajo => {
+            dibujarElemento(trabajo, "trabajo", $(`#${element._id}`));    
+        });
+        
     }
     if (objs) {
         objs.forEach(objetivo => {

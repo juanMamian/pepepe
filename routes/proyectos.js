@@ -5,11 +5,45 @@ const Proyecto = require("../model/Proyecto").modeloProyecto;
 const { estaLogeado } = require("./loginStatus");
 const Trabajo = require("../model/Trabajo").modeloTrabajo;
 
+function findUpdateTareas(padre) {
+    //preguntarse si tiene tareas
+    var estosTrabajos = padre.trabajos;
+    console.log("actualizando tareas de "+padre.nombre+` con id ${padre._id}`);
+    if (estosTrabajos.length > 0) {
+        estosTrabajos.forEach(trabajo => {
+            const idTrabajo = trabajo.idTrabajo;
+            Trabajo.findById(idTrabajo, "nombre", (err, nombreTrabajo) => {
+                if (err) {
+                    console.log("Trabajo no encontrado");
+                }
+                console.log(`actualizando ${idTrabajo} con ${nombreTrabajo}`);
+                trabajo.nombre = nombreTrabajo;
+            });
 
+            findUpdateTareas(trabajo);
+        });
+    }
+
+    //Preguntarse si tiene objetivos
+    var estosObjetivos = padre.bbjetivos;
+    if (estosObjetivos.length > 0) {
+        estosObjetivos.forEach(objetivo => {
+            findUpdateTareas(objetivo);
+        });
+
+    }
+}
 
 router.post("/listaCompleta", async (req, res) => {
     console.log("enviando información completa de los proyectos");
     Proyecto.find({}, function (err, objects) {
+        objects.forEach(proyecto => {
+            //buscar sitios donde hay trabajos.
+            proyecto.objetivos.forEach(objetivo => {
+                findUpdateTareas(objetivo);
+            });
+            Trabajo.findById()
+        });
         res.send(objects);
     });
 });
@@ -196,16 +230,16 @@ router.post("/trabajos/crear", (req, res) => {
         if (err) {
             return res.status(400).send(err);
         }
-        console.log("Proyecto padre: "+proyectoPadre.nombre);
+        console.log("Proyecto padre: " + proyectoPadre.nombre);
         var elementoPunta = proyectoPadre;
         var i = 1;
         while (pathId[i]) {
             //El siguiente elemento puede ser un objetivo o un trabajo
-            if (!elementoPunta.objetivos.find(elemento => elemento._id== pathId[i])) {
+            if (!elementoPunta.objetivos.find(elemento => elemento._id == pathId[i])) {
                 console.log(`${pathId[i]} no encontrado en ${elementoPunta._id}. (Index=${i})`);
                 return res.status(400).send(err);
             }
-            elementoPunta = elementoPunta.objetivos.find(elemento => elemento._id== pathId[i]);
+            elementoPunta = elementoPunta.objetivos.find(elemento => elemento._id == pathId[i]);
             i++;
         }
         const nTrabajo = new Trabajo({
@@ -214,19 +248,33 @@ router.post("/trabajos/crear", (req, res) => {
             responsables: req.body.responsables ? req.body.responsables : null,
             materiales: req.body.materiales ? req.body.materiales : null,
             enlacesAtlas: req.body.enlacesAtlas ? req.body.enlacesAtlas : null,
-
-
+            enlacesProyectos: []
         });
 
-        nTrabajo.save((err, resultado) => {
+        nTrabajo.enlacesProyectos.push({ pathId: pathId });
+        console.log(`path en nTrabajo: ${nTrabajo.enlacesProyectos}`);
+
+        //Guardar trabajo en colección de trabajos
+        nTrabajo.save((err, resultadoT) => {
 
             if (err) {
                 console.log(err);
                 return res.status(400).send(err);
             }
+            const idTrabajoNuevo = resultadoT._id;
+            //Actualizar proyecto:
+            elementoPunta.trabajos.push({ idTrabajo: idTrabajoNuevo });
+            proyectoPadre.save((err, resultadoP) => {
+                if (err) {
+                    console.log(err);
+                    return res.status(400).send(err);
+                }
+                console.log(resultadoP);
+                return res.send({ trabajo: resultadoT });
+
+            });
 
 
-            return res.send({ trabajo: resultado });
         });
     });
 

@@ -19,7 +19,7 @@ esquemaObjetivo.add({
     },
     trabajos: [
         {
-            id: String
+            idTrabajo: String
         }
     ],
     objetivos: [esquemaObjetivo]
