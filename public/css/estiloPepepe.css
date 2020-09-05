@@ -2,6 +2,7 @@
     box-sizing: border-box;
 }
 body{
+    background-color: #e0fbfc;
 }
 #wrapper{
     position: absolute;
@@ -16,9 +17,31 @@ body{
     grid-row-gap: 10px;
 }
 #barraSuperior{
-    background-color:black;
+    background-color:#ee6c4d;
     grid-column: 1/3;
     grid-row: 1;
+}
+.botonBarraS{
+    float: right;
+    margin-right: 1vw;
+    cursor: pointer;
+    position: relative;
+}
+.botonBarraS::after{
+    content:"";
+    width: 100%;
+    height: 3px;
+    background-color:#e0fbfc;
+    position: absolute;
+    bottom:0;
+    left:0;
+    transform-origin: right;
+    transform: scaleX(0);
+    transition: transform 0.1s ease-in;
+}
+.botonBarraS:hover::after{
+    transform: scaleX(1);
+    transform-origin:left;
 }
 #contenedorDiagrama{
     grid-column: 1;
@@ -123,4 +146,16 @@ right: 1vw;
 }
 .botonCrear:hover{
     opacity: 1;
+}
+#contenedorLogin{
+    position: fixed;
+    top: 6vh;
+    right: 2vw;
+    z-index:100;
+    border: 2px dotted #98c1d9;
+    border-radius: 0.4vw;
+    padding: 0.5vw;
+}
+.elementosLogin{
+    margin-top:0.4vh;
 }

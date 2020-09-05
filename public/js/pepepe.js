@@ -212,5 +212,37 @@ $(document).ready(function () {
         var idSel = getPathIds(elElem);
 
         ubicarseEnDiagrama(nivel, idSel);
+    });
+
+    $(".elementosLogin:not(#botonEnviarLogin)").on("input paste", function(){
+        const cLogin=$("#inputLogin").val();
+        const cPass=$("#inputPass").val();
+        
+        if(cLogin.length==0 || cPass.length==0){
+           $("#botonEnviarLogin").attr("disabled", true); 
+        }
+        else{
+            $("#botonEnviarLogin").attr("disabled", false); 
+        }
+    });
+    $("#botonEnviarLogin").on("click", function(){
+        dataEnviar={
+            login: $("#inputLogin").val();
+            password: $("#inputPass").val();
+        }
+        jQuery.ajax({
+            type: "POST",
+            url: "api/usuarios/login",
+            contentType: "application/json",            
+            data:JSON.stringify(dataEnviar),
+            success: function (res) {
+                console.log("res: "+JSON.stringify(res));
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                console.log(thrownError);
+            }
+    
+        });
     })
+
 });

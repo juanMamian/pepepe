@@ -1,7 +1,9 @@
 const router=require("express").Router();
 const User=require("../model/User");
 
-
+router.post("/login", async (req, res) => {
+    
+});
 
 router.post("/registro", async (req, res)=>{
     const nuevoU=new User({

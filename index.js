@@ -2,7 +2,7 @@ const express=require("express");
 const app=express();
 const mongoose =require("mongoose");
 const dotenv=require("dotenv");
-const authRoutes = require("./routes/auth");
+const usuariosRoutes = require("./routes/usuarios");
 const routesProyectos=require("./routes/proyectos");
 
 dotenv.config();
@@ -24,7 +24,7 @@ app.use(express.static("public"));
 
 //Routes
 app.use(express.json());
-app.use("/api/usuarios", authRoutes );
+app.use("/api/usuarios", usuariosRoutes );
 app.use("/api/proyectos", routesProyectos);
 
 app.post("", (req, res) => {

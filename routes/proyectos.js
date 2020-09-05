@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { route } = require("./auth");
 const router=require("express").Router();
 const Proyecto=require("../model/Proyecto").modeloProyecto;
 
