@@ -4,7 +4,7 @@ const esquemaTrabajo = new mongoose.Schema({
     nombre:{
         type:String,
         required: true,
-        min: 3
+        min: 3,
         max: 600
     },
     descripcion:{
@@ -16,13 +16,13 @@ const esquemaTrabajo = new mongoose.Schema({
             id:String
         }   
     ],
-    materiales[
+    materiales:[
         {
             id:{
                 type:String,
                 min:24,
                 max:24
-            }
+            },
             nombre:{
                 type:String,
                 min:2,
@@ -36,13 +36,22 @@ const esquemaTrabajo = new mongoose.Schema({
             valor_unitario: Number,            
         }
     ],
-    conocimientos[{
+    enlacesAtlas:[{
         id:{
             type:String,
             min: 24,
             max: 24
+        },
+        tipo:{
+            type:String
         }
     
 
+    }],
+    enlacesProyectos:[{
+        pathId: [String],
+        tipo: String
     }]
 });
+
+module.exports.modeloTrabajo=mongoose.model("Trabajo", esquemaTrabajo);

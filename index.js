@@ -4,6 +4,7 @@ const mongoose =require("mongoose");
 const dotenv=require("dotenv");
 const usuariosRoutes = require("./routes/usuarios");
 const routesProyectos=require("./routes/proyectos");
+const routesTrabajos = require("./routes/trabajos");
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use("/api/usuarios", usuariosRoutes );
 app.use("/api/proyectos", routesProyectos);
+app.use("/api/trabajos/", routesTrabajos);
 
 app.post("", (req, res) => {
     res.send("hola");

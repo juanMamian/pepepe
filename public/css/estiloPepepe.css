@@ -4,6 +4,25 @@
 body{
     background-color: #e0fbfc;
 }
+#contenedorLogin{
+    position: fixed;
+    right: 2vw;
+    top: 5vh;
+    border: 2px dotted #555b6eff;
+    padding: 1vw;
+    border-radius: 1vw;
+    background-color: #555b6eff;
+}
+.elemLogin{
+    display: block;
+    margin-top: 1vh;
+}
+#bAbrirLogin::after{
+content:"Login"
+}
+#bAbrirLogin.logged::after{
+    content: "Logout";
+}
 #wrapper{
     position: absolute;
     left: 0;
@@ -12,11 +31,12 @@ body{
     height: 100vh;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 5vh 85vh 10vh;
+    grid-template-rows: 25px 1fr 200px;
     grid-column-gap: 20px;
     grid-row-gap: 10px;
 }
 #barraSuperior{
+<<<<<<< HEAD
     background-color:#ee6c4d;
     grid-column: 1/3;
     grid-row: 1;
@@ -42,6 +62,19 @@ body{
 .botonBarraS:hover::after{
     transform: scaleX(1);
     transform-origin:left;
+=======
+    background-color:#555b6e;
+    grid-column: 1/3;
+    grid-row: 1;
+}
+.elemBarraS{
+    float: right;
+    height: 100%;
+    vertical-align: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    margin-right: 1vw;
+>>>>>>> 60d4f902550f49a19cfec932bd22758ad1c8b34b
 }
 #contenedorDiagrama{
     grid-column: 1;
@@ -50,9 +83,9 @@ body{
     border: 2px solid black;
     background-color: #eaac8b;
 }
+
 #contenedorProyectos{
     position: relative;
-    overflow-y: scroll;
 }
 .tituloElemento{
     position: relative;
@@ -60,6 +93,12 @@ body{
     top: -5%;
     visibility: hidden;
     pointer-events: none;
+    text-align: center;
+}
+#contenedorDetalles{
+    grid-column: 2/3;
+    grid-row: 2/3;
+    background-color: gray;
 }
 .editado{
     background-color: tomato;
@@ -76,23 +115,29 @@ body{
     visibility: visible;
 }
 
-.diagObjetivo{
-
-    width: clamp(150px, 50rem, 250px);
-    height: clamp(150px, 50rem, 250px);
-    display: inline-block;
-    margin: 1vw;
-
+.diagObjetivo{    
     background-color:#bccc76;
-    border-radius: 50%;
-    text-align: center;
 }
 .diagProyecto{
-    display: inline-block;
-  
     background-color:#b56576;
+
+
+
+}
+.diagTrabajo{
+    background-color:#257a37;
+
+}
+
+.elementoDiagrama{
+    vertical-align: top;
+    display: inline-block;
     border-radius: 50%;
-    text-align: center;
+    overflow-y: visible;
+
+}
+.elementoDiagrama.activo{
+    overflow-y: scroll;
 
 }
 .primerPlano{
@@ -101,10 +146,9 @@ body{
     height: 100%;
     display: inline-block;
     margin: 0;
-    overflow-y: scroll;
 }
-.elementoDiagrama{
-    vertical-align: top;
+.elementoDiagrama.enLista.seleccionado{
+    transform: scale(1.1);
 }
 .elementoDiagrama.enLista{
     display: inline-block;
@@ -130,6 +174,7 @@ body{
 .itemNBDiagrama{
     cursor: pointer;
     border:2px solid black;
+    
 }
 #botonesCrear{
 position: absolute;
@@ -147,6 +192,7 @@ right: 1vw;
 .botonCrear:hover{
     opacity: 1;
 }
+<<<<<<< HEAD
 #contenedorLogin{
     position: fixed;
     top: 6vh;
@@ -159,3 +205,5 @@ right: 1vw;
 .elementosLogin{
     margin-top:0.4vh;
 }
+=======
+>>>>>>> 60d4f902550f49a19cfec932bd22758ad1c8b34b

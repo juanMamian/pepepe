@@ -1,0 +1,12 @@
+Las tareas tienen:
+Titulo.
+Descripción.
+Responsable. Array
+Contacto para info adicional. (Inicialmente es el creador). Array
+Estado. En curso, terminada, huerfana
+Materiales necesarios. Array String/_id.
+
+relacionesAtlas. Array con todos los enlaces al atlas. Pueden ser a habilidades necesarias, conocimientos necesarios, conocimientos que mejoran, conocimientos que se pueden practicar, etc.
+
+producto. Descripción del producto de la actividad. String
+
