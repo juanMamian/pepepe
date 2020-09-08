@@ -27,4 +27,10 @@ router.post("/crear", (req, res) => {
     });
 });
 
+router.post("/renombrar", (req, res)=>{
+    const idT=req.body.id;
+    const nNombre=req.body.nNombre;
+    console.log(`renombrando ${idT} con ${nNombre}`);
+});
+
 module.exports=router;

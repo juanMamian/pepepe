@@ -1,23 +1,77 @@
 const mongoose = require("mongoose");
-const { route } = require("./auth");
+//const { route } = require("./auth");
 const router = require("express").Router();
 const Proyecto = require("../model/Proyecto").modeloProyecto;
 const { estaLogeado } = require("./loginStatus");
 const Trabajo = require("../model/Trabajo").modeloTrabajo;
 
+
+//Funcion que recibe un pathId y retorna el objeto en la punta del pathId listo para create()
+// u otra operacion y el
+//objeto Proyecto completo listo para save()
+async function getElementoPunta(pathId) {
+    elems = false;
+    console.log(`evaluando ${pathId}`);
+    await Proyecto.findById(pathId[0], (err, proyectoPadre) => {
+        if (err) {
+            return false;
+        }
+        console.log("Proyecto padre: " + proyectoPadre.nombre);
+        var elementoPunta = proyectoPadre;
+        var i = 1;
+        var encontrado = 0;
+        while (pathId[i]) {
+            //El siguiente elemento puede ser un objetivo o un trabajo
+            if (!elementoPunta.objetivos.find(elemento => elemento._id == pathId[i])) {
+                console.log(`objetivo ${pathId[i]} no encontrado en ${elementoPunta._id}. (Index=${i})`);
+            }
+            else {
+                encontrado++;
+                console.log(`objetivo ${pathId[i]} encontrado`);
+                elementoPunta = elementoPunta.objetivos.find(elemento => elemento._id == pathId[i]);
+            }
+            if (!elementoPunta.trabajos.find(elemento => elemento._id == pathId[i])) {
+                console.log(`trabajo ${pathId[i]} no encontrado en ${elementoPunta._id}. (Index=${i})`);
+            }
+            else {
+                console.log(`trabajo ${pathId[i]} encontrado`);
+                encontrado++;
+                elementoPunta = elementoPunta.trabajos.find(elemento => elemento._id == pathId[i]);
+            }
+            if (encontrado != 1) {
+                if (encontrado == 0) {
+                    console.log(`elemento ${pathId[i]} no encontrado`);
+                    return false;
+                }
+                if (encontrado > 1) {
+                    console.log("conflicto de ids: " + pathId[i]);
+                    return false;
+                }
+                console.log("error con 'encontrado': pathId: " + pathId[i]);
+                return false;
+            }
+            i++;
+        }
+        elems = [proyectoPadre, elementoPunta];
+        console.log("padre y punta encontrados");
+    });
+    return elems;
+}
+
+
 function findUpdateTareas(padre) {
     //preguntarse si tiene tareas
-    var estosTrabajos = padre.trabajos;
-    console.log("actualizando tareas de "+padre.nombre+` con id ${padre._id}`);
+    var estosTrabajos = padre.trabajos ? padre.trabajos : [];
+    console.log("Buscando tareas en " + padre.nombre + ` con id ${padre._id}`);
     if (estosTrabajos.length > 0) {
         estosTrabajos.forEach(trabajo => {
             const idTrabajo = trabajo.idTrabajo;
-            Trabajo.findById(idTrabajo, "nombre", (err, nombreTrabajo) => {
+            Trabajo.findById(idTrabajo, "nombre", (err, infoTrabajo) => {
                 if (err) {
                     console.log("Trabajo no encontrado");
                 }
-                console.log(`actualizando ${idTrabajo} con ${nombreTrabajo}`);
-                trabajo.nombre = nombreTrabajo;
+                console.log(`actualizando ${idTrabajo} con ${infoTrabajo.nombre}`);
+                trabajo.nombre = infoTrabajo.nombre;
             });
 
             findUpdateTareas(trabajo);
@@ -25,7 +79,7 @@ function findUpdateTareas(padre) {
     }
 
     //Preguntarse si tiene objetivos
-    var estosObjetivos = padre.bbjetivos;
+    var estosObjetivos = padre.objetivos ? padre.objetivos : [];
     if (estosObjetivos.length > 0) {
         estosObjetivos.forEach(objetivo => {
             findUpdateTareas(objetivo);
@@ -36,91 +90,57 @@ function findUpdateTareas(padre) {
 
 router.post("/listaCompleta", async (req, res) => {
     console.log("enviando información completa de los proyectos");
-    Proyecto.find({}, function (err, objects) {
-        objects.forEach(proyecto => {
-            //buscar sitios donde hay trabajos.
-            proyecto.objetivos.forEach(objetivo => {
-                findUpdateTareas(objetivo);
-            });
-            Trabajo.findById()
-        });
-        res.send(objects);
+    Proyecto.find({}, function (err, proyectos) {
+        res.send(proyectos);
     });
 });
 
-router.post("/crear", estaLogeado, async (req, res) => {
+router.post("/crear", async (req, res) => {
     console.log("creando proyecto nuevo");
     const newProyecto = new Proyecto({
         nombre: req.body.nombre ? req.body.nombre : "nuevo proyecto",
-        descripcion: req.body.descripcion ? req.body.descripcion : "sin descripcion",
-        gestores: [req.infoUsuario._id]
+        descripcion: req.body.descripcion ? req.body.descripcion : "sin descripcion"
+        //gestores: [req.infoUsuario._id] ? [req.infoUsuario._id] : ""
     });
 
-    try {
-        const upload = await newProyecto.save();
-        res.send({ proyecto: newProyecto });
-    } catch (error) {
-        res.status(400).send(error);
-    }
-});
-//Eliminar elemento                                                                 
-
-
-
-router.post("/objetivos/crear", (req, res) => {//Se espera un array de ids que señalan el path en el que se debe insertar el objetivo: [id de proyecto, id de objetivo, ide de objetivo, etc.]
-    const pathId = req.body.pathId;
-    if (!pathId[0]) {
-        res.status(400).send("wrong id");
-        return console.log("retornando");
-    }
-    console.log(`buscando el id: ${pathId[0]}`);
-    Proyecto.findById(pathId[0], (err, elProyecto) => {
+    newProyecto.save((err, resultado) => {
         if (err) {
-            res.status(400).send(err);
+            console.log("error guardando proyecto nuevo");
+            return res.status(400).send("error");
         }
-        else {
+        console.log("proyecto creado");
+        res.send({ proyecto: resultado });
+    });
+});
+
+router.post("/eliminar", (req, res) =>{
+    console.log("eliminando proyecto id: "+req.body.idProyecto);
+    const idProyecto=req.body.idProyecto;
+});
 
 
-            var futuroParent = elProyecto;
-            var rutaNombres = elProyecto.nombre;
-            var i = 1;
-
-            while (pathId[i]) {
-                //revisar si este objeto tiene una key "objetivos" en donde encontrar el nuevo futuro Parent
-                console.log(`checkeando el nivel ${i} de nest`);
-                if (!futuroParent.objetivos) {
-                    console.log(`en ${futuroParent.nombre} no hay objetivos`);
-                    res.status(400).send("wrong id");
-                }
-                console.log(typeof (futuroParent));
-                //Verificar que existe el nuevo parent
-                if (futuroParent.objetivos.find(elemento => elemento._id == pathId[i])) {
-                    futuroParent = futuroParent.objetivos.find(elemento => elemento._id == pathId[i]);
-                    console.log(`seleccionando ${futuroParent.nombre}`);
-                }
-                else {
-                    console.log(`elemento ${i} del path no encontrado`);
-                    res.status(400).send("wrong id");
-                    return;
-                }
-                i++;
-            }
-            //Introducir el nuevo objetivo y guardar en base de datos
-            const nuevoObjetivo = futuroParent.objetivos.create({
-                nombre: req.body.nombre ? req.body.nombre : "nuevo objetivo",
-                descripcion: req.body.descripcion ? req.body.descripcion : ""
-            });
-
-            console.log(`futuro parent es ${futuroParent.nombre}`);
-            console.log(`nuevo id es: ${nuevoObjetivo._id}`);
-            futuroParent.objetivos.push(nuevoObjetivo);
-            elProyecto.save(function (err, resultado) {
-                if (err) res.status(400).send(err);
-
-                res.send({ objetivo: nuevoObjetivo });
-            });
-
-        }
+router.post("/objetivos/crear", async (req, res) => {//Se espera un array de ids que señalan el path en el que se debe insertar el objetivo: [id de proyecto, id de objetivo, ide de objetivo, etc.]
+    const pathId = req.body.pathId;
+    console.log(`enviando ${pathId}`);
+    const elems = await getElementoPunta(pathId);
+    if (!elems) {
+        res.status(400).send("bad pathId");
+    }
+    const elProyecto = elems[0];
+    const elementoPunta = elems[1];
+    console.log(`seleccionado ${elementoPunta.nombre} en ${elProyecto.nombre}`);
+    futuroParent = elementoPunta;
+    //Introducir el nuevo objetivo y guardar en base de datos
+    const nuevoObjetivo = futuroParent.objetivos.create({
+        nombre: req.body.nombre ? req.body.nombre : "nuevo objetivo",
+        descripcion: req.body.descripcion ? req.body.descripcion : ""
+    });
+    console.log(`futuro parent es ${futuroParent.nombre}`);
+    console.log(`nuevo id es: ${nuevoObjetivo._id}`);
+    futuroParent.objetivos.push(nuevoObjetivo);
+    elProyecto.save(function (err, resultado) {
+        if (err) res.status(400).send(err);
+        res.send({ objetivo: nuevoObjetivo });
     });
 });
 
@@ -193,8 +213,9 @@ router.post("/elementosDiagrama/renombrar", (req, res) => { //se espera un array
         else {
             var elementoPunta = elProyecto;
             var i = 1;
+            encontrado
             while (pathId[i]) {
-                if (!elementoPunta.objetivos) {
+                if (!elementoPunta.objetivos && !elementoPunta.trabajos) {
                     res.status(400).send("wrong id");
                     return;
                 }
@@ -233,13 +254,37 @@ router.post("/trabajos/crear", (req, res) => {
         console.log("Proyecto padre: " + proyectoPadre.nombre);
         var elementoPunta = proyectoPadre;
         var i = 1;
+        var encontrado = 0;
         while (pathId[i]) {
             //El siguiente elemento puede ser un objetivo o un trabajo
             if (!elementoPunta.objetivos.find(elemento => elemento._id == pathId[i])) {
-                console.log(`${pathId[i]} no encontrado en ${elementoPunta._id}. (Index=${i})`);
-                return res.status(400).send(err);
+                console.log(`objetivo ${pathId[i]} no encontrado en ${elementoPunta._id}. (Index=${i})`);
             }
-            elementoPunta = elementoPunta.objetivos.find(elemento => elemento._id == pathId[i]);
+            else {
+                encontrado++;
+                console.log(`objetivo ${pathId[i]} encontrado`);
+                elementoPunta = elementoPunta.objetivos.find(elemento => elemento._id == pathId[i]);
+            }
+            if (!elementoPunta.trabajos.find(elemento => elemento._id == pathId[i])) {
+                console.log(`objetivo ${pathId[i]} no encontrado en ${elementoPunta._id}. (Index=${i})`);
+            }
+            else {
+                console.log(`trabajo ${pathId[i]} encontrado`);
+                encontrado++;
+                elementoPunta = elementoPunta.trabajos.find(elemento => elemento._id == pathId[i]);
+            }
+            if (encontrado != 1) {
+                if (encontrado == 0) {
+                    return res.status(400).send("bad pathId");
+                }
+                if (encontrado > 1) {
+                    return res.status(500).send("conflicto de ids");
+                }
+                console.log("error con 'encontrado'");
+                return res.status(500).send("error desconocido");
+
+            }
+
             i++;
         }
         const nTrabajo = new Trabajo({
@@ -271,13 +316,11 @@ router.post("/trabajos/crear", (req, res) => {
                 }
                 console.log(resultadoP);
                 return res.send({ trabajo: resultadoT });
-
             });
-
-
         });
     });
-
-
 });
+
+
+
 module.exports = router;

@@ -5,6 +5,7 @@ body{
     background-color: #e0fbfc;
 }
 #contenedorLogin{
+    z-index: 100;
     position: fixed;
     right: 2vw;
     top: 5vh;
@@ -36,33 +37,6 @@ content:"Login"
     grid-row-gap: 10px;
 }
 #barraSuperior{
-<<<<<<< HEAD
-    background-color:#ee6c4d;
-    grid-column: 1/3;
-    grid-row: 1;
-}
-.botonBarraS{
-    float: right;
-    margin-right: 1vw;
-    cursor: pointer;
-    position: relative;
-}
-.botonBarraS::after{
-    content:"";
-    width: 100%;
-    height: 3px;
-    background-color:#e0fbfc;
-    position: absolute;
-    bottom:0;
-    left:0;
-    transform-origin: right;
-    transform: scaleX(0);
-    transition: transform 0.1s ease-in;
-}
-.botonBarraS:hover::after{
-    transform: scaleX(1);
-    transform-origin:left;
-=======
     background-color:#555b6e;
     grid-column: 1/3;
     grid-row: 1;
@@ -74,7 +48,6 @@ content:"Login"
     cursor: pointer;
     font-size: 1.1rem;
     margin-right: 1vw;
->>>>>>> 60d4f902550f49a19cfec932bd22758ad1c8b34b
 }
 #contenedorDiagrama{
     grid-column: 1;
@@ -192,18 +165,3 @@ right: 1vw;
 .botonCrear:hover{
     opacity: 1;
 }
-<<<<<<< HEAD
-#contenedorLogin{
-    position: fixed;
-    top: 6vh;
-    right: 2vw;
-    z-index:100;
-    border: 2px dotted #98c1d9;
-    border-radius: 0.4vw;
-    padding: 0.5vw;
-}
-.elementosLogin{
-    margin-top:0.4vh;
-}
-=======
->>>>>>> 60d4f902550f49a19cfec932bd22758ad1c8b34b

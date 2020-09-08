@@ -48,6 +48,11 @@ const esquemaTrabajo = new mongoose.Schema({
     
 
     }],
+    trabajos:[
+        {
+            idTrabajo: String
+        }
+    ],
     enlacesProyectos:[{
         pathId: [String],
         tipo: String

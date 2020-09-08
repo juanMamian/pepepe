@@ -1,26 +1,7 @@
 loginToken = null;
+estructuraProyectos = {};
 
-function eliminarElemento(pathId) {
-    jQuery.ajax({
-        type: "POST",
-        url: "api/proyectos/elementos/eliminar",
-        dataType: "text",
-        contentType: "application/json",
-        data: JSON.stringify({
-            pathId: pathId
-        }),
-        success: function (res) {
-            res = JSON.parse(res);
-            const idEliminado = res.idEliminado;
-            //Dibujar los proyectos.
-            $("#" + idEliminado).remove();
-        },
-        error: function (xhr, ajaxOptions, thrownError) {
-            console.log(thrownError);
-        }
 
-    });
-}
 
 function getPathIds(elElem) {
     var esteId = elElem.attr("id");
@@ -48,7 +29,7 @@ function getPathIdsDB(elElem) {
 
 
 function dibujarElemento(element, tipo, parent) {
-    var claseLista="";
+    var claseLista = "";
     const padre = parent ? parent : $(".elementoDiagrama.activo:first"); claseLista = "enLista";
     var divElemento = "";
     switch (tipo) {
@@ -92,9 +73,9 @@ function dibujarObjetivos(element) {
     if (trabajos.length > 0) {//Buscar y dibujar los trabajos
         console.log(`encontrados ${trabajos.length} trabajos en ${element.nombre}`);
         trabajos.forEach(trabajo => {
-            dibujarElemento(trabajo, "trabajo", $(`#${element._id}`));    
+            dibujarElemento(trabajo, "trabajo", $(`#${element._id}`));
         });
-        
+
     }
     if (objs) {
         objs.forEach(objetivo => {
@@ -114,12 +95,12 @@ function dibujarDiagrama() {                                                  //
 
         },
         success: function (res) {
-            proyectos = JSON.parse(res);
             //Dibujar los proyectos.
-            proyectos.forEach(element => {
-                dibujarElemento(element, "proyecto", $("#contenedorProyectos"));
-                dibujarObjetivos(element);
-
+            console.log("lista completa proyectos: " + res);
+            estructuraProyectos = JSON.parse(res);
+            estructuraProyectos.forEach(proyecto => {
+                dibujarElemento(proyecto, "proyecto", $("#contenedorProyectos"));
+                //dibujarObjetivos(element);
             });
         },
         error: function (xhr, ajaxOptions, thrownError) {
@@ -148,7 +129,6 @@ $(document).ready(function () {
                     url: "api/proyectos/objetivos/crear",
                     dataType: "text",
                     contentType: "application/json",
-
                     data: JSON.stringify({
                         pathId: pathIds
                     }),
@@ -161,49 +141,19 @@ $(document).ready(function () {
                     error: function (xhr, ajaxOptions, thrownError) {
                         console.log(thrownError);
                     }
-
                 });
-
-                /*
-                    jQuery.ajax({
-                        beforeSend: function (request) {
-                            request.setRequestHeader("loginToken", loginToken);
-                        },
-                        headers: {
-                            Authorization: 'Bearer '+loginToken
-                        },
-                        type: "POST",
-                        url: "api/proyectos/objetivos/crear",
-                        dataType: "text",
-                        contentType: "application/json",
-                        data: JSON.stringify({
-                            pathId: pathId
-                        }),
-                        success: function (res) {
-                            const nElemento = JSON.parse(res).objetivo;
-                            console.log("recibido: " + JSON.stringify(nElemento));
-                            dibujarElemento(nElemento, "objetivo");
-                        },
-                        error: function (xhr, ajaxOptions, thrownError) {
-                            console.log(thrownError);
-                        }
-    
-                    });*/
                 break;
             case "trabajo":
                 const padre = $(".elementoDiagrama.primerPlano.activo:first");
                 const pathId = getPathIdsDB(padre);
                 console.log("creando un trabajo en " + padre.attr("id") + ` con pathId: ${pathId}`);
-
                 jQuery.ajax({
                     type: "POST",
                     url: "api/proyectos/trabajos/crear",
                     dataType: "text",
                     contentType: "application/json",
-
                     data: JSON.stringify({
                         pathId: pathId,
-
                     }),
                     success: function (res) {
                         console.log(res);
@@ -214,9 +164,7 @@ $(document).ready(function () {
                     error: function (xhr, ajaxOptions, thrownError) {
                         console.log(thrownError);
                     }
-
                 });
-
                 break;
             case "proyecto":
                 console.log("creando un nuevo proyecto");
@@ -227,7 +175,6 @@ $(document).ready(function () {
                     contentType: "application/json",
                     headers: { "loginToken": loginToken },
                     data: {
-
                     },
                     success: function (res) {
                         nProyecto = JSON.parse(res).proyecto;
@@ -236,13 +183,9 @@ $(document).ready(function () {
                     error: function (xhr, ajaxOptions, thrownError) {
                         console.log(thrownError);
                     }
-
                 });
                 break;
-
         }
-
-
     });
     //Seleccionar un elemento
     $("#contenedorDiagrama").on("click", ".elementoDiagrama.enLista", function (e) {
@@ -261,12 +204,34 @@ $(document).ready(function () {
             e.stopPropagation();
             //tecla supr
             if (e.keyCode == 46) {
-                const pathId = getPathIds(elElem);
-                pathId.shift();
-                eliminarElemento(pathId);
+                var dataEliminar=null;
+                var urlRequest="";
+                const idElemento=elElem.attr("id");
+                if(elElem.hasClass("diagProyecto")){
+                    console.log("enviando id: "+idElemento+" para eliminar");
+                    urlRequest="api/proyectos/eliminar";
+                    dataEliminar={
+                        idProyecto: idElemento
+                    }
+                }
+                jQuery.ajax({
+                    type: "POST",
+                    url: urlRequest,
+                    dataType: "text",
+                    contentType: "application/json",
+                    data: JSON.stringify(dataEliminar),
+                    success: function (res) {
+                        res = JSON.parse(res);
+                        const idEliminado = res.elemento.idEliminado;
+                        $("#" + idEliminado).remove();
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        console.log("error en "+urlRequest);
+                        console.log(thrownError);
+                    }            
+                });
             }
         }
-
     });
 
 
@@ -348,10 +313,10 @@ $(document).ready(function () {
 
     $("#inputLogin, #inputPassword").on("input paste", function () {
         if ($("#inputLogin").val().length > 0 && $("#inputPassword").val().length > 0) {
-            $("#bEnviarLogin").attr("disabled", false);
+            $("#botonEnviarLogin").attr("disabled", false);
         }
         else {
-            $("#bEnviarLogin").attr("disabled", true);
+            $("#botonEnviarLogin").attr("disabled", true);
         }
     });
 
@@ -365,7 +330,7 @@ $(document).ready(function () {
         }
     });
 
-    $("#bEnviarLogin").click(function () {                                    ///LOGIN//////////////////
+    $("#botonEnviarLogin").click(function () {                                    ///LOGIN//////////////////
         const login = $("#inputLogin").val();
         const password = $("#inputPassword").val();
 
@@ -387,7 +352,7 @@ $(document).ready(function () {
                 loginToken = res.token;
                 $("#bAbrirLogin").addClass("logged");
                 $("#infoLogeado").html(res.login);
-
+                $("#contenedorLogin").css("display", "none");
             },
             error: function (xhr, ajaxOptions, thrownError) {
                 console.log(thrownError);

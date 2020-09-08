@@ -2,29 +2,6 @@ const mongoose = require("mongoose");
 
 
 
-const esquemaObjetivo = new mongoose.Schema();
-
-
-
-
-esquemaObjetivo.add({
-    nombre: {
-        type: String,
-        required: true,
-        min: 3,
-        max: 1024
-    },
-    descripcion: {
-        type: String
-    },
-    trabajos: [
-        {
-            idTrabajo: String
-        }
-    ],
-    objetivos: [esquemaObjetivo]
-});
-
 const esquemaProyecto = new mongoose.Schema({
     nombre: {
         type: String,
@@ -35,7 +12,16 @@ const esquemaProyecto = new mongoose.Schema({
     descripcion: {
         type: String
     },
-    objetivos: [esquemaObjetivo],
+    objetivos: [
+        {
+            idObjetivo: String
+        }
+    ],
+    trabajos: [
+        {
+            idTrabajo: String
+        }
+    ],
     gestores: [
         { type: String }
     ]
@@ -45,5 +31,4 @@ const esquemaProyecto = new mongoose.Schema({
 
 
 module.exports.modeloProyecto = mongoose.model("Proyecto", esquemaProyecto);
-module.exports.esquemaObjetivo = esquemaObjetivo;
 
