@@ -50,7 +50,7 @@ const esquemaTrabajo = new mongoose.Schema({
     }],
     trabajos:[
         {
-            idTrabajo: String
+            ref: String
         }
     ],
     enlacesProyectos:[{

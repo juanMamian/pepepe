@@ -14,16 +14,19 @@ const esquemaProyecto = new mongoose.Schema({
     },
     objetivos: [
         {
-            idObjetivo: String
+            ref: String
         }
     ],
     trabajos: [
         {
-            idTrabajo: String
+            ref: String
         }
     ],
     gestores: [
-        { type: String }
+        {
+            ref: String,
+
+        }
     ]
 
 

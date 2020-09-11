@@ -12,12 +12,14 @@ esquemaObjetivo = new mongoose.Schema ({
     },
     trabajos: [
         {
-            idTrabajo: String
+            ref: String
         }
     ],
     objetivos: [
         {
-            idObjetivo: String
+            ref: String
         }
     ],
 });
+
+module.exports.modeloObjetivo=mongoose.model("Objetivo", esquemaObjetivo);

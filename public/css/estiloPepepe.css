@@ -13,6 +13,7 @@ body{
     padding: 1vw;
     border-radius: 1vw;
     background-color: #555b6eff;
+    display: none;
 }
 .elemLogin{
     display: block;
@@ -89,16 +90,16 @@ content:"Login"
 }
 
 .diagObjetivo{    
-    background-color:#bccc76;
+    background-color:#89b0aeff;
 }
 .diagProyecto{
-    background-color:#b56576;
+    background-color:#555b6eff;
 
 
 
 }
 .diagTrabajo{
-    background-color:#257a37;
+    background-color:#bee3dbff;
 
 }
 

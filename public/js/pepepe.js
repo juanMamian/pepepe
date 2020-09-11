@@ -1,7 +1,9 @@
 loginToken = null;
 estructuraProyectos = {};
 
-
+function llenarDetallesElemento(elemento){
+    
+}
 
 function getPathIds(elElem) {
     var esteId = elElem.attr("id");
@@ -34,13 +36,13 @@ function dibujarElemento(element, tipo, parent) {
     var divElemento = "";
     switch (tipo) {
         case "proyecto":
-            divElemento = `<div id=${element._id} class="diagProyecto elementoDiagrama  ${claseLista}" nivel=1 ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
+            divElemento = `<div id=${element._id} class="diagProyecto elementoDiagrama ${claseLista}" elemento='proyecto' ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
             break;
         case "objetivo":
-            divElemento = `<div id=${element._id} class="diagObjetivo elementoDiagrama  ${claseLista}" nivel=1 ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
+            divElemento = `<div id=${element._id} class="diagObjetivo elementoDiagrama  ${claseLista}" elemento='objetivo' ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
             break;
         case "trabajo":
-            divElemento = `<div id=${element._id} class="diagTrabajo elementoDiagrama  ${claseLista}" nivel=1 ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
+            divElemento = `<div id=${element._id} class="diagTrabajo elementoDiagrama  ${claseLista}" elemento='trabajo' ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
     }
 
     padre.append(divElemento);
@@ -67,22 +69,48 @@ function ubicarseEnDiagrama(nivel, aId) {
 
 
 
-function dibujarObjetivos(element) {
-    objs = element.objetivos.length > 0 ? element.objetivos : null;
-    trabajos = element.trabajos ? element.trabajos : [];
-    if (trabajos.length > 0) {//Buscar y dibujar los trabajos
-        console.log(`encontrados ${trabajos.length} trabajos en ${element.nombre}`);
-        trabajos.forEach(trabajo => {
-            dibujarElemento(trabajo, "trabajo", $(`#${element._id}`));
-        });
+function crearSubelementos(element) {
+    const tipoPadre = element.attr("elemento");
 
-    }
-    if (objs) {
-        objs.forEach(objetivo => {
-            dibujarElemento(objetivo, "objetivo", $(`#${element._id}`));
-            dibujarObjetivos(objetivo);
-        });
-    }
+    jQuery.ajax({
+        type: "POST",
+        url: "api/proyectos/elementos/getSubElementos",
+        dataType: "text",
+        contentType: "application/json",
+        data: JSON.stringify({
+            tipoPadre: tipoPadre,
+            idElemento: element.attr("id")
+        }),
+        success: function (res) {
+            //Dibujar los subElementos.
+            res = JSON.parse(res);
+            const aObjetivos = res.objetivos;
+            const aTrabajos = res.trabajos;
+            element.find(".elementoDiagrama").addClass(".paraEliminar");
+            for (var i in aObjetivos) {
+                console.log(`leido objetivo ${aObjetivos[i].nombre}. Verificando el id: ${aObjetivos[i]._id}`);
+                if ($(`#${aObjetivos[i]._id}`).length == 0) {
+                    dibujarElemento(aObjetivos[i], "objetivo", element);
+                }
+                else {
+                    console.log(`objetivo ${aObjetivos[i].nombre} ya estaba presente.`);
+                }
+            }
+            for (var j in aTrabajos) {
+                console.log(`leido trabajo ${aTrabajos[j].nombre}`);
+                if ($(`#${aTrabajos[j]._id}`).length == 0) {
+                    dibujarElemento(aTrabajos[j], "trabajo", element);
+                }
+                else {
+                    console.log(`trabajo ${aTrabajos[j].nombre} ya estaba presente`);
+                }
+            }
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+            console.log(thrownError);
+        }
+
+    });
 }
 
 function dibujarDiagrama() {                                                  //Dibujar el diagrama completo
@@ -91,6 +119,7 @@ function dibujarDiagrama() {                                                  //
         type: "POST",
         url: "api/proyectos/listaCompleta",
         dataType: "text",
+        contentType: "application/json",
         data: {
 
         },
@@ -100,7 +129,6 @@ function dibujarDiagrama() {                                                  //
             estructuraProyectos = JSON.parse(res);
             estructuraProyectos.forEach(proyecto => {
                 dibujarElemento(proyecto, "proyecto", $("#contenedorProyectos"));
-                //dibujarObjetivos(element);
             });
         },
         error: function (xhr, ajaxOptions, thrownError) {
@@ -118,48 +146,29 @@ $(document).ready(function () {
     $(".botonCrear").on("click", function (e) {                         //Crear un nuevo elemento en el diagrama
         const creacion = $(this).attr("id").substr(2).toLowerCase();
         const padre = $(".elementoDiagrama.activo:first");
-        const pathIds = getPathIdsDB(padre);
+        const tipoPadre = padre.attr("elemento");
+        const idPadre = padre.attr("id");
 
         console.log("creacion: " + creacion + " en " + padre.attr("id"));
         console.log("token: " + loginToken);
         switch (creacion) {                                                 //Creando un objetivo
             case "objetivo":
-                jQuery.ajax({
-                    type: "POST",
-                    url: "api/proyectos/objetivos/crear",
-                    dataType: "text",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        pathId: pathIds
-                    }),
-                    success: function (res) {
-                        console.log(res);
-                        nElemento = JSON.parse(res).objetivo;
-                        console.log(nElemento);
-                        dibujarElemento(nElemento, "objetivo");
-                    },
-                    error: function (xhr, ajaxOptions, thrownError) {
-                        console.log(thrownError);
-                    }
-                });
-                break;
             case "trabajo":
-                const padre = $(".elementoDiagrama.primerPlano.activo:first");
-                const pathId = getPathIdsDB(padre);
-                console.log("creando un trabajo en " + padre.attr("id") + ` con pathId: ${pathId}`);
                 jQuery.ajax({
                     type: "POST",
-                    url: "api/proyectos/trabajos/crear",
+                    url: "api/proyectos/elementos/crear",
                     dataType: "text",
                     contentType: "application/json",
                     data: JSON.stringify({
-                        pathId: pathId,
+                        idPadre: idPadre,
+                        tipoDocumento: creacion,
+                        tipoPadre: tipoPadre
                     }),
                     success: function (res) {
                         console.log(res);
-                        nElemento = JSON.parse(res).trabajo;
-                        console.log("nuevo Elemento: " + nElemento);
-                        dibujarElemento(nElemento, "trabajo");
+                        nElemento = JSON.parse(res).elemento;
+                        console.log(nElemento);
+                        dibujarElemento(nElemento, creacion);
                     },
                     error: function (xhr, ajaxOptions, thrownError) {
                         console.log(thrownError);
@@ -178,7 +187,7 @@ $(document).ready(function () {
                     },
                     success: function (res) {
                         nProyecto = JSON.parse(res).proyecto;
-                        dibujarElemento(nProyecto, "proyecto");
+                        dibujarElemento(nProyecto, "proyecto", "#contenedorProyecto");
                     },
                     error: function (xhr, ajaxOptions, thrownError) {
                         console.log(thrownError);
@@ -202,17 +211,49 @@ $(document).ready(function () {
         if ($(".elementoDiagrama.enLista.seleccionado").length > 0) {
             const elElem = $(".elementoDiagrama.enLista.seleccionado:first");
             e.stopPropagation();
+
             //tecla supr
+
             if (e.keyCode == 46) {
-                var dataEliminar=null;
-                var urlRequest="";
-                const idElemento=elElem.attr("id");
-                if(elElem.hasClass("diagProyecto")){
-                    console.log("enviando id: "+idElemento+" para eliminar");
-                    urlRequest="api/proyectos/eliminar";
-                    dataEliminar={
-                        idProyecto: idElemento
-                    }
+                var funcionSuccess = function () {
+                    console.log("funcion success no especificada");
+                };
+                var dataEliminar = null;
+                const tipoElemento = elElem.attr("elemento");
+                var urlRequest = "";
+                const idElemento = elElem.attr("id");
+                console.log(`enviando ${tipoElemento}:` + idElemento + " para eliminar");
+
+                switch (tipoElemento) {
+                    case "proyecto":
+                        urlRequest = "api/proyectos/eliminar";
+                        dataEliminar = {
+                            idProyecto: idElemento
+                        };
+                        funcionSuccess = function (res) {
+                            res = JSON.parse(res);
+                            const idEliminado = res.eliminado._id;
+                            $("#" + idEliminado).remove();
+                        };
+                        break;
+                    case "objetivo":
+                    case "trabajo":
+                        const elPadre=elElem.parent().closest(".elementoDiagrama");
+                        urlRequest = "api/proyectos/elementos/desconectar";
+                        dataEliminar = {
+                            idPadre:elPadre.attr("id"),
+                            tipoPadre:elPadre.attr("elemento"),
+                            idElemento: idElemento,
+                            tipoElemento:tipoElemento
+                        };
+                        funcionSuccess = function (res) {
+                            res = JSON.parse(res);
+                            const idEliminado = res.eliminado._id;
+                            $("#" + idEliminado).remove();
+                        };
+                        break;
+                    default:
+                        return console.log("error. Tipo de documento no conocido");
                 }
                 jQuery.ajax({
                     type: "POST",
@@ -221,15 +262,14 @@ $(document).ready(function () {
                     contentType: "application/json",
                     data: JSON.stringify(dataEliminar),
                     success: function (res) {
-                        res = JSON.parse(res);
-                        const idEliminado = res.elemento.idEliminado;
-                        $("#" + idEliminado).remove();
+                        funcionSuccess(res);
                     },
                     error: function (xhr, ajaxOptions, thrownError) {
-                        console.log("error en "+urlRequest);
+                        console.log("error en " + urlRequest);
                         console.log(thrownError);
-                    }            
+                    }
                 });
+
             }
         }
     });
@@ -237,7 +277,7 @@ $(document).ready(function () {
 
     $("#contenedorDiagrama").on("dblclick", ".elementoDiagrama.enLista", function (e) {//Abrir un elemento
         e.stopPropagation();
-
+        crearSubelementos($(this));
         var nivel = $(this).parents(".elementoDiagrama").length;
         var id = $(this).attr("id");
         var idElementoAnterior = $(`.itemNBDiagrama[nivel="${nivel - 1}"]`).attr("idSel");
@@ -252,8 +292,11 @@ $(document).ready(function () {
         for (var i = 0; i <= nivel; i++) {
             arrayId[i] = $(`.itemNBDiagrama[nivel="${i}"]`).attr("idSel");
         }
-
         ubicarseEnDiagrama(nivel, arrayId);
+
+        llenarDetallesElemento();
+
+
 
     });
     $("#contenedorProyectos").on("input", ".tituloElemento", function () {
@@ -271,27 +314,24 @@ $(document).ready(function () {
         const elTitulo = $(this);
         const elElem = $(this).closest(".elementoDiagrama");
         console.log($(this).html());
-        const nuevoN = $(this).html().replace(/(<([^>]+)>)/gi, "").replace(/\&nbsp;/gi, "").replace(/[^a-zA-ZÀ-Üà-ü0-9 ]/gi, "").replace(/\s\s+/g, ' ');
-
-        const pathId = getPathIds(elElem);
-        pathId.shift();
+        const nuevoNombre = $(this).html().replace(/(<([^>]+)>)/gi, "").replace(/\&nbsp;/gi, "").replace(/[^a-zA-ZÀ-Üà-ü0-9 ]/gi, "").replace(/\s\s+/g, ' ');
         const data = {
-            pathId: pathId,
-            nombre: nuevoN
+            id: elElem.attr("id"),
+            nuevoNombre: nuevoNombre,
+            tipoDocumento: elElem.attr("elemento")
         };
-        console.log("replacing: " + nuevoN);
         jQuery.ajax({
             type: "POST",
-            url: "api/proyectos/elementosDiagrama/renombrar",
+            url: "api/proyectos/elementos/renombrar",
             contentType: "application/json",
             data: JSON.stringify(data),
             success: function (res) {
-                console.log("res: " + JSON.stringify(res));
-                proyecto = res;
-                //Dibujar los proyectos.
+                elementoRespuesta = res.documento;
+                console.log(res);
+
                 elTitulo.removeClass("editado");
-                elTitulo.html(nuevoN);
-                $(".itemNBDiagrama[idSel='" + elElem.attr("id") + "']").html(nuevoN);
+                elTitulo.html(elementoRespuesta.nombre);
+                $(".itemNBDiagrama[idSel='" + elElem.attr("id") + "']").html(elementoRespuesta.nombre);
             },
             error: function (xhr, ajaxOptions, thrownError) {
                 console.log(thrownError);
