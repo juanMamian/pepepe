@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="css/estiloPepepe.css">
 
 </head>
+
 <body>
     <div id="contenedorLogin">
         <input type="text" id="inputLogin" class="elementosLogin" placeholder="nombre o email"><br>
@@ -18,33 +20,48 @@
             <div class="elemBarraS" id="bAbrirLogin"></div>
             <div class="elemBarraS" id="infoLogeado"></div>
         </div>
- 
-        <div id="contenedorDiagrama">
-            <div id="navbarDiagrama">
-                <div class="itemNBDiagrama" nivel=0 idSel="contenedorProyectos" id="itemNBDiagramacontenedorProyectos">Proyectos</div>
-            </div>
-            <div id="contenedorProyectos" class="elementoDiagrama" nivel=0></div>
-           
-            <div id="botonesCrear">
-                <div class="botonCrear" id="bcProyecto">Crear proyecto</div>
-                <div class="botonCrear" id="bcObjetivo">Crear objetivo</div>
-                <div class="botonCrear" id="bcTrabajo">Crear trabajo</div>
-    
-            </div>
-        </div>
-        <div id="contenedorDetalles">
-            <div id="tituloElemento">
 
+        <div id="zonaDiagrama">
+            <div id="zonaNombreProyecto">
+                <div id="paqueteProyectos">
+                    <div class="boton desplegando" id="bDesplegarProyectos"></div>
+                    <div id="bCrearProyecto" class="boton">+</div>
+                    <div id="cuadroBusquedaProyectos" contenteditable="true" class="itemPaqueteProyecto"></div>
+                </div>
+            </div>
+            <div id="barraSelectElementos">
+                <div id="selectTrabajos" class="itemBarraSelectElementos hoverable"><p>Trabajos</p><input class="checkVisiblidad" type="checkbox"></div>
+                <div id="selectObjetivos" class="itemBarraSelectElementos hoverable"><p>Objetivos</p><input class="checkVisiblidad" type="checkbox"></div>
+            </div>
+            <div id="diagrama">               
+                <div id="contenedorElementos" tabindex="1"></div>
+            </div>
+            <div id="menuContextualCrearElemento" class="menuContextualDiagrama">
+                <div class="itemMenu hoverable" id="crearTrabajo">Crear trabajo </div>
+                <div class="itemMenu hoverable" id="crearObjetivo">Crear objetivo</div>
+            </div>
+            <div id="menuContextualElementoDiagrama" class="menuContextualDiagrama">
+                <div class="tituloSeccionMenuContextual">Crear trabajo:</div>
+                <div class="itemMenu hoverable" id="crearTrabajoAnterior">Anterior </div>
+                <div class="itemMenu hoverable" id="crearTrabajoPosterior">Posterior </div>
+                <div class="tituloSeccionMenuContextual">Crear objetivo:</div>
+                <div class="itemMenu hoverable" id="crearObjetivoAnterior">Anterior </div>
+                <div class="itemMenu hoverable" id="crearObjetivoPosterior">Posterior</div>
             </div>
 
         </div>
-        
-        
-        
-    </div>        
+
+        <div id="zonaDetalles">
+            <div id="tituloZonaDetalles" contenteditable="true">Detalles</div>
+        </div>
+
+
+
+    </div>
 
 
     <script src="libs/jquery-3.5.1.min.js"></script>
     <script src="js/pepepe.js"></script>
 </body>
+
 </html>

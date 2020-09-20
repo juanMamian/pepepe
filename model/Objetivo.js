@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-esquemaObjetivo = new mongoose.Schema ({
+esquemaObjetivo = new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
@@ -10,16 +10,18 @@ esquemaObjetivo = new mongoose.Schema ({
     descripcion: {
         type: String
     },
-    trabajos: [
+    dependencias: [
         {
-            ref: String
+            tipoElemento: String,
+            ref: String,
+            tipoDependencia: String
         }
     ],
-    objetivos: [
+    subobjetivos: [
         {
             ref: String
         }
     ],
 });
 
-module.exports.modeloObjetivo=mongoose.model("Objetivo", esquemaObjetivo);
+module.exports.esquemaObjetivo = esquemaObjetivo;

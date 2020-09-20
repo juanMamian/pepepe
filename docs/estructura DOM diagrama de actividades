@@ -1,0 +1,31 @@
+Al escoger un proyecto se despliega una ventana de detalles del proyecto. Esa ventana tendra:
+
+ventana{
+    titulo,
+    barra de opciones
+
+    zonaDiagrama{
+        zonaNombreProyecto{
+            PaqueteProyectos{
+                Boton desplegar/replegar
+                BotonCrear
+
+                cuadro de búsqueda,
+                ItemsProyectos
+            }
+        }
+        diagrama{
+            barraSelectElementos,
+            contenedorElementos{
+                elementos
+            }
+
+        }
+
+    },
+
+    zonaDetalles{
+
+    }
+
+}

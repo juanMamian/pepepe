@@ -2,3 +2,4 @@ revisar con regex que no haya símbolos extraños en el registro de un nuevo usu
 Verificar seguridad en el envio de la contraseña y el token
 limpiar de simbolos extraños el nuevo nombre de un elemento del diagrama en la ruta "/elementos/renombrar"
 una función que revise proyecto por proyecto haciendo una lista de objetivos, tras lo cual se puede comparar con la base de datos de objetivos para encontrar aquellos que no están listados en ningun proyecto
+en el servidor debe haber una funcion que busque dependencias huerfanas y las elimine.

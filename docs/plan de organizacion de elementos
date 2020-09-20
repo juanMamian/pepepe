@@ -1,0 +1,53 @@
+
+
+Variable elementosProyecto:{
+    [
+        id:
+        {
+            tipo: Objetivo, trabajo o otro
+            dependencias:[]
+            columna: int columna a la que pertenece.
+            fila: fila a la que pertenece.
+            elementoDOM. Objeto en el el DOM
+        }
+    ]
+
+}
+
+elementos se reinicia cuando se selecciona el proyecto. Se actualiza con las ordenes CRUD y con un push desde el servidor.
+
+Para organizar:
+
+Crear un array temporal de elementos por dibujar igual al array de elementos.
+Crear otro array temporal para los elementos ya modificados.
+
+Objetivo: Definir filas y columnas:
+recursivamente:
+
+asignarColumna(col, id)
+{   
+    this = arrayElementos.id 
+    si ya estaba asignada la columna){
+        return this.columna
+    }
+    this.columna=col
+    contar las dependencias.
+    Si hay dependencias, sumarle uno a this.columna.
+    a cada dependencia{
+        this.columna = asignarColumnas(this.columna - 1) + 1        
+    } 
+    return this.columna
+}
+maxColumnas=0;
+
+para cada i en array de elementos{
+    cuentaColumnas = asignarColumna()
+    maxColumnas = cuentaColumnas>maxColumnas ? cuentaColumnas : maxColumnas
+}
+
+
+Funciones:
+
+ubicarElementos( ) -- Borra info de columnas y filas, reorganiza todo desde cero. Incluye asignar columnas.
+AsignarColumna() -- Si ya habia columna asignada no la sobreescribe.
+

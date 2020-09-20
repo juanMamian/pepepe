@@ -1,8 +1,58 @@
+:root{
+--colorBarras: #bfc0c0ff;
+--colorFondo: #f1f1f1ff;
+--white: #ffffffff;
+--colorMandarina: #ef8354ff;
+--colorMandarinaApagado: #ef835489;
+--independence: #4f5d75ff;
+--independenceApagado: #4f5d7589;
+}
 *{
     box-sizing: border-box;
 }
+.hoverable:hover{
+    background-color: var(--colorFondo);
+}
+
 body{
-    background-color: #e0fbfc;
+    background-color: var(--colorFondo);
+}
+.boton{
+    cursor:pointer;
+}
+
+.simboloCargando{
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color:red;
+    position: absolute;
+}
+
+#wrapper{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1px 1fr 1fr 1px;
+    grid-template-rows: 25px 1fr 20px;
+    grid-column-gap: 20px;
+    grid-row-gap: 10px;
+}
+#barraSuperior{
+    background-color:var(--colorBarras);
+    grid-column: 1/5;
+    grid-row: 1;
+}
+.elemBarraS{
+    float: right;
+    height: 100%;
+    vertical-align: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    margin-right: 1vw;
 }
 #contenedorLogin{
     z-index: 100;
@@ -25,144 +75,217 @@ content:"Login"
 #bAbrirLogin.logged::after{
     content: "Logout";
 }
-#wrapper{
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 25px 1fr 200px;
-    grid-column-gap: 20px;
-    grid-row-gap: 10px;
-}
-#barraSuperior{
-    background-color:#555b6e;
-    grid-column: 1/3;
-    grid-row: 1;
-}
-.elemBarraS{
-    float: right;
-    height: 100%;
-    vertical-align: center;
-    cursor: pointer;
-    font-size: 1.1rem;
-    margin-right: 1vw;
-}
-#contenedorDiagrama{
-    grid-column: 1;
+
+#zonaDiagrama{
+    grid-column: 2/3;
     grid-row: 2/3;  
     position: relative; 
-    border: 2px solid black;
-    background-color: #eaac8b;
+    background-color: #e4e4e4ff;
+    overflow-y:scroll;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px 20px 30px 1fr;
+
+}
+#zonaDiagrama::-webkit-scrollbar{
+    width: 0;
+}
+#zonaNombreProyecto{
+    grid-column: 1;
+    grid-row: 1/2;
+}
+#paqueteProyectos{
+    width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    border:2px solid var(--colorMandarina);
+    top: 17px;
+    z-index: 10;
+}
+#bDesplegarProyectos{
+    width: 20px;    
+    border-top: 15px solid var(--independence);
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    position: absolute;    
+    top: 7px;
+    right: 3px;
+    pointer-events: none;
+}
+#bDesplegarProyectos.desplegando{
+    transform:rotate(-90deg);
+}
+#bCrearProyecto{
+    position: absolute;
+    top: 1px;
+    right: -23px;
+    border-radius: 50%;
+    border: 2px solid var(--colorMandarina);
+    width: 20px;
+    height: 20px;
+    text-align:center;
+    vertical-align: center;
+    padding-bottom:4px;
+    display: none;
+}
+#cuadroBusquedaProyectos{
+    width: 100%;
+    min-height: 20px;
+    background-color:white;
+    font-size: 1.3rem;
+    padding-right: 16px;
+}
+.itemPaqueteProyecto{
+    text-align: center;
+    font-size:1.3rem;
+    border:2px solid var(--colorMandarina);
+    cursor: pointer;
+    background-color: var(--colorFondo);
+    display: none;
+}
+.itemPaqueteProyecto.seleccionado{
+    background-color: var(--colorBarras);
+
+}
+.itemPaqueteProyecto.desplegado{
+    display: block;
+}
+.itemPaqueteProyecto:hover{
+    background-color: var(--colorBarras);
 }
 
+
+#diagrama{
+    display: block;
+    position: relative;
+    grid-column: 1;
+    grid-row:4/5;
+    border:2px solid var(--colorMandarina);
+    background-color: var(--colorFondo);
+    overflow: scroll;
+}
+
+#barraSelectElementos{
+    grid-column: 1;
+    grid-row: 3/4;
+    top:-30px;
+    height: 30px;
+}
+.itemBarraSelectElementos{
+    height: 100%;
+    display: inline-block;    
+    vertical-align: bottom;
+    border: 2px solid var(--colorMandarina);
+    background-color:#bfc0c0ff;
+    padding-left: 4px;
+    padding-right: 4px;
+    display: flex;
+    float: left;
+
+}
+.itemBarraSelectElementos>p{
+    display: inline-block;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+}
+
+.checkVisiblidad{
+    margin-left: 12px;
+    height: 12px;
+    
+    margin-top: 3px;
+    
+}
+
+#contenedorElementos{
+    position: absolute;
+    top: 20px;
+    left:20px;
+}
+.elementoDiagrama{
+    width: 120px;
+    max-height: 70px;
+    position: absolute;
+    cursor: pointer;
+    padding:3px;
+    text-align: center;
+    font-size: 0.9rem;
+    overflow: hidden;
+}
+.elementoDiagrama.selected{
+    
+}
+
+.elementoTrabajo.resaltarComoDependencia{
+background-color: var(--colorMandarinaApagado);
+}
+
+.elementoObjetivo.resaltarComoDependencia{
+    background-color: var(--independenceApagado);
+    }
+
+.elementoTrabajo{
+    border: 2px solid var(--colorMandarina);
+}
+
+.elementoObjetivo{
+    border: 2px solid var(--independence);
+}
+.elementoObjetivo.selected{
+    background-color: var(--independence);
+}
+.elementoTrabajo.selected{
+    background-color: var(--colorMandarina);
+}
+
+.menuContextualDiagrama{
+    position: fixed;
+    z-index: 100;
+    border: 2px solid var(--colorMandarina);
+    border-radius: 2px;
+    cursor: pointer;
+    padding: 8px;
+    display: none;
+    background-color: var(--colorBarras);
+}
+
+#menuContextualCrearElemento{
+   
+}
+.tituloSeccionMenuContextual{
+    font-size: 0.9rem;
+    color: gray;
+}
+.itemMenu{
+    margin-left: 5px;
+}
+
+#zonaDetalles{
+    grid-column: 3/4;
+    grid-row: 2/3;
+    background-color: #e4e4e4ff;
+}
+#tituloZonaDetalles{
+    text-align: center;
+    font-size: 1.5rem;    
+}
+.editandose{
+    background-color: var(--colorMandarina);
+}
 #contenedorProyectos{
     position: relative;
 }
-.tituloElemento{
-    position: relative;
-    left: 0%;
-    top: -5%;
-    visibility: hidden;
-    pointer-events: none;
-    text-align: center;
-}
-#contenedorDetalles{
-    grid-column: 2/3;
-    grid-row: 2/3;
-    background-color: gray;
-}
+
 .editado{
     background-color: tomato;
 }
-.elementoDiagrama.activo>.tituloElemento{
-    pointer-events: all;
-    top: 2%;
-}
-.enLista .tituloElemento{
-    visibility: visible;
-    
-}
-.primerPlano .tituloElemento{
-    visibility: visible;
-}
-
-.diagObjetivo{    
-    background-color:#89b0aeff;
-}
 .diagProyecto{
     background-color:#555b6eff;
-
-
-
-}
-.diagTrabajo{
-    background-color:#bee3dbff;
-
-}
-
-.elementoDiagrama{
     vertical-align: top;
     display: inline-block;
     border-radius: 50%;
     overflow-y: visible;
-
-}
-.elementoDiagrama.activo{
-    overflow-y: scroll;
-
-}
-.primerPlano{
-    border-radius: 0%;
-    width: 100%;
-    height: 100%;
-    display: inline-block;
-    margin: 0;
-}
-.elementoDiagrama.enLista.seleccionado{
-    transform: scale(1.1);
-}
-.elementoDiagrama.enLista{
-    display: inline-block;
-    margin: 3vw;
-    width: 15vw;
-    height: 15vw;
-}
-.elementoDiagrama:not(.enLista):not(.primerPlano){
-    display: none;
-}
-#navbarDiagrama{
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 10vw;
-    height: 80vh;
-    z-index: 5;
-    opacity: 0.4;
-}
-#navbarDiagrama:hover{
-    opacity: 1;
-}
-.itemNBDiagrama{
-    cursor: pointer;
-    border:2px solid black;
-    
-}
-#botonesCrear{
-position: absolute;
-bottom: 0;
-right: 1vw;
-}
-.botonCrear{
-    display: inline-block;
-    text-align: center;
-    margin-left: 1vw;
-    cursor: pointer;
-    font-size: 0.8rem;
-    opacity: 0.7;
-}
-.botonCrear:hover{
-    opacity: 1;
 }

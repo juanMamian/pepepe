@@ -1,62 +1,71 @@
 const mongoose = require("mongoose");
 
-const esquemaTrabajo = new mongoose.Schema({
-    nombre:{
-        type:String,
+const esquemaTrabajo = new mongoose.Schema();
+
+
+esquemaTrabajo.add({
+    nombre: {
+        type: String,
         required: true,
         min: 3,
         max: 600
     },
-    descripcion:{
-        type:String,
-        max:10000
+    descripcion: {
+        type: String,
+        max: 10000
     },
-    responsables:[
+    responsables: [
         {
-            id:String
-        }   
+            id: String
+        }
     ],
-    materiales:[
+    materiales: [
         {
-            id:{
-                type:String,
-                min:24,
-                max:24
+            id: {
+                type: String,
+                min: 24,
+                max: 24
             },
-            nombre:{
-                type:String,
-                min:2,
-                max:500
+            nombre: {
+                type: String,
+                min: 2,
+                max: 500
             },
-            descripcion:{
-                type:String
+            descripcion: {
+                type: String
             },
             cantidad: Number,
             unidadReferencia: Number,
-            valor_unitario: Number,            
+            valor_unitario: Number,
         }
     ],
-    enlacesAtlas:[{
-        id:{
-            type:String,
+    enlacesAtlas: [{
+        id: {
+            type: String,
             min: 24,
             max: 24
         },
-        tipo:{
-            type:String
+        tipo: {
+            type: String
         }
-    
+
 
     }],
-    trabajos:[
+    subtrabajos: [
+        esquemaTrabajo
+    ],
+    dependencias: [
         {
-            ref: String
+            tipoElemento: String,
+            ref: String,
+            tipoDependencia: String
         }
     ],
-    enlacesProyectos:[{
+    enlacesProyectos: [{
         pathId: [String],
         tipo: String
     }]
 });
 
-module.exports.modeloTrabajo=mongoose.model("Trabajo", esquemaTrabajo);
+//module.exports.modeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);
+module.exports.esquemaTrabajo = esquemaTrabajo;

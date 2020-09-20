@@ -1,405 +1,589 @@
+
+const simboloCargando = "<div class='simboloCargando'></div>";
+const codigoTrabajo = "<div class='elementoTrabajo elementoDiagrama'></div>";
+const codigoObjetivo = "<div class='elementoObjetivo elementoDiagrama'></div>";
+
 loginToken = null;
-estructuraProyectos = {};
+elementosProyecto = new Object();
 
-function llenarDetallesElemento(elemento){
-    
-}
-
-function getPathIds(elElem) {
-    var esteId = elElem.attr("id");
-    var idSel = new Array();
-    var index = elElem.parents(".elementoDiagrama").length;
-    idSel[index] = esteId;
-    elElem.parents(".elementoDiagrama").each(function () {
-        index--;
-        idSel[index] = $(this).attr("id");
-    });
-    return idSel;
-}
-function getPathIdsDB(elElem) {
-    var esteId = elElem.attr("id");
-    var idSel = new Array();
-    var index = elElem.parents(".elementoDiagrama").length;
-    idSel[index] = esteId;
-    elElem.parents(".elementoDiagrama").each(function () {
-        index--;
-        idSel[index] = $(this).attr("id");
-    });
-    idSel.shift();
-    return idSel;
-}
-
-
-function dibujarElemento(element, tipo, parent) {
-    var claseLista = "";
-    const padre = parent ? parent : $(".elementoDiagrama.activo:first"); claseLista = "enLista";
-    var divElemento = "";
-    switch (tipo) {
-        case "proyecto":
-            divElemento = `<div id=${element._id} class="diagProyecto elementoDiagrama ${claseLista}" elemento='proyecto' ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
-            break;
-        case "objetivo":
-            divElemento = `<div id=${element._id} class="diagObjetivo elementoDiagrama  ${claseLista}" elemento='objetivo' ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
-            break;
-        case "trabajo":
-            divElemento = `<div id=${element._id} class="diagTrabajo elementoDiagrama  ${claseLista}" elemento='trabajo' ><div class='tituloElemento' contenteditable='true' >${element.nombre}</div></div>`;
+//para el diagrama
+heightCol = 80;
+widthCol = 150;
+function getDependenciasElemento(idProyecto, idElemento) {
+    if(!(idElemento in elementosProyecto[idProyecto]) ){
+        return [];
     }
-
-    padre.append(divElemento);
-    return padre.find(`#${element._id}`);
-}
-
-function ubicarseEnDiagrama(nivel, aId) {
-    //Vista de proyectos - nivel 0    
-    $(".primerPlano").removeClass("primerPlano");
-
-    var i = 0;
-    for (i = 0; i < aId.length; i++) {
-        //Ocultar todos los elementos de este nivel excepto el seleccionado mediante idSel           
-        $(`#${aId[i]}`).addClass("primerPlano");
-
+    aDependencias = elementosProyecto[idProyecto][idElemento].dependencias;
+    for (var i in aDependencias) {
+        let ref = aDependencias[i].ref;
+        aDependencias = aDependencias.concat(getDependenciasElemento(idProyecto, ref));
     }
-    //Clase "activo" para el último elemento en primer plano. Revelar los children de este elemento activo
-    console.log(`activando ${aId[i - 1]}`);
-    $(".activo").removeClass("activo");
-    $(`#${aId[i - 1]}`).addClass("activo");
-    $(".enLista").removeClass("enLista");
-    $(".activo:first").children().addClass("enLista");
+    return aDependencias;
 }
 
-
-
-function crearSubelementos(element) {
-    const tipoPadre = element.attr("elemento");
-
-    jQuery.ajax({
-        type: "POST",
-        url: "api/proyectos/elementos/getSubElementos",
-        dataType: "text",
-        contentType: "application/json",
-        data: JSON.stringify({
-            tipoPadre: tipoPadre,
-            idElemento: element.attr("id")
-        }),
-        success: function (res) {
-            //Dibujar los subElementos.
-            res = JSON.parse(res);
-            const aObjetivos = res.objetivos;
-            const aTrabajos = res.trabajos;
-            element.find(".elementoDiagrama").addClass(".paraEliminar");
-            for (var i in aObjetivos) {
-                console.log(`leido objetivo ${aObjetivos[i].nombre}. Verificando el id: ${aObjetivos[i]._id}`);
-                if ($(`#${aObjetivos[i]._id}`).length == 0) {
-                    dibujarElemento(aObjetivos[i], "objetivo", element);
-                }
-                else {
-                    console.log(`objetivo ${aObjetivos[i].nombre} ya estaba presente.`);
-                }
-            }
-            for (var j in aTrabajos) {
-                console.log(`leido trabajo ${aTrabajos[j].nombre}`);
-                if ($(`#${aTrabajos[j]._id}`).length == 0) {
-                    dibujarElemento(aTrabajos[j], "trabajo", element);
-                }
-                else {
-                    console.log(`trabajo ${aTrabajos[j].nombre} ya estaba presente`);
-                }
-            }
-        },
-        error: function (xhr, ajaxOptions, thrownError) {
-            console.log(thrownError);
-        }
-
-    });
+function crearItemProyecto(infoProyecto) {
+    let nuevoItem = $(`<div class='itemPaqueteProyecto nombreProyecto' id='${infoProyecto._id}'>${infoProyecto.nombre}</div>`);
+    $("#paqueteProyectos").append(nuevoItem);
+    return nuevoItem;
 }
 
-function dibujarDiagrama() {                                                  //Dibujar el diagrama completo
-    console.log("dibujando diagrama");
-    jQuery.ajax({
-        type: "POST",
-        url: "api/proyectos/listaCompleta",
-        dataType: "text",
-        contentType: "application/json",
-        data: {
-
-        },
-        success: function (res) {
-            //Dibujar los proyectos.
-            console.log("lista completa proyectos: " + res);
-            estructuraProyectos = JSON.parse(res);
-            estructuraProyectos.forEach(proyecto => {
-                dibujarElemento(proyecto, "proyecto", $("#contenedorProyectos"));
-            });
-        },
-        error: function (xhr, ajaxOptions, thrownError) {
-            console.log(thrownError);
-        }
-
-    });
-
-}
-
-$(document).ready(function () {
-
-    dibujarDiagrama();
-
-    $(".botonCrear").on("click", function (e) {                         //Crear un nuevo elemento en el diagrama
-        const creacion = $(this).attr("id").substr(2).toLowerCase();
-        const padre = $(".elementoDiagrama.activo:first");
-        const tipoPadre = padre.attr("elemento");
-        const idPadre = padre.attr("id");
-
-        console.log("creacion: " + creacion + " en " + padre.attr("id"));
-        console.log("token: " + loginToken);
-        switch (creacion) {                                                 //Creando un objetivo
-            case "objetivo":
-            case "trabajo":
-                jQuery.ajax({
-                    type: "POST",
-                    url: "api/proyectos/elementos/crear",
-                    dataType: "text",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        idPadre: idPadre,
-                        tipoDocumento: creacion,
-                        tipoPadre: tipoPadre
-                    }),
-                    success: function (res) {
-                        console.log(res);
-                        nElemento = JSON.parse(res).elemento;
-                        console.log(nElemento);
-                        dibujarElemento(nElemento, creacion);
-                    },
-                    error: function (xhr, ajaxOptions, thrownError) {
-                        console.log(thrownError);
-                    }
-                });
-                break;
-            case "proyecto":
-                console.log("creando un nuevo proyecto");
-                jQuery.ajax({
-                    type: "POST",
-                    url: "api/proyectos/crear",
-                    dataType: "text",
-                    contentType: "application/json",
-                    headers: { "loginToken": loginToken },
-                    data: {
-                    },
-                    success: function (res) {
-                        nProyecto = JSON.parse(res).proyecto;
-                        dibujarElemento(nProyecto, "proyecto", "#contenedorProyecto");
-                    },
-                    error: function (xhr, ajaxOptions, thrownError) {
-                        console.log(thrownError);
-                    }
-                });
-                break;
-        }
-    });
-    //Seleccionar un elemento
-    $("#contenedorDiagrama").on("click", ".elementoDiagrama.enLista", function (e) {
-        const seleccionado = $(this).hasClass("seleccionado");
-        $(".seleccionado").removeClass("seleccionado");
-        if (!seleccionado) {
-            $(this).addClass("seleccionado");
-        }
-
-    });
-    //Keydown para elementos diagrama
-    $(document).on("keydown", function (e) {
-
-        if ($(".elementoDiagrama.enLista.seleccionado").length > 0) {
-            const elElem = $(".elementoDiagrama.enLista.seleccionado:first");
-            e.stopPropagation();
-
-            //tecla supr
-
-            if (e.keyCode == 46) {
-                var funcionSuccess = function () {
-                    console.log("funcion success no especificada");
-                };
-                var dataEliminar = null;
-                const tipoElemento = elElem.attr("elemento");
-                var urlRequest = "";
-                const idElemento = elElem.attr("id");
-                console.log(`enviando ${tipoElemento}:` + idElemento + " para eliminar");
-
-                switch (tipoElemento) {
-                    case "proyecto":
-                        urlRequest = "api/proyectos/eliminar";
-                        dataEliminar = {
-                            idProyecto: idElemento
-                        };
-                        funcionSuccess = function (res) {
-                            res = JSON.parse(res);
-                            const idEliminado = res.eliminado._id;
-                            $("#" + idEliminado).remove();
-                        };
-                        break;
-                    case "objetivo":
-                    case "trabajo":
-                        const elPadre=elElem.parent().closest(".elementoDiagrama");
-                        urlRequest = "api/proyectos/elementos/desconectar";
-                        dataEliminar = {
-                            idPadre:elPadre.attr("id"),
-                            tipoPadre:elPadre.attr("elemento"),
-                            idElemento: idElemento,
-                            tipoElemento:tipoElemento
-                        };
-                        funcionSuccess = function (res) {
-                            res = JSON.parse(res);
-                            const idEliminado = res.eliminado._id;
-                            $("#" + idEliminado).remove();
-                        };
-                        break;
-                    default:
-                        return console.log("error. Tipo de documento no conocido");
-                }
-                jQuery.ajax({
-                    type: "POST",
-                    url: urlRequest,
-                    dataType: "text",
-                    contentType: "application/json",
-                    data: JSON.stringify(dataEliminar),
-                    success: function (res) {
-                        funcionSuccess(res);
-                    },
-                    error: function (xhr, ajaxOptions, thrownError) {
-                        console.log("error en " + urlRequest);
-                        console.log(thrownError);
-                    }
-                });
-
-            }
-        }
-    });
-
-
-    $("#contenedorDiagrama").on("dblclick", ".elementoDiagrama.enLista", function (e) {//Abrir un elemento
-        e.stopPropagation();
-        crearSubelementos($(this));
-        var nivel = $(this).parents(".elementoDiagrama").length;
-        var id = $(this).attr("id");
-        var idElementoAnterior = $(`.itemNBDiagrama[nivel="${nivel - 1}"]`).attr("idSel");
-        //Añadir un elemento a la barra de navegacion
-
-        `.itemNBDiagrama:eq(${nivel})` ? $(`.itemNBDiagrama:eq(${nivel})`).remove() : console.log("");
-        const nuevoItem = `<div class='itemNBDiagrama' id="itemNBDiagrama${id}" nivel='${nivel}' idSel="${id}">` + $(this).find(".tituloElemento").html() + "</div>";
-        $(nuevoItem).insertAfter($(`#itemNBDiagrama${idElementoAnterior}`));
-
-        //Crear el array de direccion en el diagrama
-        var arrayId = new Array();
-        for (var i = 0; i <= nivel; i++) {
-            arrayId[i] = $(`.itemNBDiagrama[nivel="${i}"]`).attr("idSel");
-        }
-        ubicarseEnDiagrama(nivel, arrayId);
-
-        llenarDetallesElemento();
-
-
-
-    });
-    $("#contenedorProyectos").on("input", ".tituloElemento", function () {
-        $(this).addClass("editado");
-    });
-    $("#contenedorProyectos").on("keydown", ".tituloElemento", function (e) {                                    //Enter key en input titulo elemento
-        if (e.keyCode == 13) {
-            $(this).blur();
-        }
-    });
-
-
-
-    $("#contenedorProyectos").on("focusout", ".tituloElemento.editado", function () {                                    //Renombrando el elemento después de que el título ha perdido foco
-        const elTitulo = $(this);
-        const elElem = $(this).closest(".elementoDiagrama");
-        console.log($(this).html());
-        const nuevoNombre = $(this).html().replace(/(<([^>]+)>)/gi, "").replace(/\&nbsp;/gi, "").replace(/[^a-zA-ZÀ-Üà-ü0-9 ]/gi, "").replace(/\s\s+/g, ' ');
-        const data = {
-            id: elElem.attr("id"),
-            nuevoNombre: nuevoNombre,
-            tipoDocumento: elElem.attr("elemento")
-        };
-        jQuery.ajax({
-            type: "POST",
-            url: "api/proyectos/elementos/renombrar",
-            contentType: "application/json",
-            data: JSON.stringify(data),
-            success: function (res) {
-                elementoRespuesta = res.documento;
-                console.log(res);
-
-                elTitulo.removeClass("editado");
-                elTitulo.html(elementoRespuesta.nombre);
-                $(".itemNBDiagrama[idSel='" + elElem.attr("id") + "']").html(elementoRespuesta.nombre);
-            },
-            error: function (xhr, ajaxOptions, thrownError) {
-                console.log(thrownError);
-            }
-
+function guardarInfoElementos(idProyecto, objetivos, trabajos) {
+    console.log(`guardando info elementos de proyecto con id ${idProyecto}`);
+    var aElementos = new Object();
+    var j = 0;
+    for (var i in objetivos) {
+        console.log(`tenemos un objetivo ${objetivos[i].nombre}`);
+        aElementos[objetivos[i]._id] = new Object({
+            tipo: "objetivo",
+            nombre: objetivos[i].nombre,
+            dependencias: objetivos[i].dependencias
         });
-    });
+        j++;
+    }
+    for (var i in trabajos) {
+        aElementos[trabajos[i]._id] = new Object({
+            tipo: "trabajo",
+            nombre: trabajos[i].nombre,
+            dependencias: trabajos[i].dependencias
+        });
+        j++;
+    }
+    elementosProyecto[idProyecto] = aElementos;
+}
 
+function addInfoToElementosProyecto(elemento, idProyecto){
+    const idElemento=elemento._id;
+    console.log(`añadiendo info al ${elemento.tipo} ${elemento.nombre} con id ${idElemento}`);
 
-    $("#navbarDiagrama").on("click", ".itemNBDiagrama", function () {
-        var nivel = $(this).attr("nivel");
-        var esteId = $(this).attr("idSel")
-        var elElem = $("#" + esteId);
+    if((idElemento in elementosProyecto[idProyecto])){
+        console.log(`${elemento.nombre} ya existia en elementosProyecto`);
+    }
+    else{
+        console.log(`creando nueva key ${idElemento} en elementosProyecto`);    
+        elementosProyecto[idProyecto][idElemento]=new Object();
+    }
+    elementosProyecto[idProyecto][idElemento].nombre=elemento.nombre;
+    elementosProyecto[idProyecto][idElemento].tipo=elemento.tipo;
+    elementosProyecto[idProyecto][idElemento].dependencias=elemento.dependencias ? elemento.dependencias: [];
+    elementosProyecto[idProyecto][idElemento].eDom= elemento.eDom ? elemento.eDom : elementosProyecto[idProyecto][idElemento].eDom
 
-        var idSel = getPathIds(elElem);
+}
 
-        ubicarseEnDiagrama(nivel, idSel);
-    });
+function dibujarObjetivo(id, nombre) {
+    var nuevoObjetivo = $(codigoObjetivo);
+    nuevoObjetivo.attr("id", id);
+    if (nombre) {
+        nuevoObjetivo.html(nombre);
+    }
+    $("#contenedorElementos").append(nuevoObjetivo);
+    return nuevoObjetivo;
+}
+function dibujarTrabajo(id, nombre) {
+    var nuevoTrabajo = $(codigoTrabajo);
+    nuevoTrabajo.attr("id", id);
+    if (nombre) {
+        nuevoTrabajo.html(nombre);
+    }
+    $("#contenedorElementos").append(nuevoTrabajo);
+    return nuevoTrabajo;
+}
+function dibujarElementos(idProyecto) {
+    $(".elementoDiagrama").remove();
+    for (var idElemento in elementosProyecto[idProyecto]) {
 
-    $("#inputLogin, #inputPassword").on("input paste", function () {
-        if ($("#inputLogin").val().length > 0 && $("#inputPassword").val().length > 0) {
-            $("#botonEnviarLogin").attr("disabled", false);
+        let nombreE = elementosProyecto[idProyecto][idElemento].nombre;
+        let idE = idElemento;
+        let tipo = elementosProyecto[idProyecto][idElemento].tipo;
+
+        switch (tipo) {
+            case "trabajo":
+                elementosProyecto[idProyecto][idElemento].eDom = dibujarTrabajo(idE, nombreE);
+                break;
+            case "objetivo":
+                elementosProyecto[idProyecto][idElemento].eDom = dibujarObjetivo(idE, nombreE);
+                break;
+            default:
+                console.log("tipo de elemento desconocido");
+        }
+        let esteE = elementosProyecto[idProyecto][idElemento].eDom;
+        esteE.css("top", top);
+    }
+}
+
+function asignarColumna(col, id, idProyecto) {
+    if(!(id in elementosProyecto[idProyecto])){
+        return 1;
+    }
+    let esteElemento = elementosProyecto[idProyecto][id];
+    if (esteElemento.columna) {
+        return esteElemento.columna;
+    }
+    esteElemento.columna = col;
+    if (Array.isArray(esteElemento.dependencias)) {
+        if (esteElemento.dependencias.length > 0) {
+            esteElemento.columna++;
+            for (var i in esteElemento.dependencias) {
+                let ref = esteElemento.dependencias[i].ref;
+                esteElemento.columna =Math.max(esteElemento.columna, (asignarColumna(1, ref, idProyecto) + 1));
+            }
+        }
+    }
+    return esteElemento.columna;
+}
+
+function ubicarElementos(idProyecto) {
+
+    //reiniciar columnas
+    for (var i in elementosProyecto[idProyecto]) {
+        delete elementosProyecto[idProyecto][i].columna;
+    }
+    for (var idElemento in elementosProyecto[idProyecto]) {
+        asignarColumna(1, idElemento, idProyecto);
+    }
+    var sizeColumna = new Object();
+    var columnest = 0;
+
+    //Buscando la columna mas grande. Columnest
+    for (var idElemento in elementosProyecto[idProyecto]) {
+        let columnaE = elementosProyecto[idProyecto][idElemento].columna;
+        var estaColumna = sizeColumna[columnaE];
+
+        if (Number.isInteger(sizeColumna[columnaE])) {
+            sizeColumna[columnaE]++
         }
         else {
-            $("#botonEnviarLogin").attr("disabled", true);
+            sizeColumna[columnaE] = 1;
+        }
+        if (sizeColumna[columnaE] > columnest) {
+            columnest = sizeColumna[columnaE];
+        }
+    }
+
+    //Ubicando segun columnest cada elemento. Falta la fila //Falta centrar verticalmente las columnas más pequeñas que columnest.
+    var turnoColumna = new Object()
+    for (var idElemento in elementosProyecto[idProyecto]) {
+        console.log(`ubicando ${elementosProyecto[idProyecto][idElemento].nombre}`);
+        let columnaE = elementosProyecto[idProyecto][idElemento].columna;
+        let eDom = elementosProyecto[idProyecto][idElemento].eDom;
+        if (!Number.isInteger(turnoColumna[columnaE])) {
+            turnoColumna[columnaE] = 0;
+        }
+        let turno = turnoColumna[columnaE];       
+        eDom.css("top", heightCol * turno + "px");
+        eDom.css("left", widthCol * (columnaE - 1) + "px");
+
+        turnoColumna[columnaE]++;
+
+    }
+
+}
+$(document).ready(function () {
+
+    //Recibir los proyectos.
+    jQuery.ajax({
+        type: "POST",
+        url: "api/proyectos/listaNombres",
+        dataType: "text",
+        contentType: "application/json",
+        data: {},
+        success: function (resp) {
+
+            console.log(resp);
+            resp = JSON.parse(resp);
+
+            for (var i in resp) {
+                console.log("nombre: " + resp[i].nombre);
+                crearItemProyecto({ nombre: resp[i].nombre, _id: resp[i]._id });
+            }
+            $("#bDesplegarProyectos").css("pointer-events", "all");
+
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+            console.log("errores: " + xhr + "**" + ajaxOptions + "**" + thrownError);
         }
     });
 
-    $("#bAbrirLogin").on("click", function () {
-        if (!$(this).hasClass("logged")) {
-            $("#contenedorLogin").css("display", "block");
+    $("#bDesplegarProyectos").on("click", function (e) {
+        e.stopPropagation();
+        const boton = $(this);
+        if (boton.hasClass("desplegando")) {
+            $("#bDesplegarProyectos").removeClass("desplegando");
+            $(".itemPaqueteProyecto").addClass("desplegado");
+            $("#cuadroBusquedaProyectos").html("");
+            $("#cuadroBusquedaProyectos").focus();
         }
-        else { //Deslogearse
-            loginToken = null
-            $(this).removeClass("logged");
+        else {
+            $("#bDesplegarProyectos").addClass("desplegando");
+            $(".itemPaqueteProyecto:not(.seleccionado)").removeClass("desplegado");
+        }
+
+    });
+
+    $("#cuadroBusquedaProyectos").on("input", function (e) {
+        if ($(this).html().length > 5) {
+            $("#bCrearProyecto").css("display", "block");
+        }
+        else {
+            $("#bCrearProyecto").css("display", "none");
         }
     });
 
-    $("#botonEnviarLogin").click(function () {                                    ///LOGIN//////////////////
-        const login = $("#inputLogin").val();
-        const password = $("#inputPassword").val();
+    $("#cuadroBusquedaProyectos").on("keypress", function (e) {
 
-        const data = {
-            login: login,
-            password: password
-        };
-        console.log(`iniciando intento de login con ${login} y ${password}`);
+        if (e.which == 13) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+    });
+
+    $("#paqueteProyectos").on("click", ".nombreProyecto", function () {
+        $("#paqueteProyectos").children(".itemPaqueteProyecto").removeClass("desplegado");
+        $(this).addClass("desplegado");
+        $("#bDesplegarProyectos").addClass("desplegando");
+
+        if ($(this).hasClass("seleccionado")) {
+            return;
+        }
+        $("#paqueteProyectos").children(".nombreProyecto").removeClass("seleccionado");
+        $(this).addClass("seleccionado");
+
+        datos = {
+            idProyecto: $(this).attr("id")
+        }
+        jQuery.ajax({
+            type: "POST",
+            url: "api/proyectos/getInfoElementos",
+            dataType: "text",
+            contentType: "application/json",
+            data: JSON.stringify(datos),
+            success: function (resp) {
+
+                resp = JSON.parse(resp);
+                objetivos = resp.proyecto.objetivos;
+                trabajos = resp.proyecto.trabajos;
+                console.log(`objetivos : ${objetivos.length}`);
+                console.log(`trabajos: ${trabajos.length}`);
+                guardarInfoElementos(datos.idProyecto, objetivos, trabajos);
+                dibujarElementos(datos.idProyecto);
+                ubicarElementos(datos.idProyecto);
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                console.log("errores: " + xhr + "**" + ajaxOptions + "**" + thrownError);
+            }
+        });
+    });
+
+    $("#bCrearProyecto").on("click", function () {
+        //Validacion del contenido del buscador de proyectos
+        if ($("#cuadroBusquedaProyectos").html().length < 5) {
+            return;
+        }
+        nombre = $("#cuadroBusquedaProyectos").html();
+
+        datos = {
+            nombre: nombre
+        }
 
         jQuery.ajax({
             type: "POST",
-            url: "api/usuarios/login",
+            url: "api/proyectos/crear",
             dataType: "text",
             contentType: "application/json",
-            data: JSON.stringify(data),
-            success: function (res) {
-                console.log("recibido token: " + res);
-                res = JSON.parse(res);
-                loginToken = res.token;
-                $("#bAbrirLogin").addClass("logged");
-                $("#infoLogeado").html(res.login);
-                $("#contenedorLogin").css("display", "none");
+            data: JSON.stringify(datos),
+            success: function (resp) {
+
+                console.log(resp);
+                resp = JSON.parse(resp);
+                console.log(`creado ${resp.proyecto.nombre}`);
+                crearItemProyecto(resp.proyecto).trigger("click");
             },
             error: function (xhr, ajaxOptions, thrownError) {
-                console.log(thrownError);
+                console.log("errores: " + xhr + "**" + ajaxOptions + "**" + thrownError);
             }
-
         });
+    });
+    $("#zonaDiagrama").on("click", function (e) {
+        $("#menuContextualCrearElemento, #menuContextualElementoDiagrama").css("display", "none");
+    });
 
+    $("#diagrama").on("contextmenu", function (e) {
+        $(".menuContextualDiagrama").css("display", "none");
+        $("#menuContextualCrearElemento").attr("ref", "");
+        $("#menuContextualCrearElemento").attr("tipoRef", "");
+        e.preventDefault();
+        e.stopPropagation();
+        coords = { x: e.screenX + 3, y: e.screenY - 100 };
+        console.log("right click en " + `${coords.x}, ${coords.y}. Target: ${$(e.target).attr("id")}`);
+        $("#menuContextualCrearElemento").css("top", `${coords.y}px`);
+        $("#menuContextualCrearElemento").css("left", `${coords.x}px`);
+        $("#menuContextualCrearElemento").css("display", "block");
+    });
+
+    $('#contenedorElementos').on('contextmenu', '.elementoDiagrama', function (e) {
+        const idTarget = $(e.target).attr("id");
+        const idProyectoActivo = $(".nombreProyecto.seleccionado:first").attr("id");
+        const tipoRef = elementosProyecto[idProyectoActivo][idTarget].tipo;
+        console.log(`Menu contextual para crear un elemento dependiente del ${tipoRef} en ${$(".nombreProyecto.seleccionado:first").html()}`);
+        $("#menuContextualElementoDiagrama").attr("ref", idTarget);
+        $("#menuContextualElementoDiagrama").attr("tipoRef", tipoRef);
+        $(".menuContextualDiagrama").css("display", "none");
+        console.log(`contextMenu de elementoDiagrama ${$(this).attr("id")}`);
+        e.stopPropagation()
+        e.preventDefault();
+        coords = { x: e.screenX + 3, y: e.screenY - 100 };
+        console.log("right click en " + `${coords.x}, ${coords.y}. Target: ${$(e.target).attr("id")}`);
+        $("#menuContextualElementoDiagrama").css("top", `${coords.y}px`);
+        $("#menuContextualElementoDiagrama").css("left", `${coords.x}px`);
+        $("#menuContextualElementoDiagrama").css("display", "block");
+    });
+
+    ////////////////////////////////////////////////////////////////BOTONES DE CREAR TRABAJOS Y OBJETIVOS///////////////////////////////////////
+
+    $("#crearTrabajo, #crearTrabajoAnterior, #crearTrabajoPosterior").on("click", function () {
+        const idProyectoSeleccionado = $(".nombreProyecto.seleccionado:first").attr("id");
+        const menuCx = $(this).closest(".menuContextualDiagrama");
+
+        const botonClickado = $(this);
+        console.log(`proyecto seleccionado: ${idProyectoSeleccionado}`)
+        datos = {
+            idProyecto: idProyectoSeleccionado
+        }
+        if (menuCx.attr("id") == "menuContextualElementoDiagrama") { //Informacion adicional para la dependencia.
+            const ref = menuCx.attr("ref");
+            var tipoRef = menuCx.attr("tipoRef");
+            if (botonClickado.attr("id") == "crearTrabajoPosterior") {
+                datos.dependenciaDelNuevo = {
+                    ref: ref,
+                    tipoElemento: tipoRef,
+                    tipoDependencia: "requiere"
+                };
+            }
+            if (botonClickado.attr("id") == "crearTrabajoAnterior") {
+                datos.elementoViejo = {
+                    id: ref,
+                    tipo: tipoRef
+                };
+                datos.dependenciaDelViejo = {
+                    tipoDependencia: "requiere"
+                };
+            }
+        }
+
+        //simbolo cargando en el sitio donde está el menu contextual
+        const elemCargando = $(simboloCargando);
+        $("body").append(elemCargando);
+        var lugar = $("#menuContextualCrearElemento").offset();
+        console.log(`lugar: ${JSON.stringify(lugar)}`);
+        elemCargando.css("left", lugar.left);
+        elemCargando.css("top", lugar.top);
+        elemCargando.css("display", "block");
+        jQuery.ajax({
+            type: "POST",
+            url: "api/proyectos/crearTrabajo",
+            dataType: "text",
+            contentType: "application/json",
+            data: JSON.stringify(datos),
+            success: function (resp) {
+                console.log(resp);
+                resp = JSON.parse(resp);
+                
+                var elementoNuevo=resp.nuevoTrabajo;
+                console.log(`creado ${elementoNuevo._id}`);
+                const elementoDomNuevo = dibujarTrabajo(resp.nuevoTrabajo._id, resp.nuevoTrabajo.nombre);
+                //Añadir tipo a elementoNuevo
+
+                elementoNuevo.tipo="trabajo";
+                elementoNuevo.eDom=elementoDomNuevo;
+                //introducir información a la variable elementosProyecto
+                addInfoToElementosProyecto(resp.nuevoTrabajo, idProyectoSeleccionado);
+                                
+                if( ("elementoViejo" in resp) ){
+                    var elementoViejo=resp.elementoViejo;
+                    //Añadir "tipo" a resp.elementoViejo       
+                    if(typeof(tipoRef)=="undefined"){
+                        console.log(`error. Hay un elementoViejo pero no hay tipoRef`);
+                        return;
+                    }       
+                    elementoViejo.tipo=tipoRef;
+                    addInfoToElementosProyecto(elementoViejo, idProyectoSeleccionado);
+                }
+                
+                elemCargando.remove();
+
+                //ReorganizarDiagrama:
+                ubicarElementos(idProyectoSeleccionado);
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                console.log("errores: " + xhr + "**" + ajaxOptions + "**" + thrownError);
+            }
+        });
+    });
+
+    $("#crearObjetivo").on("click", function () {//objetivo primario: sin dependencias
+        const idProyectoSeleccionado = $(".nombreProyecto.seleccionado:first").attr("id");
+        console.log(`proyecto seleccionado: ${idProyectoSeleccionado}`)
+        datos = {
+            idProyecto: idProyectoSeleccionado
+        }
+        if ($("#menuContextualCrearElemento").attr("ref").length > 0) {
+            datos.dependencia = {
+                ref: $("#menuContextualCrearElemento").attr("ref"),
+                tipoElemento: $("#menuContextualCrearElemento").attr("tipoRef"),
+                tipoDependencia: "requiere"
+            };
+
+        }
+        //simbolo cargando en el sitio donde está el menu contextual
+        const elemCargando = $(simboloCargando);
+        $("body").append(elemCargando);
+        var lugar = $("#menuContextualCrearElemento").offset();
+        console.log(`lugar: ${JSON.stringify(lugar)}`);
+        elemCargando.css("left", lugar.left);
+        elemCargando.css("top", lugar.top);
+        elemCargando.css("display", "block");
+        jQuery.ajax({
+            type: "POST",
+            url: "api/proyectos/crearObjetivo",
+            dataType: "text",
+            contentType: "application/json",
+            data: JSON.stringify(datos),
+            success: function (resp) {
+                console.log(resp);
+                resp = JSON.parse(resp);
+                console.log(`creado ${resp.id}`);
+                const elementoNuevo = dibujarObjetivo(resp.id, resp.nombre);
+
+                //introducir información a la variable elementosProyectoo
+                elementosProyecto[idProyectoSeleccionado][resp.id] = {
+                    nombre: resp.nombre,
+                    tipo: "objetivo",
+                    dependencias: resp.dependencias,
+                    eDom: elementoNuevo
+                }
+                elemCargando.remove();
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                console.log("errores: " + xhr + "**" + ajaxOptions + "**" + thrownError);
+            }
+        });
+    });
+
+
+
+
+    $("#contenedorElementos").on("click", ".elementoDiagrama", function () {
+        console.log("seleccionando un elemento");
+        $(".elementoDiagrama").removeClass("selected");
+        $(this).addClass("selected");
+
+
+        //Cambios en la zona detalles.
+        const idProyectoActivo = $(".nombreProyecto.seleccionado:first").attr("id");
+        const idElemento = $(this).attr("id");
+        const nombreElemento = elementosProyecto[idProyectoActivo][idElemento].nombre;
+        const tipoElemento = elementosProyecto[idProyectoActivo][idElemento].tipo;
+        $("#tituloZonaDetalles").html(nombreElemento);
+
+        $("#tituloZonaDetalles").attr("nivelRef", "elementoDiagrama");
+        $("#tituloZonaDetalles").attr("idRef", idElemento);
+        $("#tituloZonaDetalles").attr("tipoRef", tipoElemento);
+        $("#tituloZonaDetalles").attr("idParent", idProyectoActivo);
+
+        //Resaltar dependencias
+        aDependencias = getDependenciasElemento(idProyectoActivo, idElemento);
+        $(".elementoDiagrama.resaltarComoDependencia").removeClass("resaltarComoDependencia");
+        for (var i in aDependencias) {
+            $(`#${aDependencias[i].ref}`).addClass("resaltarComoDependencia");
+        }
 
     });
+
+    $('#contenedorElementos').on('keypress', function (e) {
+        console.log(`contenedor elementos detecta ${e.which}`);
+        if (e.which = 127 && $(".elementoDiagrama.selected").length == 1) {
+            const idElemento = $(".elementoDiagrama.selected").attr("id");
+            const idProyectoActivo = $(".nombreProyecto.seleccionado:first").attr("id");
+            console.log(`eliminando el elemento con id ${idElemento}`);
+
+            datos = {
+                tipoElemento: elementosProyecto[idProyectoActivo][idElemento].tipo,
+                idElemento: idElemento,
+                idProyecto: idProyectoActivo
+            }
+            jQuery.ajax({
+                type: 'POST',
+                url: 'api/proyectos/eliminarElemento',
+                dataType: 'text',
+                contentType: 'application/json',
+                data: JSON.stringify(datos),
+                success: function (resp) {
+                    resp = JSON.parse(resp);
+                    console.log(`elemento ${idElemento} eliminado exitosamente`);
+                    $(`#${idElemento}`).remove();
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
+                }
+            });
+
+        }
+    });
+
+    $("#tituloZonaDetalles").on("input", function () {
+        $(this).addClass("editandose");
+    });
+
+    $("#tituloZonaDetalles").on("keypress", function (e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).trigger("focusout");
+        }
+    });
+    $('#tituloZonaDetalles').on('focusout', function () {
+        if ($(this).attr("nivelRef") == "elementoDiagrama") {
+            if ($("#tituloZonaDetalles").html().length < 5) {
+                return;
+            }
+            const nuevoNombre = $("#tituloZonaDetalles").html();
+            const idRef = $("#tituloZonaDetalles").attr("idRef");
+            const idParent = $("#tituloZonaDetalles").attr("idParent");
+            const tipoRef = $("#tituloZonaDetalles").attr("tipoRef");
+            if ($("#tituloZonaDetalles").attr("tipoRef").length > 0) {
+                datos = {
+                    tipoRef: tipoRef,
+                    idRef: idRef,
+                    idParent: idParent,
+                    nuevoNombre: nuevoNombre
+                }
+            }
+
+            jQuery.ajax({
+                type: "POST",
+                url: "api/proyectos/elementos/renombrar",
+                dataType: "text",
+                contentType: "application/json",
+                data: JSON.stringify(datos),
+                success: function (resp) {
+                    console.log(resp);
+                    resp = JSON.parse(resp);
+                    $("#tituloZonaDetalles").removeClass("editandose");
+                    console.log(`elemento renombrado a ${resp.elemento.nombre}`);
+                    //Cambiar nombre del elemento en el elementosProyecto
+
+                    elementosProyecto[idParent][idRef].nombre = resp.elemento.nombre;
+                    $(`#${idRef}`).html(elementosProyecto[idParent][idRef].nombre);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    console.log("errores: " + xhr + "**" + ajaxOptions + "**" + thrownError);
+                }
+            });
+        }
+    });
+
+
+
+
+
 });

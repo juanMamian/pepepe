@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-
+const esquemaTrabajo=require("../model/Trabajo").esquemaTrabajo;
+const esquemaObjetivo=require("../model/Objetivo").esquemaObjetivo;
 
 
 const esquemaProyecto = new mongoose.Schema({
@@ -13,14 +14,11 @@ const esquemaProyecto = new mongoose.Schema({
         type: String
     },
     objetivos: [
-        {
-            ref: String
-        }
+        esquemaObjetivo
+
     ],
     trabajos: [
-        {
-            ref: String
-        }
+        esquemaTrabajo
     ],
     gestores: [
         {
