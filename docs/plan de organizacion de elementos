@@ -4,6 +4,7 @@ Variable elementosProyecto:{
     [
         id:
         {
+            nombre,
             tipo: Objetivo, trabajo o otro
             dependencias:[]
             columna: int columna a la que pertenece.
@@ -11,10 +12,13 @@ Variable elementosProyecto:{
             elementoDOM. Objeto en el el DOM
         }
     ]
-
 }
 
 elementos se reinicia cuando se selecciona el proyecto. Se actualiza con las ordenes CRUD y con un push desde el servidor.
+
+
+
+
 
 Para organizar:
 

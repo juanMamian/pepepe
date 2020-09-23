@@ -65,7 +65,7 @@ function addInfoToElementosProyecto(elemento, idProyecto){
     elementosProyecto[idProyecto][idElemento].nombre=elemento.nombre;
     elementosProyecto[idProyecto][idElemento].tipo=elemento.tipo;
     elementosProyecto[idProyecto][idElemento].dependencias=elemento.dependencias ? elemento.dependencias: [];
-    elementosProyecto[idProyecto][idElemento].eDom= elemento.eDom ? elemento.eDom : elementosProyecto[idProyecto][idElemento].eDom
+    elementosProyecto[idProyecto][idElemento].eDom= elemento.eDom ? elemento.eDom : null
 
 }
 

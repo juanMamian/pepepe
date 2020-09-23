@@ -1,0 +1,93 @@
+{
+	// Place your global snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+	// Placeholders with the same ids are connected.
+	// Example:
+	// "Print to console": {
+	// 	"scope": "javascript,typescript",
+	// 	"prefix": "log",
+	// 	"body": [
+	// 		"console.log('$1');",
+	// 		"$2"
+	// 	],
+	// 	"description": "Log output to console"
+	// }
+		"logespecial":{
+			"scope": "javascript",
+			"prefix": "logespecial",
+			"body": "console.log(`$1`);",
+			"description": "console.log con comillas especiales"
+		},
+
+	"retornar con error 400": {
+		"scope": "javascript",
+		"prefix": "e400",
+		"body": [
+			"console.log('error: $1.');",
+			"return res.status(400).send('$2');"
+		],
+		"description": "generar un error en API"
+	},
+	"try catch": {
+		"scope": "javascript",
+		"prefix": "trycatch",
+		"body": [
+			"try{",
+			"	$1",
+			"}",
+			"catch(error){",
+			"	console.log(`error $2. e: `+error);",
+			"	return res.status(400).send('$3');",
+			"}"
+		],
+		"description": "generar un error en API"
+	},
+	"jquery 'on' function to element":{
+		"scope": "javascript",
+		"prefix": "$on",
+		"body": [
+			"$('$1').on('$2', function(){",
+			"	$3",
+			"});"
+		]
+	},
+	"jquery second 'on' function to element in element":{
+		"scope": "javascript",
+		"prefix": "$on2",
+		"body": [
+			"$('$1').on('$2', '$3',function(){",
+			"	$4",
+			"});"
+		]
+	},
+	"jquery + ajax":{
+		"scope": "javascript",
+		"prefix": "jajax",
+		"body": [
+			"datos={",
+			"	$1",
+			"}",
+			"jQuery.ajax({",
+			"	type: 'POST',",
+			"	url: 'api/proyectos/$2',",
+			"	dataType: 'text',",
+			"	contentType:'application/json',",
+			"	data: JSON.stringify(datos),",
+			"	success: function(resp){",
+			"		resp=JSON.parse(resp);",
+			"		$3",
+			"	},",
+			"	error: function (xhr, ajaxOptions, thrownError) {",
+			"		console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);",
+			"	}",
+			"});"
+				
+		]
+	}
+
+
+
+}
