@@ -54,17 +54,29 @@ esquemaTrabajo.add({
     subtrabajos: [
         esquemaTrabajo
     ],
-    dependencias: [
+    vinculos: [
         {
-            tipoElemento: String,
-            ref: String,
-            tipoDependencia: String
+            tipoTarget: {
+                type: String,
+                required: true
+            },
+            ref: {
+                type: String,
+                required: true
+            },
+            tipoVinculo: {
+                type: String,
+                required: true
+            }
         }
     ],
     enlacesProyectos: [{
         pathId: [String],
         tipo: String
-    }]
+    }],
+    estado: String,
+    fila: Number,
+    columna: Number
 });
 
 //module.exports.modeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);

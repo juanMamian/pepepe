@@ -5,20 +5,24 @@ const codigoObjetivo = "<div class='elementoObjetivo elementoDiagrama'></div>";
 
 loginToken = null;
 elementosProyecto = new Object();
+elementosColumna = new Array();
 
 //para el diagrama
-heightCol = 80;
+heightCol = 35;
 widthCol = 150;
-function getDependenciasElemento(idProyecto, idElemento) {
-    if(!(idElemento in elementosProyecto[idProyecto]) ){
+
+
+
+function getVinculosElementoRecursivamente(idProyecto, idElemento) {
+    if (!(idElemento in elementosProyecto[idProyecto])) {
         return [];
     }
-    aDependencias = elementosProyecto[idProyecto][idElemento].dependencias;
-    for (var i in aDependencias) {
-        let ref = aDependencias[i].ref;
-        aDependencias = aDependencias.concat(getDependenciasElemento(idProyecto, ref));
+    aVinculos = elementosProyecto[idProyecto][idElemento].vinculos;
+    for (var i in aVinculos) {
+        let ref = aVinculos[i].ref;
+        aVinculos = aVinculos.concat(getVinculosElementoRecursivamente(idProyecto, ref));
     }
-    return aDependencias;
+    return aVinculos;
 }
 
 function crearItemProyecto(infoProyecto) {
@@ -36,7 +40,7 @@ function guardarInfoElementos(idProyecto, objetivos, trabajos) {
         aElementos[objetivos[i]._id] = new Object({
             tipo: "objetivo",
             nombre: objetivos[i].nombre,
-            dependencias: objetivos[i].dependencias
+            vinculos: objetivos[i].vinculos
         });
         j++;
     }
@@ -44,28 +48,30 @@ function guardarInfoElementos(idProyecto, objetivos, trabajos) {
         aElementos[trabajos[i]._id] = new Object({
             tipo: "trabajo",
             nombre: trabajos[i].nombre,
-            dependencias: trabajos[i].dependencias
+            vinculos: trabajos[i].vinculos,
+            fila: trabajos[i].fila,
+            columna: trabajos[i].columna
         });
         j++;
     }
     elementosProyecto[idProyecto] = aElementos;
 }
 
-function addInfoToElementosProyecto(elemento, idProyecto){
-    const idElemento=elemento._id;
+function addInfoToElementosProyecto(elemento, idProyecto) {
+    const idElemento = elemento._id;
     console.log(`añadiendo info al ${elemento.tipo} ${elemento.nombre} con id ${idElemento}`);
 
-    if((idElemento in elementosProyecto[idProyecto])){
+    if ((idElemento in elementosProyecto[idProyecto])) {
         console.log(`${elemento.nombre} ya existia en elementosProyecto`);
     }
-    else{
-        console.log(`creando nueva key ${idElemento} en elementosProyecto`);    
-        elementosProyecto[idProyecto][idElemento]=new Object();
+    else {
+        console.log(`creando nueva key ${idElemento} en elementosProyecto`);
+        elementosProyecto[idProyecto][idElemento] = new Object();
     }
-    elementosProyecto[idProyecto][idElemento].nombre=elemento.nombre;
-    elementosProyecto[idProyecto][idElemento].tipo=elemento.tipo;
-    elementosProyecto[idProyecto][idElemento].dependencias=elemento.dependencias ? elemento.dependencias: [];
-    elementosProyecto[idProyecto][idElemento].eDom= elemento.eDom ? elemento.eDom : null
+    elementosProyecto[idProyecto][idElemento].nombre = elemento.nombre;
+    elementosProyecto[idProyecto][idElemento].tipo = elemento.tipo;
+    elementosProyecto[idProyecto][idElemento].vinculos = elemento.vinculos ? elemento.vinculos : [];
+    elementosProyecto[idProyecto][idElemento].eDom = elemento.eDom ? elemento.eDom : null
 
 }
 
@@ -94,7 +100,8 @@ function dibujarElementos(idProyecto) {
         let nombreE = elementosProyecto[idProyecto][idElemento].nombre;
         let idE = idElemento;
         let tipo = elementosProyecto[idProyecto][idElemento].tipo;
-
+        let fila = elementosProyecto[idProyecto][idElemento].fila;
+        let columna = elementosProyecto[idProyecto][idElemento].columna;
         switch (tipo) {
             case "trabajo":
                 elementosProyecto[idProyecto][idElemento].eDom = dibujarTrabajo(idE, nombreE);
@@ -106,29 +113,64 @@ function dibujarElementos(idProyecto) {
                 console.log("tipo de elemento desconocido");
         }
         let esteE = elementosProyecto[idProyecto][idElemento].eDom;
-        esteE.css("top", top);
+        esteE.css("top", heightCol * fila + "px");
+        esteE.css("left", widthCol * (columna) + "px");
+        //esteE.html(fila);
     }
 }
 
 function asignarColumna(col, id, idProyecto) {
-    if(!(id in elementosProyecto[idProyecto])){
-        return 1;
-    }
+    //A filas contiene la información de las filas ocupadas 
+
     let esteElemento = elementosProyecto[idProyecto][id];
     if (esteElemento.columna) {
-        return esteElemento.columna;
+        return { columna: esteElemento.columna, fila: esteElemento.fila };
     }
     esteElemento.columna = col;
-    if (Array.isArray(esteElemento.dependencias)) {
-        if (esteElemento.dependencias.length > 0) {
+    var filaDeseada = 1;
+    if (Array.isArray(esteElemento.vinculos)) {
+        if (esteElemento.vinculos.length > 0) {
             esteElemento.columna++;
-            for (var i in esteElemento.dependencias) {
-                let ref = esteElemento.dependencias[i].ref;
-                esteElemento.columna =Math.max(esteElemento.columna, (asignarColumna(1, ref, idProyecto) + 1));
+            var sumatoriaFilas = 0;
+            var cuentaVinculos = 0;
+            for (var i in esteElemento.vinculos) {
+                let ref = esteElemento.vinculos[i].ref;
+                if (!(ref in elementosProyecto[idProyecto])) {
+                    continue;
+                }
+                resultado = asignarColumna(1, ref, idProyecto);
+                esteElemento.columna = Math.max(esteElemento.columna, (resultado.columna + 1));
+                sumatoriaFilas += resultado.fila;
+                cuentaVinculos++;
             }
+            filaDeseada = Math.round(sumatoriaFilas / cuentaVinculos);
         }
     }
-    return esteElemento.columna;
+    //Escoger fila
+    if (!(esteElemento.columna in elementosColumna)) {
+        elementosColumna[esteElemento.columna] = new Array();
+    }
+    var aEstaColumna = elementosColumna[esteElemento.columna];
+
+    var ultimaFilaOcupada = 0;
+    if (aEstaColumna.length > 0) {
+
+        //console.log(`leyendo la ultima fila ocupada en la columna ${esteElemento.columna} que tiene ${aEstaColumna.length} elementos. El ultimo elemento es un ${esteElemento.tipo}`);
+        ultimaFilaOcupada = elementosProyecto[idProyecto][aEstaColumna[aEstaColumna.length - 1].ref].fila;
+    }
+    if (filaDeseada > ultimaFilaOcupada) {
+        esteElemento.fila = filaDeseada
+    }
+    else {
+        esteElemento.fila = ultimaFilaOcupada + 2;
+    }
+    elementosColumna[esteElemento.columna].push({ ref: id });
+
+
+    //Guardar cambios en elementos proyecto y retornar.
+    elementosProyecto[idProyecto][id] = esteElemento;
+
+    return { columna: esteElemento.columna, fila: esteElemento.fila };
 }
 
 function ubicarElementos(idProyecto) {
@@ -164,16 +206,13 @@ function ubicarElementos(idProyecto) {
     for (var idElemento in elementosProyecto[idProyecto]) {
         console.log(`ubicando ${elementosProyecto[idProyecto][idElemento].nombre}`);
         let columnaE = elementosProyecto[idProyecto][idElemento].columna;
+        let filaE = elementosProyecto[idProyecto][idElemento].fila;
         let eDom = elementosProyecto[idProyecto][idElemento].eDom;
-        if (!Number.isInteger(turnoColumna[columnaE])) {
-            turnoColumna[columnaE] = 0;
-        }
-        let turno = turnoColumna[columnaE];       
-        eDom.css("top", heightCol * turno + "px");
+
+        eDom.css("top", heightCol * filaE + "px");
         eDom.css("left", widthCol * (columnaE - 1) + "px");
 
-        turnoColumna[columnaE]++;
-
+        //eDom.html(filaE);
     }
 
 }
@@ -266,7 +305,7 @@ $(document).ready(function () {
                 console.log(`trabajos: ${trabajos.length}`);
                 guardarInfoElementos(datos.idProyecto, objetivos, trabajos);
                 dibujarElementos(datos.idProyecto);
-                ubicarElementos(datos.idProyecto);
+                //ubicarElementos(datos.idProyecto);
             },
             error: function (xhr, ajaxOptions, thrownError) {
                 console.log("errores: " + xhr + "**" + ajaxOptions + "**" + thrownError);
@@ -324,7 +363,7 @@ $(document).ready(function () {
         const idTarget = $(e.target).attr("id");
         const idProyectoActivo = $(".nombreProyecto.seleccionado:first").attr("id");
         const tipoRef = elementosProyecto[idProyectoActivo][idTarget].tipo;
-        console.log(`Menu contextual para crear un elemento dependiente del ${tipoRef} en ${$(".nombreProyecto.seleccionado:first").html()}`);
+
         $("#menuContextualElementoDiagrama").attr("ref", idTarget);
         $("#menuContextualElementoDiagrama").attr("tipoRef", tipoRef);
         $(".menuContextualDiagrama").css("display", "none");
@@ -349,14 +388,14 @@ $(document).ready(function () {
         datos = {
             idProyecto: idProyectoSeleccionado
         }
-        if (menuCx.attr("id") == "menuContextualElementoDiagrama") { //Informacion adicional para la dependencia.
+        if (menuCx.attr("id") == "menuContextualElementoDiagrama") { //Informacion adicional para la vinculo.
             const ref = menuCx.attr("ref");
             var tipoRef = menuCx.attr("tipoRef");
             if (botonClickado.attr("id") == "crearTrabajoPosterior") {
-                datos.dependenciaDelNuevo = {
+                datos.vinculoDelNuevo = {
                     ref: ref,
-                    tipoElemento: tipoRef,
-                    tipoDependencia: "requiere"
+                    tipoTarget: tipoRef,
+                    tipoVinculo: "requiere"
                 };
             }
             if (botonClickado.attr("id") == "crearTrabajoAnterior") {
@@ -364,8 +403,8 @@ $(document).ready(function () {
                     id: ref,
                     tipo: tipoRef
                 };
-                datos.dependenciaDelViejo = {
-                    tipoDependencia: "requiere"
+                datos.vinculoDelViejo = {
+                    tipoVinculo: "requiere"
                 };
             }
         }
@@ -387,30 +426,30 @@ $(document).ready(function () {
             success: function (resp) {
                 console.log(resp);
                 resp = JSON.parse(resp);
-                
-                var elementoNuevo=resp.nuevoTrabajo;
+
+                var elementoNuevo = resp.nuevoTrabajo;
                 console.log(`creado ${elementoNuevo._id}`);
                 const elementoDomNuevo = dibujarTrabajo(resp.nuevoTrabajo._id, resp.nuevoTrabajo.nombre);
                 //Añadir tipo a elementoNuevo
 
-                elementoNuevo.tipo="trabajo";
-                elementoNuevo.eDom=elementoDomNuevo;
+                elementoNuevo.tipo = "trabajo";
+                elementoNuevo.eDom = elementoDomNuevo;
                 //introducir información a la variable elementosProyecto
                 addInfoToElementosProyecto(resp.nuevoTrabajo, idProyectoSeleccionado);
-                                
-                if( ("elementoViejo" in resp) ){
-                    var elementoViejo=resp.elementoViejo;
+
+                if (("elementoViejo" in resp)) {
+                    var elementoViejo = resp.elementoViejo;
                     //Añadir "tipo" a resp.elementoViejo       
-                    if(typeof(tipoRef)=="undefined"){
+                    if (typeof (tipoRef) == "undefined") {
                         console.log(`error. Hay un elementoViejo pero no hay tipoRef`);
                         return;
-                    }       
-                    elementoViejo.tipo=tipoRef;
+                    }
+                    elementoViejo.tipo = tipoRef;
                     addInfoToElementosProyecto(elementoViejo, idProyectoSeleccionado);
                 }
-                
-                elemCargando.remove();
 
+                elemCargando.remove();
+                elementoDomNuevo.trigger("click");
                 //ReorganizarDiagrama:
                 ubicarElementos(idProyectoSeleccionado);
             },
@@ -420,17 +459,55 @@ $(document).ready(function () {
         });
     });
 
-    $("#crearObjetivo").on("click", function () {//objetivo primario: sin dependencias
+    $('#conectarRequeridoSeleccionando').on('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const menuCx = $(this).closest(".menuContextualDiagrama");
+        const idRequeridor = menuCx.attr("ref");
+       
+        const requeridor = $(`#${idRequeridor}`);
+        $(".elementoDiagrama").addClass("optandoRequerido");
+        requeridor.removeClass("optandoRequerido");
+        requeridor.addClass("optandoRequeridor");
+        menuCx.css("display", "none");
+        $("#contenedorElementos").focus();
+    });
+
+    $('#desconectarSeleccionando').on('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        const menuCx = $(this).closest(".menuContextualDiagrama");
+        const idSource = menuCx.attr("ref");
+        const source = $(`#${idSource}`);
+        const idProyectoActivo = $(".nombreProyecto.seleccionado:first").attr("id");
+
+        var aVinculos=elementosProyecto[idProyectoActivo][idSource].vinculos;
+        $(".elementoDiagrama").addClass("noclickable");
+        for(var i in aVinculos){
+            ref= aVinculos[i].ref
+            if(!(ref in elementosProyecto[idProyectoActivo]))continue;
+            $(`#${ref}`).addClass("optandoDesconexionAsTarget");
+            $(`#${ref}`).removeClass("noclickable");
+        }
+        source.addClass("optandoDesconexionAsSource");
+        source.removeClass("noclickable");
+        menuCx.css("display", "none");
+        $("#contenedorElementos").focus();
+
+    });
+
+    $("#crearObjetivo").on("click", function () {//objetivo primario: sin vinculos
         const idProyectoSeleccionado = $(".nombreProyecto.seleccionado:first").attr("id");
         console.log(`proyecto seleccionado: ${idProyectoSeleccionado}`)
         datos = {
             idProyecto: idProyectoSeleccionado
         }
         if ($("#menuContextualCrearElemento").attr("ref").length > 0) {
-            datos.dependencia = {
+            datos.vinculo = {
                 ref: $("#menuContextualCrearElemento").attr("ref"),
                 tipoElemento: $("#menuContextualCrearElemento").attr("tipoRef"),
-                tipoDependencia: "requiere"
+                tipoVinculo: "requiere"
             };
 
         }
@@ -458,7 +535,7 @@ $(document).ready(function () {
                 elementosProyecto[idProyectoSeleccionado][resp.id] = {
                     nombre: resp.nombre,
                     tipo: "objetivo",
-                    dependencias: resp.dependencias,
+                    vinculos: resp.vinculos,
                     eDom: elementoNuevo
                 }
                 elemCargando.remove();
@@ -470,16 +547,81 @@ $(document).ready(function () {
     });
 
 
+    $("#contenedorElementos").on("click", ".elementoDiagrama", function () { ///CLICK en el elemento diagrama
+        const idProyectoActivo = $(".nombreProyecto.seleccionado:first").attr("id");
+
+        
+        if($(this).hasClass("optandoRequerido")){ //Crear una vinculo entre un requeridor y un requerido ya existentes
+            const requeridor=$(".optandoRequeridor:first");
+            const idRequeridor=requeridor.attr("id");
+            const tipoRequeridor=elementosProyecto[idProyectoActivo][idRequeridor].tipo;
+
+            const requerido=$(this);            
+            const idRequerido=requerido.attr("id");
+            const tipoRequerido=elementosProyecto[idProyectoActivo][idRequerido].tipo;
+            console.log(`enviando una nueva vinculo en proyecto con id ${idProyectoActivo}`);
+            datos={
+                idProyecto:idProyectoActivo,
+
+                idSource:idRequeridor,
+                tipoSource:tipoRequeridor,
+               
+                idTarget:idRequerido,
+                tipoTarget:tipoRequerido,
+                tipoVinculo:"requiere"
+            }
+            jQuery.ajax({
+                type: 'POST',
+                url: 'api/proyectos/crearVinculo',
+                dataType: 'text',
+                contentType:'application/json',
+                data: JSON.stringify(datos),
+                success: function(resp){
+                    resp=JSON.parse(resp);
+                    
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
+                }
+            });
+
+            return;
+        }
+        if($(this).hasClass("optandoDesconexionAsTarget")){           //Desconectando el vinculo entre un source y un target
+            console.log(`desconectando`);
+            idSource=$(`.optandoDesconexionAsSource:first`).attr("id");
+            idTarget=$(this).attr("id");
+
+            datos={
+                idProyecto: idProyectoActivo,
+                idSource: idSource,
+                idTarget: idTarget  
+            }
+            jQuery.ajax({
+                type: 'POST',
+                url: 'api/proyectos/desconectarVinculoBySourceTarget',
+                dataType: 'text',
+                contentType:'application/json',
+                data: JSON.stringify(datos),
+                success: function(resp){
+                    resp=JSON.parse(resp);
+                    
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
+                }
+            });
+            return;
+        }
 
 
-    $("#contenedorElementos").on("click", ".elementoDiagrama", function () {
+                                                             //Seleccionar un elemento
         console.log("seleccionando un elemento");
         $(".elementoDiagrama").removeClass("selected");
         $(this).addClass("selected");
 
 
         //Cambios en la zona detalles.
-        const idProyectoActivo = $(".nombreProyecto.seleccionado:first").attr("id");
         const idElemento = $(this).attr("id");
         const nombreElemento = elementosProyecto[idProyectoActivo][idElemento].nombre;
         const tipoElemento = elementosProyecto[idProyectoActivo][idElemento].tipo;
@@ -490,11 +632,11 @@ $(document).ready(function () {
         $("#tituloZonaDetalles").attr("tipoRef", tipoElemento);
         $("#tituloZonaDetalles").attr("idParent", idProyectoActivo);
 
-        //Resaltar dependencias
-        aDependencias = getDependenciasElemento(idProyectoActivo, idElemento);
-        $(".elementoDiagrama.resaltarComoDependencia").removeClass("resaltarComoDependencia");
-        for (var i in aDependencias) {
-            $(`#${aDependencias[i].ref}`).addClass("resaltarComoDependencia");
+        //Resaltar vinculos
+        aVinculos = getVinculosElementoRecursivamente(idProyectoActivo, idElemento);
+        $(".elementoDiagrama.resaltarComoVinculo").removeClass("resaltarComoVinculo");
+        for (var i in aVinculos) {
+            $(`#${aVinculos[i].ref}`).addClass("resaltarComoVinculo");
         }
 
     });
@@ -530,6 +672,15 @@ $(document).ready(function () {
         }
     });
 
+    $('#contenedorElementos').on('focusout', function () {
+        console.log(`focousout del contenedor de elementos`);
+        $(".elementoDiagrama").removeClass("optandoRequerido");
+        $(".elementoDiagrama").removeClass("optandoRequeridor");
+        $(".elementoDiagrama").removeClass("optandoDesconexionAsSource");
+        $(".elementoDiagrama").removeClass("optandoDesconexionAsTarget");
+        $(".elementoDiagrama").removeClass("noclickable");
+    });
+    
     $("#tituloZonaDetalles").on("input", function () {
         $(this).addClass("editandose");
     });

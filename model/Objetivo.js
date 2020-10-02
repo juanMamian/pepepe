@@ -10,11 +10,20 @@ esquemaObjetivo = new mongoose.Schema({
     descripcion: {
         type: String
     },
-    dependencias: [
+    vinculos: [
         {
-            tipoElemento: String,
-            ref: String,
-            tipoDependencia: String
+            tipoTarget: {
+                type: String,
+                required: true
+            },
+            ref: {
+                type: String,
+                required: true
+            },
+            tipoVinculo: {
+                type: String,
+                required: true
+            }
         }
     ],
     subobjetivos: [
@@ -22,6 +31,9 @@ esquemaObjetivo = new mongoose.Schema({
             ref: String
         }
     ],
+    estado: String,
+    fila: Number,
+    columna: Number
 });
 
 module.exports.esquemaObjetivo = esquemaObjetivo;

@@ -4,6 +4,7 @@
 --white: #ffffffff;
 --colorMandarina: #ef8354ff;
 --colorMandarinaApagado: #ef835489;
+--colorMandarinaMasApagado: #ef8354f9;
 --independence: #4f5d75ff;
 --independenceApagado: #4f5d7589;
 }
@@ -205,9 +206,10 @@ content:"Login"
     top: 20px;
     left:20px;
 }
+
 .elementoDiagrama{
     width: 120px;
-    max-height: 70px;
+    max-height: 60px;
     position: absolute;
     cursor: pointer;
     padding:3px;
@@ -218,12 +220,34 @@ content:"Login"
 .elementoDiagrama.selected{
     
 }
+.elementoDiagrama.optandoRequerido{
+    border-color: purple;
+}
+.elementoDiagrama.seleccionandoRequerido{
+    border-color: grey;
+}
+.elementoDiagrama.optandoDesconexionAsSource{
+    border-color: grey;
+}
+.elementoDiagrama.optandoDesconexionAsTarget{
+    border-color: purple;
 
-.elementoTrabajo.resaltarComoDependencia{
+}
+.noclickable{
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+
+.elementoTrabajo.resaltarComoVinculo{
 background-color: var(--colorMandarinaApagado);
 }
 
-.elementoObjetivo.resaltarComoDependencia{
+.elementoTrabajo.resaltarComoVinculoSecundario{
+    background-color: var(--colorMandarinaMasApagado);
+}
+
+.elementoObjetivo.resaltarComoVinculo{
     background-color: var(--independenceApagado);
     }
 

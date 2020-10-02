@@ -1,0 +1,4 @@
+Entre los elementos se establecen vinculos.
+Estos pueden ser de los siguiente tipos:
+
+"depende" Significa que el target de este vinculo debe estar completado para que el presente elemento pueda iniciar.
