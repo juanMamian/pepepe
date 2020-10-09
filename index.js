@@ -5,6 +5,7 @@ const dotenv=require("dotenv");
 const usuariosRoutes = require("./routes/usuarios");
 const routesProyectos=require("./routes/proyectos");
 const routesTrabajos = require("./routes/trabajos");
+const routesNodos=require("./routes/atlas/nodos");
 
 dotenv.config();
 
@@ -21,17 +22,17 @@ db.once('open', function() {
   // we're connected!
 });
 
-app.use(express.static("public"));
+app.use( express.static("public"));
 
 //Routes
 app.use(express.json());
 app.use("/api/usuarios", usuariosRoutes );
 app.use("/api/proyectos", routesProyectos);
 app.use("/api/trabajos/", routesTrabajos);
-
+app.use("/atlas/api/nodos", routesNodos);
 app.post("", (req, res) => {
     res.send("hola");
 });
 const port=process.env.PORT || 3000;
-app.listen(3000, ()=>{console.log(`servidor Up en 3000`)});
+app.listen(port, ()=>{console.log(`servidor Up en ${port}`)});
 

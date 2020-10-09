@@ -8,7 +8,8 @@ esquemaTrabajo.add({
         type: String,
         required: true,
         min: 3,
-        max: 600
+        max: 600,
+        default:"nuevo trabajo"
     },
     descripcion: {
         type: String,
@@ -39,18 +40,20 @@ esquemaTrabajo.add({
             valor_unitario: Number,
         }
     ],
-    enlacesAtlas: [{
-        id: {
-            type: String,
-            min: 24,
-            max: 24
-        },
-        tipo: {
-            type: String
+    conocimientosVinculados:[
+        {
+            idRef:{
+                type:String,
+                required:true
+            },
+            nombre: String,
+            tipoVinculo:{
+                type:String,
+                required:true,
+                default:"requiere"
+            }            
         }
-
-
-    }],
+    ],   
     subtrabajos: [
         esquemaTrabajo
     ],

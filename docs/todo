@@ -1,11 +1,14 @@
-revisar con regex que no haya símbolos extraños en el registro de un nuevo usuario
-Verificar seguridad en el envio de la contraseña y el token
-limpiar de simbolos extraños el nuevo nombre de un elemento del diagrama en la ruta "/elementos/renombrar"
+revisar con regex que no haya símbolos extraños en el registro de un nuevo usuario.
+Verificar seguridad en el envio de la contraseña y el token.
+limpiar de simbolos extraños el nuevo nombre de un elemento del diagrama en la ruta "/elementos/renombrar".
 una función que revise proyecto por proyecto haciendo una lista de objetivos, tras lo cual se puede comparar con la base de datos de objetivos para encontrar aquellos que no están listados en ningun proyecto
 * En el servidor debe haber una funcion que busque dependencias huerfanas y las elimine.
 Eficiencia en el manejo de la variable elementosProyecto, para no tener que descargar el proyecto entero cada vez.
 convertir todo lo que se llama "dependencias" en "vinculos". Ahora solo existe "requiere" como tipo de vínculo.
 Al crear vinculos, verificar que no se generen bucles.
-Al organizar los elementos según vínculos, usar solo los vínculos pertinentes: {"requiere"}
-programar la funcion "eliminarVinculoHuerfano"
-revisar el codigo buscando variables globales que deberían ser locales. Debe haber alguna herramienta para extraños
+Al organizar los elementos según vínculos, usar solo los vínculos pertinentes: {"requiere"}.
+programar la funcion "eliminarVinculoHuerfano".
+revisar el codigo buscando variables globales que deberían ser locales. Debe haber alguna herramienta para extraños.
+Cambiar el llamado a la funcion "dibujarelementos" por la funcion "ubicarElementos". La primera debe deprecarse.
+el menu contextual del diagrama a veces se sale de la pantalla. Reparar.
+Limpiar los textos que se envian como nombre de los elementos y proyecto (Crear proyecto también. Recordar que está aparte). Limpiar los textos que se envian como descripción.

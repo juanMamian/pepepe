@@ -5,7 +5,8 @@ esquemaObjetivo = new mongoose.Schema({
         type: String,
         required: true,
         min: 3,
-        max: 1024
+        max: 1024,
+        default: "nuevo objetivo"
     },
     descripcion: {
         type: String

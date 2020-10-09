@@ -19,7 +19,7 @@ const esquemaProyecto = new mongoose.Schema({
     ],
     trabajos: [
         esquemaTrabajo
-    ],
+    ],     
     gestores: [
         {
             ref: String,
@@ -94,19 +94,31 @@ function asignarColumna(col, id, elementosProyecto, elementosColumna) {
         //  Buscar un huequito en las filas.
         var filaTocara = ultimaFilaOcupada + 2;
         var distanciaFilaDeseada = Math.abs(filaTocara - filaDeseada);
-        console.log(`inicia a una distancia de ${distanciaFilaDeseada}`);
+        console.log(`inicia a una distancia de ${distanciaFilaDeseada} de su fila ${filaDeseada} deseada`);
         var indexTocara = aEstaColumna.length;
-        for (var i = (aEstaColumna.length - 1); i >= 0; i--) {
-            console.log(`probando si cabe entre ${i - 1} y ${i}`);
+        for (var i = (aEstaColumna.length - 1); i >= 0; i--) {            
             //verificar que cabe
             let filaArriba = aEstaColumna[i].fila;
             let filaAbajo = 0;
             if (i > 0) {
                 filaAbajo = aEstaColumna[i - 1].fila;
             }
-            if ((filaArriba - filaAbajo) > 4) {
+            console.log(`probando si cabe entre ${i - 1} y ${i}. Espacio: ${filaArriba - filaAbajo} `);
+            
+            if ((filaArriba - filaAbajo) >= 4) {
                 //hay hueco. Verificar si está mas cerca de su fila deseada
-                let filaPosible = filaAbajo + 2;
+                var filaPosible = filaArriba - 2; //Posición pegada al siguiente elemento de la columna
+                if(filaDeseada>=(filaAbajo+2) && filaDeseada<=(filaArriba-2)){ //üede ubicarse exactamente en la fila deseada
+                    filaPosible=filaDeseada;
+                }
+                else{//Verificar cual de los dos bordes del hueco está más cerca de su fila deseada
+                    if( Math.abs(filaDeseada - (filaAbajo+2)) < Math.abs(filaDeseada - (filaArriba-2)) ){ //Está mas cerca de la fila de abajo
+                        filaPosible=filaAbajo+2;   
+                    }                    
+                }
+
+                
+                console.log(`En este hueco quedará a una distancia de ${Math.abs(filaPosible - filaDeseada)} comparada con ${distanciaFilaDeseada}`);
                 if (Math.abs(filaPosible - filaDeseada) < distanciaFilaDeseada) {
                     //Está mas cerca, actualizarse.
                     filaTocara = filaPosible;
@@ -155,6 +167,7 @@ esquemaProyecto.methods.ordenarFilasColumnas=async function() {
         elementosColumna = resultado.elementosColumna;
         elementosProyecto = resultado.elementosProyecto;
     }
+    
     console.log(`ordenamiento de ${this.nombre} finalizado`);
 }
 

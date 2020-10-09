@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 //const { route } = require("./auth");
 const router = require("express").Router();
 const Proyecto = require("../model/Proyecto").modeloProyecto;
+const Nodo=require("../model/atlas/Nodo").modeloNodo;
 const esquemaTrabajo = require("../model/Trabajo").esquemaTrabajo;
 const esquemaObjetivo = require("../model/Objetivo").esquemaObjetivo;
 const { estaLogeado } = require("./loginStatus");
@@ -64,45 +65,9 @@ async function detectarVinculoFuerte(idProyecto, idInicio, idObjetivo) {
 
 }
 
-//Funciones que toman todos los elementos de un proyecto y les asgina una fila y una columna. De ese modo se ubicaran en el diagrama de la frontend.
-
-
 //Funcion que recibe un pathId y retorna el objeto en la punta del pathId listo para create()
 // u otra operacion y el
 //objeto Proyecto completo listo para save()
-async function getPadre(idPadre, tipoPadre) {
-    switch (tipoPadre) {
-        case "proyecto":
-            try {
-                elPadre = await Proyecto.findById(idPadre);
-            }
-            catch (err) {
-                console.log(`Proyecto padre no encontrado: ${err}`);
-                return false;
-            }
-            break;
-        case "objetivo":
-            try {
-                elPadre = await Objetivo.findById(idPadre);
-            }
-            catch (err) {
-                console.log(`Objetivo padre no encontrado: ${err}`);
-                return false;
-            }
-            break;
-        case "Trabajo":
-            try {
-                elPadre = await Trabajo.findById(idPadre);
-            }
-            catch (err) {
-                console.log(`Trabajo padre no encontrado: ${err}`);
-                return false;
-            }
-            break;
-        default: return false;
-    }
-    return elPadre;
-}
 
 
 router.post("/listaNombres", async (req, res) => {
@@ -118,7 +83,6 @@ router.post("/listaNombres", async (req, res) => {
         return res.status(400).send("");
     }
     //ordenarFilasColumnas(proyectos[5]._id);
-
     res.send(proyectos);
 
     /*for (var i in proyectos) {
@@ -141,7 +105,7 @@ router.post("/getInfoElementos", async (req, res) => {
     const idProyecto = req.body.idProyecto;
     var elProyecto = null;
     try {
-        elProyecto = await Proyecto.findById(idProyecto, "objetivos trabajos");
+        elProyecto = await Proyecto.findById(idProyecto, "nombre descripcion objetivos trabajos conocimientosNecesarios");
     }
     catch (error) {
         console.log('error buscando proyecto. e: ' + error);
@@ -150,44 +114,6 @@ router.post("/getInfoElementos", async (req, res) => {
 
 
     res.send({ proyecto: elProyecto });
-});
-
-router.post("/elementos/getSubElementos", async (req, res) => {
-
-    const idPadre = req.body.idElemento;
-    const tipoPadre = req.body.tipoPadre;
-    var infoPadre = null;
-
-    infoPadre = modelo[tipopadre].findById(idPadre, `sub${tipoPadre}s`).exec()
-    console.log(`fetching subelementos de ${tipoPadre} con id ${idPadre}`);
-    console.log(`lista de refs: `);
-    //Fetch todos los objetivos
-    aRefsObjetivos = [];
-    aObjetivos = null;
-    for (var i in infoPadre.objetivos) {
-        aRefsObjetivos[i] = infoPadre.objetivos[i].ref;
-    }
-    try {
-        aObjetivos = await Objetivo.find().where("_id").in(aRefsObjetivos).exec();
-    } catch (error) {
-        console.log('Error buscando objetivos en DB');
-        return res.status(400).send('error');
-    }
-    //Fetch todos los trabajos
-    aRefsTrabajos = [];
-    aTrabajos = null;
-    for (var i in infoPadre.trabajos) {
-        aRefsTrabajos[i] = infoPadre.trabajos[i].ref;
-    }
-    try {
-        aTrabajos = await Trabajo.find().where("_id").in(aRefsTrabajos).exec();
-    }
-    catch (err) {
-        console.log('error obteniendo trabajos');
-        return res.status(400).send('error');
-    }
-
-    res.send({ objetivos: aObjetivos, trabajos: aTrabajos });
 });
 
 router.post("/crear", async (req, res) => {
@@ -207,11 +133,32 @@ router.post("/crear", async (req, res) => {
         res.send({ proyecto: resultado });
     });
 });
+router.post("/renombrar", async (req, res) => { 
+    
+    datos=req.body;
+    console.log(`renombrando proyecto con id ${datos.idProyecto}`);
+    try{
+        var elProyecto=await Proyecto.findById(datos.idProyecto, "nombre");   
+    }
+    catch(error){
+        console.log(`error buscando el proyecto con id ${datos.idProyecto} para renombrar. e: `+error);
+        return res.status(400).send('');        
+    }
+    elProyecto.nombre=datos.nuevoNombre;
+    try{
+        await elProyecto.save();
+    }
+    catch(error){
+        console.log(`error guardando el proyecto con id ${datos.idProyecto} tras renombrar. e: `+error);
+        return res.status(400).send('');
+    }
+    res.send({proyecto: elProyecto});
+});
 
 router.post("/eliminar", async (req, res) => {
     console.log("eliminando proyecto id: " + req.body.idProyecto);
     const idProyecto = req.body.idProyecto;
-    const elProyecto = await Proyecto.findById(idProyecto);
+    const elProyecto = await Proyecto.findById(idProyecto, "_id");
     elProyecto.remove((err, resultado) => {
         if (err) {
             console.log("error eliminando proyecto. Error: " + err);
@@ -223,12 +170,118 @@ router.post("/eliminar", async (req, res) => {
     });
 });
 
+router.post("/updateDescripcion", async (req, res) => {
+    
+    datos=req.body;
+    console.log(`updating descripcion de ${datos.nivelRef} con id ${datos.idRef}`);
+    try{
+        var elProyecto=await Proyecto.findById(datos.idRef, "nombre, descripcion");    
+    }
+    catch(error){
+        console.log(`error buscando el proyecto con id ${datos.idRef} para update descripcion. e: `+error);
+        return res.status(400).send('');
+    }
+    elProyecto.descripcion=datos.nuevaDescripcion;
+    try{
+        await elProyecto.save();
+    }
+    catch(error){
+        console.log(`error guardando el proyecto con id ${datos.idRef} tras update descripcion. e: `+error);
+        return res.status(400).send('');
+    }
+    res.send({proyecto: elProyecto});
+    
+});
+
+router.post("/elementos/updateDescripcion", async (req, res) => {    
+    datos=req.body;
+    console.log(`updating descripcion de ${datos.nivelRef} con id ${datos.idRef}`);
+    try{
+        var elProyecto=await Proyecto.findById(datos.idParent, "trabajos objetivos");    
+    }
+    catch(error){
+        console.log(`error buscando el proyecto con id ${datos.idParent} para update descripcion. e: `+error);
+        return res.status(400).send('');
+    }
+    var elElemento= await elProyecto.getTodosElementosDiagrama().id(datos.idRef);
+    elElemento.descripcion=datos.nuevaDescripcion;
+    try{
+        await elProyecto.save();
+    }
+    catch(error){
+        console.log(`error guardando el proyecto con id ${datos.idParent} tras update descripcion. e: `+error);
+        return res.status(400).send('');
+    }
+    res.send({descripcion: elElemento.descripcion});
+    
+});
+
+router.post("/elementos/vincularConocimiento", async (req, res) => {    
+    datos=req.body;
+    try{
+        var elProyecto=await Proyecto.findById(datos.idProyecto);
+    }
+    catch(error){
+        console.log(`error buscando el proyecto para vincular conocimiento en uno de sus elementos. e: `+error);
+        return res.status(400).send('');    
+    }
+    var elElemento= elProyecto.getTodosElementosDiagrama().id(datos.idElemento);
+
+    //Verificar que no exista ya el vínculo.
+    if(typeof(elElemento.conocimientosVinculados)=="undefined")elElemento.conocimientosVinculados=new Array();
+    for (var vinculo of elElemento.conocimientosVinculados){
+       // let vinculo=elElemento.conocimientosVinculados[i];
+        console.log(`comparando ${vinculo.idRef} con ${datos.idNuevoConocimiento}`);
+        if(vinculo.idRef==datos.idNuevoConocimiento){
+            //ya existía este vínculo
+            console.log(`Ya existia un vinculo hacia aquí. Removiendo el anterior`);
+            vinculo.remove();
+        }
+    }
+
+    //Verificar que este nodo existe y leer el nombre
+    //Buscar el nombre de este conocimiento.
+    try{
+        var elNodo= await Nodo.findById(datos.idNuevoConocimiento);
+    }
+    catch(error){
+        console.log(`error . e: `+error);
+        return res.status(400).send('');
+    }
+    if(!elNodo){
+        console.log(`el nodo de conocimiento no existía`);
+        return res.status(400).send('');
+    }
+    
+    try{
+        await elElemento.conocimientosVinculados.push({idRef: datos.idNuevoConocimiento, nombre: elNodo.nombre});
+    }
+    catch(error){
+        console.log(`error creando el nuevo conocimiento vinculado. e: `+error);
+        return res.status(400).send('');
+    }
+    console.log(`vinculado el elemento ${elElemento.nombre} al nodo de conocimiento ${elNodo.nombre}`);
+    try{
+        await elProyecto.save();
+    }
+    catch(error){
+        console.log(`error guardando el proyecto tras introducir nuevo conocimiento. e: `+error);
+        return res.status(400).send('');
+    }
+    
+    
+    
+    //console.log(`retornando los conocimientos vinculados: ${elElemento.conocimientosVinculados}`);
+    res.send({vinculos:  elElemento.conocimientosVinculados});
+});
+
+
 router.post("/eliminarElemento", async (req, res) => {
     const tipoElemento = req.body.tipoElemento;
     const idElemento = req.body.idElemento;
     const idProyecto = req.body.idProyecto;
 
-    const elProyecto = await Proyecto.findById(idProyecto);
+    const elProyecto = await Proyecto.findById(idProyecto, "nombre trabajos objetivos");
 
     console.log(`eliminando ${tipoElemento} ${idElemento} de proyecto ${elProyecto.nombre}`);
 
@@ -243,13 +296,19 @@ router.post("/eliminarElemento", async (req, res) => {
             console.log(`error elimnando: tipo ${tipoElemento} no reconocido`);
     }
     try {
+        await elProyecto.ordenarFilasColumnas();
+    }
+    catch (error) {
+        console.log(`error ordenando filas y columnas tras eliminación de elemento ${elProyecto.nombre}. e: ` + error);
+    }
+    try {
         await elProyecto.save();
     }
     catch (error) {
         console.log(`error guardando el proyecto ${elProyecto.nombre}. e: ` + error);
         return res.status(400).send('');
     }
-    res.send({ msj: "ok" });
+    res.send({ msj: "ok", infoElementos: elProyecto.getTodosElementosDiagrama() });
 });
 
 router.post("/crearTrabajo", async (req, res) => {
@@ -276,7 +335,7 @@ router.post("/crearTrabajo", async (req, res) => {
     var idNuevoTrabajo = null;
     //Encontrar el proyecto
     try {
-        var elProyecto = await Proyecto.findById(idProyecto);
+        var elProyecto = await Proyecto.findById(idProyecto, "nombre trabajos objetivos");
     }
     catch (error) {
         console.log('error ');
@@ -312,9 +371,15 @@ router.post("/crearTrabajo", async (req, res) => {
         retorno.elementoViejo = elementoViejo;
     }
 
-    if(req.body.vinculoDelNuevo || req.body.vinculoDelViejo){ //El nuevo elemento entró con vínculos, causando movimiento en los demás.
-        elProyecto.ordenarFilasColumnas();
+    //if (req.body.vinculoDelNuevo || req.body.vinculoDelViejo) { //El nuevo elemento entró con vínculos, causando movimiento en los demás.
+    console.log(`ordenando filas `);
+    try {
+        await elProyecto.ordenarFilasColumnas();
     }
+    catch (error) {
+        console.log('error guardando el proyecto con id ' + idProyecto + "tras crear un elemento error: " + error);
+    }
+    //}
 
     try {
         await elProyecto.save();
@@ -324,6 +389,8 @@ router.post("/crearTrabajo", async (req, res) => {
         return res.status(400).send('');
     }
     console.log(`creado trabajo ${nombreTrabajo} con id ${idNuevoTrabajo} en proyecto ${elProyecto.nombre}`);
+
+    retorno.infoElementos = elProyecto.getTodosElementosDiagrama();
     res.send(retorno);
 
 });
@@ -424,7 +491,7 @@ router.post("/crearVinculo", async (req, res) => {
     console.log(`tipo ${datos.tipoVinculo}`);
 
     try {
-        var elProyecto = await Proyecto.findById(datos.idProyecto);
+        var elProyecto = await Proyecto.findById(datos.idProyecto, "trabajos objetivos");
     }
     catch (error) {
         console.log(`error buscando el proyecto con id ${datos.idProyecto}. e: ` + error);
@@ -464,11 +531,11 @@ router.post("/crearVinculo", async (req, res) => {
     });
     elSource.vinculos.push(nuevoVinculo);
 
-    try{
+    try {
         await elProyecto.ordenarFilasColumnas();
     }
-    catch(error){
-        console.log(`error ordenando filas y columnas. e: `+error);        
+    catch (error) {
+        console.log(`error ordenando filas y columnas tras creación de vínculo. e: ` + error);
     }
 
     try {
@@ -478,22 +545,21 @@ router.post("/crearVinculo", async (req, res) => {
         console.log(`error guardando el proyecto con nuevo vinculo. e: ` + error);
         return res.status(400).send('');
     }
-    res.send({msjU:"Vinculo creado"});
+    res.send({ msjU: "Vinculo creado", infoElementos: elProyecto.getTodosElementosDiagrama() });
 
 });
-
 
 router.post("/desconectarVinculoBySourceTarget", async (req, res) => {
 
     const datos = req.body;
     try {
-        var elProyecto = await Proyecto.findById(datos.idProyecto);
+        var elProyecto = await Proyecto.findById(datos.idProyecto, "trabajos objetivos");
     }
     catch (error) {
         console.log(`error buscando proyecto para desconectar vínculo. e: ` + error);
         return res.status(400).send('');
     }
-    viejosElementos=elProyecto.getTodosElementosDiagrama();
+    viejosElementos = elProyecto.getTodosElementosDiagrama();
 
     var source = viejosElementos.id(datos.idSource);
     for (var i in source.vinculos) {
@@ -502,21 +568,24 @@ router.post("/desconectarVinculoBySourceTarget", async (req, res) => {
             console.log(`vinculo encontrado. Eliminar`);
             source.vinculos[i].remove();
         }
-        
-    }
-         
-    await elProyecto.ordenarFilasColumnas();
 
-    try{
+    }
+    try {
+        await elProyecto.ordenarFilasColumnas();
+    }
+    catch (error) {
+        console.log(`error ordenando filas y columnas tras eliminacion de vínculo by target source. Error: ${error}`);
+    }
+    try {
         elProyecto.save();
     }
-    catch(error){
-        console.log(`error salvando el proyecto tra la eliminación del vínculo. e: `+error);
+    catch (error) {
+        console.log(`error salvando el proyecto tra la eliminación del vínculo. e: ` + error);
         return res.status(400).send('');
-    }  
+    }
     //elementosCambiados=elProyecto.encontrarElementosCambiados(viejosElementos);
 
-    res.send({ msjU: "Desconectado" });
+    res.send({ msjU: "Desconectado", infoElementos: elProyecto.getTodosElementosDiagrama() });
 });
 
 module.exports = router;
