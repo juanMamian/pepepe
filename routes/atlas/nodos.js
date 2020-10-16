@@ -3,24 +3,64 @@ const multer=require("multer");
 const upload=multer();
 const router=require("express").Router();
 const Nodo=require("../../model/atlas/Nodo").modeloNodo;
+const gestionAtlas=require("../../gestionDatos/atlas");
 
 
 router.post("/todosNombres", async function(req, res){
     try{
-        var todosNodos=await Nodo.find({}, "nombre, vinculos").exec();
+        var elGrafo=await gestionAtlas.getGrafo();        
+        var todosNodos=await Nodo.find({}, "nombre vinculos coordx coordy ubicado").exec();
     }
     catch(error){
         console.log(`error fetching todos los nodos. e: `+error);
         return res.status(400).send('');
     }
-    res.send({nodos: todosNodos});
+    
+    res.send({nodos: todosNodos, grafo: elGrafo});
 });
 
 router.post("/crear", async function(req, res){
     console.log(`creando un nodo`);
     const nuevoNodo=new Nodo({
-        nombre: "nuevo nodo de conocimiento"
+        nombre: "Nuevo nodo de conocimiento"
     });
+
+    if(req.body.vinculo){
+        console.log(`creando vinculo con la informacion: ${JSON.stringify(req.body)}`);
+        var vinculo=req.body.vinculo;
+        const idRef=vinculo.idRef;
+
+        try{
+            var otroNodo=await Nodo.findById(idRef, "nombre vinculos");
+        }
+        catch(error){
+            console.log(`error . e: `+error);
+            return res.status(400).send('');
+        }
+        var otroVinculo= Object.assign({},vinculo);
+        otroVinculo.idRef=nuevoNodo._id;
+     
+        if(vinculo.rol==="target"){
+            otroVinculo.rol="source";
+        }
+        else{
+            otroVinculo.rol="target"
+        }        
+        
+        otroNodo.verificarVinculo(otroVinculo.idRef, true);
+        otroNodo.vinculos.push(otroVinculo);
+
+        try{
+            await otroNodo.save();  
+        }
+        catch(error){
+            console.log(`error guardando el otro nodo . e: `+error);
+            return res.status(400).send('');
+        }
+
+        nuevoNodo.vinculos=new Array();
+        nuevoNodo.vinculos.push(vinculo);
+    }
 
     try{
         await nuevoNodo.save();
@@ -29,6 +69,7 @@ router.post("/crear", async function(req, res){
         console.log(`error guardando el nuevo nodo. e: `+error);
         return res.status(400).send('');
     }
+    await gestionAtlas.posicionarNodos();
     res.send({nuevoNodo:nuevoNodo});
 });
 
@@ -122,12 +163,58 @@ router.post("/vincularBySourceTarget", async function(req, res){
         console.log(`error guardando los nodos despues de la creacion de vinculos. e: `+error);
         return res.status(400).send('');
     }
+    var resPosicionar=await gestionAtlas.posicionarNodos(); //Viene con nombre, vinculos, coords
+    var nuevasPosicionesNodos=resPosicionar.nodos;
+    var grafo=resPosicionar.grafo;
+    
     console.log(`vinculo entre ${datos.idSource} y ${datos.idTarget} creado`);
-    res.send({msjU: "Ok"});
+    res.send({msjU: "Ok", posNodos:nuevasPosicionesNodos, grafo:grafo});
 
 });
 
+router.post("/desvincularDos", async function(req, res){
+    const datos=req.body;
+    console.log(`desvinculando ${datos.idUno} de ${datos.idOtro}`);
+    try{
+        var elUno=await Nodo.findById(datos.idUno, "nombre vinculos");
+        var elOtro=await Nodo.findById(datos.idOtro, "nombre vinculos");
+    }
+    catch(error){
+        console.log(`error . e: `+error);
+        return res.status(400).send('');
+    }
+    
+    var eliminarUno = elUno.vinculos.find(v=>v.idRef==""+datos.idOtro);
+    var eliminarOtro = elOtro.vinculos.find(v=>v.idRef==""+datos.idUno);
 
+    console.log(`Uno: ${elUno.vinculos}`);
+    console.log(`Otro: ${elOtro.vinculos}`);
+    for(var vinculo of elUno.vinculos){
+        if(vinculo.idRef==datos.idOtro)vinculo.remove();
+    }
+    for(var vinculo of elOtro.vinculos){
+        if(vinculo.idRef==datos.idUno)vinculo.remove();
+    }
+
+    console.log(`Uno: ${elUno.vinculos}`);
+    console.log(`Otro: ${elOtro.vinculos}`);
+
+    try{
+        await elUno.save();
+        await elOtro.save();
+    }
+    catch(error){
+        console.log(`error . e: `+error);
+        return res.status(400).send('');
+    }
+    var resPosicionar=await gestionAtlas.posicionarNodos(); //Viene con nombre, vinculos, coords
+    var nuevasPosicionesNodos=resPosicionar.nodos;
+    var grafo=resPosicionar.grafo;
+    
+    res.send({msjU: "Ok", posNodos:nuevasPosicionesNodos, grafo:grafo});
+
+
+});
 
 router.get("/iconos/:id", async function(req, res){
     const idNodo=req.params.id;

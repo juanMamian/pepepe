@@ -1,0 +1,19 @@
+*Vista básica:
+
+Un nodo está centrado. 
+Aquellos nodos que tienen un vínculo con él, salen en la imágen.
+
+
+*Vista general
+Salen ciertos nodos.
+Al introducir texto en el buscador, aparecen los nodos relevantes para la búsqueda.
+
+¿Como conectar nodos?
+Al escoger la opción de vincular en la vista general, se activa el cuadro de búsqueda para encontrar el nodo Target del vínculo.
+
+
+Opciones:
+
+-Un solo contenedor. Los nodos se organizan por vínculos, o se despliegan todos de forma plana. ****
+
+-Dos contenedores. Los nodos están organizados por vínculos en uno, y desplegados de forma plana en el otro.

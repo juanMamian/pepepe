@@ -1,15 +1,85 @@
 var codigoNodo = "<div class='bolitaNodo'><div class='nombreBolitaNodo' contenteditable='true'></div><input type='file' class='inputIconoBolitaNodo'></input></div>"
-
+var infoGrafo = new Object();
 var aNodos = new Object();
+
+canv = document.getElementById("canvasFlechas");
+ctx = canv.getContext("2d");
+
+const factorAmpliacionGrafo = 50; //Las coordenadas que llegan de la base de datos deben ser escaladas usando este factor para ajustarse a los tamaños locales.
+const anchoBolitaNodo = 90;
+
+function retrazarFlechas() {
+    $(canv).css("top", infoGrafo.bordes.bottom + "px");
+    $(canv).css("left", infoGrafo.bordes.left + "px");
+
+    console.log(`retrazando flechas con infoGrafo: ${JSON.stringify(infoGrafo)}`);
+    ctx.canvas.width = infoGrafo.bordes.right - infoGrafo.bordes.left;
+    ctx.canvas.height = infoGrafo.bordes.top - infoGrafo.bordes.bottom;
+
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    for (var nodo of Object.values(aNodos).filter(n => n.ubicado)) {
+        console.log(`Trazando las flechas de ${JSON.stringify(nodo)}`);
+        for (var vinculo of nodo.vinculos.filter(v => v.rol == "source")) {
+            console.log(`linea de ${nodo.nombre} hacia ${aNodos[vinculo.idRef].nombre}`);
+            const finx = aNodos[vinculo.idRef].coordx;
+            const finy = aNodos[vinculo.idRef].coordy;
+            trazarFlechaContinuacion({ x: nodo.coordx, y: nodo.coordy }, { x: finx, y: finy });
+        }
+    }
+}
+
+function trazarFlechaContinuacion(inicio, fin) {
+
+    const largoAlas = 10;
+
+    inicio.x = inicio.x + (anchoBolitaNodo / 2) - (infoGrafo.bordes.left);
+    inicio.y = inicio.y + (anchoBolitaNodo / 2) - (infoGrafo.bordes.bottom);
+    fin.x = fin.x + (anchoBolitaNodo / 2) - (infoGrafo.bordes.left);
+    fin.y = fin.y + (anchoBolitaNodo / 2) - (infoGrafo.bordes.bottom);
+
+    ctx.moveTo(inicio.x, inicio.y);
+    ctx.lineTo(fin.x, fin.y);
+
+    const intermedio = new Object({ x: ((inicio.x + fin.x) / 2), y: ((inicio.y + fin.y) / 2) });
+    var anguloEnlace = Math.atan((fin.y - inicio.y) / (fin.x - inicio.x));
+
+    if ((fin.y - inicio.y) == 0 && (fin.x - inicio.x) < 0) {
+        anguloEnlace = Math.PI;
+    }
+    else if ((fin.y - inicio.y) < 0 && (fin.x - inicio.x) == 0) {
+        anguloEnlace = Math.PI * 3 / 2;
+    }
+    else if (anguloEnlace < 0 && (fin.x - inicio.x) < 0) {
+        anguloEnlace = anguloEnlace + Math.PI;
+    }
+    if ((fin.x - inicio.x) < 0 && (fin.y - inicio.y) < 0) {
+        console.log(`(Cuarto cuadrante. Invirtiendo ángulo)`);
+        anguloEnlace += Math.PI;
+    }
+
+    console.log(`(${fin.x - inicio.x}) -> (${fin.y - inicio.y}), angulo: ${anguloEnlace * 180 / Math.PI}, anguloFlechaDerecha: ${(anguloEnlace + (Math.PI * 7 / 8)) * 180 / Math.PI}`);
+    const alaDerecha = new Object({ x: intermedio.x + (largoAlas * Math.cos(anguloEnlace + (Math.PI * 7 / 8))), y: intermedio.y + (largoAlas * Math.sin(anguloEnlace + (Math.PI * 7 / 8))) });
+    const alaIzquierda = new Object({ x: intermedio.x + (largoAlas * Math.cos(anguloEnlace + (Math.PI * 9 / 8))), y: intermedio.y + (largoAlas * Math.sin(anguloEnlace + (Math.PI * 9 / 8))) });
+
+    ctx.moveTo(intermedio.x, intermedio.y);
+    ctx.lineTo(alaIzquierda.x, alaIzquierda.y);
+
+    ctx.moveTo(intermedio.x, intermedio.y);
+    ctx.lineTo(alaDerecha.x, alaDerecha.y);
+
+    ctx.stroke();
+}
+
 
 function cancelarClasesDeBolitas() {
     $(".bolitaNodo").removeClass("optandoVinculoAsTarget");
     $(".bolitaNodo").removeClass("optandoVinculoAsSource");
+    $(".bolitaNodo").removeClass("optandoDesvinculacionUno");
+    $(".bolitaNodo").removeClass("esperandoClick");
     $(".bolitaNodo").removeClass("noclickable");
 }
 
 function centrarVistaEn(idNodo) {
-
 }
 
 function getVinculos(idNodo, niveles) {
@@ -17,15 +87,84 @@ function getVinculos(idNodo, niveles) {
     return aNodos[idNodo].vinculos;
 }
 
-function actualizarNodosLocal(nodos) {
-    for (var nodo of nodos) {
+function actualizarNodosLocal(nodos, grafo) {
+    for (var [idN, nodo] of Object.entries(nodos)) {
+        if (idN in aNodos) console.log(`introduciendo la informacion para ${aNodos[idN].nombre}: ${JSON.stringify(nodo)}`);
+        if ("coordx" in nodo) nodo.coordx = nodo.coordx * factorAmpliacionGrafo;
+        if ("coordy" in nodo) nodo.coordy = nodo.coordy * factorAmpliacionGrafo;
         if (!(nodo._id in aNodos)) aNodos[nodo._id] = new Object();
-        aNodos[nodo._id].nombre = nodo.nombre;
-        aNodos[nodo._id].vinculos = nodo.vinculos;
+        for (var key of Object.keys(nodo)) {
+            if (key == "_id") {
+                continue;
+            }
+            aNodos[nodo._id][key] = nodo[key];
+        }                
+    }
+    console.log(`multiplicacion quedó con ${aNodos["5f871edc843f3b58e756362c"].vinculos.length}:`);
+    for(var v of aNodos["5f871edc843f3b58e756362c"].vinculos){
+        console.log(`${aNodos[v.idRef].nombre}`);
+    }
+    if (grafo) {
+        
+        console.log(`introduciendo info de grafo: ${JSON.stringify(grafo)}`);
+        infoGrafo = grafo;
+        for(var coord of Object.keys(infoGrafo.bordes)){
+            infoGrafo.bordes[coord]*=factorAmpliacionGrafo;
+        }
+        infoGrafo.bordes.top+=anchoBolitaNodo;
+        infoGrafo.bordes.right+=anchoBolitaNodo;
+        
+    }
+}
+
+function ubicarNodosEnDiagrama(){
+    for( var [idNodo, nodo] of Object.entries(aNodos)){
+        if(nodo.ubicado){
+            $(`#${idNodo}`).css("top", nodo.coordy);
+            $(`#${idNodo}`).css("left", nodo.coordx);
+        }
     }
 }
 
 $(document).ready(function () {
+
+    $("#diagrama").on("mousedown", function (e) {
+        $(".menuContextualDiagrama").css("display", "none");
+        console.log(`mousedown: ${e.which} en ${e.pageX}, ${e.pageY} sobre ${$(e.target).attr("class")}`);
+        if (e.which != 1) return;
+
+        var iniciox = e.pageX;
+        var inicioy = e.pageY;
+        let movimiento = false;
+
+        $("#diagrama").on("mousemove", function (ev) {
+            let deltax = Math.round((ev.pageX - iniciox));
+            let deltay = Math.round((ev.pageY - inicioy));
+
+            let distancia = Math.sqrt(Math.pow(deltax, 2) + Math.pow(deltay, 2));
+            if (distancia > 20) movimiento = true;
+            if (movimiento == true) {
+
+                let viejoy = $("#contenedorNodosUbicados").css("top");
+                let viejox = $("#contenedorNodosUbicados").css("left");
+
+
+                let nuevox = parseInt(viejox) + parseInt(deltax);
+                let nuevoy = parseInt(viejoy) + parseInt(deltay);
+
+                $("#contenedorNodosUbicados").css("top", nuevoy + "px");
+                $("#contenedorNodosUbicados").css("left", nuevox + "px");
+
+                inicioy = ev.pageY;
+                iniciox = ev.pageX;
+            }
+
+        });
+    });
+
+    $("#diagrama").on("mouseup", function () {
+        $("#diagrama").off("mousemove");
+    });
 
     jQuery.ajax({
         type: 'POST',
@@ -35,16 +174,28 @@ $(document).ready(function () {
         data: "",
         success: function (resp) {
             resp = JSON.parse(resp);
-            actualizarNodosLocal(resp.nodos);
+
+            actualizarNodosLocal(resp.nodos, resp.grafo);
             for (var nodo of resp.nodos) {
                 var nuevoNodo = $(codigoNodo);
-                var iconoNodo = $("<img class='iconoBolitaNodo' src='api/nodos/iconos/" + nodo._id + "'>");
+                var iconoNodo = $("<img draggable='false' class='iconoBolitaNodo' src='api/nodos/iconos/" + nodo._id + "'>");
                 nuevoNodo.find(".nombreBolitaNodo").html(nodo.nombre);
                 nuevoNodo.attr("id", nodo._id);
                 nuevoNodo.append(iconoNodo);
-                $("#contenedorNodos").append(nuevoNodo);
 
+                if (!nodo.ubicado) {
+                    //nuevoNodo.css("display", "none");
+                    $("#contenedorNodosDesubicados").append(nuevoNodo);
+                }
+                else {
+                    console.log(`${nodo.nombre} está ubicado`);
+                    $("#contenedorNodosUbicados").append(nuevoNodo);
+
+                }
             }
+            ubicarNodosEnDiagrama();
+            retrazarFlechas();
+
 
         },
         error: function (xhr, ajaxOptions, thrownError) {
@@ -52,7 +203,7 @@ $(document).ready(function () {
         }
     });
 
-    $('#contenedorNodos').on('click', function () {
+    $('.contenedorNodos').on('click', function () {
         cancelarClasesDeBolitas();
     });
     $('#contenedorNodos').on('contextmenu', function (e) {
@@ -67,7 +218,7 @@ $(document).ready(function () {
         $("#menuContextualFondo").css("display", "block");
     });
 
-    $('#contenedorNodos').on('contextmenu', '.bolitaNodo', function (e) {
+    $('.contenedorNodos').on('contextmenu', '.bolitaNodo', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const coords = { x: e.screenX + 3, y: e.screenY - 100 };
@@ -88,7 +239,7 @@ $(document).ready(function () {
         $(`#${idRef}`).closest(".bolitaNodo").find(".inputIconoBolitaNodo").trigger("click");
     });
 
-    $('#contenedorNodos').on('change', '.inputIconoBolitaNodo', function () {
+    $('.contenedorNodos').on('change', '.inputIconoBolitaNodo', function () {
         var datos = new FormData();
         datos.append("idNodo", $(this).closest(".bolitaNodo").attr("id"));
         datos.append("nuevoIcono", $(this).prop("files")[0]);
@@ -108,6 +259,11 @@ $(document).ready(function () {
                 console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
             }
         });
+    });
+
+    $('.itemMenuContextual').on('click', function () {
+        const menuCx = $(this).closest(".menuContextualDiagrama");
+        menuCx.css("display", "none");
     });
 
     $('#vincularAsSource').on('click', function (e) {
@@ -144,7 +300,104 @@ $(document).ready(function () {
         menuCx.css("display", "none");
     });
 
-    $('#contenedorNodos').on('click', '.bolitaNodo.optandoVinculoAsTarget.esperandoClick', function (e) {
+    $("#desvincularNodoDeTarget").on("click", function () {
+
+        const menuCx = $(this).closest("#menuContextualBolitaNodo");
+        const idNodo = menuCx.attr("idRef");
+        var bolitaNodoUno = $(`#${idNodo}`);
+        bolitaNodoUno.addClass("optandoDesvinculacionUno");
+        $(".bolitaNodo").addClass("noclickable");
+
+        for (var idV of getVinculos(idNodo)) {
+            $(`#${idV.idRef}`).removeClass("noclickable");
+            $(`#${idV.idRef}`).addClass("optandoDesvinculacion esperandoClick");
+        }
+        menuCx.css("display", "none");
+
+    });
+
+    $('#crearNodoDespues').on('click', function () {
+        const menuCx = $(this).closest("#menuContextualBolitaNodo");
+        const idNodo = menuCx.attr("idRef");
+        datos = {
+            vinculo: {
+                idRef: idNodo,
+                tipo: "continuacion",
+                rol: "target"
+            }
+        }
+
+        jQuery.ajax({
+            type: 'POST',
+            url: 'api/nodos/crear',
+            dataType: 'text',
+            contentType: 'application/json',
+            data: JSON.stringify(datos),
+            success: function (resp) {
+                resp = JSON.parse(resp);
+                console.log(`nuevo nodo: ${JSON.stringify(resp.nuevoNodo)}`);
+
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
+            }
+        });
+    });
+
+    $('#crearNodoAntes').on('click', function () {
+        const menuCx = $(this).closest("#menuContextualBolitaNodo");
+        const idNodo = menuCx.attr("idRef");
+        datos = {
+            vinculo: {
+                idRef: idNodo,
+                tipo: "continuacion",
+                rol: "source"
+            }
+        }
+
+        jQuery.ajax({
+            type: 'POST',
+            url: 'api/nodos/crear',
+            dataType: 'text',
+            contentType: 'application/json',
+            data: JSON.stringify(datos),
+            success: function (resp) {
+                resp = JSON.parse(resp);
+                console.log(`nuevo nodo: ${JSON.stringify(resp.nuevoNodo)}`);
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
+            }
+        });
+    });
+
+    $('.contenedorNodos').on('click', '.bolitaNodo.optandoDesvinculacion.esperandoClick', function (e) {
+        console.log(`enviando peticion de desvinculacion`);
+        const datos = {
+            idUno: $(".optandoDesvinculacionUno:first").attr("id"),
+            idOtro: $(this).attr("id")
+        }
+        jQuery.ajax({
+            type: 'POST',
+            url: 'api/nodos/desvincularDos',
+            dataType: 'text',
+            contentType: 'application/json',
+            data: JSON.stringify(datos),
+            success: function (resp) {
+                resp = JSON.parse(resp);
+                cancelarClasesDeBolitas();
+                console.log(`pidiendo update de posicion de nodos: ${resp.posNodos}`);
+                actualizarNodosLocal(resp.posNodos, resp.grafo);
+                ubicarNodosEnDiagrama();
+                retrazarFlechas();
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
+            }
+        });
+    });
+
+    $('.contenedorNodos').on('click', '.bolitaNodo.optandoVinculoAsTarget.esperandoClick', function (e) {
         e.stopPropagation();
         var datos = {
             idSource: $(".optandoVinculoAsSource:first").attr("id"),
@@ -162,6 +415,11 @@ $(document).ready(function () {
             success: function (resp) {
                 resp = JSON.parse(resp);
                 centrarVistaEn(datos.idSource);
+                cancelarClasesDeBolitas();
+                console.log(`pidiendo actualizacion así. Nodos: ${resp.posNodos}, Grafo: ${resp.grafo}`);
+                actualizarNodosLocal(resp.posNodos, resp.grafo);
+                ubicarNodosEnDiagrama();
+                retrazarFlechas();
             },
             error: function (xhr, ajaxOptions, thrownError) {
                 console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
@@ -169,7 +427,7 @@ $(document).ready(function () {
         });
     });
 
-    $('#contenedorNodos').on('click', '.bolitaNodo.optandoVinculoAsSource.esperandoClick', function (e) {
+    $('.contenedorNodos').on('click', '.bolitaNodo.optandoVinculoAsSource.esperandoClick', function (e) {
         e.stopPropagation();
         var datos = {
             idTarget: $(".optandoVinculoAsTarget:first").attr("id"),
@@ -187,34 +445,24 @@ $(document).ready(function () {
             success: function (resp) {
                 resp = JSON.parse(resp);
                 centrarVistaEn(datos.idSource);
+                cancelarClasesDeBolitas();
+                console.log(`pidiendo actualizacion así. Nodos: ${resp.posNodos}, Grafo: ${resp.grafo}`);
+                actualizarNodosLocal(resp.posNodos, resp.grafo);
+                ubicarNodosEnDiagrama();
+                retrazarFlechas();
             },
             error: function (xhr, ajaxOptions, thrownError) {
                 console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
             }
         });
     });
+
     $('#centrarEnNodo').on('click', function (e) {
         const menuCx = $(this).closest("#menuContextualBolitaNodo");
-        const idNodo = menuCx.attr("idRef");
-        const nodo = $("#" + idNodo);
-
-        console.log(`centrando la vista en el nodo con id ${idNodo}`);
-
-        $(".bolitaNodo").css("display", "none");
-        nodo.css("display", "block");
-        var vinculosDelNodo=getVinculos(idNodo);
-        console.log(`vinculos del nodo recibidos: ${vinculosDelNodo}`);
-        for (vinculo of vinculosDelNodo) {
-            
-            let idV = vinculo.idRef;
-            console.log(`revelando al vinculo ${idV}`);
-            $(`#${idV}`).css("display", "block");
-        }
-
+        menuCx.css("display", "none");
     });
 
-
-    $("#contenedorNodos").on("click", function (e) {
+    $(".contenedorNodos").on("click", function (e) {
         $(".menuContextualDiagrama").css("display", "none");
     });
 
@@ -237,21 +485,26 @@ $(document).ready(function () {
         });
     });
 
-    $('#contenedorNodos').on('keydown', '.nombreBolitaNodo', function (e) {
+    $('#modoParrilla').on('click', function () {
+        $(".bolitaNodo").css("display", "inline-block");
+        $(".bolitaNodo").removeClass("nodoModoRed");
+        $(".bolitaNodo").addClass("nodoModoParrilla");
+
+    });
+
+    $('.contenedorNodos').on('keydown', '.nombreBolitaNodo', function (e) {
         if (e.which == 13) {
             e.stopPropagation();
             e.preventDefault();
             $(this).trigger("focusout");
         }
-
     });
 
-
-    $('#contenedorNodos').on('input paste', '.nombreBolitaNodo', function () {
+    $('.contenedorNodos').on('input paste', '.nombreBolitaNodo', function () {
         $(this).addClass("editandose");
     });
 
-    $('#contenedorNodos').on('focusout', '.nombreBolitaNodo', function () {
+    $('.contenedorNodos').on('focusout', '.nombreBolitaNodo', function () {
         if (!$(this).hasClass("editandose")) {
             return;
         }

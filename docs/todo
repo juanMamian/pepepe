@@ -12,3 +12,5 @@ revisar el codigo buscando variables globales que deberían ser locales. Debe ha
 Cambiar el llamado a la funcion "dibujarelementos" por la funcion "ubicarElementos". La primera debe deprecarse.
 el menu contextual del diagrama a veces se sale de la pantalla. Reparar.
 Limpiar los textos que se envian como nombre de los elementos y proyecto (Crear proyecto también. Recordar que está aparte). Limpiar los textos que se envian como descripción.
+En cada elemento se guardará el nombre de los nodos de conocimiento a los cuales está vinculado. Preparar una funcion periódica que actualize el nombre de los nodos.
+En el atlas, una funcion que revise todos los vínculos en busca de vínculos rotos.
