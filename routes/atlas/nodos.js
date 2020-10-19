@@ -187,17 +187,12 @@ router.post("/desvincularDos", async function(req, res){
     var eliminarUno = elUno.vinculos.find(v=>v.idRef==""+datos.idOtro);
     var eliminarOtro = elOtro.vinculos.find(v=>v.idRef==""+datos.idUno);
 
-    console.log(`Uno: ${elUno.vinculos}`);
-    console.log(`Otro: ${elOtro.vinculos}`);
     for(var vinculo of elUno.vinculos){
         if(vinculo.idRef==datos.idOtro)vinculo.remove();
     }
     for(var vinculo of elOtro.vinculos){
         if(vinculo.idRef==datos.idUno)vinculo.remove();
     }
-
-    console.log(`Uno: ${elUno.vinculos}`);
-    console.log(`Otro: ${elOtro.vinculos}`);
 
     try{
         await elUno.save();

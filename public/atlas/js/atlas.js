@@ -1,8 +1,12 @@
+
 var codigoNodo = "<div class='bolitaNodo'><div class='nombreBolitaNodo' contenteditable='true'></div><input type='file' class='inputIconoBolitaNodo'></input></div>"
 var infoGrafo = new Object();
 var aNodos = new Object();
 
 canv = document.getElementById("canvasFlechas");
+canvSel = document.getElementById("canvasBolitaSeleccionada");
+
+lapizBolitaSel = canvSel.getContext("2d");
 ctx = canv.getContext("2d");
 
 const factorAmpliacionGrafo = 50; //Las coordenadas que llegan de la base de datos deben ser escaladas usando este factor para ajustarse a los tamaños locales.
@@ -12,9 +16,14 @@ function retrazarFlechas() {
     $(canv).css("top", infoGrafo.bordes.bottom + "px");
     $(canv).css("left", infoGrafo.bordes.left + "px");
 
+    $(canvSel).css("top", infoGrafo.bordes.bottom + "px");
+    $(canvSel).css("left", infoGrafo.bordes.left + "px");
+
     console.log(`retrazando flechas con infoGrafo: ${JSON.stringify(infoGrafo)}`);
     ctx.canvas.width = infoGrafo.bordes.right - infoGrafo.bordes.left;
     ctx.canvas.height = infoGrafo.bordes.top - infoGrafo.bordes.bottom;
+    lapizBolitaSel.canvas.width = infoGrafo.bordes.right - infoGrafo.bordes.left;
+    lapizBolitaSel.canvas.height = infoGrafo.bordes.top - infoGrafo.bordes.bottom;
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     for (var nodo of Object.values(aNodos).filter(n => n.ubicado)) {
@@ -70,6 +79,22 @@ function trazarFlechaContinuacion(inicio, fin) {
     ctx.stroke();
 }
 
+function trazarFlechaEntreNodos(idUno, idOtro, color){
+    const inicio={
+        x: parseInt($(`#${idUno}`).css("left"))+(anchoBolitaNodo/2)-infoGrafo.bordes.left,
+        y: parseInt($(`#${idUno}`).css("top"))+(anchoBolitaNodo/2)-infoGrafo.bordes.bottom
+    };
+    const fin={
+        x: parseInt($(`#${idOtro}`).css("left"))+(anchoBolitaNodo/2)-infoGrafo.bordes.left,
+        y: parseInt($(`#${idOtro}`).css("top"))+(anchoBolitaNodo/2)-infoGrafo.bordes.bottom
+    };
+    lapizBolitaSel.strokeStyle = "#FF0000";
+
+
+    lapizBolitaSel.moveTo(inicio.x, inicio.y);
+    lapizBolitaSel.lineTo(fin.x, fin.y);
+    lapizBolitaSel.stroke();
+}
 
 function cancelarClasesDeBolitas() {
     $(".bolitaNodo").removeClass("optandoVinculoAsTarget");
@@ -80,10 +105,23 @@ function cancelarClasesDeBolitas() {
 }
 
 function centrarVistaEn(idNodo) {
+    lapizBolitaSel.clearRect(0, 0, lapizBolitaSel.canvas.width, lapizBolitaSel.canvas.height);
+
+    const centro = {
+        x: document.getElementById("diagrama").offsetWidth / 2,
+        y: document.getElementById("diagrama").offsetHeight / 2
+    };
+    const posxNodo = $(`#${idNodo}`).css("left");
+    const posyNodo = $(`#${idNodo}`).css("top");
+
+    console.log(`centrando vista en ${aNodos[idNodo].nombre} ubicado en ${posxNodo}, ${posyNodo}`);
+    $("#contenedorNodosUbicados").css("top", (centro.x - parseInt(posyNodo)) + "px");
+    $("#contenedorNodosUbicados").css("left", (centro.y - parseInt(posxNodo)) + "px");
+
+
 }
 
 function getVinculos(idNodo, niveles) {
-    console.log(`vinculos en ${idNodo}: ${JSON.stringify(aNodos[idNodo].vinculos)}`);
     return aNodos[idNodo].vinculos;
 }
 
@@ -98,28 +136,28 @@ function actualizarNodosLocal(nodos, grafo) {
                 continue;
             }
             aNodos[nodo._id][key] = nodo[key];
-        }                
+        }
     }
     console.log(`multiplicacion quedó con ${aNodos["5f871edc843f3b58e756362c"].vinculos.length}:`);
-    for(var v of aNodos["5f871edc843f3b58e756362c"].vinculos){
+    for (var v of aNodos["5f871edc843f3b58e756362c"].vinculos) {
         console.log(`${aNodos[v.idRef].nombre}`);
     }
     if (grafo) {
-        
+
         console.log(`introduciendo info de grafo: ${JSON.stringify(grafo)}`);
         infoGrafo = grafo;
-        for(var coord of Object.keys(infoGrafo.bordes)){
-            infoGrafo.bordes[coord]*=factorAmpliacionGrafo;
+        for (var coord of Object.keys(infoGrafo.bordes)) {
+            infoGrafo.bordes[coord] *= factorAmpliacionGrafo;
         }
-        infoGrafo.bordes.top+=anchoBolitaNodo;
-        infoGrafo.bordes.right+=anchoBolitaNodo;
-        
+        infoGrafo.bordes.top += anchoBolitaNodo;
+        infoGrafo.bordes.right += anchoBolitaNodo;
+
     }
 }
 
-function ubicarNodosEnDiagrama(){
-    for( var [idNodo, nodo] of Object.entries(aNodos)){
-        if(nodo.ubicado){
+function ubicarNodosEnDiagrama() {
+    for (var [idNodo, nodo] of Object.entries(aNodos)) {
+        if (nodo.ubicado) {
             $(`#${idNodo}`).css("top", nodo.coordy);
             $(`#${idNodo}`).css("left", nodo.coordx);
         }
@@ -148,7 +186,7 @@ $(document).ready(function () {
                 let viejoy = $("#contenedorNodosUbicados").css("top");
                 let viejox = $("#contenedorNodosUbicados").css("left");
 
-
+                console.log(`trasladando contenedor nodos ubicados`);
                 let nuevox = parseInt(viejox) + parseInt(deltax);
                 let nuevoy = parseInt(viejoy) + parseInt(deltay);
 
@@ -162,7 +200,7 @@ $(document).ready(function () {
         });
     });
 
-    $("#diagrama").on("mouseup", function () {
+    $(document).on("mouseup", function () {
         $("#diagrama").off("mousemove");
     });
 
@@ -206,6 +244,7 @@ $(document).ready(function () {
     $('.contenedorNodos').on('click', function () {
         cancelarClasesDeBolitas();
     });
+
     $('#contenedorNodos').on('contextmenu', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -308,9 +347,9 @@ $(document).ready(function () {
         bolitaNodoUno.addClass("optandoDesvinculacionUno");
         $(".bolitaNodo").addClass("noclickable");
 
-        for (var idV of getVinculos(idNodo)) {
-            $(`#${idV.idRef}`).removeClass("noclickable");
-            $(`#${idV.idRef}`).addClass("optandoDesvinculacion esperandoClick");
+        for (var vinc of getVinculos(idNodo)) {
+            $(`#${vinc.idRef}`).removeClass("noclickable");
+            $(`#${vinc.idRef}`).addClass("optandoDesvinculacion esperandoClick");
         }
         menuCx.css("display", "none");
 
@@ -372,6 +411,7 @@ $(document).ready(function () {
     });
 
     $('.contenedorNodos').on('click', '.bolitaNodo.optandoDesvinculacion.esperandoClick', function (e) {
+        e.stopPropagation();
         console.log(`enviando peticion de desvinculacion`);
         const datos = {
             idUno: $(".optandoDesvinculacionUno:first").attr("id"),
@@ -455,6 +495,33 @@ $(document).ready(function () {
                 console.log('errores: ' + xhr + '**' + ajaxOptions + '**' + thrownError);
             }
         });
+    });
+
+    $('.contenedorNodos').on('click', '.bolitaNodo', function () {//Seleccionando este nodo
+        lapizBolitaSel.clearRect(0, 0, lapizBolitaSel.canvas.width, lapizBolitaSel.canvas.height);
+        const idSelected = $(this).attr("id");
+        console.log(`Seleccionando nodo`);
+        $(".bolitaNodo").removeClass("seleccionado");
+        $(".bolitaNodo").removeClass("vinculoDelSeleccionado");
+
+
+        $(this).addClass("seleccionado");
+        centrarVistaEn(idSelected);
+
+        for (var vinc of getVinculos(idSelected)) {
+            $(`#${vinc.idRef}`).addClass("vinculoDelSeleccionado");
+
+            if (vinc.rol == "source") {
+                let color = "blue";
+                trazarFlechaEntreNodos(idSelected, vinc.idRef, color);
+            }
+            else {
+                let color = "blue";
+                trazarFlechaEntreNodos(vinc.idRef, idSelected, color);
+            }
+
+        }
+
     });
 
     $('#centrarEnNodo').on('click', function (e) {
