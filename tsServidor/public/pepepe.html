@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pepepe</title>
+    <link rel="stylesheet" href="css/estiloPepepe.css">
+
+</head>
+
+<body>
+    <div id="contenedorLogin">
+        <input type="text" id="inputLogin" class="elementosLogin" placeholder="nombre o email"><br>
+        <input type="password" id="inputPassword" class="elementosLogin" placeholder="password"><br>
+        <button class="elementosLogin" id="botonEnviarLogin" type="submit" disabled="true">Enviar</button>
+    </div>
+    <div id="wrapper">
+        <div id="barraSuperior">
+            <div class="elemBarraS" id="bAbrirLogin"></div>
+            <div class="elemBarraS" id="infoLogeado"></div>
+        </div>
+
+        <div id="zonaDiagrama">
+            <div id="zonaNombreProyecto">
+                <div id="paqueteProyectos">
+                    <div class="boton desplegando" id="bDesplegarProyectos"></div>
+                    <div id="bCrearProyecto" class="boton">+</div>
+                    <div id="cuadroBusquedaProyectos" contenteditable="true" class="itemPaqueteProyecto"></div>
+                </div>
+            </div>
+            <div id="barraSelectElementos">
+                <div id="selectTrabajos" class="itemBarraSelectElementos hoverable">
+                    <p>Trabajos</p><input class="checkVisiblidad" type="checkbox">
+                </div>
+                <div id="selectObjetivos" class="itemBarraSelectElementos hoverable">
+                    <p>Objetivos</p><input class="checkVisiblidad" type="checkbox">
+                </div>
+            </div>
+            <div id="diagrama">
+                <div id="contenedorElementos" tabindex="1"></div>
+            </div>
+            <div id="menuContextualCrearElemento" class="menuContextualDiagrama">
+                <div class="itemMenu hoverable" id="crearTrabajo">Crear trabajo </div>
+                <div class="itemMenu hoverable" id="crearObjetivo">Crear objetivo</div>
+            </div>
+            <div id="menuContextualElementoDiagrama" class="menuContextualDiagrama">
+                <div class="tituloSeccionMenuContextual">Crear trabajo:</div>
+                <div class="itemMenu hoverable" id="crearTrabajoAnterior">Anterior </div>
+                <div class="itemMenu hoverable" id="crearTrabajoPosterior">Posterior </div>
+                <div class="tituloSeccionMenuContextual">Crear objetivo:</div>
+                <div class="itemMenu hoverable" id="crearObjetivoAnterior">Anterior </div>
+                <div class="itemMenu hoverable" id="crearObjetivoPosterior">Posterior</div>
+                <div class="tituloSeccionMenuContextual">Requiere:</div>
+                <div class="itemMenu hoverable" id="conectarRequeridoSeleccionando">Seleccionar</div>
+                <div class="tituloSeccionMenuContextual">desconectar:</div>
+                <div class="itemMenu hoverable" id="desconectarSeleccionando">Seleccionar</div>
+
+            </div>
+
+        </div>
+
+        <div id="zonaDetalles">
+            <div id="tituloZonaDetalles" contenteditable="true">Detalles</div>
+            <div id="contenedorConocimientosVinculados">
+                <div id="nuevoConocimientoVinculado" class="bolitaNodo">
+                    <div id="contenedorConocimientosPosibles"></div>
+                </div>
+            </div>
+            <div id="descripcionZonaDetalles" contenteditable="true">Descripcion</div>
+            <div id="conocimientosInvolucrados">
+                <div id="busquedaConocimientos" contenteditable="true" class=""></div>
+            </div>
+        </div>
+
+
+
+    </div>
+
+
+    <script src="libs/jquery-3.5.1.min.js"></script>
+    <script src="js/pepepe.js"></script>
+</body>
+
+</html>

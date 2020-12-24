@@ -1,0 +1,143 @@
+:root{
+    --colorBarras: #bfc0c0ff;
+    --colorFondo: #f1f1f1ff;
+    --white: #ffffffff;
+    --colorMandarina: #ef8354ff;
+    --colorMandarinaApagado: #ef835489;
+    --colorMandarinaMasApagado: #ef8354f9;
+    --independence: #4f5d75ff;
+    --independenceApagado: #4f5d7589;
+    }
+
+    .editandose{
+        background-color: var(--colorMandarina);
+    }
+.menuContextualDiagrama{
+    position: fixed;
+    z-index: 100;
+    border: 2px solid var(--colorMandarina);
+    border-radius: 2px;
+    cursor: pointer;
+    padding: 8px;
+    display: none;
+    background-color: var(--colorBarras);
+}
+.tituloSeccionMenuContextual{
+    font-size: 0.9rem;
+    color: gray;
+}
+.noclickable{
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.hoverable:hover{
+    background-color: var(--colorFondo);
+}
+#canvasFlechas{
+    position: absolute;
+    z-index:0;
+    top: 0;
+    left: 0;    
+    pointer-events: none;
+    opacity: 0.1;
+}
+#canvasBolitaSeleccionada{
+    position: absolute;
+    z-index:1;
+    top: 0;
+    left: 0;    
+    pointer-events: none;
+    opacity: 0.8;
+}
+#diagrama{
+    position: relative;
+    width: 100vw;
+    height:98vh;
+    margin-left: auto;
+    margin-right:auto ;
+    background-color: lightblue;
+    z-index: 0;
+    overflow: hidden;
+}
+
+#contenedorNodosUbicados{
+    position: absolute;
+    background-color: lightblue;
+    min-width: 100px;
+    min-height: 800px;
+    top:50%;
+    left: 50%;
+    z-index: 10;
+}
+
+#contenedorNodosUbicados>.bolitaNodo{
+    position: absolute;
+    transition: left 0.5s, top 0.5s;
+}
+#contenedorNodosDesubicados{
+    background-color: gray;
+    height: 100vh;
+    width: 100vw;
+    z-index: 2;
+}
+#contenedorNodosDesubicados>.bolitaNodo{
+    margin: 50px;
+    position: relative;
+}
+
+#contenidoDelNodo{
+    height: 96vh;
+    width: 94vw;
+    position: fixed;
+    top: 2vh;
+    left: 3vw;
+    background-color: var(--independence);
+    display: none;
+}
+.bolitaNodo{
+width: 90px;
+height: 90px;
+border: 2px solid transparent;
+border-radius: 50%;
+background-color: grey;
+cursor: pointer;
+display: inline-block;
+vertical-align: top;
+opacity: 0.1;
+z-index: 10;
+}
+.bolitaNodo.seleccionado{
+    opacity: 1;
+    transform:scale(1.2);
+}
+.bolitaNodo.vinculoDelSeleccionado{
+    opacity: 1;
+}
+
+.nodoModoParrilla{
+}
+
+.nodoModoRed{
+}
+
+.nombreBolitaNodo{
+    position: relative;
+    bottom: -100px;
+    text-align: center;
+}
+.inputIconoBolitaNodo{
+    display: none;
+}
+.iconoBolitaNodo{
+    width: 90px;
+    height: 90px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.esperandoClick{
+    border-color: purple;    
+}
+
