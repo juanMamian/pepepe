@@ -1,9 +1,11 @@
 import { gql } from "apollo-server-express";
 const Nodo = require("../model/atlas/Nodo").modeloNodo;
 
+
+
 export const typeDefs = gql`
 type Query{
-    nodos: {}
+    nodos: String
 }
 `;
 
