@@ -4,24 +4,40 @@ const Nodo = require("../model/atlas/Nodo").modeloNodo;
 
 
 export const typeDefs = gql`
+type Vinculo{
+    id:ID!,
+    tipo: String!,
+    idRef: ID!,
+    rol: String!
+}
+
+type NodoConocimiento{
+    id: ID!
+    nombre: String!,
+    coordX: Int,
+    coordY: Int,
+    vinculos: [Vinculo],    
+}
+
 type Query{
-    nodos: String
+    todosNodos: [NodoConocimiento]
 }
 `;
 
 export const resolvers = {
     Query: {
-        nodos: async function () {
+        todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             try {
                 var todosNodos = await Nodo.find({}, "nombre vinculos coordx coordy ubicado").exec();
+                console.log(`encontrados ${todosNodos.length} nodos`);
             }
             catch (error) {
                 console.log(`error fetching todos los nodos. e: ` + error);
-                return { msj: "error fetching nodos" };
+                return ;
             }
 
-            return { nodos: todosNodos };
+            return todosNodos;
         }
     }
 };
