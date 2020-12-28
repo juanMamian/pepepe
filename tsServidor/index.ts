@@ -36,20 +36,17 @@ db.once('open', function () {
   // we're connected!
 });
 
-app.use(cors());
+//app.use(cors());
 
 aServer.applyMiddleware({app});
-app.use(express.static("public"));
 
 //Routes
 app.use(express.json());
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/proyectos", routesProyectos);
 app.use("/api/trabajos/", routesTrabajos);
-app.use("/atlas/api/nodos", routesNodos);
-app.post("", (req: Request, res: Response) => {
-  res.send("hola");
-});
+app.use("/api/atlas", routesNodos);
+
 const port = process.env.PORT || 3000;
-app.listen(port, () => { console.log(`servidor Up en ${port}. Path gql: ${aServer.graphqlPath}`) });
+app.listen(port, () => { console.log(`servidor Up en ${port}. Path gql: ${aServer.graphqlPath}. Subscriptions en ${aServer.subscriptionsPath}`) });
 

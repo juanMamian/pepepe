@@ -20,7 +20,8 @@ type NodoConocimiento{
 }
 
 type Query{
-    todosNodos: [NodoConocimiento]
+    todosNodos: [NodoConocimiento],
+    ping: String
 }
 `;
 
@@ -38,6 +39,9 @@ export const resolvers = {
             }
 
             return todosNodos;
+        },
+        ping:function(){
+            return "ping!";
         }
     }
 };
