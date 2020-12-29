@@ -1,39 +1,41 @@
 <template>
   <div id="app">
-    <atlas-conocimiento/>
+    <atlas-conocimiento />
   </div>
 </template>
 
 <script>
-import AtlasConocimiento from './components/AtlasConocimiento.vue'
+import AtlasConocimiento from "./components/AtlasConocimiento.vue";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
-    AtlasConocimiento
-    
-  }
-}
+    AtlasConocimiento,
+  },
+};
 </script>
 
 <style>
-body{
+body {
   margin: 0px;
   width: 100%;
   height: 100vh;
 }
 #app {
-width: 100%;
-height: 100%;  
-display: grid;
-grid-template-rows: 20px 20px 1fr 5px;
-row-gap: 5px;
-padding-left: 5px;
-padding-right: 5px;
-box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 20px 20px 1fr 5px;
+  row-gap: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  box-sizing: border-box;
 }
-#atlasConocimiento{
+#atlasConocimiento {
   grid-row: 3/4;
-  background-color: grey;
+  background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
+    no-repeat;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
 </style>

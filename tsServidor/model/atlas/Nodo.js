@@ -31,6 +31,10 @@ esquemaNodo.add({
             }
         }
     ],
+    coordsManuales:{
+        x: Number,
+        y:Number
+    },
     coordx:Number,
     coordy:Number,
     radio: Number,
