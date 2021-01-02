@@ -1,22 +1,35 @@
 import Vue from 'vue'
-import VueApollo from "vue-apollo";
-
 import App from './App.vue'
-import ApolloClient from "apollo-boost"
+import store from "./store/main"
+import {apolloProvider} from "./apollo"
 
-Vue.use(VueApollo);
-
-
-const apolloClient=new ApolloClient({
-  uri: "http://localhost:3000/graphql"
-});
-
-const apolloProvider=new VueApollo({
-  defaultClient:apolloClient
+Vue.mixin({
+  data(){
+    return {
+      serverUrl:"http://localhost:3000",
+    }
+  },
+  computed:{
+    authHeader: function(){
+      let infoSesion=localStorage.getItem("sesionUsuario");
+      if(!infoSesion)return null;
+      infoSesion=JSON.parse(infoSesion);
+      if(!infoSesion.token){
+        return null;
+      }
+      console.log(`introduciendo header: ${infoSesion.token}`);
+        return { 
+          Authorization: "Bearer "+infoSesion.token
+        }
+    }
+  }
 })
+
+
 Vue.config.productionTip = false
 
 new Vue({
   render: h => h(App),
+  store,
   apolloProvider
 }).$mount('#app')

@@ -1,0 +1,4 @@
+NOVUE_APP_GRAPHQL_HTTP="server/graphql"
+NOVUE_APP_GRAPHQL_WS="server/graphql"
+
+JWT_SECRET="secreto"

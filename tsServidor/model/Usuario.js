@@ -1,7 +1,9 @@
 const mongoose=require("mongoose");
 
+
+
 const esquemaUsuario=mongoose.Schema({
-    login:{
+    username:{
         type:String,
         min:3,
         max:50,
@@ -17,7 +19,15 @@ const esquemaUsuario=mongoose.Schema({
         required:true,
         max: 1024,
         min:6
+    },
+    permisos:{
+        type:String,
+        required:true,
+        max: 100,
+        min:2,
+        default:"usuario"
     }
 });
+
 
 module.exports=mongoose.model("Usuario", esquemaUsuario);

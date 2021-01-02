@@ -1,16 +1,19 @@
 <template>
   <div id="app">
+    <login-area/>
     <atlas-conocimiento />
   </div>
 </template>
 
 <script>
 import AtlasConocimiento from "./components/AtlasConocimiento.vue";
+import LoginArea from './components/LoginArea.vue';
 
 export default {
   name: "App",
   components: {
     AtlasConocimiento,
+    LoginArea,
   },
 };
 </script>

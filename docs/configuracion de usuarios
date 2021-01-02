@@ -1,0 +1,11 @@
+para username y password se usan las siguientes regexp
+
+var charProhibidosUsername=/[^a-zA-Z0-9_]/g;
+var charProhibidosPassword=/[^a-zA-Z0-9*@_-]/g;
+
+Se usan para validar en 
+Cliente:
+el componente LoginArea.vue 
+
+Servidor:
+ Routes/usuarios.ts

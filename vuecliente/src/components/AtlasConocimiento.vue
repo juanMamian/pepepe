@@ -5,6 +5,7 @@
     @click="idNodoMenuCx = '-1'"
     @mousemove="panVista($event)"
     @mouseup="panningVista = false"
+    @dblclick.ctrl.shift.self.stop="crearNodo"
   >
     <canvas-vinculos
       :nodoSeleccionado="nodoSeleccionado"
@@ -24,6 +25,9 @@
         @click.right.native.prevent="idNodoMenuCx = nodo.id"
         @creacionVinculo="crearVinculo"
         @eliminacionVinculo="eliminarVinculo"
+        @edicionNombreNodo="editarNombreNodo"
+        @cambioDePosicionManual="cambiarCoordsManualesNodo"
+        @eliminar="eliminarNodo"
       />
     </div>
   </div>
@@ -63,7 +67,7 @@ export default {
   data() {
     return {
       todosNodos: [],
-      nodoSeleccionado: { id: -1, nombre: "" },
+      idNodoSeleccionado: "-1",
       idNodoMenuCx: "-1",
       centroVista: {
         x: 0,
@@ -73,7 +77,100 @@ export default {
       panningVista: false,
     };
   },
+  computed: {
+    nodoSeleccionado: function () {
+      let indexSeleccionado = this.todosNodos.findIndex(
+        (n) => n.id == this.idNodoSeleccionado
+      );
+      return this.todosNodos[indexSeleccionado];
+    },
+  },
   methods: {
+    
+    cambiarCoordsManualesNodo(idNodo, coordsManuales){
+      console.log(`enviando mutacion de cambio de coordenadas manuales`);
+      console.log(`Token: ${localStorage.getItem(process.env.TOKEN_KEY)}`);
+      //Update optimista:
+      this.todosNodos[this.todosNodos.findIndex(n=>n.id==idNodo)].coordsManuales=coordsManuales;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodo: String, $coordsManuales: CoordsInput) {
+            setCoordsManuales(idNodo: $idNodo, coordsManuales: $coordsManuales) {
+              modificados{
+                id
+                coordsManuales{
+                  x
+                  y
+                }
+              }
+            }
+          }
+        `,
+        variables: {
+          idNodo,
+          coordsManuales
+        },
+      });
+    },
+    eliminarNodo(idNodo){
+      console.log(`enviando mutacion de eliminar nodo`);
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idNodo:ID!){
+            eliminarNodo(idNodo:$idNodo)                        
+          }
+        `,
+        variables:{
+          idNodo
+        }
+      }).then(data=>{
+        console.log(`quitando el objeto del array. ${data}`);
+      })
+    },
+    crearNodo(e){
+      console.log(`enviando una mutación de crear nodo`);
+      let posContenedor = document
+        .getElementById("contenedorNodos")
+        .getBoundingClientRect();
+      let nuevoTop = Math.round(
+        e.clientY - posContenedor.top + this.centroVista.y
+      );
+      let nuevoLeft = Math.round(
+        e.clientX - posContenedor.left + this.centroVista.x
+      );
+      
+      let infoNodo={
+        coordsManuales:{
+          x: nuevoLeft,
+          y: nuevoTop
+        }
+      }
+      console.log(`en las coordenadas: ${nuevoLeft}, ${nuevoTop} `);
+      this.$apollo.mutate({
+        mutation:gql`
+        mutation($infoNodo: NodoConocimientoInput){
+          crearNodo(infoNodo:$infoNodo){
+            modificados{
+              nombre
+              id
+              coordsManuales{
+                x
+                y
+              }
+              vinculos{
+                idRef
+                rol
+                tipo
+              }
+            }
+          }
+        }
+        `,
+        variables:{
+          infoNodo 
+        }
+      });
+    },
     panVista(e) {
       if (!this.panningVista) {
         return;
@@ -88,64 +185,100 @@ export default {
       */
     },
     seleccionNodo(nodo) {
-      console.log(`seleccionando nodo ${nodo.nombre}`);
-      this.nodoSeleccionado = JSON.parse(JSON.stringify(nodo));
+      this.idNodoSeleccionado = nodo.id;
     },
-    async eliminarVinculo(args){
-      console.log(`eliminando un vinculo entre ${args.idNodoFrom} y ${args.idNodoTo} `);
-      await this.$apollo.mutate({
-        mutation: gql`
-          mutation($idNodoFrom:ID!, $idNodoTo:ID!){
-            eliminarVinculoFromTo(idSource: $idNodoFrom, idTarget:$idNodoTo){
-              errores{
-                tipo
-                mensaje
-              }
-              modificados{
-                id
-                vinculos{
-                  idRef
-                  tipo
-                  rol
+    async eliminarVinculo(args) {
+      console.log(
+        `eliminando un vinculo entre ${args.idNodoFrom} y ${args.idNodoTo} `
+      );
+      await this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idNodoFrom: ID!, $idNodoTo: ID!) {
+              eliminarVinculoFromTo(
+                idSource: $idNodoFrom
+                idTarget: $idNodoTo
+              ) {
+                modificados {
+                  id
+                  vinculos {
+                    idRef
+                    tipo
+                    rol
+                  }
                 }
               }
-
             }
-          }
-        `,
-        variables:{
-          idNodoFrom:args.idNodoFrom,
-          idNodoTo:args.idNodoTo
-        }
-      })
+          `,
+          variables: {
+            idNodoFrom: args.idNodoFrom,
+            idNodoTo: args.idNodoTo,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log(`error: ${error}`);
+        });
     },
-    async crearVinculo(args) {
+    async crearVinculo(args) { 
       console.log(`creando un vinculo ${JSON.stringify(args)} `);
-      await this.$apollo.mutate({
-        mutation: gql`
-        mutation($tipo:String!, $idNodoFrom:ID!, $idNodoTo:ID!){
-          crearVinculo(tipo: $tipo, idSource: $idNodoFrom, idTarget: $idNodoTo){            
-              errores{
-                tipo
-                mensaje
+      await this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($tipo: String!, $idNodoFrom: ID!, $idNodoTo: ID!) {
+              crearVinculo(
+                tipo: $tipo
+                idSource: $idNodoFrom
+                idTarget: $idNodoTo
+              ) {
+                modificados {
+                  id
+                  vinculos {
+                    idRef
+                    rol
+                    tipo
+                  }
+                }
               }
-              modificados{
-              id
-              vinculos{
-                idRef
-                rol
-                tipo
+            }
+          `,
+          variables: {
+            tipo: "continuacion",
+            idNodoFrom: args.idNodoFrom,
+            idNodoTo: args.idNodoTo,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log(`error: ${error}`);
+        });
+    },
+    async editarNombreNodo({ idNodo, nuevoNombre }) {
+      console.log(`enviando una edicion de nombre de nodo`);
+      nuevoNombre = nuevoNombre.replace(/[^a-zA-Z0-9Á-ú ]/g, "");
+      await this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idNodo: ID!, $nuevoNombre: String!) {
+              editarNombreNodo(idNodo: $idNodo, nuevoNombre: $nuevoNombre) {
+                modificados {
+                  id
+                  nombre
+                }
               }
-              }
-            
-          }
-        }`,
-        variables:{
-          tipo:"continuacion",
-          idNodoFrom:args.idNodoFrom,
-          idNodoTo:args.idNodoTo
-        }
-      });
+            }
+          `,
+          variables: {
+            idNodo: idNodo,
+            nuevoNombre: nuevoNombre,
+          },
+        })
+        .then(() => {
+          console.log(`fin de la mutacion`);
+        })
+        .catch((error) => {
+          console.log(`error: ${error}`);
+        });
     },
   },
   watch: {
@@ -172,5 +305,6 @@ export default {
   height: 100%;
   user-select: none;
   overflow: hidden;
+  pointer-events: none;
 }
 </style>

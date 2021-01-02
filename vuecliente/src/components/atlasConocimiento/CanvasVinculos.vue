@@ -11,7 +11,15 @@ export default {
     };
   },
   props: {
-    nodoSeleccionado: Object,
+    nodoSeleccionado: {
+      type:Object,
+      default(){
+        return{
+          id:"-1",
+          vinculos:[]
+        }
+      }
+    },
     nodoRelevante: [Object],
     todosNodos: Array,
     centroVista: Object,
@@ -27,7 +35,7 @@ export default {
       this.ctx.clearRect(0, 0, this.$el.width, this.$el.height);
 
       this.ctx.beginPath();
-
+      
       if (Array.isArray(this.nodoSeleccionado.vinculos)) {
       
         for (let vinculo of this.nodoSeleccionado.vinculos) {      
@@ -90,6 +98,7 @@ export default {
   },
   watch: {
     actualizar: function () {
+      console.log(`actualizandoVinculos. Nodo seleccionado: ${this.nodoSeleccionado.id}`);
       this.dibujarVinculos();
     },
   },

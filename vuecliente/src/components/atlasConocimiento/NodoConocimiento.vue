@@ -9,25 +9,55 @@
   >
     <div id="menuContextual" v-show="menuCx">
       <div class="seccionMenuCx">{{ esteNodo.nombre }}</div>
-      <div class="botonMenuCx">Eliminar</div>
-      <template v-if="nodoSeleccionado.id!='-1' && nodoSeleccionado.id!=esteNodo.id">
-      <div class="seccionMenuCx">{{ nodoSeleccionado.nombre }}</div>
-      <div class="botonMenuCx" @click.stop="crearVinculo('continuacion', nodoSeleccionado, esteNodo)">Continua aquí</div>
-      <div class="botonMenuCx" @click.stop="crearVinculo('continuacion', esteNodo, nodoSeleccionado)">Continua desde aquí</div>
-      <div class="botonMenuCx" v-show="esteNodo.vinculos.some(v=>v.idRef==nodoSeleccionado.id)" @click.stop="eliminarVinculo(esteNodo, nodoSeleccionado)">Desconectar</div>
+      <div class="botonMenuCx" @click.stop="eliminarEsteNodo">Eliminar</div>
+      <template
+        v-if="
+          nodoSeleccionado.id!=-1 &&
+          nodoSeleccionado.id != esteNodo.id
+        "
+      >
+        <div class="seccionMenuCx">{{ nodoSeleccionado.nombre }}</div>
+        <div
+          class="botonMenuCx"
+          @click.stop="crearVinculo('continuacion', nodoSeleccionado, esteNodo)"
+        >
+          Continua aquí
+        </div>
+        <div
+          class="botonMenuCx"
+          @click.stop="crearVinculo('continuacion', esteNodo, nodoSeleccionado)"
+        >
+          Continua desde aquí
+        </div>
+        <div
+          class="botonMenuCx"
+          v-show="esteNodo.vinculos.some((v) => v.idRef == nodoSeleccionado.id)"
+          @click.stop="eliminarVinculo(esteNodo, nodoSeleccionado)"
+        >
+          Desconectar
+        </div>
       </template>
     </div>
-    <div id="nombreNodo">{{ esteNodo.nombre }}</div>
+    <div
+      id="nombreNodo"
+      ref="nombreNodo"
+      :contenteditable="true"
+      @blur="guardarNombre"
+      @input="nombreEditandose = true"
+    >
+      {{ esteNodo.nombre }}
+    </div>
   </div>
 </template>
 
 <script>
-import gql from "graphql-tag";
 export default {
   name: "NodoConocimiento",
   data() {
     return {
       arrastrandoNodo: false,
+      nombreEditable: false,
+      nombreEditandose: false,
       baseSize: {
         x: 50,
         y: 50,
@@ -44,19 +74,20 @@ export default {
       required: true,
     },
     centroVista: Object,
-    idNodoMenuCx:String,
+    idNodoMenuCx: String,
     nodoSeleccionado: {
       type: Object,
-      default: function () {
+      default(){
         return {
-          id: 0,
-        };
+          id:"-1",
+          nombre:"ninguno"
+        }
+      }
       },
-    },
   },
   computed: {
-    menuCx(){
-      return this.idNodoMenuCx==this.esteNodo.id ? true : false;
+    menuCx() {
+      return this.idNodoMenuCx == this.esteNodo.id ? true : false;
     },
     size() {
       let fSize = Object.assign({}, this.baseSize);
@@ -73,13 +104,14 @@ export default {
       if (this.nodoSeleccionado.id == this.esteNodo.id) {
         sel = true;
       }
-
       return sel;
     },
     imgFondo() {
       return {
         backgroundImage:
-          "url('http://localhost:3000/api/atlas/iconos/" + this.esteNodo.id + "')",
+          "url('http://localhost:3000/api/atlas/iconos/" +
+          this.esteNodo.id +
+          "')",
       };
     },
     estiloPosicion() {
@@ -111,7 +143,17 @@ export default {
       };
     },
   },
-  methods: { 
+  methods: {
+    eliminarEsteNodo(){
+      this.$emit("eliminar", this.esteNodo.id);
+    },
+    guardarNombre() {
+      let nuevoNombre = this.$refs.nombreNodo.innerHTML;
+      this.$emit("edicionNombreNodo", {
+        idNodo: this.esteNodo.id,
+        nuevoNombre,
+      });
+    },
     arrastrarNodo(e) {
       if (!this.arrastrandoNodo) {
         return;
@@ -131,32 +173,28 @@ export default {
     },
     guardarPosicion() {
       if (!this.arrastrandoNodo) return;
+      this.$emit("cambioDePosicionManual", this.esteNodo.id, {x:this.posicion.x, y: this.posicion.y});
+      
       this.arrastrandoNodo = false;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idNodo: String, $nuevox: Int, $nuevoy: Int) {
-            setCoordsManuales(idNodo: $idNodo, x: $nuevox, y: $nuevoy) {
-              coordsManuales {
-                x
-                y
-              }
-            }
-          }
-        `,
-        variables: {
-          idNodo: this.esteNodo.id,
-          nuevox: this.posicion.x,
-          nuevoy: this.posicion.y,
-        },
+      
+    },
+    crearVinculo(tipo, nodoFrom, nodoTo) {
+      console.log(
+        `creando un vinculo tipo ${tipo} entre ${nodoFrom.nombre} y ${nodoTo.nombre} `
+      );
+      this.$emit("creacionVinculo", {
+        tipo,
+        idNodoFrom: nodoFrom.id,
+        idNodoTo: nodoTo.id,
       });
     },
-    crearVinculo(tipo, nodoFrom, nodoTo){
-      console.log(`creando un vinculo tipo ${tipo} entre ${nodoFrom.nombre} y ${nodoTo.nombre} `);
-      this.$emit("creacionVinculo", {tipo, idNodoFrom:nodoFrom.id, idNodoTo:nodoTo.id});
+    eliminarVinculo(nodoFrom, nodoTo) {
+      this.$emit("eliminacionVinculo", {
+        idNodoFrom: nodoFrom.id,
+        idNodoTo: nodoTo.id,
+      });
     },
-    eliminarVinculo(nodoFrom, nodoTo){
-      this.$emit("eliminacionVinculo", {idNodoFrom:nodoFrom.id, idNodoTo:nodoTo.id})
-    }
+    activarEdicionNombre() {},
   },
   mounted() {
     this.posicion.y = this.esteNodo.coordsManuales.y
@@ -177,6 +215,8 @@ export default {
   background-size: 100% 100%;
   cursor: pointer;
   position: absolute;
+  pointer-events: all;
+  background-color: rgba(128, 128, 128, 0.349);
 }
 #nombreNodo {
   font-size: 12px;
