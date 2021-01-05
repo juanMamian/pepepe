@@ -1,20 +1,28 @@
 <template>
   <div
     class="nodoConocimiento"
-    :style="[imgFondo, estiloPosicion, estiloSize, estiloArrastrando]"
+    :style="[estiloPosicion, estiloSize, estiloArrastrando]"
     @mousedown.ctrl="arrastrandoNodo = true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
     @mouseleave="arrastrandoNodo = false"
   >
+    
+    
+    <div id="sombra"></div>
+    <img
+      :src="'http://localhost:3000/api/atlas/iconos/' + esteNodo.id"
+      alt=""
+      class="iconoNodo"
+      ref="iconoNodo"
+      @error.once="iconoFallback"
+    />
+
     <div id="menuContextual" v-show="menuCx">
       <div class="seccionMenuCx">{{ esteNodo.nombre }}</div>
       <div class="botonMenuCx" @click.stop="eliminarEsteNodo">Eliminar</div>
       <template
-        v-if="
-          nodoSeleccionado.id!=-1 &&
-          nodoSeleccionado.id != esteNodo.id
-        "
+        v-if="nodoSeleccionado.id != -1 && nodoSeleccionado.id != esteNodo.id"
       >
         <div class="seccionMenuCx">{{ nodoSeleccionado.nombre }}</div>
         <div
@@ -42,8 +50,10 @@
       id="nombreNodo"
       ref="nombreNodo"
       :contenteditable="true"
+      :style="fondoNombre"
       @blur="guardarNombre"
-      @input="nombreEditandose = true"
+      @input="setNombreEditandose"
+      @keypress.enter="blurNombre"
     >
       {{ esteNodo.nombre }}
     </div>
@@ -51,6 +61,10 @@
 </template>
 
 <script>
+import gql from "graphql-tag";
+
+var charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_-]/g;
+
 export default {
   name: "NodoConocimiento",
   data() {
@@ -66,6 +80,7 @@ export default {
         x: 0,
         y: 0,
       },
+     
     };
   },
   props: {
@@ -77,13 +92,13 @@ export default {
     idNodoMenuCx: String,
     nodoSeleccionado: {
       type: Object,
-      default(){
+      default() {
         return {
-          id:"-1",
-          nombre:"ninguno"
-        }
-      }
+          id: "-1",
+          nombre: "ninguno",
+        };
       },
+    },
   },
   computed: {
     menuCx() {
@@ -105,14 +120,6 @@ export default {
         sel = true;
       }
       return sel;
-    },
-    imgFondo() {
-      return {
-        backgroundImage:
-          "url('http://localhost:3000/api/atlas/iconos/" +
-          this.esteNodo.id +
-          "')",
-      };
     },
     estiloPosicion() {
       //Posicion absoluta
@@ -142,17 +149,133 @@ export default {
         height: this.size.y + "px",
       };
     },
+    fondoNombre() {
+      if (this.nombreEditandose) {
+        return {
+          backgroundColor: "orange",
+        };
+      }
+      return {
+        backgroundColor: "lightblue",
+      };
+    },
   },
   methods: {
-    eliminarEsteNodo(){
+    // dibujarVinculos: function (rol, color) {
+    //   let nodosVinculados = this.todosNodos.filter((n) =>
+    //     this.esteNodo.vinculos.some((v) => v.idRef == n.id && v.rol == rol)
+    //   );
+
+    //   this.lapiz.beginPath();
+    //   console.log(`trazando lineas de color ${color} `);
+    //   this.lapiz.strokeStyle = color;
+
+    //   for (let nodo of nodosVinculados) {
+    //     console.log(`${nodo.nombre}`);
+    //   }
+
+    //   this.bordesDibujoActivo.bot = nodosVinculados.reduce((acc, n) => {
+    //     return n.coordsManuales.y < acc ? n.coordsManuales.y : acc;
+    //   }, this.esteNodo.coordsManuales.y);
+    //   this.bordesDibujoActivo.top = nodosVinculados.reduce((acc, n) => {
+    //     return n.coordsManuales.y > acc ? n.coordsManuales.y : acc;
+    //   }, this.esteNodo.coordsManuales.y);
+    //   this.bordesDibujoActivo.left = nodosVinculados.reduce((acc, n) => {
+    //     return n.coordsManuales.x < acc ? n.coordsManuales.x : acc;
+    //   }, this.esteNodo.coordsManuales.x);
+    //   this.bordesDibujoActivo.right = nodosVinculados.reduce((acc, n) => {
+    //     return n.coordsManuales.x > acc ? n.coordsManuales.x : acc;
+    //   }, this.esteNodo.coordsManuales.x);
+
+    //   let ancho =
+    //     this.bordesDibujoActivo.right -
+    //     this.bordesDibujoActivo.left +
+    //     this.paddingGuarda;
+    //   let alto =
+    //     this.bordesDibujoActivo.top -
+    //     this.bordesDibujoActivo.bot +
+    //     this.paddingGuarda;
+
+    //   this.$set(
+    //     this.posicionDibujoVinculos,
+    //     "left",
+    //     this.size.x / 2 -
+    //       this.paddingGuarda / 2 -
+    //       (this.esteNodo.coordsManuales.x - this.bordesDibujoActivo.left) +
+    //       "px"
+    //   );
+    //   this.$set(
+    //     this.posicionDibujoActivo,
+    //     "top",
+    //     this.size.y / 2 -
+    //       this.paddingGuarda / 2 -
+    //       (this.esteNodo.coordsManuales.y - this.bordesDibujoActivo.bot) +
+    //       "px"
+    //   );
+
+    //   this.lapiz.canvas.width = ancho;
+    //   this.lapiz.canvas.height = alto;
+
+    //   for (let vinculo of this.esteNodo.vinculos) {
+    //     if (vinculo.rol == rol || vinculo.rol == "any") {
+    //       let otroNodo = this.todosNodos.find((n) => n.id == vinculo.idRef);
+    //       if (!otroNodo) {
+    //         console.log(`ALERTA. Vinculo a ${vinculo.idRef} huerfano`);
+    //         continue;
+    //       }
+    //       this.dibujarLineaEntreNodos(this.esteNodo, otroNodo);
+    //       console.log(
+    //         `dibujando linea entre ${this.esteNodo.nombre} y ${otroNodo.nombre} `
+    //       );
+    //     }
+    //   }
+    //   this.lapiz.stroke();
+    // },
+    eliminarEsteNodo() {
       this.$emit("eliminar", this.esteNodo.id);
     },
-    guardarNombre() {
-      let nuevoNombre = this.$refs.nombreNodo.innerHTML;
-      this.$emit("edicionNombreNodo", {
-        idNodo: this.esteNodo.id,
-        nuevoNombre,
-      });
+    async guardarNombre() {
+      let nuevoNombre = this.$refs.nombreNodo.innerHTML.trim();
+      let idNodo = this.esteNodo.id;
+
+      if (!this.nombreEditandose || nuevoNombre == this.esteNodo.nombre) {
+        return;
+      }
+
+      nuevoNombre = nuevoNombre.replace(charProhibidosNombreNodo, "");
+      nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
+
+      await this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idNodo: ID!, $nuevoNombre: String!) {
+              editarNombreNodo(idNodo: $idNodo, nuevoNombre: $nuevoNombre) {
+                modificados {
+                  id
+                  nombre
+                }
+              }
+            }
+          `,
+          variables: {
+            idNodo,
+            nuevoNombre,
+          },
+        })
+        .then((data) => {
+          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
+          this.nombreEditandose = false;
+        })
+        .catch((error) => {
+          console.log(`error: ${error}`);
+        });
+    },
+    setNombreEditandose() {
+      if (this.esteNodo.nombre != this.$refs.nombreNodo.innerHTML.trim()) {
+        this.nombreEditandose = true;
+      } else {
+        this.nombreEditandose = false;
+      }
     },
     arrastrarNodo(e) {
       if (!this.arrastrandoNodo) {
@@ -173,10 +296,12 @@ export default {
     },
     guardarPosicion() {
       if (!this.arrastrandoNodo) return;
-      this.$emit("cambioDePosicionManual", this.esteNodo.id, {x:this.posicion.x, y: this.posicion.y});
-      
+      this.$emit("cambioDePosicionManual", this.esteNodo.id, {
+        x: this.posicion.x,
+        y: this.posicion.y,
+      });
+
       this.arrastrandoNodo = false;
-      
     },
     crearVinculo(tipo, nodoFrom, nodoTo) {
       console.log(
@@ -194,8 +319,99 @@ export default {
         idNodoTo: nodoTo.id,
       });
     },
-    activarEdicionNombre() {},
+    blurNombre() {
+      this.$refs.nombreNodo.blur();
+    },
+    iconoFallback() {
+      this.$refs.iconoNodo.src = "nodoConocimientoDefault.png";
+      //this.$refs.iconoNodo.src="@/assets/iconos/atlas/nodoConocimientoDefault.png";
+    },
+    dibujarLineaEntreNodos(nodoFrom, nodoTo) {
+      let inicio = {
+        x:
+          nodoFrom.coordsManuales.x +
+          this.paddingGuarda / 2 -
+          parseInt(this.bordesDibujoActivo.left),
+        y:
+          nodoFrom.coordsManuales.y +
+          this.paddingGuarda / 2 -
+          parseInt(this.bordesDibujoActivo.bot),
+      };
+      let final = {
+        x:
+          nodoTo.coordsManuales.x +
+          this.paddingGuarda / 2 -
+          parseInt(this.bordesDibujoActivo.left),
+        y:
+          nodoTo.coordsManuales.y +
+          this.paddingGuarda / 2 -
+          parseInt(this.bordesDibujoActivo.bot),
+      };
+      console.log(`${inicio.x}, ${inicio.y} -> ${final.x}, ${final.y} `);
+
+      let anguloVinculo = Math.atan(
+        (final.y - inicio.y) / (final.x - inicio.x)
+      );
+      if (final.y - inicio.y < 0 && final.x - inicio.x < 0)
+        anguloVinculo += Math.PI;
+      if (final.y - inicio.y > 0 && final.x - inicio.x < 0)
+        anguloVinculo += Math.PI;
+
+      let radioAmpliado = parseInt(this.baseSize.x * 0.6);
+      console.log(`radio ampliado: ${radioAmpliado}`);
+      let correccionHorizontal = parseInt(
+        radioAmpliado * Math.cos(anguloVinculo)
+      );
+      let correccionVertical = parseInt(
+        radioAmpliado * Math.sin(anguloVinculo)
+      );
+      console.log(
+        `Correcciones: ${correccionHorizontal}, ${correccionVertical} `
+      );
+
+      let finalCorregido = {
+        x: final.x - correccionHorizontal,
+        y: final.y - correccionVertical,
+      };
+
+      this.lapiz.moveTo(inicio.x, inicio.y);
+      this.lapiz.lineTo(finalCorregido.x, finalCorregido.y);
+
+      //ahora la flechita
+
+      // let centro = {
+      //   x: (final.x + inicio.x) / 2,
+      //   y: (final.y + inicio.y) / 2,
+      // };
+
+      let longitudAla = 7;
+
+      //anguloVinculo=anguloVinculo*180/Math.PI;
+
+      let puntaAlaIzquierda = {
+        x:
+          finalCorregido.x +
+          longitudAla * Math.cos(anguloVinculo - (3 * Math.PI) / 4),
+        y:
+          finalCorregido.y +
+          longitudAla * Math.sin(anguloVinculo - (3 * Math.PI) / 4),
+      };
+      let puntaAlaDerecha = {
+        x:
+          finalCorregido.x +
+          longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4),
+        y:
+          finalCorregido.y +
+          longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4),
+      };
+      this.lapiz.moveTo(finalCorregido.x, finalCorregido.y);
+      this.lapiz.lineTo(puntaAlaIzquierda.x, puntaAlaIzquierda.y);
+      this.lapiz.moveTo(finalCorregido.x, finalCorregido.y);
+      this.lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
+    },
+    
   },
+  
   mounted() {
     this.posicion.y = this.esteNodo.coordsManuales.y
       ? this.esteNodo.coordsManuales.y
@@ -203,11 +419,32 @@ export default {
     this.posicion.x = this.esteNodo.coordsManuales.x
       ? this.esteNodo.coordsManuales.x
       : 0;
+   
   },
 };
 </script>
 
 <style>
+
+#sombra {
+  position: absolute;
+  top: 2%;
+  left: 0%;
+  border-radius: inherit;
+  width: 106%;
+  height: 106%;
+  background-color: rgba(128, 128, 128, 0.452);
+  z-index: 0;
+}
+.iconoNodo {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
 .nodoConocimiento {
   width: 60px;
   height: 60px;

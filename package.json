@@ -1,7 +1,7 @@
 {
   "name": "gestorproyectos",
   "version": "1.0.0",
-  "description": "",
+  "description": "Una aplicacion para gestionar ppp y conocimientos en Maestra Vida",
   "main": "index.js",
   "scripts": {
     "start": "nodemon servidor/index.js",

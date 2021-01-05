@@ -1,31 +1,28 @@
 <template>
   <div
     id="atlasConocimiento"
-    @mousedown.left.shift="panningVista = true"
+    @mousedown.left.shift.stop="panningVista = true"
     @click="idNodoMenuCx = '-1'"
+    @click.exact="idNodoSeleccionado = '-1'"
     @mousemove="panVista($event)"
     @mouseup="panningVista = false"
     @dblclick.ctrl.shift.self.stop="crearNodo"
   >
-    <canvas-vinculos
-      :nodoSeleccionado="nodoSeleccionado"
-      :todosNodos="todosNodos"
-      :centroVista="centroVista"
-      :actualizar="actualizarTrazos"
-    />
+   
     <div id="contenedorNodos">
+      <canvases :todosNodos="todosNodos" :nodoSeleccionado="nodoSeleccionado" :centroVista="centroVista"/>
       <nodo-conocimiento
         :nodoSeleccionado="nodoSeleccionado"
+        :todosNodos="todosNodos"
         :idNodoMenuCx="idNodoMenuCx"
         :key="nodo.id"
         v-for="nodo of todosNodos"
         :esteNodo="nodo"
         :centroVista="centroVista"
-        @click.native="seleccionNodo(nodo)"
+        @click.native.stop="seleccionNodo(nodo)"
         @click.right.native.prevent="idNodoMenuCx = nodo.id"
         @creacionVinculo="crearVinculo"
         @eliminacionVinculo="eliminarVinculo"
-        @edicionNombreNodo="editarNombreNodo"
         @cambioDePosicionManual="cambiarCoordsManualesNodo"
         @eliminar="eliminarNodo"
       />
@@ -36,13 +33,14 @@
 <script>
 import gql from "graphql-tag";
 import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
-import CanvasVinculos from "./atlasConocimiento/CanvasVinculos.vue";
+import Canvases from './atlasConocimiento/Canvases.vue';
 export default {
-  components: { NodoConocimiento, CanvasVinculos },
+  components: { NodoConocimiento, Canvases },
   name: "AtlasConocimiento",
   apollo: {
-    todosNodos: gql`
-      query {
+    todosNodos:{
+      query: gql`
+        query {
         todosNodos {
           nombre
           id
@@ -58,6 +56,12 @@ export default {
         }
       }
     `,
+      result: function(){
+        console.log(`Nodos descargados`);
+        this.dibujarVinculosGrises();
+      }
+
+    },
     ping: gql`
       query {
         ping
@@ -75,59 +79,82 @@ export default {
       },
       actualizarTrazos: 0,
       panningVista: false,
+      nodosConectadosAlSeleccionado:{
+        listaCompleta:[],
+        listaPorNiveles:[]
+      },
+      profundidadNodosConectadosAlSeleccionado:1,
+      actualizarVinculosGrises:0
     };
   },
   computed: {
     nodoSeleccionado: function () {
-      let indexSeleccionado = this.todosNodos.findIndex(
-        (n) => n.id == this.idNodoSeleccionado
-      );
-      return this.todosNodos[indexSeleccionado];
+      if (this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
+        let indexSeleccionado = this.todosNodos.findIndex(
+          (n) => n.id == this.idNodoSeleccionado
+        );
+        return this.todosNodos[indexSeleccionado];
+      }
+      return {
+        id: "-1",
+        vinculos: [],
+      };
     },
   },
   methods: {
-    
-    cambiarCoordsManualesNodo(idNodo, coordsManuales){
+    cambiarCoordsManualesNodo(idNodo, coordsManuales) {
       console.log(`enviando mutacion de cambio de coordenadas manuales`);
       console.log(`Token: ${localStorage.getItem(process.env.TOKEN_KEY)}`);
       //Update optimista:
-      this.todosNodos[this.todosNodos.findIndex(n=>n.id==idNodo)].coordsManuales=coordsManuales;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idNodo: String, $coordsManuales: CoordsInput) {
-            setCoordsManuales(idNodo: $idNodo, coordsManuales: $coordsManuales) {
-              modificados{
-                id
-                coordsManuales{
-                  x
-                  y
+      this.todosNodos[
+        this.todosNodos.findIndex((n) => n.id == idNodo)
+      ].coordsManuales = coordsManuales;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idNodo: String, $coordsManuales: CoordsInput) {
+              setCoordsManuales(
+                idNodo: $idNodo
+                coordsManuales: $coordsManuales
+              ) {
+                modificados {
+                  id
+                  coordsManuales {
+                    x
+                    y
+                  }
                 }
               }
             }
-          }
-        `,
-        variables: {
-          idNodo,
-          coordsManuales
-        },
-      });
+          `,
+          variables: {
+            idNodo,
+            coordsManuales,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+        });
     },
-    eliminarNodo(idNodo){
+    eliminarNodo(idNodo) {
       console.log(`enviando mutacion de eliminar nodo`);
-      this.$apollo.mutate({
-        mutation:gql`
-          mutation($idNodo:ID!){
-            eliminarNodo(idNodo:$idNodo)                        
-          }
-        `,
-        variables:{
-          idNodo
-        }
-      }).then(data=>{
-        console.log(`quitando el objeto del array. ${data}`);
-      })
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idNodo: ID!) {
+              eliminarNodo(idNodo: $idNodo)
+            }
+          `,
+          variables: {
+            idNodo,
+          },
+        })
+        .then((data) => {
+          console.log(`quitando el objeto del array. ${data}`);
+        });
     },
-    crearNodo(e){
+    crearNodo(e) {
       console.log(`enviando una mutación de crear nodo`);
       let posContenedor = document
         .getElementById("contenedorNodos")
@@ -138,37 +165,37 @@ export default {
       let nuevoLeft = Math.round(
         e.clientX - posContenedor.left + this.centroVista.x
       );
-      
-      let infoNodo={
-        coordsManuales:{
+
+      let infoNodo = {
+        coordsManuales: {
           x: nuevoLeft,
-          y: nuevoTop
-        }
-      }
+          y: nuevoTop,
+        },
+      };
       console.log(`en las coordenadas: ${nuevoLeft}, ${nuevoTop} `);
       this.$apollo.mutate({
-        mutation:gql`
-        mutation($infoNodo: NodoConocimientoInput){
-          crearNodo(infoNodo:$infoNodo){
-            modificados{
-              nombre
-              id
-              coordsManuales{
-                x
-                y
-              }
-              vinculos{
-                idRef
-                rol
-                tipo
+        mutation: gql`
+          mutation($infoNodo: NodoConocimientoInput) {
+            crearNodo(infoNodo: $infoNodo) {
+              modificados {
+                nombre
+                id
+                coordsManuales {
+                  x
+                  y
+                }
+                vinculos {
+                  idRef
+                  rol
+                  tipo
+                }
               }
             }
           }
-        }
         `,
-        variables:{
-          infoNodo 
-        }
+        variables: {
+          infoNodo,
+        },
       });
     },
     panVista(e) {
@@ -176,7 +203,6 @@ export default {
         return;
       }
       e.preventDefault();
-      console.log(`panning`);
       this.$set(this.centroVista, "x", this.centroVista.x - e.movementX);
       this.$set(this.centroVista, "y", this.centroVista.y - e.movementY);
       this.actualizarTrazos++;
@@ -186,6 +212,34 @@ export default {
     },
     seleccionNodo(nodo) {
       this.idNodoSeleccionado = nodo.id;
+      if(!this.todosNodos.some(n=>n.id==this.idNodoSeleccionado)){
+        return null
+      }
+
+      let profundidad=parseInt(this.profundidadNodosConectadosAlSeleccionado);
+      let listaPorNiveles = [];
+      let idNodoSel=this.idNodoSeleccionado;
+      let listaCompleta = [idNodoSel];
+      if (profundidad > 0) {
+        for (let i = 0; i < profundidad; i++) {
+          listaPorNiveles[i] = [];
+        }
+        ({
+          listaCompleta,
+          listaPorNiveles,
+        } = this.encontrarNodosConectadosRecursivamente(
+          idNodoSel,
+          ["target", "source"],
+          ["continuacion"],
+          listaCompleta,
+          listaPorNiveles,
+          0,
+          profundidad
+        ));
+      }
+      this.nodosConectadosAlSeleccionado={
+        listaCompleta,listaPorNiveles
+      }
     },
     async eliminarVinculo(args) {
       console.log(
@@ -220,7 +274,11 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    async crearVinculo(args) { 
+    dibujarVinculosGrises(){
+      console.log(`dibujando todos los vinculos en gris`);
+      this.actualizarVinculosGrises++;
+    },
+    async crearVinculo(args) {
       console.log(`creando un vinculo ${JSON.stringify(args)} `);
       await this.$apollo
         .mutate({
@@ -253,32 +311,48 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    async editarNombreNodo({ idNodo, nuevoNombre }) {
-      console.log(`enviando una edicion de nombre de nodo`);
-      nuevoNombre = nuevoNombre.replace(/[^a-zA-Z0-9Á-ú ]/g, "");
-      await this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idNodo: ID!, $nuevoNombre: String!) {
-              editarNombreNodo(idNodo: $idNodo, nuevoNombre: $nuevoNombre) {
-                modificados {
-                  id
-                  nombre
-                }
-              }
-            }
-          `,
-          variables: {
-            idNodo: idNodo,
-            nuevoNombre: nuevoNombre,
-          },
-        })
-        .then(() => {
-          console.log(`fin de la mutacion`);
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-        });
+    encontrarNodosConectadosRecursivamente(
+      idNodo,
+      roles,
+      tipos,
+      listaCompleta,
+      listaPorNiveles,
+      nivel,
+      profundidad
+    ) {
+      // Rol debe ser un array que incluye los roles validos en esta búsqueda.
+      // Tipo deber ser un array que incluye todos los tipos válidos en esta búsqueda
+      let nodo = this.todosNodos.find((n) => n.id == idNodo);
+      for (let vinculo of nodo.vinculos) {
+        if (
+          this.todosNodos.some((n) => n.id == vinculo.idRef) &&
+          roles.some((r) => r == vinculo.rol) &&
+          tipos.some((t) => t == vinculo.tipo) &&
+          !listaCompleta.some((idN) => idN == vinculo.idRef)
+        ) {
+          listaPorNiveles[nivel].push(vinculo.idRef);
+          listaCompleta.push(vinculo.idRef);
+          
+          if ((nivel+1) < profundidad) {
+            ({
+              listaCompleta,
+              listaPorNiveles,
+            } = this.encontrarNodosConectadosRecursivamente(
+              vinculo.idRef,
+              roles,
+              tipos,
+              listaCompleta,
+              listaPorNiveles,
+              nivel + 1,
+              profundidad
+            ));
+          }
+        }
+        else{
+          console.log(`No`);
+        } 
+      }
+      return { listaCompleta, listaPorNiveles };
     },
   },
   watch: {
@@ -292,8 +366,9 @@ export default {
 <style>
 #atlasConocimiento {
   position: relative;
+  overflow: hidden;
 }
-#canvasVinculos {
+#canvases {
   width: 100%;
   height: 100%;
   position: absolute;

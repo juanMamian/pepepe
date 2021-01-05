@@ -84,7 +84,8 @@ router.post("/login", async (req: Request, res: Response) => {
         console.log(`login correcto de ${username}. Enviando JWT`);
         let datosToken={
             id: usuario._id,
-            permisos:usuario.permisos
+            permisos:usuario.permisos,
+            username:usuario.username
         }
         let token=jwt.sign(datosToken, process.env.JWT_SECRET, {expiresIn: "2h"});
         let respuesta={

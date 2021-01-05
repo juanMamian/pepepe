@@ -25,7 +25,8 @@ const esquemaUsuario=mongoose.Schema({
         required:true,
         max: 100,
         min:2,
-        default:"usuario"
+        default:"usuario",
+        enum: ["usuario", "atlasAdministrador",  "administrador", "superadministrador"]
     }
 });
 

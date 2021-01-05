@@ -1,4 +1,4 @@
-import { ApolloError, gql } from "apollo-server-express";
+import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
 const jwt = require("jsonwebtoken");
 const Nodo = require("../model/atlas/Nodo").modeloNodo;
 /*
@@ -17,6 +17,16 @@ interface NodoConocimiento{
     }
 }
 */
+
+interface Usuario{
+    username: string,
+    permisos: string,
+    id: string
+}
+
+interface contextoMutation{
+    usuario:Usuario
+}
 
 export const typeDefs = gql`
 type Vinculo{
@@ -110,17 +120,23 @@ export const resolvers = {
         }
     },
     Mutation: {
-        async eliminarNodo(_:any, {idNodo}:any){
-            console.log(`eliminando nodo con id ${idNodo}`);
-            try {
-                await Nodo.deleteOne({_id:idNodo}).exec();
-            } catch (error) {
-                console.log(`error eliminando nodo`);
+        async eliminarNodo(_: any, { idNodo }: any, { req }: any) {
+            console.log(`eliminando nodo con id ${idNodo} por el usuario ${req.user.id}`);
+            let permisos: string = req.usuario.permisos;
+            if (permisos == "atlasAdministrador" || permisos == "administrador" || permisos == "superadministrador") {
+                try {
+                    await Nodo.deleteOne({ _id: idNodo }).exec();
+                } catch (error) {
+                    console.log(`error eliminando nodo`);
+                }
+                console.log(`nodo ${idNodo} eliminado`);
+                return idNodo;
             }
-            console.log(`nodo ${idNodo} eliminado`);
-            return idNodo;
+            else {
+                throw new AuthenticationError("No autorizado");
+            }
         },
-        async crearNodo(_: any, {infoNodo}: any) {
+        async crearNodo(_: any, { infoNodo }: any) {
             console.log(`Creando nuevo nodo de conocimiento`);
             let modificados = [];
             let nuevoNodo = new Nodo({
@@ -139,23 +155,31 @@ export const resolvers = {
                 modificados
             }
         },
-        setCoordsManuales: async function (_: any, {idNodo, coordsManuales}: any) {
-            let modificados=[];
-            try {
-                var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
+        setCoordsManuales: async function (_: any, { idNodo, coordsManuales }: any, {usuario}:contextoMutation) {
+            console.log(`movimiento de coords manuales por ${usuario.username} con permisos ${usuario.permisos}`);
+            let permisos: string = usuario.permisos;
+            if (permisos == "atlasAdministrador" || permisos == "administrador" || permisos == "superadministrador") {
+
+                let modificados = [];
+                try {
+                    var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
+                }
+                catch (error) {
+                    console.log(`error buscando el nodo. E: ` + error);
+                }
+                elNodo.coordsManuales = coordsManuales;
+                try {
+                    console.log(`guardando coords de ${elNodo.nombre} en la base de datos`);
+                    await elNodo.save();
+                } catch (error) {
+                    console.log(`error guardando el nodo con coordenadas manuales: ${error}`);
+                }
+                modificados.push(elNodo);
+                return { modificados };
             }
-            catch (error) {
-                console.log(`error buscando el nodo. E: ` + error);
-            }            
-            elNodo.coordsManuales = coordsManuales;
-            try {
-                console.log(`guardando coords de ${elNodo.nombre} en la base de datos`);
-                await elNodo.save();
-            } catch (error) {
-                console.log(`error guardando el nodo con coordenadas manuales: ${error}`);
+            else{
+                throw new AuthenticationError("No autorizado");
             }
-            modificados.push(elNodo);
-            return {modificados};
         },
         crearVinculo: async function (_: any, args: any) {
             let errores = [];
@@ -270,29 +294,29 @@ export const resolvers = {
     }
 };
 
-export const context=({req, res}: any)=>{
+export const context = ({ req, res }: any) => {
     console.log(`creando contexto`);
-    var usuario={
-      id: null,
-      permisos:null
+    var usuario = {
+        id: null,
+        permisos: null
     }
-    let headers:any=req.headers;
+    let headers: any = req.headers;
     console.log(`headers: ${JSON.stringify(headers)}`);
 
-    if(!headers.authorization) return usuario; 
-    const token:string=headers.authorization;
-    try{
-        usuario= jwt.verify(token, process.env.JWT_SECRET);
+    if (!headers.authorization) return usuario;
+    const token: string = headers.authorization;
+    try {
+        usuario = jwt.verify(token, process.env.JWT_SECRET);
     }
-    catch(error){
+    catch (error) {
         console.log(`Error verificando el token.E: ${error}`);
-        return {
+        var usuario = {
             id: null,
-            permisos:null
+            permisos: null
         }
     }
     console.log(`Decodifcado el token así: ${JSON.stringify(usuario)}`);
-    return usuario;
+    return { usuario };
 
 }
 
