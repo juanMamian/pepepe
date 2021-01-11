@@ -492,9 +492,9 @@ export default {
   top: 110%;
   left: 110%;
   min-width: 140px;
-  background-color: rgb(177, 177, 159);
   padding: 5px;
   z-index: 10;
+  background-color: rgb(177, 177, 159);
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
     0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }

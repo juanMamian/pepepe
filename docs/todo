@@ -1,3 +1,4 @@
 *verificar el manejo de contraseñas
 *Cambiar el registro de modo que se realice a través de graphql, no de la API
 *Lograr que el servidor envíe una imagen fallback cuando busque y no encuentre el ícono de un nodo o la fotografía de un usuario
+*Crear la validacion de nombre de nodo

@@ -35,6 +35,10 @@ esquemaNodo.add({
         x: Number,
         y:Number
     },
+    resumen:{
+        type:String,
+        max:2000,
+    },
     coordx:Number,
     coordy:Number,
     radio: Number,

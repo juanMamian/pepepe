@@ -14,7 +14,7 @@
 
     <template v-if="seleccionado">
       <div id="zonaDescripcion">
-        Descripcion: <br />
+        <div class="nombreZona">Descripcion</div>
 
         <div
           id="descripcion"
@@ -42,7 +42,7 @@
 
           <div
             class="controlesResponsables hoverGris botonesControles"
-            v-if="usuarioresponsableTrabajo == true"
+            v-if="usuarioResponsableTrabajo == true"
             @click="abandonarListaResponsables"
           >
             Abandonar
@@ -58,8 +58,34 @@
         </div>
       </div>
 
+      <div id="zonaNodosConocimiento" class="zonaPrimerNivel">
+        <div class="nombreZona">Nodos de conocimiento involucrados</div>
+        <div id="controlesNodosConocimiento" class="controlesZona">
+          <div
+            class="controlesNodosConocimiento hoverGris botonesControles"
+            v-if="usuarioResponsableProyecto == true"
+          >
+            Añadir
+          </div>
+          <div
+            class="controlesNodosConocimiento hoverGris botonesControles"
+            v-if="usuarioResponsableProyecto == true && idNodoSeleccionado!=null && esteTrabajo.nodosConocimiento.some(n=>n.id==idNodoSeleccionado)"
+          >
+            Remover
+          </div>
+        </div>
+        <div id="listaNodosConocimiento" @click.self="idNodoSeleccionado=null">
+          <icono-nodo-conocimiento
+            :esteNodo="nodo"
+            :key="nodo.id"
+            v-for="nodo of esteTrabajo.nodosConocimiento"
+            @click.native="idNodoSeleccionado=nodo.id"
+          />
+        </div>
+      </div>
+
       <div id="controlesTrabajo" v-show="seleccionado">
-        <div class="controlesTrabajo hoverGris" @click="eliminarse">
+        <div class="controlesTrabajo hoverGris" @click="eliminarse" v-if="usuarioResponsableProyecto==true">
           Eliminar
         </div>
       </div>
@@ -68,18 +94,27 @@
 </template>
 
 <script>
+import gql from "graphql-tag"
+import {fragmentoResponsables} from "../utilidades/recursosGql"
+import IconoPersona from "./IconoPersona.vue"
+
 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
 export default {
   name: "IconoTrabajo",
+  components:{
+    IconoPersona
+  },
   data() {
     return {
       nombreEditandose: false,
       descripcionEditandose: false,
+      idNodoSeleccionado:null,
     };
   },
   props: {
     esteTrabajo: Object,
+    idEsteProyecto:String,
     idTrabajoSeleccionado: String,
     permisosEdicion: Boolean,
     usuarioResponsableProyecto: Boolean,
@@ -89,14 +124,76 @@ export default {
       return this.idTrabajoSeleccionado == this.esteTrabajo.id ? true : false;
     },
     usuarioResponsableTrabajo: function () {
-      return this.esteTrabajo.responsables.includes(
-        this.$store.state.usuario.id
+      return this.esteTrabajo.responsables.some(r=>
+        r.id==this.$store.state.usuario.id
       )
         ? true
         : false;
     },
   },
   methods: {
+    asumirComoResponsable() {
+      console.log(
+        `enviando id ${this.$store.state.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.idEsteProyecto}`
+      );
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idProyecto: ID!, $idTrabajo: ID!, $idUsuario: ID!) {
+              addResponsableTrabajo(
+                idProyecto: $idProyecto
+                idTrabajo:$idTrabajo
+                idUsuario: $idUsuario                
+              ) {
+                id
+                responsables {
+                  ...fragResponsables
+                }
+              }
+            }
+            ${fragmentoResponsables}
+          `,
+          variables: {
+            idProyecto: this.idEsteProyecto,
+            idTrabajo: this.esteTrabajo.id,
+            idUsuario: this.$store.state.usuario.id,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log("error: " + error);
+        });
+    },
+    abandonarListaResponsables() {
+      console.log(`Abandonando este trabajo`);
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idProyecto: ID!, $idTrabajo:ID! $idUsuario: ID!) {
+              removeResponsableTrabajo(
+                idProyecto: $idProyecto
+                idTrabajo:$idTrabajo
+                idUsuario: $idUsuario
+              ) {
+                id
+                responsables {
+                  ...fragResponsables
+                }                
+              }
+            }
+            ${fragmentoResponsables}
+          `,
+          variables: {
+            idProyecto: this.idEsteProyecto,
+            idTrabajo:this.esteTrabajo.id,
+            idUsuario: this.$store.state.usuario.id,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log("error: " + error);
+        });
+    },
     eliminarse() {
       this.$emit("eliminandose", this.esteTrabajo.id);
     },
@@ -162,7 +259,7 @@ export default {
 }
 
 .trabajoSeleccionado {
-  height: 200px;
+  padding-bottom: 40px;
   box-shadow: 2px 2px 2px 2px rgb(54, 54, 54);
 }
 
@@ -193,8 +290,33 @@ export default {
 #imagenIcono {
   width: 30px;
   height: 30px;
+  margin-bottom: 10px;
 }
 .zonaPrimerNivel {
   border: 2px solid black;
+}
+.controlesZona {
+  display: flex;
+  font-size: 13px;
+  flex-direction: row-reverse;
+}
+.botonesControles {
+  padding: 3px 5px;
+  cursor: pointer;
+}
+.nombreZona {
+  font-size: 18px;
+  background-color: rgb(199, 110, 8);
+  padding: 3px 5px;
+}
+#listaResponsables {
+  display: flex;
+}
+.iconoPersona {
+  margin-right: 10px;
+  margin-left: 5px;
+  vertical-align: middle;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 </style>

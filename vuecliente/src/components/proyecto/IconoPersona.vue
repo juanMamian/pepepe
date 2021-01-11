@@ -37,8 +37,8 @@ export default {
   position: relative;
   border-radius: 50%;
   user-select: none;
-  width: "70px";
-  height: "70px";
+  width: 70px;
+  height: 70px;
 }
 
 #fotografia {

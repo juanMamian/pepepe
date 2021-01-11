@@ -43,12 +43,11 @@ export const resolvers ={
             let idsResponsables=parent.responsables;
             
             try {
-                var usuariosResponsables=Usuario.find({_id: {$in : idsResponsables}}).exec();
+                var usuariosResponsables=await Usuario.find({_id: {$in : idsResponsables}}).exec();
             } catch (error) {
                 console.log(`error buscando a los responsables del trabajo. E: ${error}`);
                 return [];
             }
-
 
             return usuariosResponsables;
         },

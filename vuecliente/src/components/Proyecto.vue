@@ -18,6 +18,7 @@
           v-if="
             usuarioLogeado &&
             !usuarioResponsableProyecto &&
+            !usuarioPosibleResponsableProyecto &&
             esteProyecto.responsables.length > 0
           "
           id="botonAddResponsable"
@@ -27,7 +28,7 @@
         </div>
         <div
           class="controlesResponsables hoverGris botonesControles"
-          v-if="usuarioLogeado == true && usuarioResponsableProyecto == true"
+          v-if="usuarioLogeado == true && (usuarioResponsableProyecto == true || usuarioPosibleResponsableProyecto==true)"
           @click="abandonarListaResponsables"
         >
           Abandonar
@@ -84,6 +85,7 @@
         <div
           class="controlesTrabajos hoverGris botonesControles"
           @click="crearNuevoTrabajo"
+          v-if="usuarioResponsableProyecto"
         >
           Crear trabajo
         </div>
@@ -91,8 +93,10 @@
       <div id="listaTrabajos" @click.self="idTrabajoSeleccionado = null">
         <iconoTrabajo
           v-for="trabajo of esteProyecto.trabajos"
+          :class="{opacar: (idTrabajoSeleccionado!=null && idTrabajoSeleccionado != trabajo.id)}"
           :key="trabajo.id"
           :esteTrabajo="trabajo"
+          :idEsteProyecto="esteProyecto.id"
           :idTrabajoSeleccionado="idTrabajoSeleccionado"
           :permisosEdicion="permisosEdicion"
           :usuarioLogeado="usuarioLogeado"
@@ -112,18 +116,8 @@ import gql from "graphql-tag";
 import IconoTrabajo from "./proyecto/IconoTrabajo.vue";
 import IconoPersona from "./proyecto/IconoPersona.vue";
 import IconoObjetivo from "./proyecto/IconoObjetivo.vue";
+import {fragmentoResponsables} from "./utilidades/recursosGql"
 
-const fragmentoResponsables = gql`
-  fragment fragResponsables on PublicUsuario {
-    id
-    username
-    nombres
-    apellidos
-    email
-    numeroTel
-    lugarResidencia
-  }
-`;
 
 const QUERY_PROYECTO = gql`
   query($idProyecto: ID!) {
@@ -186,6 +180,18 @@ export default {
       if (
         this.esteProyecto.responsables.some(
           (r) => r.id == this.$store.state.usuario.id
+        )
+      ) {
+        return true;
+      }
+      return false;
+    },
+    usuarioPosibleResponsableProyecto: function () {
+      if (!this.esteProyecto.posiblesResponsables) return false;
+
+      if (
+        this.esteProyecto.posiblesResponsables.some(
+          (pr) => pr.id == this.$store.state.usuario.id
         )
       ) {
         return true;
@@ -275,8 +281,8 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!) {
-              entrarPosiblesResponsablesProyecto(idProyecto: $idProyecto) {
+            mutation($idProyecto: ID!, $idUsuario: ID!) {
+              addPosibleResponsableProyecto(idProyecto: $idProyecto, idUsuario: $idUsuario) {
                 id
                 posiblesResponsables {
                   ...fragResponsables
@@ -353,9 +359,7 @@ export default {
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
               });
-              console.log(`cache: ${JSON.stringify(cache)}`);
               cache.proyecto.trabajos.push(nuevoTrabajo);
-              console.log(`cache: ${JSON.stringify(cache)}`);
 
               store.writeQuery({
                 query: QUERY_PROYECTO,
@@ -656,6 +660,7 @@ export default {
   padding: 5px 10px;
 }
 
+
 #nombreProyecto {
   margin-top: 15px;
   font-size: 23px;
@@ -676,6 +681,9 @@ export default {
 }
 .iconoTrabajo {
   margin-bottom: 30px;
+}
+.opacar{
+  opacity: 0.3;
 }
 #listaObjetivos {
   padding: 10px 25px;
