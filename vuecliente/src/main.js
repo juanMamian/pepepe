@@ -1,7 +1,8 @@
 import Vue from 'vue'
 import App from './App.vue'
-import store from "./store/main"
+import store from "./store/index"
 import {apolloProvider} from "./apollo"
+import {router} from "./Router"
 
 Vue.mixin({
   data(){
@@ -21,7 +22,10 @@ Vue.mixin({
         return { 
           Authorization: "Bearer "+infoSesion.token
         }
-    }
+    },
+    usuarioLogeado: function () {
+      return this.$store.state.usuario.id ? true : false;
+    },
   }
 })
 
@@ -31,5 +35,6 @@ Vue.config.productionTip = false
 new Vue({
   render: h => h(App),
   store,
-  apolloProvider
+  apolloProvider,
+  router
 }).$mount('#app')

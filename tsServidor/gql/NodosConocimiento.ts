@@ -1,6 +1,6 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
-const jwt = require("jsonwebtoken");
 const Nodo = require("../model/atlas/Nodo").modeloNodo;
+import {contextoQuery} from "./tsObjetos"
 /*
 interface NodoConocimiento{
     nombre: string,
@@ -18,15 +18,30 @@ interface NodoConocimiento{
 }
 */
 
-interface Usuario{
-    username: string,
-    permisos: string,
-    id: string
+interface Coords{
+    x: number,
+    y: number
 }
 
-interface contextoMutation{
-    usuario:Usuario
+interface NodoConocimiento{
+    id: string
+    nombre: string,
+    coordX: number,
+    coordY: number,
+    vinculos: Array<Vinculo>,
+    coordsManuales: Array<Coords>    
 }
+
+interface Vinculo{
+    id:string,
+    tipo: string,
+    idRef: string,
+    rol: string
+}
+
+
+
+
 
 export const typeDefs = gql`
 type Vinculo{
@@ -43,14 +58,7 @@ input vinculoInput{
     rol: String
 }
 
-type Coords{
-    x: Int,
-    y: Int
-}
-input CoordsInput{
-    x:Int,
-    y:Int
-}
+
 
 type NodoConocimiento{
     id: ID!
@@ -73,7 +81,7 @@ type Error{
     mensaje: String
 }
 
-type Query{
+extend type Query{
     todosNodos: [NodoConocimiento],
     ping: String,
     nodo(idNodo: String): NodoConocimiento
@@ -83,7 +91,7 @@ type infoNodosModificados{
     modificados: [NodoConocimiento]
 }
 
-type Mutation{
+extend type Mutation{
     setCoordsManuales(idNodo: String, coordsManuales:CoordsInput):infoNodosModificados,
     crearVinculo(tipo:String!, idSource:ID!, idTarget:ID!):infoNodosModificados,
     eliminarVinculoFromTo(idSource:ID!, idTarget:ID!):infoNodosModificados,
@@ -138,7 +146,7 @@ export const resolvers = {
         },
         async crearNodo(_: any, { infoNodo }: any) {
             console.log(`Creando nuevo nodo de conocimiento`);
-            let modificados = [];
+            let modificados:Array<NodoConocimiento> = new Array();
             let nuevoNodo = new Nodo({
                 ...infoNodo
             });
@@ -155,12 +163,12 @@ export const resolvers = {
                 modificados
             }
         },
-        setCoordsManuales: async function (_: any, { idNodo, coordsManuales }: any, {usuario}:contextoMutation) {
+        setCoordsManuales: async function (_: any, { idNodo, coordsManuales }: any, {usuario}:contextoQuery) {
             console.log(`movimiento de coords manuales por ${usuario.username} con permisos ${usuario.permisos}`);
             let permisos: string = usuario.permisos;
             if (permisos == "atlasAdministrador" || permisos == "administrador" || permisos == "superadministrador") {
 
-                let modificados = [];
+                let modificados:Array<NodoConocimiento> = new Array();
                 try {
                     var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
                 }
@@ -182,8 +190,7 @@ export const resolvers = {
             }
         },
         crearVinculo: async function (_: any, args: any) {
-            let errores = [];
-            let modificados = [];
+            let modificados:Array<NodoConocimiento> = [];
             console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
             try {
                 var nodoSource = await Nodo.findById(args.idSource, "vinculos");
@@ -191,10 +198,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
-                errores.push({
-                    tipo: "database",
-                    mensaje: "Error fetching nodos"
-                });
+                
             }
 
             //Buscar y eliminar vinculos previos entre estos dos nodos.
@@ -233,19 +237,14 @@ export const resolvers = {
             return { modificados };
         },
         eliminarVinculoFromTo: async function (_: any, args: any) {
-            let errores = [];
-            let modificados = [];
+            let modificados:Array<NodoConocimiento> = [];
             console.log(`desvinculando ${args.idSource} de ${args.idTarget}`);
             try {
                 var elUno = await Nodo.findById(args.idSource, "nombre vinculos");
                 var elOtro = await Nodo.findById(args.idTarget, "nombre vinculos");
             }
             catch (error) {
-                console.log(`error . e: ` + error);
-                errores.push({
-                    tipo: "database",
-                    mensaje: "Error conectandose con la base de datos"
-                })
+                console.log(`error . e: ` + error);                
             }
 
             for (var vinculo of elUno.vinculos) {
@@ -261,10 +260,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error . e: ` + error);
-                errores.push({
-                    tipo: "database",
-                    mensaje: "Error conectandose con la base de datos"
-                })
+                
             }
             modificados.push(elUno);
             modificados.push(elOtro);
@@ -273,14 +269,20 @@ export const resolvers = {
 
         },
         editarNombreNodo: async function (_: any, { idNodo, nuevoNombre }: any) {
-            let modificados = [];
+            let modificados:Array<NodoConocimiento> = [];
             try {
                 var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
             }
-            elNodo.nombre = nuevoNombre;
+            nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
+            var charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+            if(charProhibidosNombreNodo.test(nuevoNombre)){
+                throw new ApolloError("Nombre ilegal");
+            }
+
+            elNodo.nombre = nuevoNombre.trim();
 
             try {
                 console.log(`guardando nuevo nombre ${elNodo.nombre} en la base de datos`);
@@ -294,29 +296,5 @@ export const resolvers = {
     }
 };
 
-export const context = ({ req, res }: any) => {
-    console.log(`creando contexto`);
-    var usuario = {
-        id: null,
-        permisos: null
-    }
-    let headers: any = req.headers;
-    console.log(`headers: ${JSON.stringify(headers)}`);
-
-    if (!headers.authorization) return usuario;
-    const token: string = headers.authorization;
-    try {
-        usuario = jwt.verify(token, process.env.JWT_SECRET);
-    }
-    catch (error) {
-        console.log(`Error verificando el token.E: ${error}`);
-        var usuario = {
-            id: null,
-            permisos: null
-        }
-    }
-    console.log(`Decodifcado el token así: ${JSON.stringify(usuario)}`);
-    return { usuario };
-
-}
+ 
 

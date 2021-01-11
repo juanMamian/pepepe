@@ -9,17 +9,21 @@ esquemaTrabajo.add({
         required: true,
         min: 3,
         max: 600,
-        default:"nuevo trabajo"
+        default:"Nuevo trabajo"
     },
     descripcion: {
         type: String,
-        max: 10000
+        max: 10000,
+        default:""
     },
-    responsables: [
-        {
-            id: String
-        }
-    ],
+    responsables:{
+        type: [String],
+        default: []
+    },
+    nodosConocimiento:{
+        type:[String],
+        default:[]
+    },
     materiales: [
         {
             id: {
@@ -39,21 +43,7 @@ esquemaTrabajo.add({
             unidadReferencia: Number,
             valor_unitario: Number,
         }
-    ],
-    conocimientosVinculados:[
-        {
-            idRef:{
-                type:String,
-                required:true
-            },
-            nombre: String,
-            tipoVinculo:{
-                type:String,
-                required:true,
-                default:"requiere"
-            }            
-        }
-    ],   
+    ], 
     subtrabajos: [
         esquemaTrabajo
     ],
@@ -82,5 +72,5 @@ esquemaTrabajo.add({
     columna: Number
 });
 
-//module.exports.modeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);
+module.exports.modeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);
 module.exports.esquemaTrabajo = esquemaTrabajo;

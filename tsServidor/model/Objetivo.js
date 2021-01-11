@@ -9,7 +9,8 @@ esquemaObjetivo = new mongoose.Schema({
         default: "nuevo objetivo"
     },
     descripcion: {
-        type: String
+        type: String,
+        max:2000
     },
     vinculos: [
         {
@@ -27,14 +28,12 @@ esquemaObjetivo = new mongoose.Schema({
             }
         }
     ],
-    subobjetivos: [
-        {
-            ref: String
-        }
-    ],
-    estado: String,
-    fila: Number,
-    columna: Number
+    estado:{
+        type:String,
+        required:true,
+        default:"noCumplido",
+        enum:["noCumplido", "cumplido"],
+    }
 });
 
 module.exports.esquemaObjetivo = esquemaObjetivo;

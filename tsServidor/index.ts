@@ -9,19 +9,14 @@ const routesProyectos = require("./routes/proyectos");
 const routesTrabajos = require("./routes/trabajos");
 const routesNodos = require("./routes/atlas/nodos");
 const {ApolloServer, gql} = require("apollo-server-express");
-const passport = require("passport");
 const ejwt=require("express-jwt");
 import cors from "cors";
 
-import { typeDefs, resolvers, context } from "./gql/NodosConocimiento";
+import {aServer} from "./gql/Schema";
 
 
 
-const aServer= new ApolloServer({
-  typeDefs,
-  resolvers,
-  context
-});
+
 
 
 mongoose.connect(
@@ -38,15 +33,15 @@ db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
   // we're connected!
 });
+app.use(express.static(__dirname+'/public'));
 
-app.use(passport.initialize());
-app.use(passport.session());
 
 aServer.applyMiddleware({app});
 
+const rutaFotografias=/api\/usuarios\/fotografias\/\S+/;
 //Routes
 app.use(express.json());
-app.use("/api/usuarios", cors(), usuariosRoutes);
+app.use("/api/usuarios", cors(), ejwt({secret: process.env.JWT_SECRET, algorithms: ['HS256']}).unless({path:['/api/usuarios/login', 'api/usuario/registro', rutaFotografias]}), usuariosRoutes);
 app.use("/api/proyectos", routesProyectos);
 app.use("/api/trabajos/", routesTrabajos);
 app.use("/api/atlas", routesNodos);

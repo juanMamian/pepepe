@@ -8,9 +8,13 @@
     @mouseup="panningVista = false"
     @dblclick.ctrl.shift.self.stop="crearNodo"
   >
-   
     <div id="contenedorNodos">
-      <canvases :todosNodos="todosNodos" :nodoSeleccionado="nodoSeleccionado" :centroVista="centroVista"/>
+      <canvases
+        :todosNodos="todosNodos"
+        :nodoSeleccionado="nodoSeleccionado"
+        :centroVista="centroVista"
+      />
+
       <nodo-conocimiento
         :nodoSeleccionado="nodoSeleccionado"
         :todosNodos="todosNodos"
@@ -33,40 +37,34 @@
 <script>
 import gql from "graphql-tag";
 import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
-import Canvases from './atlasConocimiento/Canvases.vue';
+import Canvases from "./atlasConocimiento/Canvases.vue";
 export default {
   components: { NodoConocimiento, Canvases },
   name: "AtlasConocimiento",
   apollo: {
-    todosNodos:{
+    todosNodos: {
       query: gql`
         query {
-        todosNodos {
-          nombre
-          id
-          coordsManuales {
-            x
-            y
-          }
-          vinculos {
-            idRef
-            rol
-            tipo
+          todosNodos {
+            nombre
+            id
+            coordsManuales {
+              x
+              y
+            }
+            vinculos {
+              idRef
+              rol
+              tipo
+            }
           }
         }
-      }
-    `,
-      result: function(){
-        console.log(`Nodos descargados`);
+      `,
+      result: function () {
         this.dibujarVinculosGrises();
-      }
-
+      },
     },
-    ping: gql`
-      query {
-        ping
-      }
-    `,
+
   },
   data() {
     return {
@@ -79,16 +77,20 @@ export default {
       },
       actualizarTrazos: 0,
       panningVista: false,
-      nodosConectadosAlSeleccionado:{
-        listaCompleta:[],
-        listaPorNiveles:[]
+      nodosConectadosAlSeleccionado: {
+        listaCompleta: [],
+        listaPorNiveles: [],
       },
-      profundidadNodosConectadosAlSeleccionado:1,
-      actualizarVinculosGrises:0
+      profundidadNodosConectadosAlSeleccionado: 1,
+      actualizarVinculosGrises: 0,
     };
   },
   computed: {
     nodoSeleccionado: function () {
+      if(!this.todosNodos){
+        console.log(`NO HAY NODOS`);
+        return false;
+      }
       if (this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
         let indexSeleccionado = this.todosNodos.findIndex(
           (n) => n.id == this.idNodoSeleccionado
@@ -100,11 +102,12 @@ export default {
         vinculos: [],
       };
     },
+    idUsuario: function () {
+      return this.$store.state.usuario.id;
+    },
   },
   methods: {
     cambiarCoordsManualesNodo(idNodo, coordsManuales) {
-      console.log(`enviando mutacion de cambio de coordenadas manuales`);
-      console.log(`Token: ${localStorage.getItem(process.env.TOKEN_KEY)}`);
       //Update optimista:
       this.todosNodos[
         this.todosNodos.findIndex((n) => n.id == idNodo)
@@ -198,6 +201,38 @@ export default {
         },
       });
     },
+    descargarCentroVista() {
+      let dis = this;
+      this.$apollo
+        .query({
+          query: gql`
+            query($idUsuario: ID!) {
+              publicUsuario(idUsuario: $idUsuario) {
+                id
+                atlas {
+                  centroVista {
+                    x
+                    y
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            idUsuario: this.$store.state.usuario.id,
+          },
+        fetchPolicy:"network-only",          
+        })
+        .then(function ({ data }) {
+          console.log(`respuesta: ${JSON.stringify(data)} `);
+          let coords = data.usuario.atlas.centroVista;
+          dis.$set(dis.centroVista, "x", coords.x);
+          dis.$set(dis.centroVista, "y", coords.y);
+        })
+        .catch(function (error) {
+          console.log(`error: ${error}`);
+        });
+    },
     panVista(e) {
       if (!this.panningVista) {
         return;
@@ -212,13 +247,13 @@ export default {
     },
     seleccionNodo(nodo) {
       this.idNodoSeleccionado = nodo.id;
-      if(!this.todosNodos.some(n=>n.id==this.idNodoSeleccionado)){
-        return null
+      if (!this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
+        return null;
       }
 
-      let profundidad=parseInt(this.profundidadNodosConectadosAlSeleccionado);
+      let profundidad = parseInt(this.profundidadNodosConectadosAlSeleccionado);
       let listaPorNiveles = [];
-      let idNodoSel=this.idNodoSeleccionado;
+      let idNodoSel = this.idNodoSeleccionado;
       let listaCompleta = [idNodoSel];
       if (profundidad > 0) {
         for (let i = 0; i < profundidad; i++) {
@@ -237,9 +272,10 @@ export default {
           profundidad
         ));
       }
-      this.nodosConectadosAlSeleccionado={
-        listaCompleta,listaPorNiveles
-      }
+      this.nodosConectadosAlSeleccionado = {
+        listaCompleta,
+        listaPorNiveles,
+      };
     },
     async eliminarVinculo(args) {
       console.log(
@@ -274,8 +310,7 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    dibujarVinculosGrises(){
-      console.log(`dibujando todos los vinculos en gris`);
+    dibujarVinculosGrises() {
       this.actualizarVinculosGrises++;
     },
     async crearVinculo(args) {
@@ -332,8 +367,8 @@ export default {
         ) {
           listaPorNiveles[nivel].push(vinculo.idRef);
           listaCompleta.push(vinculo.idRef);
-          
-          if ((nivel+1) < profundidad) {
+
+          if (nivel + 1 < profundidad) {
             ({
               listaCompleta,
               listaPorNiveles,
@@ -347,10 +382,9 @@ export default {
               profundidad
             ));
           }
-        }
-        else{
+        } else {
           console.log(`No`);
-        } 
+        }
       }
       return { listaCompleta, listaPorNiveles };
     },
@@ -359,11 +393,44 @@ export default {
     nodoSeleccionado: function () {
       this.actualizarTrazos++;
     },
+    route:function(to){
+      console.log(`cambio de navegación a ${to.path}`);
+      //this.descargarCentroVista();
+    }
+  },
+  mounted() {
+    this.descargarCentroVista();
+  },
+  beforeRouteLeave(_, __, next) {
+    console.log(
+      `enviando nuevo centroVista para el usuario ${
+        this.$store.state.usuario.id
+      }. Centro vista: ${JSON.stringify(this.centroVista)}`
+    );
+    this.$apollo
+      .mutate({
+        mutation: gql`
+          mutation($idUsuario: ID, $centroVista: CoordsInput) {
+            setCentroVista(idUsuario: $idUsuario, centroVista: $centroVista)
+          }
+        `,
+        variables: {
+          idUsuario: this.$store.state.usuario.id,
+          centroVista: this.centroVista,
+        },
+      })
+      .then(function () {
+        next();
+      })
+      .catch(function (error) {
+        console.log(`error: ${error}`);
+        next();
+      });
   },
 };
 </script>
 
-<style>
+<style scoped>
 #atlasConocimiento {
   position: relative;
   overflow: hidden;

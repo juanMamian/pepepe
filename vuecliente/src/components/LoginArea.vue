@@ -1,26 +1,29 @@
 <template>
   <div id="loginArea">
-    <div id="paraElLogeado" v-if="usuarioConectado">
-      <div id="nombreUsuario">{{ nombreUsuario }}</div>
-      <button @click="deslogearse">Deslogearse</button>
-    </div>
-    <div id="paraElDeslogeado" v-else>
-      <input
-        type="text"
-        name="username"
-        :style="colorUsername"
-        v-model="username"
-        placeholder="Nombre de usuario"
-      />
-      <input
-        type="password"
-        name="password"
-        :style="colorPassword"
-        v-model="password"
-        placeholder="password"
-        @keypress.enter="iniciarSesion"
-      />
-      <button @click.stop="iniciarSesion">Conectarse</button>
+    <div id="ventanaCentral">
+      <p id="tituloVentana">Iniciar sesion</p>
+      <br>
+    <input
+      type="text"
+      name="username"
+      :style="colorUsername"
+      v-model="username"
+      placeholder="Nombre de usuario"
+      class="inputs"
+    />
+    <br>
+    <input
+      type="password"
+      name="password"
+      :style="colorPassword"
+      v-model="password"
+      placeholder="password"
+      @keypress.enter="iniciarSesion"
+      class="inputs"
+    />
+    <br>
+    <br>
+    <button class="botonEnviar" @click.stop="iniciarSesion">Conectarse</button>
     </div>
   </div>
 </template>
@@ -86,38 +89,51 @@ export default {
         })
         .then(function (respuesta) {
           if (respuesta.data.username == dis.username) {
-            let usuario = respuesta.data;
-            console.log(`Sesion iniciada`);
-            localStorage.setItem(
-              "sesionUsuario",
-              JSON.stringify(respuesta.data)
-            );
-            //Login en vuex y en apollo
-            dis.$store.commit("logearse", {
-              username: usuario.username,
-              permisos: usuario.permisos,
-            });
-            localStorage.setItem(process.env.TOKEN_KEY, usuario.token);
-            ////////////
+            dis.$store.commit("logearse", respuesta.data.token);
+            dis.$router.push("/miperfil")
           }
         })
         .catch(function (error) {
           console.log(`error: ${error}`);
-          //Logout en vuex y en apollo
           dis.$store.commit("deslogearse");
-          localStorage.removeItem(process.env.TOKEN_KEY);
-          /////
         });
     },
     deslogearse: function () {
       //Logout en vuex y en apollo
       this.$store.commit("deslogearse");
-      localStorage.removeItem(process.env.TOKEN_KEY);
       /////////
     },
   },
 };
 </script>
 
-<style>
+<style scoped>
+#tituloVentana{
+  font-size: 35px;
+  margin: 5px auto;
+  text-align: center;
+  font-family: sans-serif;
+}
+.inputs{
+  font-size: 20px;
+  margin-right: auto;
+  margin-left: auto;
+  margin-top: 15px;
+  display: block;
+  padding:5px;
+}
+#ventanaCentral{
+  margin: 5% auto;
+  padding:20px;
+  width: 50%;
+  min-width: 550px;
+  box-shadow:3px 3px grey, 3px 3px 3px 3px grey;
+  background-color: rgb(248, 248, 248);
+}
+.botonEnviar{
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 20px;
+}
 </style>

@@ -73,12 +73,6 @@ export default {
         return n.coordsManuales.x > acc ? n.coordsManuales.x : acc;
       }, 0);
 
-      console.log(
-        `Bordes del diagrama quedaron: ${JSON.stringify(
-          bordesCanvasTodosVinculos
-        )}`
-      );
-
       let anchoDiagrama = parseInt(
         bordesCanvasTodosVinculos.right - bordesCanvasTodosVinculos.left
       );
@@ -112,10 +106,10 @@ export default {
       this.$refs.canvasVinculosSeleccionado.width = anchoDiagrama;
       this.$refs.canvasVinculosSeleccionado.height = altoDiagrama;
 
-      this.lapiz.lineWidth = 2;
+      this.lapiz.lineWidth = 1;
       this.lapiz.clearRect(0, 0, anchoDiagrama, altoDiagrama);
       this.lapiz.beginPath();
-      this.lapiz.strokeStyle = "#888888";
+      this.lapiz.strokeStyle = "#b3b3b3";
 
       for (let nodo of this.todosNodos) {
         for (let vinculo of nodo.vinculos) {
@@ -141,7 +135,7 @@ export default {
       if (this.todosNodos.some((n) => n.id == this.nodoSeleccionado.id)) {
         //Lineas verdes de posiblidades
         this.lapiz.beginPath();
-        //this.lapiz.lineWidth=4;
+        this.lapiz.lineWidth=2;
         this.lapiz.strokeStyle = "#008000";
 
         //Lineas verdes de salida
@@ -287,11 +281,13 @@ export default {
   },
   mounted() {
     this.montado = true;
+    this.crearImagenTodosVinculos();
+      this.crearImagenVinculosSeleccionado();
   },
 };
 </script>
 
-<style>
+<style scoped>
 .canvas {
   position: absolute;
 }

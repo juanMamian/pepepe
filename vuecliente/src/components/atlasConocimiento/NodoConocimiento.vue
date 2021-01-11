@@ -6,9 +6,8 @@
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
     @mouseleave="arrastrandoNodo = false"
+    @dblclick="abrirPaginaNodo"
   >
-    
-    
     <div id="sombra"></div>
     <img
       :src="'http://localhost:3000/api/atlas/iconos/' + esteNodo.id"
@@ -21,6 +20,13 @@
     <div id="menuContextual" v-show="menuCx">
       <div class="seccionMenuCx">{{ esteNodo.nombre }}</div>
       <div class="botonMenuCx" @click.stop="eliminarEsteNodo">Eliminar</div>
+      <div
+        class="botonMenuCx"
+        v-if="permisosUsuario == 'superadministrador'"
+        @click.stop="copiarId"
+      >
+        {{ esteNodo.id }}
+      </div>
       <template
         v-if="nodoSeleccionado.id != -1 && nodoSeleccionado.id != esteNodo.id"
       >
@@ -47,13 +53,14 @@
       </template>
     </div>
     <div
-      id="nombreNodo"
-      ref="nombreNodo"
+      id="nombre"
+      ref="nombre"
       :contenteditable="true"
       :style="fondoNombre"
       @blur="guardarNombre"
       @input="setNombreEditandose"
       @keypress.enter="blurNombre"
+      @dblclick.stop
     >
       {{ esteNodo.nombre }}
     </div>
@@ -63,7 +70,7 @@
 <script>
 import gql from "graphql-tag";
 
-var charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_-]/g;
+var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
 export default {
   name: "NodoConocimiento",
@@ -80,7 +87,6 @@ export default {
         x: 0,
         y: 0,
       },
-     
     };
   },
   props: {
@@ -159,6 +165,9 @@ export default {
         backgroundColor: "lightblue",
       };
     },
+    permisosUsuario: function () {
+      return this.$store.state.usuario.permisos;
+    },
   },
   methods: {
     // dibujarVinculos: function (rol, color) {
@@ -231,21 +240,33 @@ export default {
     //   }
     //   this.lapiz.stroke();
     // },
+    abrirPaginaNodo(){
+      this.$router.push("/nodoConocimiento/"+this.esteNodo.id);
+    },
+    copiarId(e) {
+      let str=e.target.innerHTML.trim();
+      const el = document.createElement("textarea");
+      el.value = str;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    },
     eliminarEsteNodo() {
       this.$emit("eliminar", this.esteNodo.id);
     },
-    async guardarNombre() {
-      let nuevoNombre = this.$refs.nombreNodo.innerHTML.trim();
+    guardarNombre() {
+      let nuevoNombre = this.$refs.nombre.innerHTML.trim();
       let idNodo = this.esteNodo.id;
 
       if (!this.nombreEditandose || nuevoNombre == this.esteNodo.nombre) {
         return;
       }
 
-      nuevoNombre = nuevoNombre.replace(charProhibidosNombreNodo, "");
+      nuevoNombre = nuevoNombre.replace(charProhibidosNombre, "");
       nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
 
-      await this.$apollo
+      this.$apollo
         .mutate({
           mutation: gql`
             mutation($idNodo: ID!, $nuevoNombre: String!) {
@@ -271,7 +292,7 @@ export default {
         });
     },
     setNombreEditandose() {
-      if (this.esteNodo.nombre != this.$refs.nombreNodo.innerHTML.trim()) {
+      if (this.esteNodo.nombre != this.$refs.nombre.innerHTML.trim()) {
         this.nombreEditandose = true;
       } else {
         this.nombreEditandose = false;
@@ -320,7 +341,7 @@ export default {
       });
     },
     blurNombre() {
-      this.$refs.nombreNodo.blur();
+      this.$refs.nombre.blur();
     },
     iconoFallback() {
       this.$refs.iconoNodo.src = "nodoConocimientoDefault.png";
@@ -409,9 +430,8 @@ export default {
       this.lapiz.moveTo(finalCorregido.x, finalCorregido.y);
       this.lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
     },
-    
   },
-  
+
   mounted() {
     this.posicion.y = this.esteNodo.coordsManuales.y
       ? this.esteNodo.coordsManuales.y
@@ -419,13 +439,11 @@ export default {
     this.posicion.x = this.esteNodo.coordsManuales.x
       ? this.esteNodo.coordsManuales.x
       : 0;
-   
   },
 };
 </script>
 
-<style>
-
+<style scoped>
 #sombra {
   position: absolute;
   top: 2%;
@@ -444,6 +462,7 @@ export default {
   width: 100%;
   height: 100%;
   z-index: 1;
+  pointer-events: none;
 }
 .nodoConocimiento {
   width: 60px;
@@ -455,7 +474,7 @@ export default {
   pointer-events: all;
   background-color: rgba(128, 128, 128, 0.349);
 }
-#nombreNodo {
+#nombre {
   font-size: 12px;
   position: absolute;
   top: 105%;
@@ -472,7 +491,7 @@ export default {
   position: absolute;
   top: 110%;
   left: 110%;
-  width: 140px;
+  min-width: 140px;
   background-color: rgb(177, 177, 159);
   padding: 5px;
   z-index: 10;

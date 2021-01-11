@@ -1,108 +1,20 @@
-const mongoose = require("mongoose");
+var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+var charProhibidosNombre = /[^ a-zA-ZÀ-ž]/g;
+var charProhibidosNumeroTel = /[^0-9+-]/g;
+var emailChars = /\S+@\S+\.\S+/;
+var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
 
-let hoy = new Date();
-
-const esquemaUsuario = mongoose.Schema({
-    username: {
-        type: String,
-        min: 3,
-        max: 50,
-        unique: true
-    },
-    nombres: {
-        type: String,
-        max: 255,
-        min: 2,
-        required: true
-    },
-    apellidos: {
-        type: String,
-        max: 255,
-        min: 2,
-        required: true
-    },
-    fechaNacimiento: {
-        type: Date,
-        max: Date.now(),
-        min: '1900-01-01',
-        default: Date.now()
-    },
-    fotografia: {
-        type: Buffer,
-    },
-    lugarResidencia: {
-        type: String
-    },
-    numeroTel: {
-        type: String,
-    },
-    email: {
-        type: String,
-    },
-    nodosConocimiento: [{
-        tipo: {
-            type: String,
-            required: true,
-            max: 20,
-            default: "APRENDIENDO",
-            enum: ["aprendiendo", "aprendido", "objetivo"]
-        },
-        nodoConocimiento: {
-            type: String,
-        }
-    }],
-    password: {
-        type: String,
-        required: true,
-        max: 1024,
-        min: 6
-    },
-    permisos: {
-        type: String,
-        required: true,
-        max: 100,
-        min: 2,
-        default: "usuario",
-        enum: ["usuario", "atlasAdministrador", "administrador", "superadministrador"]
-    },
-    atlas: {
-        centroVista: {
-            x: {
-                type: Number,
-                default: 0
-            },
-            y: {
-                type: Number,
-                default: 0
-            }
-        }
-    }
-});
-
-esquemaUsuario.methods.getEdad = function () {
-    console.log(`convirtiendo ${this.fechaNacimiento} a edad`);
-    let hoy = new Date();
-    let edad = hoy - this.fechaNacimiento;
-    let edadAños = parseInt(edad / (60 * 60 * 24 * 365 * 1000));
-    return edadAños;
-}
-esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
-
-    var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-    var charProhibidosNombre = /[^ a-zA-ZÀ-ž]/g;
-    var charProhibidosNumeroTel = /[^0-9+-]/g;
-    var emailChars = /\S+@\S+\.\S+/;
-    var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
-
-
+export const validarDatosUsuario = function (datosUsuario) {
     var errores = [];
 
     for (let dato in datosUsuario) {
+
         if(!datosUsuario[dato]){
             errores.push(`El dato ${dato} no tenia valor`);
             return errores;
         }
-        datosUsuario[dato] = datosUsuario[dato].trim();
+        
+        datosUsuario[dato]=datosUsuario[dato].trim();
 
         if (dato == "nombres") {
             if (datosUsuario.nombres.length < 2) {
@@ -169,6 +81,3 @@ esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
 
     return errores;
 }
-
-
-module.exports = mongoose.model("Usuario", esquemaUsuario);
