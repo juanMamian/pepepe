@@ -11,6 +11,12 @@
         <div class="botonNav hoverGris" id="navProyectos">Proyectos</div>
       </router-link>
       <div class="botonNav hoverGris" id="navTrabajos">Trabajos</div>
+      <router-link to="/actividadesVirtuales2021" v-if="usuarioLogeado">
+        <div class="botonNav hoverGris" id="navActividadesVirtuales">Actividades virtuales</div>
+      </router-link>
+      <router-link to="/personas" v-if="usuarioAdministrador">
+        <div class="botonNav hoverGris" id="navActividadesVirtuales">Personas</div>
+      </router-link>
       <div id="botonesNavDerecha">
         <template v-if="logeado">
           <div

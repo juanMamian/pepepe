@@ -7,6 +7,8 @@ import VisorNodoConocimiento from "./components/VisorNodoConocimiento.vue"
 import Proyectos from "./components/Proyectos.vue"
 import Proyecto from "./components/Proyecto.vue"
 import Registro from "./components/Registro.vue"
+import ActividadesProfes from "./components/ActividadesProfes.vue"
+import Personas from "./components/Personas.vue"
 
 Vue.use(Router);
 
@@ -17,7 +19,9 @@ const routes=[
     {path:"/nodoConocimiento/:idNodo", component: VisorNodoConocimiento},
     {path:"/proyectos", name:"proyectos", component: Proyectos },
     {path:"/proyecto/:idProyecto", name:"verProyecto", component: Proyecto},
-    {path:"/registro", name:"registro", component: Registro}
+    {path:"/registro", name:"registro", component: Registro},
+    {path:"/actividadesVirtuales2021", component: ActividadesProfes},
+    {path:"/personas", name:"personas", component: Personas}
 ];
 
 export const router=new Router({

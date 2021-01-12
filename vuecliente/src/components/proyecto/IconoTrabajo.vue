@@ -81,6 +81,7 @@
             v-for="nodo of esteTrabajo.nodosConocimiento"
             @click.native="idNodoSeleccionado=nodo.id"
           />
+          <buscador-nodos-conocimiento/>
         </div>
       </div>
 
@@ -97,13 +98,15 @@
 import gql from "graphql-tag"
 import {fragmentoResponsables} from "../utilidades/recursosGql"
 import IconoPersona from "./IconoPersona.vue"
+import BuscadorNodosConocimiento from '../atlasConocimiento/BuscadorNodosConocimiento.vue';
 
 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
 export default {
   name: "IconoTrabajo",
   components:{
-    IconoPersona
+    IconoPersona,
+    BuscadorNodosConocimiento
   },
   data() {
     return {

@@ -3,6 +3,8 @@ import { typeDefs as tdNodos, resolvers as rNodos } from "./NodosConocimiento"
 import {typeDefs as tdUsuarios, resolvers as rUsuarios} from "./Usuarios"
 import {typeDefs as tdProyectos, resolvers as rProyectos} from "./Proyectos"
 import {typeDefs as tdTrabajos, resolvers as rTrabajos} from "./Trabajos"
+import {typeDefs as tdGruposEstudiantiles, resolvers as rGruposEstudiantiles} from "./GruposEstudiantiles"
+
 
 
 import merge from "lodash/merge"
@@ -52,7 +54,7 @@ const context = ({ req, res }: any) => {
 }
 
 export const aServer = new ApolloServer({
-    typeDefs: [typeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos],
-    resolvers: merge({}, rNodos, rUsuarios, rProyectos, rTrabajos),
+    typeDefs: [typeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos, tdGruposEstudiantiles],
+    resolvers: merge({}, rNodos, rUsuarios, rProyectos, rTrabajos, rGruposEstudiantiles),
     context
 });

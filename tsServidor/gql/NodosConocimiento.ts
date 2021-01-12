@@ -66,7 +66,8 @@ type NodoConocimiento{
     coordX: Int,
     coordY: Int,
     vinculos: [Vinculo],
-    coordsManuales: Coords    
+    coordsManuales: Coords,
+    resumen:String    
 }
 
 input NodoConocimientoInput{
@@ -81,15 +82,18 @@ type Error{
     mensaje: String
 }
 
-extend type Query{
-    todosNodos: [NodoConocimiento],
-    ping: String,
-    nodo(idNodo: String): NodoConocimiento
-},
+
 
 type infoNodosModificados{
     modificados: [NodoConocimiento]
 }
+
+extend type Query{
+    todosNodos: [NodoConocimiento],
+    ping: String,
+    nodo(idNodo: String): NodoConocimiento,
+    busquedaAmplia(palabrasBuscadas:[String]!):[NodoConocimiento]
+},
 
 extend type Mutation{
     setCoordsManuales(idNodo: String, coordsManuales:CoordsInput):infoNodosModificados,
@@ -103,6 +107,26 @@ extend type Mutation{
 
 export const resolvers = {
     Query: {
+        busquedaAmplia: async function(_:any, {palabrasBuscadas}, __:any){
+            console.log(`buscando nodos de conocimientos que contengan: ${palabrasBuscadas}`);
+            console.log(`tipo de input: ${typeof(palabrasBuscadas)}`);
+            if(palabrasBuscadas.length<1){
+                console.log(`No habia palabras buscadas`);
+            }
+            let palabrasBuscadasConcatenadas=palabrasBuscadas.join("|");
+            try{
+                var opciones=await Nodo.find({nombre:{$regex:palabrasBuscadasConcatenadas, $options:"gi"}}, "nombre resumen").limit(5);
+            }
+            catch(error){
+                console.log(". E: "+error );
+                throw new ApolloError("");
+            }
+            console.log(`opciones: ${opciones}`);
+            return [{
+                id:1,
+                nombre:"kuan"
+            }]
+        },
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             try {

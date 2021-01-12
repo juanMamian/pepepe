@@ -5,6 +5,7 @@ const router = require("express").Router();
 const Usuario = require("../model/Usuario");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const path=require("path");
 
 import { errorApi } from "../errorHandling"
 import { Request, Response } from "express";
@@ -155,8 +156,14 @@ router.get("/fotografias/:id", async function(req, res){
         console.log(`error buscando el usuario con fotografia. e: `+error);
         return res.status(400).send('');
     }
+    if(!elUsuario.fotografia){
+        res.sendFile(path.join(__dirname, '../public//media/iconos/usuarioDefault.png'));
+    }
+    else{
     res.set('Content-Type', 'image/png');
     res.send(elUsuario.fotografia);
+    }
+    return;
 });
 
 module.exports = router;

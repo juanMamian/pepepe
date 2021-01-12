@@ -8,6 +8,7 @@
       :src="this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id"
       alt=""
     />
+    <div id="nombres">{{estaPersona.nombres}}</div>
   </div>
 </template>
 
@@ -39,6 +40,8 @@ export default {
   user-select: none;
   width: 70px;
   height: 70px;
+  margin-bottom: 20px;
+
 }
 
 #fotografia {
@@ -51,5 +54,13 @@ export default {
 
 .yo {
   border: 2px solid purple;
+}
+
+#nombres{
+  position: absolute;
+  top: 105%;
+  left:50%;
+  transform: translateX(-50%);
+  text-align: center;
 }
 </style>

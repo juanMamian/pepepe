@@ -63,6 +63,7 @@ export const typeDefs = gql`
         lugarResidencia:String       
     }
     extend type Query {
+        todosUsuarios:[PublicUsuario],
         publicUsuario(idUsuario:ID!):PublicUsuario,
         yo:Usuario
     }
@@ -74,6 +75,19 @@ export const typeDefs = gql`
 
 export const resolvers = {
     Query: {
+        todosUsuarios: async function (_: any, args: any, context: contextoQuery) {
+            console.log(`Solicitud de la lista de todos los usuarios`);
+
+            try{
+                var todosUsuarios=await Usuario.find({}).exec();
+            }
+            catch(error){
+                console.log("Error fetching la lista de usuarios de la base de datos. E: "+error );
+                throw new ApolloError("Error de conexión a la base de datos");
+            }
+            console.log(`Enviando lista de todos los usuarios`);
+            return todosUsuarios;
+        },
         publicUsuario: async function (_: any, args: any, context: contextoQuery) {
 
             try {
