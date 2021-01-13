@@ -1,2 +1,2 @@
-DB_CONNECT = Conexion a la base de datos
-TOKEN_SECRET = passPc
+DB_CONNECT = 
+TOKEN_SECRET = 

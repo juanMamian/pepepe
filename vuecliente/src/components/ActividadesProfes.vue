@@ -20,11 +20,12 @@
 <script>
 import gql from "graphql-tag";
 import ContenidoGrupoProfe from './actividadesProfes/ContenidoGrupoProfe.vue';
+import { fragmentoResponsables } from "./utilidades/recursosGql";
+
 export default {
   name: "ActividadesProfe",
   components:{
-    ContenidoGrupoProfe
-
+    ContenidoGrupoProfe,
   },
   apollo: {
     gruposEstudiantiles: {
@@ -32,9 +33,13 @@ export default {
         query {
           gruposEstudiantiles {
             id
-            nombre            
+            nombre
+            estudiantes{
+              ...fragResponsables
+            }            
           }
         }
+        ${fragmentoResponsables}
       `,
       update: function({gruposEstudiantiles}){
           console.log(`Respuesta. ${JSON.stringify(gruposEstudiantiles)}`);

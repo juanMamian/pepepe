@@ -1,7 +1,7 @@
 <template>
   <div
     class="iconoPersona"
-    :class="{ yo: soyYo }"
+    :class="{ yo: soyYo, seleccionado:seleccionado }"
   >
     <img
       id="fotografia"
@@ -23,6 +23,7 @@ export default {
   props: {
     estaPersona: Object,
     aceptado: Boolean,
+    seleccionado:Boolean
   },
   computed: {
     soyYo: function () {
@@ -53,7 +54,7 @@ export default {
 }
 
 .yo {
-  border: 2px solid purple;
+  border: 1px solid purple;
 }
 
 #nombres{
@@ -62,5 +63,8 @@ export default {
   left:50%;
   transform: translateX(-50%);
   text-align: center;
+}
+.seleccionado{
+  border: 2px solid black;
 }
 </style>
