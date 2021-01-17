@@ -1,10 +1,10 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
-import Usuario from "../model/Usuario"
+import { Usuario, permisosDeUsuario } from "../model/Usuario"
 import { GraphQLDateTime } from "graphql-iso-date";
 
 interface Usuario {
     username: string,
-    permisos: string,
+    permisos: Array<string>,
     id: string
 }
 
@@ -42,7 +42,7 @@ export const typeDefs = gql`
         username:String,
         nodosConocimiento: [ConocimientoUsuario],
         atlas:infoAtlas,
-        permisos:String
+        permisos:[String]
     }
     input DatosEditablesUsuario{
         nombres:String,
@@ -65,24 +65,36 @@ export const typeDefs = gql`
     extend type Query {
         todosUsuarios:[PublicUsuario],
         publicUsuario(idUsuario:ID!):PublicUsuario,
+        usuariosProfe:[PublicUsuario],
         yo:Usuario
     }
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
-        editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario
+        editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
+        addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,        
     }
 `
 
 export const resolvers = {
     Query: {
+        usuariosProfe: async function (_: any, args: any, context: contextoQuery) {
+            console.log(`Fetching la lista de todos los profes`);
+            try {
+                var profes=await Usuario.find({permisos:"actividadesProfes-profe"}).exec();
+            } catch (error) {
+                console.log(`Error buscando profes en la base de datos`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return profes;
+        },
         todosUsuarios: async function (_: any, args: any, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
 
-            try{
-                var todosUsuarios=await Usuario.find({}).exec();
+            try {
+                var todosUsuarios = await Usuario.find({}).exec();
             }
-            catch(error){
-                console.log("Error fetching la lista de usuarios de la base de datos. E: "+error );
+            catch (error) {
+                console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
                 throw new ApolloError("Error de conexión a la base de datos");
             }
             console.log(`Enviando lista de todos los usuarios`);
@@ -114,37 +126,37 @@ export const resolvers = {
         }
     },
     Mutation: {
-        editarDatosUsuario:async function(_: any, { nuevosDatos }: any, context: contextoQuery) {
+        editarDatosUsuario: async function (_: any, { nuevosDatos }: any, context: contextoQuery) {
             console.log(`solicitud de edicion de datos de usuario`);
-            let credencialesUsuario=context.usuario;
+            let credencialesUsuario = context.usuario;
             console.log(`Usuario: Id: ${credencialesUsuario.id}, username: ${credencialesUsuario.username}`);
-            if(!credencialesUsuario.permisos){
+            if (!credencialesUsuario.permisos) {
                 console.log(`No habia campo permisos activado en las credenciales del usuario`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            try{
-                var elUsuario=await Usuario.findById(credencialesUsuario.id);
+            try {
+                var elUsuario = await Usuario.findById(credencialesUsuario.id);
             }
-            catch(error){
-                console.log("Error buscando el usuario en la base de datos. E: "+error );
+            catch (error) {
+                console.log("Error buscando el usuario en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            let errores:Array<string>=elUsuario.validarDatosUsuario(nuevosDatos);
+            let errores: Array<string> = elUsuario.validarDatosUsuario(nuevosDatos);
 
-            if(errores.length>0){
+            if (errores.length > 0) {
                 console.log(`Error validando datos: ${errores}`);
                 throw new ApolloError("Datos invalidos");
             }
             console.log(`asignando ${nuevosDatos} al usuario`);
 
-            try{
+            try {
                 Object.assign(elUsuario, nuevosDatos);
                 await elUsuario.save()
             }
-            catch(error){
-                console.log("Error guardando el usuario merged con nuevos datos. E: "+error );
+            catch (error) {
+                console.log("Error guardando el usuario merged con nuevos datos. E: " + error);
                 throw new ApolloError("Error guardando datos");
             }
             console.log(`Nuevos datos guardados`);
@@ -168,20 +180,63 @@ export const resolvers = {
 
             }
             return true;
+        },
+        addPermisoUsuario: async function (_: any, { idUsuario, nuevoPermiso }, contexto: contextoQuery) {
+            console.log(`Peticion de dar permiso ${nuevoPermiso} a un usuario con id ${idUsuario}`);
+            let credencialesUsuario = contexto.usuario;
+
+            if (!credencialesUsuario.permisos) {
+                console.log(`No habia permisos en las credenciales`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            let permisosValidos = ["superadministrador"];
+
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                console.log(`Usuario no tiene permisos válidos`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            if (!permisosDeUsuario.includes(nuevoPermiso)) {
+                console.log(`${nuevoPermiso} no es un permiso de usuario válido`);
+                console.log(`los permisos válidos son: ${permisosDeUsuario}`);
+                throw new AuthenticationError("Permiso no reconocido");
+            }
+
+            try {
+                var elUsuario = await Usuario.findById(idUsuario).exec();
+                if (!Array.isArray(elUsuario.permisos)) {
+                    console.log(`Los permisos no eran un array: Eran: ${elUsuario.permisos}`);
+                }
+                if (!elUsuario.permisos.includes(nuevoPermiso)) {
+                    console.log(`Añadiendo ${nuevoPermiso} a la lista de permisos`);
+                    elUsuario.permisos.push(nuevoPermiso);
+                }
+                else{
+                    console.log(`El usuario ya tenía ese permiso`);
+                }
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error updating el usuario en la base de datos. e. ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Permiso añadido.Quedó con: ${elUsuario.permisos}`);
+            return elUsuario;
         }
     },
-    Usuario:{
-        edad:function(parent:any, _:any, __:any){
-            if(!parent.fechaNacimiento){
+    Usuario: {
+        edad: function (parent: any, _: any, __: any) {
+            if (!parent.fechaNacimiento) {
                 return 0;
             }
-            let edad=Date.now()-parent.fechaNacimiento;
+            let edad = Date.now() - parent.fechaNacimiento;
             let edadAños = edad / (60 * 60 * 24 * 365 * 1000);
-            edadAños=parseInt(edadAños.toFixed());
+            edadAños = parseInt(edadAños.toFixed());
             return edadAños;
         }
     },
-    Date:{
+    Date: {
         GraphQLDateTime
     }
 

@@ -2,7 +2,7 @@ const multer=require("multer");
 const upload=multer();
 
 const router = require("express").Router();
-const Usuario = require("../model/Usuario");
+const Usuario = require("../model/Usuario").Usuario;
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path=require("path");

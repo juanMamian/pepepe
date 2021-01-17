@@ -1,32 +1,58 @@
 <template>
   <div class="actividadesProfes">
     <div id="vistaProfe">
-      <div id="barraGrupos">
+      <div id="barraGrupos" class="barraSeleccion">
         <div
-          class="selectorGrupoEstudiantil"
-          :key="grupo.id"
-          v-for="grupo of gruposEstudiantiles"
+          class="selectoresActividadesByGrupo paraProfes"
+          v-if="usuarioProfe"
         >
-          {{ grupo.nombre }}
+          <div class="categoriaSelectores">Grupos</div>
+          <div
+            class="selectorGrupoEstudiantil selectorBarra"
+            :class="{
+              selectorSeleccionado: idGrupoEstudiantilSeleccionado == grupo.id,
+            }"
+            :key="grupo.id"
+            v-for="grupo of gruposEstudiantiles"
+            @click="
+              abrirGrupoEstudiantil(grupo.id);
+              idGrupoEstudiantilSeleccionado = grupo.id;
+            "
+          >
+            {{ grupo.nombre }}
+          </div>
+        </div>
+        <div class="selectoresActividadesByProfe paraEstudiantes">
+                    <div class="categoriaSelectores">Profes</div>
+
+          <div
+            class="selectorActividadesProfe selectorBarra"
+            :key="profe.id"
+            v-for="profe of profes"
+            :class="{
+              selectorSeleccionado: idProfeSeleccionado == profe.id,
+            }"
+            @click="
+              abrirActividadesProfe(profe.id);
+              idProfeSeleccionado = profe.id;
+            "
+          >
+            {{ profe.nombres }}
+          </div>
         </div>
       </div>
-      <div id="contenidosGrupos">
-          <contenido-grupo-profe v-for="grupo of gruposEstudiantiles" :key="grupo.id" :esteGrupo="grupo"/>
-      </div>
+
+      <router-view> </router-view>
     </div>
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
-import ContenidoGrupoProfe from './actividadesProfes/ContenidoGrupoProfe.vue';
 import { fragmentoResponsables } from "./utilidades/recursosGql";
 
 export default {
   name: "ActividadesProfe",
-  components:{
-    ContenidoGrupoProfe,
-  },
   apollo: {
     gruposEstudiantiles: {
       query: gql`
@@ -34,23 +60,49 @@ export default {
           gruposEstudiantiles {
             id
             nombre
-            estudiantes{
-              ...fragResponsables
-            }            
+          }
+        }
+      `,
+      update: function ({ gruposEstudiantiles }) {
+        console.log(`Respuesta. ${JSON.stringify(gruposEstudiantiles)}`);
+        return gruposEstudiantiles;
+      },
+    },
+    profes: {
+      query: gql`
+        query {
+          usuariosProfe {
+            ...fragResponsables
           }
         }
         ${fragmentoResponsables}
       `,
-      update: function({gruposEstudiantiles}){
-          console.log(`Respuesta. ${JSON.stringify(gruposEstudiantiles)}`);
-          return gruposEstudiantiles;
-      }
+      update: function ({ usuariosProfe }) {
+        return usuariosProfe;
+      },
     },
   },
   data() {
     return {
       gruposEstudiantiles: [],
+      idGrupoEstudiantilSeleccionado: null,
     };
+  },
+  computed: {
+    usuarioProfe: function () {
+      if (!this.$store.state.usuario.permisos) return false;
+      return this.$store.state.usuario.permisos.includes(
+        "actividadesProfes-profe"
+      );
+    },
+  },
+  methods: {
+    abrirGrupoEstudiantil(id) {
+      this.$router.push("/actividadesVirtuales2021/grupoEstudiantil/" + id);
+    },
+    abrirActividadesProfe(id) {
+      this.$router.push("/actividadesVirtuales2021/profe/" + id);
+    },
   },
 };
 </script>
@@ -67,16 +119,28 @@ export default {
   grid-column: 1/2;
   background-color: burlywood;
 }
-.selectorGrupoEstudiantil {
+.selectorBarra {
   font-size: 18px;
   padding: 10px 10px;
   cursor: pointer;
 }
-.selectorGrupoEstudiantil:hover {
+.selectorSeleccionado {
   background-color: cornsilk;
+}
+.selectorBarra:hover {
+  background-color: cornsilk;
+}
+
+#contenidosGrupos {
+  padding: 10px 30px;
 }
 
 #contenidoGrupo {
   grid-column: 2/3;
+}
+.categoriaSelectores{
+  padding: 20px 10px;
+  font-weight: bold;
+  text-align: center;
 }
 </style>

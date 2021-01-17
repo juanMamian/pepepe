@@ -27,10 +27,12 @@ Vue.mixin({
       return this.$store.state.usuario.id ? true : false;
     },
     usuarioAdministrador: function(){
-      return (this.$store.state.usuario.permisos=="administrador" || this.$store.state.usuario.permisos=="superadministrador")? true: false
+      if(!this.$store.state.usuario.permisos) return false;
+      return (this.$store.state.usuario.permisos.includes("administrador"))? true: false
     },
     usuarioSuperadministrador:function(){
-      return (this.$store.state.usuario.permisos=="superadministrador")? true: false
+      if(!this.$store.state.usuario.permisos) return false;
+      return (this.$store.state.usuario.permisos.includes("superadministrador"))? true: false
     }
   }
 })

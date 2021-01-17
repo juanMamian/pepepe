@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "build": "vue-cli-service build --dest ../tsServidor/pepepe",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
@@ -17,6 +17,7 @@
     "core-js": "^3.6.5",
     "dotenv": "^8.2.0",
     "graphql": "^15.4.0",
+    "js-file-download": "^0.4.12",
     "vue": "^2.6.11",
     "vue-apollo": "^3.0.5",
     "vue-router": "^3.4.9",

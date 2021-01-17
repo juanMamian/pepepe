@@ -20,19 +20,44 @@
         <div
           class="controlesEstudiantes hoverGris botonesControles"
           v-if="usuarioSuperadministrador == true"
-          :class="{desactivado: idEstudianteSeleccionado==null}"
+          :class="{ desactivado: idEstudianteSeleccionado == null }"
           @click="removeEstudianteGrupo(idEstudianteSeleccionado)"
         >
           Retirar estudiante
         </div>
       </div>
-      <div id="listaEstudiantes" @click.self="idEstudianteSeleccionado=null">
+      <div id="listaEstudiantes" @click.self="idEstudianteSeleccionado = null">
         <icono-persona
           :estaPersona="persona"
           :key="persona.id"
           v-for="persona of esteGrupo.estudiantes"
-          :seleccionado="idEstudianteSeleccionado == persona.id ? true :false"
-          @click.native="idEstudianteSeleccionado=persona.id"
+          :seleccionado="idEstudianteSeleccionado == persona.id ? true : false"
+          @click.native="idEstudianteSeleccionado = persona.id"
+        />
+      </div>
+    </div>
+
+    <div id="zonaActividades" class="zonaPrimerNivel">
+      <div class="nombreZona">Actividades</div>
+      <div id="controlesActividades" class="controlesZona">
+        <div
+          class="controlesActividades botonesControles hoverGris"
+          v-if="usuarioProfe"
+          @click="crearNuevaActividad"
+        >
+          Crear actividad
+        </div>
+      </div>
+      <div id="listaActividades" @click.self="idActividadSeleccionada = null">
+        <actividad
+          v-for="actividad of esteGrupo.actividades"
+          :key="actividad.id"
+          :estaActividad="actividad"
+          :seleccionada="idActividadSeleccionada == actividad.id"
+          :idGrupo="esteGrupo.id"
+          @click.native="idActividadSeleccionada = actividad.id"
+          @eliminandose="eliminarActividad"
+          @cambiandoNombre="cambiarNombreActividad"
         />
       </div>
     </div>
@@ -43,17 +68,80 @@
 import IconoPersona from "../proyecto/IconoPersona";
 import gql from "graphql-tag";
 import { fragmentoResponsables } from "../utilidades/recursosGql";
+import Actividad from "./Actividad.vue";
+
+const QUERY_GRUPO = gql`
+  query($idGrupo: ID!) {
+    grupoEstudiantil(idGrupo: $idGrupo) {
+      id
+      nombre
+      estudiantes {
+        ...fragResponsables
+      }
+      actividades {
+        id
+        nombre
+        hayGuia
+        creador {
+          ...fragResponsables
+        }
+        desarrollos {
+          id
+          estudiante {
+            ...fragResponsables
+          }
+          participaciones {
+            id
+            fechaUpload
+            archivo {
+              extension
+            }
+            comentario
+          }
+        }
+      }
+    }
+  }
+  ${fragmentoResponsables}
+`;
 
 export default {
   name: "ContenidoGrupoProfe",
+  apollo: {
+    esteGrupo: {
+      query: QUERY_GRUPO,
+      variables() {
+        console.log(`asignando a idGrupo: ${this.$route.params.idGrupo}`);
+        return { idGrupo: this.$route.params.idGrupo };
+      },
+      update: function ({ grupoEstudiantil }) {
+        console.log(`Respuesta. ${JSON.stringify(grupoEstudiantil)}`);
+        return grupoEstudiantil;
+      },
+    },
+  },
   components: {
     IconoPersona,
+    Actividad,
   },
   data() {
-    return { idEstudianteAñadir: null, idEstudianteSeleccionado: null };
+    return {
+      idEstudianteAñadir: null,
+      idEstudianteSeleccionado: null,
+      idActividadSeleccionada: null,
+      esteGrupo: {
+        estudiantes: [],
+        actividades: [],
+      },
+    };
   },
-  props: {
-    esteGrupo: Object,
+  computed: {
+    usuarioProfe: function () {
+      if (!this.$store.state.usuario.permisos) return false;
+      return this.$store.state.usuario.permisos.includes(
+        "actividadesProfes-profe"
+      );
+    },
   },
   methods: {
     addEstudianteGrupo() {
@@ -85,7 +173,9 @@ export default {
         });
     },
     removeEstudianteGrupo(idEstudiante) {
-      console.log(`Retirando el estudiante con id ${idEstudiante} del grupo con id ${this.esteGrupo.id}`);
+      console.log(
+        `Retirando el estudiante con id ${idEstudiante} del grupo con id ${this.esteGrupo.id}`
+      );
       this.$apollo
         .mutate({
           mutation: gql`
@@ -111,10 +201,148 @@ export default {
         .catch((error) => {
           console.log("error: " + error);
         });
-    }
+    },
+    crearNuevaActividad() {
+      console.log(`enviando mutacion de crear nueva actividad`);
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idGrupo: ID!) {
+              crearActividadEnGrupoEstudiantil(idGrupo: $idGrupo) {
+                id
+                nombre
+                hayGuia
+                desarrollo {
+                  id
+                }
+                creador {
+                  ...fragResponsables
+                }
+              }
+            }
+            ${fragmentoResponsables}
+          `,
+          variables: {
+            idGrupo: this.esteGrupo.id,
+          },
+          update: (store, { data: { crearActividadEnGrupoEstudiantil } }) => {
+            console.log(
+              `respuesta: ${JSON.stringify(crearActividadEnGrupoEstudiantil)}`
+            );
+            const nuevaActividad = crearActividadEnGrupoEstudiantil;
+            try {
+              let cache = store.readQuery({
+                query: QUERY_GRUPO,
+                variables: { idGrupo: this.esteGrupo.id },
+              });
+              console.log(`cache: ${JSON.stringify(cache)}`);
+              cache.grupoEstudiantil.actividades.push(nuevaActividad);
+              console.log(`cache: ${JSON.stringify(cache)}`);
+
+              store.writeQuery({
+                query: QUERY_GRUPO,
+                variables: { idGrupo: this.esteGrupo.id },
+                data: cache,
+              });
+              console.log(`cache actualizado`);
+            } catch (error) {
+              console.log(`Error actualizando cache: ${error}`);
+              return;
+            }
+          },
+        })
+        .then((respuesta) => {
+          console.log(`respuesta. ${respuesta}`);
+        })
+        .catch((error) => {
+          console.log(`error: ${error}`);
+        });
+    },
+    eliminarActividad(idActividad) {
+      console.log(`Evento de eliminar actividad ${idActividad}`);
+      if (!this.esteGrupo.actividades.some((a) => a.id == idActividad)) return;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idActividad: ID!, $idGrupo: ID!) {
+              eliminarActividadDeGrupoEstudiantil(
+                idGrupo: $idGrupo
+                idActividad: $idActividad
+              )
+            }
+          `,
+          variables: {
+            idActividad,
+            idGrupo: this.esteGrupo.id,
+          },
+          update: (
+            store,
+            { data: { eliminarActividadDeGrupoEstudiantil } }
+          ) => {
+            console.log(
+              `data: ${JSON.stringify(eliminarActividadDeGrupoEstudiantil)}`
+            );
+            let eliminado = eliminarActividadDeGrupoEstudiantil;
+
+            if (eliminado) {
+              try {
+                let cache = store.readQuery({
+                  query: QUERY_GRUPO,
+                  variables: { idGrupo: this.esteGrupo.id },
+                });
+                let indexE = cache.grupoEstudiantil.actividades.findIndex(
+                  (a) => a.id == idActividad
+                );
+                if (indexE > -1) {
+                  cache.grupoEstudiantil.actividades.splice(indexE, 1);
+                }
+                store.writeQuery({
+                  query: QUERY_GRUPO,
+                  variables: { idGrupo: this.esteGrupo.id },
+                  data: cache,
+                });
+              } catch (error) {
+                console.log(`Error actualizando cache`);
+              }
+            }
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log("error: " + error);
+        });
+    },
+    cambiarNombreActividad({ idActividad, nuevoNombre }) {
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idGrupo: ID!, $idActividad: ID!, $nuevoNombre: String!) {
+              cambiarNombreActividadGrupoEstudiantil(
+                idGrupo: $idGrupo
+                idActividad: $idActividad
+                nuevoNombre: $nuevoNombre
+              ) {
+                id
+                nombre
+              }
+            }
+          `,
+          variables: {
+            idGrupo: this.esteGrupo.id,
+            idActividad,
+            nuevoNombre,
+          },
+        })
+        .then((data) => {
+          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
+        })
+        .catch((error) => {
+          console.log(`error: ${error}`);
+        });
+    },
   },
 };
-
 </script>
 
 <style scoped>
@@ -132,7 +360,7 @@ export default {
   display: flex;
 }
 
-.iconoPersona{
+.iconoPersona {
   margin-left: 10px;
   margin-right: 10px;
 }
@@ -155,8 +383,20 @@ export default {
   padding: 3px 5px;
   border-width: 0px;
 }
-.desactivado{
+.desactivado {
   opacity: 0.5;
   pointer-events: none;
+}
+
+#listaActividades {
+  padding: 20px 50px;
+}
+
+.actividad {
+  margin-top: 15px;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 700px;
+  border-radius: 10px;
 }
 </style>

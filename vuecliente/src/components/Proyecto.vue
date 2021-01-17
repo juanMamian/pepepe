@@ -660,7 +660,6 @@ export default {
   padding: 5px 10px;
 }
 
-
 #nombreProyecto {
   margin-top: 15px;
   font-size: 23px;

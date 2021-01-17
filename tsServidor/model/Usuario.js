@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-let hoy = new Date();
+const permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesProfes-profe"];
 
 const esquemaUsuario = mongoose.Schema({
     username: {
@@ -58,12 +58,12 @@ const esquemaUsuario = mongoose.Schema({
         min: 6
     },
     permisos: {
-        type: String,
+        type: [String],
         required: true,
         max: 100,
         min: 2,
-        default: "usuario",
-        enum: ["usuario", "atlasAdministrador", "administrador", "superadministrador"]
+        default: ["usuario"],
+        enum: permisosDeUsuario
     },
     atlas: {
         centroVista: {
@@ -98,7 +98,7 @@ esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
     var errores = [];
 
     for (let dato in datosUsuario) {
-        if(!datosUsuario[dato]){
+        if (!datosUsuario[dato]) {
             errores.push(`El dato ${dato} no tenia valor`);
             return errores;
         }
@@ -171,4 +171,5 @@ esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
 }
 
 
-module.exports = mongoose.model("Usuario", esquemaUsuario);
+module.exports = { Usuario: mongoose.model("Usuario", esquemaUsuario), permisosDeUsuario }
+

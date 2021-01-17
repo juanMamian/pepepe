@@ -64,7 +64,6 @@ export default {
         this.dibujarVinculosGrises();
       },
     },
-
   },
   data() {
     return {
@@ -87,7 +86,7 @@ export default {
   },
   computed: {
     nodoSeleccionado: function () {
-      if(!this.todosNodos){
+      if (!this.todosNodos) {
         console.log(`NO HAY NODOS`);
         return false;
       }
@@ -221,7 +220,7 @@ export default {
           variables: {
             idUsuario: this.$store.state.usuario.id,
           },
-        fetchPolicy:"network-only",          
+          fetchPolicy: "network-only",
         })
         .then(function ({ data }) {
           console.log(`respuesta: ${JSON.stringify(data)} `);
@@ -230,7 +229,7 @@ export default {
           dis.$set(dis.centroVista, "y", coords.y);
         })
         .catch(function (error) {
-          console.log(`error: ${error}`);
+          console.log(`error fetching centro vista: ${error}`);
         });
     },
     panVista(e) {
@@ -393,13 +392,14 @@ export default {
     nodoSeleccionado: function () {
       this.actualizarTrazos++;
     },
-    route:function(to){
+    route: function (to) {
       console.log(`cambio de navegación a ${to.path}`);
-      //this.descargarCentroVista();
-    }
+    },
   },
   mounted() {
-    this.descargarCentroVista();
+    if (this.$store.state.usuario.centroVista) {
+      this.descargarCentroVista();
+    }
   },
   beforeRouteLeave(_, __, next) {
     console.log(

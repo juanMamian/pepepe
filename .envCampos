@@ -1,2 +1,2 @@
-DB_CONNECT =    
+DB_CONNECT = 
 JWT_SECRET = 

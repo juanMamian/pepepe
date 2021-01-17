@@ -2,7 +2,7 @@ import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
 const Proyecto = require("../model/Proyecto").modeloProyecto;
 const Trabajo = require("../model/Trabajo").modeloTrabajo;
 import { contextoQuery } from "./tsObjetos"
-import Usuario from "../model/Usuario";
+import {Usuario} from "../model/Usuario";
 
 export const typeDefs = gql`
     type Proyecto{
@@ -86,7 +86,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (idUsuario != credencialesUsuario.id && credencialesUsuario.permisos != "superadministrador") {
+            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion añadiendo posible responsable del proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -133,7 +133,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (elProyecto.responsables.length>0 && !elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (elProyecto.responsables.length>0 && !elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -189,7 +189,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (idUsuario!=credencialesUsuario.id && credencialesUsuario.permisos != "superadministrador") {
+            if (idUsuario!=credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion removiendo responsable o posible responsable de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -242,7 +242,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -304,7 +304,7 @@ export const resolvers = {
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -338,7 +338,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -385,7 +385,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -427,7 +427,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -463,7 +463,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (idUsuario != credencialesUsuario.id && credencialesUsuario.permisos != "superadministrador") {
+            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -518,7 +518,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (idUsuario != credencialesUsuario.id && credencialesUsuario.permisos != "superadministrador") {
+            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -579,7 +579,7 @@ export const resolvers = {
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -611,7 +611,7 @@ export const resolvers = {
             }
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -657,7 +657,7 @@ export const resolvers = {
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -698,7 +698,7 @@ export const resolvers = {
             }
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos != "superadministrador") {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }

@@ -1,6 +1,6 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
 const Nodo = require("../model/atlas/Nodo").modeloNodo;
-import {contextoQuery} from "./tsObjetos"
+import { contextoQuery } from "./tsObjetos"
 /*
 interface NodoConocimiento{
     nombre: string,
@@ -18,22 +18,22 @@ interface NodoConocimiento{
 }
 */
 
-interface Coords{
+interface Coords {
     x: number,
     y: number
 }
 
-interface NodoConocimiento{
+interface NodoConocimiento {
     id: string
     nombre: string,
     coordX: number,
     coordY: number,
     vinculos: Array<Vinculo>,
-    coordsManuales: Array<Coords>    
+    coordsManuales: Array<Coords>
 }
 
-interface Vinculo{
-    id:string,
+interface Vinculo {
+    id: string,
     tipo: string,
     idRef: string,
     rol: string
@@ -107,24 +107,24 @@ extend type Mutation{
 
 export const resolvers = {
     Query: {
-        busquedaAmplia: async function(_:any, {palabrasBuscadas}, __:any){
+        busquedaAmplia: async function (_: any, { palabrasBuscadas }, __: any) {
             console.log(`buscando nodos de conocimientos que contengan: ${palabrasBuscadas}`);
-            console.log(`tipo de input: ${typeof(palabrasBuscadas)}`);
-            if(palabrasBuscadas.length<1){
+            console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
+            if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
             }
-            let palabrasBuscadasConcatenadas=palabrasBuscadas.join("|");
-            try{
-                var opciones=await Nodo.find({nombre:{$regex:palabrasBuscadasConcatenadas, $options:"gi"}}, "nombre resumen").limit(5);
+            let palabrasBuscadasConcatenadas = palabrasBuscadas.join("|");
+            try {
+                var opciones = await Nodo.find({ nombre: { $regex: palabrasBuscadasConcatenadas, $options: "gi" } }, "nombre resumen").limit(5);
             }
-            catch(error){
-                console.log(". E: "+error );
+            catch (error) {
+                console.log(". E: " + error);
                 throw new ApolloError("");
             }
             console.log(`opciones: ${opciones}`);
             return [{
-                id:1,
-                nombre:"kuan"
+                id: 1,
+                nombre: "kuan"
             }]
         },
         todosNodos: async function () {
@@ -152,25 +152,30 @@ export const resolvers = {
         }
     },
     Mutation: {
-        async eliminarNodo(_: any, { idNodo }: any, { req }: any) {
-            console.log(`eliminando nodo con id ${idNodo} por el usuario ${req.user.id}`);
-            let permisos: string = req.usuario.permisos;
-            if (permisos == "atlasAdministrador" || permisos == "administrador" || permisos == "superadministrador") {
-                try {
-                    await Nodo.deleteOne({ _id: idNodo }).exec();
-                } catch (error) {
-                    console.log(`error eliminando nodo`);
-                }
-                console.log(`nodo ${idNodo} eliminado`);
-                return idNodo;
-            }
-            else {
+        async eliminarNodo(_: any, { idNodo }: any, contexto: contextoQuery) {
+            console.log(`peticion de eliminar nodo con id ${idNodo}`);
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
                 throw new AuthenticationError("No autorizado");
             }
+            try {
+                await Nodo.deleteOne({ _id: idNodo }).exec();
+            } catch (error) {
+                console.log(`error eliminando nodo`);
+            }
+            console.log(`nodo ${idNodo} eliminado`);
+            return idNodo;
+
+
+
         },
         async crearNodo(_: any, { infoNodo }: any) {
             console.log(`Creando nuevo nodo de conocimiento`);
-            let modificados:Array<NodoConocimiento> = new Array();
+            let modificados: Array<NodoConocimiento> = new Array();
             let nuevoNodo = new Nodo({
                 ...infoNodo
             });
@@ -187,34 +192,38 @@ export const resolvers = {
                 modificados
             }
         },
-        setCoordsManuales: async function (_: any, { idNodo, coordsManuales }: any, {usuario}:contextoQuery) {
-            console.log(`movimiento de coords manuales por ${usuario.username} con permisos ${usuario.permisos}`);
-            let permisos: string = usuario.permisos;
-            if (permisos == "atlasAdministrador" || permisos == "administrador" || permisos == "superadministrador") {
+        setCoordsManuales: async function (_: any, { idNodo, coordsManuales }: any, contexto: contextoQuery) {
+            console.log(`peticion de movimiento de coords manuales`);
 
-                let modificados:Array<NodoConocimiento> = new Array();
-                try {
-                    var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
-                }
-                catch (error) {
-                    console.log(`error buscando el nodo. E: ` + error);
-                }
-                elNodo.coordsManuales = coordsManuales;
-                try {
-                    console.log(`guardando coords de ${elNodo.nombre} en la base de datos`);
-                    await elNodo.save();
-                } catch (error) {
-                    console.log(`error guardando el nodo con coordenadas manuales: ${error}`);
-                }
-                modificados.push(elNodo);
-                return { modificados };
-            }
-            else{
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
                 throw new AuthenticationError("No autorizado");
             }
+            let modificados: Array<NodoConocimiento> = new Array();
+            
+            try {
+                var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
+            }
+            catch (error) {
+                console.log(`error buscando el nodo. E: ` + error);
+            }
+            elNodo.coordsManuales = coordsManuales;
+            try {
+                console.log(`guardando coords de ${elNodo.nombre} en la base de datos`);
+                await elNodo.save();
+            } catch (error) {
+                console.log(`error guardando el nodo con coordenadas manuales: ${error}`);
+            }
+            modificados.push(elNodo);
+            return { modificados };
+
         },
         crearVinculo: async function (_: any, args: any) {
-            let modificados:Array<NodoConocimiento> = [];
+            let modificados: Array<NodoConocimiento> = [];
             console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
             try {
                 var nodoSource = await Nodo.findById(args.idSource, "vinculos");
@@ -222,7 +231,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
-                
+
             }
 
             //Buscar y eliminar vinculos previos entre estos dos nodos.
@@ -261,14 +270,14 @@ export const resolvers = {
             return { modificados };
         },
         eliminarVinculoFromTo: async function (_: any, args: any) {
-            let modificados:Array<NodoConocimiento> = [];
+            let modificados: Array<NodoConocimiento> = [];
             console.log(`desvinculando ${args.idSource} de ${args.idTarget}`);
             try {
                 var elUno = await Nodo.findById(args.idSource, "nombre vinculos");
                 var elOtro = await Nodo.findById(args.idTarget, "nombre vinculos");
             }
             catch (error) {
-                console.log(`error . e: ` + error);                
+                console.log(`error . e: ` + error);
             }
 
             for (var vinculo of elUno.vinculos) {
@@ -284,7 +293,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error . e: ` + error);
-                
+
             }
             modificados.push(elUno);
             modificados.push(elOtro);
@@ -293,7 +302,7 @@ export const resolvers = {
 
         },
         editarNombreNodo: async function (_: any, { idNodo, nuevoNombre }: any) {
-            let modificados:Array<NodoConocimiento> = [];
+            let modificados: Array<NodoConocimiento> = [];
             try {
                 var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
             }
@@ -302,7 +311,7 @@ export const resolvers = {
             }
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
             var charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-            if(charProhibidosNombreNodo.test(nuevoNombre)){
+            if (charProhibidosNombreNodo.test(nuevoNombre)) {
                 throw new ApolloError("Nombre ilegal");
             }
 
@@ -320,5 +329,5 @@ export const resolvers = {
     }
 };
 
- 
+
 

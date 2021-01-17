@@ -4,11 +4,11 @@ import {typeDefs as tdUsuarios, resolvers as rUsuarios} from "./Usuarios"
 import {typeDefs as tdProyectos, resolvers as rProyectos} from "./Proyectos"
 import {typeDefs as tdTrabajos, resolvers as rTrabajos} from "./Trabajos"
 import {typeDefs as tdGruposEstudiantiles, resolvers as rGruposEstudiantiles} from "./GruposEstudiantiles"
-
-
-
 import merge from "lodash/merge"
+import {InterfaceCredencialesUsuario} from "./tsObjetos"
 const jwt = require("jsonwebtoken");
+
+
 
 const typeDefs = gql`
     type Query{
@@ -29,9 +29,9 @@ const typeDefs = gql`
 
 const context = ({ req, res }: any) => {
    // console.log(`creando contexto`);
-    var usuario = {
-        id: null,
-        permisos: null
+    var usuario:InterfaceCredencialesUsuario = {
+        id: "",
+        permisos: []
     }
     let headers: any = req.headers;
    // console.log(`headers: ${JSON.stringify(headers)}`);
@@ -43,9 +43,9 @@ const context = ({ req, res }: any) => {
     }
     catch (error) {
         console.log(`Error verificando el token.E: ${error}`);
-        var usuario = {
-            id: null,
-            permisos: null
+        usuario = {
+            id: "",
+            permisos: []
         }
     }
     //console.log(`Decodifcado el token así: ${JSON.stringify(usuario)}`);
