@@ -13,42 +13,68 @@
     </div>
 
     <div id="zonaGuia" v-show="seleccionada" class="zona">
-      <div class="nombreZona"       :class="{nombreHayGuia:estaActividad.hayGuia, nombreNoHayGuia: !estaActividad.hayGuia}"
->Guía</div>
+      <div
+        class="nombreZona"
+        :class="{
+          nombreHayGuia: estaActividad.hayGuia,
+          nombreNoHayGuia: !estaActividad.hayGuia,
+        }"
+      >
+        Guía
+      </div>
       <input
         type="file"
         id="inputNuevaGuia"
         ref="inputNuevaGuia"
         @change="subirNuevaGuia"
+        v-if="usuarioCreadorActividad"
       />
 
       <div
         id="botonDescargarGuia"
         @click="descargarGuia"
         v-if="estaActividad.hayGuia"
-      >
-        Descargar guia
-      </div>
+      ></div>
     </div>
 
-    <div id="zonaParticipantes" class="zona">
+    <div
+      id="zonaParticipantes"
+      class="zona"
+      v-if="usuarioCreadorActividad"
+      v-show="seleccionada"
+    >
       <div class="nombreZona">Participantes</div>
-      <div id="controlesParticipantes" class="controlesZona">       
-        
-      </div>
-      <div id="listaParticipantes" @click.self="idParticipanteSeleccionado = null">
+      <div id="controlesParticipantes" class="controlesZona"></div>
+      <div
+        id="listaParticipantes"
+        @click.self="idParticipanteSeleccionado = null"
+      >
         <icono-persona
           :estaPersona="desarrollo.estudiante"
           :key="desarrollo.estudiante.id"
           v-for="desarrollo of estaActividad.desarrollos"
-          :seleccionado="idEstudianteSeleccionado == desarrollo.estudiante.id ? true : false"
+          :seleccionado="
+            idEstudianteSeleccionado == desarrollo.estudiante.id ? true : false
+          "
           @click.native="idEstudianteSeleccionado = desarrollo.estudiante.id"
         />
       </div>
     </div>
 
-    <div id="zonaDesarrollo">
-
+    <div id="zonaDesarrollos" class="zona" v-show="seleccionada">
+      <div class="desarrollo" id="miDesarrollo" v-if="!usuarioCreadorActividad">
+        <participacion-estudiante
+          :key="participacion.id"
+          :indice="index"
+          :nombreEstudiante="'yo'"
+          v-for="(participacion, index) of miDesarrollo.participaciones"
+          :estaParticipacion="participacion"
+        />
+        <mi-participacion
+          :idActividad="estaActividad.id"
+          @reloadMiDesarrollo="reloadDesarrolloUsuario()"
+        />
+      </div>
     </div>
 
     <div id="controlesActividad" v-show="seleccionada == true">
@@ -63,15 +89,61 @@
 import axios from "axios";
 import FileDownload from "js-file-download";
 import gql from "graphql-tag";
+import MiParticipacion from "./MiParticipacion.vue";
+import ParticipacionEstudiante from "./ParticipacionEstudiante.vue";
+import IconoPersona from "../proyecto/IconoPersona.vue";
+import { fragmentoResponsables } from "../utilidades/recursosGql";
 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
+const QUERY_MI_DESARROLLO = gql`
+  query($idEstudiante: ID!, $idActividad: ID!) {
+    desarrolloUsuarioEnActividadEstudiantil(
+      idActividad: $idActividad
+      idEstudiante: $idEstudiante
+    ) {
+      id
+      estado
+      participaciones {
+        id
+        fechaUpload
+        comentario
+        archivo {
+          extension
+          nombre
+          accesible
+        }
+        autor {
+          ...fragResponsables
+        }
+      }
+    }
+  }
+  ${fragmentoResponsables}
+`;
+
 export default {
+  components: { MiParticipacion, ParticipacionEstudiante, IconoPersona },
   name: "Actividad",
-  apollo: {},
+  apollo: {
+    miDesarrollo: {
+      query: QUERY_MI_DESARROLLO,
+      variables() {
+        return {
+          idEstudiante: this.$store.state.usuario.id,
+          idActividad: this.estaActividad.id,
+        };
+      },
+      update: ({ desarrolloUsuarioEnActividadEstudiantil }) =>
+        desarrolloUsuarioEnActividadEstudiantil,
+    },
+  },
   data() {
     return {
       nombreEditandose: false,
-      idEstudianteSeleccionado:null
+      idEstudianteSeleccionado: null,
+      miDesarrollo: {
+        participaciones: [],
+      },
     };
   },
   props: {
@@ -179,6 +251,26 @@ export default {
           alert("Archivo no encontrado");
         });
     },
+    reloadDesarrolloUsuario() {
+      
+      this.$apollo
+        .query({
+          query: QUERY_MI_DESARROLLO,
+          fetchPolicy: "network-only",
+          variables: {
+            idEstudiante: this.$store.state.usuario.id,
+            idActividad: this.estaActividad.id,
+          },
+          
+        })
+        .then(() => {
+        })
+        .catch((error) => {
+          console.log(
+            `Error en query de actualizacion de mi desarrollo. E: ${error}`
+          );
+        });
+    },
   },
   computed: {
     usuarioCreadorActividad: function () {
@@ -224,17 +316,32 @@ export default {
 }
 #botonDescargarGuia {
   margin-top: 15px;
+  cursor: pointer;
+  background-image: url("/iconos/documento.png");
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-size: 100% 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
-.nombreZona{
+.nombreZona {
   font-size: 16px;
   font-weight: bold;
   margin-bottom: 10px;
 }
 
-.nombreNoHayGuia{
+.nombreNoHayGuia {
   background-color: red;
 }
-.nombreHayGuia{
+.nombreHayGuia {
   background-color: green;
+}
+
+.participacionEstudiante {
+  margin-top: 15px;
+}
+.miParticipacion{
+  margin-top:20px;
 }
 </style>

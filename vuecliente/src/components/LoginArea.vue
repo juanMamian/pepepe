@@ -30,6 +30,7 @@
 
 <script>
 import axios from "axios";
+import gql from 'graphql-tag';
 
 var charProhibidosUsername = /[^a-zA-Z0-9_]/g;
 var charProhibidosPassword = /[^a-zA-Z0-9*@_-]/g;
@@ -72,6 +73,7 @@ export default {
   },
   methods: {
     iniciarSesion: function () {
+      let dis=this;
       //Validacion de caracteres
       if (
         charProhibidosUsername.test(this.username) ||
@@ -80,7 +82,6 @@ export default {
         this.username.length < minUsername
       )
         return;
-      let dis = this;
 
       axios
         .post(this.serverUrl + "/api/usuarios/login", {
@@ -90,13 +91,36 @@ export default {
         .then(function (respuesta) {
           if (respuesta.data.username == dis.username) {
             dis.$store.commit("logearse", respuesta.data.token);
-            dis.$router.push("/miperfil")
+            dis.$apollo.query({
+              query:gql`
+              query{
+                yo{
+                  id
+                  idGrupoEstudiantil
+                  nombreGrupoEstudiantil
+                  nombres
+                  apellidos
+                }
+              }
+              `,  
+              fetchPolicy:"network-only"            
+            }).then(({data:{yo}})=>{
+              console.log(`Datos personales: ${JSON.stringify(yo)}`);
+              dis.$store.commit("setDatosUsuario", yo);
+              dis.$router.push("/miperfil");
+            }).catch((error)=>{
+              console.log(`Error descargando datos gql. E: ${error}`);
+            });
+
+            
           }
         })
         .catch(function (error) {
           console.log(`error: ${error}`);
           dis.$store.commit("deslogearse");
         });
+
+      
     },
     deslogearse: function () {
       //Logout en vuex y en apollo

@@ -1,6 +1,7 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
 import fs from "fs";
 import util from "util";
+import mongoose from "mongoose";
 const access=util.promisify(fs.access);
 const GrupoEstudiantil = require("../model/actividadesProfes/GrupoEstudiantil").modeloGrupoEstudiantil;
 const Usuario=require("../model/Usuario").Usuario;
@@ -13,11 +14,13 @@ export const typeDefs=gql`
     type InfoArchivo{
         nombre: String,
         extension: String,
+        accesible:Boolean,
     }
 
     type ParticipacionActividadGrupoEstudiantil{
         id: ID,
         fechaUpload:Date,
+        autor:PublicUsuario,
         comentario:String,
         archivo:InfoArchivo,        
     }
@@ -48,7 +51,10 @@ export const typeDefs=gql`
         grupoEstudiantil(idGrupo:ID!):GrupoEstudiantil,
         gruposEstudiantiles:[GrupoEstudiantil],
         addEstudianteGrupoEstudiantil:GrupoEstudiantil,
-        actividadDeGrupoEstudiantil(idGrupo:ID!, idActividad:ID!):ActividadGrupoEstudiantil
+        actividadDeGrupoEstudiantil(idGrupo:ID!, idActividad:ID!):ActividadGrupoEstudiantil,
+        actividadesEstudiantilesDeProfe(idProfe:ID!):[ActividadGrupoEstudiantil],
+        actividadesEstudiantilesDeProfeDeGrupo(idProfe:ID!, idGrupo: ID!):[ActividadGrupoEstudiantil],
+        desarrolloUsuarioEnActividadEstudiantil(idEstudiante:ID!, idActividad:ID!):DesarrolloActividadGrupoEstudiantil,
     }
     extend type Mutation{
         addEstudianteGrupoEstudiantil(idEstudiante: ID!, idGrupoEstudiantil:ID!):GrupoEstudiantil,
@@ -61,6 +67,49 @@ export const typeDefs=gql`
 
 export const resolvers={
     Query:{
+        desarrolloUsuarioEnActividadEstudiantil:async function(_:any, {idEstudiante, idActividad}:any, contexto:contextoQuery){
+            console.log(`Solicitud de desarrollo de un usuario con id ${idEstudiante} en la actividad con id ${idActividad}`);
+            // let credencialesUsuario=contexto.usuario;
+            //     if(!credencialesUsuario.id){
+            //         console.log(`Usuario no logeado`);
+            //         throw new AuthenticationError("No autorizado");
+            // }
+            
+            try {
+                var elUsuario=await Usuario.findById(idEstudiante).exec();
+                if(!elUsuario) throw new Error("Usuario no encontrado en la base de datos");
+            } catch (error) {
+                console.log(`Error buscando al usuario con id ${idEstudiante} en la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Buscando el grupo`);
+
+            try {
+                var elGrupo=await GrupoEstudiantil.findOne({"actividades._id": mongoose.Types.ObjectId(idActividad)}).exec();
+                if(!elGrupo){
+                    console.log(`Grupo no encontrado`);
+                    throw new Error("Grupo no encontrado")
+                }
+                
+            } catch (error) {
+                console.log(`Error buscando la actividad en los grupos estudiantiles. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Encontrado grupo: ${elGrupo.nombre}`);
+            let laActividad=elGrupo.actividades.id(idActividad);
+
+            console.log(`Encontrada actividad: ${laActividad.nombre}`);
+
+            let elDesarrollo=laActividad.desarrollos.find(d=>d.idEstudiante==idEstudiante);
+
+            if(!elDesarrollo)elDesarrollo=[];
+            console.log(`Enviando un desarrollo`);
+
+            return elDesarrollo;
+
+        },
         grupoEstudiantil:async function(_:any, {idGrupo}:any, contexto:contextoQuery){
             try {
                 var elGrupoEstudiantil= GrupoEstudiantil.findById(idGrupo).exec();
@@ -112,7 +161,35 @@ export const resolvers={
                 throw new ApolloError("Error conectando con la base de datos");
             }
             return laActividad;
-        }
+        },
+        actividadesEstudiantilesDeProfe:async function(_:any,{idProfe}:any, contexto: contextoQuery){
+            console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe}`);
+            try {
+                var todasLasActividades=await GrupoEstudiantil.find({}).distinct("actividades").exec();
+            } catch (error) {
+                console.log(`Error fetching grupos en la base de datos: E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let actividadesDelProfe=todasLasActividades.filter(a=>a.idCreador==idProfe);   
+            console.log(`Enviando ${actividadesDelProfe.length} actividades del profe.`);          
+            
+            return actividadesDelProfe;
+        },
+        actividadesEstudiantilesDeProfeDeGrupo:async function(_:any,{idProfe, idGrupo}:any, contexto: contextoQuery){
+            console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe} para el grupo con id ${idGrupo}`);
+            try {
+                var actividades=await GrupoEstudiantil.findById(idGrupo).distinct("actividades").exec();
+            } catch (error) {
+                console.log(`Error fetching grupos en la base de datos: E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let actividadesDelProfe=actividades.filter(a=>a.idCreador==idProfe);   
+            console.log(`Enviando ${actividadesDelProfe.length} actividades del profe.`);          
+            
+            return actividadesDelProfe;
+        },
     },
     Mutation:{
         addEstudianteGrupoEstudiantil:async function(_:any, {idEstudiante, idGrupoEstudiantil}, contexto:contextoQuery){
@@ -376,6 +453,24 @@ export const resolvers={
             return usuariosEstudiantes;
         },
     },
+    ParticipacionActividadGrupoEstudiantil : {
+        autor: async function (parent: any, _: any, __: any) {
+            if (!parent.idAutor) {
+                return null;
+            }
+            let idAutor = parent.idAutor;
+
+            try {
+                var usuarioAutor = await Usuario.findById(idAutor).exec();
+            } catch (error) {
+                console.log(`error buscando al autor de la participacion. E: ${error}`);
+                return null;
+            }
+
+
+            return usuarioAutor;
+        },
+    },
 
     ActividadGrupoEstudiantil:{
         creador:async function(parent:any, _:any, __:any){
@@ -393,7 +488,18 @@ export const resolvers={
             return usuarioCreador;
         },
         hayGuia: async function(parent: any){
-            let idActividad=parent.id;
+            let idActividad=null;
+            if("id" in parent){
+                idActividad=parent.id                                
+            }
+            else if("_id" in parent){
+                idActividad=parent._id.toString();
+            }
+            else{
+                console.log(`No habia campo id en el parent para decidir si HAY GUIA`);
+                return false
+            }
+            
             let pathGuia=path.join(__dirname, "../public/actividadesProfes/actividades", idActividad, "guia.pdf");
             
             try {
@@ -408,6 +514,9 @@ export const resolvers={
                 return false;
             }
             return true;
+        },
+        id: async function(parent: any){
+            return parent._id;
         }
     },
 
@@ -426,6 +535,41 @@ export const resolvers={
             }
             return usuarioEstudiante;
         },
+    },
+    InfoArchivo:{
+        accesible:async function(parent:any){
+            let nombreArchivo="";
+            if("nombre" in parent){
+                nombreArchivo+=parent.nombre
+            }
+            else{
+                console.log(`No habia nombre para buscar el archivo`);
+                return false;
+            }
+
+            if("extension" in parent){
+                nombreArchivo+="."+parent.extension;
+            }
+            else{
+                console.log(`No habia info de la extension en la base de datos`);
+                return false
+            }
+            
+            let pathArchivo=path.join(__dirname, "../public/actividadesProfes/evidencias", nombreArchivo);
+            
+            try {
+                await access(pathArchivo, fs.constants.R_OK);
+            } catch (error) {
+                if(error.message.substr(0,6)!="ENOENT"){
+                console.log(`Error checkeando acceso a la guia en ${pathArchivo}. E: ${error}`);
+                }
+                else{
+                console.log(`Archivo no existia`);
+                }
+                return false;
+            }
+            return true;
+        }
     }
 
     

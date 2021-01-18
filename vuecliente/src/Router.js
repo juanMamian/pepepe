@@ -10,7 +10,7 @@ import Registro from "./components/Registro.vue"
 import ActividadesProfes from "./components/ActividadesProfes.vue"
 import Personas from "./components/Personas.vue"
 import ContenidoGrupoProfe from "./components/actividadesProfes/ContenidoGrupoProfe.vue"
-import ActividadesDeProfe from "./components/actividadesProfes/actividadesDeProfe.vue"
+import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
 
 Vue.use(Router);
 

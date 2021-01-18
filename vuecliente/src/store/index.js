@@ -20,6 +20,8 @@ export default new Vuex.Store({
             username: null,
             permisos: null,
             id:null,
+            idGrupoEstudiantil:null,
+            nombreGrupoEstudiantil:null,
         },
         token:null
 
@@ -39,14 +41,19 @@ export default new Vuex.Store({
             localStorage.setItem(process.env.TOKEN_KEY, token);
             
         },
+        setDatosUsuario:function(state, yo){
+            state.usuario.idGrupoEstudiantil = yo.idGrupoEstudiantil;
+            state.usuario.nombreGrupoEstudiantil = yo.nombreGrupoEstudiantil;            
+        },
         deslogearse(state) {
-            localStorage.removeItem("pepepe_usuario");
-            localStorage.removeItem(process.env.TOKEN_KEY);
+            localStorage.clear();
 
             state.usuario.username = null,
             state.usuario.permisos = null,
             state.usuario.id = null,
-            
+            state.usuario.idGrupoEstudiantil=null,
+            state.usuario.nombreGrupoEstudiantil=null,
+           
             state.token=null
 
 

@@ -36,7 +36,7 @@ const context = ({ req, res }: any) => {
     let headers: any = req.headers;
    // console.log(`headers: ${JSON.stringify(headers)}`);
 
-    if (!headers.authorization) return usuario;
+    if (!headers.authorization) return {usuario};
     const token: string = headers.authorization;
     try {
         usuario = jwt.verify(token, process.env.JWT_SECRET);
@@ -49,7 +49,7 @@ const context = ({ req, res }: any) => {
         }
     }
     //console.log(`Decodifcado el token así: ${JSON.stringify(usuario)}`);
-    return { usuario };
+    return { usuario:usuario };
 
 }
 

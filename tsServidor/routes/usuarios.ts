@@ -149,6 +149,9 @@ router.post("/updateFoto", upload.single("nuevaFoto"), async function(req, res){
 
 router.get("/fotografias/:id", async function(req, res){
     const idUsuario=req.params.id;
+    if(idUsuario=="null" || idUsuario=="undefined" || !idUsuario){
+        return res.sendFile(path.join(__dirname, '../public/media/iconos/usuarioDefault.png'));
+    }
     try{
         var elUsuario=await Usuario.findById(idUsuario, "fotografia");
     }
@@ -157,7 +160,7 @@ router.get("/fotografias/:id", async function(req, res){
         return res.status(400).send('');
     }
     if(!elUsuario.fotografia){
-        res.sendFile(path.join(__dirname, '../public//media/iconos/usuarioDefault.png'));
+        res.sendFile(path.join(__dirname, '../public/media/iconos/usuarioDefault.png'));
     }
     else{
     res.set('Content-Type', 'image/png');

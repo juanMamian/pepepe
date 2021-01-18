@@ -86,6 +86,7 @@ export default {
     return {
       gruposEstudiantiles: [],
       idGrupoEstudiantilSeleccionado: null,
+      idProfeSeleccionado:null
     };
   },
   computed: {
@@ -101,7 +102,7 @@ export default {
       this.$router.push("/actividadesVirtuales2021/grupoEstudiantil/" + id);
     },
     abrirActividadesProfe(id) {
-      this.$router.push("/actividadesVirtuales2021/profe/" + id);
+      this.$router.push("/actividadesVirtuales2021/actividadesProfes/" + id);
     },
   },
 };

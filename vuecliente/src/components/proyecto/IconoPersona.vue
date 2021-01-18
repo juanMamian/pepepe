@@ -22,26 +22,40 @@
 </template>
 
 <script>
-import gql from "graphql-tag"
+import gql from "graphql-tag";
 
 export default {
   name: "IconoPersona",
   data() {
-    return {nuevoPermiso:null};
+    return { nuevoPermiso: null, mounted: false };
   },
   props: {
-    estaPersona: Object,
+    estaPersona: {
+        type:Object,
+        default:function(){
+          return {
+            id:"-1"
+          }
+        }
+      },
     aceptado: Boolean,
     seleccionado: Boolean,
-    menuContextual:Boolean
+    menuContextual: Boolean,
   },
   computed: {
-    soyYo: function () {
-      return this.$store.state.usuario.id == this.estaPersona.id ? true : false;
+    soyYo() {
+      if (this.mounted && this.estaPersona && this.$store.state.usuario) {
+        console.log(`id store: ${this.$store.state.usuario.id}`);
+        console.log(`id estaPersona: ${this.estaPersona.id}`);
+        return this.$store.state.usuario.id == this.estaPersona.id
+          ? true
+          : false;
+      }
+      return false;
     },
   },
-  methods:{
-    addPermisos(){
+  methods: {
+    addPermisos() {
       console.log(
         `enviando ${this.nuevoPermiso} para el usuario con id ${this.estaPersona.id}`
       );
@@ -53,13 +67,13 @@ export default {
                 nuevoPermiso: $nuevoPermiso
                 idUsuario: $idUsuario
               ) {
-                id                
+                id
                 permisos
               }
-            }            
+            }
           `,
           variables: {
-            nuevoPermiso:this.nuevoPermiso,
+            nuevoPermiso: this.nuevoPermiso,
             idUsuario: this.estaPersona.id,
           },
         })
@@ -67,9 +81,20 @@ export default {
         .catch((error) => {
           console.log("error: " + error);
         });
-    }
-  }
-
+    },
+    copiarId(e) {
+      let str = e.target.innerHTML.trim();
+      const el = document.createElement("textarea");
+      el.value = str;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    },
+  },
+  mounted() {
+    this.mounted = true;
+  },
 };
 </script>
 
@@ -81,7 +106,6 @@ export default {
   user-select: none;
   width: 70px;
   height: 70px;
-  margin-bottom: 20px;
 }
 
 #fotografia {
@@ -122,12 +146,12 @@ export default {
 .botonMenuCx:hover {
   background-color: gray;
 }
-#menuCxPersona{
+#menuCxPersona {
   position: absolute;
   top: 110%;
   left: 110%;
   min-width: 140px;
-  
+
   z-index: 10;
   background-color: rgb(177, 177, 159);
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),

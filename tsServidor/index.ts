@@ -33,12 +33,14 @@ aServer.applyMiddleware({app});
 
 const rutaFotografias=/api\/usuarios\/fotografias\/\S+/;
 const rutaGuias=/api\/actividadesProfes\/guia\/\S+/;
+const rutaEvidencias=/api\/actividadesProfes\/evidencia\/\S+/;
+
 
 //Routes
 app.use(express.json());
-app.use("/api/usuarios", cors(), ejwt({secret: process.env.JWT_SECRET, algorithms: ['HS256']}).unless({path:['/api/usuarios/login', 'api/usuario/registro', rutaFotografias]}), usuariosRoutes);
+app.use("/api/usuarios", cors(), ejwt({secret: process.env.JWT_SECRET, algorithms: ['HS256']}).unless({path:['/api/usuarios/login', '/api/usuarios/registro', rutaFotografias]}), usuariosRoutes);
 app.use("/api/atlas", routesNodos);
-app.use("/api/actividadesProfes", cors(), ejwt({secret: process.env.JWT_SECRET, algorithms: ['HS256']}).unless({path:[rutaGuias]}), routesActividadesProfes);
+app.use("/api/actividadesProfes", cors(), ejwt({secret: process.env.JWT_SECRET, algorithms: ['HS256']}).unless({path:[rutaGuias, rutaEvidencias]}), routesActividadesProfes);
 app.get("/pepepe", function(req:Request, res:Response){
   res.sendFile(__dirname+"/pepepe/index.html");
 });

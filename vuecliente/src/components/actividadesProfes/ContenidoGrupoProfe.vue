@@ -111,11 +111,9 @@ export default {
     esteGrupo: {
       query: QUERY_GRUPO,
       variables() {
-        console.log(`asignando a idGrupo: ${this.$route.params.idGrupo}`);
         return { idGrupo: this.$route.params.idGrupo };
       },
       update: function ({ grupoEstudiantil }) {
-        console.log(`Respuesta. ${JSON.stringify(grupoEstudiantil)}`);
         return grupoEstudiantil;
       },
     },
@@ -212,8 +210,20 @@ export default {
                 id
                 nombre
                 hayGuia
-                desarrollo {
+                desarrollos {
                   id
+                  estudiante{
+                    ...fragResponsables
+                  }
+                  estado
+                  participaciones{
+                    id
+                    fechaUpload
+                    comentario
+                    archivo{
+                      extension
+                    }
+                  }
                 }
                 creador {
                   ...fragResponsables
@@ -235,10 +245,7 @@ export default {
                 query: QUERY_GRUPO,
                 variables: { idGrupo: this.esteGrupo.id },
               });
-              console.log(`cache: ${JSON.stringify(cache)}`);
               cache.grupoEstudiantil.actividades.push(nuevaActividad);
-              console.log(`cache: ${JSON.stringify(cache)}`);
-
               store.writeQuery({
                 query: QUERY_GRUPO,
                 variables: { idGrupo: this.esteGrupo.id },

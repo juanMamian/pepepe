@@ -134,6 +134,8 @@ export default {
             numeroTel
             email
             username
+            idGrupoEstudiantil
+            nombreGrupoEstudiantil
             nodosConocimiento {
               nodoConocimiento {
                 id
@@ -159,6 +161,7 @@ export default {
         lugarResidencia: null,
         username: null,
         misNodos: [],
+        grupoEstudiantil:""
       },
       editandoDatosPersonales: false,
       editandoDatosContacto: false,

@@ -1,6 +1,7 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
 import { Usuario, permisosDeUsuario } from "../model/Usuario"
 import { GraphQLDateTime } from "graphql-iso-date";
+const GrupoEstudiantil = require("../model/actividadesProfes/GrupoEstudiantil").modeloGrupoEstudiantil;
 
 interface Usuario {
     username: string,
@@ -41,8 +42,10 @@ export const typeDefs = gql`
         numeroTel:String,
         username:String,
         nodosConocimiento: [ConocimientoUsuario],
-        atlas:infoAtlas,
+        atlas:infoAtlas,        
         permisos:[String]
+        idGrupoEstudiantil:String,       
+        nombreGrupoEstudiantil:String,
     }
     input DatosEditablesUsuario{
         nombres:String,
@@ -60,7 +63,10 @@ export const typeDefs = gql`
         apellidos:String,
         email:String,
         numeroTel:String,
-        lugarResidencia:String       
+        lugarResidencia:String,
+        edad:Int,
+        idGrupoEstudiantil:String,       
+        nombreGrupoEstudiantil:String,
     }
     extend type Query {
         todosUsuarios:[PublicUsuario],
@@ -234,10 +240,82 @@ export const resolvers = {
             let edadAños = edad / (60 * 60 * 24 * 365 * 1000);
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
+        },
+        nombreGrupoEstudiantil:async function (parent:any) {
+            if(!parent._id){
+                
+                return ""
+            }
+            try {
+                let elGrupo=await GrupoEstudiantil.findOne({estudiantes: parent._id});
+                if(!elGrupo)return ""
+                var nombreGrupo=elGrupo.nombre;
+            } catch (error) {
+                console.log(`Error buscando grupo en la base de datos. E: ${error}`);
+                return ""
+            }
+            return nombreGrupo;
+        },
+        idGrupoEstudiantil:async function (parent:any) {
+            if(!parent._id){
+                
+                return ""
+            }
+            try {
+                let elGrupo=await GrupoEstudiantil.findOne({estudiantes: parent._id});
+                if(!elGrupo)return ""
+                var idGrupo=elGrupo._id;
+            } catch (error) {
+                console.log(`Error buscando grupo en la base de datos. E: ${error}`);
+                return ""
+            }
+            return idGrupo;
+        }
+    },
+    PublicUsuario: {
+        edad: function (parent: any, _: any, __: any) {
+            if (!parent.fechaNacimiento) {
+                return 0;
+            }
+            let edad = Date.now() - parent.fechaNacimiento;
+            let edadAños = edad / (60 * 60 * 24 * 365 * 1000);
+            edadAños = parseInt(edadAños.toFixed());
+            return edadAños;
+        },
+        nombreGrupoEstudiantil:async function (parent:any) {
+            if(!parent._id){
+                
+                return ""
+            }
+            try {
+                let elGrupo=await GrupoEstudiantil.findOne({estudiantes: parent._id});
+                if(!elGrupo)return ""
+                var nombreGrupo=elGrupo.nombre;
+            } catch (error) {
+                console.log(`Error buscando grupo en la base de datos. E: ${error}`);
+                return ""
+            }
+            return nombreGrupo;
+        },
+        idGrupoEstudiantil:async function (parent:any) {
+            if(!parent._id){
+                
+                return ""
+            }
+            try {
+                let elGrupo=await GrupoEstudiantil.findOne({estudiantes: parent._id});
+                if(!elGrupo)return ""
+                var idGrupo=elGrupo._id;
+            } catch (error) {
+                console.log(`Error buscando grupo en la base de datos. E: ${error}`);
+                return ""
+            }
+            return idGrupo;
         }
     },
     Date: {
         GraphQLDateTime
     }
+    
 
 }

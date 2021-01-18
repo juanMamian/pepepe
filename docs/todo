@@ -4,3 +4,6 @@
 *Crear la validacion de nombre de nodo
 *cambiar el nombre de fragmentoResponsables a fragmentoUsuarios en utilidades gql del cliente.
 *mover el componente IconoPersona a la carpeta root de componentes porque es un componente que se usa en muchos lugares.
+*validar el comentario y el archivo adjunto de las respuestas a las activiades estudiantiles en cliente y servidor.
+*verificar que se este calculando la edad correcta.
+*Ventana cargando paro los outlets del router mientras la navegación se completa.

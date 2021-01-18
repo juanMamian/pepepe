@@ -12,10 +12,17 @@
       </router-link>
       <div class="botonNav hoverGris" id="navTrabajos">Trabajos</div>
       <router-link to="/actividadesVirtuales2021" v-if="usuarioLogeado">
-        <div class="botonNav hoverGris" id="navActividadesVirtuales">Actividades virtuales</div>
+        <div class="botonNav hoverGris" id="navActividadesVirtuales">
+          Actividades virtuales
+        </div>
       </router-link>
-      <router-link to="/personas" v-if="(usuarioAdministrador || usuarioSuperadministrador)">
-        <div class="botonNav hoverGris" id="navActividadesVirtuales">Personas</div>
+      <router-link
+        to="/personas"
+        v-if="usuarioAdministrador || usuarioSuperadministrador"
+      >
+        <div class="botonNav hoverGris" id="navActividadesVirtuales">
+          Personas
+        </div>
       </router-link>
       <div id="botonesNavDerecha">
         <template v-if="logeado">
@@ -63,6 +70,9 @@
 </template>
 
 <script>
+
+import gql from "graphql-tag"
+
 function parseJwt(token) {
   var base64Url = token.split(".")[1];
   var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
@@ -126,6 +136,28 @@ export default {
 
       if (secsActual < datosU.exp) {
         this.$store.commit("logearse", token);
+        this.$apollo
+          .query({
+            query: gql`
+              query {
+                yo {
+                  id
+                  idGrupoEstudiantil
+                  nombreGrupoEstudiantil
+                  nombres
+                  apellidos
+                }
+              }
+            `,
+            fetchPolicy: "network-only",
+          })
+          .then(({ data: { yo } }) => {
+            console.log(`Datos personales: ${JSON.stringify(yo)}`);
+            this.$store.commit("setDatosUsuario", yo);
+          })
+          .catch((error) => {
+            console.log(`Error descargando datos gql. E: ${error}`);
+          });
       } else {
         this.$store.commit("deslogearse");
       }
