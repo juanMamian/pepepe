@@ -15,7 +15,7 @@ const esquemaParticipacion = new mongoose.Schema({
     },
     idAutor:{
         type:String,
-        required:true,        
+        required:true,
     }
 
 });

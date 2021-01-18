@@ -36,6 +36,10 @@ Vue.mixin({
       if (!this.$store.state.usuario.permisos) return false;
       return (this.$store.state.usuario.permisos.includes("superadministrador")) ? true : false
     },
+    usuarioAdministradorActividadesEstudiantiles: function () {
+      if (!this.$store.state.usuario.permisos) return false;
+      return (this.$store.state.usuario.permisos.includes("actividadesEstudiantiles-administrador")) ? true : false
+    },
   },
  
 

@@ -47,7 +47,7 @@ export default {
             nombre
             hayGuia
             creador {
-              id
+              ...fragResponsables
             }
             desarrollos{
               id
@@ -60,6 +60,11 @@ export default {
                 comentario
                 archivo{
                   extension
+                  nombre
+                  accesible
+                }
+                autor{
+                  ...fragResponsables
                 }
               }
             }
@@ -71,8 +76,15 @@ export default {
         console.log(`Enviando la query de actividades con idProfe: ${this.$route.params.idProfe}, idGrupo: ${this.$store.state.usuario.idGrupoEstudiantil}`);
         return { idProfe: this.$route.params.idProfe, idGrupo:this.$store.state.usuario.idGrupoEstudiantil };
       },
-      update: ({ actividadesEstudiantilesDeProfeDeGrupo }) =>
-        actividadesEstudiantilesDeProfeDeGrupo,
+      update: ({ actividadesEstudiantilesDeProfeDeGrupo }) =>{
+        return actividadesEstudiantilesDeProfeDeGrupo
+      },
+      skip(){
+        if(this.$store.state.usuario.idGrupoEstudiantil==null){
+          return true;
+        }
+        return false;
+      }
     },
   },
   data() {
@@ -90,7 +102,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .actividad{
   margin-left:auto;
   margin-right:auto;

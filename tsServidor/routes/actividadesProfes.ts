@@ -6,7 +6,7 @@ const GrupoEstudiantil = require("../model/actividadesProfes/GrupoEstudiantil").
 const path = require("path");
 const fs = require("fs");
 const util = require("util");
-const mongoose=require("mongoose");
+const mongoose = require("mongoose");
 
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
@@ -38,30 +38,33 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     let idUsuario = req.user.id;
     console.log(`Recibida peticion de subir respuesta por el usuario ${req.user.username}`);
 
-    console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
+    var extensionDeArchivo = "";
+    if ("file" in req) {
+        console.log(`Participacion con archivo adjunto`);
+        console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
+        let tiposDeArchivoPermitidos = ["application/pdf", "image/png", "image/jpg"];
 
-    let tiposDeArchivoPermitidos=["application/pdf", "image/png", "image/jpg"];
+        if (!tiposDeArchivoPermitidos.includes(req.file.mimetype)) {
+            console.log(`Se intentó subir un archivo que no estaba permitido. era ${req.file.mimetype}`);
+            return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
+        }
 
-    if (!tiposDeArchivoPermitidos.includes(req.file.mimetype)) {
-        console.log(`Se intentó subir un archivo que no estaba permitido. era ${req.file.mimetype}`);
-        return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
+        if (req.file.mimetype == "application/pdf") {
+            extensionDeArchivo = "pdf"
+        }
+        else if (req.file.mimetype == "image/png") {
+            extensionDeArchivo = "png"
+        }
+        else if (req.file.mimetype == "image/jpg") {
+            extensionDeArchivo = "jpg"
+        }
+        else {
+            console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
+            return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
+        }
     }
-
-    var extensionDeArchivo="";
-    var comentario=req.body.comentario;
-
-    if(req.file.mimetype=="application/pdf"){
-        extensionDeArchivo="pdf"
-    }
-    else if(req.file.mimetype=="image/png"){
-        extensionDeArchivo="png"
-    }
-    else if(req.file.mimetype=="image/jpg"){
-        extensionDeArchivo="jpg"
-    }
-    else{
-        console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
-        return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
+    else {
+        console.log(`Participacion sin archivo adjunto`);
     }
 
     try {
@@ -72,15 +75,17 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         return res.status(400).send('');
     }
 
-   
+
     //Creando la nueva participacion
-    let nuevaParticipacion={
-        fechaUpload:Date.now(),
-        archivo:{
+    var comentario = req.body.comentario;
+
+    let nuevaParticipacion = {
+        fechaUpload: Date.now(),
+        archivo: {
             extension: extensionDeArchivo
         },
         comentario,
-        idAutor:idUsuario
+        idAutor: idUsuario
     }
 
     let idActividad = req.body.idActividad;
@@ -88,59 +93,66 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     //Introducir la informacion en la base de datos.
 
     try {
-        var elGrupo=await GrupoEstudiantil.findOne({"actividades._id": mongoose.Types.ObjectId(idActividad)}).exec();
-        console.log(`encontrado grupo ${elGrupo.nombre}`);
-
+        var elGrupo = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
         var laActividad = elGrupo.actividades.id(idActividad);
-        var elDesarrollo= laActividad.desarrollos.find(d=>d.idEstudiante==idUsuario);
-        if(!elDesarrollo){
-            console.log(`Este usuario no había iniciado un desarrollo. Creando un nuevo desarrollo`);
-            var nuevoDesarrollo=laActividad.desarrollos.create({idEstudiante:idUsuario, participaciones:[]});            
-            laActividad.desarrollos.push(nuevoDesarrollo);
-            elDesarrollo=laActividad.desarrollos.id(nuevoDesarrollo.id);
+
+        if (req.body.idDesarrollo == 0) {
+            console.log(`Desarrollo 0. Era para el desarrollo del autor de la respuesta`);
+            var elDesarrollo = laActividad.desarrollos.find(d => d.idEstudiante == idUsuario);
+            if (!elDesarrollo) {
+                console.log(`Este usuario no había iniciado un desarrollo. Creando un nuevo desarrollo`);
+                var nuevoDesarrollo = laActividad.desarrollos.create({ idEstudiante: idUsuario, participaciones: [] });
+                laActividad.desarrollos.push(nuevoDesarrollo);
+                elDesarrollo = laActividad.desarrollos.id(nuevoDesarrollo.id);
+            }
+        }
+        else{
+            elDesarrollo=laActividad.desarrollos.id(req.body.idDesarrollo);
+            if(!elDesarrollo){
+                console.log(`No se encontro el desarrollo ${req.body.idDesarrollo}`);
+            }
         }
 
-        var laParticipacion=elDesarrollo.participaciones.create(nuevaParticipacion);        
-        var idParticipacion=laParticipacion._id;
-        laParticipacion.archivo.nombre=idParticipacion;
-        
+        var laParticipacion = elDesarrollo.participaciones.create(nuevaParticipacion);
+        var idParticipacion = laParticipacion._id;
+        laParticipacion.archivo.nombre = idParticipacion;
+
         elDesarrollo.participaciones.push(laParticipacion);
-        
+
 
     } catch (error) {
         console.log(`Error leyendo nombre de grupo y actividad en la base de dato. E: ${error}`);
         return res.status(500).send("Error conectando con la base de datos");
     }
 
-     //Guardando el archivo
+    //Guardando el archivo
 
-     let idGrupo=elGrupo.id;
+    if ("file" in req) {
+        console.log(`Verificando la existencia de la carpeta de esta actividad: ${idActividad}`);
 
-     console.log(`Verificando la existencia de la carpeta de esta actividad: ${idActividad}`);
+        let carpetaEvidencias = "../public/actividadesProfes/evidencias";
 
-     let carpetaEvidencias = "../public/actividadesProfes/evidencias";
-  
-     console.log(`guardando el archivo con nombre idParticipacion`);
-     let archivo = path.join(__dirname, carpetaEvidencias)+"/"+idParticipacion+"."+laParticipacion.archivo.extension;
-     console.log(`el archivo quedará: ${archivo}`);
-     try {
-         await writeFile(archivo, req.file.buffer);
-     } catch (error) {
-         console.log(`error escribiendo el archivo. E: ${error}`);
-         return res.status(500).send("Error guardando archivo");
-     }
+        console.log(`guardando el archivo con nombre idParticipacion`);
+        let archivo = path.join(__dirname, carpetaEvidencias) + "/" + idParticipacion + "." + laParticipacion.archivo.extension;
+        console.log(`el archivo quedará: ${archivo}`);
+        try {
+            await writeFile(archivo, req.file.buffer);
+        } catch (error) {
+            console.log(`error escribiendo el archivo. E: ${error}`);
+            return res.status(500).send("Error guardando archivo");
+        }
+    }
+    //Guardando elGrupo
 
-     //Guardando elGrupo
+    try {
+        await elGrupo.save();
+    } catch (error) {
+        console.log(`Error guardando el grupo: E: ${error}`);
+        return res.status(500).send("Error guardando la respuesta");
+    }
 
-     try {
-         await elGrupo.save();
-     } catch (error) {
-         console.log(`Error guardando el grupo: E: ${error}`);
-         return res.status(500).send("Error guardando la respuesta");
-     }
- 
     console.log(`Respuesta publicada`);
-    
+
     res.send({ resultado: "ok" });
 });
 
@@ -221,33 +233,33 @@ router.get("/guia/:idGrupo/:idProfe/:idActividad", async function (req, res) {
 
     console.log(`Descargando guia del grupo con id ${req.params.idGrupo} del profe con id ${req.params.idProfe} de la actividad con id ${req.params.idActividad}`);
     res.sendFile(path.join(__dirname, '../public/actividadesProfes/actividades', req.params.idActividad, '/guia.pdf'), {}, (error) => {
-        if(error){
+        if (error) {
             console.log(`Error enviando archivo: ${error}`);
             return res.status(400).send({ msjUsuario: "Archivo no encontrado" });
         }
-        else{
+        else {
             console.log(`Archivo enviado`);
         }
 
     });
-    
+
 
 });
 router.get("/evidencia/:nombreArchivo", async function (req, res) {
 
-    console.log(`Descargando archivo de participacion  ${req.params.nombreArchivo}`);    
+    console.log(`Descargando archivo de participacion  ${req.params.nombreArchivo}`);
 
     res.sendFile(path.join(__dirname, '../public/actividadesProfes/evidencias', req.params.nombreArchivo), {}, (error) => {
-        if(error){
+        if (error) {
             console.log(`Error enviando archivo: ${error}`);
             return res.status(400).send({ msjUsuario: "Archivo no encontrado" });
         }
-        else{
+        else {
             console.log(`Archivo enviado`);
         }
 
     });
-    
+
 
 });
 module.exports = router;

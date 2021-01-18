@@ -86,7 +86,7 @@ export const resolvers = {
         usuariosProfe: async function (_: any, args: any, context: contextoQuery) {
             console.log(`Fetching la lista de todos los profes`);
             try {
-                var profes=await Usuario.find({permisos:"actividadesProfes-profe"}).exec();
+                var profes=await Usuario.find({permisos:"actividadesEstudiantiles-profe"}).exec();
             } catch (error) {
                 console.log(`Error buscando profes en la base de datos`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -217,6 +217,7 @@ export const resolvers = {
                 if (!elUsuario.permisos.includes(nuevoPermiso)) {
                     console.log(`Añadiendo ${nuevoPermiso} a la lista de permisos`);
                     elUsuario.permisos.push(nuevoPermiso);
+                    elUsuario.permisos=elUsuario.permisos.filter(p=>p!="actividadesProfes-profe");
                 }
                 else{
                     console.log(`El usuario ya tenía ese permiso`);

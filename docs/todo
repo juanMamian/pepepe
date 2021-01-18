@@ -7,3 +7,4 @@
 *validar el comentario y el archivo adjunto de las respuestas a las activiades estudiantiles en cliente y servidor.
 *verificar que se este calculando la edad correcta.
 *Ventana cargando paro los outlets del router mientras la navegación se completa.
+*Cambiar la estructura de los desarrollos en Actividad.vue. Hay dos bloques para el desarrollo propio y el resto de desarrollos. Se puede lograr en un solo bloque

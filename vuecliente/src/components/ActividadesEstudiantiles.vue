@@ -22,9 +22,8 @@
             {{ grupo.nombre }}
           </div>
         </div>
-        <div class="selectoresActividadesByProfe paraEstudiantes">
-                    <div class="categoriaSelectores">Profes</div>
-
+        <div class="selectoresActividadesByProfe paraEstudiantes" v-if="$store.state.usuario.idGrupoEstudiantil!=''">
+          <div class="categoriaSelectores">Profes</div>
           <div
             class="selectorActividadesProfe selectorBarra"
             :key="profe.id"
@@ -52,7 +51,7 @@ import gql from "graphql-tag";
 import { fragmentoResponsables } from "./utilidades/recursosGql";
 
 export default {
-  name: "ActividadesProfe",
+  name: "ActividadesEstudiantiles",
   apollo: {
     gruposEstudiantiles: {
       query: gql`
@@ -86,14 +85,14 @@ export default {
     return {
       gruposEstudiantiles: [],
       idGrupoEstudiantilSeleccionado: null,
-      idProfeSeleccionado:null
+      idProfeSeleccionado: null,
     };
   },
   computed: {
     usuarioProfe: function () {
       if (!this.$store.state.usuario.permisos) return false;
       return this.$store.state.usuario.permisos.includes(
-        "actividadesProfes-profe"
+        "actividadesEstudiantiles-profe"
       );
     },
   },
@@ -139,7 +138,7 @@ export default {
 #contenidoGrupo {
   grid-column: 2/3;
 }
-.categoriaSelectores{
+.categoriaSelectores {
   padding: 20px 10px;
   font-weight: bold;
   text-align: center;

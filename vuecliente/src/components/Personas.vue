@@ -63,6 +63,7 @@ export default {
 #listaPersonas{
     display: flex;
     padding: 20px 20px;
+    padding-bottom: 50px;
     border: 2px solid purple;
 }
 .iconoPersona{

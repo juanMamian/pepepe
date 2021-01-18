@@ -67,13 +67,43 @@
           :key="participacion.id"
           :indice="index"
           :nombreEstudiante="'yo'"
+          :idEstudianteDesarrollo="$store.state.usuario.id"
           v-for="(participacion, index) of miDesarrollo.participaciones"
           :estaParticipacion="participacion"
         />
         <mi-participacion
           :idActividad="estaActividad.id"
-          @reloadMiDesarrollo="reloadDesarrolloUsuario()"
+          @reloadDesarrollo="reloadDesarrolloUsuario()"
+          :participacionEstudiante="true"
         />
+      </div>
+      <div id="desarrollosEstudiantes" v-if="usuarioProfe">
+        <div
+          class="desarrollo"
+          :key="desarrollo.id"
+          v-for="desarrollo of estaActividad.desarrollos"
+          v-show="desarrollo.estudiante.id == idEstudianteSeleccionado"
+        >
+          {{ desarrollo.estudiante.nombres }}
+          <participacion-estudiante
+            :key="participacion.id"
+            :indice="index"
+            :idEstudianteDesarrollo="desarrollo.estudiante.id"
+            v-for="(participacion, index) of desarrollo.participaciones"
+            :estaParticipacion="participacion"
+            @eliminandose="
+              eliminarParticipacion(participacion.id, desarrollo.id)
+            "
+          />
+          <mi-participacion
+            :idActividad="estaActividad.id"
+            :enDesarrollo="desarrollo.id"
+            :participacionEstudiante="
+              desarrollo.estudiante.id == $store.state.usuario.id
+            "
+            @reloadDesarrollo="reloadDesarrollo(desarrollo.id)"
+          />
+        </div>
       </div>
     </div>
 
@@ -95,7 +125,7 @@ import IconoPersona from "../proyecto/IconoPersona.vue";
 import { fragmentoResponsables } from "../utilidades/recursosGql";
 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
-const QUERY_MI_DESARROLLO = gql`
+const QUERY_DESARROLLO_USUARIO = gql`
   query($idEstudiante: ID!, $idActividad: ID!) {
     desarrolloUsuarioEnActividadEstudiantil(
       idActividad: $idActividad
@@ -121,33 +151,50 @@ const QUERY_MI_DESARROLLO = gql`
   ${fragmentoResponsables}
 `;
 
+const QUERY_DESARROLLO = gql`
+  query($idDesarrollo: ID!, $idActividad: ID!) {
+    desarrolloEnActividadEstudiantil(
+      idActividad: $idActividad
+      idDesarrollo: $idDesarrollo
+    ) {
+      id
+      estado
+      participaciones {
+        id
+        fechaUpload
+        comentario
+        archivo {
+          extension
+          nombre
+          accesible
+        }
+        autor {
+          ...fragResponsables
+        }
+      }
+    }
+  }
+  ${fragmentoResponsables}
+`;
+
 export default {
   components: { MiParticipacion, ParticipacionEstudiante, IconoPersona },
   name: "Actividad",
-  apollo: {
-    miDesarrollo: {
-      query: QUERY_MI_DESARROLLO,
-      variables() {
-        return {
-          idEstudiante: this.$store.state.usuario.id,
-          idActividad: this.estaActividad.id,
-        };
-      },
-      update: ({ desarrolloUsuarioEnActividadEstudiantil }) =>
-        desarrolloUsuarioEnActividadEstudiantil,
-    },
-  },
   data() {
     return {
       nombreEditandose: false,
       idEstudianteSeleccionado: null,
-      miDesarrollo: {
-        participaciones: [],
-      },
     };
   },
   props: {
-    estaActividad: Object,
+    estaActividad: {
+      type: Object,
+      default() {
+        return {
+          desarrollos: new Array(),
+        };
+      },
+    },
     seleccionada: Boolean,
     idGrupo: String,
   },
@@ -252,29 +299,85 @@ export default {
         });
     },
     reloadDesarrolloUsuario() {
-      
       this.$apollo
         .query({
-          query: QUERY_MI_DESARROLLO,
+          query: QUERY_DESARROLLO_USUARIO,
           fetchPolicy: "network-only",
           variables: {
             idEstudiante: this.$store.state.usuario.id,
             idActividad: this.estaActividad.id,
           },
-          
         })
-        .then(() => {
-        })
+        .then(() => {})
         .catch((error) => {
           console.log(
             `Error en query de actualizacion de mi desarrollo. E: ${error}`
           );
         });
     },
+    reloadDesarrollo(idDesarrollo) {
+      this.$apollo
+        .query({
+          query: QUERY_DESARROLLO,
+          fetchPolicy: "network-only",
+          variables: {
+            idDesarrollo,
+            idActividad: this.estaActividad.id,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log(
+            `Error en query de actualizacion de mi desarrollo. E: ${error}`
+          );
+        });
+    },
+    eliminarParticipacion(idParticipacion, idDesarrollo) {
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idParticipacion: ID!) {
+              eliminarParticipacionActividadEstudiantil(
+                idParticipacion: $idParticipacion
+              )
+            }
+          `,
+          variables: {
+            idParticipacion,
+          },
+        })
+        .then(() => {
+          this.reloadDesarrollo(idDesarrollo);
+        })
+        .catch((error) => {
+          console.log("errores: " + error);
+        });
+    },
   },
   computed: {
     usuarioCreadorActividad: function () {
       return this.$store.state.usuario.id == this.estaActividad.creador.id;
+    },
+    miDesarrollo: function () {
+      if (
+        this.estaActividad.desarrollos.some(
+          (d) => d.estudiante.id == this.$store.state.usuario.id
+        )
+      ) {
+        return this.estaActividad.desarrollos.find(
+          (d) => d.estudiante.id == this.$store.state.usuario.id
+        );
+      } else {
+        return {
+          participaciones: [],
+        };
+      }
+    },
+    usuarioProfe: function () {
+      if (!this.$store.state.usuario.permisos) return false;
+      return this.$store.state.usuario.permisos.includes(
+        "actividadesEstudiantiles-profe"
+      );
     },
   },
 };
@@ -331,6 +434,15 @@ export default {
   margin-bottom: 10px;
 }
 
+#listaParticipantes {
+  display: flex;
+  padding-bottom: 20px;
+}
+
+.iconoPersona {
+  margin-left: 5px;
+  margin-right: 5px;
+}
 .nombreNoHayGuia {
   background-color: red;
 }
@@ -341,7 +453,7 @@ export default {
 .participacionEstudiante {
   margin-top: 15px;
 }
-.miParticipacion{
-  margin-top:20px;
+.miParticipacion {
+  margin-top: 20px;
 }
 </style>

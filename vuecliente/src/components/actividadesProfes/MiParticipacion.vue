@@ -1,5 +1,11 @@
 <template>
-  <div class="miParticipacion">
+  <div
+    class="miParticipacion"
+    :class="{
+      participacionPropia: participacionEstudiante,
+      participacionOtro: !participacionEstudiante,
+    }"
+  >
     <div id="titulo">Enviar respuesta</div>
     <img
       src="/iconos/mensaje.png"
@@ -9,6 +15,10 @@
     /><br />
     <textarea
       v-model="comentario"
+      :class="{
+        comentarioPropio: participacionEstudiante,
+        comentarioOtro: !participacionEstudiante,
+      }"
       name="comentario"
       id="comentario"
       ref="comentario"
@@ -29,7 +39,7 @@
         id="imgAdjuntar"
         @click="abrirSelectorDeArchivos"
       />
-      <div id="nombreArchivoSeleccionado">:{{ nombreArchivoSeleccionado }}</div>
+      <div id="nombreArchivoSeleccionado">{{ nombreArchivoSeleccionado }}</div>
     </div>
     <div id="enviar" v-show="cuadroAbierto">
       <img
@@ -56,27 +66,36 @@ export default {
   },
   props: {
     idActividad: String,
+    participacionEstudiante: {
+      type: Boolean,
+      default: false,
+    },
+    enDesarrollo:{
+      type:String,
+      default: "0"
+    }
   },
   methods: {
     abrirSelectorDeArchivos() {
       this.$refs.inputArchivoAdjunto.click();
     },
     enviarRespuesta() {
-      if (!this.$refs.inputArchivoAdjunto.value) {
-        console.log(`El input de archivo adjunto estaba vacio`);
-      }
-
       let dis = this;
       let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
       var datos = new FormData();
       const comentario = this.comentario;
-      const archivoAdjunto = inputArchivoAdjunto.files[0];
-      const fileType = archivoAdjunto["type"];
-      console.log(`subiendo un ${fileType}`);
-      datos.append("archivoAdjunto", archivoAdjunto);
+      if (!inputArchivoAdjunto.value) {
+        console.log(`El input de archivo adjunto estaba vacio`);
+      } else {
+        const archivoAdjunto = inputArchivoAdjunto.files[0];
+        const fileType = archivoAdjunto["type"];
+        console.log(`subiendo un ${fileType}`);
+        datos.append("archivoAdjunto", archivoAdjunto);
+      }
       datos.append("comentario", comentario);
       datos.append("idActividad", this.idActividad);
       datos.append("idEstudiante", this.idEstudiante);
+      datos.append("idDesarrollo", this.enDesarrollo);
       axios({
         method: "post",
         url: this.serverUrl + "/api/actividadesProfes/publicarRespuesta",
@@ -88,7 +107,7 @@ export default {
       })
         .then((res) => {
           console.log(`res: ${JSON.stringify(res)}`);
-          dis.$emit("reloadMiDesarrollo");
+          dis.$emit("reloadDesarrollo");
           dis.comentario = "";
           dis.$refs.inputArchivoAdjunto.value = null;
           this.nombreArchivoSeleccionado = null;
@@ -131,13 +150,29 @@ export default {
   padding: 10px;
 }
 
+.participacionPropia {
+  border: 2px solid pink;
+}
+
+.participacionOtro {
+  border: 2px solid rgb(22, 57, 73);
+}
+
 #comentario {
-  background-color: salmon;
-  border: 2px solid rgb(165, 52, 39);
   border-radius: 5px;
   resize: none;
   padding: 5px 7px;
 }
+
+.comentarioPropio {
+  background-color: salmon;
+  border: 2px solid rgb(165, 52, 39);
+}
+.comentarioOtro {
+  background-color: rgb(114, 207, 250);
+  border: 2px solid rgb(22, 57, 73);
+}
+
 #imgEnviar {
   width: 50px;
   height: 50px;
@@ -165,7 +200,7 @@ export default {
   text-align: center;
 }
 #inputArchivoAdjunto {
-  display: block;
+  display: none;
 }
 #titulo {
   text-align: center;

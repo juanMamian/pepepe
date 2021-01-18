@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesProfes-profe"];
+const permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesEstudiantiles-profe", "actividadesEstudiantiles-administrador"];
 
 const esquemaUsuario = mongoose.Schema({
     username: {

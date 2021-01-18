@@ -7,9 +7,9 @@ import VisorNodoConocimiento from "./components/VisorNodoConocimiento.vue"
 import Proyectos from "./components/Proyectos.vue"
 import Proyecto from "./components/Proyecto.vue"
 import Registro from "./components/Registro.vue"
-import ActividadesProfes from "./components/ActividadesProfes.vue"
+import ActividadesEstudiantiles from "./components/ActividadesEstudiantiles.vue"
 import Personas from "./components/Personas.vue"
-import ContenidoGrupoProfe from "./components/actividadesProfes/ContenidoGrupoProfe.vue"
+import GrupoEstudiantil from "./components/actividadesProfes/GrupoEstudiantil.vue"
 import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
 
 Vue.use(Router);
@@ -22,10 +22,10 @@ const routes=[
     {path:"/proyectos", name:"proyectos", component: Proyectos },
     {path:"/proyecto/:idProyecto", name:"verProyecto", component: Proyecto},
     {path:"/registro", name:"registro", component: Registro},
-    {path:"/actividadesVirtuales2021", component: ActividadesProfes, children:[
+    {path:"/actividadesVirtuales2021", component: ActividadesEstudiantiles, children:[
         {
             path:'grupoEstudiantil/:idGrupo',
-            component: ContenidoGrupoProfe
+            component: GrupoEstudiantil
         },
         {
             path:'actividadesProfes/:idProfe',

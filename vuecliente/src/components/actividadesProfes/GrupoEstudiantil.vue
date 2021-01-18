@@ -1,5 +1,6 @@
 <template>
-  <div class="contenidoGrupoProfe">
+  <div class="GrupoEstudiantil">
+    <div id="nombreGrupo">{{ esteGrupo.nombre }}</div>
     <div id="zonaEstudiantes" class="zonaPrimerNivel">
       <div class="nombreZona">Estudiantes</div>
       <div id="controlesEstudiantes" class="controlesZona">
@@ -8,10 +9,17 @@
           ref="idEstudianteAñadir"
           v-model="idEstudianteAñadir"
           placeholder="id de estudiante"
+          v-if="
+            usuarioSuperadministrador == true ||
+            usuarioAdministradorActividadesEstudiantiles == true
+          "
         />
         <div
           class="controlesEstudiantes hoverGris botonesControles"
-          v-if="usuarioSuperadministrador == true"
+          v-if="
+            usuarioSuperadministrador == true ||
+            usuarioAdministradorActividadesEstudiantiles == true
+          "
           @click="addEstudianteGrupo"
         >
           Añadir estudiante
@@ -19,7 +27,10 @@
 
         <div
           class="controlesEstudiantes hoverGris botonesControles"
-          v-if="usuarioSuperadministrador == true"
+          v-if="
+            usuarioSuperadministrador == true ||
+            usuarioAdministradorActividadesEstudiantiles == true
+          "
           :class="{ desactivado: idEstudianteSeleccionado == null }"
           @click="removeEstudianteGrupo(idEstudianteSeleccionado)"
         >
@@ -58,6 +69,10 @@
           @click.native="idActividadSeleccionada = actividad.id"
           @eliminandose="eliminarActividad"
           @cambiandoNombre="cambiarNombreActividad"
+          v-show="
+            verTodasActividades == true ||
+            actividad.creador.id == $store.state.usuario.id
+          "
         />
       </div>
     </div>
@@ -95,8 +110,13 @@ const QUERY_GRUPO = gql`
             fechaUpload
             archivo {
               extension
+              nombre
+              accesible
             }
             comentario
+            autor {
+              ...fragResponsables
+            }
           }
         }
       }
@@ -106,7 +126,7 @@ const QUERY_GRUPO = gql`
 `;
 
 export default {
-  name: "ContenidoGrupoProfe",
+  name: "GrupoEstudiantil",
   apollo: {
     esteGrupo: {
       query: QUERY_GRUPO,
@@ -131,13 +151,14 @@ export default {
         estudiantes: [],
         actividades: [],
       },
+      verTodasActividades: false,
     };
   },
   computed: {
     usuarioProfe: function () {
       if (!this.$store.state.usuario.permisos) return false;
       return this.$store.state.usuario.permisos.includes(
-        "actividadesProfes-profe"
+        "actividadesEstudiantiles-profe"
       );
     },
   },
@@ -212,15 +233,15 @@ export default {
                 hayGuia
                 desarrollos {
                   id
-                  estudiante{
+                  estudiante {
                     ...fragResponsables
                   }
                   estado
-                  participaciones{
+                  participaciones {
                     id
                     fechaUpload
                     comentario
-                    archivo{
+                    archivo {
                       extension
                     }
                   }
@@ -362,7 +383,17 @@ export default {
   padding: 5px 10px;
   background-color: rgb(230, 247, 247);
 }
+
+#nombreGrupo {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px;
+  background-color: cornsilk;
+}
+
 #listaEstudiantes {
+  padding-top: 10px;
   padding-bottom: 40px;
   display: flex;
 }

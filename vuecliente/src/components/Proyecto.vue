@@ -706,6 +706,7 @@ export default {
 }
 #listaResponsables {
   display: flex;
+  padding-bottom:40px;
 }
 .iconoPersona {
   margin-right: 10px;
