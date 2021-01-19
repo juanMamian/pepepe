@@ -2,14 +2,14 @@ import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
 import fs from "fs";
 import util from "util";
 import mongoose from "mongoose";
-const access=util.promisify(fs.access);
+const access = util.promisify(fs.access);
 const GrupoEstudiantil = require("../model/actividadesProfes/GrupoEstudiantil").modeloGrupoEstudiantil;
-const Usuario=require("../model/Usuario").Usuario;
-const path=require("path");
+const Usuario = require("../model/Usuario").Usuario;
+const path = require("path");
 
-import {contextoQuery} from "./tsObjetos"
+import { contextoQuery } from "./tsObjetos"
 
-export const typeDefs=gql`
+export const typeDefs = gql`
 
     type InfoArchivo{
         nombre: String,
@@ -64,51 +64,53 @@ export const typeDefs=gql`
         crearActividadEnGrupoEstudiantil(idGrupo:ID!):ActividadGrupoEstudiantil,
         eliminarActividadDeGrupoEstudiantil(idActividad:ID!, idGrupo: ID!):Boolean,
         cambiarNombreActividadGrupoEstudiantil(idGrupo:ID!, idActividad:ID!, nuevoNombre: String):ActividadGrupoEstudiantil
-        eliminarParticipacionActividadEstudiantil(idParticipacion:ID!):Boolean
+        eliminarParticipacionActividadEstudiantil(idParticipacion:ID!):Boolean,
+        setEstadoDesarrolloActividadEstudiantil(idDesarrollo:ID!, nuevoEstado: String):DesarrolloActividadGrupoEstudiantil
+
     }
 `;
 
-export const resolvers={
-    Query:{
-        desarrolloEnActividadEstudiantil:async function(_:any, {idDesarrollo, idActividad}:any, contexto:contextoQuery){
+export const resolvers = {
+    Query: {        
+        desarrolloEnActividadEstudiantil: async function (_: any, { idDesarrollo, idActividad }: any, contexto: contextoQuery) {
             console.log(`Solicitud de desarrollo con id ${idDesarrollo} en la actividad con id ${idActividad}`);
-                   
+
             try {
-                var elGrupo=await GrupoEstudiantil.findOne({"actividades._id": mongoose.Types.ObjectId(idActividad)}).exec();
-                if(!elGrupo){
+                var elGrupo = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
+                if (!elGrupo) {
                     console.log(`Grupo no encontrado`);
                     throw new Error("Grupo no encontrado")
                 }
-                
+
             } catch (error) {
                 console.log(`Error buscando la actividad en los grupos estudiantiles. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`Encontrado grupo: ${elGrupo.nombre}`);
-            let laActividad=elGrupo.actividades.id(idActividad);
+            let laActividad = elGrupo.actividades.id(idActividad);
 
             console.log(`Encontrada actividad: ${laActividad.nombre}`);
 
-            let elDesarrollo=laActividad.desarrollos.id(idDesarrollo);
+            let elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
 
-            if(!elDesarrollo)elDesarrollo=[];
+            if (!elDesarrollo) elDesarrollo = [];
             console.log(`Enviando un desarrollo`);
 
             return elDesarrollo;
 
         },
-        desarrolloUsuarioEnActividadEstudiantil:async function(_:any, {idEstudiante, idActividad}:any, contexto:contextoQuery){
+        desarrolloUsuarioEnActividadEstudiantil: async function (_: any, { idEstudiante, idActividad }: any, contexto: contextoQuery) {
             console.log(`Solicitud de desarrollo de un usuario con id ${idEstudiante} en la actividad con id ${idActividad}`);
             // let credencialesUsuario=contexto.usuario;
             //     if(!credencialesUsuario.id){
             //         console.log(`Usuario no logeado`);
             //         throw new AuthenticationError("No autorizado");
             // }
-            
+
             try {
-                var elUsuario=await Usuario.findById(idEstudiante).exec();
-                if(!elUsuario) throw new Error("Usuario no encontrado en la base de datos");
+                var elUsuario = await Usuario.findById(idEstudiante).exec();
+                if (!elUsuario) throw new Error("Usuario no encontrado en la base de datos");
             } catch (error) {
                 console.log(`Error buscando al usuario con id ${idEstudiante} en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -117,33 +119,33 @@ export const resolvers={
             console.log(`Buscando el grupo`);
 
             try {
-                var elGrupo=await GrupoEstudiantil.findOne({"actividades._id": mongoose.Types.ObjectId(idActividad)}).exec();
-                if(!elGrupo){
+                var elGrupo = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
+                if (!elGrupo) {
                     console.log(`Grupo no encontrado`);
                     throw new Error("Grupo no encontrado")
                 }
-                
+
             } catch (error) {
                 console.log(`Error buscando la actividad en los grupos estudiantiles. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`Encontrado grupo: ${elGrupo.nombre}`);
-            let laActividad=elGrupo.actividades.id(idActividad);
+            let laActividad = elGrupo.actividades.id(idActividad);
 
             console.log(`Encontrada actividad: ${laActividad.nombre}`);
 
-            let elDesarrollo=laActividad.desarrollos.find(d=>d.idEstudiante==idEstudiante);
+            let elDesarrollo = laActividad.desarrollos.find(d => d.idEstudiante == idEstudiante);
 
-            if(!elDesarrollo)elDesarrollo=[];
+            if (!elDesarrollo) elDesarrollo = [];
             console.log(`Enviando un desarrollo`);
 
             return elDesarrollo;
 
         },
-        grupoEstudiantil:async function(_:any, {idGrupo}:any, contexto:contextoQuery){
+        grupoEstudiantil: async function (_: any, { idGrupo }: any, contexto: contextoQuery) {
             try {
-                var elGrupoEstudiantil= GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupoEstudiantil = GrupoEstudiantil.findById(idGrupo).exec();
             } catch (error) {
                 console.log(`Error buscando el grupo con id ${idGrupo} en la base de datos`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -151,96 +153,136 @@ export const resolvers={
             console.log(`enviando el grupo estudiantil`);
             return elGrupoEstudiantil;
         },
-        gruposEstudiantiles:async function(_:any, __:any, contexto:contextoQuery){
+        gruposEstudiantiles: async function (_: any, __: any, contexto: contextoQuery) {
             console.log(`solicitud de todos los grupos estudiantiles`);
-            let credencialesUsuario=contexto.usuario;
-            if(!contexto.usuario){
+            let credencialesUsuario = contexto.usuario;
+            if (!contexto.usuario) {
                 console.log("Usuario no logeado");
                 throw new AuthenticationError("No autorizado");
             }
 
-            try{
-                var elLogeado=await Usuario.findById(credencialesUsuario.id).exec();
+            try {
+                var elLogeado = await Usuario.findById(credencialesUsuario.id).exec();
             }
-            catch(error){
-                console.log("Error buscando el usuario en la base de datos. E: "+error );
+            catch (error) {
+                console.log("Error buscando el usuario en la base de datos. E: " + error);
                 throw new ApolloError("");
             }
-            if(!elLogeado){
+            if (!elLogeado) {
                 console.log(`${credencialesUsuario.id} no fue encontrado en la base de datos`);
                 throw new AuthenticationError("No autorizado");
             }
             console.log(`Usuario logeado: ${credencialesUsuario.id}`);
 
-            try{
-                var gruposEstudiantiles=await GrupoEstudiantil.find({}).exec();
+            try {
+                var gruposEstudiantiles = await GrupoEstudiantil.find({}).exec();
             }
-            catch(error){
-                console.log("Error descargando los grupos estudiantiles de la base de datos. E: "+error );
+            catch (error) {
+                console.log("Error descargando los grupos estudiantiles de la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`enviando todos los grupos estudiantiles`);
             return gruposEstudiantiles;
         },
-        actividadDeGrupoEstudiantil:async function(_:any, {idGrupo, idActividad}, contexto: contextoQuery){
+        actividadDeGrupoEstudiantil: async function (_: any, { idGrupo, idActividad }, contexto: contextoQuery) {
             try {
-                let elGrupo=await GrupoEstudiantil.findById(idGrupo).exec();
-                var laActividad=elGrupo.actividades.id(idActividad);
+                let elGrupo = await GrupoEstudiantil.findById(idGrupo).exec();
+                var laActividad = elGrupo.actividades.id(idActividad);
             } catch (error) {
                 console.log(`Error buscando grupo y actividad en la base de datos`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
             return laActividad;
         },
-        actividadesEstudiantilesDeProfe:async function(_:any,{idProfe}:any, contexto: contextoQuery){
+        actividadesEstudiantilesDeProfe: async function (_: any, { idProfe }: any, contexto: contextoQuery) {
             console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe}`);
             try {
-                var todasLasActividades=await GrupoEstudiantil.find({}).distinct("actividades").exec();
+                var todasLasActividades = await GrupoEstudiantil.find({}).distinct("actividades").exec();
             } catch (error) {
                 console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            let actividadesDelProfe=todasLasActividades.filter(a=>a.idCreador==idProfe);   
-            for(var i=0; i<actividadesDelProfe.length;i++){
-                if(!actividadesDelProfe[i].desarrollos){
-                    actividadesDelProfe[i].desarrollos=[];
+            let actividadesDelProfe = todasLasActividades.filter(a => a.idCreador == idProfe);
+            for (var i = 0; i < actividadesDelProfe.length; i++) {
+                if (!actividadesDelProfe[i].desarrollos) {
+                    actividadesDelProfe[i].desarrollos = [];
                 }
             }
-            console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${actividadesDelProfe[0].desarrollos[0].participaciones}.`);          
-            
+            console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${actividadesDelProfe[0].desarrollos[0].participaciones}.`);
+
             return actividadesDelProfe;
         },
-        actividadesEstudiantilesDeProfeDeGrupo:async function(_:any,{idProfe, idGrupo}:any, contexto: contextoQuery){
+        actividadesEstudiantilesDeProfeDeGrupo: async function (_: any, { idProfe, idGrupo }: any, contexto: contextoQuery) {
             console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe} para el grupo con id ${idGrupo}`);
             try {
-                var elGrupo=await GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupo = await GrupoEstudiantil.findById(idGrupo).exec();
             } catch (error) {
                 console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            let actividadesDelProfe=elGrupo.actividades.filter(a=>a.idCreador==idProfe);   
-            for(var i=0; i<actividadesDelProfe.length;i++){
-                if(!actividadesDelProfe[i].desarrollos){
-                    actividadesDelProfe[i].desarrollos=[];
-                }
+            let actividadesDelProfe = elGrupo.actividades.filter(a => a.idCreador == idProfe);
+            console.log(`Actividades de este profe en este grupo: ${actividadesDelProfe}`);
+            if (actividadesDelProfe.length == 0) {
+                console.log(`Este profe no tenía actividades para este grupo. Enviando array vacío`);
+
             }
-            console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${JSON.stringify(actividadesDelProfe[0].desarrollos[0].participaciones)}.`);          
-            
+            else {
+                for (var i = 0; i < actividadesDelProfe.length; i++) {
+                    if (!actividadesDelProfe[i].desarrollos) {
+                        actividadesDelProfe[i].desarrollos = [];
+                    }
+                }
+                console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${JSON.stringify(actividadesDelProfe[0].desarrollos[0].participaciones)}.`);
+
+            }
+
             return actividadesDelProfe;
         },
     },
-    Mutation:{
-        addEstudianteGrupoEstudiantil:async function(_:any, {idEstudiante, idGrupoEstudiantil}, contexto:contextoQuery){
+    Mutation: {
+        setEstadoDesarrolloActividadEstudiantil: async function (_: any, { idDesarrollo, nuevoEstado }: any, contexto: contextoQuery) {
+            console.log(`||||||||||||||||||||||||||`);
+            console.log(`Solicitud de set estado ${nuevoEstado} en desarrollo con id ${idDesarrollo}`);
+            try {
+                var elGrupo = await GrupoEstudiantil.findOne({ "actividades.desarrollos._id": mongoose.Types.ObjectId(idDesarrollo) }).exec();
+                if (!elGrupo) {
+                    console.log(`No se encontró grupo`);
+                }
+                else {
+                    console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
+
+                    let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d=>d._id == idDesarrollo));
+                    console.log(`Actividad: ${laActividad.nombre}`);
+                    var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
+                    elDesarrollo.estado=nuevoEstado;
+                }
+            } catch (error) {
+                console.log(`Error buscando desarrollo en la base de datos: E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            try {
+                await elGrupo.save();
+            } catch (error) {
+                console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Estado de desarrollo cambiado`);
+            return elDesarrollo;
+
+        },    
+        addEstudianteGrupoEstudiantil: async function (_: any, { idEstudiante, idGrupoEstudiantil }, contexto: contextoQuery) {
             console.log(`petición de añadir el estudiante con id ${idEstudiante} a grupo estudiantil con id ${idGrupoEstudiantil}`);
-            let credencialesUsuario=contexto.usuario;
-            if(!credencialesUsuario){
+            let credencialesUsuario = contexto.usuario;
+            if (!credencialesUsuario) {
                 console.log("No habia credenciales de usuario")
-                throw new AuthenticationError("No autorizado");             
+                throw new AuthenticationError("No autorizado");
             }
 
             try {
@@ -254,9 +296,9 @@ export const resolvers={
 
             //Authorizaion
 
-            let permisosValidos=["superadministrador"];
+            let permisosValidos = ["superadministrador"];
 
-            if (!credencialesUsuario.permisos.some(p=>permisosValidos.includes(p))){
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`No tiene los permisos necesarios, cancelando.`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -295,21 +337,21 @@ export const resolvers={
         removeEstudianteGrupoEstudiantil: async function (_: any, { idGrupo, idEstudiante }: any, contexto: contextoQuery) {
             console.log(`Solicitud de remover un estudiante con id ${idEstudiante} de un grupo estudiantil con id ${idGrupo}`);
             let credencialesUsuario = contexto.usuario;
-    
-            if(!credencialesUsuario){
-                console.log("No habia credenciales de usuario")
-                throw new AuthenticationError("No autorizado");             
-            }
-    
-             //Authorización
 
-             let permisosValidos=["superadministrador"];
-    
-             if (!credencialesUsuario.permisos.some(p=>permisosValidos.includes(p))) {
+            if (!credencialesUsuario) {
+                console.log("No habia credenciales de usuario")
+                throw new AuthenticationError("No autorizado");
+            }
+
+            //Authorización
+
+            let permisosValidos = ["superadministrador"];
+
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`Error de autenticacion removiendo responsable o posible responsable de grupo estudiantil`);
                 throw new AuthenticationError("No autorizado");
             }
-    
+
             try {
                 var elGrupoEstudiantil = await GrupoEstudiantil.findById(idGrupo).exec();
             }
@@ -317,8 +359,8 @@ export const resolvers={
                 console.log("Error buscando el grupo estudiantil en la base de datos. E: " + error);
                 throw new ApolloError("Error de conexión con la base de datos");
             }
-    
-           
+
+
             try {
                 var elUsuario = await Usuario.findById(idEstudiante).exec();
                 if (!elUsuario) {
@@ -330,14 +372,14 @@ export const resolvers={
                 console.log("Error buscando al usuario en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-    
+
             let indexEstudiante = elGrupoEstudiantil.estudiantes.indexOf(idEstudiante);
-    
+
             if (indexEstudiante > -1) {
                 console.log(`sacando al estudiante ${idEstudiante} del grupo`);
                 elGrupoEstudiantil.estudiantes.splice(indexEstudiante, 1);
-            }        
-    
+            }
+
             try {
                 await elGrupoEstudiantil.save();
             }
@@ -347,9 +389,9 @@ export const resolvers={
             }
             console.log(`GrupoEstudiantil guardado`);
             return elGrupoEstudiantil
-    
-        },        
-        crearActividadEnGrupoEstudiantil: async function (_: any, { idGrupo}: any, contexto: contextoQuery) {
+
+        },
+        crearActividadEnGrupoEstudiantil: async function (_: any, { idGrupo }: any, contexto: contextoQuery) {
             console.log(`Peticion de crear ua nueva actividad en el grupo con id ${idGrupo}`);
 
             try {
@@ -362,7 +404,7 @@ export const resolvers={
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            
+
             if (!credencialesUsuario.permisos.includes("actividadesEstudiantiles-profe")) {
                 console.log(`Error: el usuario no era profe`);
                 throw new AuthenticationError("No autorizado");
@@ -371,8 +413,8 @@ export const resolvers={
             console.log(`creando una nueva actividad en el grupo ${elGrupoEstudiantil.nombre}`);
             console.log(`las actividades eran: ${elGrupoEstudiantil.actividades}`);
             try {
-                var nuevaActividad = elGrupoEstudiantil.actividades.create({fechaCreacion: Date.now(), idCreador: credencialesUsuario.id});
-                
+                var nuevaActividad = elGrupoEstudiantil.actividades.create({ fechaCreacion: Date.now(), idCreador: credencialesUsuario.id });
+
                 elGrupoEstudiantil.actividades.push(nuevaActividad);
                 await elGrupoEstudiantil.save();
             }
@@ -381,27 +423,27 @@ export const resolvers={
                 throw new ApolloError("Error introduciendo la actividad en el proyecto");
             }
 
-            
+
             console.log(`Actividad creada exitosamente: ${nuevaActividad}`);
             return nuevaActividad;
 
 
         },
-        eliminarActividadDeGrupoEstudiantil: async function (_: any, { idActividad, idGrupo}: any, contexto: contextoQuery) {
+        eliminarActividadDeGrupoEstudiantil: async function (_: any, { idActividad, idGrupo }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||||||||`);
             console.log(`peticion de eliminar una actividad con id ${idActividad} de un proyecto con id ${idGrupo}`);
 
             try {
                 var elGrupo = await GrupoEstudiantil.findById(idGrupo).exec();
                 console.log(`Grupo encontrado`);
-                var laActividad=elGrupo.actividades.id(idActividad);
+                var laActividad = elGrupo.actividades.id(idActividad);
             }
             catch (error) {
                 console.log("Error buscando el grupo en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            
+
             //Authorización
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario.permisos.includes("actividadesEstudiantiles-administrador") && !credencialesUsuario.permisos.includes("superadministrador") && laActividad.idCreador != credencialesUsuario.id) {
@@ -428,12 +470,14 @@ export const resolvers={
 
             //Eliminando carpeta
 
-            let pathActividad=path.join(__dirname, "../public/actividadesProfes/actividades", idActividad);
-            
-            fs.rmdir(pathActividad, {recursive:true}, (err)=>{
-                console.log(`Error eliminando carpeta de actividad. E: ${err}`);
+            let pathActividad = path.join(__dirname, "../public/actividadesProfes/actividades", idActividad);
+
+            fs.rmdir(pathActividad, { recursive: true }, (err) => {
+                if (err) {
+                    console.log(`Error eliminando carpeta de actividad. E: ${err}`);
+                }
             });
-            
+
             return true;
         },
         async cambiarNombreActividadGrupoEstudiantil(_: any, { idGrupo, idActividad, nuevoNombre }, contexto: contextoQuery) {
@@ -456,7 +500,7 @@ export const resolvers={
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
-            if(!elGrupo.actividades.id(idActividad)){                
+            if (!elGrupo.actividades.id(idActividad)) {
                 console.log(`Actividad no encontrada en el grupo`);
                 throw new ApolloError("Error conectando con la bse de datos");
             }
@@ -464,11 +508,11 @@ export const resolvers={
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (elGrupo.actividades.id(idActividad).idCreador!=credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+            if (elGrupo.actividades.id(idActividad).idCreador != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
-            
+
             try {
                 elGrupo.actividades.id(idActividad).nombre = nuevoNombre;
             }
@@ -487,36 +531,36 @@ export const resolvers={
             console.log(`Nombre cambiado`);
             return elGrupo.actividades.id(idActividad);
         },
-        eliminarParticipacionActividadEstudiantil: async function (_: any, { idParticipacion}: any, contexto: contextoQuery) {
-            let credencialesUsuario=contexto.usuario;
-            if(!credencialesUsuario){
+        eliminarParticipacionActividadEstudiantil: async function (_: any, { idParticipacion }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            if (!credencialesUsuario) {
                 console.log("No habia credenciales de usuario")
-                throw new AuthenticationError("No autorizado");                                    
+                throw new AuthenticationError("No autorizado");
             }
-             //Authorizaion
+            //Authorizaion
 
-             let permisosValidos=["superadministrador", "actividadesEstudiantiles-administrador"];
+            let permisosValidos = ["superadministrador", "actividadesEstudiantiles-administrador"];
 
-             if (!credencialesUsuario.permisos.some(p=>permisosValidos.includes(p))){
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`No tiene los permisos necesarios, cancelando.`);
                 throw new AuthenticationError("No autorizado");
             }
 
             try {
-                var elGrupo=await GrupoEstudiantil.findOne({"actividades.desarrollos.participaciones._id":mongoose.Types.ObjectId(idParticipacion)}).exec();
-                if(!elGrupo){
+                var elGrupo = await GrupoEstudiantil.findOne({ "actividades.desarrollos.participaciones._id": mongoose.Types.ObjectId(idParticipacion) }).exec();
+                if (!elGrupo) {
                     console.log(`No se encontró grupo`);
                 }
-                else{
+                else {
                     console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
 
-                    let laActividad=elGrupo.actividades.find(a=>a.desarrollos.some(d=>d.participaciones.some(p=>p._id==idParticipacion)));
+                    let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d => d.participaciones.some(p => p._id == idParticipacion)));
                     console.log(`Actividad: ${laActividad.nombre}`);
-                    let lasParticipaciones=laActividad.desarrollos.find(d=>d.participaciones.some(p=>p._id==idParticipacion)).participaciones;
+                    let lasParticipaciones = laActividad.desarrollos.find(d => d.participaciones.some(p => p._id == idParticipacion)).participaciones;
 
-                    console.log(`Participaciones: ${lasParticipaciones}`); 
-                    lasParticipaciones.pull({_id:idParticipacion});
-                    console.log(`Participaciones: ${lasParticipaciones}`); 
+                    console.log(`Participaciones: ${lasParticipaciones}`);
+                    lasParticipaciones.pull({ _id: idParticipacion });
+                    console.log(`Participaciones: ${lasParticipaciones}`);
                 }
             } catch (error) {
                 console.log(`Error buscando grupo en la base de datos: E: ${error}`);
@@ -534,7 +578,7 @@ export const resolvers={
             return true;
         },
     },
-    
+
     GrupoEstudiantil: {
         estudiantes: async function (parent: any, _: any, __: any) {
             if (!parent.estudiantes) {
@@ -553,13 +597,13 @@ export const resolvers={
             return usuariosEstudiantes;
         },
     },
-    ParticipacionActividadGrupoEstudiantil : {
+    ParticipacionActividadGrupoEstudiantil: {
         autor: async function (parent: any, _: any, __: any) {
             if (!parent.idAutor) {
                 return {
-                    id:"0",
-                    nombres:"?",
-                    apellidos:"?"
+                    id: "0",
+                    nombres: "?",
+                    apellidos: "?"
                 }
             }
             let idAutor = parent.idAutor;
@@ -569,9 +613,9 @@ export const resolvers={
             } catch (error) {
                 console.log(`error buscando al autor de la participacion. E: ${error}`);
                 return {
-                    id:"0",
-                    nombres:"?",
-                    apellidos:"?"
+                    id: "0",
+                    nombres: "?",
+                    apellidos: "?"
                 }
             }
 
@@ -580,8 +624,8 @@ export const resolvers={
         },
     },
 
-    ActividadGrupoEstudiantil:{
-        creador:async function(parent:any, _:any, __:any){
+    ActividadGrupoEstudiantil: {
+        creador: async function (parent: any, _: any, __: any) {
             if (!parent.idCreador) {
                 return [];
             }
@@ -595,41 +639,41 @@ export const resolvers={
             }
             return usuarioCreador;
         },
-        hayGuia: async function(parent: any){
-            let idActividad=null;
-            if("id" in parent){
-                idActividad=parent.id                                
+        hayGuia: async function (parent: any) {
+            let idActividad = null;
+            if ("id" in parent) {
+                idActividad = parent.id
             }
-            else if("_id" in parent){
-                idActividad=parent._id.toString();
+            else if ("_id" in parent) {
+                idActividad = parent._id.toString();
             }
-            else{
+            else {
                 console.log(`No habia campo id en el parent para decidir si HAY GUIA`);
                 return false
             }
-            
-            let pathGuia=path.join(__dirname, "../public/actividadesProfes/actividades", idActividad, "guia.pdf");
-            
+
+            let pathGuia = path.join(__dirname, "../public/actividadesProfes/actividades", idActividad, "guia.pdf");
+
             try {
                 await access(pathGuia, fs.constants.R_OK);
             } catch (error) {
-                if(error.message.substr(0,6)!="ENOENT"){
-                console.log(`Error checkeando acceso a la guia en ${pathGuia}. E: ${error}`);
+                if (error.message.substr(0, 6) != "ENOENT") {
+                    console.log(`Error checkeando acceso a la guia en ${pathGuia}. E: ${error}`);
                 }
-                else{
-                console.log(`Guia no existia`);
+                else {
+                    console.log(`Guia no existia`);
                 }
                 return false;
             }
             return true;
         },
-        id: async function(parent: any){
+        id: async function (parent: any) {
             return parent._id;
         }
     },
 
-    DesarrolloActividadGrupoEstudiantil:{
-        estudiante:async function(parent:any, _:any, __:any){
+    DesarrolloActividadGrupoEstudiantil: {
+        estudiante: async function (parent: any, _: any, __: any) {
             if (!parent.idEstudiante) {
                 return [];
             }
@@ -644,35 +688,35 @@ export const resolvers={
             return usuarioEstudiante;
         },
     },
-    InfoArchivo:{
-        accesible:async function(parent:any){
-            let nombreArchivo="";
-            if("nombre" in parent){
-                nombreArchivo+=parent.nombre
+    InfoArchivo: {
+        accesible: async function (parent: any) {
+            let nombreArchivo = "";
+            if ("nombre" in parent) {
+                nombreArchivo += parent.nombre
             }
-            else{
+            else {
                 console.log(`No habia nombre para buscar el archivo`);
                 return false;
             }
 
-            if("extension" in parent){
-                nombreArchivo+="."+parent.extension;
+            if ("extension" in parent) {
+                nombreArchivo += "." + parent.extension;
             }
-            else{
+            else {
                 console.log(`No habia info de la extension en la base de datos`);
                 return false
             }
-            
-            let pathArchivo=path.join(__dirname, "../public/actividadesProfes/evidencias", nombreArchivo);
-            
+
+            let pathArchivo = path.join(__dirname, "../public/actividadesProfes/evidencias", nombreArchivo);
+
             try {
                 await access(pathArchivo, fs.constants.R_OK);
             } catch (error) {
-                if(error.message.substr(0,6)!="ENOENT"){
-                console.log(`Error checkeando acceso a la guia en ${pathArchivo}. E: ${error}`);
+                if (error.message.substr(0, 6) != "ENOENT") {
+                    console.log(`Error checkeando acceso a la guia en ${pathArchivo}. E: ${error}`);
                 }
-                else{
-                console.log(`Archivo no existia`);
+                else {
+                    console.log(`Archivo no existia`);
                 }
                 return false;
             }
@@ -680,7 +724,7 @@ export const resolvers={
         }
     }
 
-    
+
 }
 
 

@@ -1,26 +1,27 @@
 <template>
   <div id="app">
     <div id="navBar">
-      <div class="botonNav hoverGris" id="navHome" to="/">Home</div>
-      <router-link to="/atlas">
-        <div class="botonNav hoverGris" id="navAtlas">
+      <div class="botonNav" id="navHome" to="/">Home</div>
+      <router-link to="/atlas" class="hoverGris">
+        <div class="botonNav" id="navAtlas">
           Atlas de conocimientos
         </div>
       </router-link>
-      <router-link to="/proyectos">
-        <div class="botonNav hoverGris" id="navProyectos">Proyectos</div>
+      <router-link to="/proyectos" class="hoverGris">
+        <div class="botonNav" id="navProyectos">Proyectos</div>
       </router-link>
-      <div class="botonNav hoverGris" id="navTrabajos">Trabajos</div>
-      <router-link to="/actividadesVirtuales2021" v-if="usuarioLogeado">
-        <div class="botonNav hoverGris" id="navActividadesVirtuales">
+      <div class="botonNav" id="navTrabajos">Trabajos</div>
+      <router-link to="/actividadesVirtuales2021" v-if="usuarioLogeado" class="hoverGris">
+        <div class="botonNav" id="navActividadesVirtuales">
           Actividades virtuales
         </div>
       </router-link>
       <router-link
         to="/personas"
         v-if="usuarioAdministrador || usuarioSuperadministrador"
+        class="hoverGris"
       >
-        <div class="botonNav hoverGris" id="navActividadesVirtuales">
+        <div class="botonNav" id="navActividadesVirtuales">
           Personas
         </div>
       </router-link>
@@ -50,7 +51,7 @@
         <template v-else>
           <router-link
             to="/registro"
-            class="botonNav hoverGris"
+            class="botonNav"
             id="navRegistro"
           >
             <div>Registro</div></router-link
@@ -174,12 +175,73 @@ body {
   background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
     no-repeat;
 }
+
+.botonNav {
+  padding-top: 10px;
+  padding-left: 15px;
+  padding-right: 15px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 16px;
+  font-family: Avenir, helvetica;
+}
+
+.hoverGris:hover {
+  background-color: rgb(201, 201, 201);
+}
+.router-link-active{
+  background-color: rgb(201, 201, 201);
+}
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+
+  /* Position the tooltip text */
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+
+  /* Fade in tooltip */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Tooltip arrow */
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+.noUserSelect{
+  user-select: none;
+}
+</style>
+
+<style scoped>
 #app {
   width: 100%;
   height: 100%;
   display: grid;
   grid-template-rows: 40px 1fr 5px;
-  row-gap: 5px;
   padding-left: 5px;
   padding-right: 5px;
   box-sizing: border-box;
@@ -203,15 +265,6 @@ body {
   display: flex;
   z-index: 100;
 }
-.botonNav {
-  padding-top: 10px;
-  padding-left: 15px;
-  padding-right: 15px;
-  cursor: pointer;
-  user-select: none;
-  font-size: 16px;
-  font-family: Avenir, helvetica;
-}
 #navLogged {
   position: relative;
 }
@@ -232,7 +285,5 @@ body {
   padding-right: 35px;
   min-width: 150px;
 }
-.hoverGris:hover {
-  background-color: rgb(201, 201, 201);
-}
+
 </style>

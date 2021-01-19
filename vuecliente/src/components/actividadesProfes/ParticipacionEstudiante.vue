@@ -82,9 +82,8 @@ export default {
 <style scoped>
 .participacionEstudiante {
   background-color: rgb(253, 249, 253);
- 
-  border-radius: 10px;
   padding: 10px;
+  border-bottom-style: groove;
 }
 .participacionPropia {
   border-bottom: 2px solid pink;

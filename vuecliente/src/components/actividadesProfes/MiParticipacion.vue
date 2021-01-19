@@ -84,6 +84,10 @@ export default {
       let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
       var datos = new FormData();
       const comentario = this.comentario;
+      if(comentario==""){
+        alert("¡Tu mensaje está vacío!");
+        return;
+      }
       if (!inputArchivoAdjunto.value) {
         console.log(`El input de archivo adjunto estaba vacio`);
       } else {

@@ -9,7 +9,7 @@ import Proyecto from "./components/Proyecto.vue"
 import Registro from "./components/Registro.vue"
 import ActividadesEstudiantiles from "./components/ActividadesEstudiantiles.vue"
 import Personas from "./components/Personas.vue"
-import GrupoEstudiantil from "./components/actividadesProfes/GrupoEstudiantil.vue"
+import ActividadesDeGrupo from "./components/actividadesProfes/ActividadesDeGrupo.vue"
 import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
 
 Vue.use(Router);
@@ -25,7 +25,7 @@ const routes=[
     {path:"/actividadesVirtuales2021", component: ActividadesEstudiantiles, children:[
         {
             path:'grupoEstudiantil/:idGrupo',
-            component: GrupoEstudiantil
+            component: ActividadesDeGrupo
         },
         {
             path:'actividadesProfes/:idProfe',

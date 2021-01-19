@@ -1,6 +1,7 @@
 <template>
-  <div class="actividad" :class="{ seleccionada: seleccionada }">
-    <div
+  <div class="actividad" :class="{ seleccionada: seleccionada}">
+    <div id="triangulito" :class="{arrowDown: seleccionada}" @click.stop="$emit('clickTrianguloSeleccion')"></div>
+    <span
       id="nombre"
       ref="nombre"
       class="nombreZona"
@@ -10,8 +11,8 @@
       @keypress.enter="blurNombre"
     >
       {{ estaActividad.nombre }}
-    </div>
-
+    </span>
+  <br>
     <div id="zonaGuia" v-show="seleccionada" class="zona">
       <div
         class="nombreZona"
@@ -28,6 +29,7 @@
         ref="inputNuevaGuia"
         @change="subirNuevaGuia"
         v-if="usuarioCreadorActividad"
+        accept="application/pdf"
       />
 
       <div
@@ -61,28 +63,20 @@
       </div>
     </div>
 
-    <div id="zonaDesarrollos" class="zona" v-show="seleccionada">
-      <div class="desarrollo" id="miDesarrollo" v-if="!usuarioCreadorActividad">
-        <participacion-estudiante
-          :key="participacion.id"
-          :indice="index"
-          :nombreEstudiante="'yo'"
-          :idEstudianteDesarrollo="$store.state.usuario.id"
-          v-for="(participacion, index) of miDesarrollo.participaciones"
-          :estaParticipacion="participacion"
-        />
+    <div id="zonaDesarrollos" class="zona" v-show="seleccionada && (idEstudianteSeleccionado!=null || !usuarioCreadorActividad)">
+      <div class="desarrollo" id="miNuevoDesarrollo" v-if="!usuarioCreadorActividad && !usuarioTieneDesarrollo">        
         <mi-participacion
           :idActividad="estaActividad.id"
           @reloadDesarrollo="reloadDesarrolloUsuario()"
           :participacionEstudiante="true"
         />
       </div>
-      <div id="desarrollosEstudiantes" v-if="usuarioProfe">
+      <div id="desarrollosEstudiantes">
         <div
           class="desarrollo"
           :key="desarrollo.id"
-          v-for="desarrollo of estaActividad.desarrollos"
-          v-show="desarrollo.estudiante.id == idEstudianteSeleccionado"
+          v-for="desarrollo of estaActividad.desarrollos"          
+          v-show="idEstudianteSeleccionado==desarrollo.estudiante.id"
         >
           {{ desarrollo.estudiante.nombres }}
           <participacion-estudiante
@@ -101,14 +95,16 @@
             :participacionEstudiante="
               desarrollo.estudiante.id == $store.state.usuario.id
             "
+            v-if="desarrollo.estado!='completado'"
             @reloadDesarrollo="reloadDesarrollo(desarrollo.id)"
           />
+          <div v-if="usuarioCreadorActividad" id="botonToggleDesarrolloCompletado"> <img :class="{completado: desarrollo.estado=='completado'}" @click="toggleDesarrolloCompletado(desarrollo.id, desarrollo.estado)" id="botonToggleDesarrolloCompletado" src="/iconos/success.png" alt="Marcar como completado"/></div>
         </div>
       </div>
     </div>
 
     <div id="controlesActividad" v-show="seleccionada == true">
-      <div class="controlesActividad hoverGris" @click="eliminarse">
+      <div id="botonEliminarActividad" class="controlesActividad" @click="eliminarse">
         Eliminar
       </div>
     </div>
@@ -183,7 +179,7 @@ export default {
   data() {
     return {
       nombreEditandose: false,
-      idEstudianteSeleccionado: null,
+      idEstudianteSeleccionado: this.$store.state.usuario.id,
     };
   },
   props: {
@@ -353,26 +349,37 @@ export default {
           console.log("errores: " + error);
         });
     },
+    toggleDesarrolloCompletado(idDesarrollo, actualEstado){
+      console.log(`Toggling estado de desarrollo ${idDesarrollo} que estaba en ${actualEstado}`);
+      let nuevoEstado= actualEstado=="completado" ? "desarrollando" : "completado";
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idDesarrollo:ID!, $nuevoEstado:String){
+            setEstadoDesarrolloActividadEstudiantil(idDesarrollo:$idDesarrollo, nuevoEstado:$nuevoEstado){
+              id
+              estado
+            }
+          }
+        `,
+        variables:{
+          idDesarrollo,
+          nuevoEstado,
+        }
+      }).then(()=>{
+
+      }).catch((error)=>{
+        console.log(`Error: ${error}`);
+      })
+    },
+    
   },
   computed: {
     usuarioCreadorActividad: function () {
       return this.$store.state.usuario.id == this.estaActividad.creador.id;
     },
-    miDesarrollo: function () {
-      if (
-        this.estaActividad.desarrollos.some(
-          (d) => d.estudiante.id == this.$store.state.usuario.id
-        )
-      ) {
-        return this.estaActividad.desarrollos.find(
-          (d) => d.estudiante.id == this.$store.state.usuario.id
-        );
-      } else {
-        return {
-          participaciones: [],
-        };
-      }
-    },
+    usuarioTieneDesarrollo:function(){
+      return this.estaActividad.desarrollos.some(d=>d.estudiante.id==this.$store.state.usuario.id);
+    },   
     usuarioProfe: function () {
       if (!this.$store.state.usuario.permisos) return false;
       return this.$store.state.usuario.permisos.includes(
@@ -389,6 +396,9 @@ export default {
   padding: 5px 15px;
   position: relative;
 }
+.actividad:not(.seleccionada){
+  cursor: pointer;
+}
 .seleccionada {
   background-color: rgb(240, 240, 240);
   padding-bottom: 30px;
@@ -400,6 +410,9 @@ export default {
   text-align: center;
   font-weight: bold;
   font-size: 18px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
 }
 #controlesActividad {
   position: absolute;
@@ -410,8 +423,11 @@ export default {
 }
 .controlesActividad {
   padding: 3px 5px;
+  cursor: pointer;
 }
-
+#botonEliminarActividad:hover{
+  background-color: red;
+}
 .zona {
   border: 2px solid pink;
   border-radius: 10px;
@@ -455,5 +471,38 @@ export default {
 }
 .miParticipacion {
   margin-top: 20px;
+}
+#triangulito{
+  position: absolute;
+  
+  left: 4px;
+  cursor:pointer
+}
+#triangulito:not(.arrowDown){
+width: 0; 
+  height: 0; 
+  border-top: 15px solid transparent;
+  border-bottom: 15px solid transparent;
+  border-left: 15px solid gray;
+  top:50%;
+  transform: translateY(-50%);
+}
+.arrowDown {
+  top: 10px;  
+  width: 0; 
+  height: 0; 
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;  
+  border-top: 15px solid gray;
+}
+#botonToggleDesarrolloCompletado{
+  margin: 10px auto;
+  cursor: pointer;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+#botonToggleDesarrolloCompletado.completado{
+  background-color: green;
 }
 </style>

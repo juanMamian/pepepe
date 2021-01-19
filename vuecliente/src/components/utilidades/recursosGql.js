@@ -11,3 +11,35 @@ fragment fragResponsables on PublicUsuario {
   lugarResidencia
 }
 `;
+
+export const fragmentoActividad = gql`
+fragment fragActividad on ActividadGrupoEstudiantil {
+  id
+  nombre
+  hayGuia
+  creador {
+    ...fragResponsables
+  }
+  desarrollos {
+    id
+    estado
+    estudiante {
+      ...fragResponsables
+    }
+    participaciones {
+      id
+      fechaUpload
+      archivo {
+        extension
+        nombre
+        accesible
+      }
+      comentario
+      autor {
+        ...fragResponsables
+      }
+    }
+  }
+}
+${fragmentoResponsables}
+`;

@@ -149,7 +149,7 @@ router.post("/updateFoto", upload.single("nuevaFoto"), async function(req, res){
 
 router.get("/fotografias/:id", async function(req, res){
     const idUsuario=req.params.id;
-    if(idUsuario=="null" || idUsuario=="undefined" || !idUsuario){
+    if(idUsuario=="null" || idUsuario=="undefined" || idUsuario=="-1" || !idUsuario){
         return res.sendFile(path.join(__dirname, '../public/media/iconos/usuarioDefault.png'));
     }
     try{

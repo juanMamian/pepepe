@@ -6,7 +6,8 @@
         v-for="actividad of actividades"
         :key="actividad.id"
         :estaActividad="actividad"
-        @click.native="idActividadSeleccionada = actividad.id"
+        @click.native="idActividadSeleccionada != actividad.id ? idActividadSeleccionada=actividad.id : null"
+        @clickTrianguloSeleccion="idActividadSeleccionada==actividad.id? idActividadSeleccionada=null: idActividadSeleccionada=actividad.id"
         :seleccionada="idActividadSeleccionada == actividad.id"
       />
     </div>
@@ -16,7 +17,7 @@
 <script>
 import gql from "graphql-tag";
 import IconoPersona from "../proyecto/IconoPersona";
-import { fragmentoResponsables } from "../utilidades/recursosGql";
+import { fragmentoActividad, fragmentoResponsables } from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 export default {
   name: "ActividadesDeProfe",
@@ -43,34 +44,11 @@ export default {
       query: gql`
         query($idProfe: ID!, $idGrupo:ID!) {
           actividadesEstudiantilesDeProfeDeGrupo(idProfe: $idProfe, idGrupo:$idGrupo) {
-            id
-            nombre
-            hayGuia
-            creador {
-              ...fragResponsables
-            }
-            desarrollos{
-              id
-              estudiante{
-                ...fragResponsables
-              }
-              participaciones{
-                id
-                fechaUpload
-                comentario
-                archivo{
-                  extension
-                  nombre
-                  accesible
-                }
-                autor{
-                  ...fragResponsables
-                }
-              }
-            }
+            ...fragActividad
           }
         }
         ${fragmentoResponsables}
+        ${fragmentoActividad}
       `,
       variables() {
         console.log(`Enviando la query de actividades con idProfe: ${this.$route.params.idProfe}, idGrupo: ${this.$store.state.usuario.idGrupoEstudiantil}`);

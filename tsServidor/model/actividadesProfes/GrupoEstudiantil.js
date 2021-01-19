@@ -36,7 +36,7 @@ const esquemaDesarrollo = new mongoose.Schema({
         type:String,
         default:"desarrollando",
         required:true,
-        enum: ["desarrollando", "terminado"]
+        enum: ["desarrollando", "completado"]
     },
     participaciones: {
         type: [esquemaParticipacion],

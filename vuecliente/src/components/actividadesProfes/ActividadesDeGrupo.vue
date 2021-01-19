@@ -66,7 +66,16 @@
           :estaActividad="actividad"
           :seleccionada="idActividadSeleccionada == actividad.id"
           :idGrupo="esteGrupo.id"
-          @click.native="idActividadSeleccionada = actividad.id"
+          @click.native="
+            idActividadSeleccionada != actividad.id
+              ? (idActividadSeleccionada = actividad.id)
+              : null
+          "
+          @clickTrianguloSeleccion="
+            idActividadSeleccionada == actividad.id
+              ? (idActividadSeleccionada = null)
+              : (idActividadSeleccionada = actividad.id)
+          "
           @eliminandose="eliminarActividad"
           @cambiandoNombre="cambiarNombreActividad"
           v-show="
@@ -82,7 +91,10 @@
 <script>
 import IconoPersona from "../proyecto/IconoPersona";
 import gql from "graphql-tag";
-import { fragmentoResponsables } from "../utilidades/recursosGql";
+import {
+  fragmentoActividad,
+  fragmentoResponsables,
+} from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 
 const QUERY_GRUPO = gql`
@@ -94,39 +106,16 @@ const QUERY_GRUPO = gql`
         ...fragResponsables
       }
       actividades {
-        id
-        nombre
-        hayGuia
-        creador {
-          ...fragResponsables
-        }
-        desarrollos {
-          id
-          estudiante {
-            ...fragResponsables
-          }
-          participaciones {
-            id
-            fechaUpload
-            archivo {
-              extension
-              nombre
-              accesible
-            }
-            comentario
-            autor {
-              ...fragResponsables
-            }
-          }
-        }
+        ...fragActividad
       }
     }
   }
   ${fragmentoResponsables}
+  ${fragmentoActividad}
 `;
 
 export default {
-  name: "GrupoEstudiantil",
+  name: "ActividadesDeGrupo",
   apollo: {
     esteGrupo: {
       query: QUERY_GRUPO,
