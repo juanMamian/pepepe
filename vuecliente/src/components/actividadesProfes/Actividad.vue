@@ -1,6 +1,10 @@
 <template>
-  <div class="actividad" :class="{ seleccionada: seleccionada}">
-    <div id="triangulito" :class="{arrowDown: seleccionada}" @click.stop="$emit('clickTrianguloSeleccion')"></div>
+  <div class="actividad" :class="{ seleccionada: seleccionada, completada: usuarioCompletoActividad }">
+    <div
+      id="triangulito"
+      :class="{ arrowDown: seleccionada }"
+      @click.stop="$emit('clickTrianguloSeleccion')"
+    ></div>
     <span
       id="nombre"
       ref="nombre"
@@ -12,7 +16,7 @@
     >
       {{ estaActividad.nombre }}
     </span>
-  <br>
+    <br />
     <div id="zonaGuia" v-show="seleccionada" class="zona">
       <div
         class="nombreZona"
@@ -42,7 +46,9 @@
     <div
       id="zonaParticipantes"
       class="zona"
-      v-if="usuarioCreadorActividad"
+      v-if="
+        usuarioCreadorActividad || usuarioAdministradorActividadesEstudiantiles
+      "
       v-show="seleccionada"
     >
       <div class="nombreZona">Participantes</div>
@@ -63,11 +69,26 @@
       </div>
     </div>
 
-    <div id="zonaDesarrollos" class="zona" v-show="seleccionada && (idEstudianteSeleccionado!=null || !usuarioCreadorActividad)">
-      <div class="desarrollo" id="miNuevoDesarrollo" v-if="!usuarioCreadorActividad && !usuarioTieneDesarrollo">        
+    <div
+      id="zonaDesarrollos"
+      class="zona"
+      v-show="
+        seleccionada &&
+        (idEstudianteSeleccionado != null || !usuarioCreadorActividad)
+      "
+    >
+      <div
+        class="desarrollo"
+        id="miNuevoDesarrollo"
+        v-if="
+          !usuarioCreadorActividad &&
+          !usuarioTieneDesarrollo &&
+          idEstudianteSeleccionado == this.$store.state.usuario.id
+        "
+      >
         <mi-participacion
           :idActividad="estaActividad.id"
-          @reloadDesarrollo="reloadDesarrolloUsuario()"
+          @reloadDesarrollo="reloadDesarrollosActividad()"
           :participacionEstudiante="true"
         />
       </div>
@@ -75,8 +96,8 @@
         <div
           class="desarrollo"
           :key="desarrollo.id"
-          v-for="desarrollo of estaActividad.desarrollos"          
-          v-show="idEstudianteSeleccionado==desarrollo.estudiante.id"
+          v-for="desarrollo of estaActividad.desarrollos"
+          v-show="idEstudianteSeleccionado == desarrollo.estudiante.id"
         >
           {{ desarrollo.estudiante.nombres }}
           <participacion-estudiante
@@ -95,16 +116,34 @@
             :participacionEstudiante="
               desarrollo.estudiante.id == $store.state.usuario.id
             "
-            v-if="desarrollo.estado!='completado'"
+            v-if="desarrollo.estado != 'completado'"
             @reloadDesarrollo="reloadDesarrollo(desarrollo.id)"
           />
-          <div v-if="usuarioCreadorActividad" id="botonToggleDesarrolloCompletado"> <img :class="{completado: desarrollo.estado=='completado'}" @click="toggleDesarrolloCompletado(desarrollo.id, desarrollo.estado)" id="botonToggleDesarrolloCompletado" src="/iconos/success.png" alt="Marcar como completado"/></div>
+          <div
+            v-if="usuarioCreadorActividad"
+            id="botonToggleDesarrolloCompletado"
+          >
+            <img
+              :class="{ completado: desarrollo.estado == 'completado' }"
+              @click="
+                toggleDesarrolloCompletado(desarrollo.id, desarrollo.estado)
+              "
+              id="botonToggleDesarrolloCompletado"
+              src="/iconos/success.png"
+              alt="Marcar como completado"
+            />
+          </div>
         </div>
       </div>
     </div>
 
     <div id="controlesActividad" v-show="seleccionada == true">
-      <div id="botonEliminarActividad" class="controlesActividad" @click="eliminarse">
+      <div
+        id="botonEliminarActividad"
+        class="controlesActividad"
+        @click="eliminarse"
+        v-if="usuarioCreadorActividad"
+      >
         Eliminar
       </div>
     </div>
@@ -118,33 +157,22 @@ import gql from "graphql-tag";
 import MiParticipacion from "./MiParticipacion.vue";
 import ParticipacionEstudiante from "./ParticipacionEstudiante.vue";
 import IconoPersona from "../proyecto/IconoPersona.vue";
-import { fragmentoResponsables } from "../utilidades/recursosGql";
+import {
+  fragmentoDesarrollo,
+  fragmentoResponsables,
+} from "../utilidades/recursosGql";
 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
-const QUERY_DESARROLLO_USUARIO = gql`
-  query($idEstudiante: ID!, $idActividad: ID!) {
-    desarrolloUsuarioEnActividadEstudiantil(
-      idActividad: $idActividad
-      idEstudiante: $idEstudiante
-    ) {
+const QUERY_DESARROLLOS_ACTIVIDAD = gql`
+  query($idActividad: ID!) {
+    actividadEstudiantil(idActividad: $idActividad) {
       id
-      estado
-      participaciones {
-        id
-        fechaUpload
-        comentario
-        archivo {
-          extension
-          nombre
-          accesible
-        }
-        autor {
-          ...fragResponsables
-        }
+      desarrollos {
+        ...fragDesarrollo
       }
     }
   }
-  ${fragmentoResponsables}
+  ${fragmentoDesarrollo}
 `;
 
 const QUERY_DESARROLLO = gql`
@@ -294,17 +322,19 @@ export default {
           alert("Archivo no encontrado");
         });
     },
-    reloadDesarrolloUsuario() {
+    reloadDesarrollosActividad() {
+      let idActividad = this.estaActividad.id;
       this.$apollo
         .query({
-          query: QUERY_DESARROLLO_USUARIO,
+          query: QUERY_DESARROLLOS_ACTIVIDAD,
           fetchPolicy: "network-only",
           variables: {
-            idEstudiante: this.$store.state.usuario.id,
-            idActividad: this.estaActividad.id,
+            idActividad,
           },
         })
-        .then(() => {})
+        .then(() => {
+          console.log(`Desarrollos de actividad reloaded`);
+        })
         .catch((error) => {
           console.log(
             `Error en query de actualizacion de mi desarrollo. E: ${error}`
@@ -349,37 +379,56 @@ export default {
           console.log("errores: " + error);
         });
     },
-    toggleDesarrolloCompletado(idDesarrollo, actualEstado){
-      console.log(`Toggling estado de desarrollo ${idDesarrollo} que estaba en ${actualEstado}`);
-      let nuevoEstado= actualEstado=="completado" ? "desarrollando" : "completado";
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idDesarrollo:ID!, $nuevoEstado:String){
-            setEstadoDesarrolloActividadEstudiantil(idDesarrollo:$idDesarrollo, nuevoEstado:$nuevoEstado){
-              id
-              estado
+    toggleDesarrolloCompletado(idDesarrollo, actualEstado) {
+      console.log(
+        `Toggling estado de desarrollo ${idDesarrollo} que estaba en ${actualEstado}`
+      );
+      let nuevoEstado =
+        actualEstado == "completado" ? "desarrollando" : "completado";
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idDesarrollo: ID!, $nuevoEstado: String) {
+              setEstadoDesarrolloActividadEstudiantil(
+                idDesarrollo: $idDesarrollo
+                nuevoEstado: $nuevoEstado
+              ) {
+                id
+                estado
+              }
             }
-          }
-        `,
-        variables:{
-          idDesarrollo,
-          nuevoEstado,
-        }
-      }).then(()=>{
-
-      }).catch((error)=>{
-        console.log(`Error: ${error}`);
-      })
+          `,
+          variables: {
+            idDesarrollo,
+            nuevoEstado,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+        });
     },
-    
   },
   computed: {
     usuarioCreadorActividad: function () {
       return this.$store.state.usuario.id == this.estaActividad.creador.id;
     },
-    usuarioTieneDesarrollo:function(){
-      return this.estaActividad.desarrollos.some(d=>d.estudiante.id==this.$store.state.usuario.id);
-    },   
+    usuarioTieneDesarrollo: function () {
+      return this.estaActividad.desarrollos.some(
+        (d) => d.estudiante.id == this.$store.state.usuario.id
+      );
+    },
+    usuarioCompletoActividad: function () {
+      if (this.usuarioTieneDesarrollo) {
+        let desarrolloUsuario = this.estaActividad.desarrollos.find(
+          (d) => d.estudiante.id == this.$store.state.usuario.id
+        );
+        if (desarrolloUsuario.estado == "completado") {
+          return true;
+        }
+      }
+      return false;
+    },
     usuarioProfe: function () {
       if (!this.$store.state.usuario.permisos) return false;
       return this.$store.state.usuario.permisos.includes(
@@ -396,8 +445,11 @@ export default {
   padding: 5px 15px;
   position: relative;
 }
-.actividad:not(.seleccionada){
+.actividad:not(.seleccionada) {
   cursor: pointer;
+}
+.actividad.completada{
+  background-color: rgb(172 216 172);
 }
 .seleccionada {
   background-color: rgb(240, 240, 240);
@@ -425,11 +477,11 @@ export default {
   padding: 3px 5px;
   cursor: pointer;
 }
-#botonEliminarActividad:hover{
+#botonEliminarActividad:hover {
   background-color: red;
 }
 .zona {
-  border: 2px solid pink;
+  border: 2px solid rgb(9, 53, 66);
   border-radius: 10px;
   padding: 10px;
 }
@@ -452,7 +504,7 @@ export default {
 
 #listaParticipantes {
   display: flex;
-  padding-bottom: 20px;
+  padding-bottom: 40px;
 }
 
 .iconoPersona {
@@ -472,37 +524,37 @@ export default {
 .miParticipacion {
   margin-top: 20px;
 }
-#triangulito{
+#triangulito {
   position: absolute;
-  
+
   left: 4px;
-  cursor:pointer
+  cursor: pointer;
 }
-#triangulito:not(.arrowDown){
-width: 0; 
-  height: 0; 
+#triangulito:not(.arrowDown) {
+  width: 0;
+  height: 0;
   border-top: 15px solid transparent;
   border-bottom: 15px solid transparent;
   border-left: 15px solid gray;
-  top:50%;
+  top: 50%;
   transform: translateY(-50%);
 }
 .arrowDown {
-  top: 10px;  
-  width: 0; 
-  height: 0; 
+  top: 10px;
+  width: 0;
+  height: 0;
   border-left: 15px solid transparent;
-  border-right: 15px solid transparent;  
+  border-right: 15px solid transparent;
   border-top: 15px solid gray;
 }
-#botonToggleDesarrolloCompletado{
+#botonToggleDesarrolloCompletado {
   margin: 10px auto;
   cursor: pointer;
   width: 50px;
   height: 50px;
   border-radius: 50%;
 }
-#botonToggleDesarrolloCompletado.completado{
+#botonToggleDesarrolloCompletado.completado {
   background-color: green;
 }
 </style>

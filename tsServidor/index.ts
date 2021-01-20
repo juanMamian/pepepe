@@ -1,4 +1,4 @@
-
+import http from "http"
 import express, {Application, Request, Response, NextFunction} from "express"
 const app: Application = express();
 const mongoose = require("mongoose");
@@ -7,9 +7,11 @@ dotenv.config();
 const usuariosRoutes = require("./routes/usuarios");
 const routesNodos = require("./routes/atlas/nodos");
 const routesActividadesProfes=require("./routes/actividadesProfes");
+
+
+
 const ejwt=require("express-jwt");
 import cors from "cors";
-
 import {aServer} from "./gql/Schema";
 
 mongoose.connect(
@@ -26,10 +28,14 @@ db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
   // we're connected!
 });
+
 app.use(express.static(__dirname+'/public'));
 app.use("/pepepe", express.static(__dirname+'/pepepe'));
 app.use(express.static(__dirname+'/pepepe'));
+
 aServer.applyMiddleware({app});
+
+
 
 const rutaFotografias=/api\/usuarios\/fotografias\/\S+/;
 const rutaGuias=/api\/actividadesProfes\/guia\/\S+/;
@@ -45,7 +51,14 @@ app.get("/pepepe", function(req:Request, res:Response){
   res.sendFile(__dirname+"/pepepe/index.html");
 });
 
-
 const port = process.env.PORT || 3000;
-app.listen(port, () => { console.log(`servidor Up en ${port}. Path gql: ${aServer.graphqlPath}. Subscriptions en ${aServer.subscriptionsPath}`) });
+
+const httpServer = http.createServer(app);
+aServer.installSubscriptionHandlers(httpServer);
+
+httpServer.listen(port, () => {
+  console.log(`🚀 Server ready at http://localhost:${port}${aServer.graphqlPath}`)
+  console.log(`🚀 Subscriptions ready at ws://localhost:${port}${aServer.subscriptionsPath}`)
+})
+//app.listen(port, () => { console.log(`servidor Up en ${port}. Path gql: ${aServer.graphqlPath}. Subscriptions en ${aServer.subscriptionsPath}`) });
 

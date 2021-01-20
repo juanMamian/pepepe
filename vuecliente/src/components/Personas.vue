@@ -65,10 +65,12 @@ export default {
     padding: 20px 20px;
     padding-bottom: 50px;
     border: 2px solid purple;
+    flex-flow: row wrap;
 }
 .iconoPersona{
     margin-left: 10px;
     margin-right:10px;
+    margin-bottom: 50px;
     border:1px solid black;
 }
 

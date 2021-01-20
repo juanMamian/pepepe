@@ -2,12 +2,12 @@ import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
 import fs from "fs";
 import util from "util";
 import mongoose from "mongoose";
-const access = util.promisify(fs.access);
-const GrupoEstudiantil = require("../model/actividadesProfes/GrupoEstudiantil").modeloGrupoEstudiantil;
-const Usuario = require("../model/Usuario").Usuario;
-const path = require("path");
-
+import {ModeloGrupoEstudiantil as GrupoEstudiantil} from "../model/actividadesProfes/GrupoEstudiantil"
+import {ModeloUsuario as Usuario} from "../model/Usuario";
+import path from "path"
 import { contextoQuery } from "./tsObjetos"
+
+const access = util.promisify(fs.access);
 
 export const typeDefs = gql`
 
@@ -52,6 +52,7 @@ export const typeDefs = gql`
         gruposEstudiantiles:[GrupoEstudiantil],
         addEstudianteGrupoEstudiantil:GrupoEstudiantil,
         actividadDeGrupoEstudiantil(idGrupo:ID!, idActividad:ID!):ActividadGrupoEstudiantil,
+        actividadEstudiantil(idActividad:ID!):ActividadGrupoEstudiantil,
         actividadesEstudiantilesDeProfe(idProfe:ID!):[ActividadGrupoEstudiantil],
         actividadesEstudiantilesDeProfeDeGrupo(idProfe:ID!, idGrupo: ID!):[ActividadGrupoEstudiantil],
         desarrolloUsuarioEnActividadEstudiantil(idEstudiante:ID!, idActividad:ID!):DesarrolloActividadGrupoEstudiantil,
@@ -66,13 +67,27 @@ export const typeDefs = gql`
         cambiarNombreActividadGrupoEstudiantil(idGrupo:ID!, idActividad:ID!, nuevoNombre: String):ActividadGrupoEstudiantil
         eliminarParticipacionActividadEstudiantil(idParticipacion:ID!):Boolean,
         setEstadoDesarrolloActividadEstudiantil(idDesarrollo:ID!, nuevoEstado: String):DesarrolloActividadGrupoEstudiantil
+    }
 
+    type Subscription{
+        nuevaActividadEstudiantil:ActividadGrupoEstudiantil!,
+        eliminadaParticipacionActividadEstudiantil:ID!
     }
 `;
 
+const NUEVA_ACTIVIDAD="nueva_actividad_estudiantil"
+
 export const resolvers = {
+    Subscription:{
+        nuevaActividadEstudiantil:{            
+            subscribe:(_:any, args:any, contexto)=>{
+                return contexto.pubsub.asyncIterator([NUEVA_ACTIVIDAD]);
+            }
+        }
+    },
     Query: {        
         desarrolloEnActividadEstudiantil: async function (_: any, { idDesarrollo, idActividad }: any, contexto: contextoQuery) {
+            console.log(`|||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de desarrollo con id ${idDesarrollo} en la actividad con id ${idActividad}`);
 
             try {
@@ -94,7 +109,11 @@ export const resolvers = {
 
             let elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
 
-            if (!elDesarrollo) elDesarrollo = [];
+            if (!elDesarrollo) {
+                console.log(`Desarrollo no encontrado`);
+                throw new ApolloError("Dato no existia");
+            }
+
             console.log(`Enviando un desarrollo`);
 
             return elDesarrollo;
@@ -190,7 +209,18 @@ export const resolvers = {
                 let elGrupo = await GrupoEstudiantil.findById(idGrupo).exec();
                 var laActividad = elGrupo.actividades.id(idActividad);
             } catch (error) {
-                console.log(`Error buscando grupo y actividad en la base de datos`);
+                console.log(`Error buscando grupo y actividad en la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return laActividad;
+        },
+        actividadEstudiantil: async function (_: any, { idActividad }, contexto: contextoQuery) {
+            console.log(`Solicitud de actividad con id ${idActividad}`);
+            try {
+                let elGrupo = await GrupoEstudiantil.findOne({"actividades._id":mongoose.Types.ObjectId(idActividad)}).exec();
+                var laActividad = elGrupo.actividades.id(idActividad);
+            } catch (error) {
+                console.log(`Error buscando actividad en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
             return laActividad;
@@ -226,7 +256,7 @@ export const resolvers = {
             }
 
             let actividadesDelProfe = elGrupo.actividades.filter(a => a.idCreador == idProfe);
-            console.log(`Actividades de este profe en este grupo: ${actividadesDelProfe}`);
+            console.log(`Habia ${actividadesDelProfe.length} actividades de este profe en este grupo`);
             if (actividadesDelProfe.length == 0) {
                 console.log(`Este profe no tenía actividades para este grupo. Enviando array vacío`);
 
@@ -237,9 +267,9 @@ export const resolvers = {
                         actividadesDelProfe[i].desarrollos = [];
                     }
                 }
-                console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${JSON.stringify(actividadesDelProfe[0].desarrollos[0].participaciones)}.`);
 
             }
+            console.log(`Enviando actividades del profe`);
 
             return actividadesDelProfe;
         },
@@ -422,12 +452,11 @@ export const resolvers = {
                 console.log("Error guardando la actividad creada en el grupo. E: " + error);
                 throw new ApolloError("Error introduciendo la actividad en el proyecto");
             }
-
-
             console.log(`Actividad creada exitosamente: ${nuevaActividad}`);
+            contexto.pubsub.publish(NUEVA_ACTIVIDAD, {nuevaActividadEstudiantil: nuevaActividad});
+
             return nuevaActividad;
-
-
+            
         },
         eliminarActividadDeGrupoEstudiantil: async function (_: any, { idActividad, idGrupo }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||||||||`);
@@ -532,6 +561,8 @@ export const resolvers = {
             return elGrupo.actividades.id(idActividad);
         },
         eliminarParticipacionActividadEstudiantil: async function (_: any, { idParticipacion }: any, contexto: contextoQuery) {
+            console.log(`||||||||||||||||||||||`);
+            console.log(`Solicitud de eliminar participacion con id ${idParticipacion}`);
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario) {
                 console.log("No habia credenciales de usuario")
@@ -550,17 +581,25 @@ export const resolvers = {
                 var elGrupo = await GrupoEstudiantil.findOne({ "actividades.desarrollos.participaciones._id": mongoose.Types.ObjectId(idParticipacion) }).exec();
                 if (!elGrupo) {
                     console.log(`No se encontró grupo`);
+                    throw new ApolloError("Error conectando con la base de datos");
                 }
                 else {
                     console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
 
                     let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d => d.participaciones.some(p => p._id == idParticipacion)));
                     console.log(`Actividad: ${laActividad.nombre}`);
-                    let lasParticipaciones = laActividad.desarrollos.find(d => d.participaciones.some(p => p._id == idParticipacion)).participaciones;
+                    let elDesarrollo=laActividad.desarrollos.find(d => d.participaciones.some(p => p._id == idParticipacion));
+                    let lasParticipaciones = elDesarrollo.participaciones;
 
                     console.log(`Participaciones: ${lasParticipaciones}`);
                     lasParticipaciones.pull({ _id: idParticipacion });
                     console.log(`Participaciones: ${lasParticipaciones}`);
+
+                    if(elDesarrollo.participaciones.length<1){
+                        let idDesarrollo=elDesarrollo.id
+                        console.log(`Este desarrollo con id ${idDesarrollo} se quedó sin participaciones. Eliminando`);
+                        laActividad.desarrollos.pull({_id:idDesarrollo});
+                    }
                 }
             } catch (error) {
                 console.log(`Error buscando grupo en la base de datos: E: ${error}`);
@@ -640,7 +679,7 @@ export const resolvers = {
             return usuarioCreador;
         },
         hayGuia: async function (parent: any) {
-            let idActividad = null;
+            let idActividad = "";
             if ("id" in parent) {
                 idActividad = parent.id
             }

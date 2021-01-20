@@ -1,7 +1,8 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
-import { Usuario, permisosDeUsuario } from "../model/Usuario"
+import { ModeloUsuario as Usuario, permisosDeUsuario } from "../model/Usuario"
 import { GraphQLDateTime } from "graphql-iso-date";
-const GrupoEstudiantil = require("../model/actividadesProfes/GrupoEstudiantil").modeloGrupoEstudiantil;
+import {ModeloGrupoEstudiantil as GrupoEstudiantil} from "../model/actividadesProfes/GrupoEstudiantil";
+
 
 interface Usuario {
     username: string,

@@ -1,8 +1,8 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
-const Proyecto = require("../model/Proyecto").modeloProyecto;
-const Trabajo = require("../model/Trabajo").modeloTrabajo;
+import {ModeloProyecto as Proyecto} from "../model/Proyecto";
+import {ModeloTrabajo as Trabajo} from "../model/Trabajo";
 import { contextoQuery } from "./tsObjetos"
-import {Usuario} from "../model/Usuario";
+import {ModeloUsuario as Usuario} from "../model/Usuario";
 
 export const typeDefs = gql`
     type Proyecto{

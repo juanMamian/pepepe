@@ -8,3 +8,7 @@
 *verificar que se este calculando la edad correcta.
 *Ventana cargando paro los outlets del router mientras la navegación se completa.
 *Cambiar la estructura de los desarrollos en Actividad.vue. Hay dos bloques para el desarrollo propio y el resto de desarrollos. Se puede lograr en un solo bloque
+*Cambiar el resolver "actividadesEstudiantilesDeProfe" para que no use la expresión "distinct"
+*Limpiar cache de apollo-vue en logout
+*Programar los tooltips
+*Para solucionar los avisos de typescript puse tipo ANY en los objetos creados mediante el constructor de un modelo mongoose. Habrá que revisar ese asunto en el futuro.

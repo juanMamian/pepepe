@@ -1,3 +1,5 @@
+import { PubSub } from "apollo-server-express";
+
 export interface UsuarioLogin{
     username: string,
     permisos: Array<string>,
@@ -5,7 +7,8 @@ export interface UsuarioLogin{
 }
 
 export interface contextoQuery{
-    usuario:UsuarioLogin
+    usuario:UsuarioLogin,
+    pubsub:PubSub
 }
 
 export interface InterfaceCredencialesUsuario{

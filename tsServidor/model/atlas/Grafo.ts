@@ -1,6 +1,6 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-esquemaGrafo=new mongoose.Schema({
+let esquemaGrafo=new mongoose.Schema({
     version: Number,
     bordes:{
         left:{
@@ -23,11 +23,11 @@ esquemaGrafo=new mongoose.Schema({
     
 });
 
-esquemaGrafo.methods.updateBordes=function(posicion){
+esquemaGrafo.methods.updateBordes=function(this: any, posicion){
     this.bordes.left=Math.min(this.bordes.left, posicion.x);
     this.bordes.right=Math.max(this.bordes.right, posicion.x);
     this.bordes.top=Math.max(this.bordes.top, posicion.y);
     this.bordes.bottom=Math.min(this.bordes.bottom, posicion.y);
 };
 
-module.exports.modeloGrafo=mongoose.model("Grafo", esquemaGrafo);
+export const ModeloGrafo=mongoose.model("Grafo", esquemaGrafo);

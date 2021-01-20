@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose";
 
 const esquemaParticipacion = new mongoose.Schema({
    
@@ -20,7 +19,7 @@ const esquemaParticipacion = new mongoose.Schema({
 
 });
 
-esquemaParticipacion.pre('validate', function () {
+esquemaParticipacion.pre('validate', function (this:any) {
     if ((this.isNew || this.isModified) && !this.archivos) {
       this.archivos=[]
     }
@@ -71,7 +70,7 @@ const esquemaActividad = new mongoose.Schema({
 });
 
 
-esquemaActividad.pre('save', function () {    
+esquemaActividad.pre('save', function (this:any) {    
     if ((this.isNew || this.isModified) && !this.desarrollo) {
       this.desarrollo=[]
     }
@@ -97,11 +96,11 @@ const esquemaGrupoEstudiantil = new mongoose.Schema({
 
 });
 
-esquemaGrupoEstudiantil.pre('validate', function () {
+esquemaGrupoEstudiantil.pre('validate', function (this:any) {
     if ((this.isNew || this.isModified) && !this.actividades) {
       this.actividades=[]
     }
   });
 
 
-module.exports.modeloGrupoEstudiantil = mongoose.model("GrupoEstudiantil", esquemaGrupoEstudiantil);
+export const ModeloGrupoEstudiantil = mongoose.model("GrupoEstudiantil", esquemaGrupoEstudiantil);

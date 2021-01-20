@@ -1,8 +1,7 @@
 const multer=require("multer");
 const upload=multer();
-
 const router = require("express").Router();
-const Usuario = require("../model/Usuario").Usuario;
+import {ModeloUsuario as Usuario} from "../model/Usuario";
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path=require("path");
@@ -54,7 +53,7 @@ router.post("/registro", async (req: Request, res: Response) => {
     nuevoU.password = hashPassword;
 
     try {
-        var nuevoUsuario = new Usuario({ ...nuevoU });
+        var nuevoUsuario:any = new Usuario({ ...nuevoU });
     }
     catch (error) {
         let respuesta = errorApi(error, "database", "Error creando el objeto mongoose antes de subirlo a la DB", null);

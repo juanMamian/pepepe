@@ -79,7 +79,7 @@
           @eliminandose="eliminarActividad"
           @cambiandoNombre="cambiarNombreActividad"
           v-show="
-            verTodasActividades == true ||
+            (verTodasActividades == true && usuarioAdministradorActividadesEstudiantiles) ||
             actividad.creador.id == $store.state.usuario.id
           "
         />
@@ -140,7 +140,7 @@ export default {
         estudiantes: [],
         actividades: [],
       },
-      verTodasActividades: false,
+      verTodasActividades: true,
     };
   },
   computed: {

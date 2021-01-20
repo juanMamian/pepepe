@@ -1,5 +1,5 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
-const Nodo = require("../model/atlas/Nodo").modeloNodo;
+import {ModeloNodo as Nodo} from "../model/atlas/Nodo";
 import { contextoQuery } from "./tsObjetos"
 /*
 interface NodoConocimiento{
@@ -176,7 +176,7 @@ export const resolvers = {
         async crearNodo(_: any, { infoNodo }: any) {
             console.log(`Creando nuevo nodo de conocimiento`);
             let modificados: Array<NodoConocimiento> = new Array();
-            let nuevoNodo = new Nodo({
+            let nuevoNodo:any = new Nodo({
                 ...infoNodo
             });
             console.log(`nodo: ${JSON.stringify(nuevoNodo)}`);

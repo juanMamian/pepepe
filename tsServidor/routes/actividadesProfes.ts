@@ -1,13 +1,12 @@
 const multer = require("multer");
 const upload = multer({ limits: { fileSize: 5000000 } });
 const router = require("express").Router();
-const Usuario = require("../model/Usuario").Usuario;
-const GrupoEstudiantil = require("../model/actividadesProfes/GrupoEstudiantil").modeloGrupoEstudiantil;
+import {ModeloUsuario as Usuario} from "../model/Usuario";
+import {ModeloGrupoEstudiantil as GrupoEstudiantil} from "../model/actividadesProfes/GrupoEstudiantil"
 const path = require("path");
 const fs = require("fs");
 const util = require("util");
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose"
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
 
@@ -110,7 +109,13 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             elDesarrollo=laActividad.desarrollos.id(req.body.idDesarrollo);
             if(!elDesarrollo){
                 console.log(`No se encontro el desarrollo ${req.body.idDesarrollo}`);
+                throw new Error("Error localizando el desarrollo");
             }
+        }
+
+        if(elDesarrollo.estado=="completado"){
+            console.log(`Este desarrollo estaba marcado como completado.`);
+            throw new Error("El desarrollo ya esta completado");
         }
 
         var laParticipacion = elDesarrollo.participaciones.create(nuevaParticipacion);

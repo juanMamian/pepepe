@@ -116,6 +116,8 @@ export default {
   display: flex;
   padding-left: 30px;
   padding-right: 30px;
+  max-width: 100%;
+  flex-flow:row wrap;
 }
 
 #controles {

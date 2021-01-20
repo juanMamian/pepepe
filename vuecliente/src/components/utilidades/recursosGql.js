@@ -12,16 +12,9 @@ fragment fragResponsables on PublicUsuario {
 }
 `;
 
-export const fragmentoActividad = gql`
-fragment fragActividad on ActividadGrupoEstudiantil {
+export const fragmentoDesarrollo = gql`
+fragment fragDesarrollo on DesarrolloActividadGrupoEstudiantil{
   id
-  nombre
-  hayGuia
-  creador {
-    ...fragResponsables
-  }
-  desarrollos {
-    id
     estado
     estudiante {
       ...fragResponsables
@@ -39,7 +32,22 @@ fragment fragActividad on ActividadGrupoEstudiantil {
         ...fragResponsables
       }
     }
+}
+${fragmentoResponsables}
+`;
+
+export const fragmentoActividad = gql`
+fragment fragActividad on ActividadGrupoEstudiantil {
+  id
+  nombre
+  hayGuia
+  creador {
+    ...fragResponsables
+  }
+  desarrollos {
+    ...fragDesarrollo 
   }
 }
 ${fragmentoResponsables}
+${fragmentoDesarrollo}
 `;

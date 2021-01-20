@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 
-const esquemaNodo = new mongoose.Schema();
 
+var esquemaNodo = new mongoose.Schema();
 esquemaNodo.add({
     nombre: {
         type: String,
@@ -17,7 +17,7 @@ esquemaNodo.add({
     vinculos: [
         {
             idRef: {
-                type: mongoose.ObjectId,
+                type: mongoose.Types.ObjectId,
                 required:true
             },
             rol: {
@@ -48,7 +48,7 @@ esquemaNodo.add({
 
 });
 
-esquemaNodo.methods.verificarVinculo=function(idRef, eliminar){
+esquemaNodo.methods.verificarVinculo=function(this:any,idRef, eliminar){
     console.log(`${this.nombre} está buscando un vinculo con ${idRef}. Eliminar es ${eliminar}`);
     var respuesta=false;
     for(var vinculo of this.vinculos){
@@ -65,4 +65,4 @@ esquemaNodo.methods.verificarVinculo=function(idRef, eliminar){
 }
 
 
-module.exports.modeloNodo = mongoose.model("Nodo", esquemaNodo);
+export const ModeloNodo = mongoose.model("Nodo", esquemaNodo);

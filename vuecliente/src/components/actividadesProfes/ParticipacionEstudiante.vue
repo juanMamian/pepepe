@@ -81,19 +81,19 @@ export default {
 
 <style scoped>
 .participacionEstudiante {
-  background-color: rgb(253, 249, 253);
+    
   padding: 10px;
   border-bottom-style: groove;
 }
 .participacionPropia {
-  border-bottom: 2px solid pink;
+  border-bottom: 2px solid rgb(75, 11, 21);
 }
 
 .participacionOtro {
   border-bottom: 2px solid rgb(22, 57, 73);
 }
 #comentario {
- 
+ color:black;
   border-radius: 5px;
   resize: none;
   padding: 5px 7px;

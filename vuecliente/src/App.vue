@@ -242,12 +242,14 @@ body {
   height: 100%;
   display: grid;
   grid-template-rows: 40px 1fr 5px;
+  grid-template-columns: 1fr;
   padding-left: 5px;
   padding-right: 5px;
   box-sizing: border-box;
   z-index: 0;
 }
 #visorRouter {
+  grid-column: 1/2;
   grid-row: 2/3;
   background-color: "#fab467";
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
@@ -261,6 +263,7 @@ body {
     0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
 #navBar {
+  grid-column: 1/2;
   grid-row: 1/2;
   display: flex;
   z-index: 100;

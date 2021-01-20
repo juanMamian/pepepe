@@ -1,6 +1,6 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-esquemaObjetivo = new mongoose.Schema({
+export const esquemaObjetivo = new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
@@ -36,4 +36,3 @@ esquemaObjetivo = new mongoose.Schema({
     }
 });
 
-module.exports.esquemaObjetivo = esquemaObjetivo;

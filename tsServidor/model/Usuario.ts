@@ -1,8 +1,10 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesEstudiantiles-profe", "actividadesEstudiantiles-administrador"];
+export const permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesEstudiantiles-profe", "actividadesEstudiantiles-administrador"];
 
-const esquemaUsuario = mongoose.Schema({
+
+
+const esquemaUsuario = new mongoose.Schema({
     username: {
         type: String,
         min: 3,
@@ -23,9 +25,9 @@ const esquemaUsuario = mongoose.Schema({
     },
     fechaNacimiento: {
         type: Date,
-        max: Date.now(),
-        min: '1900-01-01',
-        default: Date.now()
+        max: Date.now,
+        min: new Date('1890-01-01'),
+        default: Date.now
     },
     fotografia: {
         type: Buffer,
@@ -79,11 +81,11 @@ const esquemaUsuario = mongoose.Schema({
     }
 });
 
-esquemaUsuario.methods.getEdad = function () {
+esquemaUsuario.methods.getEdad = function (this:any) {
     console.log(`convirtiendo ${this.fechaNacimiento} a edad`);
     let hoy = new Date();
-    let edad = hoy - this.fechaNacimiento;
-    let edadAños = parseInt(edad / (60 * 60 * 24 * 365 * 1000));
+    let edad = hoy.getTime() - this.fechaNacimiento.getTime();
+    let edadAños = Math.floor(edad / (60 * 60 * 24 * 365 * 1000));
     return edadAños;
 }
 esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
@@ -95,7 +97,7 @@ esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
     var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
 
 
-    var errores = [];
+    var errores:Array<String> = [];
 
     for (let dato in datosUsuario) {
         if (!datosUsuario[dato]) {
@@ -171,5 +173,5 @@ esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
 }
 
 
-module.exports = { Usuario: mongoose.model("Usuario", esquemaUsuario), permisosDeUsuario }
+export const ModeloUsuario= mongoose.model("Usuario", esquemaUsuario);
 

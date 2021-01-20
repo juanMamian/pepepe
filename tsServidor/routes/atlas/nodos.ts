@@ -1,8 +1,7 @@
 const multer=require("multer");
 const upload=multer();
 const router=require("express").Router();
-const Nodo=require("../../model/atlas/Nodo").modeloNodo;
-
+import {ModeloNodo as Nodo} from "../../model/atlas/Nodo";
 
 router.post("/updateIcono",upload.single("nuevoIcono"), async function(req, res){
 

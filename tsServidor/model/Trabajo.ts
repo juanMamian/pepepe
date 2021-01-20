@@ -1,6 +1,7 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const esquemaTrabajo = new mongoose.Schema();
+
+export var esquemaTrabajo = new mongoose.Schema();
 
 
 esquemaTrabajo.add({
@@ -72,5 +73,4 @@ esquemaTrabajo.add({
     columna: Number
 });
 
-module.exports.modeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);
-module.exports.esquemaTrabajo = esquemaTrabajo;
+export const ModeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);

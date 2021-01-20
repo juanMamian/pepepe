@@ -1,7 +1,6 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
-const Trabajo = require("../model/Trabajo").modeloTrabajo;
-const Nodo= require("../model/atlas/Nodo");
-const Usuario=require("../model/Usuario").Usuario;
+import {ModeloTrabajo as Trabajo} from "../model/Trabajo";const Nodo= require("../model/atlas/Nodo");
+import {ModeloUsuario as Usuario} from "../model/Usuario"
 import {contextoQuery} from "./tsObjetos"
 
 export const typeDefs = gql`

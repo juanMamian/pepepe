@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 import store from "./store/index"
-import { apolloProvider } from "./apollo"
+import { apolloProvider, serverUrl } from "./apollo"
 import { router } from "./Router"
 
 
@@ -9,7 +9,7 @@ Vue.mixin({
 
   data() {
     return {
-      serverUrl: "http://localhost:3000",      
+      serverUrl,      
     }
   },
   computed: {
