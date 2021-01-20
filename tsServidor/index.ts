@@ -50,7 +50,7 @@ app.use("/api/usuarios", cors(), ejwt({secret: process.env.JWT_SECRET, algorithm
 app.use("/api/atlas", routesNodos);
 app.use("/api/actividadesProfes", cors(), ejwt({secret: process.env.JWT_SECRET, algorithms: ['HS256']}).unless({path:[rutaGuias, rutaEvidencias]}), routesActividadesProfes);
 app.get("/", function(req:Request, res:Response){
-  res.sendFile(__dirname+"/clientes/pepepe/index.html");
+  return res.send("Hola");
 });
 
 const port = process.env.PORT || 3000;
