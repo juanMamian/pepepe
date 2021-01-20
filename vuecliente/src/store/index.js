@@ -38,7 +38,7 @@ export default new Vuex.Store({
             let usuarioLS=JSON.stringify(state.usuario);
 
             localStorage.setItem("pepepe_usuario", usuarioLS);
-            localStorage.setItem("token".TOKEN_KEY, token);
+            localStorage.setItem("token", token);
             
         },
         setDatosUsuario:function(state, yo){

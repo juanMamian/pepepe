@@ -39,8 +39,6 @@ export const esquema = makeExecutableSchema({
 const pubsub = new PubSub();
 
 const context = ({ req, res, connection }: any) => {
-
-
     // console.log(`creando contexto`);
     var usuario: InterfaceCredencialesUsuario = {
         id: "",
@@ -53,7 +51,7 @@ const context = ({ req, res, connection }: any) => {
         console.log(`Conexion normal`);
 
         let headers: any = req.headers;
-        // console.log(`headers: ${JSON.stringify(headers)}`);
+        console.log(`headers: ${JSON.stringify(headers)}`);
 
         if (!headers.authorization) return { usuario };
         const token: string = headers.authorization;
