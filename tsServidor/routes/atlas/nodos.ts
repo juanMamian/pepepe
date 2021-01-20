@@ -6,7 +6,7 @@ import {ModeloNodo as Nodo} from "../../model/atlas/Nodo";
 router.post("/updateIcono",upload.single("nuevoIcono"), async function(req, res){
 
     try{
-        var elNodo=await Nodo.findById(req.body.idNodo, "nombre icono");
+        var elNodo:any=await Nodo.findById(req.body.idNodo, "nombre icono");
     }
     catch(error){
         console.log(`error buscando el nodo para cambio de icono. e: `+error);
@@ -30,7 +30,7 @@ router.post("/updateIcono",upload.single("nuevoIcono"), async function(req, res)
 router.get("/iconos/:id", async function(req, res){
     const idNodo=req.params.id;
     try{
-        var elNodo=await Nodo.findById(idNodo, "icono");
+        var elNodo:any=await Nodo.findById(idNodo, "icono");
     }
     catch(error){
         console.log(`error buscando el nodo con icono. e: `+error);

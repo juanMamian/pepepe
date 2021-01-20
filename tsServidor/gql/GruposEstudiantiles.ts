@@ -91,10 +91,9 @@ export const resolvers = {
             console.log(`Solicitud de desarrollo con id ${idDesarrollo} en la actividad con id ${idActividad}`);
 
             try {
-                var elGrupo = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
+                var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
                 if (!elGrupo) {
-                    console.log(`Grupo no encontrado`);
-                    throw new Error("Grupo no encontrado")
+                    throw "Grupo no encontrado";
                 }
 
             } catch (error) {
@@ -128,8 +127,8 @@ export const resolvers = {
             // }
 
             try {
-                var elUsuario = await Usuario.findById(idEstudiante).exec();
-                if (!elUsuario) throw new Error("Usuario no encontrado en la base de datos");
+                var elUsuario:any = await Usuario.findById(idEstudiante).exec();                
+                if (!elUsuario) throw "Usuario no encontrado en la base de datos";
             } catch (error) {
                 console.log(`Error buscando al usuario con id ${idEstudiante} en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -138,10 +137,9 @@ export const resolvers = {
             console.log(`Buscando el grupo`);
 
             try {
-                var elGrupo = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
-                if (!elGrupo) {
-                    console.log(`Grupo no encontrado`);
-                    throw new Error("Grupo no encontrado")
+                var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
+                if (!elGrupo) {                    
+                    throw "Grupo no encontrado";
                 }
 
             } catch (error) {
@@ -164,7 +162,10 @@ export const resolvers = {
         },
         grupoEstudiantil: async function (_: any, { idGrupo }: any, contexto: contextoQuery) {
             try {
-                var elGrupoEstudiantil = GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupoEstudiantil:any = GrupoEstudiantil.findById(idGrupo).exec();
+                if(!elGrupoEstudiantil){
+                    throw "grupo no encontrado"
+                }
             } catch (error) {
                 console.log(`Error buscando el grupo con id ${idGrupo} en la base de datos`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -181,7 +182,10 @@ export const resolvers = {
             }
 
             try {
-                var elLogeado = await Usuario.findById(credencialesUsuario.id).exec();
+                var elLogeado:any = await Usuario.findById(credencialesUsuario.id).exec();
+                if(!elLogeado){
+                    throw "usuario no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el usuario en la base de datos. E: " + error);
@@ -206,7 +210,10 @@ export const resolvers = {
         },
         actividadDeGrupoEstudiantil: async function (_: any, { idGrupo, idActividad }, contexto: contextoQuery) {
             try {
-                let elGrupo = await GrupoEstudiantil.findById(idGrupo).exec();
+                let elGrupo:any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if(!elGrupo){
+                    throw "grupo no encontrado"
+                }
                 var laActividad = elGrupo.actividades.id(idActividad);
             } catch (error) {
                 console.log(`Error buscando grupo y actividad en la base de datos. E: ${error}`);
@@ -217,7 +224,10 @@ export const resolvers = {
         actividadEstudiantil: async function (_: any, { idActividad }, contexto: contextoQuery) {
             console.log(`Solicitud de actividad con id ${idActividad}`);
             try {
-                let elGrupo = await GrupoEstudiantil.findOne({"actividades._id":mongoose.Types.ObjectId(idActividad)}).exec();
+                let elGrupo:any = await GrupoEstudiantil.findOne({"actividades._id":mongoose.Types.ObjectId(idActividad)}).exec();
+                if(!elGrupo){
+                    throw "grupo no encontrado"
+                }
                 var laActividad = elGrupo.actividades.id(idActividad);
             } catch (error) {
                 console.log(`Error buscando actividad en la base de datos. E: ${error}`);
@@ -229,7 +239,7 @@ export const resolvers = {
             console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe}`);
             try {
-                var todasLasActividades = await GrupoEstudiantil.find({}).distinct("actividades").exec();
+                var todasLasActividades:any = await GrupoEstudiantil.find({}).distinct("actividades").exec();
             } catch (error) {
                 console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -249,7 +259,10 @@ export const resolvers = {
             console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe} para el grupo con id ${idGrupo}`);
             try {
-                var elGrupo = await GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupo:any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if(!elGrupo){
+                    throw "grupo no encontrado"
+                }
             } catch (error) {
                 console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -279,9 +292,9 @@ export const resolvers = {
             console.log(`||||||||||||||||||||||||||`);
             console.log(`Solicitud de set estado ${nuevoEstado} en desarrollo con id ${idDesarrollo}`);
             try {
-                var elGrupo = await GrupoEstudiantil.findOne({ "actividades.desarrollos._id": mongoose.Types.ObjectId(idDesarrollo) }).exec();
-                if (!elGrupo) {
-                    console.log(`No se encontró grupo`);
+                var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades.desarrollos._id": mongoose.Types.ObjectId(idDesarrollo) }).exec();
+                if(!elGrupo){
+                    throw "grupo no encontrado"
                 }
                 else {
                     console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
@@ -316,7 +329,10 @@ export const resolvers = {
             }
 
             try {
-                var elGrupoEstudiantil = await GrupoEstudiantil.findById(idGrupoEstudiantil).exec();
+                var elGrupoEstudiantil:any = await GrupoEstudiantil.findById(idGrupoEstudiantil).exec();
+                if(!elGrupoEstudiantil){
+                    throw "grupo no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el grupo estudiantil en la base de datos. E: " + error);
@@ -383,7 +399,10 @@ export const resolvers = {
             }
 
             try {
-                var elGrupoEstudiantil = await GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupoEstudiantil:any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if(!elGrupoEstudiantil){
+                    throw "grupo no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el grupo estudiantil en la base de datos. E: " + error);
@@ -425,7 +444,10 @@ export const resolvers = {
             console.log(`Peticion de crear ua nueva actividad en el grupo con id ${idGrupo}`);
 
             try {
-                var elGrupoEstudiantil = await GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupoEstudiantil:any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if(!elGrupoEstudiantil){
+                    throw "grupo no encontrado"
+                }
             }
             catch (error) {
                 console.log("GrupoEstudiantil no encontrado. E: " + error);
@@ -463,7 +485,10 @@ export const resolvers = {
             console.log(`peticion de eliminar una actividad con id ${idActividad} de un proyecto con id ${idGrupo}`);
 
             try {
-                var elGrupo = await GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupo:any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if(!elGrupo){
+                    throw "grupo no encontrado"
+                }
                 console.log(`Grupo encontrado`);
                 var laActividad = elGrupo.actividades.id(idActividad);
             }
@@ -499,7 +524,7 @@ export const resolvers = {
 
             //Eliminando carpeta
 
-            let pathActividad = path.join(__dirname, "../public/actividadesProfes/actividades", idActividad);
+            let pathActividad = path.join(__dirname, "../archivosDeUsuario/actividadesProfes/actividades", idActividad);
 
             fs.rmdir(pathActividad, { recursive: true }, (err) => {
                 if (err) {
@@ -522,7 +547,10 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elGrupo = await GrupoEstudiantil.findById(idGrupo);
+                var elGrupo:any = await GrupoEstudiantil.findById(idGrupo);
+                if(!elGrupo){
+                    throw "grupo no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el grupo. E: " + error);
@@ -578,7 +606,7 @@ export const resolvers = {
             }
 
             try {
-                var elGrupo = await GrupoEstudiantil.findOne({ "actividades.desarrollos.participaciones._id": mongoose.Types.ObjectId(idParticipacion) }).exec();
+                var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades.desarrollos.participaciones._id": mongoose.Types.ObjectId(idParticipacion) }).exec();
                 if (!elGrupo) {
                     console.log(`No se encontró grupo`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -691,7 +719,7 @@ export const resolvers = {
                 return false
             }
 
-            let pathGuia = path.join(__dirname, "../public/actividadesProfes/actividades", idActividad, "guia.pdf");
+            let pathGuia = path.join(__dirname, "../archivosDeUsuario/actividadesProfes/actividades", idActividad, "guia.pdf");
 
             try {
                 await access(pathGuia, fs.constants.R_OK);
@@ -746,7 +774,7 @@ export const resolvers = {
                 return false
             }
 
-            let pathArchivo = path.join(__dirname, "../public/actividadesProfes/evidencias", nombreArchivo);
+            let pathArchivo = path.join(__dirname, "../archivosDeUsuario/actividadesProfes/evidencias", nombreArchivo);
 
             try {
                 await access(pathArchivo, fs.constants.R_OK);

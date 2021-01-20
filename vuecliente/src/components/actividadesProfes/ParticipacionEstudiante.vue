@@ -12,7 +12,7 @@
       }"></textarea>
     <div id="archivo">
       <img
-        src="/iconos/downloadFile.png"
+        src="@/assets/iconos/downloadFile.png"
         alt="Descargar archivo"
         id="imgDownloadArchivo"
         @click="descargarArchivo"
@@ -120,6 +120,11 @@ export default {
   cursor: pointer;
   margin-left: auto;
   margin-right: auto;
+  border-radius: 50%;
+  background-color: rgb(194, 137, 137);
+}
+#imgDownloadArchivo:hover{
+  background-color: indianred;
 }
 #autorParticipacion{
   font-size: 12px;

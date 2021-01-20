@@ -143,7 +143,10 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(credencialesUsuario.id);
+                var elUsuario:any = await Usuario.findById(credencialesUsuario.id).exec();
+                if(!elUsuario){                    
+                    throw "Usuario no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el usuario en la base de datos. E: " + error);
@@ -172,7 +175,10 @@ export const resolvers = {
         },
         setCentroVista: async function (_: any, { idUsuario, centroVista }: any, context: contextoQuery) {
             try {
-                var elUsuario = await Usuario.findById(idUsuario, "atlas").exec();
+                var elUsuario:any = await Usuario.findById(idUsuario, "atlas").exec();
+                if(!elUsuario){
+                    throw "Error recopilando datos";
+                }
             } catch (error) {
                 console.log(`error buscando usuario en la base de datos`);
                 throw new ApolloError("");
@@ -211,7 +217,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!Array.isArray(elUsuario.permisos)) {
                     console.log(`Los permisos no eran un array: Eran: ${elUsuario.permisos}`);
                 }
@@ -249,7 +255,7 @@ export const resolvers = {
                 return ""
             }
             try {
-                let elGrupo=await GrupoEstudiantil.findOne({estudiantes: parent._id});
+                let elGrupo:any=await GrupoEstudiantil.findOne({estudiantes: parent._id}).exec();
                 if(!elGrupo)return ""
                 var nombreGrupo=elGrupo.nombre;
             } catch (error) {
@@ -290,7 +296,7 @@ export const resolvers = {
                 return ""
             }
             try {
-                let elGrupo=await GrupoEstudiantil.findOne({estudiantes: parent._id});
+                let elGrupo:any=await GrupoEstudiantil.findOne({estudiantes: parent._id}).exec();
                 if(!elGrupo)return ""
                 var nombreGrupo=elGrupo.nombre;
             } catch (error) {
@@ -305,7 +311,7 @@ export const resolvers = {
                 return ""
             }
             try {
-                let elGrupo=await GrupoEstudiantil.findOne({estudiantes: parent._id});
+                let elGrupo:any=await GrupoEstudiantil.findOne({estudiantes: parent._id}).exec();
                 if(!elGrupo)return ""
                 var idGrupo=elGrupo._id;
             } catch (error) {

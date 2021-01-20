@@ -1,5 +1,11 @@
 .env
 /node_modules
 package-lock.json
-tsServidor/public/actividadesProfes/actividades
-tsServidor/public/actividadesProfes/evidencias
+
+tsServidor/archivosDeUsuario/actvidades/*
+tsServidor/archivosDeUsuario/evidencias/*
+
+!tsServidor/archivosDeUsuario/evidencias/.gitkeep
+!tsServidor/archivosDeUsuario/actvidades/.gitkeep
+
+/comunaBuild

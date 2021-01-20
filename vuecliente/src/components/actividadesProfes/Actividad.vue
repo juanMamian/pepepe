@@ -37,10 +37,12 @@
       />
 
       <div
-        id="botonDescargarGuia"
+        id="descargarGuia"
         @click="descargarGuia"
         v-if="estaActividad.hayGuia"
-      ></div>
+      >
+      <img src="@/assets/iconos/documento.png" alt="Descargar guia" id="botonDescargarGuia"/>
+      </div>
     </div>
 
     <div
@@ -121,7 +123,7 @@
           />
           <div
             v-if="usuarioCreadorActividad"
-            id="botonToggleDesarrolloCompletado"
+            id="toggleDesarrolloCompletado"
           >
             <img
               :class="{ completado: desarrollo.estado == 'completado' }"
@@ -129,7 +131,7 @@
                 toggleDesarrolloCompletado(desarrollo.id, desarrollo.estado)
               "
               id="botonToggleDesarrolloCompletado"
-              src="/iconos/success.png"
+              src="@/assets/iconos/success.png"
               alt="Marcar como completado"
             />
           </div>
@@ -485,16 +487,16 @@ export default {
   border-radius: 10px;
   padding: 10px;
 }
-#botonDescargarGuia {
-  margin-top: 15px;
+#descargarGuia {
+  margin-top: 15px;     
+  text-align: center;
+}
+#botonDescargarGuia{
   cursor: pointer;
-  background-image: url("/iconos/documento.png");
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background-size: 100% 100%;
-  margin-left: auto;
-  margin-right: auto;
+  background-color: rgb(123, 214, 123);
 }
 .nombreZona {
   font-size: 16px;
@@ -547,12 +549,18 @@ export default {
   border-right: 15px solid transparent;
   border-top: 15px solid gray;
 }
+#toggleDesarrolloCompletado{
+  text-align: center;
+}
 #botonToggleDesarrolloCompletado {
   margin: 10px auto;
   cursor: pointer;
   width: 50px;
   height: 50px;
   border-radius: 50%;
+}
+#botonToggleDesarrolloCompletado:hover{
+background-color: rgb(98, 151, 98);
 }
 #botonToggleDesarrolloCompletado.completado {
   background-color: green;

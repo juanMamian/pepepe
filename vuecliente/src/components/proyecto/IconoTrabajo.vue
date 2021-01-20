@@ -10,7 +10,7 @@
     >
       {{ esteTrabajo.nombre }}
     </div>
-    <img src="iconos/iconoTrabajo.png" alt="" id="imagenIcono" />
+    <img src="@/assets/iconos/iconoTrabajo.png" alt="" id="imagenIcono" />
 
     <template v-if="seleccionado">
       <div id="zonaDescripcion">

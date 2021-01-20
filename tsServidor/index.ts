@@ -29,10 +29,12 @@ db.once('open', function () {
   // we're connected!
 });
 
-app.use(express.static(__dirname+'/public'));
-app.use("/pepepe", express.static(__dirname+'/pepepe'));
-app.use(express.static(__dirname+'/pepepe'));
-
+//Rutas pepepe
+console.log(`Carpeta estatica en ${__dirname+'/pepepe'}`);
+app.use("/pepepe",express.static(__dirname+'/clientes/pepepe'));
+app.get("/pepepe", function(req:Request, res:Response){
+  res.sendFile(__dirname+"/clientes/pepepe/index.html");
+});
 aServer.applyMiddleware({app});
 
 
@@ -47,9 +49,7 @@ app.use(express.json());
 app.use("/api/usuarios", cors(), ejwt({secret: process.env.JWT_SECRET, algorithms: ['HS256']}).unless({path:['/api/usuarios/login', '/api/usuarios/registro', rutaFotografias]}), usuariosRoutes);
 app.use("/api/atlas", routesNodos);
 app.use("/api/actividadesProfes", cors(), ejwt({secret: process.env.JWT_SECRET, algorithms: ['HS256']}).unless({path:[rutaGuias, rutaEvidencias]}), routesActividadesProfes);
-app.get("/pepepe", function(req:Request, res:Response){
-  res.sendFile(__dirname+"/pepepe/index.html");
-});
+
 
 const port = process.env.PORT || 3000;
 

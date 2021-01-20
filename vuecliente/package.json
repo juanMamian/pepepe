@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build --dest ../tsServidor/pepepe",
+    "build": "vue-cli-service build --dest ../comunaBuild/clientes/pepepe",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {

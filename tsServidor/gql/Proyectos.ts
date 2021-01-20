@@ -62,7 +62,10 @@ export const resolvers = {
         proyecto: async function (_: any, { idProyecto }: any, context: any) {
             console.log(`Buscando proyecto con id ${idProyecto}`);
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             } catch (error) {
                 console.log(`Error buscando el proyecto. E:${error}`);
                 throw new ApolloError("Error en la conexión con la base de datos");
@@ -77,7 +80,10 @@ export const resolvers = {
             console.log(`añadiendo usuario ${idUsuario} a la lista de posibles responsables del proyecto ${idProyecto}`);
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
@@ -124,7 +130,10 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
@@ -180,7 +189,10 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
@@ -234,7 +246,10 @@ export const resolvers = {
         editarNombreProyecto: async function (_: any, { idProyecto, nuevoNombre }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log(`error buscando el proyecto. E: ` + error);
@@ -295,7 +310,10 @@ export const resolvers = {
             console.log(`Peticion de crear un nuevo trabajo en el proyecto con id ${idProyecto}`);
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Proyecto no encontrado. E: " + error);
@@ -329,7 +347,10 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
@@ -376,7 +397,10 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto);
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto. E: " + error);
@@ -418,7 +442,10 @@ export const resolvers = {
             }
             nuevaDescripcion = nuevaDescripcion.trim();
             try {
-                var elProyecto = await Proyecto.findById(idProyecto);
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto. E: " + error);
@@ -454,7 +481,10 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
@@ -509,7 +539,10 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
@@ -570,7 +603,10 @@ export const resolvers = {
 
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Proyecto no encontrado. E: " + error);
@@ -603,7 +639,10 @@ export const resolvers = {
             console.log(`peticion de eliminar un objetivo con id ${idObjetivo} de un proyecto con id ${idProyecto}`);
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto).exec();
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
@@ -648,7 +687,10 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elProyecto = await Proyecto.findById(idProyecto);
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto. E: " + error);
@@ -690,7 +732,10 @@ export const resolvers = {
             }
             nuevaDescripcion = nuevaDescripcion.trim();
             try {
-                var elProyecto = await Proyecto.findById(idProyecto);
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
             }
             catch (error) {
                 console.log("Error buscando el proyecto. E: " + error);

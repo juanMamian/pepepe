@@ -8,7 +8,7 @@
   >
     <div id="titulo">Enviar respuesta</div>
     <img
-      src="/iconos/mensaje.png"
+      src="@/assets/iconos/mensaje.png"
       alt="Enviar respuesta"
       id="iconoMensaje"
       @click="abrirCerrar"
@@ -34,7 +34,7 @@
         @change="actualizarNombreDeArchivo"
       />
       <img
-        src="/iconos/adjuntar.png"
+        src="@/assets/iconos/adjuntar.png"
         alt="Ajuntar archivo"
         id="imgAdjuntar"
         @click="abrirSelectorDeArchivos"
@@ -43,7 +43,7 @@
     </div>
     <div id="enviar" v-show="cuadroAbierto">
       <img
-        src="/iconos/enviar.png"
+        src="@/assets/iconos/enviar.png"
         alt="Enviar respuesta"
         id="imgEnviar"
         @click="enviarRespuesta"
@@ -183,11 +183,24 @@ export default {
   cursor: pointer;
   margin-left: auto;
   margin-right: auto;
+  border-radius: 50%;
+  background-color: rgb(153, 130, 204);
+}
+#imgEnviar:hover {
+    background-color: rgb(137, 108, 199);
+
 }
 #imgAdjuntar {
+  margin-top: 5px;
+  margin-bottom: 5px;
   width: 50px;
   height: 50px;
   cursor: pointer;
+  border-radius: 50%;
+  background-color: rgb(206, 130, 130);
+}
+#imgAdjuntar:hover{
+  background-color: indianred;
 }
 #iconoMensaje {
   margin-left: auto;
@@ -196,6 +209,11 @@ export default {
   height: 60px;
   display: block;
   cursor: pointer;
+  background-color: rgb(156, 204, 156);
+  border-radius: 50%;
+}
+#iconoMensaje:hover {
+background-color: rgb(68, 129, 68);
 }
 #adjuntarArchivo {
   text-align: left;

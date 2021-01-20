@@ -4,14 +4,13 @@
   "description": "Una aplicacion para gestionar ppp y conocimientos en Maestra Vida",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon servidor/index.js",
+    "start": "node comunaBuild/index.js",
     "dev": "nodemon tsServidor/index.ts",
     "build": "tsc -p ."
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/mongoose": "^5.10.3",
     "apollo-server-express": "^2.19.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -22,13 +21,13 @@
     "graphql-iso-date": "^3.6.1",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.20",
-    "mongoose": "^5.10.0",
+    "mongoose": "^5.11.12",
     "multer": "^1.4.2",
     "passport-local": "^1.0.0",
     "vue": "^2.6.12"
   },
   "devDependencies": {
-    "@types/express": "^4.17.9",
+    "@types/express": "^4.17.11",
     "@types/graphql": "^14.5.0",
     "@types/node": "^14.14.16",
     "nodemon": "^2.0.4",

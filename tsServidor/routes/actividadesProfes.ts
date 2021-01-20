@@ -92,7 +92,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     //Introducir la informacion en la base de datos.
 
     try {
-        var elGrupo = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
+        var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
         var laActividad = elGrupo.actividades.id(idActividad);
 
         if (req.body.idDesarrollo == 0) {
@@ -135,7 +135,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     if ("file" in req) {
         console.log(`Verificando la existencia de la carpeta de esta actividad: ${idActividad}`);
 
-        let carpetaEvidencias = "../public/actividadesProfes/evidencias";
+        let carpetaEvidencias = "../archivosDeUsuario/actividadesProfes/evidencias";
 
         console.log(`guardando el archivo con nombre idParticipacion`);
         let archivo = path.join(__dirname, carpetaEvidencias) + "/" + idParticipacion + "." + laParticipacion.archivo.extension;
@@ -198,7 +198,7 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
     let idActividad = req.body.idActividad;
 
     try {
-        var elGrupo = await GrupoEstudiantil.findById(idGrupo);
+        var elGrupo:any = await GrupoEstudiantil.findById(idGrupo);
         var nombreGrupo = elGrupo.nombre;
         var nombreActividad = elGrupo.actividades.id(idActividad).nombre;
     } catch (error) {
@@ -208,7 +208,7 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
 
     console.log(`Verificando la existencia de las carpetas ${idGrupo}, actividades y ${idUsuario}`);
 
-    let carpetaActividades = "../public/actividadesProfes/actividades";
+    let carpetaActividades = "../archivosDeUsuario/actividadesProfes/actividades";
 
 
     try {
@@ -237,7 +237,7 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
 router.get("/guia/:idGrupo/:idProfe/:idActividad", async function (req, res) {
 
     console.log(`Descargando guia del grupo con id ${req.params.idGrupo} del profe con id ${req.params.idProfe} de la actividad con id ${req.params.idActividad}`);
-    res.sendFile(path.join(__dirname, '../public/actividadesProfes/actividades', req.params.idActividad, '/guia.pdf'), {}, (error) => {
+    res.sendFile(path.join(__dirname, '../archivosDeUsuario/actividadesProfes/actividades', req.params.idActividad, '/guia.pdf'), {}, (error) => {
         if (error) {
             console.log(`Error enviando archivo: ${error}`);
             return res.status(400).send({ msjUsuario: "Archivo no encontrado" });
@@ -254,7 +254,7 @@ router.get("/evidencia/:nombreArchivo", async function (req, res) {
 
     console.log(`Descargando archivo de participacion  ${req.params.nombreArchivo}`);
 
-    res.sendFile(path.join(__dirname, '../public/actividadesProfes/evidencias', req.params.nombreArchivo), {}, (error) => {
+    res.sendFile(path.join(__dirname, '../archivosDeUsuario/actividadesProfes/evidencias', req.params.nombreArchivo), {}, (error) => {
         if (error) {
             console.log(`Error enviando archivo: ${error}`);
             return res.status(400).send({ msjUsuario: "Archivo no encontrado" });

@@ -143,7 +143,7 @@ export const resolvers = {
         nodo: async function (_: any, { idNodo }: any) {
             console.log(`Buscando el nodo con id ${idNodo}`);
             try {
-                var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
+                var elNodo:any = await Nodo.findById(idNodo, "nombre coordsManuales");
             }
             catch (error) {
                 console.log(`error buscando el nodo. e: ` + error);
@@ -206,7 +206,7 @@ export const resolvers = {
             let modificados: Array<NodoConocimiento> = new Array();
             
             try {
-                var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
+                var elNodo:any = await Nodo.findById(idNodo, "nombre coordsManuales").exec();
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
@@ -226,8 +226,8 @@ export const resolvers = {
             let modificados: Array<NodoConocimiento> = [];
             console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
             try {
-                var nodoSource = await Nodo.findById(args.idSource, "vinculos");
-                var nodoTarget = await Nodo.findById(args.idTarget, "vinculos");
+                var nodoSource:any = await Nodo.findById(args.idSource, "vinculos").exec();
+                var nodoTarget:any = await Nodo.findById(args.idTarget, "vinculos").exec();
             }
             catch (error) {
                 console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
@@ -273,8 +273,8 @@ export const resolvers = {
             let modificados: Array<NodoConocimiento> = [];
             console.log(`desvinculando ${args.idSource} de ${args.idTarget}`);
             try {
-                var elUno = await Nodo.findById(args.idSource, "nombre vinculos");
-                var elOtro = await Nodo.findById(args.idTarget, "nombre vinculos");
+                var elUno:any = await Nodo.findById(args.idSource, "nombre vinculos").exec();
+                var elOtro:any = await Nodo.findById(args.idTarget, "nombre vinculos").exec();
             }
             catch (error) {
                 console.log(`error . e: ` + error);
@@ -304,7 +304,7 @@ export const resolvers = {
         editarNombreNodo: async function (_: any, { idNodo, nuevoNombre }: any) {
             let modificados: Array<NodoConocimiento> = [];
             try {
-                var elNodo = await Nodo.findById(idNodo, "nombre coordsManuales");
+                var elNodo:any = await Nodo.findById(idNodo, "nombre coordsManuales").exec();
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);

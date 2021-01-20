@@ -1,6 +1,6 @@
 <template>
   <div class="iconoObjetivo" :class="{ objetivoSeleccionado: seleccionado }">
-    <img src="iconos/iconoObjetivo.png" alt="" id="imagenIcono" />
+    <img src="@/assets/iconos/iconoObjetivo.png" alt="" id="imagenIcono" />
 
     <div
       id="nombre"

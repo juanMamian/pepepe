@@ -80,7 +80,7 @@ router.post("/login", async (req: Request, res: Response) => {
     const username = req.body.username;
     const pass = req.body.password;
     console.log("loging " + JSON.stringify(req.body));
-    const usuario = await Usuario.findOne({ username }, "username password permisos");
+    const usuario:any = await Usuario.findOne({ username }, "username password permisos");
     if (!usuario) {
         console.log("usuario no encontrado");
         let respuesta = errorApi("", "noerror", "", "El usuario no existe");
@@ -124,7 +124,7 @@ router.post("/updateFoto", upload.single("nuevaFoto"), async function(req, res){
     let idUsuario=req.user.id;
 
     try{
-        var elUsuario=await Usuario.findById(idUsuario, "username fotografia");
+        var elUsuario:any=await Usuario.findById(idUsuario, "username fotografia");
     }
     catch(error){
         console.log(`error buscando el usuario para cambio de fotografia. e: `+error);
@@ -152,7 +152,7 @@ router.get("/fotografias/:id", async function(req, res){
         return res.sendFile(path.join(__dirname, '../public/media/iconos/usuarioDefault.png'));
     }
     try{
-        var elUsuario=await Usuario.findById(idUsuario, "fotografia");
+        var elUsuario:any=await Usuario.findById(idUsuario, "fotografia");
     }
     catch(error){
         console.log(`error buscando el usuario con fotografia. e: `+error);
