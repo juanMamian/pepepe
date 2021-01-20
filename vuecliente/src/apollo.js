@@ -3,10 +3,10 @@ import {InMemoryCache} from "apollo-cache-inmemory";
 import {createHttpLink} from "apollo-link-http"
 import VueApollo from "vue-apollo";
 import { typeDefs, resolvers} from "./apolloStore/Schema"
-import {split} from "apollo-link"
-import {WebSocketLink} from "apollo-link-ws"
-import {getMainDefinition} from "apollo-utilities"
-import {setContext} from "apollo-link-context"
+// import {split} from "apollo-link"
+// import {WebSocketLink} from "apollo-link-ws"
+// import {getMainDefinition} from "apollo-utilities"
+ import {setContext} from "apollo-link-context"
 import Vue from 'vue'
 
 Vue.use(VueApollo);
@@ -18,15 +18,15 @@ const httpLink = createHttpLink({
   uri: serverUrl+"/graphql"
 });
 
-const wsLink = new WebSocketLink({
-  uri: 'ws://'+serverUrl.substr(7)+'/subscripciones',
-  options: {
-    reconnect: true,
-  },
-})
+// const wsLink = new WebSocketLink({
+//   uri: 'ws://'+serverUrl.substr(7)+'/subscripciones',
+//   options: {
+//     reconnect: true,
+//   },
+// })
 
 const authLink=setContext((_, {headers})=>{
-    const token=localStorage.getItem(process.env.TOKEN_KEY) || "";
+    const token=localStorage.getItem("token") || "";
     return {
         headers:{
             ...headers,
@@ -38,19 +38,19 @@ const authLink=setContext((_, {headers})=>{
 const link=authLink.concat(httpLink);
 
 
-const finalLink = split(
-  // split based on operation type
-  ({ query }) => {
-    const definition = getMainDefinition(query)
-    return definition.kind === 'OperationDefinition' &&
-      definition.operation === 'subscription'
-  },
-  wsLink,
-  link
-)
+// const finalLink = split(
+//   // split based on operation type
+//   ({ query }) => {
+//     const definition = getMainDefinition(query)
+//     return definition.kind === 'OperationDefinition' &&
+//       definition.operation === 'subscription'
+//   },
+//   wsLink,
+//   link
+// )
 
 const apolloClient=new ApolloClient({
-  link:finalLink,
+  link,
   cache,
   typeDefs,
   resolvers

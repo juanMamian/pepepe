@@ -127,7 +127,7 @@ export default {
     },
   },
   mounted() {
-    let token = localStorage.getItem(process.env.TOKEN_KEY);
+    let token = localStorage.getItem("token");
     //let reloj=new Date();
     if (!token) {
       console.log(`no habia token`);

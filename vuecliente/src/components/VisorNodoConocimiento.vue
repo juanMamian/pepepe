@@ -13,14 +13,14 @@ export default {
   computed: {
     direccionNodo: function () {
       return (
-        process.env.VUE_APP_DATA_SERVER_ADD +
+        this.serverUrl +
         "/atlas/contenidosNodos/" +
         this.$route.params.idNodo
       );
     },
   },
   mounted() {
-    console.log(`data server addres:: ${process.env.VUE_APP_DATA_SERVER_ADD}`);
+    console.log(`data server addres:: ${this.serverUrl}`);
   },
 };
 </script>
