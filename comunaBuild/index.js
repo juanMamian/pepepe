@@ -39,6 +39,9 @@ app.use(express_1.default.json());
 app.use("/api/usuarios", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: ['/api/usuarios/login', '/api/usuarios/registro', rutaFotografias] }), usuariosRoutes);
 app.use("/api/atlas", routesNodos);
 app.use("/api/actividadesProfes", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaGuias, rutaEvidencias] }), routesActividadesProfes);
+app.get("/", function (req, res) {
+    res.sendFile(__dirname + "/clientes/pepepe/index.html");
+});
 const port = process.env.PORT || 3000;
 const httpServer = http_1.default.createServer(app);
 Schema_1.aServer.installSubscriptionHandlers(httpServer);
