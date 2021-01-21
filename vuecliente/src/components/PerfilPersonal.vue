@@ -1,13 +1,13 @@
 <template>
   <div class="perfilPersonal">
     <div id="categorias">
-      <div class="categorias" @click="seccion = categorias">
+      <div class="categorias" @click="seccion = 'categorias'">
         Datos personales
       </div>
-      <div class="categorias" @click="seccion = contacto">
+      <div class="categorias" @click="seccion = 'contacto'">
         Información de contacto
       </div>
-      <div class="categorias" @click="seccion = conocimientos">
+      <div class="categorias" @click="seccion = 'conocimientos'">
         Conocimientos
       </div>
     </div>

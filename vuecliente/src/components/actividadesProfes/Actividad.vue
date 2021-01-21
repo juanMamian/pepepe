@@ -1,5 +1,11 @@
 <template>
-  <div class="actividad" :class="{ seleccionada: seleccionada, completada: usuarioCompletoActividad }">
+  <div
+    class="actividad"
+    :class="{
+      seleccionada: seleccionada,
+      completada: usuarioCompletoActividad,
+    }"
+  >
     <div
       id="triangulito"
       :class="{ arrowDown: seleccionada }"
@@ -19,6 +25,7 @@
     <br />
     <div id="zonaGuia" v-show="seleccionada" class="zona">
       <div
+        id="nombreZonaGuia"
         class="nombreZona"
         :class="{
           nombreHayGuia: estaActividad.hayGuia,
@@ -35,13 +42,14 @@
         v-if="usuarioCreadorActividad"
         accept="application/pdf"
       />
-
-      <div
-        id="descargarGuia"
-        @click="descargarGuia"
-        v-if="estaActividad.hayGuia"
-      >
-      <img src="@/assets/iconos/documento.png" alt="Descargar guia" id="botonDescargarGuia"/>
+      <div id="descargarGuia" v-if="estaActividad.hayGuia.length > 5">
+        <a :href="estaActividad.hayGuia">
+          <img
+            src="@/assets/iconos/documento.png"
+            alt="Descargar guia"
+            id="botonDescargarGuia"          
+          />
+        </a>
       </div>
     </div>
 
@@ -112,6 +120,7 @@
               eliminarParticipacion(participacion.id, desarrollo.id)
             "
           />
+          <div class="anuncioActividadCompletada" v-if="desarrollo.estado=='completado'">¡Actividad completada!</div>
           <mi-participacion
             :idActividad="estaActividad.id"
             :enDesarrollo="desarrollo.id"
@@ -121,10 +130,7 @@
             v-if="desarrollo.estado != 'completado'"
             @reloadDesarrollo="reloadDesarrollo(desarrollo.id)"
           />
-          <div
-            v-if="usuarioCreadorActividad"
-            id="toggleDesarrolloCompletado"
-          >
+          <div v-if="usuarioCreadorActividad" id="toggleDesarrolloCompletado">
             <img
               :class="{ completado: desarrollo.estado == 'completado' }"
               @click="
@@ -218,6 +224,7 @@ export default {
       default() {
         return {
           desarrollos: new Array(),
+          hayGuia:""
         };
       },
     },
@@ -444,14 +451,16 @@ export default {
 <style scoped>
 .actividad {
   border: 2px solid rgb(219, 214, 219);
-  padding: 5px 15px;
+  padding: 5px 10px;
   position: relative;
+  border-radius: 10px;
+  
 }
 .actividad:not(.seleccionada) {
   cursor: pointer;
 }
-.actividad.completada{
-  background-color: rgb(172 216 172);
+.actividad.completada {
+  border-color: rgb(172 216 172);
 }
 .seleccionada {
   background-color: rgb(240, 240, 240);
@@ -468,6 +477,7 @@ export default {
   margin-right: auto;
   display: block;
 }
+
 #controlesActividad {
   position: absolute;
   bottom: 0px;
@@ -487,11 +497,20 @@ export default {
   border-radius: 10px;
   padding: 10px;
 }
-#descargarGuia {
-  margin-top: 15px;     
+#nombreZonaGuia{
   text-align: center;
 }
-#botonDescargarGuia{
+.nombreNoHayGuia {
+  background-color: rgb(228, 86, 86);
+}
+.nombreHayGuia {
+  background-color: rgb(92, 179, 92);
+}
+#descargarGuia {
+  margin-top: 15px;
+  text-align: center;
+}
+#botonDescargarGuia {
   cursor: pointer;
   width: 100px;
   height: 100px;
@@ -513,12 +532,7 @@ export default {
   margin-left: 5px;
   margin-right: 5px;
 }
-.nombreNoHayGuia {
-  background-color: red;
-}
-.nombreHayGuia {
-  background-color: green;
-}
+
 
 .participacionEstudiante {
   margin-top: 15px;
@@ -549,7 +563,7 @@ export default {
   border-right: 15px solid transparent;
   border-top: 15px solid gray;
 }
-#toggleDesarrolloCompletado{
+#toggleDesarrolloCompletado {
   text-align: center;
 }
 #botonToggleDesarrolloCompletado {
@@ -559,10 +573,19 @@ export default {
   height: 50px;
   border-radius: 50%;
 }
-#botonToggleDesarrolloCompletado:hover{
-background-color: rgb(98, 151, 98);
+#botonToggleDesarrolloCompletado:hover {
+  background-color: rgb(98, 151, 98);
 }
 #botonToggleDesarrolloCompletado.completado {
   background-color: green;
+}
+.anuncioActividadCompletada{
+  border-radius: 5px;
+  padding: 5px 8px;
+  text-align: center;
+  background-color: rgb(86, 160, 86);
+  min-width: 40%;
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>

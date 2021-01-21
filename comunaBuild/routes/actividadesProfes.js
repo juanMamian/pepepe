@@ -23,6 +23,8 @@ const util = require("util");
 const mongoose_1 = __importDefault(require("mongoose"));
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
+const utilidades_1 = require("./utilidades");
+const streamifier_1 = __importDefault(require("streamifier"));
 router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err, req, res, next) {
     console.log(`Errores: <<${err.message}>>`);
     let mensaje = "Archivo no permitido";
@@ -113,7 +115,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             var laParticipacion = elDesarrollo.participaciones.create(nuevaParticipacion);
             var idParticipacion = laParticipacion._id;
             laParticipacion.archivo.nombre = idParticipacion;
-            elDesarrollo.participaciones.push(laParticipacion);
+            ;
         }
         catch (error) {
             console.log(`Error leyendo nombre de grupo y actividad en la base de dato. E: ${error}`);
@@ -121,19 +123,52 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
         //Guardando el archivo
         if ("file" in req) {
-            console.log(`Verificando la existencia de la carpeta de esta actividad: ${idActividad}`);
-            let carpetaEvidencias = "../archivosDeUsuario/actividadesProfes/evidencias";
-            console.log(`guardando el archivo con nombre idParticipacion`);
-            let archivo = path.join(__dirname, carpetaEvidencias) + "/" + idParticipacion + "." + laParticipacion.archivo.extension;
-            console.log(`el archivo quedará: ${archivo}`);
+            let idCarpetaEvidencias = "1DJR9u-rv7_jQweBMUesurZpmIPT-8MpO";
             try {
-                yield writeFile(archivo, req.file.buffer);
+                yield utilidades_1.jwToken.authorize();
             }
             catch (error) {
-                console.log(`error escribiendo el archivo. E: ${error}`);
-                return res.status(500).send("Error guardando archivo");
+                console.log(`Error autorizando token. E: ${error}`);
+                return res.status(500).send("Error conectando con el servidor de google drive");
+            }
+            var fileMetadata = {
+                'name': idParticipacion + '.' + laParticipacion.archivo.extension,
+                parents: [idCarpetaEvidencias],
+            };
+            var media = {
+                mimeType: req.file.mimetype,
+                body: streamifier_1.default.createReadStream(req.file.buffer)
+            };
+            try {
+                let respuesta = yield utilidades_1.drive.files.create({
+                    auth: utilidades_1.jwToken,
+                    resource: fileMetadata,
+                    media: media,
+                    fields: 'id, webContentLink'
+                });
+                console.log(`Creado archivo ${JSON.stringify(respuesta.data)}`);
+                laParticipacion.archivo.idGoogleDrive = respuesta.data.id;
+                laParticipacion.archivo.googleDriveDirectLink = respuesta.data.webContentLink;
+            }
+            catch (error) {
+                console.log(`Error creando archivo: E: ${error}`);
+                return res.status(500).send("Error conectando con el servidor de google drive");
             }
         }
+        elDesarrollo.participaciones.push(laParticipacion);
+        // if ("file" in req) {
+        //     console.log(`Verificando la existencia de la carpeta de esta actividad: ${idActividad}`);
+        //     let carpetaEvidencias = "../archivosDeUsuario/actividadesProfes/evidencias";
+        //     console.log(`guardando el archivo con nombre idParticipacion`);
+        //     let archivo = path.join(__dirname, carpetaEvidencias) + "/" + idParticipacion + "." + laParticipacion.archivo.extension;
+        //     console.log(`el archivo quedará: ${archivo}`);
+        //     try {
+        //         await writeFile(archivo, req.file.buffer);
+        //     } catch (error) {
+        //         console.log(`error escribiendo el archivo. E: ${error}`);
+        //         return res.status(500).send("Error guardando archivo");
+        //     }
+        // }
         //Guardando elGrupo
         try {
             yield elGrupo.save();
@@ -156,11 +191,15 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
     return __awaiter(this, void 0, void 0, function* () {
         if (!("user" in req)) {
             console.log(`No habia info del bearer`);
-            return;
+            return res.status(400).send();
         }
         if (!("id" in req.user)) {
             console.log(`no había id del usuario`);
-            return;
+            return res.status(400).send();
+        }
+        if (!("file" in req)) {
+            console.log(`no había file en la request`);
+            return res.status(400).send();
         }
         let idUsuario = req.user.id;
         console.log(`Recibida peticion de subir guia por el usuario ${req.user.username}`);
@@ -186,26 +225,62 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
             console.log(`Error leyendo nombre de grupo y actividad en la base de dato. E: ${error}`);
             return res.status(500).send("Error conectando con la base de datos");
         }
-        console.log(`Verificando la existencia de las carpetas ${idGrupo}, actividades y ${idUsuario}`);
-        let carpetaActividades = "../archivosDeUsuario/actividadesProfes/actividades";
+        let idCarpetaGuias = "1GCsyYWtEbv3zElcUXj7YWGXOoHUzNyfQ";
         try {
-            yield mkdir(path.join(__dirname, carpetaActividades, idActividad));
+            yield utilidades_1.jwToken.authorize();
         }
         catch (error) {
-            if (error.message.substr(0, 6) != "EEXIST") {
-                console.log(`Error creando la carpeta de la actividad. E: ${error.message.substr(0, 6)}`);
-                return res.status(500).send("Error accediendo al servidor");
-            }
+            console.log(`Error autorizando token. E: ${error}`);
+            return res.status(500).send("Error conectando con el servidor de google drive");
         }
-        console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
-        let archivo = path.join(__dirname, carpetaActividades, idActividad, "guia.pdf");
+        var fileMetadata = {
+            'name': idActividad + '.pdf',
+            parents: [idCarpetaGuias],
+        };
+        var media = {
+            mimeType: req.file.mimetype,
+            body: streamifier_1.default.createReadStream(req.file.buffer)
+        };
         try {
-            yield writeFile(archivo, req.file.buffer);
+            let respuesta = yield utilidades_1.drive.files.create({
+                auth: utilidades_1.jwToken,
+                resource: fileMetadata,
+                media: media,
+                fields: 'id, webContentLink'
+            });
+            console.log(`Creado archivo ${JSON.stringify(respuesta.data)}`);
+            elGrupo.actividades.id(idActividad).guiaGoogleDrive.idArchivo = respuesta.data.id;
+            elGrupo.actividades.id(idActividad).guiaGoogleDrive.enlace = respuesta.data.webContentLink;
         }
         catch (error) {
-            console.log(`error escribiendo el archivo. E: ${error}`);
-            return res.status(500).send("Error guardando archivo");
+            console.log(`Error creando archivo: E: ${error}`);
+            return res.status(500).send("Error conectando con el servidor de google drive");
         }
+        try {
+            yield elGrupo.save();
+        }
+        catch (error) {
+            console.log(`Error guardando el grupo: E: ${error}`);
+            return res.status(500).send("Error guardando la guia");
+        }
+        // console.log(`Verificando la existencia de las carpetas ${idGrupo}, actividades y ${idUsuario}`);
+        // let carpetaActividades = "../archivosDeUsuario/actividadesProfes/actividades";
+        // try {
+        //     await mkdir(path.join(__dirname, carpetaActividades, idActividad));
+        // } catch (error) {
+        //     if (error.message.substr(0, 6) != "EEXIST") {
+        //         console.log(`Error creando la carpeta de la actividad. E: ${error.message.substr(0, 6)}`);
+        //         return res.status(500).send("Error accediendo al servidor");
+        //     }
+        // }
+        // console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
+        // let archivo = path.join(__dirname, carpetaActividades, idActividad, "guia.pdf");
+        // try {
+        //     await writeFile(archivo, req.file.buffer);
+        // } catch (error) {
+        //     console.log(`error escribiendo el archivo. E: ${error}`);
+        //     return res.status(500).send("Error guardando archivo");
+        // }
         console.log(`update terminado`);
         res.send({ resultado: "ok" });
     });

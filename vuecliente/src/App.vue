@@ -3,15 +3,17 @@
     <div id="navBar">
       <div class="botonNav" id="navHome" to="/">Home</div>
       <router-link to="/atlas" class="hoverGris">
-        <div class="botonNav" id="navAtlas">
-          Atlas de conocimientos
-        </div>
+        <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
       </router-link>
       <router-link to="/proyectos" class="hoverGris">
         <div class="botonNav" id="navProyectos">Proyectos</div>
       </router-link>
       <div class="botonNav" id="navTrabajos">Trabajos</div>
-      <router-link to="/actividadesVirtuales2021" v-if="usuarioLogeado" class="hoverGris">
+      <router-link
+        to="/actividadesVirtuales2021"
+        v-if="usuarioLogeado"
+        class="hoverGris"
+      >
         <div class="botonNav" id="navActividadesVirtuales">
           Actividades virtuales
         </div>
@@ -21,10 +23,16 @@
         v-if="usuarioAdministrador || usuarioSuperadministrador"
         class="hoverGris"
       >
-        <div class="botonNav" id="navActividadesVirtuales">
-          Personas
-        </div>
+        <div class="botonNav" id="navActividadesVirtuales">Personas</div>
       </router-link>
+      <router-link
+        to="/registro"
+        class="botonNav"
+        id="navRegistro"
+        v-if="usuarioSuperadministrador"
+      >
+        <div>Registrar usuario</div></router-link
+      >
       <div id="botonesNavDerecha">
         <template v-if="logeado">
           <div
@@ -50,13 +58,6 @@
         </template>
         <template v-else>
           <router-link
-            to="/registro"
-            class="botonNav"
-            id="navRegistro"
-          >
-            <div>Registro</div></router-link
-          >
-          <router-link
             to="/login"
             class="botonNav navLogin hoverGris"
             id="navLogin"
@@ -71,8 +72,7 @@
 </template>
 
 <script>
-
-import gql from "graphql-tag"
+import gql from "graphql-tag";
 
 function parseJwt(token) {
   var base64Url = token.split(".")[1];
@@ -189,7 +189,7 @@ body {
 .hoverGris:hover {
   background-color: rgb(201, 201, 201);
 }
-.router-link-active{
+.router-link-active {
   background-color: rgb(201, 201, 201);
 }
 .tooltip .tooltiptext {
@@ -231,7 +231,7 @@ body {
   opacity: 1;
 }
 
-.noUserSelect{
+.noUserSelect {
   user-select: none;
 }
 </style>
@@ -288,5 +288,4 @@ body {
   padding-right: 35px;
   min-width: 150px;
 }
-
 </style>

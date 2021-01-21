@@ -2,10 +2,11 @@ import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
 import fs from "fs";
 import util from "util";
 import mongoose from "mongoose";
-import {ModeloGrupoEstudiantil as GrupoEstudiantil} from "../model/actividadesProfes/GrupoEstudiantil"
-import {ModeloUsuario as Usuario} from "../model/Usuario";
+import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil"
+import { ModeloUsuario as Usuario } from "../model/Usuario";
 import path from "path"
 import { contextoQuery } from "./tsObjetos"
+import { drive, jwToken } from "../routes/utilidades"
 
 const access = util.promisify(fs.access);
 
@@ -14,7 +15,7 @@ export const typeDefs = gql`
     type InfoArchivo{
         nombre: String,
         extension: String,
-        accesible:Boolean,
+        accesible: String,        
     }
 
     type ParticipacionActividadGrupoEstudiantil{
@@ -37,7 +38,7 @@ export const typeDefs = gql`
         nombre: String,
         desarrollos:[DesarrolloActividadGrupoEstudiantil],
         creador: PublicUsuario,
-        hayGuia: Boolean,
+        hayGuia: String,
     }
 
     type GrupoEstudiantil{
@@ -75,23 +76,23 @@ export const typeDefs = gql`
     }
 `;
 
-const NUEVA_ACTIVIDAD="nueva_actividad_estudiantil"
+const NUEVA_ACTIVIDAD = "nueva_actividad_estudiantil"
 
 export const resolvers = {
-    Subscription:{
-        nuevaActividadEstudiantil:{            
-            subscribe:(_:any, args:any, contexto)=>{
+    Subscription: {
+        nuevaActividadEstudiantil: {
+            subscribe: (_: any, args: any, contexto) => {
                 return contexto.pubsub.asyncIterator([NUEVA_ACTIVIDAD]);
             }
         }
     },
-    Query: {        
+    Query: {
         desarrolloEnActividadEstudiantil: async function (_: any, { idDesarrollo, idActividad }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de desarrollo con id ${idDesarrollo} en la actividad con id ${idActividad}`);
 
             try {
-                var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
+                var elGrupo: any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
                 if (!elGrupo) {
                     throw "Grupo no encontrado";
                 }
@@ -127,7 +128,7 @@ export const resolvers = {
             // }
 
             try {
-                var elUsuario:any = await Usuario.findById(idEstudiante).exec();                
+                var elUsuario: any = await Usuario.findById(idEstudiante).exec();
                 if (!elUsuario) throw "Usuario no encontrado en la base de datos";
             } catch (error) {
                 console.log(`Error buscando al usuario con id ${idEstudiante} en la base de datos. E: ${error}`);
@@ -137,8 +138,8 @@ export const resolvers = {
             console.log(`Buscando el grupo`);
 
             try {
-                var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
-                if (!elGrupo) {                    
+                var elGrupo: any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
+                if (!elGrupo) {
                     throw "Grupo no encontrado";
                 }
 
@@ -162,8 +163,8 @@ export const resolvers = {
         },
         grupoEstudiantil: async function (_: any, { idGrupo }: any, contexto: contextoQuery) {
             try {
-                var elGrupoEstudiantil:any = GrupoEstudiantil.findById(idGrupo).exec();
-                if(!elGrupoEstudiantil){
+                var elGrupoEstudiantil: any = GrupoEstudiantil.findById(idGrupo).exec();
+                if (!elGrupoEstudiantil) {
                     throw "grupo no encontrado"
                 }
             } catch (error) {
@@ -182,8 +183,8 @@ export const resolvers = {
             }
 
             try {
-                var elLogeado:any = await Usuario.findById(credencialesUsuario.id).exec();
-                if(!elLogeado){
+                var elLogeado: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elLogeado) {
                     throw "usuario no encontrado"
                 }
             }
@@ -210,8 +211,8 @@ export const resolvers = {
         },
         actividadDeGrupoEstudiantil: async function (_: any, { idGrupo, idActividad }, contexto: contextoQuery) {
             try {
-                let elGrupo:any = await GrupoEstudiantil.findById(idGrupo).exec();
-                if(!elGrupo){
+                let elGrupo: any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
                 var laActividad = elGrupo.actividades.id(idActividad);
@@ -224,8 +225,8 @@ export const resolvers = {
         actividadEstudiantil: async function (_: any, { idActividad }, contexto: contextoQuery) {
             console.log(`Solicitud de actividad con id ${idActividad}`);
             try {
-                let elGrupo:any = await GrupoEstudiantil.findOne({"actividades._id":mongoose.Types.ObjectId(idActividad)}).exec();
-                if(!elGrupo){
+                let elGrupo: any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
+                if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
                 var laActividad = elGrupo.actividades.id(idActividad);
@@ -239,7 +240,7 @@ export const resolvers = {
             console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe}`);
             try {
-                var todasLasActividades:any = await GrupoEstudiantil.find({}).distinct("actividades").exec();
+                var todasLasActividades: any = await GrupoEstudiantil.find({}).distinct("actividades").exec();
             } catch (error) {
                 console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -259,8 +260,8 @@ export const resolvers = {
             console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe} para el grupo con id ${idGrupo}`);
             try {
-                var elGrupo:any = await GrupoEstudiantil.findById(idGrupo).exec();
-                if(!elGrupo){
+                var elGrupo: any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
             } catch (error) {
@@ -292,17 +293,17 @@ export const resolvers = {
             console.log(`||||||||||||||||||||||||||`);
             console.log(`Solicitud de set estado ${nuevoEstado} en desarrollo con id ${idDesarrollo}`);
             try {
-                var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades.desarrollos._id": mongoose.Types.ObjectId(idDesarrollo) }).exec();
-                if(!elGrupo){
+                var elGrupo: any = await GrupoEstudiantil.findOne({ "actividades.desarrollos._id": mongoose.Types.ObjectId(idDesarrollo) }).exec();
+                if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
                 else {
                     console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
 
-                    let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d=>d._id == idDesarrollo));
+                    let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d => d._id == idDesarrollo));
                     console.log(`Actividad: ${laActividad.nombre}`);
                     var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
-                    elDesarrollo.estado=nuevoEstado;
+                    elDesarrollo.estado = nuevoEstado;
                 }
             } catch (error) {
                 console.log(`Error buscando desarrollo en la base de datos: E: ${error}`);
@@ -319,7 +320,7 @@ export const resolvers = {
             console.log(`Estado de desarrollo cambiado`);
             return elDesarrollo;
 
-        },    
+        },
         addEstudianteGrupoEstudiantil: async function (_: any, { idEstudiante, idGrupoEstudiantil }, contexto: contextoQuery) {
             console.log(`petición de añadir el estudiante con id ${idEstudiante} a grupo estudiantil con id ${idGrupoEstudiantil}`);
             let credencialesUsuario = contexto.usuario;
@@ -329,8 +330,8 @@ export const resolvers = {
             }
 
             try {
-                var elGrupoEstudiantil:any = await GrupoEstudiantil.findById(idGrupoEstudiantil).exec();
-                if(!elGrupoEstudiantil){
+                var elGrupoEstudiantil: any = await GrupoEstudiantil.findById(idGrupoEstudiantil).exec();
+                if (!elGrupoEstudiantil) {
                     throw "grupo no encontrado"
                 }
             }
@@ -399,8 +400,8 @@ export const resolvers = {
             }
 
             try {
-                var elGrupoEstudiantil:any = await GrupoEstudiantil.findById(idGrupo).exec();
-                if(!elGrupoEstudiantil){
+                var elGrupoEstudiantil: any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if (!elGrupoEstudiantil) {
                     throw "grupo no encontrado"
                 }
             }
@@ -444,8 +445,8 @@ export const resolvers = {
             console.log(`Peticion de crear ua nueva actividad en el grupo con id ${idGrupo}`);
 
             try {
-                var elGrupoEstudiantil:any = await GrupoEstudiantil.findById(idGrupo).exec();
-                if(!elGrupoEstudiantil){
+                var elGrupoEstudiantil: any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if (!elGrupoEstudiantil) {
                     throw "grupo no encontrado"
                 }
             }
@@ -475,18 +476,18 @@ export const resolvers = {
                 throw new ApolloError("Error introduciendo la actividad en el proyecto");
             }
             console.log(`Actividad creada exitosamente: ${nuevaActividad}`);
-            contexto.pubsub.publish(NUEVA_ACTIVIDAD, {nuevaActividadEstudiantil: nuevaActividad});
+            contexto.pubsub.publish(NUEVA_ACTIVIDAD, { nuevaActividadEstudiantil: nuevaActividad });
 
             return nuevaActividad;
-            
+
         },
         eliminarActividadDeGrupoEstudiantil: async function (_: any, { idActividad, idGrupo }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||||||||`);
             console.log(`peticion de eliminar una actividad con id ${idActividad} de un proyecto con id ${idGrupo}`);
 
             try {
-                var elGrupo:any = await GrupoEstudiantil.findById(idGrupo).exec();
-                if(!elGrupo){
+                var elGrupo: any = await GrupoEstudiantil.findById(idGrupo).exec();
+                if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
                 console.log(`Grupo encontrado`);
@@ -547,8 +548,8 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elGrupo:any = await GrupoEstudiantil.findById(idGrupo);
-                if(!elGrupo){
+                var elGrupo: any = await GrupoEstudiantil.findById(idGrupo);
+                if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
             }
@@ -606,7 +607,7 @@ export const resolvers = {
             }
 
             try {
-                var elGrupo:any = await GrupoEstudiantil.findOne({ "actividades.desarrollos.participaciones._id": mongoose.Types.ObjectId(idParticipacion) }).exec();
+                var elGrupo: any = await GrupoEstudiantil.findOne({ "actividades.desarrollos.participaciones._id": mongoose.Types.ObjectId(idParticipacion) }).exec();
                 if (!elGrupo) {
                     console.log(`No se encontró grupo`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -616,17 +617,17 @@ export const resolvers = {
 
                     let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d => d.participaciones.some(p => p._id == idParticipacion)));
                     console.log(`Actividad: ${laActividad.nombre}`);
-                    let elDesarrollo=laActividad.desarrollos.find(d => d.participaciones.some(p => p._id == idParticipacion));
+                    let elDesarrollo = laActividad.desarrollos.find(d => d.participaciones.some(p => p._id == idParticipacion));
                     let lasParticipaciones = elDesarrollo.participaciones;
 
                     console.log(`Participaciones: ${lasParticipaciones}`);
                     lasParticipaciones.pull({ _id: idParticipacion });
                     console.log(`Participaciones: ${lasParticipaciones}`);
 
-                    if(elDesarrollo.participaciones.length<1){
-                        let idDesarrollo=elDesarrollo.id
+                    if (elDesarrollo.participaciones.length < 1) {
+                        let idDesarrollo = elDesarrollo.id
                         console.log(`Este desarrollo con id ${idDesarrollo} se quedó sin participaciones. Eliminando`);
-                        laActividad.desarrollos.pull({_id:idDesarrollo});
+                        laActividad.desarrollos.pull({ _id: idDesarrollo });
                     }
                 }
             } catch (error) {
@@ -707,6 +708,7 @@ export const resolvers = {
             return usuarioCreador;
         },
         hayGuia: async function (parent: any) {
+            console.log(`------parent para decidir si hay guia. ${JSON.stringify(parent)}`);
             let idActividad = "";
             if ("id" in parent) {
                 idActividad = parent.id
@@ -716,23 +718,20 @@ export const resolvers = {
             }
             else {
                 console.log(`No habia campo id en el parent para decidir si HAY GUIA`);
-                return false
+                return ""
             }
 
-            let pathGuia = path.join(__dirname, "../archivosDeUsuario/actividadesProfes/actividades", idActividad, "guia.pdf");
-
-            try {
-                await access(pathGuia, fs.constants.R_OK);
-            } catch (error) {
-                if (error.message.substr(0, 6) != "ENOENT") {
-                    console.log(`Error checkeando acceso a la guia en ${pathGuia}. E: ${error}`);
-                }
-                else {
-                    console.log(`Guia no existia`);
-                }
-                return false;
+            if(parent.guiaGoogleDrive && parent.guiaGoogleDrive.enlace){
+                console.log(`Enviando enlace de guia: ${parent.guiaGoogleDrive.enlace}`);
+                return parent.guiaGoogleDrive.enlace;
             }
-            return true;
+            else{
+                console.log(`La actividad no tenia campo 'guiaGoogleDrive'`);
+                return "";
+            }
+            return "";
+
+            
         },
         id: async function (parent: any) {
             return parent._id;
@@ -759,11 +758,11 @@ export const resolvers = {
         accesible: async function (parent: any) {
             let nombreArchivo = "";
             if ("nombre" in parent) {
-                nombreArchivo += parent.nombre
+                nombreArchivo += parent.nombre;
             }
             else {
                 console.log(`No habia nombre para buscar el archivo`);
-                return false;
+                return "";
             }
 
             if ("extension" in parent) {
@@ -771,8 +770,31 @@ export const resolvers = {
             }
             else {
                 console.log(`No habia info de la extension en la base de datos`);
-                return false
+                return ""
             }
+
+            if (parent.idGoogleDrive) {
+                console.log(`Verificando existencia de archivo en google drive`);
+                try {
+                    await jwToken.authorize();
+                }
+                catch (error) {
+                    console.log(`Error autorizando token. E: ${error}`);
+                }
+                try {
+                    let respuesta = await drive.files.get({ fileId: parent.idGoogleDrive, auth: jwToken });
+                    console.log(`El link es: ${parent.googleDriveDirectLink}`);
+                    if (parent.googleDriveDirectLink) {
+                        return parent.googleDriveDirectLink;
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando archivo en google drive: E: ${error}`);
+                    //return res.status(500).send("Error conectando con el servidor de google drive");
+                }
+            }
+
+            //Buscar en archivos locales
 
             let pathArchivo = path.join(__dirname, "../archivosDeUsuario/actividadesProfes/evidencias", nombreArchivo);
 
@@ -785,9 +807,10 @@ export const resolvers = {
                 else {
                     console.log(`Archivo no existia`);
                 }
-                return false;
+                return "";
             }
-            return true;
+            let enlaceDescargaLocal="/api/actividadesProfes/evidencia/"+parent.nombre+"."+parent.extension;
+            return enlaceDescargaLocal;
         }
     }
 

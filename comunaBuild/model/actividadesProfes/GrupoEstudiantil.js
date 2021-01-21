@@ -11,7 +11,9 @@ const esquemaParticipacion = new mongoose_1.default.Schema({
     },
     archivo: {
         nombre: String,
-        extension: String
+        extension: String,
+        idGoogleDrive: String,
+        googleDriveDirectLink: String,
     },
     comentario: {
         type: String,
@@ -62,6 +64,14 @@ const esquemaActividad = new mongoose_1.default.Schema({
     idCreador: {
         type: String,
         required: true
+    },
+    guiaGoogleDrive: {
+        idArchivo: {
+            type: String,
+        },
+        enlace: {
+            type: String
+        }
     }
 });
 esquemaActividad.pre('save', function () {

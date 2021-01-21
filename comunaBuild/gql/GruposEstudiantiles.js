@@ -20,13 +20,14 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
 const Usuario_1 = require("../model/Usuario");
 const path_1 = __importDefault(require("path"));
+const utilidades_1 = require("../routes/utilidades");
 const access = util_1.default.promisify(fs_1.default.access);
 exports.typeDefs = apollo_server_express_1.gql `
 
     type InfoArchivo{
         nombre: String,
         extension: String,
-        accesible:Boolean,
+        accesible: String,        
     }
 
     type ParticipacionActividadGrupoEstudiantil{
@@ -49,7 +50,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         nombre: String,
         desarrollos:[DesarrolloActividadGrupoEstudiantil],
         creador: PublicUsuario,
-        hayGuia: Boolean,
+        hayGuia: String,
     }
 
     type GrupoEstudiantil{
@@ -677,6 +678,7 @@ exports.resolvers = {
         },
         hayGuia: function (parent) {
             return __awaiter(this, void 0, void 0, function* () {
+                console.log(`------parent para decidir si hay guia. ${JSON.stringify(parent)}`);
                 let idActividad = "";
                 if ("id" in parent) {
                     idActividad = parent.id;
@@ -686,22 +688,17 @@ exports.resolvers = {
                 }
                 else {
                     console.log(`No habia campo id en el parent para decidir si HAY GUIA`);
-                    return false;
+                    return "";
                 }
-                let pathGuia = path_1.default.join(__dirname, "../archivosDeUsuario/actividadesProfes/actividades", idActividad, "guia.pdf");
-                try {
-                    yield access(pathGuia, fs_1.default.constants.R_OK);
+                if (parent.guiaGoogleDrive && parent.guiaGoogleDrive.enlace) {
+                    console.log(`Enviando enlace de guia: ${parent.guiaGoogleDrive.enlace}`);
+                    return parent.guiaGoogleDrive.enlace;
                 }
-                catch (error) {
-                    if (error.message.substr(0, 6) != "ENOENT") {
-                        console.log(`Error checkeando acceso a la guia en ${pathGuia}. E: ${error}`);
-                    }
-                    else {
-                        console.log(`Guia no existia`);
-                    }
-                    return false;
+                else {
+                    console.log(`La actividad no tenia campo 'guiaGoogleDrive'`);
+                    return "";
                 }
-                return true;
+                return "";
             });
         },
         id: function (parent) {
@@ -737,15 +734,36 @@ exports.resolvers = {
                 }
                 else {
                     console.log(`No habia nombre para buscar el archivo`);
-                    return false;
+                    return "";
                 }
                 if ("extension" in parent) {
                     nombreArchivo += "." + parent.extension;
                 }
                 else {
                     console.log(`No habia info de la extension en la base de datos`);
-                    return false;
+                    return "";
                 }
+                if (parent.idGoogleDrive) {
+                    console.log(`Verificando existencia de archivo en google drive`);
+                    try {
+                        yield utilidades_1.jwToken.authorize();
+                    }
+                    catch (error) {
+                        console.log(`Error autorizando token. E: ${error}`);
+                    }
+                    try {
+                        let respuesta = yield utilidades_1.drive.files.get({ fileId: parent.idGoogleDrive, auth: utilidades_1.jwToken });
+                        console.log(`El link es: ${parent.googleDriveDirectLink}`);
+                        if (parent.googleDriveDirectLink) {
+                            return parent.googleDriveDirectLink;
+                        }
+                    }
+                    catch (error) {
+                        console.log(`Error buscando archivo en google drive: E: ${error}`);
+                        //return res.status(500).send("Error conectando con el servidor de google drive");
+                    }
+                }
+                //Buscar en archivos locales
                 let pathArchivo = path_1.default.join(__dirname, "../archivosDeUsuario/actividadesProfes/evidencias", nombreArchivo);
                 try {
                     yield access(pathArchivo, fs_1.default.constants.R_OK);
@@ -757,9 +775,10 @@ exports.resolvers = {
                     else {
                         console.log(`Archivo no existia`);
                     }
-                    return false;
+                    return "";
                 }
-                return true;
+                let enlaceDescargaLocal = "/api/actividadesProfes/evidencia/" + parent.nombre + "." + parent.extension;
+                return enlaceDescargaLocal;
             });
         }
     }

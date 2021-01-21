@@ -12,3 +12,5 @@
 *Limpiar cache de apollo-vue en logout
 *Programar los tooltips
 *Para solucionar los avisos de typescript puse tipo ANY en los objetos creados mediante el constructor de un modelo mongoose. Habrá que revisar ese asunto en el futuro.
+*Garantizar que los username pasan a minúsculas y que son únicos en ese modo
+*Set nombre download en la descarga de las evidencias y guias.

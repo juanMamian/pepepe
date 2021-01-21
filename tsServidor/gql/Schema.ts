@@ -51,7 +51,7 @@ const context = ({ req, res, connection }: any) => {
         console.log(`Conexion normal`);
 
         let headers: any = req.headers;
-        console.log(`headers: ${JSON.stringify(headers)}`);
+        //console.log(`headers: ${JSON.stringify(headers)}`);
 
         if (!headers.authorization) return { usuario };
         const token: string = headers.authorization;

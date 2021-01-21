@@ -6,24 +6,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const http_1 = __importDefault(require("http"));
 const express_1 = __importDefault(require("express"));
 const app = express_1.default();
-const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 dotenv.config();
 const usuariosRoutes = require("./routes/usuarios");
 const routesNodos = require("./routes/atlas/nodos");
 const routesActividadesProfes = require("./routes/actividadesProfes");
+const mongoose_1 = require("./mongoose");
 const ejwt = require("express-jwt");
 const cors_1 = __importDefault(require("cors"));
 const Schema_1 = require("./gql/Schema");
-mongoose.connect(process.env.DB_CONNECT, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}, () => console.log("conexion exitosa a la b de datos"));
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function () {
-    // we're connected!
-});
 //Rutas pepepe
 console.log(`Carpeta estatica en ${__dirname + '/pepepe'}`);
 app.use("/pepepe", express_1.default.static(__dirname + '/clientes/pepepe'));
@@ -40,11 +31,12 @@ app.use("/api/usuarios", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET
 app.use("/api/atlas", routesNodos);
 app.use("/api/actividadesProfes", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaGuias, rutaEvidencias] }), routesActividadesProfes);
 app.get("/", function (req, res) {
-    res.sendFile(__dirname + "/clientes/pepepe/index.html");
+    return res.send("Hola");
 });
 const port = process.env.PORT || 3000;
 const httpServer = http_1.default.createServer(app);
 Schema_1.aServer.installSubscriptionHandlers(httpServer);
+mongoose_1.iniciarMongoose();
 httpServer.listen(port, () => {
     console.log(`🚀 Server ready at http://localhost:${port}${Schema_1.aServer.graphqlPath}`);
     console.log(`🚀 Subscriptions ready at ws://localhost:${port}${Schema_1.aServer.subscriptionsPath}`);

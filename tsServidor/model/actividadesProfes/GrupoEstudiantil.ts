@@ -7,7 +7,9 @@ const esquemaParticipacion = new mongoose.Schema({
     },
     archivo:{
         nombre: String,
-        extension:String        
+        extension:String,
+        idGoogleDrive:String,
+        googleDriveDirectLink:String,        
     },
     comentario:{
         type:String,        
@@ -66,6 +68,14 @@ const esquemaActividad = new mongoose.Schema({
     idCreador:{
         type: String,
         required:true
+    },
+    guiaGoogleDrive:{
+        idArchivo:{
+            type:String,            
+        },
+        enlace:{
+            type:String
+        }
     }
 });
 

@@ -1,7 +1,7 @@
 <template>
   <div class="actividadesDeProfe">
     <icono-persona :estaPersona="esteProfe"></icono-persona>
-    <div id="listaActividades">
+    <div id="listaActividades" @click.self="idActividadSeleccionada=null">
       <actividad
         v-for="actividad of actividades"
         :key="actividad.id"
@@ -82,9 +82,10 @@ export default {
 
 <style scoped>
 .actividad{
-  margin-left:auto;
-  margin-right:auto;
+  margin: 10px auto;
   max-width: 500px;
+  box-shadow: 2px 2px 2px 2px rgb(190, 190, 190);
+  
 }
 .iconoPersona {
   margin-top: 30px;

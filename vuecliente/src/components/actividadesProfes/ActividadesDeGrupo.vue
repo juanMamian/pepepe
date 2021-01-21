@@ -363,6 +363,10 @@ export default {
 </script>
 
 <style scoped>
+.actividad{
+  box-shadow: 2px 2px 2px 2px rgb(190, 190, 190);
+}
+
 .contenidoGrupoProfe {
   border: 2px solid blue;
   border-radius: 5px;

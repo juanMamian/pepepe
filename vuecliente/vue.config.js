@@ -1,4 +1,4 @@
 module.exports = {
     // options...
-    publicPath: "/pepepe"
+    //publicPath: "/pepepe"
   }

@@ -25,7 +25,7 @@ fragment fragDesarrollo on DesarrolloActividadGrupoEstudiantil{
       archivo {
         extension
         nombre
-        accesible
+        accesible,        
       }
       comentario
       autor {
