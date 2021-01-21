@@ -14,7 +14,7 @@ export default {
     direccionNodo: function () {
       return (
         this.serverUrl +
-        "/atlas/contenidosNodos/" +
+        "/assetsAtlas/contenidosNodos/" +
         this.$route.params.idNodo
       );
     },

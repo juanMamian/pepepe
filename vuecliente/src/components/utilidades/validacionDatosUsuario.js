@@ -9,7 +9,7 @@ export const validarDatosUsuario = function (datosUsuario) {
 
     for (let dato in datosUsuario) {
 
-        if(!datosUsuario[dato]){
+        if(!datosUsuario[dato] && dato!="numeroTel"){
             errores.push(`El dato ${dato} no tenia valor`);
             return errores;
         }

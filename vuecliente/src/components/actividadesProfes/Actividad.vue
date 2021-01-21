@@ -6,6 +6,14 @@
       completada: usuarioCompletoActividad,
     }"
   >
+    <div id="contenedorAlertas">
+      <img
+        v-if="actividadConNuevasRespuestasParaProfe"        
+        id="simboloNuevoMensaje"
+        src="@/assets/iconos/mensaje.png"
+        title="Nuevo(s) mensaje(s)"
+      />
+    </div>
     <div
       id="triangulito"
       :class="{ arrowDown: seleccionada }"
@@ -47,7 +55,7 @@
           <img
             src="@/assets/iconos/documento.png"
             alt="Descargar guia"
-            id="botonDescargarGuia"          
+            id="botonDescargarGuia"
           />
         </a>
       </div>
@@ -74,8 +82,24 @@
           :seleccionado="
             idEstudianteSeleccionado == desarrollo.estudiante.id ? true : false
           "
-          @click.native="idEstudianteSeleccionado = desarrollo.estudiante.id"
-        />
+          @click.native="
+            idEstudianteSeleccionado = desarrollo.estudiante.id;
+            marcarComoLeido(desarrollo.estudiante.id);
+          "
+        >
+          <template v-slot:alertas>
+            <img
+              v-if="
+                idsEstudiantesConNuevaRespuestaParaProfe.includes(
+                  desarrollo.estudiante.id
+                )
+              "              
+              id="simboloNuevoMensaje"
+              src="@/assets/iconos/mensaje.png"
+              title="Nuevo mensaje"
+            />
+          </template>
+        </icono-persona>
       </div>
     </div>
 
@@ -120,7 +144,12 @@
               eliminarParticipacion(participacion.id, desarrollo.id)
             "
           />
-          <div class="anuncioActividadCompletada" v-if="desarrollo.estado=='completado'">¡Actividad completada!</div>
+          <div
+            class="anuncioActividadCompletada"
+            v-if="desarrollo.estado == 'completado'"
+          >
+            ¡Actividad completada!
+          </div>
           <mi-participacion
             :idActividad="estaActividad.id"
             :enDesarrollo="desarrollo.id"
@@ -139,6 +168,7 @@
               id="botonToggleDesarrolloCompletado"
               src="@/assets/iconos/success.png"
               alt="Marcar como completado"
+              title="Marcar como completado"
             />
           </div>
         </div>
@@ -150,7 +180,10 @@
         id="botonEliminarActividad"
         class="controlesActividad"
         @click="eliminarse"
-        v-if="usuarioCreadorActividad"
+        v-if="
+          usuarioCreadorActividad ||
+          usuarioAdministradorActividadesEstudiantiles
+        "
       >
         Eliminar
       </div>
@@ -224,7 +257,7 @@ export default {
       default() {
         return {
           desarrollos: new Array(),
-          hayGuia:""
+          hayGuia: "",
         };
       },
     },
@@ -417,12 +450,45 @@ export default {
           console.log(`Error: ${error}`);
         });
     },
+    marcarComoLeido(idEstudiante) {
+      if (this.$store.state.usuario.id == this.estaActividad.creador.id) {
+        let idDesarrollo = this.estaActividad.desarrollos.find(
+          (d) => d.estudiante.id == idEstudiante
+        ).id;
+        console.log(
+          `Marcando el desarrollo con id ${idDesarrollo} como leído por profe`
+        );
+        this.$apollo.mutate({
+          mutation: gql`
+            mutation($idDesarrollo: ID!) {
+              setLeidoPorProfeDesarrolloEstudiantil(
+                idDesarrollo: $idDesarrollo
+                nuevoLeidoPorProfe: true
+              ) {
+                id
+                leidoPorProfe
+              }
+            }
+          `,
+          variables: {
+            idDesarrollo,
+          },
+        });
+      }
+    },
   },
   computed: {
     usuarioCreadorActividad: function () {
       return this.$store.state.usuario.id == this.estaActividad.creador.id;
     },
     usuarioTieneDesarrollo: function () {
+      console.log(`**`);
+      console.log(`${this.$store.state.usuario.id}`);
+      if (this.estaActividad.desarrollos.length < 1) {
+        console.log(`Actividad sin desarrollos`);
+
+        return false;
+      }
       return this.estaActividad.desarrollos.some(
         (d) => d.estudiante.id == this.$store.state.usuario.id
       );
@@ -444,6 +510,29 @@ export default {
         "actividadesEstudiantiles-profe"
       );
     },
+    idsDesarrollosConNuevaRespuestaParaProfe() {
+      let desarrollosConNuevaRespuesta = this.estaActividad.desarrollos.filter(
+        (d) => d.leidoPorProfe == false
+      );
+      if (this.usuarioCreadorActividad) {
+        return desarrollosConNuevaRespuesta.map((d) => d.id);
+      }
+      return [];
+    },
+    idsEstudiantesConNuevaRespuestaParaProfe() {
+      let desarrollosConNuevaRespuesta = this.estaActividad.desarrollos.filter(
+        (d) => d.leidoPorProfe == false
+      );
+      if (this.usuarioCreadorActividad) {
+        return desarrollosConNuevaRespuesta.map((d) => d.estudiante.id);
+      }
+      return [];
+    },
+    actividadConNuevasRespuestasParaProfe() {
+      return this.idsDesarrollosConNuevaRespuestaParaProfe.length > 0
+        ? true
+        : false;
+    },
   },
 };
 </script>
@@ -454,7 +543,7 @@ export default {
   padding: 5px 10px;
   position: relative;
   border-radius: 10px;
-  
+  font-family: 'Noto Sans', Sans-Serif;
 }
 .actividad:not(.seleccionada) {
   cursor: pointer;
@@ -465,6 +554,11 @@ export default {
 .seleccionada {
   background-color: rgb(240, 240, 240);
   padding-bottom: 30px;
+}
+#contenedorAlertas {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 #nombre {
   padding-top: 10px;
@@ -497,7 +591,7 @@ export default {
   border-radius: 10px;
   padding: 10px;
 }
-#nombreZonaGuia{
+#nombreZonaGuia {
   text-align: center;
 }
 .nombreNoHayGuia {
@@ -533,6 +627,13 @@ export default {
   margin-right: 5px;
 }
 
+#simboloNuevoMensaje {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: orange;
+  cursor: pointer;
+}
 
 .participacionEstudiante {
   margin-top: 15px;
@@ -579,7 +680,7 @@ export default {
 #botonToggleDesarrolloCompletado.completado {
   background-color: green;
 }
-.anuncioActividadCompletada{
+.anuncioActividadCompletada {
   border-radius: 5px;
   padding: 5px 8px;
   text-align: center;

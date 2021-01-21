@@ -657,7 +657,7 @@ export default {
 
 <style scoped>
 .proyecto {
-  padding: 5px 10px;
+  padding: 5px 20px;
 }
 
 #nombreProyecto {

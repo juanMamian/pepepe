@@ -43,6 +43,11 @@ const esquemaDesarrollo = new mongoose.Schema({
         type: [esquemaParticipacion],
         required: true,
         default:[]
+    },
+    leidoPorProfe:{
+        type:Boolean,
+        required:true,
+        default:true
     }
 
 });

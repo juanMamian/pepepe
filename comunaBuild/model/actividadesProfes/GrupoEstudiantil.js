@@ -43,6 +43,11 @@ const esquemaDesarrollo = new mongoose_1.default.Schema({
         type: [esquemaParticipacion],
         required: true,
         default: []
+    },
+    leidoPorProfe: {
+        type: Boolean,
+        required: true,
+        default: true
     }
 });
 const esquemaActividad = new mongoose_1.default.Schema({

@@ -11,6 +11,7 @@
       src="@/assets/iconos/mensaje.png"
       alt="Enviar respuesta"
       id="iconoMensaje"
+      :title="cuadroAbierto? 'cerrar':'abrir'"
       @click="abrirCerrar"
     /><br />
     <textarea
@@ -31,13 +32,15 @@
         type="file"
         id="inputArchivoAdjunto"
         ref="inputArchivoAdjunto"
+        accept="application/pdf, .png, .jpg, .jpeg, image/png, image/jpg"
         @change="actualizarNombreDeArchivo"
       />
       <img
         src="@/assets/iconos/adjuntar.png"
         alt="Ajuntar archivo"
         id="imgAdjuntar"
-        @click="abrirSelectorDeArchivos"
+        title="adjuntar un archivo"
+        @click="abrirSelectorDeArchivos"        
       />
       <div id="nombreArchivoSeleccionado">{{ nombreArchivoSeleccionado }}</div>
     </div>
@@ -46,6 +49,7 @@
         src="@/assets/iconos/enviar.png"
         alt="Enviar respuesta"
         id="imgEnviar"
+        title="Enviar"
         @click="enviarRespuesta"
       />
     </div>

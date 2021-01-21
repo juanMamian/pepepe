@@ -60,11 +60,7 @@
 </template>
 
 <script>
-var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-var charProhibidosNombre = /[^ a-zA-ZÀ-ž]/g;
-var charProhibidosNumeroTel = /[^0-9+-]/g;
-var emailChars = /\S+@\S+\.\S+/;
-var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
+
 import axios from "axios";
 import { validarDatosUsuario } from "./utilidades/validacionDatosUsuario";
 
@@ -82,16 +78,34 @@ export default {
         username: null,
         password: null,
       },
+      camposObligatorios:["nombres", "apellidos", "username", "password"]
     }
   },
   methods: {
     enviarRegistro() {
+      let datosIntroducidos=new Object();
+      for(let campo in this.datosRegistro){
+        if(!this.datosRegistro[campo]){
+          console.log(`campo ${campo} vacio`);
+        }
+        else{
+          datosIntroducidos[campo]=this.datosRegistro[campo];
+        }
+      }
+      
+      this.camposObligatorios.forEach((campoObligatorio)=>{
+        if(!datosIntroducidos[campoObligatorio]){
+          console.log(`Faltaba el campo ${campoObligatorio}`);
+          return;
+        }
+      });
       let dis = this;
-      let errores = validarDatosUsuario(this.datosRegistro);
+      
+      let errores = validarDatosUsuario(datosIntroducidos);
       if (errores.length<1) {
         axios
           .post(this.serverUrl + "/api/usuarios/registro", {
-            usuario: this.datosRegistro,
+            usuario: datosIntroducidos,
           })
           .then(function (respuesta) {
             console.log(`respuesta: ${JSON.stringify(respuesta.data)}`);
@@ -107,77 +121,7 @@ export default {
       else{
         console.log(`Errores: ${errores}`);
       }
-    },
-    validarDatos() {
-      var errores = 0;
-
-      this.nombres = this.nombres.trim();
-      this.apellidos = this.apellidos.trim();
-      this.fechaNacimiento = this.fechaNacimiento.trim();
-      this.email = this.email.trim();
-      this.numeroTel = this.numeroTel.trim();
-      this.lugarResidencia = this.lugarResidencia.trim();
-
-      if (this.nombres.length < 2) {
-        this.alertar("Tu nombre es muy corto");
-        errores++;
-      }
-      if (charProhibidosNombre.test(this.nombres)) {
-        this.alertar("Tu nombre contiene caracteres no permitidos");
-        errores++;
-      }
-      if (this.apellidos.length < 2) {
-        this.alertar("Tu apellido es muy corto");
-        errores++;
-      }
-      if (charProhibidosNombre.test(this.apellidos)) {
-        this.alertar("Tu apellido contiene caracteres no permitidos");
-        errores++;
-      }
-
-      if (!dateChars.test(this.fechaNacimiento)) {
-        this.alertar("Tu fecha de nacimiento es incorrecta");
-        errores++;
-      }
-
-      if (this.email.length > 0 && !emailChars.test(this.email)) {
-        this.alertar("Tu e-mail no es válido");
-        errores++;
-      }
-
-      if (charProhibidosNumeroTel.test(this.numeroTel)) {
-        this.alertar("Tu número telefónico no es válido");
-        errores++;
-      }
-
-      if (this.lugarResidencia.length < 2) {
-        this.alertar("Tu lugar de residencia es muy corto");
-        errores++;
-      }
-      if (charProhibidos.test(this.lugarResidencia)) {
-        this.alertar(
-          "Tu lugar de residencia contiene caracteres no permitidos"
-        );
-        errores++;
-      }
-      if (this.username.length < 4) {
-        this.alertar("Tu nombre de usuario es muy corto");
-        errores++;
-      }
-      if (charProhibidos.test(this.username)) {
-        this.alertar("Tu nombre de usuario contiene caracteres no permitidos");
-        errores++;
-      }
-      if (this.password.length < 6 || this.password.length > 32) {
-        this.alertar("Tu contraseña debe contener entre 6 y 32 caracteres");
-        errores++;
-      }
-
-      if (errores > 0) {
-        return false;
-      }
-      return true;
-    },
+    },   
     alertar(msj) {
       console.log(msj);
     },

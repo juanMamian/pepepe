@@ -22,6 +22,10 @@ app.get("/pepepe", function (req: Request, res: Response) {
 });
 aServer.applyMiddleware({ app });
 
+//Carpetas publicas
+
+app.use("/assetsAtlas", express.static(__dirname + '/assetsAtlas'));
+
 
 const rutaFotografias = /api\/usuarios\/fotografias\/\S+/;
 const rutaGuias = /api\/actividadesProfes\/guia\/\S+/;
@@ -34,7 +38,7 @@ app.use("/api/usuarios", cors(), ejwt({ secret: process.env.JWT_SECRET, algorith
 app.use("/api/atlas", routesNodos);
 app.use("/api/actividadesProfes", cors(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaGuias, rutaEvidencias] }), routesActividadesProfes);
 app.get("/", function (req: Request, res: Response) {
-  return res.send("Hola");
+  return res.redirect("/pepepe");
 });
 
 const port = process.env.PORT || 3000;

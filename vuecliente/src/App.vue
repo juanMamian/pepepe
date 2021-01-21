@@ -1,17 +1,17 @@
 <template>
   <div id="app">
     <div id="navBar">
-      <div class="botonNav" id="navHome" to="/">Home</div>
+      <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
       <router-link to="/atlas" class="hoverGris">
         <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
       </router-link>
       <router-link to="/proyectos" class="hoverGris">
         <div class="botonNav" id="navProyectos">Proyectos</div>
       </router-link>
-      <div class="botonNav" id="navTrabajos">Trabajos</div>
+      <!-- <div class="botonNav" id="navTrabajos">Trabajos</div> -->
       <router-link
         to="/actividadesVirtuales2021"
-        v-if="usuarioLogeado"
+        v-if="usuarioLogeado==true && (($store.state.usuario.idGrupoEstudiantil!=null && $store.state.usuario.idGrupoEstudiantil.length>5)||usuarioProfe)"
         class="hoverGris"
       >
         <div class="botonNav" id="navActividadesVirtuales">
@@ -118,6 +118,12 @@ export default {
         };
       }
       return {};
+    },
+    usuarioProfe: function () {
+      if (!this.$store.state.usuario.permisos) return false;
+      return this.$store.state.usuario.permisos.includes(
+        "actividadesEstudiantiles-profe"
+      );
     },
   },
   methods: {

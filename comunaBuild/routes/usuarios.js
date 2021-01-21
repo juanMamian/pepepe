@@ -23,12 +23,29 @@ const minPassword = 6;
 const minUsername = 4;
 router.post("/registro", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("peticion de registro: " + JSON.stringify(req.body));
-    if (!validarDatos(req.body.usuario)) {
+    let datosRegistro = req.body.usuario;
+    let camposObligatorios = ["nombres", "apellidos", "username", "password"];
+    let datosIntroducidos = new Object();
+    for (let campo in datosRegistro) {
+        if (!datosRegistro[campo]) {
+            console.log(`campo ${campo} vacio`);
+        }
+        else {
+            datosIntroducidos[campo] = datosRegistro[campo];
+        }
+    }
+    camposObligatorios.forEach((campoObligatorio) => {
+        if (!datosIntroducidos[campoObligatorio]) {
+            console.log(`Faltaba el campo ${campoObligatorio}`);
+            return res.status(400).send({ msjUsuario: `El campo ${campoObligatorio} es necesario` });
+        }
+    });
+    if (!validarDatos(datosIntroducidos)) {
         let respuesta = errorHandling_1.errorApi(null, "Bad request", "", "Datos de usuario no válidos");
         return res.status(400).send(respuesta);
     }
     try {
-        var nuevoU = Object.assign({}, req.body.usuario);
+        var nuevoU = Object.assign({}, datosIntroducidos);
     }
     catch (e) {
         console.log(`error creando el nuevo Usuario. E: ${e}`);
@@ -174,43 +191,60 @@ var emailChars = /\S+@\S+\.\S+/;
 var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
 function validarDatos(datos) {
     var errores = [];
-    if (datos.nombres.length < 2) {
-        errores.push("Tu nombre es muy corto");
+    if (datos.nombres) {
+        if (datos.nombres.length < 2) {
+            errores.push("Tu nombre es muy corto");
+        }
+        if (charProhibidosNombre.test(datos.nombres)) {
+            errores.push("Tu nombre contiene caracteres no permitidos");
+        }
     }
-    if (charProhibidosNombre.test(datos.nombres)) {
-        errores.push("Tu nombre contiene caracteres no permitidos");
+    if (datos.apellidos) {
+        if (datos.apellidos.length < 2) {
+            errores.push("Tu apellido es muy corto");
+        }
+        if (charProhibidosNombre.test(datos.apellidos)) {
+            errores.push("Tu apellido contiene caracteres no permitidos");
+        }
     }
-    if (datos.apellidos.length < 2) {
-        errores.push("Tu apellido es muy corto");
+    if (datos.fechaNacimiento) {
+        if (!dateChars.test(datos.fechaNacimiento)) {
+            errores.push("Tu fecha de nacimiento es incorrecta");
+        }
     }
-    if (charProhibidosNombre.test(datos.apellidos)) {
-        errores.push("Tu apellido contiene caracteres no permitidos");
+    if (datos.email) {
+        if (datos.email.length > 0 && !emailChars.test(datos.email)) {
+            errores.push("Tu e-mail no es válido");
+        }
     }
-    if (!dateChars.test(datos.fechaNacimiento)) {
-        errores.push("Tu fecha de nacimiento es incorrecta");
+    if (datos.numeroTel) {
+        if (charProhibidosNumeroTel.test(datos.numeroTel)) {
+            errores.push("Tu número telefónico no es válido");
+        }
     }
-    if (datos.email.length > 0 && !emailChars.test(datos.email)) {
-        errores.push("Tu e-mail no es válido");
+    if (datos.lugarResidencia) {
+        if (datos.lugarResidencia.length < 2) {
+            errores.push("Tu lugar de residencia es muy corto");
+        }
+        if (charProhibidos.test(datos.lugarResidencia)) {
+            errores.push("Tu lugar de residencia contiene caracteres no permitidos");
+        }
     }
-    if (charProhibidosNumeroTel.test(datos.numeroTel)) {
-        errores.push("Tu número telefónico no es válido");
+    if (datos.username) {
+        if (datos.username.length < minUsername) {
+            errores.push("Tu nombre de usuario es muy corto");
+        }
+        if (charProhibidos.test(datos.username)) {
+            errores.push("Tu nombre de usuario contiene caracteres no permitidos");
+        }
     }
-    if (datos.lugarResidencia.length < 2) {
-        errores.push("Tu lugar de residencia es muy corto");
-    }
-    if (charProhibidos.test(datos.lugarResidencia)) {
-        errores.push("Tu lugar de residencia contiene caracteres no permitidos");
-    }
-    if (datos.username.length < 4) {
-        errores.push("Tu nombre de usuario es muy corto");
-    }
-    if (charProhibidos.test(datos.username)) {
-        errores.push("Tu nombre de usuario contiene caracteres no permitidos");
-    }
-    if (datos.password.length < 6 || datos.password.length > 32) {
-        errores.push("Tu contraseña debe contener entre 6 y 32 caracteres");
+    if (datos.password) {
+        if (datos.password.length < minPassword || datos.password.length > 32) {
+            errores.push("Tu contraseña debe contener entre 6 y 32 caracteres");
+        }
     }
     if (errores.length > 0) {
+        console.log(`Errores en los campos de registro: ${errores}`);
         return false;
     }
     return true;

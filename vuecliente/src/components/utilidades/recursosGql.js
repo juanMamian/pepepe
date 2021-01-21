@@ -16,6 +16,7 @@ export const fragmentoDesarrollo = gql`
 fragment fragDesarrollo on DesarrolloActividadGrupoEstudiantil{
   id
     estado
+    leidoPorProfe
     estudiante {
       ...fragResponsables
     }

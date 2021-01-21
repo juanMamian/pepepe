@@ -121,12 +121,15 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             console.log(`Este desarrollo estaba marcado como completado.`);
             throw new Error("El desarrollo ya esta completado");
         }
-
+        
         var laParticipacion = elDesarrollo.participaciones.create(nuevaParticipacion);
         var idParticipacion = laParticipacion._id;
         laParticipacion.archivo.nombre = idParticipacion;
 
-        ;
+        if(elDesarrollo.idEstudiante==laParticipacion.idAutor){
+            console.log(`Modificado por el propio estudiante`);
+            elDesarrollo.leidoPorProfe=false;
+        }
 
 
     } catch (error) {
@@ -236,7 +239,7 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
     }
 
     try {
-        var elUsuario = await Usuario.findById(idUsuario, "username nombres apellidos id");
+        var elUsuario:any = await Usuario.findById(idUsuario, "username nombres apellidos id").exec();
     }
     catch (error) {
         console.log(`error buscando el usuario para cambio de guia. e: ` + error);

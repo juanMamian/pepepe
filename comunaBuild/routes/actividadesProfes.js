@@ -115,7 +115,10 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             var laParticipacion = elDesarrollo.participaciones.create(nuevaParticipacion);
             var idParticipacion = laParticipacion._id;
             laParticipacion.archivo.nombre = idParticipacion;
-            ;
+            if (elDesarrollo.idEstudiante == laParticipacion.idAutor) {
+                console.log(`Modificado por el propio estudiante`);
+                elDesarrollo.leidoPorProfe = false;
+            }
         }
         catch (error) {
             console.log(`Error leyendo nombre de grupo y actividad en la base de dato. E: ${error}`);
@@ -208,7 +211,7 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
             return res.status(400).send({ msjUsuario: "Tu archivo debe ser PDF" });
         }
         try {
-            var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario, "username nombres apellidos id");
+            var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario, "username nombres apellidos id").exec();
         }
         catch (error) {
             console.log(`error buscando el usuario para cambio de guia. e: ` + error);

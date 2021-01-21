@@ -5,6 +5,9 @@
       :src="this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id"
       alt=""
     />
+    <div id="contenedorAlertas">
+      <slot name="alertas"></slot>
+    </div>
     <div id="nombres">{{ estaPersona.nombres }}</div>
     <div id="menuCxPersona" v-show="menuContextual">
       <div class="botonMenuCx" @click.stop="copiarId">{{ estaPersona.id }}</div>
@@ -17,6 +20,14 @@
       </div>
       <input type="text" v-model="nuevoPermiso" placeholder="Nuevo permiso" />
       <div class="botonMenuCx" @click.stop="addPermisos">Dar permiso</div>
+      <div
+        class="botonMenuCx"
+        :key="index"
+        v-for="(opcionCx, index) of opcionesMenuCx"
+        @click="$emit(opcionCx.evento)"
+      >
+        {{ opcionCx.textoVisible }}
+      </div>
     </div>
   </div>
 </template>
@@ -31,16 +42,19 @@ export default {
   },
   props: {
     estaPersona: {
-        type:Object,
-        default:function(){
-          return {
-            id:"-1"
-          }
-        }
+      type: Object,
+      default: function () {
+        return {
+          id: "-1",
+        };
       },
+    },
     aceptado: Boolean,
     seleccionado: Boolean,
     menuContextual: Boolean,
+    opcionesMenuCx: {
+      type: Array,
+    },
   },
   computed: {
     soyYo() {
@@ -107,6 +121,9 @@ export default {
   width: 70px;
   height: 70px;
 }
+.iconoPersona:hover{
+  background-color: rgb(218, 218, 218);
+}
 
 #fotografia {
   width: 100%;
@@ -115,7 +132,11 @@ export default {
   position: absolute;
   pointer-events: none;
 }
-
+#contenedorAlertas{
+  position: absolute;
+  top: 0;
+  right: 0;
+}
 .yo {
   border: 1px solid purple;
 }

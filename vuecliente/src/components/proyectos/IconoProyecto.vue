@@ -97,6 +97,8 @@ export default {
   cursor: pointer;
   box-sizing: border-box;
   padding: 1px 5px;
+  border-radius: 5px;
+  background-color: burlywood;
 }
 .iconoProyecto:hover {
   box-shadow: 2px 2px 2px 2px grey;

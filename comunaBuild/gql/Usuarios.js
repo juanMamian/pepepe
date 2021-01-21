@@ -78,7 +78,8 @@ exports.typeDefs = apollo_server_express_1.gql `
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
         editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
-        addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,        
+        addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
+        eliminarUsuario(idUsuario:ID!):Boolean,      
     }
 `;
 exports.resolvers = {
@@ -237,6 +238,34 @@ exports.resolvers = {
                 }
                 console.log(`Permiso añadido.Quedó con: ${elUsuario.permisos}`);
                 return elUsuario;
+            });
+        },
+        eliminarUsuario: function (_, { idUsuario }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`||||||||||||||||||||||`);
+                console.log(`Solicitud de eliminar un usuario con id ${idUsuario} de la base de datos`);
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario.permisos) {
+                    console.log(`No habia permisos en las credenciales`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                let permisosValidos = ["superadministrador"];
+                if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                    console.log(`Usuario no tiene permisos válidos`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    let elEliminado = yield Usuario_1.ModeloUsuario.findByIdAndDelete(idUsuario).exec();
+                    if (!elEliminado) {
+                        throw "Usuario no encontrado";
+                    }
+                    console.log(`Eliminado ${elEliminado.username}`);
+                }
+                catch (error) {
+                    console.log(`Error eliminando usuario. E: ${error}`);
+                    throw new apollo_server_express_1.AuthenticationError("Error conectando con la base de datos");
+                }
+                return true;
             });
         }
     },

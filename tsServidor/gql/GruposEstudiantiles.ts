@@ -30,7 +30,8 @@ export const typeDefs = gql`
         id: ID,
         estudiante: PublicUsuario,
         estado:String,
-        participaciones: [ParticipacionActividadGrupoEstudiantil]
+        participaciones: [ParticipacionActividadGrupoEstudiantil],
+        leidoPorProfe:Boolean,
     }
 
     type ActividadGrupoEstudiantil{        
@@ -67,7 +68,8 @@ export const typeDefs = gql`
         eliminarActividadDeGrupoEstudiantil(idActividad:ID!, idGrupo: ID!):Boolean,
         cambiarNombreActividadGrupoEstudiantil(idGrupo:ID!, idActividad:ID!, nuevoNombre: String):ActividadGrupoEstudiantil
         eliminarParticipacionActividadEstudiantil(idParticipacion:ID!):Boolean,
-        setEstadoDesarrolloActividadEstudiantil(idDesarrollo:ID!, nuevoEstado: String):DesarrolloActividadGrupoEstudiantil
+        setEstadoDesarrolloActividadEstudiantil(idDesarrollo:ID!, nuevoEstado: String):DesarrolloActividadGrupoEstudiantil,
+        setLeidoPorProfeDesarrolloEstudiantil(idDesarrollo:ID!, nuevoLeidoPorProfe:Boolean):DesarrolloActividadGrupoEstudiantil
     }
 
     type Subscription{
@@ -171,6 +173,7 @@ export const resolvers = {
                 console.log(`Error buscando el grupo con id ${idGrupo} en la base de datos`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+
             console.log(`enviando el grupo estudiantil`);
             return elGrupoEstudiantil;
         },
@@ -210,6 +213,8 @@ export const resolvers = {
             return gruposEstudiantiles;
         },
         actividadDeGrupoEstudiantil: async function (_: any, { idGrupo, idActividad }, contexto: contextoQuery) {
+            console.log(`|||||||||||||||||||`);
+            console.log(`Solicitud de una actividad con id ${idActividad} de un grupo estudiantil con id ${idGrupo}`);
             try {
                 let elGrupo: any = await GrupoEstudiantil.findById(idGrupo).exec();
                 if (!elGrupo) {
@@ -289,6 +294,38 @@ export const resolvers = {
         },
     },
     Mutation: {
+        setLeidoPorProfeDesarrolloEstudiantil: async function (_: any, { idDesarrollo, nuevoLeidoPorProfe }: any, contexto: contextoQuery) {
+            console.log(`||||||||||||||||||||||||||`);
+            console.log(`Solicitud de set leidoPorProfe en ${nuevoLeidoPorProfe} en desarrollo con id ${idDesarrollo}`);
+            try {
+                var elGrupo: any = await GrupoEstudiantil.findOne({ "actividades.desarrollos._id": mongoose.Types.ObjectId(idDesarrollo) }).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
+                }
+                else {
+                    console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
+
+                    let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d => d._id == idDesarrollo));
+                    console.log(`Actividad: ${laActividad.nombre}`);
+                    var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
+                    elDesarrollo.leidoPorProfe = nuevoLeidoPorProfe;
+                }
+            } catch (error) {
+                console.log(`Error buscando desarrollo en la base de datos: E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            try {
+                await elGrupo.save();
+            } catch (error) {
+                console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Leido por profe de desarrollo cambiado`);
+            return elDesarrollo;
+
+        },
         setEstadoDesarrolloActividadEstudiantil: async function (_: any, { idDesarrollo, nuevoEstado }: any, contexto: contextoQuery) {
             console.log(`||||||||||||||||||||||||||`);
             console.log(`Solicitud de set estado ${nuevoEstado} en desarrollo con id ${idDesarrollo}`);
@@ -677,7 +714,22 @@ export const resolvers = {
             let idAutor = parent.idAutor;
 
             try {
-                var usuarioAutor = await Usuario.findById(idAutor).exec();
+                var usuarioAutor:any = await Usuario.findById(idAutor).exec();
+                if (!usuarioAutor) {
+                    console.log(`El estudiante no existe en la base de datos enviando un dummy`);
+                    return {
+                        id: "-1",
+                        username: "?",
+                        nombres: "?",
+                        apellidos: "?",
+                        email: "?",
+                        numeroTel: "?",
+                        lugarResidencia: "?",
+                        edad: 0,
+                        idGrupoEstudiantil: "?",
+                        nombreGrupoEstudiantil: "?",
+                    }
+                }
             } catch (error) {
                 console.log(`error buscando al autor de la participacion. E: ${error}`);
                 return {
@@ -700,7 +752,22 @@ export const resolvers = {
             let idCreador = parent.idCreador;
 
             try {
-                var usuarioCreador = await Usuario.findById(idCreador).exec();
+                var usuarioCreador:any = await Usuario.findById(idCreador).exec();
+                if (!usuarioCreador) {
+                    console.log(`El estudiante no existe en la base de datos enviando un dummy`);
+                    return {
+                        id: "-1",
+                        username: "?",
+                        nombres: "?",
+                        apellidos: "?",
+                        email: "?",
+                        numeroTel: "?",
+                        lugarResidencia: "?",
+                        edad: 0,
+                        idGrupoEstudiantil: "?",
+                        nombreGrupoEstudiantil: "?",
+                    }
+                }
             } catch (error) {
                 console.log(`error buscando a los responsables del proyecto. E: ${error}`);
                 return [];
@@ -721,17 +788,17 @@ export const resolvers = {
                 return ""
             }
 
-            if(parent.guiaGoogleDrive && parent.guiaGoogleDrive.enlace){
+            if (parent.guiaGoogleDrive && parent.guiaGoogleDrive.enlace) {
                 console.log(`Enviando enlace de guia: ${parent.guiaGoogleDrive.enlace}`);
                 return parent.guiaGoogleDrive.enlace;
             }
-            else{
+            else {
                 console.log(`La actividad no tenia campo 'guiaGoogleDrive'`);
                 return "";
             }
             return "";
 
-            
+
         },
         id: async function (parent: any) {
             return parent._id;
@@ -746,7 +813,22 @@ export const resolvers = {
             let idEstudiante = parent.idEstudiante;
 
             try {
-                var usuarioEstudiante = await Usuario.findById(idEstudiante).exec();
+                var usuarioEstudiante:any = await Usuario.findById(idEstudiante).exec();
+                if (!usuarioEstudiante) {
+                    console.log(`El estudiante no existe en la base de datos enviando un dummy`);
+                    return {
+                        id: "-1",
+                        username: "?",
+                        nombres: "?",
+                        apellidos: "?",
+                        email: "?",
+                        numeroTel: "?",
+                        lugarResidencia: "?",
+                        edad: 0,
+                        idGrupoEstudiantil: "?",
+                        nombreGrupoEstudiantil: "?",
+                    }
+                }
             } catch (error) {
                 console.log(`error buscando a los responsables del proyecto. E: ${error}`);
                 return [];
@@ -809,7 +891,7 @@ export const resolvers = {
                 }
                 return "";
             }
-            let enlaceDescargaLocal="/api/actividadesProfes/evidencia/"+parent.nombre+"."+parent.extension;
+            let enlaceDescargaLocal = "/api/actividadesProfes/evidencia/" + parent.nombre + "." + parent.extension;
             return enlaceDescargaLocal;
         }
     }

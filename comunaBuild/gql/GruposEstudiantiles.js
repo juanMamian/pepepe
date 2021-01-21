@@ -42,7 +42,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         id: ID,
         estudiante: PublicUsuario,
         estado:String,
-        participaciones: [ParticipacionActividadGrupoEstudiantil]
+        participaciones: [ParticipacionActividadGrupoEstudiantil],
+        leidoPorProfe:Boolean,
     }
 
     type ActividadGrupoEstudiantil{        
@@ -79,7 +80,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         eliminarActividadDeGrupoEstudiantil(idActividad:ID!, idGrupo: ID!):Boolean,
         cambiarNombreActividadGrupoEstudiantil(idGrupo:ID!, idActividad:ID!, nuevoNombre: String):ActividadGrupoEstudiantil
         eliminarParticipacionActividadEstudiantil(idParticipacion:ID!):Boolean,
-        setEstadoDesarrolloActividadEstudiantil(idDesarrollo:ID!, nuevoEstado: String):DesarrolloActividadGrupoEstudiantil
+        setEstadoDesarrolloActividadEstudiantil(idDesarrollo:ID!, nuevoEstado: String):DesarrolloActividadGrupoEstudiantil,
+        setLeidoPorProfeDesarrolloEstudiantil(idDesarrollo:ID!, nuevoLeidoPorProfe:Boolean):DesarrolloActividadGrupoEstudiantil
     }
 
     type Subscription{
@@ -213,6 +215,8 @@ exports.resolvers = {
         },
         actividadDeGrupoEstudiantil: function (_, { idGrupo, idActividad }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||`);
+                console.log(`Solicitud de una actividad con id ${idActividad} de un grupo estudiantil con id ${idGrupo}`);
                 try {
                     let elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
                     if (!elGrupo) {
@@ -297,6 +301,38 @@ exports.resolvers = {
         },
     },
     Mutation: {
+        setLeidoPorProfeDesarrolloEstudiantil: function (_, { idDesarrollo, nuevoLeidoPorProfe }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`||||||||||||||||||||||||||`);
+                console.log(`Solicitud de set leidoPorProfe en ${nuevoLeidoPorProfe} en desarrollo con id ${idDesarrollo}`);
+                try {
+                    var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ "actividades.desarrollos._id": mongoose_1.default.Types.ObjectId(idDesarrollo) }).exec();
+                    if (!elGrupo) {
+                        throw "grupo no encontrado";
+                    }
+                    else {
+                        console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
+                        let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d => d._id == idDesarrollo));
+                        console.log(`Actividad: ${laActividad.nombre}`);
+                        var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
+                        elDesarrollo.leidoPorProfe = nuevoLeidoPorProfe;
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando desarrollo en la base de datos: E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    yield elGrupo.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Leido por profe de desarrollo cambiado`);
+                return elDesarrollo;
+            });
+        },
         setEstadoDesarrolloActividadEstudiantil: function (_, { idDesarrollo, nuevoEstado }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`||||||||||||||||||||||||||`);
@@ -646,6 +682,21 @@ exports.resolvers = {
                 let idAutor = parent.idAutor;
                 try {
                     var usuarioAutor = yield Usuario_1.ModeloUsuario.findById(idAutor).exec();
+                    if (!usuarioAutor) {
+                        console.log(`El estudiante no existe en la base de datos enviando un dummy`);
+                        return {
+                            id: "-1",
+                            username: "?",
+                            nombres: "?",
+                            apellidos: "?",
+                            email: "?",
+                            numeroTel: "?",
+                            lugarResidencia: "?",
+                            edad: 0,
+                            idGrupoEstudiantil: "?",
+                            nombreGrupoEstudiantil: "?",
+                        };
+                    }
                 }
                 catch (error) {
                     console.log(`error buscando al autor de la participacion. E: ${error}`);
@@ -668,6 +719,21 @@ exports.resolvers = {
                 let idCreador = parent.idCreador;
                 try {
                     var usuarioCreador = yield Usuario_1.ModeloUsuario.findById(idCreador).exec();
+                    if (!usuarioCreador) {
+                        console.log(`El estudiante no existe en la base de datos enviando un dummy`);
+                        return {
+                            id: "-1",
+                            username: "?",
+                            nombres: "?",
+                            apellidos: "?",
+                            email: "?",
+                            numeroTel: "?",
+                            lugarResidencia: "?",
+                            edad: 0,
+                            idGrupoEstudiantil: "?",
+                            nombreGrupoEstudiantil: "?",
+                        };
+                    }
                 }
                 catch (error) {
                     console.log(`error buscando a los responsables del proyecto. E: ${error}`);
@@ -716,6 +782,21 @@ exports.resolvers = {
                 let idEstudiante = parent.idEstudiante;
                 try {
                     var usuarioEstudiante = yield Usuario_1.ModeloUsuario.findById(idEstudiante).exec();
+                    if (!usuarioEstudiante) {
+                        console.log(`El estudiante no existe en la base de datos enviando un dummy`);
+                        return {
+                            id: "-1",
+                            username: "?",
+                            nombres: "?",
+                            apellidos: "?",
+                            email: "?",
+                            numeroTel: "?",
+                            lugarResidencia: "?",
+                            edad: 0,
+                            idGrupoEstudiantil: "?",
+                            nombreGrupoEstudiantil: "?",
+                        };
+                    }
                 }
                 catch (error) {
                     console.log(`error buscando a los responsables del proyecto. E: ${error}`);

@@ -22,6 +22,8 @@ app.get("/pepepe", function (req, res) {
     res.sendFile(__dirname + "/clientes/pepepe/index.html");
 });
 Schema_1.aServer.applyMiddleware({ app });
+//Carpetas publicas
+app.use("/assetsAtlas", express_1.default.static(__dirname + '/assetsAtlas'));
 const rutaFotografias = /api\/usuarios\/fotografias\/\S+/;
 const rutaGuias = /api\/actividadesProfes\/guia\/\S+/;
 const rutaEvidencias = /api\/actividadesProfes\/evidencia\/\S+/;
@@ -31,7 +33,7 @@ app.use("/api/usuarios", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET
 app.use("/api/atlas", routesNodos);
 app.use("/api/actividadesProfes", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaGuias, rutaEvidencias] }), routesActividadesProfes);
 app.get("/", function (req, res) {
-    return res.send("Hola");
+    return res.redirect("/pepepe");
 });
 const port = process.env.PORT || 3000;
 const httpServer = http_1.default.createServer(app);

@@ -78,7 +78,8 @@ export const typeDefs = gql`
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
         editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
-        addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,        
+        addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
+        eliminarUsuario(idUsuario:ID!):Boolean,      
     }
 `
 
@@ -237,6 +238,38 @@ export const resolvers = {
 
             console.log(`Permiso añadido.Quedó con: ${elUsuario.permisos}`);
             return elUsuario;
+        },
+        eliminarUsuario:async function(_: any, { idUsuario}, contexto: contextoQuery) {
+            console.log(`||||||||||||||||||||||`);
+            console.log(`Solicitud de eliminar un usuario con id ${idUsuario} de la base de datos`);
+
+            let credencialesUsuario = contexto.usuario;
+
+            if (!credencialesUsuario.permisos) {
+                console.log(`No habia permisos en las credenciales`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            let permisosValidos = ["superadministrador"];
+
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                console.log(`Usuario no tiene permisos válidos`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                let elEliminado:any=await Usuario.findByIdAndDelete(idUsuario).exec();                
+                if(!elEliminado){
+                    throw "Usuario no encontrado"    ;
+                }
+                console.log(`Eliminado ${elEliminado.username}`);
+            } catch (error) {
+                console.log(`Error eliminando usuario. E: ${error}`);
+                throw new AuthenticationError("Error conectando con la base de datos");
+            }
+            return true;
+
+
         }
     },
     Usuario: {
