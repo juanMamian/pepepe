@@ -41,6 +41,7 @@ export const fragmentoActividad = gql`
 fragment fragActividad on ActividadGrupoEstudiantil {
   id
   nombre
+  fechaUpload
   hayGuia
   creador {
     ...fragResponsables

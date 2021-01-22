@@ -40,6 +40,7 @@
             id="navLogged"
             :style="[colorBlancoAccionLogeado]"
             @click="accionesLogeado = !accionesLogeado"
+            @mouseleave="accionesLogeado=false"
           >
             {{ username }}
             <div id="botonesLogeado" v-if="accionesLogeado">
@@ -240,6 +241,8 @@ body {
 .noUserSelect {
   user-select: none;
 }
+
+
 </style>
 
 <style scoped>

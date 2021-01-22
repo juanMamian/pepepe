@@ -58,9 +58,7 @@ export default {
   },
   computed: {
     soyYo() {
-      if (this.mounted && this.estaPersona && this.$store.state.usuario) {
-        console.log(`id store: ${this.$store.state.usuario.id}`);
-        console.log(`id estaPersona: ${this.estaPersona.id}`);
+      if (this.mounted && this.estaPersona && this.$store.state.usuario) {        
         return this.$store.state.usuario.id == this.estaPersona.id
           ? true
           : false;

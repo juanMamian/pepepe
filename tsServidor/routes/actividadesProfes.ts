@@ -21,6 +21,7 @@ interface UsuarioInterface {
     password: string
 }
 
+
 router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err, req, res, next) {
     console.log(`Errores: <<${err.message}>>`)
     let mensaje = "Archivo no permitido";
@@ -39,11 +40,17 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     let idUsuario = req.user.id;
     console.log(`Recibida peticion de subir respuesta por el usuario ${req.user.username}`);
 
+    var charProhibidosComentario = /[^ a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/g;
+    var comentario = req.body.comentario;
+    if(charProhibidosComentario.test(comentario)){
+        return res.status(400).send({msjUsuario: "El comentario contenía caracteres no válidos"});
+    }
+
     var extensionDeArchivo = "";
     if ("file" in req) {
         console.log(`Participacion con archivo adjunto`);
         console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
-        let tiposDeArchivoPermitidos = ["application/pdf", "image/png", "image/jpg"];
+        let tiposDeArchivoPermitidos = ["application/pdf", "image/png", "image/jpg, image/jpeg"];
 
         if (!tiposDeArchivoPermitidos.includes(req.file.mimetype)) {
             console.log(`Se intentó subir un archivo que no estaba permitido. era ${req.file.mimetype}`);
@@ -59,6 +66,9 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         else if (req.file.mimetype == "image/jpg") {
             extensionDeArchivo = "jpg"
         }
+        else if (req.file.mimetype == "image/jpeg") {
+            extensionDeArchivo = "jpg"
+        }
         else {
             console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
             return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
@@ -71,7 +81,8 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     }
 
     try {
-        var elUsuario = await Usuario.findById(idUsuario, "username nombres apellidos id");
+        var elUsuario:any = await Usuario.findById(idUsuario, "username nombres apellidos id").exec();
+        var nombreApellidoUsuario=elUsuario.nombres+" "+elUsuario.apellidos;
     }
     catch (error) {
         console.log(`error buscando el usuario para publicar respuesta. e: ` + error);
@@ -80,7 +91,6 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
 
 
     //Creando la nueva participacion
-    var comentario = req.body.comentario;
 
     let nuevaParticipacion = {
         fechaUpload: Date.now(),
@@ -149,7 +159,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
 
         var fileMetadata = {
-            'name': idParticipacion + '.' + laParticipacion.archivo.extension,
+            'name': laActividad.nombre+'-'+ nombreApellidoUsuario+ '.' + laParticipacion.archivo.extension,
             parents: [idCarpetaEvidencias],
         };
         var media = {
@@ -268,7 +278,7 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
     }
 
     var fileMetadata = {
-        'name': idActividad + '.pdf',
+        name: nombreActividad+'-Guia.pdf',
         parents: [idCarpetaGuias],
     };
     var media = {

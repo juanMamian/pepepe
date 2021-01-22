@@ -278,7 +278,8 @@ export const resolvers = {
                 return 0;
             }
             let edad = Date.now() - parent.fechaNacimiento;
-            let edadAños = edad / (60 * 60 * 24 * 365 * 1000);
+            console.log(`Usuario tiene edad: ${edad}`);        
+            let edadAños = Math.floor(edad / (60 * 60 * 24 * 365 * 1000));
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
         },

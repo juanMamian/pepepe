@@ -1,6 +1,6 @@
 import Vue from "vue"
 import Vuex from "vuex"
-
+import {apolloClient} from "../apollo"
 Vue.use(Vuex);
 
 function parseJwt (token) {
@@ -55,8 +55,7 @@ export default new Vuex.Store({
             state.usuario.nombreGrupoEstudiantil=null,
            
             state.token=null
-
-
+            apolloClient.cache.data.clear();
         }
     }
 });

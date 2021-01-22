@@ -7,7 +7,7 @@
     }"
   >
     <div id="autorParticipacion">
-      {{ estaParticipacion.autor.nombres }}
+      {{ estaParticipacion.autor.nombres }} {{estaParticipacion.autor.apellidos}} - {{fechaFormateada}}
     </div>
     <textarea
       disabled
@@ -89,6 +89,9 @@ export default {
     participacionDelPropioEstudiante: function () {
       return this.idEstudianteDesarrollo == this.estaParticipacion.autor.id;
     },
+    fechaFormateada(){
+      return new Date(this.estaParticipacion.fechaUpload);
+    }
   },
 };
 </script>
@@ -140,7 +143,7 @@ export default {
   background-color: indianred;
 }
 #autorParticipacion {
-  font-size: 12px;
+  font-size: 10px;
   margin: 5px 5px;
   color: gray;
 }

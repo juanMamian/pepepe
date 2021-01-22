@@ -62,8 +62,7 @@ export default {
           }
         }
       `,
-      update: function ({ gruposEstudiantiles }) {
-        console.log(`Respuesta. ${JSON.stringify(gruposEstudiantiles)}`);
+      update: function ({ gruposEstudiantiles }) {        
         return gruposEstudiantiles;
       },
     },
@@ -82,10 +81,12 @@ export default {
     },
   },
   data() {
+
     return {
       gruposEstudiantiles: [],
       idGrupoEstudiantilSeleccionado: null,
       idProfeSeleccionado: null,
+      outletDeshabilitado:false,
     };
   },
   computed: {
@@ -103,7 +104,11 @@ export default {
     abrirActividadesProfe(id) {
       this.$router.push("/actividadesVirtuales2021/actividadesProfes/" + id);
     },
+    navegacionCompleta(){
+      console.log(`Navacion completada`);
+    }
   },
+  
 };
 </script>
 
@@ -114,7 +119,11 @@ export default {
   display: grid;
   grid-template-columns: 150px 1fr;
 }
-
+.deshabilitado{
+  opacity: 0.5;
+  user-select: none;
+  pointer-events: none;
+}
 #barraGrupos {
   grid-column: 1/2;
   background-color: burlywood;

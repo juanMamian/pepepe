@@ -51,7 +51,7 @@ const link=authLink.concat(httpLink);
 //   link
 // )
 
-const apolloClient=new ApolloClient({
+export const apolloClient=new ApolloClient({
   link,
   cache,
   typeDefs,

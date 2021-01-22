@@ -6,12 +6,12 @@
       participacionOtro: !participacionEstudiante,
     }"
   >
-    <div id="titulo">Enviar respuesta</div>
+    <div id="titulo">Responder</div>
     <img
       src="@/assets/iconos/mensaje.png"
       alt="Enviar respuesta"
       id="iconoMensaje"
-      :title="cuadroAbierto? 'cerrar':'abrir'"
+      :title="cuadroAbierto ? 'cerrar' : 'abrir'"
       @click="abrirCerrar"
     /><br />
     <textarea
@@ -32,7 +32,7 @@
         type="file"
         id="inputArchivoAdjunto"
         ref="inputArchivoAdjunto"
-        accept="application/pdf, .png, .jpg, .jpeg, image/png, image/jpg"
+        accept="application/pdf, .png, .jpg, .jpeg, image/png, image/jpg, image/jpeg"
         @change="actualizarNombreDeArchivo"
       />
       <img
@@ -40,12 +40,17 @@
         alt="Ajuntar archivo"
         id="imgAdjuntar"
         title="adjuntar un archivo"
-        @click="abrirSelectorDeArchivos"        
+        @click="abrirSelectorDeArchivos"
       />
       <div id="nombreArchivoSeleccionado">{{ nombreArchivoSeleccionado }}</div>
     </div>
+    <loading
+      v-show="enviandoRespuesta"
+      :texto="'Enviando respuesta...'"
+    /><br />
     <div id="enviar" v-show="cuadroAbierto">
       <img
+        :class="{ deshabilitado: enviandoRespuesta }"
         src="@/assets/iconos/enviar.png"
         alt="Enviar respuesta"
         id="imgEnviar"
@@ -58,14 +63,21 @@
 
 <script>
 import axios from "axios";
+import Loading from "../utilidades/Loading.vue";
+
+var charProhibidosComentario = /[^ a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/g;
 
 export default {
   name: "MiParticipacion",
+  components: {
+    Loading,
+  },
   data() {
     return {
       comentario: "",
       nombreArchivoSeleccionado: null,
       cuadroAbierto: false,
+      enviandoRespuesta: false,
     };
   },
   props: {
@@ -74,22 +86,26 @@ export default {
       type: Boolean,
       default: false,
     },
-    enDesarrollo:{
-      type:String,
-      default: "0"
-    }
+    enDesarrollo: {
+      type: String,
+      default: "0",
+    },
   },
   methods: {
     abrirSelectorDeArchivos() {
       this.$refs.inputArchivoAdjunto.click();
     },
     enviarRespuesta() {
+      this.enviandoRespuesta = true;
       let dis = this;
       let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
       var datos = new FormData();
-      const comentario = this.comentario;
-      if(comentario==""){
+      var comentario = this.comentario.trim();
+      comentario = comentario.replace(charProhibidosComentario, "");
+
+      if (comentario == "") {
         alert("¡Tu mensaje está vacío!");
+        this.enviandoRespuesta = false;
         return;
       }
       if (!inputArchivoAdjunto.value) {
@@ -114,6 +130,7 @@ export default {
         },
       })
         .then((res) => {
+          this.enviandoRespuesta = false;
           console.log(`res: ${JSON.stringify(res)}`);
           dis.$emit("reloadDesarrollo");
           dis.comentario = "";
@@ -121,6 +138,7 @@ export default {
           this.nombreArchivoSeleccionado = null;
         })
         .catch((error) => {
+          this.enviandoRespuesta = false;
           console.log(`Errores: ${error}`);
           if (error.response) {
             if (error.response.data.msjUsuario) {
@@ -191,8 +209,7 @@ export default {
   background-color: rgb(153, 130, 204);
 }
 #imgEnviar:hover {
-    background-color: rgb(137, 108, 199);
-
+  background-color: rgb(137, 108, 199);
 }
 #imgAdjuntar {
   margin-top: 5px;
@@ -203,7 +220,7 @@ export default {
   border-radius: 50%;
   background-color: rgb(206, 130, 130);
 }
-#imgAdjuntar:hover{
+#imgAdjuntar:hover {
   background-color: indianred;
 }
 #iconoMensaje {
@@ -217,7 +234,7 @@ export default {
   border-radius: 50%;
 }
 #iconoMensaje:hover {
-background-color: rgb(68, 129, 68);
+  background-color: rgb(68, 129, 68);
 }
 #adjuntarArchivo {
   text-align: left;
@@ -231,5 +248,9 @@ background-color: rgb(68, 129, 68);
 #titulo {
   text-align: center;
   margin-bottom: 15px;
+}
+.deshabilitado {
+  opacity: 0.5;
+  pointer-events: none;
 }
 </style>

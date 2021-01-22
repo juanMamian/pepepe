@@ -63,8 +63,9 @@ const esquemaActividad = new mongoose_1.default.Schema({
         required: true,
         default: [],
     },
-    fechaCreacion: {
+    fechaUpload: {
         type: Date,
+        default: Date.now,
     },
     idCreador: {
         type: String,

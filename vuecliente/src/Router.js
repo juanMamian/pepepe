@@ -40,11 +40,13 @@ const routes = [
         path: "/actividadesVirtuales2021", component: ActividadesEstudiantiles, children: [
             {
                 path: 'grupoEstudiantil/:idGrupo',
-                component: ActividadesDeGrupo
+                component: ActividadesDeGrupo,
+                name: "ActividadesDeGrupo"
             },
             {
                 path: 'actividadesProfes/:idProfe',
-                component: ActividadesDeProfe
+                component: ActividadesDeProfe,
+                name:"ActividadesDeProfe"
             }
         ]
     },

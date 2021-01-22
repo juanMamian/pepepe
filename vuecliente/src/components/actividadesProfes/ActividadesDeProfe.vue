@@ -1,9 +1,9 @@
 <template>
-  <div class="actividadesDeProfe">
+  <div class="actividadesDeProfe" :class="{deshabilitada:ventanaDeshabilitada}">
     <icono-persona :estaPersona="esteProfe"></icono-persona>
     <div id="listaActividades" @click.self="idActividadSeleccionada=null">
       <actividad
-        v-for="actividad of actividades"
+        v-for="actividad of actividadesOrdenadas"
         :key="actividad.id"
         :estaActividad="actividad"
         @click.native="idActividadSeleccionada != actividad.id ? idActividadSeleccionada=actividad.id : null"
@@ -54,7 +54,8 @@ export default {
         console.log(`Enviando la query de actividades con idProfe: ${this.$route.params.idProfe}, idGrupo: ${this.$store.state.usuario.idGrupoEstudiantil}`);
         return { idProfe: this.$route.params.idProfe, idGrupo:this.$store.state.usuario.idGrupoEstudiantil };
       },
-      update: ({ actividadesEstudiantilesDeProfeDeGrupo }) =>{
+      update: function({ actividadesEstudiantilesDeProfeDeGrupo }){
+        this.ventanaDeshabilitada=false;
         return actividadesEstudiantilesDeProfeDeGrupo
       },
       skip(){
@@ -69,14 +70,29 @@ export default {
     return {
       idActividadSeleccionada: null,
       actividades:[],
+      ventanaDeshabilitada:true,
     };
   },
   computed:{
     actividadesParaMiGrupo:function(){
       console.log(``);
       return false;
+    },
+    actividadesOrdenadas: function () {
+      let lasActividades = this.actividades;
+      lasActividades.sort((a, b) => {
+        return new Date(b.fechaUpload) - new Date(a.fechaUpload);
+      });
+      return lasActividades;
     }
-  }
+  },
+   beforeRouteUpdate(to, from, next){
+    console.log(`Saliendo de ${from.name} hacia ${to.name} `);
+    if(from.name=="ActividadesDeGrupo" || from.name=="ActividadesDeProfe"){
+      this.ventanaDeshabilitada=true;
+    }
+    next();
+  },    
 };
 </script>
 
@@ -84,8 +100,11 @@ export default {
 .actividad{
   margin: 10px auto;
   max-width: 500px;
-  box-shadow: 2px 2px 2px 2px rgb(190, 190, 190);
-  
+  box-shadow: 2px 2px 2px 2px rgb(190, 190, 190); 
+}
+.deshabilitada{
+  pointer-events: none;
+  opacity: 0.5;
 }
 .iconoPersona {
   margin-top: 30px;

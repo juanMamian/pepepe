@@ -94,8 +94,7 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const usuario = yield Usuario_1.ModeloUsuario.findOne({ username }, "username password permisos");
     if (!usuario) {
         console.log("usuario no encontrado");
-        let respuesta = errorHandling_1.errorApi("", "noerror", "", "El usuario no existe");
-        return res.status(400).send(respuesta);
+        return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
     }
     const correctLogin = yield bcrypt.compare(pass, usuario.password);
     if (correctLogin) {
@@ -105,7 +104,7 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
             permisos: usuario.permisos,
             username: usuario.username
         };
-        let token = jwt.sign(datosToken, process.env.JWT_SECRET, { expiresIn: "2h" });
+        let token = jwt.sign(datosToken, process.env.JWT_SECRET, { expiresIn: "6h" });
         let respuesta = {
             username: usuario.username,
             permisos: usuario.permisos,
@@ -116,7 +115,7 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     else {
         console.log(`Contraseña errada. Rechazando`);
-        return res.status(400).send("badPass");
+        return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
     }
 }));
 router.post("/updateFoto", upload.single("nuevaFoto"), function (req, res) {

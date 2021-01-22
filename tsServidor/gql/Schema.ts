@@ -48,7 +48,7 @@ const context = ({ req, res, connection }: any) => {
         console.log(`Una conexion ws`);
     }
     else {
-        console.log(`Conexion normal`);
+        //console.log(`Conexion normal`);
 
         let headers: any = req.headers;
         //console.log(`headers: ${JSON.stringify(headers)}`);

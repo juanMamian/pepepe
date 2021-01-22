@@ -1,5 +1,8 @@
 <template>
-  <div class="GrupoEstudiantil">
+  <div
+    class="GrupoEstudiantil"
+    :class="{ deshabilitada: ventanaDeshabilitada }"
+  >
     <div id="nombreGrupo">{{ esteGrupo.nombre }}</div>
     <div id="zonaEstudiantes" class="zonaPrimerNivel">
       <div class="nombreZona">Estudiantes</div>
@@ -53,6 +56,17 @@
       <div id="controlesActividades" class="controlesZona">
         <div
           class="controlesActividades botonesControles hoverGris"
+          v-if="usuarioAdministradorActividadesEstudiantiles"
+          @click="verTodasActividades = !verTodasActividades"
+        >
+          {{
+            verTodasActividades == true
+              ? "Ver sólo mis actividades"
+              : "Ver todas las actividades"
+          }}
+        </div>
+        <div
+          class="controlesActividades botonesControles hoverGris"
           v-if="usuarioProfe"
           @click="crearNuevaActividad"
         >
@@ -61,7 +75,7 @@
       </div>
       <div id="listaActividades" @click.self="idActividadSeleccionada = null">
         <actividad
-          v-for="actividad of esteGrupo.actividades"
+          v-for="actividad of actividadesOrdenadas"
           :key="actividad.id"
           :estaActividad="actividad"
           :seleccionada="idActividadSeleccionada == actividad.id"
@@ -79,7 +93,8 @@
           @eliminandose="eliminarActividad"
           @cambiandoNombre="cambiarNombreActividad"
           v-show="
-            (verTodasActividades == true && usuarioAdministradorActividadesEstudiantiles==true) ||
+            (verTodasActividades == true &&
+              usuarioAdministradorActividadesEstudiantiles == true) ||
             actividad.creador.id == $store.state.usuario.id
           "
         />
@@ -123,6 +138,7 @@ export default {
         return { idGrupo: this.$route.params.idGrupo };
       },
       update: function ({ grupoEstudiantil }) {
+        this.ventanaDeshabilitada = false;
         return grupoEstudiantil;
       },
     },
@@ -140,7 +156,8 @@ export default {
         estudiantes: [],
         actividades: [],
       },
-      verTodasActividades: true,
+      verTodasActividades: false,
+      ventanaDeshabilitada: true,
     };
   },
   computed: {
@@ -149,6 +166,13 @@ export default {
       return this.$store.state.usuario.permisos.includes(
         "actividadesEstudiantiles-profe"
       );
+    },
+    actividadesOrdenadas: function () {
+      let lasActividades = this.esteGrupo.actividades;
+      lasActividades.sort((a, b) => {        
+        return new Date(b.fechaUpload) - new Date(a.fechaUpload);
+      });
+      return lasActividades;
     },
   },
   methods: {
@@ -217,30 +241,10 @@ export default {
           mutation: gql`
             mutation($idGrupo: ID!) {
               crearActividadEnGrupoEstudiantil(idGrupo: $idGrupo) {
-                id
-                nombre
-                hayGuia
-                desarrollos {
-                  id
-                  estudiante {
-                    ...fragResponsables
-                  }
-                  estado
-                  participaciones {
-                    id
-                    fechaUpload
-                    comentario
-                    archivo {
-                      extension
-                    }
-                  }
-                }
-                creador {
-                  ...fragResponsables
-                }
+                ...fragActividad
               }
             }
-            ${fragmentoResponsables}
+            ${fragmentoActividad}
           `,
           variables: {
             idGrupo: this.esteGrupo.id,
@@ -359,14 +363,27 @@ export default {
         });
     },
   },
+  beforeRouteUpdate(to, from, next) {
+    console.log(`Saliendo de ${from.name} hacia ${to.name} `);
+    if (
+      from.name == "ActividadesDeGrupo" ||
+      from.name == "ActividadesDeProfe"
+    ) {
+      this.ventanaDeshabilitada = true;
+    }
+    next();
+  },
 };
 </script>
 
 <style scoped>
-.actividad{
+.actividad {
   box-shadow: 2px 2px 2px 2px rgb(190, 190, 190);
 }
-
+.deshabilitada {
+  pointer-events: none;
+  opacity: 0.5;
+}
 .contenidoGrupoProfe {
   border: 2px solid blue;
   border-radius: 5px;

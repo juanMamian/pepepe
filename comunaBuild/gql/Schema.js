@@ -46,7 +46,7 @@ const context = ({ req, res, connection }) => {
         console.log(`Una conexion ws`);
     }
     else {
-        console.log(`Conexion normal`);
+        //console.log(`Conexion normal`);
         let headers = req.headers;
         //console.log(`headers: ${JSON.stringify(headers)}`);
         if (!headers.authorization)

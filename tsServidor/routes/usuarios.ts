@@ -101,8 +101,7 @@ router.post("/login", async (req: Request, res: Response) => {
     const usuario: any = await Usuario.findOne({ username }, "username password permisos");
     if (!usuario) {
         console.log("usuario no encontrado");
-        let respuesta = errorApi("", "noerror", "", "El usuario no existe");
-        return res.status(400).send(respuesta);
+        return res.status(400).send({error:"badLogin", msjUsuario:"Datos incorrectos"});
     }
     const correctLogin = await bcrypt.compare(pass, usuario.password);
     if (correctLogin) {
@@ -112,7 +111,7 @@ router.post("/login", async (req: Request, res: Response) => {
             permisos: usuario.permisos,
             username: usuario.username
         }
-        let token = jwt.sign(datosToken, process.env.JWT_SECRET, { expiresIn: "2h" });
+        let token = jwt.sign(datosToken, process.env.JWT_SECRET, { expiresIn: "6h" });
         let respuesta = {
             username: usuario.username,
             permisos: usuario.permisos,
@@ -123,7 +122,7 @@ router.post("/login", async (req: Request, res: Response) => {
     }
     else {
         console.log(`Contraseña errada. Rechazando`);
-        return res.status(400).send("badPass");
+        return res.status(400).send({error:"badLogin", msjUsuario:"Datos incorrectos"});
     }
 });
 

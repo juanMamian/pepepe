@@ -9,9 +9,15 @@
     <div id="contenedorAlertas">
       <img
         v-if="actividadConNuevasRespuestasParaProfe"        
-        id="simboloNuevoMensaje"
+        class="alertas alertaNuevoMensaje"
         src="@/assets/iconos/mensaje.png"
         title="Nuevo(s) mensaje(s)"
+      />
+      <img
+        v-if="usuarioCompletoActividad"        
+        class="alertas alertaActividadCompletada"
+        src="@/assets/iconos/success.png"
+        title="¡Completaste esta actividad!"
       />
     </div>
     <div
@@ -30,6 +36,11 @@
     >
       {{ estaActividad.nombre }}
     </span>
+    <span
+      id="nombreCreador"
+      v-if="usuarioAdministradorActividadesEstudiantiles == true"
+      >{{ estaActividad.creador.nombres }}</span
+    >
     <br />
     <div id="zonaGuia" v-show="seleccionada" class="zona">
       <div
@@ -50,8 +61,9 @@
         v-if="usuarioCreadorActividad"
         accept="application/pdf"
       />
+      <loading v-show="uploadingGuia" :texto="'Subiendo archivo...'" />
       <div id="descargarGuia" v-if="estaActividad.hayGuia.length > 5">
-        <a :href="estaActividad.hayGuia">
+        <a :href="estaActividad.hayGuia" :download="estaActividad.nombre+'-Guia'">
           <img
             src="@/assets/iconos/documento.png"
             alt="Descargar guia"
@@ -93,8 +105,8 @@
                 idsEstudiantesConNuevaRespuestaParaProfe.includes(
                   desarrollo.estudiante.id
                 )
-              "              
-              id="simboloNuevoMensaje"
+              "
+              class="alertas alertaNuevoMensaje"
               src="@/assets/iconos/mensaje.png"
               title="Nuevo mensaje"
             />
@@ -202,6 +214,7 @@ import {
   fragmentoDesarrollo,
   fragmentoResponsables,
 } from "../utilidades/recursosGql";
+import Loading from "../utilidades/Loading.vue";
 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
 const QUERY_DESARROLLOS_ACTIVIDAD = gql`
@@ -243,12 +256,18 @@ const QUERY_DESARROLLO = gql`
 `;
 
 export default {
-  components: { MiParticipacion, ParticipacionEstudiante, IconoPersona },
+  components: {
+    MiParticipacion,
+    ParticipacionEstudiante,
+    IconoPersona,
+    Loading,
+  },
   name: "Actividad",
   data() {
     return {
       nombreEditandose: false,
       idEstudianteSeleccionado: this.$store.state.usuario.id,
+      uploadingGuia: false,
     };
   },
   props: {
@@ -291,6 +310,7 @@ export default {
       this.$refs.inputNuevaGuia.click();
     },
     subirNuevaGuia() {
+      this.uploadingGuia = true;
       let dis = this;
       let inputGuia = this.$refs.inputNuevaGuia;
       var datos = new FormData();
@@ -311,6 +331,7 @@ export default {
         },
       })
         .then((res) => {
+          this.uploadingGuia = false;
           console.log(`res: ${JSON.stringify(res)}`);
           dis.$apollo.query({
             query: gql`
@@ -331,6 +352,7 @@ export default {
           });
         })
         .catch((error) => {
+          this.uploadingGuia = false;
           console.log(`Errores: ${error}`);
           if (error.response.data.msjUsuario) {
             alert(error.response.data.msjUsuario);
@@ -482,8 +504,6 @@ export default {
       return this.$store.state.usuario.id == this.estaActividad.creador.id;
     },
     usuarioTieneDesarrollo: function () {
-      console.log(`**`);
-      console.log(`${this.$store.state.usuario.id}`);
       if (this.estaActividad.desarrollos.length < 1) {
         console.log(`Actividad sin desarrollos`);
 
@@ -543,7 +563,7 @@ export default {
   padding: 5px 10px;
   position: relative;
   border-radius: 10px;
-  font-family: 'Noto Sans', Sans-Serif;
+  font-family: "Noto Sans", Sans-Serif;
 }
 .actividad:not(.seleccionada) {
   cursor: pointer;
@@ -560,6 +580,19 @@ export default {
   top: 0;
   right: 0;
 }
+.alertas {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.alertaActividadCompletada{
+  background-color: rgb(112, 161, 112);
+}
+.alertaNuevoMensaje {
+  background-color: orange;
+}
+
 #nombre {
   padding-top: 10px;
   padding-bottom: 10px;
@@ -625,14 +658,6 @@ export default {
 .iconoPersona {
   margin-left: 5px;
   margin-right: 5px;
-}
-
-#simboloNuevoMensaje {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background-color: orange;
-  cursor: pointer;
 }
 
 .participacionEstudiante {

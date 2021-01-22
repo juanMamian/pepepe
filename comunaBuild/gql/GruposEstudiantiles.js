@@ -49,6 +49,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     type ActividadGrupoEstudiantil{        
         id: ID,
         nombre: String,
+        fechaUpload:Date,
         desarrollos:[DesarrolloActividadGrupoEstudiantil],
         creador: PublicUsuario,
         hayGuia: String,
@@ -56,7 +57,7 @@ exports.typeDefs = apollo_server_express_1.gql `
 
     type GrupoEstudiantil{
         id:ID,
-        nombre:String,
+        nombre:String,        
         estudiantes:[PublicUsuario],
         actividades:[ActividadGrupoEstudiantil]
     }
@@ -253,19 +254,15 @@ exports.resolvers = {
                 console.log(`||||||||||||||||||||||||||||||||||||||||||`);
                 console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe}`);
                 try {
-                    var todasLasActividades = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.find({}).distinct("actividades").exec();
+                    var losGrupos = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.find({ "actividades.idCreador": idProfe }).exec();
                 }
                 catch (error) {
                     console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                let actividadesDelProfe = todasLasActividades.filter(a => a.idCreador == idProfe);
-                for (var i = 0; i < actividadesDelProfe.length; i++) {
-                    if (!actividadesDelProfe[i].desarrollos) {
-                        actividadesDelProfe[i].desarrollos = [];
-                    }
-                }
-                console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${actividadesDelProfe[0].desarrollos[0].participaciones}.`);
+                console.log(`Encontrados grupos: ${losGrupos}`);
+                let actividadesDelProfe = losGrupos.reduce((acc, g) => { return acc.concat(g.actividades); }, []).filter(a => a.idCreador == idProfe);
+                console.log(`Enviando actividades del profe: ${actividadesDelProfe}`);
                 return actividadesDelProfe;
             });
         },
@@ -744,7 +741,6 @@ exports.resolvers = {
         },
         hayGuia: function (parent) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`------parent para decidir si hay guia. ${JSON.stringify(parent)}`);
                 let idActividad = "";
                 if ("id" in parent) {
                     idActividad = parent.id;
@@ -844,22 +840,7 @@ exports.resolvers = {
                         //return res.status(500).send("Error conectando con el servidor de google drive");
                     }
                 }
-                //Buscar en archivos locales
-                let pathArchivo = path_1.default.join(__dirname, "../archivosDeUsuario/actividadesProfes/evidencias", nombreArchivo);
-                try {
-                    yield access(pathArchivo, fs_1.default.constants.R_OK);
-                }
-                catch (error) {
-                    if (error.message.substr(0, 6) != "ENOENT") {
-                        console.log(`Error checkeando acceso a la guia en ${pathArchivo}. E: ${error}`);
-                    }
-                    else {
-                        console.log(`Archivo no existia`);
-                    }
-                    return "";
-                }
-                let enlaceDescargaLocal = "/api/actividadesProfes/evidencia/" + parent.nombre + "." + parent.extension;
-                return enlaceDescargaLocal;
+                return "";
             });
         }
     }

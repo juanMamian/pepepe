@@ -37,6 +37,7 @@ export const typeDefs = gql`
     type ActividadGrupoEstudiantil{        
         id: ID,
         nombre: String,
+        fechaUpload:Date,
         desarrollos:[DesarrolloActividadGrupoEstudiantil],
         creador: PublicUsuario,
         hayGuia: String,
@@ -44,7 +45,7 @@ export const typeDefs = gql`
 
     type GrupoEstudiantil{
         id:ID,
-        nombre:String,
+        nombre:String,        
         estudiantes:[PublicUsuario],
         actividades:[ActividadGrupoEstudiantil]
     }
@@ -245,20 +246,15 @@ export const resolvers = {
             console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe}`);
             try {
-                var todasLasActividades: any = await GrupoEstudiantil.find({}).distinct("actividades").exec();
+                var losGrupos: any = await GrupoEstudiantil.find({ "actividades.idCreador": idProfe }).exec();
             } catch (error) {
                 console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+            console.log(`Encontrados grupos: ${losGrupos}`);
+            let actividadesDelProfe = losGrupos.reduce((acc, g) => { return acc.concat(g.actividades) }, []).filter(a => a.idCreador == idProfe);
 
-            let actividadesDelProfe = todasLasActividades.filter(a => a.idCreador == idProfe);
-            for (var i = 0; i < actividadesDelProfe.length; i++) {
-                if (!actividadesDelProfe[i].desarrollos) {
-                    actividadesDelProfe[i].desarrollos = [];
-                }
-            }
-            console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${actividadesDelProfe[0].desarrollos[0].participaciones}.`);
-
+            console.log(`Enviando actividades del profe: ${actividadesDelProfe}`);
             return actividadesDelProfe;
         },
         actividadesEstudiantilesDeProfeDeGrupo: async function (_: any, { idProfe, idGrupo }: any, contexto: contextoQuery) {
@@ -714,7 +710,7 @@ export const resolvers = {
             let idAutor = parent.idAutor;
 
             try {
-                var usuarioAutor:any = await Usuario.findById(idAutor).exec();
+                var usuarioAutor: any = await Usuario.findById(idAutor).exec();
                 if (!usuarioAutor) {
                     console.log(`El estudiante no existe en la base de datos enviando un dummy`);
                     return {
@@ -752,7 +748,7 @@ export const resolvers = {
             let idCreador = parent.idCreador;
 
             try {
-                var usuarioCreador:any = await Usuario.findById(idCreador).exec();
+                var usuarioCreador: any = await Usuario.findById(idCreador).exec();
                 if (!usuarioCreador) {
                     console.log(`El estudiante no existe en la base de datos enviando un dummy`);
                     return {
@@ -775,7 +771,7 @@ export const resolvers = {
             return usuarioCreador;
         },
         hayGuia: async function (parent: any) {
-            console.log(`------parent para decidir si hay guia. ${JSON.stringify(parent)}`);
+
             let idActividad = "";
             if ("id" in parent) {
                 idActividad = parent.id
@@ -813,7 +809,7 @@ export const resolvers = {
             let idEstudiante = parent.idEstudiante;
 
             try {
-                var usuarioEstudiante:any = await Usuario.findById(idEstudiante).exec();
+                var usuarioEstudiante: any = await Usuario.findById(idEstudiante).exec();
                 if (!usuarioEstudiante) {
                     console.log(`El estudiante no existe en la base de datos enviando un dummy`);
                     return {
@@ -875,24 +871,7 @@ export const resolvers = {
                     //return res.status(500).send("Error conectando con el servidor de google drive");
                 }
             }
-
-            //Buscar en archivos locales
-
-            let pathArchivo = path.join(__dirname, "../archivosDeUsuario/actividadesProfes/evidencias", nombreArchivo);
-
-            try {
-                await access(pathArchivo, fs.constants.R_OK);
-            } catch (error) {
-                if (error.message.substr(0, 6) != "ENOENT") {
-                    console.log(`Error checkeando acceso a la guia en ${pathArchivo}. E: ${error}`);
-                }
-                else {
-                    console.log(`Archivo no existia`);
-                }
-                return "";
-            }
-            let enlaceDescargaLocal = "/api/actividadesProfes/evidencia/" + parent.nombre + "." + parent.extension;
-            return enlaceDescargaLocal;
+            return "";
         }
     }
 
