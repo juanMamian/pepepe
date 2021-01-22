@@ -8,13 +8,13 @@
   >
     <div id="contenedorAlertas">
       <img
-        v-if="actividadConNuevasRespuestasParaProfe"        
+        v-if="actividadConNuevasRespuestasParaProfe"
         class="alertas alertaNuevoMensaje"
         src="@/assets/iconos/mensaje.png"
         title="Nuevo(s) mensaje(s)"
       />
       <img
-        v-if="usuarioCompletoActividad"        
+        v-if="usuarioCompletoActividad"
         class="alertas alertaActividadCompletada"
         src="@/assets/iconos/success.png"
         title="¡Completaste esta actividad!"
@@ -63,7 +63,10 @@
       />
       <loading v-show="uploadingGuia" :texto="'Subiendo archivo...'" />
       <div id="descargarGuia" v-if="estaActividad.hayGuia.length > 5">
-        <a :href="estaActividad.hayGuia" :download="estaActividad.nombre+'-Guia'">
+        <a
+          :href="estaActividad.hayGuia"
+          :download="estaActividad.nombre + '-Guia'"
+        >
           <img
             src="@/assets/iconos/documento.png"
             alt="Descargar guia"
@@ -285,10 +288,12 @@ export default {
   },
   methods: {
     eliminarse() {
-      this.$emit("eliminandose", this.estaActividad.id);
+      if (confirm("Eliminando actividad completa. ¿Continuar?")) {
+        this.$emit("eliminandose", this.estaActividad.id);
+      }
     },
     async guardarNombre() {
-      let nuevoNombre = this.$refs.nombre.innerHTML.trim();
+      let nuevoNombre = this.$refs.nombre.innerText.trim();
       let idActividad = this.estaActividad.id;
 
       if (!this.nombreEditandose || nuevoNombre == this.estaActividad.nombre) {
@@ -586,7 +591,7 @@ export default {
   border-radius: 50%;
   cursor: pointer;
 }
-.alertaActividadCompletada{
+.alertaActividadCompletada {
   background-color: rgb(112, 161, 112);
 }
 .alertaNuevoMensaje {
