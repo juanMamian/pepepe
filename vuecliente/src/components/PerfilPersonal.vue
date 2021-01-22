@@ -21,8 +21,19 @@
         >
           {{ editandoDatosPersonales ? "Volver" : "Editar" }}
         </div>
-        <div id="fotografia" @click.self="seleccionarFoto">
-          <img id="laFotografia" :src="serverUrl+'/api/usuarios/fotografias/'+yo.id" alt="">
+        <div id="fotografia">
+          <loading
+            v-show="subiendoNuevaFotoPersonal"
+            :texto="'Enviando fotografía...'"
+          />
+          <img
+            id="laFotografia"
+            title="Cambiar fotografia"
+            :src="serverUrl + '/api/usuarios/fotografias/' + yo.id+'?'+refreshImg"
+            :class="{ deshabilitada: subiendoNuevaFotoPersonal }"
+            alt=""
+            @click="seleccionarFoto"
+          />
           <input
             type="file"
             id="inputNuevaFoto"
@@ -99,7 +110,8 @@
 <script>
 import gql from "graphql-tag";
 import { validarDatosUsuario } from "./utilidades/validacionDatosUsuario";
-import axios from "axios"
+import axios from "axios";
+import Loading from "./utilidades/Loading.vue";
 
 const fragmentoDatosPersonales = gql`
   fragment DatosPersonales on Usuario {
@@ -120,6 +132,7 @@ const fragmentoDatosContacto = gql`
 
 export default {
   name: "PerfilPersonal",
+  components: { Loading },
   apollo: {
     yo: {
       query: gql`
@@ -161,10 +174,12 @@ export default {
         lugarResidencia: null,
         username: null,
         misNodos: [],
-        grupoEstudiantil:""
+        grupoEstudiantil: "",
       },
       editandoDatosPersonales: false,
       editandoDatosContacto: false,
+      subiendoNuevaFotoPersonal: false,
+      refreshImg:0
     };
   },
   computed: {
@@ -185,6 +200,7 @@ export default {
   },
   methods: {
     subirNuevaFoto() {
+      let dis = this;
       let inputFoto = this.$refs.inputNuevaFoto;
       var datos = new FormData();
       const nuevaFoto = inputFoto.files[0];
@@ -195,25 +211,28 @@ export default {
         return;
       }
       datos.append("nuevaFoto", nuevaFoto);
-      //console.log(`enviando nuevo icono con datos: : `);
+      dis.subiendoNuevaFotoPersonal = true;
       axios({
-        method:'post',
-        url: this.serverUrl+ "/api/usuarios/updateFoto",
+        method: "post",
+        url: this.serverUrl + "/api/usuarios/updateFoto",
         data: datos,
         headers: {
           "Content-Type": "multipart/form-data",
-          "Authorization": "Bearer "+this.$store.state.token
+          Authorization: "Bearer " + this.$store.state.token,
         },
-        success: function (resp) {
-          console.log(`respuesta: ${JSON.stringify(resp)}`);
+      })
+        .then(({data}) => {
+          dis.subiendoNuevaFotoPersonal = false;
+          console.log(`respuesta: ${JSON.stringify(data)}`);
+          if(data.resultado=="ok"){
+            dis.refreshImg++;
+          }
           //resp=JSON.parse(resp);
-        },
-        error: function (xhr, ajaxOptions, thrownError) {
-          console.log(
-            "errores: " + xhr + "**" + ajaxOptions + "**" + thrownError
-          );
-        },
-      });
+        })
+        .catch((error) => {
+          dis.subiendoNuevaFotoPersonal = false;
+          console.log(`Error subiendo foto. E: ${error}`);
+        });
     },
     enviarDatosPersonales() {
       let dis = this;
@@ -335,13 +354,13 @@ export default {
   position: relative;
   margin-bottom: 15px;
   margin-right: 25px;
+  cursor: pointer;
 }
 
-#laFotografia{
+#laFotografia {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  pointer-events: none;
 }
 
 #textosDatosPersonales {
@@ -373,5 +392,14 @@ export default {
 #inputNuevaFoto {
   display: none;
   cursor: pointer;
+}
+.loading {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+}
+.deshabilitada {
+  opacity: 0.5;
+  pointer-events: none;
 }
 </style>
