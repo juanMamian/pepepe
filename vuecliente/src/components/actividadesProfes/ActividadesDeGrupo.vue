@@ -3,7 +3,7 @@
     class="GrupoEstudiantil"
     :class="{ deshabilitada: ventanaDeshabilitada }"
   >
-    <div id="nombreGrupo">{{ esteGrupo.nombre }}</div>
+    <div class="nombreGrupo">{{ esteGrupo.nombre }}</div>
     <div id="zonaEstudiantes" class="zonaPrimerNivel">
       <div class="nombreZona">Estudiantes</div>
       <div id="controlesEstudiantes" class="controlesZona">
@@ -394,7 +394,7 @@ export default {
   background-color: rgb(230, 247, 247);
 }
 
-#nombreGrupo {
+.nombreGrupo {
   font-size: 20px;
   font-weight: bold;
   text-align: center;

@@ -244,7 +244,7 @@ export default {
       this.$router.push("/nodoConocimiento/"+this.esteNodo.id);
     },
     copiarId(e) {
-      let str=e.target.innerHTML.trim();
+      let str=e.target.innerText.trim();
       const el = document.createElement("textarea");
       el.value = str;
       document.body.appendChild(el);
@@ -256,7 +256,7 @@ export default {
       this.$emit("eliminar", this.esteNodo.id);
     },
     guardarNombre() {
-      let nuevoNombre = this.$refs.nombre.innerHTML.trim();
+      let nuevoNombre = this.$refs.nombre.innerText.trim();
       let idNodo = this.esteNodo.id;
 
       if (!this.nombreEditandose || nuevoNombre == this.esteNodo.nombre) {
@@ -292,7 +292,7 @@ export default {
         });
     },
     setNombreEditandose() {
-      if (this.esteNodo.nombre != this.$refs.nombre.innerHTML.trim()) {
+      if (this.esteNodo.nombre != this.$refs.nombre.innerText.trim()) {
         this.nombreEditandose = true;
       } else {
         this.nombreEditandose = false;
