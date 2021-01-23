@@ -40,6 +40,12 @@ Vue.mixin({
       if (!this.$store.state.usuario.permisos) return false;
       return (this.$store.state.usuario.permisos.includes("actividadesEstudiantiles-administrador")) ? true : false
     },
+    usuarioProfe: function () {
+      if (!this.$store.state.usuario.permisos) return false;
+      return this.$store.state.usuario.permisos.includes(
+        "actividadesEstudiantiles-profe"
+      );
+    },
   },
  
 

@@ -1,16 +1,17 @@
 var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-var charProhibidosNombre = /[^ a-zA-ZÀ-ž]/g;
+var charProhibidosNombre = /[^ a-zA-ZÀ-žñÑ]/g;
 var charProhibidosNumeroTel = /[^0-9+-]/g;
 var emailChars = /\S+@\S+\.\S+/;
 var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
+var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
 
 export const validarDatosUsuario = function (datosUsuario) {
     var errores = [];
 
     for (let dato in datosUsuario) {
 
-        if(!datosUsuario[dato] && dato!="numeroTel"){
-            errores.push(`El dato ${dato} no tenia valor`);
+        if(!datosUsuario[dato]){
+            errores.push(`Falta ${dato}`);
             return errores;
         }
         
@@ -73,9 +74,12 @@ export const validarDatosUsuario = function (datosUsuario) {
             if (datosUsuario.password.length < 6 || datosUsuario.password.length > 32) {
                 errores.push("Tu contraseña debe contener entre 6 y 32 caracteres");
             }
+            if (charProhibidosPassword.test(datosUsuario.password)) {
+                errores.push("Tu password contiene caracteres no permitidos");
+            }
         }
         else {
-            errores.push(`El dato ${dato} no tenía lǵica de validación`);
+            errores.push(`El dato ${dato} no tenía lógica de validación. Informa al administrador del sistema por favor`);
         }
     }
 

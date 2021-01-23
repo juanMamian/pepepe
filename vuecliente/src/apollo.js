@@ -13,8 +13,14 @@ Vue.use(VueApollo);
 
 const cache= new InMemoryCache();
 
+
+export const serverUrl=process.env.NODE_ENV === 'production'
+? 'https://pe-pe-pe.herokuapp.com'
+: 'http://localhost:3000'
+
+console.log(`Server url: ${serverUrl}`);
 //export const serverUrl="http://localhost:3000";
-export const serverUrl="https://pe-pe-pe.herokuapp.com";
+//export const serverUrl="https://pe-pe-pe.herokuapp.com";
 
 const httpLink = createHttpLink({
   uri: serverUrl+"/graphql"

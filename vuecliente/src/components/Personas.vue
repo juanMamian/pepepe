@@ -1,6 +1,7 @@
 <template>
   <div class="personas">
     <div id="listaPersonas" @click="idPersonaMenuCx = null">
+      <loading v-show="loadingPersonas" texto="Cargando lista de personas..." />
       <icono-persona
         v-for="persona of personas"
         :key="persona.id"
@@ -21,6 +22,7 @@
 import gql from "graphql-tag";
 import { fragmentoResponsables } from "./utilidades/recursosGql";
 import IconoPersona from "./proyecto/IconoPersona";
+import Loading from './utilidades/Loading.vue';
 
 const QUERY_PERSONAS = gql`
   query {
@@ -35,11 +37,13 @@ export default {
   name: "Personas",
   components: {
     IconoPersona,
+    Loading,
   },
   apollo: {
     personas: {
       query: QUERY_PERSONAS,
       update: function ({ todosUsuarios }) {
+        this.loadingPersonas=false;
         return todosUsuarios;
       },
     },
@@ -55,6 +59,7 @@ export default {
           evento: "eliminandoseDeDatabase",
         },
       ],
+      loadingPersonas:true,
     };
   },
   methods: {
@@ -136,5 +141,8 @@ export default {
   margin-right: 10px;
   margin-bottom: 50px;
   border: 1px solid black;
+}
+.loading{
+  margin: 20px auto;
 }
 </style>

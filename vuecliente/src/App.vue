@@ -119,13 +119,7 @@ export default {
         };
       }
       return {};
-    },
-    usuarioProfe: function () {
-      if (!this.$store.state.usuario.permisos) return false;
-      return this.$store.state.usuario.permisos.includes(
-        "actividadesEstudiantiles-profe"
-      );
-    },
+    },    
   },
   methods: {
     deslogeo() {
@@ -242,7 +236,10 @@ body {
   user-select: none;
 }
 
-
+a:-webkit-any-link {
+  text-decoration: none;
+  color:black
+}
 </style>
 
 <style scoped>

@@ -1,6 +1,8 @@
 <template>
   <div id="loginArea">
     <div id="ventanaCentral">
+            <form>
+
       <p id="tituloVentana">Iniciar sesion</p>
       <br />
       <input
@@ -28,11 +30,13 @@
       <loading v-show="enviandoDatos" :texto="'Conectando...'" />
       <button
         class="botonEnviar"
-        @click.stop="iniciarSesion"
+        @click.stop.prevent="iniciarSesion"
         :class="{ loginFail, deshabilitado: enviandoDatos }"
       >
         {{ loginFail ? loginFailMsg : "Conectarse" }}
       </button>
+          </form>
+
     </div>
   </div>
 </template>
@@ -42,8 +46,8 @@ import axios from "axios";
 import gql from "graphql-tag";
 import Loading from "./utilidades/Loading.vue";
 
-var charProhibidosUsername = /[^a-zA-Z0-9_]/g;
-var charProhibidosPassword = /[^a-zA-Z0-9*@_-]/g;
+var charProhibidosUsername = /[^a-zA-Z0-9_ñÑ]/g;
+var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
 const minPassword = 6;
 const minUsername = 4;
 

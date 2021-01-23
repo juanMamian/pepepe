@@ -1,6 +1,6 @@
 <template>
   <div
-    class="GrupoEstudiantil"
+    class="grupoEstudiantil"
     :class="{ deshabilitada: ventanaDeshabilitada }"
   >
     <div class="nombreGrupo">{{ esteGrupo.nombre }}</div>

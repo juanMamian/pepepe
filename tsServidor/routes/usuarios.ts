@@ -1,7 +1,7 @@
 const multer = require("multer");
 const upload = multer();
 const router = require("express").Router();
-import { ModeloUsuario as Usuario } from "../model/Usuario";
+import { ModeloUsuario as Usuario, validarDatosUsuario} from "../model/Usuario";
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
@@ -9,8 +9,8 @@ const path = require("path");
 import { errorApi } from "../errorHandling"
 import { Request, Response } from "express";
 
-var charProhibidosUsername = /[^a-zA-Z0-9_]/g;
-var charProhibidosPassword = /[^a-zA-Z0-9*@_-]/g;
+var charProhibidosUsername = /[^a-zA-ZñÑ0-9_]/g;
+var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
 
 const minPassword = 6;
 const minUsername = 4;
@@ -30,7 +30,7 @@ router.post("/registro", async (req: Request, res: Response) => {
             console.log(`campo ${campo} vacio`);
         }
         else {
-            datosIntroducidos[campo] = datosRegistro[campo];
+            datosIntroducidos[campo] = datosRegistro[campo].trim();
         }
     }
 
@@ -41,9 +41,11 @@ router.post("/registro", async (req: Request, res: Response) => {
         }
     })
 
-    if (!validarDatos(datosIntroducidos)) {
-        let respuesta = errorApi(null, "Bad request", "", "Datos de usuario no válidos");
-        return res.status(400).send(respuesta);
+    let erroresDatos:Array<string>=validarDatosUsuario(datosIntroducidos);
+
+    if (erroresDatos.length>0) {        
+        console.log(`Había errores en los datos: ${erroresDatos}`);
+        return res.status(400).send({msjUsuario:erroresDatos[0]});
     }
 
     try {
@@ -55,8 +57,8 @@ router.post("/registro", async (req: Request, res: Response) => {
     }
     try {
         if (await Usuario.findOne({ username: nuevoU.username }).exec()) {
-            let respuesta = errorApi(null, "noerror", "", "El nombre de usuario ya estaba registrado");
-            return res.status(400).send(respuesta);
+            console.log(`Error. El username ya existía`);
+            return res.status(400).send({msjUsuario: "El username ya existía"});
         }
     }
     catch (error) {
@@ -89,32 +91,43 @@ router.post("/registro", async (req: Request, res: Response) => {
 });
 
 router.post("/login", async (req: Request, res: Response) => {
+    
+    let datosLogin={
+        username:req.body.username,
+        password: req.body.password,
+    }
     console.log(`LOGIN`);
-    if (!usuarioPassLegales(req.body.username, req.body.password)) {
-        let respuesta = errorApi("", "noerror", "Se introdujeron credenciales ilegales en un intento de login", "Datos inválidos");
-        return res.status(400).send(respuesta);
+    let erroresDatos:Array<string>=validarDatosUsuario(datosLogin);
+    if (erroresDatos.length>0) {
+        console.log(`Errores en datos de usuario: ${erroresDatos}`);
+        return res.status(400).send({msjUsuario: erroresDatos[0]});
     }
 
     const username = req.body.username;
     const pass = req.body.password;
     console.log("loging " + JSON.stringify(req.body));
-    const usuario: any = await Usuario.findOne({ username }, "username password permisos");
-    if (!usuario) {
-        console.log("usuario no encontrado");
-        return res.status(400).send({error:"badLogin", msjUsuario:"Datos incorrectos"});
+    
+    try {
+        var elUsuario: any = await Usuario.findOne({ username }, "username password permisos").exec();
+        if (!elUsuario) {
+            console.log("usuario no encontrado");
+            return res.status(400).send({error:"badLogin", msjUsuario:"Datos incorrectos"});
+        }        
+    } catch (error) {
+        console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
     }
-    const correctLogin = await bcrypt.compare(pass, usuario.password);
+    const correctLogin = await bcrypt.compare(pass, elUsuario.password);
     if (correctLogin) {
         console.log(`login correcto de ${username}. Enviando JWT`);
         let datosToken = {
-            id: usuario._id,
-            permisos: usuario.permisos,
-            username: usuario.username
+            id: elUsuario._id,
+            permisos: elUsuario.permisos,
+            username: elUsuario.username
         }
         let token = jwt.sign(datosToken, process.env.JWT_SECRET, { expiresIn: "6h" });
         let respuesta = {
-            username: usuario.username,
-            permisos: usuario.permisos,
+            username: elUsuario.username,
+            permisos: elUsuario.permisos,
             token
         }
         res.status(200).send(respuesta);
@@ -126,17 +139,80 @@ router.post("/login", async (req: Request, res: Response) => {
     }
 });
 
+router.post("/updatePassword", async (req, res) => {
+    
+    if (!req.user) {
+        console.log(`No habia info del bearer`);
+        return res.status(400).send('No autorizado');
+    }
+    if (!req.user.id) {
+        console.log(`no había id del usuario`);        
+        return res.status(400).send('No autorizado');
+    }
+    let idUsuario = req.user.id;
+
+    let datosUpdatePass={
+        viejoPassword:req.body.viejoPassword,
+        nuevoPassword:req.body.nuevoPassword,
+    }
+    //Validación
+    let erroresViejoPassword:Array<string>=validarDatosUsuario({password: datosUpdatePass.viejoPassword});
+    if(erroresViejoPassword.length>0){
+        console.log(`Error en el viejoPassword: ${erroresViejoPassword}`);
+        return res.status(400).send({msjUsuario: erroresViejoPassword[0]})
+    }
+    let erroresNuevoPassword:Array<string>=validarDatosUsuario({password: datosUpdatePass.nuevoPassword});
+    if(erroresNuevoPassword.length>0){
+        console.log(`Error en el nuevoPassword: ${erroresNuevoPassword}`);
+        return res.status(400).send({msjUsuario: erroresNuevoPassword[0]})
+    }
+   
+
+    try {
+        var elUsuario: any = await Usuario.findById(idUsuario, "password").exec();  
+        if (!elUsuario) {
+            console.log("usuario no encontrado");
+            return res.status(400).send({error:"badLogin", msjUsuario:"Datos incorrectos"});
+        }        
+    } catch (error) {
+        console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+    }
+
+    const correctPass = await bcrypt.compare(datosUpdatePass.viejoPassword, elUsuario.password);
+
+    if (correctPass) {
+        //Introducir nuevo password
+        const salt = await bcrypt.genSalt(10);
+        const hashPassword = await bcrypt.hash(datosUpdatePass.nuevoPassword, salt);
+        elUsuario.password = hashPassword;
+
+        try {
+            await elUsuario.save();
+        } catch (error) {
+            console.log(`Error guardando el usuario con el nuevo password. E: ${error}`);
+            return res.status(500).send({msjUsuario: "Error conectando con el servidor. Intenta de nuevo más tarde..."})
+        }
+
+        res.status(200).send({resultado: "ok", msjUsuario:"Contraseña cambiada"});
+        return;
+    }
+    else {
+        console.log(`Contraseña errada. Rechazando`);
+        return res.status(400).send({error:"badLogin", msjUsuario:"Contraseña incorrecta"});
+    }
+});
+
 router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res) {
 
     console.log(`Recibida peticion de subir foto por el usuario ${req.user.username}`);
 
-    if (!("user" in req)) {
+    if (!req.user) {
         console.log(`No habia info del bearer`);
-        return;
+        return res.status(400).send('No autorizado');
     }
-    if (!("id" in req.user)) {
-        console.log(`no había id del usuario`);
-        return;
+    if (!req.user.id) {
+        console.log(`no había id del usuario`);        
+        return res.status(400).send('No autorizado');
     }
     let idUsuario = req.user.id;
 
@@ -189,6 +265,7 @@ module.exports = router;
 
 const usuarioPassLegales = function (username: string, password: string) {
     console.log(`verificando ${username} - ${password}`);
+    console.log("el test de password da: "+charProhibidosPassword.test(password));
     if (!username || !password) return false
     if (charProhibidosUsername.test(username) || charProhibidosPassword.test(password) || password.length < minPassword || username.length < minUsername) return false
     return true;

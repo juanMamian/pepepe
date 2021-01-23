@@ -13,14 +13,11 @@
     </div>
     <div id="contenidos">
       <div class="contenidos editables" id="datosPersonales">
-        <div
+        <img
+          src="@/assets/iconos/editar.png"
           class="botonEditar hoverGris"
-          @click="
-            editandoDatosPersonales = editandoDatosPersonales ? false : true
-          "
-        >
-          {{ editandoDatosPersonales ? "Volver" : "Editar" }}
-        </div>
+          @click="editandoDatosPersonales = !editandoDatosPersonales"
+        />
         <div id="fotografia">
           <loading
             v-show="subiendoNuevaFotoPersonal"
@@ -29,7 +26,13 @@
           <img
             id="laFotografia"
             title="Cambiar fotografia"
-            :src="serverUrl + '/api/usuarios/fotografias/' + yo.id+'?'+refreshImg"
+            :src="
+              serverUrl +
+              '/api/usuarios/fotografias/' +
+              yo.id +
+              '?' +
+              refreshImg
+            "
             :class="{ deshabilitada: subiendoNuevaFotoPersonal }"
             alt=""
             @click="seleccionarFoto"
@@ -75,12 +78,12 @@
       </div>
 
       <div class="contenidos editables" id="informacionContacto">
-        <div
-          class="botonEditar hoverGris"
-          @click="editandoDatosContacto = editandoDatosContacto ? false : true"
-        >
-          {{ editandoDatosContacto ? "Volver" : "Editar" }}
-        </div>
+        <img
+          src="@/assets/iconos/editar.png"
+          class="botonEditar"
+          @click="editandoDatosContacto = !editandoDatosContacto"
+        />
+
         <template v-if="!editandoDatosContacto">
           <div id="miResidencia">Residencia: {{ yo.lugarResidencia }}</div>
           <div id="miEmail">Correo electrónico: {{ yo.email }}</div>
@@ -104,6 +107,69 @@
           /><br />
           <button @click="enviarDatosContacto">Enviar</button>
         </template>
+      </div>
+
+      <div v-if="usuarioProfe" class="contenidos editables" id="informacionPassword">
+        <div class="zonaBotonEditar">
+          Cambiar contraseña
+          <img
+            src="@/assets/iconos/editar.png"
+            alt="Editar"
+            id="bEditarPassword"
+            class="botonEditar"
+            :title="editandoDatosPassword ? 'Volver' : 'Cambiar contraseña'"
+            @click="
+              editandoDatosPassword = !editandoDatosPassword;
+              resetearCamposPassword;
+            "
+          />
+        </div>
+
+        <template v-if="!editandoDatosPassword"> </template>
+          <form id="zonaInputsNuevoPassword" v-else>
+            <label for="viejoPassword">Escribe tu contraseña actual: </label>
+            <input
+              v-model="edicionDatosPassword.viejoPassword"
+              name="viejoPassword"
+              type="password"
+              placeholder="Contraseña actual"
+              class="inputsNuevoPassword"
+            />
+            <label for="nuevoPassword">Escribe tu nueva contraseña: </label>
+            <input
+              name="nuevoPassword"
+              v-model="edicionDatosPassword.nuevoPassword"
+              type="password"
+              placeholder="Nueva contraseña"
+              class="inputsNuevoPassword"
+              @input="compararNuevoPassConfirmacion"
+            />
+            <label for="nuevoPasswordConfirmacion"
+              >Confirma tu nueva contraseña:
+            </label>
+            <input
+              name="nuevoPasswordConfirmacion"
+              v-model="edicionDatosPassword.nuevoPasswordConfirmacion"
+              type="password"
+              placeholder="Nueva contraseña"
+              class="inputsNuevoPassword"
+              :class="{ enRojo: !nuevoPasswordConfirmado }"
+              @input="compararNuevoPassConfirmacion"
+            />
+            <button
+              :disabled="!nuevoPasswordConfirmado"
+              @click.prevent="enviarDatosPassword"
+            >
+              Enviar
+            </button>
+            <div
+              id="resultadoEdicionPassword"
+              v-show="resultadoEdicionPassword"
+            >
+              {{ this.resultadoEdicionPassword }}
+            </div>
+          </form>
+        <loading v-show="enviandoDatosPassword" texto="Enviando..." />
       </div>
     </div>
   </div>
@@ -178,10 +244,19 @@ export default {
         misNodos: [],
         grupoEstudiantil: "",
       },
+      edicionDatosPassword: {
+        viejoPassword: "",
+        nuevoPassword: "",
+        nuevoPasswordConfirmacion: "",
+      },
+      subiendoNuevaFotoPersonal: false,
       editandoDatosPersonales: false,
       editandoDatosContacto: false,
-      subiendoNuevaFotoPersonal: false,
-      refreshImg:0
+      editandoDatosPassword: false,
+      nuevoPasswordConfirmado: false,
+      enviandoDatosPassword: false,
+      resultadoEdicionPassword: null,
+      refreshImg: 0,
     };
   },
   computed: {
@@ -192,7 +267,7 @@ export default {
         fechaNacimiento: this.yo.fechaNacimiento.substr(0, 10),
       };
     },
-    edicionDatosContacto: function () {      
+    edicionDatosContacto: function () {
       return {
         lugarResidencia: this.yo.lugarResidencia,
         email: this.yo.email,
@@ -223,10 +298,10 @@ export default {
           Authorization: "Bearer " + this.$store.state.token,
         },
       })
-        .then(({data}) => {
+        .then(({ data }) => {
           dis.subiendoNuevaFotoPersonal = false;
           console.log(`respuesta: ${JSON.stringify(data)}`);
-          if(data.resultado=="ok"){
+          if (data.resultado == "ok") {
             dis.refreshImg++;
           }
           //resp=JSON.parse(resp);
@@ -268,18 +343,19 @@ export default {
       }
     },
     enviarDatosContacto() {
-      let datosEscritos=new Object();
-      for(var dato in this.edicionDatosContacto){
-        if(this.edicionDatosContacto[dato]!=null || this.edicionDatosContacto[dato]!=undefined){
-          datosEscritos[dato]=this.edicionDatosContacto[dato];
+      let datosEscritos = new Object();
+      for (var dato in this.edicionDatosContacto) {
+        if (
+          this.edicionDatosContacto[dato] != null ||
+          this.edicionDatosContacto[dato] != undefined
+        ) {
+          datosEscritos[dato] = this.edicionDatosContacto[dato];
         }
       }
-      
+
       let dis = this;
       console.log(
-        `Enviando nuevos datos contacto: ${JSON.stringify(
-          datosEscritos
-        )}`
+        `Enviando nuevos datos contacto: ${JSON.stringify(datosEscritos)}`
       );
       let errores = validarDatosUsuario(datosEscritos);
       if (errores.length < 1) {
@@ -307,6 +383,78 @@ export default {
           });
       } else {
         console.log(`Errores: ${errores}`);
+      }
+    },
+    resetearCamposPassword() {
+      this.$set(this.edicionDatosPassword, "viejoPassword", "");
+      this.$set(this.edicionDatosPassword, "nuevoPassword", "");
+      this.$set(this.edicionDatosPassword, "nuevoPasswordConfirmacion", "");
+      this.resultadoEdicionPassword = null;
+    },
+    enviarDatosPassword() {
+      console.log(`Iniciando envio de nuevo password`);
+      if (!this.nuevoPasswordConfirmado) {
+        console.log(`Nuevo password no confirmado`);
+        return;
+      }
+      let dis = this;
+      let datos = this.edicionDatosPassword;
+
+      for (let dato in this.edicionDatosPassword) {
+        if (!this.edicionDatosPassword[dato]) {
+          alert("Te faltó introducir un campo");
+          return;
+        }
+      }
+      if (datos.nuevoPassword != datos.nuevoPasswordConfirmacion) {
+        alert("Debes confirmar correctamente la nueva contraseña");
+        return;
+      }
+      this.resultadoEdicionPassword = null;
+      let errores = validarDatosUsuario({
+        password: datos.viejoPassword,
+      }).concat(validarDatosUsuario({ password: datos.nuevoPassword }));
+
+      if (errores.length > 0) {
+        alert(errores[0]);
+      }
+
+      dis.enviandoDatosPassword = true;
+      axios({
+        method: "post",
+        url: this.serverUrl + "/api/usuarios/updatePassword",
+        data: datos,
+        headers: {
+          Authorization: "Bearer " + this.$store.state.token,
+        },
+      })
+        .then(({ data }) => {
+          dis.enviandoDatosPassword = false;
+          console.log(`Contraseña cambiada`);
+          if (data.resultado == "ok") {
+            this.resetearCamposPassword();
+            if (data.msjUsuario) {
+              this.resultadoEdicionPassword = data.msjUsuario;
+            }
+          }
+          //resp=JSON.parse(resp);
+        })
+        .catch((error) => {
+          dis.enviandoDatosPassword = false;
+          console.log(`Error subiendo nuevo password. E: ${error}`);
+          if (error.response) {
+            this.resultadoEdicionPassword = error.response.msjUsuario;
+          }
+        });
+    },
+    compararNuevoPassConfirmacion() {
+      if (
+        this.edicionDatosPassword.nuevoPassword ==
+        this.edicionDatosPassword.nuevoPasswordConfirmacion
+      ) {
+        this.nuevoPasswordConfirmado = true;
+      } else {
+        this.nuevoPasswordConfirmado = false;
       }
     },
     seleccionarFoto() {
@@ -350,6 +498,37 @@ export default {
   border: 2px solid black;
   border-radius: 5px;
 }
+.botonEditar {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+}
+.botonEditar:hover {
+  background-color: gray;
+}
+#bEditarPassword {
+  margin-left: 10px;
+  position: relative;
+}
+#zonaInputsNuevoPassword {
+  margin-top: 10px;
+  display: grid;
+  max-width: 500px;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto;
+  row-gap: 10px;
+  justify-items: start;
+  align-items: center;
+}
+.inputsNuevoPassword {
+  border-radius: 5px;
+  font-size: 18px;
+  margin-left: auto;
+}
 
 #datosPersonales {
   display: flex;
@@ -391,13 +570,7 @@ export default {
 .editables {
   position: relative;
 }
-.botonEditar {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  padding: 5px 10px;
-  cursor: pointer;
-}
+
 #inputNuevaFoto {
   display: none;
   cursor: pointer;
@@ -410,5 +583,17 @@ export default {
 .deshabilitada {
   opacity: 0.5;
   pointer-events: none;
+}
+#resultadoEdicionPassword {
+  color: gray;
+  font-size: 14px;
+  text-align: center;
+  font-style: italic;
+}
+.enRojo {
+  color: red;
+}
+.loading {
+  position: relative;
 }
 </style>

@@ -17,8 +17,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 const errorHandling_1 = require("../errorHandling");
-var charProhibidosUsername = /[^a-zA-Z0-9_]/g;
-var charProhibidosPassword = /[^a-zA-Z0-9*@_-]/g;
+var charProhibidosUsername = /[^a-zA-ZñÑ0-9_]/g;
+var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
 const minPassword = 6;
 const minUsername = 4;
 router.post("/registro", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -31,7 +31,7 @@ router.post("/registro", (req, res) => __awaiter(void 0, void 0, void 0, functio
             console.log(`campo ${campo} vacio`);
         }
         else {
-            datosIntroducidos[campo] = datosRegistro[campo];
+            datosIntroducidos[campo] = datosRegistro[campo].trim();
         }
     }
     camposObligatorios.forEach((campoObligatorio) => {
@@ -40,9 +40,10 @@ router.post("/registro", (req, res) => __awaiter(void 0, void 0, void 0, functio
             return res.status(400).send({ msjUsuario: `El campo ${campoObligatorio} es necesario` });
         }
     });
-    if (!validarDatos(datosIntroducidos)) {
-        let respuesta = errorHandling_1.errorApi(null, "Bad request", "", "Datos de usuario no válidos");
-        return res.status(400).send(respuesta);
+    let erroresDatos = Usuario_1.validarDatosUsuario(datosIntroducidos);
+    if (erroresDatos.length > 0) {
+        console.log(`Había errores en los datos: ${erroresDatos}`);
+        return res.status(400).send({ msjUsuario: erroresDatos[0] });
     }
     try {
         var nuevoU = Object.assign({}, datosIntroducidos);
@@ -53,8 +54,8 @@ router.post("/registro", (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
     try {
         if (yield Usuario_1.ModeloUsuario.findOne({ username: nuevoU.username }).exec()) {
-            let respuesta = errorHandling_1.errorApi(null, "noerror", "", "El nombre de usuario ya estaba registrado");
-            return res.status(400).send(respuesta);
+            console.log(`Error. El username ya existía`);
+            return res.status(400).send({ msjUsuario: "El username ya existía" });
         }
     }
     catch (error) {
@@ -83,31 +84,41 @@ router.post("/registro", (req, res) => __awaiter(void 0, void 0, void 0, functio
     return res.status(200).send({ registro: true, msjUsuario: "Registro exitoso" });
 }));
 router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    let datosLogin = {
+        username: req.body.username,
+        password: req.body.password,
+    };
     console.log(`LOGIN`);
-    if (!usuarioPassLegales(req.body.username, req.body.password)) {
-        let respuesta = errorHandling_1.errorApi("", "noerror", "Se introdujeron credenciales ilegales en un intento de login", "Datos inválidos");
-        return res.status(400).send(respuesta);
+    let erroresDatos = Usuario_1.validarDatosUsuario(datosLogin);
+    if (erroresDatos.length > 0) {
+        console.log(`Errores en datos de usuario: ${erroresDatos}`);
+        return res.status(400).send({ msjUsuario: erroresDatos[0] });
     }
     const username = req.body.username;
     const pass = req.body.password;
     console.log("loging " + JSON.stringify(req.body));
-    const usuario = yield Usuario_1.ModeloUsuario.findOne({ username }, "username password permisos");
-    if (!usuario) {
-        console.log("usuario no encontrado");
-        return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
+    try {
+        var elUsuario = yield Usuario_1.ModeloUsuario.findOne({ username }, "username password permisos").exec();
+        if (!elUsuario) {
+            console.log("usuario no encontrado");
+            return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
+        }
     }
-    const correctLogin = yield bcrypt.compare(pass, usuario.password);
+    catch (error) {
+        console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+    }
+    const correctLogin = yield bcrypt.compare(pass, elUsuario.password);
     if (correctLogin) {
         console.log(`login correcto de ${username}. Enviando JWT`);
         let datosToken = {
-            id: usuario._id,
-            permisos: usuario.permisos,
-            username: usuario.username
+            id: elUsuario._id,
+            permisos: elUsuario.permisos,
+            username: elUsuario.username
         };
         let token = jwt.sign(datosToken, process.env.JWT_SECRET, { expiresIn: "6h" });
         let respuesta = {
-            username: usuario.username,
-            permisos: usuario.permisos,
+            username: elUsuario.username,
+            permisos: elUsuario.permisos,
             token
         };
         res.status(200).send(respuesta);
@@ -118,16 +129,72 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
     }
 }));
+router.post("/updatePassword", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.user) {
+        console.log(`No habia info del bearer`);
+        return res.status(400).send('No autorizado');
+    }
+    if (!req.user.id) {
+        console.log(`no había id del usuario`);
+        return res.status(400).send('No autorizado');
+    }
+    let idUsuario = req.user.id;
+    let datosUpdatePass = {
+        viejoPassword: req.body.viejoPassword,
+        nuevoPassword: req.body.nuevoPassword,
+    };
+    //Validación
+    let erroresViejoPassword = Usuario_1.validarDatosUsuario({ password: datosUpdatePass.viejoPassword });
+    if (erroresViejoPassword.length > 0) {
+        console.log(`Error en el viejoPassword: ${erroresViejoPassword}`);
+        return res.status(400).send({ msjUsuario: erroresViejoPassword[0] });
+    }
+    let erroresNuevoPassword = Usuario_1.validarDatosUsuario({ password: datosUpdatePass.nuevoPassword });
+    if (erroresNuevoPassword.length > 0) {
+        console.log(`Error en el nuevoPassword: ${erroresNuevoPassword}`);
+        return res.status(400).send({ msjUsuario: erroresNuevoPassword[0] });
+    }
+    try {
+        var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario, "password").exec();
+        if (!elUsuario) {
+            console.log("usuario no encontrado");
+            return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
+        }
+    }
+    catch (error) {
+        console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+    }
+    const correctPass = yield bcrypt.compare(datosUpdatePass.viejoPassword, elUsuario.password);
+    if (correctPass) {
+        //Introducir nuevo password
+        const salt = yield bcrypt.genSalt(10);
+        const hashPassword = yield bcrypt.hash(datosUpdatePass.nuevoPassword, salt);
+        elUsuario.password = hashPassword;
+        try {
+            yield elUsuario.save();
+        }
+        catch (error) {
+            console.log(`Error guardando el usuario con el nuevo password. E: ${error}`);
+            return res.status(500).send({ msjUsuario: "Error conectando con el servidor. Intenta de nuevo más tarde..." });
+        }
+        res.status(200).send({ resultado: "ok", msjUsuario: "Contraseña cambiada" });
+        return;
+    }
+    else {
+        console.log(`Contraseña errada. Rechazando`);
+        return res.status(400).send({ error: "badLogin", msjUsuario: "Contraseña incorrecta" });
+    }
+}));
 router.post("/updateFoto", upload.single("nuevaFoto"), function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(`Recibida peticion de subir foto por el usuario ${req.user.username}`);
-        if (!("user" in req)) {
+        if (!req.user) {
             console.log(`No habia info del bearer`);
-            return;
+            return res.status(400).send('No autorizado');
         }
-        if (!("id" in req.user)) {
+        if (!req.user.id) {
             console.log(`no había id del usuario`);
-            return;
+            return res.status(400).send('No autorizado');
         }
         let idUsuario = req.user.id;
         try {
@@ -177,6 +244,7 @@ router.get("/fotografias/:id", function (req, res) {
 module.exports = router;
 const usuarioPassLegales = function (username, password) {
     console.log(`verificando ${username} - ${password}`);
+    console.log("el test de password da: " + charProhibidosPassword.test(password));
     if (!username || !password)
         return false;
     if (charProhibidosUsername.test(username) || charProhibidosPassword.test(password) || password.length < minPassword || username.length < minUsername)

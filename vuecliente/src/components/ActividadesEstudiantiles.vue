@@ -7,6 +7,7 @@
           v-if="usuarioProfe"
         >
           <div class="categoriaSelectores">Grupos</div>
+          <loading v-show="cargandoGruposEstudiantiles" texto="Cargando grupos..." />
           <div
             class="selectorGrupoEstudiantil selectorBarra"
             :class="{
@@ -22,8 +23,9 @@
             {{ grupo.nombre }}
           </div>
         </div>
-        <div class="selectoresActividadesByProfe paraEstudiantes" v-if="$store.state.usuario.idGrupoEstudiantil!=''">
+        <div class="selectoresActividadesByProfe paraEstudiantes" v-if="($store.state.usuario.idGrupoEstudiantil!='' && $store.state.usuario.idGrupoEstudiantil!=null)">
           <div class="categoriaSelectores">Profes</div>
+          <loading v-show="cargandoProfes" texto="Cargando profes..." />
           <div
             class="selectorActividadesProfe selectorBarra"
             :key="profe.id"
@@ -49,8 +51,10 @@
 <script>
 import gql from "graphql-tag";
 import { fragmentoResponsables } from "./utilidades/recursosGql";
+import Loading from './utilidades/Loading.vue';
 
 export default {
+  components: { Loading },
   name: "ActividadesEstudiantiles",
   apollo: {
     gruposEstudiantiles: {
@@ -62,7 +66,8 @@ export default {
           }
         }
       `,
-      update: function ({ gruposEstudiantiles }) {        
+      update: function ({ gruposEstudiantiles }) {    
+        this.cargandoGruposEstudiantiles=false;    
         return gruposEstudiantiles;
       },
     },
@@ -76,6 +81,7 @@ export default {
         ${fragmentoResponsables}
       `,
       update: function ({ usuariosProfe }) {
+        this.cargandoProfes=false;
         return usuariosProfe;
       },
     },
@@ -87,6 +93,8 @@ export default {
       idGrupoEstudiantilSeleccionado: null,
       idProfeSeleccionado: null,
       outletDeshabilitado:false,
+      cargandoGruposEstudiantiles:true,
+      cargandoProfes:true
     };
   },
   computed: {
@@ -134,14 +142,14 @@ export default {
   cursor: pointer;
 }
 .selectorSeleccionado {
-  background-color: cornsilk;
+  background-color: whitesmoke;
 }
 .selectorBarra:hover {
-  background-color: cornsilk;
+  background-color: whitesmoke;
 }
 
-#contenidosGrupos {
-  padding: 10px 30px;
+.grupoEstudiantil {
+  background-color: whitesmoke;
 }
 
 #contenidoGrupo {

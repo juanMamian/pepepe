@@ -88,23 +88,25 @@ esquemaUsuario.methods.getEdad = function (this:any) {
     let edadAños = Math.floor(edad / (60 * 60 * 24 * 365 * 1000));
     return edadAños;
 }
-esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
 
-    var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-    var charProhibidosNombre = /[^ a-zA-ZÀ-ž]/g;
-    var charProhibidosNumeroTel = /[^0-9+-]/g;
-    var emailChars = /\S+@\S+\.\S+/;
-    var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
+var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+var charProhibidosNombre = /[^ a-zA-ZÀ-žñÑ]/g;
+var charProhibidosNumeroTel = /[^0-9+-]/g;
+var emailChars = /\S+@\S+\.\S+/;
+var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
+var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
 
-
-    var errores:Array<String> = [];
+export const validarDatosUsuario = function (datosUsuario) {
+    var errores:Array<string> = [];
 
     for (let dato in datosUsuario) {
-        if (!datosUsuario[dato]) {
+
+        if(!datosUsuario[dato]){
             errores.push(`El dato ${dato} no tenia valor`);
             return errores;
         }
-        datosUsuario[dato] = datosUsuario[dato].trim();
+        
+        datosUsuario[dato]=datosUsuario[dato].trim();
 
         if (dato == "nombres") {
             if (datosUsuario.nombres.length < 2) {
@@ -162,6 +164,9 @@ esquemaUsuario.methods.validarDatosUsuario = function (datosUsuario) {
         else if (dato == "password") {
             if (datosUsuario.password.length < 6 || datosUsuario.password.length > 32) {
                 errores.push("Tu contraseña debe contener entre 6 y 32 caracteres");
+            }
+            if (charProhibidosPassword.test(datosUsuario.password)) {
+                errores.push("Tu password contiene caracteres no permitidos");
             }
         }
         else {
