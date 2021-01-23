@@ -1,6 +1,7 @@
 <template>
   <div class="actividadesDeProfe" :class="{deshabilitada:ventanaDeshabilitada}">
-    <icono-persona :estaPersona="esteProfe"></icono-persona>
+    <loading v-show="ventanaDeshabilitada"/>
+    <icono-persona v-show="!ventanaDeshabilitada" :estaPersona="esteProfe"></icono-persona>
     <div id="listaActividades" @click.self="idActividadSeleccionada=null">
       <actividad
         v-for="actividad of actividadesOrdenadas"
@@ -19,11 +20,13 @@ import gql from "graphql-tag";
 import IconoPersona from "../proyecto/IconoPersona";
 import { fragmentoActividad, fragmentoResponsables } from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
+import Loading from '../utilidades/Loading.vue';
 export default {
   name: "ActividadesDeProfe",
   components: {
     IconoPersona,
     Actividad,
+    Loading,
   },
   apollo: {
     esteProfe: {
@@ -42,28 +45,20 @@ export default {
     },
     actividades: {
       query: gql`
-        query($idProfe: ID!, $idGrupo:ID!) {
-          actividadesEstudiantilesDeProfeDeGrupo(idProfe: $idProfe, idGrupo:$idGrupo) {
+        query($idProfe: ID!) {
+          misActividadesEstudiantilesDeProfe(idProfe: $idProfe) {
             ...fragActividad
           }
         }
-        ${fragmentoResponsables}
         ${fragmentoActividad}
       `,
       variables() {
-        console.log(`Enviando la query de actividades con idProfe: ${this.$route.params.idProfe}, idGrupo: ${this.$store.state.usuario.idGrupoEstudiantil}`);
-        return { idProfe: this.$route.params.idProfe, idGrupo:this.$store.state.usuario.idGrupoEstudiantil };
+        return { idProfe: this.$route.params.idProfe };
       },
-      update: function({ actividadesEstudiantilesDeProfeDeGrupo }){
+      update: function({ misActividadesEstudiantilesDeProfe }){
         this.ventanaDeshabilitada=false;
-        return actividadesEstudiantilesDeProfeDeGrupo
-      },
-      skip(){
-        if(this.$store.state.usuario.idGrupoEstudiantil==null){
-          return true;
-        }
-        return false;
-      }
+        return misActividadesEstudiantilesDeProfe
+      },      
     },
   },
   data() {

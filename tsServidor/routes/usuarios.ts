@@ -1,11 +1,11 @@
 const multer = require("multer");
 const upload = multer();
 const router = require("express").Router();
-import { ModeloUsuario as Usuario, validarDatosUsuario} from "../model/Usuario";
+import { ModeloUsuario as Usuario, validarDatosUsuario } from "../model/Usuario";
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
-
+import sharp from "sharp"
 import { errorApi } from "../errorHandling"
 import { Request, Response } from "express";
 
@@ -23,8 +23,8 @@ interface UsuarioInterface {
 router.post("/registro", async (req: Request, res: Response) => {
     console.log("peticion de registro: " + JSON.stringify(req.body));
     let datosRegistro = req.body.usuario;
-    let camposObligatorios= ["nombres", "apellidos", "username", "password"];
-    let datosIntroducidos:any = new Object();
+    let camposObligatorios = ["nombres", "apellidos", "username", "password"];
+    let datosIntroducidos: any = new Object();
     for (let campo in datosRegistro) {
         if (!datosRegistro[campo]) {
             console.log(`campo ${campo} vacio`);
@@ -37,15 +37,15 @@ router.post("/registro", async (req: Request, res: Response) => {
     camposObligatorios.forEach((campoObligatorio) => {
         if (!datosIntroducidos[campoObligatorio]) {
             console.log(`Faltaba el campo ${campoObligatorio}`);
-            return res.status(400).send({msjUsuario: `El campo ${campoObligatorio} es necesario`});
+            return res.status(400).send({ msjUsuario: `El campo ${campoObligatorio} es necesario` });
         }
     })
 
-    let erroresDatos:Array<string>=validarDatosUsuario(datosIntroducidos);
+    let erroresDatos: Array<string> = validarDatosUsuario(datosIntroducidos);
 
-    if (erroresDatos.length>0) {        
+    if (erroresDatos.length > 0) {
         console.log(`Había errores en los datos: ${erroresDatos}`);
-        return res.status(400).send({msjUsuario:erroresDatos[0]});
+        return res.status(400).send({ msjUsuario: erroresDatos[0] });
     }
 
     try {
@@ -58,7 +58,7 @@ router.post("/registro", async (req: Request, res: Response) => {
     try {
         if (await Usuario.findOne({ username: nuevoU.username }).exec()) {
             console.log(`Error. El username ya existía`);
-            return res.status(400).send({msjUsuario: "El username ya existía"});
+            return res.status(400).send({ msjUsuario: "El username ya existía" });
         }
     }
     catch (error) {
@@ -91,28 +91,28 @@ router.post("/registro", async (req: Request, res: Response) => {
 });
 
 router.post("/login", async (req: Request, res: Response) => {
-    
-    let datosLogin={
-        username:req.body.username,
+
+    let datosLogin = {
+        username: req.body.username,
         password: req.body.password,
     }
     console.log(`LOGIN`);
-    let erroresDatos:Array<string>=validarDatosUsuario(datosLogin);
-    if (erroresDatos.length>0) {
+    let erroresDatos: Array<string> = validarDatosUsuario(datosLogin);
+    if (erroresDatos.length > 0) {
         console.log(`Errores en datos de usuario: ${erroresDatos}`);
-        return res.status(400).send({msjUsuario: erroresDatos[0]});
+        return res.status(400).send({ msjUsuario: erroresDatos[0] });
     }
 
     const username = req.body.username;
     const pass = req.body.password;
     console.log("loging " + JSON.stringify(req.body));
-    
+
     try {
         var elUsuario: any = await Usuario.findOne({ username }, "username password permisos").exec();
         if (!elUsuario) {
             console.log("usuario no encontrado");
-            return res.status(400).send({error:"badLogin", msjUsuario:"Datos incorrectos"});
-        }        
+            return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
+        }
     } catch (error) {
         console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
     }
@@ -135,45 +135,45 @@ router.post("/login", async (req: Request, res: Response) => {
     }
     else {
         console.log(`Contraseña errada. Rechazando`);
-        return res.status(400).send({error:"badLogin", msjUsuario:"Datos incorrectos"});
+        return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
     }
 });
 
 router.post("/updatePassword", async (req, res) => {
-    
+
     if (!req.user) {
         console.log(`No habia info del bearer`);
-        return res.status(400).send('No autorizado');
+        return res.status(401).send('No autorizado');
     }
     if (!req.user.id) {
-        console.log(`no había id del usuario`);        
-        return res.status(400).send('No autorizado');
+        console.log(`no había id del usuario`);
+        return res.status(401).send('No autorizado');
     }
     let idUsuario = req.user.id;
 
-    let datosUpdatePass={
-        viejoPassword:req.body.viejoPassword,
-        nuevoPassword:req.body.nuevoPassword,
+    let datosUpdatePass = {
+        viejoPassword: req.body.viejoPassword,
+        nuevoPassword: req.body.nuevoPassword,
     }
     //Validación
-    let erroresViejoPassword:Array<string>=validarDatosUsuario({password: datosUpdatePass.viejoPassword});
-    if(erroresViejoPassword.length>0){
+    let erroresViejoPassword: Array<string> = validarDatosUsuario({ password: datosUpdatePass.viejoPassword });
+    if (erroresViejoPassword.length > 0) {
         console.log(`Error en el viejoPassword: ${erroresViejoPassword}`);
-        return res.status(400).send({msjUsuario: erroresViejoPassword[0]})
+        return res.status(400).send({ msjUsuario: erroresViejoPassword[0] })
     }
-    let erroresNuevoPassword:Array<string>=validarDatosUsuario({password: datosUpdatePass.nuevoPassword});
-    if(erroresNuevoPassword.length>0){
+    let erroresNuevoPassword: Array<string> = validarDatosUsuario({ password: datosUpdatePass.nuevoPassword });
+    if (erroresNuevoPassword.length > 0) {
         console.log(`Error en el nuevoPassword: ${erroresNuevoPassword}`);
-        return res.status(400).send({msjUsuario: erroresNuevoPassword[0]})
+        return res.status(400).send({ msjUsuario: erroresNuevoPassword[0] })
     }
-   
+
 
     try {
-        var elUsuario: any = await Usuario.findById(idUsuario, "password").exec();  
+        var elUsuario: any = await Usuario.findById(idUsuario, "password").exec();
         if (!elUsuario) {
             console.log("usuario no encontrado");
-            return res.status(400).send({error:"badLogin", msjUsuario:"Datos incorrectos"});
-        }        
+            return res.status(400).send({ error: "badLogin", msjUsuario: "Datos incorrectos" });
+        }
     } catch (error) {
         console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
     }
@@ -190,16 +190,51 @@ router.post("/updatePassword", async (req, res) => {
             await elUsuario.save();
         } catch (error) {
             console.log(`Error guardando el usuario con el nuevo password. E: ${error}`);
-            return res.status(500).send({msjUsuario: "Error conectando con el servidor. Intenta de nuevo más tarde..."})
+            return res.status(500).send({ msjUsuario: "Error conectando con el servidor. Intenta de nuevo más tarde..." })
         }
 
-        res.status(200).send({resultado: "ok", msjUsuario:"Contraseña cambiada"});
+        res.status(200).send({ resultado: "ok", msjUsuario: "Contraseña cambiada" });
         return;
     }
     else {
         console.log(`Contraseña errada. Rechazando`);
-        return res.status(400).send({error:"badLogin", msjUsuario:"Contraseña incorrecta"});
+        return res.status(400).send({ error: "badLogin", msjUsuario: "Contraseña incorrecta" });
     }
+});
+
+router.post("/resetearPassUsuario", async (req, res) => {
+
+    if (!req.user) {
+        console.log(`No habia info del bearer`);
+        return res.status(401).send('No autorizado');
+    }
+    if (!req.user.permisos) {
+        console.log(`no había permisos del usuario`);
+        return res.status(401).send('No autorizado');
+    }
+
+    let idUsuario = req.user.id;
+    let idReseteado = req.body.idUsuario
+    console.log(`Usario con id ${idUsuario} solicita reseteo de pass de usuario con id ${idReseteado}`);
+
+    let permisosValidos = ["superadministrador"];
+    if (!req.user.permisos.some(p => permisosValidos.includes(p))) {
+        console.log(`Permisos ${req.user.permisos} insuficientes`);
+        return res.status(401).send({ msjUsuario: "No autorizado" })
+    }
+
+    let passDefault = "123456"
+    const salt = await bcrypt.genSalt(10);
+    const hashPassword = await bcrypt.hash(passDefault, salt);
+
+    try {
+        var elUsuario: any = await Usuario.findByIdAndUpdate({ _id: idReseteado }, { password: hashPassword }).exec();
+    } catch (error) {
+        console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+        res.status(500).send({ msjUsuario: "Error conectando con la base de datos" });
+    }
+    return res.send({ respuesta: "ok", msjUsuario: "Contraseña reseteada" })
+
 });
 
 router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res) {
@@ -208,11 +243,11 @@ router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res)
 
     if (!req.user) {
         console.log(`No habia info del bearer`);
-        return res.status(400).send('No autorizado');
+        return res.status(401).send('No autorizado');
     }
     if (!req.user.id) {
-        console.log(`no había id del usuario`);        
-        return res.status(400).send('No autorizado');
+        console.log(`no había id del usuario`);
+        return res.status(401).send('No autorizado');
     }
     let idUsuario = req.user.id;
 
@@ -224,10 +259,15 @@ router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res)
         return res.status(400).send('');
     }
 
-    console.log(`updating fotografia del usuario ${elUsuario.nombre} con id ${idUsuario}`);
-    // console.log(`info en la request: files: ${req.files}, otros: ${req.body}`);
-    elUsuario.fotografia = req.file.buffer;
-
+    try {
+        const imagenPeque=await sharp(req.file.buffer)
+        .resize({ height: 200, width: 200 })
+        .toBuffer();    
+        elUsuario.fotografia = imagenPeque;
+    } catch (error) {
+        console.log(`Error resizing imagen. E: ${error}`);
+    }
+            
     try {
         await elUsuario.save();
     }
@@ -262,88 +302,3 @@ router.get("/fotografias/:id", async function (req, res) {
 });
 
 module.exports = router;
-
-const usuarioPassLegales = function (username: string, password: string) {
-    console.log(`verificando ${username} - ${password}`);
-    console.log("el test de password da: "+charProhibidosPassword.test(password));
-    if (!username || !password) return false
-    if (charProhibidosUsername.test(username) || charProhibidosPassword.test(password) || password.length < minPassword || username.length < minUsername) return false
-    return true;
-}
-
-var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-var charProhibidosNombre = /[^ a-zA-ZÀ-ž]/g;
-var charProhibidosNumeroTel = /[^0-9+-]/g;
-var emailChars = /\S+@\S+\.\S+/;
-var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
-
-function validarDatos(datos) {
-    var errores: Array<string> = [];
-
-    if (datos.nombres) {
-        if (datos.nombres.length < 2) {
-            errores.push("Tu nombre es muy corto");
-        }
-        if (charProhibidosNombre.test(datos.nombres)) {
-            errores.push("Tu nombre contiene caracteres no permitidos");
-        }
-    }
-    if (datos.apellidos) {
-        if (datos.apellidos.length < 2) {
-            errores.push("Tu apellido es muy corto");
-        }
-        if (charProhibidosNombre.test(datos.apellidos)) {
-            errores.push("Tu apellido contiene caracteres no permitidos");
-        }
-    }
-
-    if (datos.fechaNacimiento) {
-        if (!dateChars.test(datos.fechaNacimiento)) {
-            errores.push("Tu fecha de nacimiento es incorrecta");
-        }
-    }
-
-    if (datos.email) {
-        if (datos.email.length > 0 && !emailChars.test(datos.email)) {
-            errores.push("Tu e-mail no es válido");
-        }
-    }
-
-    if (datos.numeroTel) {
-        if (charProhibidosNumeroTel.test(datos.numeroTel)) {
-            errores.push("Tu número telefónico no es válido");
-        }
-    }
-
-    if (datos.lugarResidencia) {
-        if (datos.lugarResidencia.length < 2) {
-            errores.push("Tu lugar de residencia es muy corto");
-        }
-
-        if (charProhibidos.test(datos.lugarResidencia)) {
-            errores.push(
-                "Tu lugar de residencia contiene caracteres no permitidos"
-            );
-        }
-    }
-
-    if (datos.username) {
-        if (datos.username.length < minUsername) {
-            errores.push("Tu nombre de usuario es muy corto");
-        }
-        if (charProhibidos.test(datos.username)) {
-            errores.push("Tu nombre de usuario contiene caracteres no permitidos");
-        }
-    }
-
-    if (datos.password) {
-        if (datos.password.length < minPassword || datos.password.length > 32) {
-            errores.push("Tu contraseña debe contener entre 6 y 32 caracteres");
-        }
-    }
-    if (errores.length > 0) {
-        console.log(`Errores en los campos de registro: ${errores}`);
-        return false;
-    }
-    return true;
-}

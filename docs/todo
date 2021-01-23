@@ -12,14 +12,13 @@ Reestructuracion no-urgente
 
 Funcionalidad urgente
 
-*Agregar la ñ Ñ a todos los sitios donde hay validacion de caracteres
-*Permitir cambio de contraseña.
-*Refresh de tokens de usuario si ya habia uno cuando inicia la app.
+*El cambio de fotografia de los iconosPersona
+*Refresh de tokens.
 *Verificar el tamaño de la foto que sube un usuario.
 *Un modo de que los profes sepamos que un grupo se está quedando sin actividades.
 *Subscripciones
-*loading para la lista de personas y para la lista de actividades de profe y grupo.
 *Evaluar el problema de que si un estudiante pertenece a varios grupos, va a haber errores.
+
 
 Pruebas:{
     acciones sobre elementos ya eliminados pero no notificados{

@@ -11,7 +11,7 @@
       <!-- <div class="botonNav" id="navTrabajos">Trabajos</div> -->
       <router-link
         to="/actividadesVirtuales2021"
-        v-if="usuarioLogeado==true && (($store.state.usuario.idGrupoEstudiantil!=null && $store.state.usuario.idGrupoEstudiantil.length>5)||usuarioProfe)"
+        v-if="usuarioLogeado==true"
         class="hoverGris"
       >
         <div class="botonNav" id="navActividadesVirtuales">
@@ -299,5 +299,8 @@ a:-webkit-any-link {
   padding-bottom: 5px;
   padding-right: 35px;
   min-width: 150px;
+}
+input{
+  border:1px solid black
 }
 </style>

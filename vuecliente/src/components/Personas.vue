@@ -12,6 +12,7 @@
         @click.native.right.stop.prevent="idPersonaMenuCx = persona.id"
         @click.left.native="idPersonaSeleccionada = persona.id"
         @eliminandoseDeDatabase="eliminarPersonaDeDatabase(persona.id)"
+        @reseteandoPass="resetearPassUsuario(persona.id)"
       >
       </icono-persona>
     </div>
@@ -22,8 +23,8 @@
 import gql from "graphql-tag";
 import { fragmentoResponsables } from "./utilidades/recursosGql";
 import IconoPersona from "./proyecto/IconoPersona";
-import Loading from './utilidades/Loading.vue';
-
+import Loading from "./utilidades/Loading.vue";
+import axios from "axios";
 const QUERY_PERSONAS = gql`
   query {
     todosUsuarios {
@@ -43,7 +44,7 @@ export default {
     personas: {
       query: QUERY_PERSONAS,
       update: function ({ todosUsuarios }) {
-        this.loadingPersonas=false;
+        this.loadingPersonas = false;
         return todosUsuarios;
       },
     },
@@ -53,13 +54,7 @@ export default {
       personas: [],
       idPersonaMenuCx: null,
       idPersonaSeleccionada: null,
-      opcionesEspecialesPersona: [
-        {
-          textoVisible: "Eliminar de la base de datos",
-          evento: "eliminandoseDeDatabase",
-        },
-      ],
-      loadingPersonas:true,
+      loadingPersonas: true,
     };
   },
   methods: {
@@ -98,7 +93,9 @@ export default {
                 });
                 console.log(`cache: ${cache}`);
 
-                let indexE = cache.todosUsuarios.findIndex((p) => p.id == idPersona);
+                let indexE = cache.todosUsuarios.findIndex(
+                  (p) => p.id == idPersona
+                );
                 if (indexE > -1) {
                   cache.todosUsuarios.splice(indexE, 1);
                 }
@@ -124,6 +121,42 @@ export default {
           console.log(`Error eliminando usuario: E: ${error}`);
         });
     },
+    resetearPassUsuario(idUsuario) {
+      console.log(`Evento de resetear pass de ${idUsuario}`);
+      let datos={
+        idUsuario
+      }
+      axios({
+        method: "post",
+        url: this.serverUrl + "/api/usuarios/resetearPassUsuario",
+        data: datos,
+        headers: {          
+          Authorization: "Bearer " + this.$store.state.token,
+        },
+      }).then(({data})=>{
+        console.log(`Respuesta: ${data}`);
+      }).catch((error)=>{
+        console.log(`Error reseteando password. E:${error}`);
+      })
+    },
+  },
+  computed: {
+    opcionesEspecialesPersona: function () {
+      let opciones = [];
+      if (this.usuarioSuperadministrador) {
+        opciones=opciones.concat([
+          {
+            textoVisible: "Eliminar de la base de datos",
+            evento: "eliminandoseDeDatabase",
+          },
+          {
+            textoVisible: "resetear contraseña (123456)",
+            evento: "reseteandoPass",
+          },
+        ]);
+      }
+      return opciones;
+    },
   },
 };
 </script>
@@ -137,12 +170,12 @@ export default {
   flex-flow: row wrap;
 }
 .iconoPersona {
-  margin-left: 10px;
-  margin-right: 10px;
+  margin-left: 15px;
+  margin-right: 15px;
   margin-bottom: 50px;
   border: 1px solid black;
 }
-.loading{
+.loading {
   margin: 20px auto;
 }
 </style>

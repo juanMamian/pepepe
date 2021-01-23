@@ -69,7 +69,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         actividadDeGrupoEstudiantil(idGrupo:ID!, idActividad:ID!):ActividadGrupoEstudiantil,
         actividadEstudiantil(idActividad:ID!):ActividadGrupoEstudiantil,
         actividadesEstudiantilesDeProfe(idProfe:ID!):[ActividadGrupoEstudiantil],
-        actividadesEstudiantilesDeProfeDeGrupo(idProfe:ID!, idGrupo: ID!):[ActividadGrupoEstudiantil],
+        misActividadesEstudiantilesDeProfe(idProfe:ID!):[ActividadGrupoEstudiantil],
         desarrolloUsuarioEnActividadEstudiantil(idEstudiante:ID!, idActividad:ID!):DesarrolloActividadGrupoEstudiantil,
         desarrolloEnActividadEstudiantil(idDesarrollo:ID!, idActividad:ID!):DesarrolloActividadGrupoEstudiantil,
 
@@ -266,32 +266,31 @@ exports.resolvers = {
                 return actividadesDelProfe;
             });
         },
-        actividadesEstudiantilesDeProfeDeGrupo: function (_, { idProfe, idGrupo }, contexto) {
+        misActividadesEstudiantilesDeProfe: function (_, { idProfe }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`||||||||||||||||||||||||||||||||||||||||||`);
-                console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe} para el grupo con id ${idGrupo}`);
+                console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe} para el usuario`);
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario || !credencialesUsuario.id) {
+                    console.log("No habia credenciales de usuario");
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                let idUsuario = credencialesUsuario.id;
                 try {
-                    var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
-                    if (!elGrupo) {
+                    var losGrupos = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.find({ estudiantes: idUsuario }, "actividades").exec();
+                    if (!losGrupos) {
                         throw "grupo no encontrado";
+                    }
+                    if (losGrupos.length < 1) {
+                        console.log(`Usuario no hacia parte de ningún grupo`);
+                        return [];
                     }
                 }
                 catch (error) {
                     console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                let actividadesDelProfe = elGrupo.actividades.filter(a => a.idCreador == idProfe);
-                console.log(`Habia ${actividadesDelProfe.length} actividades de este profe en este grupo`);
-                if (actividadesDelProfe.length == 0) {
-                    console.log(`Este profe no tenía actividades para este grupo. Enviando array vacío`);
-                }
-                else {
-                    for (var i = 0; i < actividadesDelProfe.length; i++) {
-                        if (!actividadesDelProfe[i].desarrollos) {
-                            actividadesDelProfe[i].desarrollos = [];
-                        }
-                    }
-                }
+                let actividadesDelProfe = losGrupos.reduce((acc, g) => { return acc.concat(g.actividades); }, []).filter(a => a.idCreador == idProfe);
                 console.log(`Enviando actividades del profe`);
                 return actividadesDelProfe;
             });

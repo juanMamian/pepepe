@@ -8,6 +8,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const multer = require("multer");
 const upload = multer();
@@ -16,6 +19,7 @@ const Usuario_1 = require("../model/Usuario");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const sharp_1 = __importDefault(require("sharp"));
 const errorHandling_1 = require("../errorHandling");
 var charProhibidosUsername = /[^a-zA-ZñÑ0-9_]/g;
 var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
@@ -132,11 +136,11 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
 router.post("/updatePassword", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.user) {
         console.log(`No habia info del bearer`);
-        return res.status(400).send('No autorizado');
+        return res.status(401).send('No autorizado');
     }
     if (!req.user.id) {
         console.log(`no había id del usuario`);
-        return res.status(400).send('No autorizado');
+        return res.status(401).send('No autorizado');
     }
     let idUsuario = req.user.id;
     let datosUpdatePass = {
@@ -185,16 +189,45 @@ router.post("/updatePassword", (req, res) => __awaiter(void 0, void 0, void 0, f
         return res.status(400).send({ error: "badLogin", msjUsuario: "Contraseña incorrecta" });
     }
 }));
+router.post("/resetearPassUsuario", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.user) {
+        console.log(`No habia info del bearer`);
+        return res.status(401).send('No autorizado');
+    }
+    if (!req.user.permisos) {
+        console.log(`no había permisos del usuario`);
+        return res.status(401).send('No autorizado');
+    }
+    let idUsuario = req.user.id;
+    let idReseteado = req.body.idUsuario;
+    console.log(`Usario con id ${idUsuario} solicita reseteo de pass de usuario con id ${idReseteado}`);
+    let permisosValidos = ["superadministrador"];
+    if (!req.user.permisos.some(p => permisosValidos.includes(p))) {
+        console.log(`Permisos ${req.user.permisos} insuficientes`);
+        return res.status(401).send({ msjUsuario: "No autorizado" });
+    }
+    let passDefault = "123456";
+    const salt = yield bcrypt.genSalt(10);
+    const hashPassword = yield bcrypt.hash(passDefault, salt);
+    try {
+        var elUsuario = yield Usuario_1.ModeloUsuario.findByIdAndUpdate({ _id: idReseteado }, { password: hashPassword }).exec();
+    }
+    catch (error) {
+        console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+        res.status(500).send({ msjUsuario: "Error conectando con la base de datos" });
+    }
+    return res.send({ respuesta: "ok", msjUsuario: "Contraseña reseteada" });
+}));
 router.post("/updateFoto", upload.single("nuevaFoto"), function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(`Recibida peticion de subir foto por el usuario ${req.user.username}`);
         if (!req.user) {
             console.log(`No habia info del bearer`);
-            return res.status(400).send('No autorizado');
+            return res.status(401).send('No autorizado');
         }
         if (!req.user.id) {
             console.log(`no había id del usuario`);
-            return res.status(400).send('No autorizado');
+            return res.status(401).send('No autorizado');
         }
         let idUsuario = req.user.id;
         try {
@@ -204,9 +237,15 @@ router.post("/updateFoto", upload.single("nuevaFoto"), function (req, res) {
             console.log(`error buscando el usuario para cambio de fotografia. e: ` + error);
             return res.status(400).send('');
         }
-        console.log(`updating fotografia del usuario ${elUsuario.nombre} con id ${idUsuario}`);
-        // console.log(`info en la request: files: ${req.files}, otros: ${req.body}`);
-        elUsuario.fotografia = req.file.buffer;
+        try {
+            const imagenPeque = yield sharp_1.default(req.file.buffer)
+                .resize({ height: 200, width: 200 })
+                .toBuffer();
+            elUsuario.fotografia = imagenPeque;
+        }
+        catch (error) {
+            console.log(`Error resizing imagen. E: ${error}`);
+        }
         try {
             yield elUsuario.save();
         }
@@ -242,77 +281,3 @@ router.get("/fotografias/:id", function (req, res) {
     });
 });
 module.exports = router;
-const usuarioPassLegales = function (username, password) {
-    console.log(`verificando ${username} - ${password}`);
-    console.log("el test de password da: " + charProhibidosPassword.test(password));
-    if (!username || !password)
-        return false;
-    if (charProhibidosUsername.test(username) || charProhibidosPassword.test(password) || password.length < minPassword || username.length < minUsername)
-        return false;
-    return true;
-};
-var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-var charProhibidosNombre = /[^ a-zA-ZÀ-ž]/g;
-var charProhibidosNumeroTel = /[^0-9+-]/g;
-var emailChars = /\S+@\S+\.\S+/;
-var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
-function validarDatos(datos) {
-    var errores = [];
-    if (datos.nombres) {
-        if (datos.nombres.length < 2) {
-            errores.push("Tu nombre es muy corto");
-        }
-        if (charProhibidosNombre.test(datos.nombres)) {
-            errores.push("Tu nombre contiene caracteres no permitidos");
-        }
-    }
-    if (datos.apellidos) {
-        if (datos.apellidos.length < 2) {
-            errores.push("Tu apellido es muy corto");
-        }
-        if (charProhibidosNombre.test(datos.apellidos)) {
-            errores.push("Tu apellido contiene caracteres no permitidos");
-        }
-    }
-    if (datos.fechaNacimiento) {
-        if (!dateChars.test(datos.fechaNacimiento)) {
-            errores.push("Tu fecha de nacimiento es incorrecta");
-        }
-    }
-    if (datos.email) {
-        if (datos.email.length > 0 && !emailChars.test(datos.email)) {
-            errores.push("Tu e-mail no es válido");
-        }
-    }
-    if (datos.numeroTel) {
-        if (charProhibidosNumeroTel.test(datos.numeroTel)) {
-            errores.push("Tu número telefónico no es válido");
-        }
-    }
-    if (datos.lugarResidencia) {
-        if (datos.lugarResidencia.length < 2) {
-            errores.push("Tu lugar de residencia es muy corto");
-        }
-        if (charProhibidos.test(datos.lugarResidencia)) {
-            errores.push("Tu lugar de residencia contiene caracteres no permitidos");
-        }
-    }
-    if (datos.username) {
-        if (datos.username.length < minUsername) {
-            errores.push("Tu nombre de usuario es muy corto");
-        }
-        if (charProhibidos.test(datos.username)) {
-            errores.push("Tu nombre de usuario contiene caracteres no permitidos");
-        }
-    }
-    if (datos.password) {
-        if (datos.password.length < minPassword || datos.password.length > 32) {
-            errores.push("Tu contraseña debe contener entre 6 y 32 caracteres");
-        }
-    }
-    if (errores.length > 0) {
-        console.log(`Errores en los campos de registro: ${errores}`);
-        return false;
-    }
-    return true;
-}

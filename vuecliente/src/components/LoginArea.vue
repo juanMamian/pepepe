@@ -1,42 +1,40 @@
 <template>
   <div id="loginArea">
     <div id="ventanaCentral">
-            <form>
-
-      <p id="tituloVentana">Iniciar sesion</p>
-      <br />
-      <input
-        type="text"
-        name="username"
-        :style="colorUsername"
-        v-model="username"
-        placeholder="Nombre de usuario"
-        class="inputs"
-        @input="loginFail = false"
-      />
-      <br />
-      <input
-        type="password"
-        name="password"
-        class="inputs"
-        :style="colorPassword"
-        v-model="password"
-        placeholder="password"
-        @keypress.enter="iniciarSesion"
-        @input="loginFail = false"
-      />
-      <br />
-      <br />
-      <loading v-show="enviandoDatos" :texto="'Conectando...'" />
-      <button
-        class="botonEnviar"
-        @click.stop.prevent="iniciarSesion"
-        :class="{ loginFail, deshabilitado: enviandoDatos }"
-      >
-        {{ loginFail ? loginFailMsg : "Conectarse" }}
-      </button>
-          </form>
-
+      <form>
+        <p id="tituloVentana">Iniciar sesion</p>
+        <br />
+        <input
+          type="text"
+          name="username"
+          :style="colorUsername"
+          v-model="username"
+          placeholder="Nombre de usuario"
+          class="inputs"
+          @input="loginFail = false"
+        />
+        <br />
+        <input
+          type="password"
+          name="password"
+          class="inputs"
+          :style="colorPassword"
+          v-model="password"
+          placeholder="password"
+          @keypress.enter="iniciarSesion"
+          @input="loginFail = false"
+        />
+        <br />
+        <br />
+        <loading v-show="enviandoDatos" :texto="'Conectando...'" />
+        <button
+          class="botonEnviar"
+          @click.stop.prevent="iniciarSesion"
+          :class="{ loginFail, deshabilitado: enviandoDatos }"
+        >
+          {{ loginFail ? loginFailMsg : "Conectarse" }}
+        </button>
+      </form>
     </div>
   </div>
 </template>

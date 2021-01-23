@@ -47,7 +47,11 @@
           @click="iniciarEdicionNombre"
         />
       </span>
-      <loading v-if="usuarioCreadorActividad" v-show="enviandoNuevoNombre" texto="Guardando nombre..."/>
+      <loading
+        v-if="usuarioCreadorActividad"
+        v-show="enviandoNuevoNombre"
+        texto="Guardando nombre..."
+      />
       <div
         id="zonaNuevoNombre"
         v-if="usuarioCreadorActividad"
@@ -305,7 +309,7 @@ export default {
       uploadingGuia: false,
       nuevoNombre: "",
       botonesNombre: false,
-      enviandoNuevoNombre:false,
+      enviandoNuevoNombre: false,
     };
   },
   props: {
@@ -328,23 +332,25 @@ export default {
       }
     },
     async guardarNombre() {
+      this.enviandoNuevoNombre = true;
       console.log(`Evento de cambio de nombre`);
       let nuevoNombre = this.nuevoNombre.trim();
       let idActividad = this.estaActividad.id;
 
       if (!this.nombreEditandose || nuevoNombre == this.estaActividad.nombre) {
         this.nombreEditandose = false;
+        this.enviandoNuevoNombre = false;
         return;
       }
       this.nombreEditandose = false;
       nuevoNombre = nuevoNombre.replace(charProhibidosNombre, "");
       nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-      this.enviandoNuevoNombre=true;
+      this.enviandoNuevoNombre = true;
       this.$apollo
         .mutate({
           mutation: gql`
             mutation($idActividad: ID!, $nuevoNombre: String!) {
-              cambiarNombreActividadEstudiantil(                
+              cambiarNombreActividadEstudiantil(
                 idActividad: $idActividad
                 nuevoNombre: $nuevoNombre
               ) {
@@ -353,17 +359,17 @@ export default {
               }
             }
           `,
-          variables: {            
+          variables: {
             idActividad,
             nuevoNombre,
           },
         })
         .then((data) => {
-          this.enviandoNuevoNombre=false;
+          this.enviandoNuevoNombre = false;
           console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
         })
         .catch((error) => {
-          this.enviandoNuevoNombre=false;
+          this.enviandoNuevoNombre = false;
           console.log(`error: ${error}`);
         });
     },

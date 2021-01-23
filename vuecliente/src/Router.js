@@ -21,7 +21,7 @@ const routes = [
         path: "/login", name: "loginArea",
         component: loginArea,
         beforeEnter: function (to, from, next) {
-            console.log(`Verificando si estaba logeado`);
+            console.log(`Verificando si estaba logeado: ${store.state.usuario.id}`);
             if (store.state.usuario.id != null) {
                 console.log(`estaba logeado`);
                 next("/miperfil");
@@ -30,8 +30,23 @@ const routes = [
                 next();
             }
         }
+
     },
-    { path: "/miperfil", name: "perfilPersonal", component: perfilPersonal },
+    {
+        path: "/miperfil",
+        name: "perfilPersonal",
+        component: perfilPersonal, 
+        beforeEnter: function (to, from, next) {
+            console.log(`Verificando si estaba logeado: ${store.state.usuario.id}`);
+            if (store.state.usuario.id != null) {
+                console.log(`estaba logeado`);
+                next();
+            }
+            else {
+                next("/login");
+            }
+        }
+    },
     { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
     { path: "/proyectos", name: "proyectos", component: Proyectos },
     { path: "/proyecto/:idProyecto", name: "verProyecto", component: Proyecto },
@@ -46,12 +61,12 @@ const routes = [
             {
                 path: 'actividadesProfes/:idProfe',
                 component: ActividadesDeProfe,
-                name:"ActividadesDeProfe"
+                name: "ActividadesDeProfe"
             }
         ]
     },
     { path: "/personas", name: "personas", component: Personas },
-    { path: "/", redirect: "/login" }
+    { path: "/", redirect: "/miPerfil" }
 ];
 
 export const router = new Router({

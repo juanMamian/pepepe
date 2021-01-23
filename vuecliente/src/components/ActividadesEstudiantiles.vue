@@ -23,7 +23,7 @@
             {{ grupo.nombre }}
           </div>
         </div>
-        <div class="selectoresActividadesByProfe paraEstudiantes" v-if="($store.state.usuario.idGrupoEstudiantil!='' && $store.state.usuario.idGrupoEstudiantil!=null)">
+        <div class="selectoresActividadesByProfe paraEstudiantes" v-if="usuarioLogeado">
           <div class="categoriaSelectores">Profes</div>
           <loading v-show="cargandoProfes" texto="Cargando profes..." />
           <div
