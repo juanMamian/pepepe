@@ -63,7 +63,7 @@ export default {
       this.$emit("eliminandose", this.esteObjetivo.id);
     },
     setNombreEditandose() {
-      if (this.esteObjetivo.nombre != this.$refs.nombre.innerHTML.trim()) {
+      if (this.esteObjetivo.nombre != this.$refs.nombre.innerText.trim()) {
         this.nombreEditandose = true;
       } else {
         this.nombreEditandose = false;
@@ -79,7 +79,7 @@ export default {
       this.$refs.descripcion.blur();
     },
     async guardarNombre() {
-      let nuevoNombre = this.$refs.nombre.innerHTML.trim();
+      let nuevoNombre = this.$refs.nombre.innerText.trim();
       let idObjetivo = this.esteObjetivo.id;
 
       if (!this.nombreEditandose || nuevoNombre == this.esteObjetivo.nombre) {
@@ -92,7 +92,7 @@ export default {
       this.$emit("cambiandoNombre", { idObjetivo, nuevoNombre });
     },
     async guardarDescripcion() {
-      let nuevaDescripcion = this.$refs.descripcion.innerHTML.trim();
+      let nuevaDescripcion = this.$refs.descripcion.innerText.trim();
       let idObjetivo = this.esteObjetivo.id;
 
       if (

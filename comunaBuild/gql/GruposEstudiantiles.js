@@ -79,7 +79,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         removeEstudianteGrupoEstudiantil(idEstudiante:ID!, idGrupo:ID!):GrupoEstudiantil,
         crearActividadEnGrupoEstudiantil(idGrupo:ID!):ActividadGrupoEstudiantil,
         eliminarActividadDeGrupoEstudiantil(idActividad:ID!, idGrupo: ID!):Boolean,
-        cambiarNombreActividadGrupoEstudiantil(idGrupo:ID!, idActividad:ID!, nuevoNombre: String):ActividadGrupoEstudiantil
+        cambiarNombreActividadEstudiantil(idActividad:ID!, nuevoNombre: String):ActividadGrupoEstudiantil
         eliminarParticipacionActividadEstudiantil(idParticipacion:ID!):Boolean,
         setEstadoDesarrolloActividadEstudiantil(idDesarrollo:ID!, nuevoEstado: String):DesarrolloActividadGrupoEstudiantil,
         setLeidoPorProfeDesarrolloEstudiantil(idDesarrollo:ID!, nuevoLeidoPorProfe:Boolean):DesarrolloActividadGrupoEstudiantil
@@ -547,10 +547,10 @@ exports.resolvers = {
                 return true;
             });
         },
-        cambiarNombreActividadGrupoEstudiantil(_, { idGrupo, idActividad, nuevoNombre }, contexto) {
+        cambiarNombreActividadEstudiantil(_, { idActividad, nuevoNombre }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`|||||||||||||||||||||||||||`);
-                console.log(`cambiando el nombre de la actividad con id ${idActividad} del grupo con id ${idGrupo}`);
+                console.log(`cambiando el nombre de la actividad con id ${idActividad}`);
                 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
                 nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
                 if (charProhibidosNombre.test(nuevoNombre)) {
@@ -558,7 +558,7 @@ exports.resolvers = {
                 }
                 nuevoNombre = nuevoNombre.trim();
                 try {
-                    var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo);
+                    var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ "actividades._id": idActividad }).exec();
                     if (!elGrupo) {
                         throw "grupo no encontrado";
                     }

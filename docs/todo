@@ -13,13 +13,13 @@ Reestructuracion no-urgente
 Funcionalidad urgente
 
 
-*Error de Aura
-*Los selectores de grupo no funcionan bien porque usan la funcion .html()
-*Boton de guardar nombre en los nombres de las actividades y otras ayudas para saber cuándo se puede guardar y cuándo ya está guardado.
 *Tamaño cambiante de la barra de navegacion para que en los moviles se vea bien.
 *Permitir actualizacion de datos de usuario incluyendo cambio de contraseña.
 *Refresh de tokens de usuario si ya habia uno cuando inicia la app.
-*Verificar el tamaño de la foto que sube un usuario
+*Verificar el tamaño de la foto que sube un usuario.
+*Responder a la necesidad: 
+*Un modo de que los profes sepamos que un grupo se está quedando sin actividades.
+*Subscripciones
 
 Pruebas:{
     acciones sobre elementos ya eliminados pero no notificados{
@@ -28,3 +28,7 @@ Pruebas:{
         personas
     }
 }
+
+
+*Error de marlon cambiando el nombre de la actividad en el celular
+*Error de Aura navegando entre los grupos estudiantiles.

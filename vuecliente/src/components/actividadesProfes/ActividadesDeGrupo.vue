@@ -91,7 +91,6 @@
               : (idActividadSeleccionada = actividad.id)
           "
           @eliminandose="eliminarActividad"
-          @cambiandoNombre="cambiarNombreActividad"
           v-show="
             (verTodasActividades == true &&
               usuarioAdministradorActividadesEstudiantiles == true) ||
@@ -332,34 +331,6 @@ export default {
         .then(() => {})
         .catch((error) => {
           console.log("error: " + error);
-        });
-    },
-    cambiarNombreActividad({ idActividad, nuevoNombre }) {
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idGrupo: ID!, $idActividad: ID!, $nuevoNombre: String!) {
-              cambiarNombreActividadGrupoEstudiantil(
-                idGrupo: $idGrupo
-                idActividad: $idActividad
-                nuevoNombre: $nuevoNombre
-              ) {
-                id
-                nombre
-              }
-            }
-          `,
-          variables: {
-            idGrupo: this.esteGrupo.id,
-            idActividad,
-            nuevoNombre,
-          },
-        })
-        .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
         });
     },
   },

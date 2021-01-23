@@ -246,16 +246,22 @@ body {
 </style>
 
 <style scoped>
+
 #app {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-rows: 40px 1fr 5px;
+  grid-template-rows: 45px 1fr 5px;
   grid-template-columns: 1fr;
   padding-left: 5px;
   padding-right: 5px;
   box-sizing: border-box;
   z-index: 0;
+}
+@media only screen and (max-width: 600px) {
+  #app {
+  grid-template-rows: 65px 1fr 5px;
+  }
 }
 #visorRouter {
   grid-column: 1/2;

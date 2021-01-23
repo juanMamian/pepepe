@@ -50,6 +50,7 @@
           </template>
           <template v-else>
             <input
+              disabled
               v-model="edicionDatosPersonales.nombres"
               type="text"
               name="nombres"
@@ -57,6 +58,7 @@
             /><br />
             <input
               v-model="edicionDatosPersonales.apellidos"
+              disabled
               type="text"
               name="apellidos"
               placeholder="Apellidos"
@@ -190,7 +192,7 @@ export default {
         fechaNacimiento: this.yo.fechaNacimiento.substr(0, 10),
       };
     },
-    edicionDatosContacto: function () {
+    edicionDatosContacto: function () {      
       return {
         lugarResidencia: this.yo.lugarResidencia,
         email: this.yo.email,
@@ -266,13 +268,20 @@ export default {
       }
     },
     enviarDatosContacto() {
+      let datosEscritos=new Object();
+      for(var dato in this.edicionDatosContacto){
+        if(this.edicionDatosContacto[dato]!=null || this.edicionDatosContacto[dato]!=undefined){
+          datosEscritos[dato]=this.edicionDatosContacto[dato];
+        }
+      }
+      
       let dis = this;
       console.log(
         `Enviando nuevos datos contacto: ${JSON.stringify(
-          this.edicionDatosContacto
+          datosEscritos
         )}`
       );
-      let errores = validarDatosUsuario(this.edicionDatosContacto);
+      let errores = validarDatosUsuario(datosEscritos);
       if (errores.length < 1) {
         this.$apollo
           .mutate({
@@ -286,7 +295,7 @@ export default {
               ${fragmentoDatosContacto}
             `,
             variables: {
-              nuevosDatos: this.edicionDatosContacto,
+              nuevosDatos: datosEscritos,
             },
           })
           .then(() => {

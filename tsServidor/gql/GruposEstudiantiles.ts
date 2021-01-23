@@ -67,7 +67,7 @@ export const typeDefs = gql`
         removeEstudianteGrupoEstudiantil(idEstudiante:ID!, idGrupo:ID!):GrupoEstudiantil,
         crearActividadEnGrupoEstudiantil(idGrupo:ID!):ActividadGrupoEstudiantil,
         eliminarActividadDeGrupoEstudiantil(idActividad:ID!, idGrupo: ID!):Boolean,
-        cambiarNombreActividadGrupoEstudiantil(idGrupo:ID!, idActividad:ID!, nuevoNombre: String):ActividadGrupoEstudiantil
+        cambiarNombreActividadEstudiantil(idActividad:ID!, nuevoNombre: String):ActividadGrupoEstudiantil
         eliminarParticipacionActividadEstudiantil(idParticipacion:ID!):Boolean,
         setEstadoDesarrolloActividadEstudiantil(idDesarrollo:ID!, nuevoEstado: String):DesarrolloActividadGrupoEstudiantil,
         setLeidoPorProfeDesarrolloEstudiantil(idDesarrollo:ID!, nuevoLeidoPorProfe:Boolean):DesarrolloActividadGrupoEstudiantil
@@ -568,9 +568,9 @@ export const resolvers = {
 
             return true;
         },
-        async cambiarNombreActividadGrupoEstudiantil(_: any, { idGrupo, idActividad, nuevoNombre }, contexto: contextoQuery) {
+        async cambiarNombreActividadEstudiantil(_: any, {idActividad, nuevoNombre }, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||||||||`);
-            console.log(`cambiando el nombre de la actividad con id ${idActividad} del grupo con id ${idGrupo}`);
+            console.log(`cambiando el nombre de la actividad con id ${idActividad}`);
             var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
@@ -581,7 +581,7 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elGrupo: any = await GrupoEstudiantil.findById(idGrupo);
+                var elGrupo: any = await GrupoEstudiantil.findOne({"actividades._id":idActividad}).exec();
                 if (!elGrupo) {
                     throw "grupo no encontrado"
                 }

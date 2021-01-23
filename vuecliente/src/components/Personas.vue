@@ -59,7 +59,7 @@ export default {
   },
   methods: {
     copiarId(e) {
-      let str = e.target.innerHTML.trim();
+      let str = e.target.innerText.trim();
       const el = document.createElement("textarea");
       el.value = str;
       document.body.appendChild(el);

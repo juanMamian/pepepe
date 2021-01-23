@@ -25,17 +25,49 @@
       :class="{ arrowDown: seleccionada }"
       @click.stop="$emit('clickTrianguloSeleccion')"
     ></div>
-    <span
-      id="nombre"
-      ref="nombre"
-      class="nombreZona"
-      :contenteditable="usuarioCreadorActividad == true && seleccionada == true"
-      @blur="guardarNombre"
-      @input="setNombreEditandose"
-      @keypress.enter="blurNombre"
+    <div
+      id="zonaNombre"
+      @mouseover="botonesNombre = true"
+      @mouseout="botonesNombre = false"
     >
-      {{ estaActividad.nombre }}
-    </span>
+      <span
+        id="nombre"
+        ref="nombre"
+        :class="{ enEdicion: nombreEditandose }"
+        class="nombreZona"
+      >
+        {{ estaActividad.nombre }}
+        <img
+          src="@/assets/iconos/editar.png"
+          v-if="usuarioCreadorActividad"
+          v-show="seleccionada"
+          alt="Editar nombre"
+          title="Editar nombre"
+          id="botonEditarNombre"
+          @click="iniciarEdicionNombre"
+        />
+      </span>
+      <loading v-if="usuarioCreadorActividad" v-show="enviandoNuevoNombre" texto="Guardando nombre..."/>
+      <div
+        id="zonaNuevoNombre"
+        v-if="usuarioCreadorActividad"
+        v-show="nombreEditandose == true && seleccionada == true"
+      >
+        <label style="font-style: italic" for="inputNuevoNombre"
+          >Nuevo nombre:
+        </label>
+        <input
+          ref="inputNuevoNombre"
+          name="inputNuevoNombre"
+          type="text"
+          class="nuevoNombreActividad"
+          v-model="nuevoNombre"
+          @keydown.esc="cancelarEdicionNombre"
+          @keypress.enter="guardarNombre"
+          @blur="guardarNombre"
+        />
+      </div>
+    </div>
     <span
       id="nombreCreador"
       v-if="usuarioAdministradorActividadesEstudiantiles == true"
@@ -271,6 +303,9 @@ export default {
       nombreEditandose: false,
       idEstudianteSeleccionado: this.$store.state.usuario.id,
       uploadingGuia: false,
+      nuevoNombre: "",
+      botonesNombre: false,
+      enviandoNuevoNombre:false,
     };
   },
   props: {
@@ -293,23 +328,59 @@ export default {
       }
     },
     async guardarNombre() {
-      let nuevoNombre = this.$refs.nombre.innerText.trim();
+      console.log(`Evento de cambio de nombre`);
+      let nuevoNombre = this.nuevoNombre.trim();
       let idActividad = this.estaActividad.id;
 
       if (!this.nombreEditandose || nuevoNombre == this.estaActividad.nombre) {
+        this.nombreEditandose = false;
         return;
       }
-
+      this.nombreEditandose = false;
       nuevoNombre = nuevoNombre.replace(charProhibidosNombre, "");
       nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-
-      this.$emit("cambiandoNombre", { idActividad, nuevoNombre });
+      this.enviandoNuevoNombre=true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idActividad: ID!, $nuevoNombre: String!) {
+              cambiarNombreActividadEstudiantil(                
+                idActividad: $idActividad
+                nuevoNombre: $nuevoNombre
+              ) {
+                id
+                nombre
+              }
+            }
+          `,
+          variables: {            
+            idActividad,
+            nuevoNombre,
+          },
+        })
+        .then((data) => {
+          this.enviandoNuevoNombre=false;
+          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
+        })
+        .catch((error) => {
+          this.enviandoNuevoNombre=false;
+          console.log(`error: ${error}`);
+        });
     },
-    setNombreEditandose() {
+    iniciarEdicionNombre() {
+      if (!this.usuarioCreadorActividad || !this.seleccionada) return;
+      console.log(`iniciando edicion de nombre`);
+      this.nuevoNombre = this.estaActividad.nombre;
       this.nombreEditandose = true;
+      this.$nextTick(() => {
+        this.$refs.inputNuevoNombre.focus();
+      });
     },
-    blurNombre(e) {
-      e.target.blur();
+    cancelarEdicionNombre() {
+      console.log(`cancelando edición de nombre`);
+
+      this.nombreEditandose = false;
+      this.$refs.inputNuevoNombre.blur();
     },
     seleccionarGuia() {
       this.$refs.inputNuevaGuia.click();
@@ -609,7 +680,25 @@ export default {
   margin-right: auto;
   display: block;
 }
-
+#botonEditarNombre {
+  width: 20px;
+  height: 20px;
+  opacity: 0.8;
+  position: absolute;
+  right: 5px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+#botonEditarNombre:hover {
+  background-color: gray;
+}
+.enEdicion {
+  color: gray;
+  pointer-events: none;
+}
+#zonaNuevoNombre {
+  text-align: center;
+}
 #controlesActividad {
   position: absolute;
   bottom: 0px;

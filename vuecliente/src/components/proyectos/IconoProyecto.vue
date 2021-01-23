@@ -56,7 +56,7 @@ export default {
   methods: {
     guardarNombre() {
       console.log(`guardando nombre`);
-      let nuevoNombre = this.$refs.nombre.innerHTML.trim();
+      let nuevoNombre = this.$refs.nombre.innerText.trim();
       let idProyecto = this.esteProyecto.id;
 
       if (!this.nombreEditandose || nuevoNombre == this.esteProyecto.nombre) {
@@ -72,7 +72,7 @@ export default {
       this.nombreEditandose = false;
     },
     setNombreEditandose() {
-      if (this.esteProyecto.nombre != this.$refs.nombre.innerHTML.trim()) {
+      if (this.esteProyecto.nombre != this.$refs.nombre.innerText.trim()) {
         this.nombreEditandose = true;
       } else {
         this.nombreEditandose = false;
