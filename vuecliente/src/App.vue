@@ -241,7 +241,7 @@ textarea{
   user-select: none;
 }
 
-a:-webkit-any-link {
+a{
   text-decoration: none;
   color: black;
 }
