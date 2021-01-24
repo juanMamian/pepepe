@@ -1,6 +1,6 @@
 <template>
   <div class="actividadesProfes">
-    <div id="vistaProfe">
+    <div id="layout">
       <div id="barraGrupos" class="barraSeleccion">
         <div
           class="selectoresActividadesByGrupo paraProfes"
@@ -149,7 +149,7 @@ export default {
 </script>
 
 <style scoped>
-#vistaProfe {
+#layout {
   width: 100%;
   height: 100%;
   display: grid;

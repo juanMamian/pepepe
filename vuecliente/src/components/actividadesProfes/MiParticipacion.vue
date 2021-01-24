@@ -196,6 +196,27 @@ export default {
 .participacionOtro {
   border: 2px solid rgb(22, 57, 73);
 }
+#titulo {
+  text-align: center;
+  grid-area: titulo;
+}
+
+#iconoMensaje {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  margin-left: 10px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  background-color: rgb(156, 204, 156);
+  border-radius: 50%;
+}
+
+
+#iconoMensaje:hover {
+  background-color: rgb(68, 129, 68);
+}
 
 #comentario {
   border-radius: 5px;
@@ -203,6 +224,7 @@ export default {
   padding: 5px 7px;
   grid-area: comentario;
   display: block;
+  font-size: 20px;
 }
 
 .comentarioPropio {
@@ -212,6 +234,20 @@ export default {
 .comentarioOtro {
   background-color: rgb(114, 207, 250);
   border: 2px solid rgb(22, 57, 73);
+}
+
+
+#imgAdjuntar {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  border-radius: 50%;
+  background-color: rgb(206, 130, 130);
+}
+#imgAdjuntar:hover {
+  background-color: indianred;
 }
 
 #imgEnviar {
@@ -226,21 +262,7 @@ export default {
 #imgEnviar:hover {
   background-color: rgb(137, 108, 199);
 }
-.miParticipacion .loading{
-  grid-area: loading;
-}
-#imgAdjuntar {
-  margin-top: 5px;
-  margin-bottom: 5px;
-  width: 50px;
-  height: 50px;
-  cursor: pointer;
-  border-radius: 50%;
-  background-color: rgb(206, 130, 130);
-}
-#imgAdjuntar:hover {
-  background-color: indianred;
-}
+
 #nombreArchivoSeleccionado{
   grid-area: adjuntar;
   opacity: 0.8;
@@ -252,20 +274,7 @@ export default {
 #nombreArchivoSeleccionado:hover{
   opacity: 1;
 }
-#iconoMensaje {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  margin-left: 10px;
-  width: 30px;
-  height: 30px;
-  cursor: pointer;
-  background-color: rgb(156, 204, 156);
-  border-radius: 50%;
-}
-#iconoMensaje:hover {
-  background-color: rgb(68, 129, 68);
-}
+
 #adjuntarArchivo {
   text-align: left;
   grid-area: adjuntar;
@@ -274,16 +283,27 @@ export default {
   text-align: center;
   grid-area: enviar;
 }
+
+@media only screen and (max-width:500px) {
+  #iconoMensaje {
+  width: 20px;
+  height: 20px;
+  }
+  #imgAdjuntar{
+    width:25px;
+    height:25px;
+  }
+}
+
 #inputArchivoAdjunto {
   display: none;
 }
-#titulo {
-  text-align: center;
-  grid-area: titulo;
 
-}
 .deshabilitado {
   opacity: 0.5;
   pointer-events: none;
+}
+.miParticipacion .loading{
+  grid-area: loading;
 }
 </style>

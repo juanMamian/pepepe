@@ -2,17 +2,6 @@
   <div id="app">
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
-      
-      <!-- <router-link to="/atlas" class="hoverNegro">
-        <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
-      </router-link> -->
-      
-      <!-- <router-link to="/proyectos" class="hoverNegro">
-        <div class="botonNav" id="navProyectos">Proyectos</div>
-      </router-link> -->
-      
-      <!-- <div class="botonNav" id="navTrabajos">Trabajos</div> -->
-      
       <router-link
         to="/actividadesVirtuales2021"
         v-if="usuarioLogeado == true"
@@ -22,6 +11,19 @@
           Actividades virtuales
         </div>
       </router-link>
+
+      <router-link to="/proyectos" class="hoverNegro disabled">
+        <div class="botonNav" id="navProyectos">Proyectos</div>
+      </router-link>
+
+      <router-link to="/atlas" class="hoverNegro disabled">
+        <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
+      </router-link>
+
+      <router-link to="/trabajos" class="hoverNegro disabled">
+        <div class="botonNav" id="navTrabajos">Trabajos</div>
+      </router-link>
+
       <router-link
         to="/personas"
         v-if="usuarioAdministrador || usuarioSuperadministrador"
@@ -178,11 +180,11 @@ body {
   height: 100vh;
   background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
     no-repeat;
-  font-family: "Brush Script MT", "Lucida Handwriting", cursive;
+  font-family: cursive;
 }
 
-textarea{
-  font-family: "Brush Script MT", "Lucida Handwriting", cursive;
+textarea {
+  font-family: cursive;
 }
 
 .botonNav {
@@ -192,8 +194,8 @@ textarea{
   cursor: pointer;
   user-select: none;
   font-size: 16px;
-  font-family:"Poppins",sans-serif;
-  color:white;
+  font-family: "Poppins", sans-serif;
+  color: white;
 }
 
 .hoverGris:hover {
@@ -243,7 +245,7 @@ textarea{
   user-select: none;
 }
 
-a{
+a {
   text-decoration: none;
   color: black;
 }
@@ -291,7 +293,11 @@ input {
   grid-row: 1/2;
   display: flex;
   z-index: 100;
-  background: linear-gradient(to right, rgb(239, 174, 74) 0%, rgb(243, 138, 58) 100%);
+  background: linear-gradient(
+    to right,
+    rgb(239, 174, 74) 0%,
+    rgb(243, 138, 58) 100%
+  );
 }
 #navLogged {
   position: relative;
@@ -304,8 +310,7 @@ input {
   position: absolute;
   right: 0;
   top: 100%;
-    background-color:rgb(243, 138, 58);
-
+  background-color: rgb(243, 138, 58);
 }
 .botonesLogeado {
   padding-top: 10px;
@@ -313,9 +318,12 @@ input {
   padding-bottom: 5px;
   padding-right: 35px;
   min-width: 150px;
-
 }
-.hoverNegro:hover{
+.hoverNegro:hover {
   background-color: rgba(0, 0, 0, 0.315);
+}
+.disabled{
+  opacity:0.8;
+  pointer-events: none;
 }
 </style>

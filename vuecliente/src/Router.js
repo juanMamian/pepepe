@@ -12,6 +12,7 @@ import Personas from "./components/Personas.vue"
 import ActividadesDeGrupo from "./components/actividadesProfes/ActividadesDeGrupo.vue"
 import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
 import store from "./store/index"
+import PortadaActividadesEstudiantiles from "./components/actividadesProfes/PortadaActividadesEstudiantiles";
 
 Vue.use(Router);
 
@@ -62,6 +63,10 @@ const routes = [
                 path: 'actividadesProfes/:idProfe',
                 component: ActividadesDeProfe,
                 name: "ActividadesDeProfe"
+            },
+            {
+                path:"",
+                component: PortadaActividadesEstudiantiles
             }
         ]
     },
