@@ -505,6 +505,7 @@ export default {
         });
     },
     eliminarParticipacion(idParticipacion, idDesarrollo) {
+      let dis=this;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -519,7 +520,8 @@ export default {
           },
         })
         .then(() => {
-          this.reloadDesarrollo(idDesarrollo);
+          dis.$emit("participacionEliminada", {idParticipacion, idDesarrollo, idActividad:this.estaActividad.id});
+          //this.reloadDesarrollo(idDesarrollo);
         })
         .catch((error) => {
           console.log("errores: " + error);
@@ -756,8 +758,8 @@ export default {
 }
 
 .iconoPersona {
-  margin-left: 5px;
-  margin-right: 5px;
+  margin-left: 25px;
+  margin-right: 25px;
   margin-bottom: 55px;
 }
 

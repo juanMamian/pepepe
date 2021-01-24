@@ -27,7 +27,7 @@
       </router-link>
       <router-link
         to="/registro"
-        class="botonNav"
+        class="botonNav hoverGris"
         id="navRegistro"
         v-if="usuarioSuperadministrador"
       >
