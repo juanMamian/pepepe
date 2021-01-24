@@ -220,7 +220,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
 
     //Guardando elGrupo
 
-    try {
+    try {        
         await elGrupo.save();
     } catch (error) {
         console.log(`Error guardando el grupo: E: ${error}`);

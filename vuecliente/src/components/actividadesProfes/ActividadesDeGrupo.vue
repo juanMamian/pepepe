@@ -47,7 +47,17 @@
           v-for="persona of esteGrupo.estudiantes"
           :seleccionado="idEstudianteSeleccionado == persona.id ? true : false"
           @click.native="idEstudianteSeleccionado = persona.id"
-        />
+        >
+          <template v-slot:alertas>
+            <img
+              v-if="esteGrupo.estudiantesIdle.some((ei) => ei.id == persona.id)"
+              id="alertaEstudianteIdle"
+              class="alertas"
+              src="@/assets/iconos/idle.png"
+              title="Estudiante desocupado"
+            />
+          </template>
+        </icono-persona>
       </div>
     </div>
 
@@ -105,6 +115,7 @@
             actividad.creador.id == $store.state.usuario.id
           "
           @participacionEliminada="eliminarParticipacionDeCache"
+          @posibleCambioEstudiantesIdle="reloadEstudiantesIdle()"
         />
       </div>
     </div>
@@ -127,6 +138,9 @@ const QUERY_GRUPO = gql`
       nombre
       estudiantes {
         ...fragResponsables
+      }
+      estudiantesIdle {
+        id
       }
       actividades {
         ...fragActividad
@@ -385,6 +399,25 @@ export default {
         data,
       });
     },
+    reloadEstudiantesIdle() {
+      console.log(`Reloading estudiantes idle`);
+      this.$apollo.query({
+        query: gql`
+          query($idGrupo: ID!) {
+            grupoEstudiantil(idGrupo: $idGrupo) {
+              id
+              estudiantesIdle {
+                id
+              }
+            }
+          }
+        `,
+        fetchPolicy:"network-only",
+        variables: {
+          idGrupo: this.$route.params.idGrupo,
+        },
+      });
+    },
   },
   beforeRouteUpdate(to, from, next) {
     console.log(`Saliendo de ${from.name} hacia ${to.name} `);
@@ -401,7 +434,13 @@ export default {
 
 <style scoped>
 .actividad {
+  margin-top: 15px;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 700px;
+  border-radius: 10px;
   box-shadow: 2px 2px 2px 2px rgb(190, 190, 190);
+
 }
 .deshabilitada {
   pointer-events: none;
@@ -465,11 +504,14 @@ export default {
   padding: 20px 50px;
 }
 
-.actividad {
-  margin-top: 15px;
-  margin-left: auto;
-  margin-right: auto;
-  max-width: 700px;
-  border-radius: 10px;
+.alertas {
+  border-radius: 50%;
+}
+#alertaEstudianteIdle {
+  background-color: rgb(255, 219, 152);
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgb(255, 115, 0);
+  border-radius: 50%;
 }
 </style>

@@ -48,6 +48,7 @@ export const typeDefs = gql`
         id:ID,
         nombre:String,        
         estudiantes:[PublicUsuario],
+        estudiantesIdle:[PublicUsuario],
         actividades:[ActividadGrupoEstudiantil]
     }
 
@@ -166,13 +167,16 @@ export const resolvers = {
 
         },
         grupoEstudiantil: async function (_: any, { idGrupo }: any, contexto: contextoQuery) {
+            console.log(`||||||||||||||||||||||`);
+            console.log(`Peticion de un grupo estudiantil con id ${idGrupo}`);
             try {
-                var elGrupoEstudiantil: any = GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupoEstudiantil: any = await GrupoEstudiantil.findById(idGrupo).exec();
                 if (!elGrupoEstudiantil) {
                     throw "grupo no encontrado"
                 }
+                elGrupoEstudiantil.calcularIdleStudents();
             } catch (error) {
-                console.log(`Error buscando el grupo con id ${idGrupo} en la base de datos`);
+                console.log(`Error buscando el grupo con id ${idGrupo} en la base de datos. E:${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
@@ -204,7 +208,10 @@ export const resolvers = {
             console.log(`Usuario logeado: ${credencialesUsuario.id}`);
 
             try {
-                var gruposEstudiantiles = await GrupoEstudiantil.find({}).exec();
+                var gruposEstudiantiles:any = await GrupoEstudiantil.find({}).exec();
+                for( var i=0; i<gruposEstudiantiles.length;i++){
+                    gruposEstudiantiles[i].calcularIdleStudents();
+                }
             }
             catch (error) {
                 console.log("Error descargando los grupos estudiantiles de la base de datos. E: " + error);
@@ -344,6 +351,7 @@ export const resolvers = {
             }
 
             try {
+                
                 await elGrupo.save();
             } catch (error) {
                 console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
@@ -404,7 +412,7 @@ export const resolvers = {
             console.log(`Usuario añadido a la lista de estudiantes`);
 
 
-            try {
+            try {                
                 await elGrupoEstudiantil.save();
             }
             catch (error) {
@@ -501,7 +509,7 @@ export const resolvers = {
             try {
                 var nuevaActividad = elGrupoEstudiantil.actividades.create({ fechaCreacion: Date.now(), idCreador: credencialesUsuario.id });
 
-                elGrupoEstudiantil.actividades.push(nuevaActividad);
+                elGrupoEstudiantil.actividades.push(nuevaActividad);                
                 await elGrupoEstudiantil.save();
             }
             catch (error) {
@@ -546,7 +554,7 @@ export const resolvers = {
                 console.log(`Actividad ${idActividad} no encontrado. E: ` + error);
                 throw new ApolloError("");
             }
-            try {
+            try {                
                 await elGrupo.save();
             }
             catch (error) {
@@ -668,7 +676,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            try {
+            try {                
                 await elGrupo.save();
             } catch (error) {
                 console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
@@ -696,6 +704,22 @@ export const resolvers = {
 
 
             return usuariosEstudiantes;
+        },
+        estudiantesIdle: async function (parent: any, _: any, __: any) {
+            if (!parent.estudiantesIdle) {
+                return [];
+            }
+            let idsEstudiantesIdle = parent.estudiantesIdle;
+
+            try {
+                var usuariosEstudiantesIdle = await Usuario.find({ _id: { $in: idsEstudiantesIdle } }).exec();
+            } catch (error) {
+                console.log(`error buscando a los estudiantesIdle del proyecto. E: ${error}`);
+                return [];
+            }
+
+
+            return usuariosEstudiantesIdle;
         },
     },
     ParticipacionActividadGrupoEstudiantil: {

@@ -154,6 +154,12 @@
               src="@/assets/iconos/mensaje.png"
               title="Nuevo mensaje"
             />
+            <img
+              v-if="desarrollo.estado == 'completado'"
+              class="alertas alertaEstudianteCompletoDesarrollo"
+              src="@/assets/iconos/success.png"
+              title="Completó esta actividad"
+            />
           </template>
         </icono-persona>
       </div>
@@ -560,7 +566,9 @@ export default {
             nuevoEstado,
           },
         })
-        .then(() => {})
+        .then(() => {
+          this.$emit("posibleCambioEstudiantesIdle");
+        })
         .catch((error) => {
           console.log(`Error: ${error}`);
         });
@@ -683,6 +691,9 @@ export default {
 }
 .alertaNuevoMensaje {
   background-color: orange;
+}
+.alertaEstudianteCompletoDesarrollo {
+  background-color: rgb(112, 161, 112);
 }
 
 #nombre {

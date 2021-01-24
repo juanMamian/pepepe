@@ -1,108 +1,108 @@
 import mongoose from "mongoose";
 
 const esquemaParticipacion = new mongoose.Schema({
-   
-    fechaUpload:{
-        type:Date
+
+    fechaUpload: {
+        type: Date
     },
-    archivo:{
+    archivo: {
         nombre: String,
-        extension:String,
-        idGoogleDrive:String,
-        googleDriveDirectLink:String,        
+        extension: String,
+        idGoogleDrive: String,
+        googleDriveDirectLink: String,
     },
-    comentario:{
-        type:String,        
+    comentario: {
+        type: String,
     },
-    idAutor:{
-        type:String,
-        required:true,
+    idAutor: {
+        type: String,
+        required: true,
     }
 
 });
 
-esquemaParticipacion.pre('validate', function (this:any) {
+esquemaParticipacion.pre('validate', function (this: any) {
     if ((this.isNew || this.isModified) && !this.archivos) {
-      this.archivos=[]
+        this.archivos = []
     }
-  });
+});
 
-  
+
 const esquemaDesarrollo = new mongoose.Schema({
-    idEstudiante:{
-        type:String,
-        required:true
+    idEstudiante: {
+        type: String,
+        required: true
     },
-    estado:{
-        type:String,
-        default:"desarrollando",
-        required:true,
+    estado: {
+        type: String,
+        default: "desarrollando",
+        required: true,
         enum: ["desarrollando", "completado"]
     },
     participaciones: {
         type: [esquemaParticipacion],
         required: true,
-        default:[]
+        default: []
     },
-    leidoPorProfe:{
-        type:Boolean,
-        required:true,
-        default:true
+    leidoPorProfe: {
+        type: Boolean,
+        required: true,
+        default: true
     }
 
 });
 
 
 const esquemaActividad = new mongoose.Schema({
-    nombre:{
-        type:String,
-        min:3,
-        max:50,
-        required:true,
-        default:"Nueva actividad"
-    },
-    desarrollos:{
-        type:[esquemaDesarrollo],
-        required:true,
-        default:[],
-    },
-    fechaUpload:{
-        type: Date,
-        default: Date.now,        
-    },
-    idCreador:{
+    nombre: {
         type: String,
-        required:true
+        min: 3,
+        max: 50,
+        required: true,
+        default: "Nueva actividad"
     },
-    guiaGoogleDrive:{
-        idArchivo:{
-            type:String,            
+    desarrollos: {
+        type: [esquemaDesarrollo],
+        required: true,
+        default: [],
+    },
+    fechaUpload: {
+        type: Date,
+        default: Date.now,
+    },
+    idCreador: {
+        type: String,
+        required: true
+    },
+    guiaGoogleDrive: {
+        idArchivo: {
+            type: String,
         },
-        enlace:{
-            type:String
+        enlace: {
+            type: String
         }
     }
 });
 
 
-esquemaActividad.pre('save', function (this:any) {    
+esquemaActividad.pre('save', function (this: any) {
     if ((this.isNew || this.isModified) && !this.desarrollo) {
-      this.desarrollo=[]
+        this.desarrollo = []
     }
-  });
+});
 
 
 const esquemaGrupoEstudiantil = new mongoose.Schema({
-    nombre:{
-        type:String,
-        min:3,
-        max:50,
-        required:true,
+    nombre: {
+        type: String,
+        min: 3,
+        max: 50,
+        required: true,
     },
     estudiantes: {
         type: [String],
         default: []
-    },
+    },    
     actividades: {
         type: [esquemaActividad],
         required: true,
@@ -111,11 +111,25 @@ const esquemaGrupoEstudiantil = new mongoose.Schema({
 
 });
 
-esquemaGrupoEstudiantil.pre('validate', function (this:any) {
+esquemaGrupoEstudiantil.pre('validate', function (this: any) {
     if ((this.isNew || this.isModified) && !this.actividades) {
-      this.actividades=[]
+        this.actividades = []
     }
-  });
+});
+
+esquemaGrupoEstudiantil.methods.calcularIdleStudents = function (this: any) {
+    console.log(`Listando estudiantes idle`);
+    let idles:Array<string>=[]
+    this.estudiantes.forEach(idEsteEstudiante => {
+        console.log(`Evaluando estudiante ${idEsteEstudiante}`);
+        //Buscando si en alguna actividad no tiene desarrollo o, si lo tiene, está incompleto
+        if (!this.actividades.some(a =>!a.desarrollos.some(d => (d.idEstudiante == idEsteEstudiante && d.estado=="completado")))){
+            console.log(`Estudiante ${idEsteEstudiante} idle`);
+            idles.push(idEsteEstudiante);
+        }
+    })
+    this.estudiantesIdle=idles;
+}
 
 
 export const ModeloGrupoEstudiantil = mongoose.model("GrupoEstudiantil", esquemaGrupoEstudiantil);

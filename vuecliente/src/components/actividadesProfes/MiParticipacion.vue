@@ -242,10 +242,12 @@ export default {
   background-color: indianred;
 }
 #nombreArchivoSeleccionado{
+  grid-area: adjuntar;
   opacity: 0.8;
   color: gray;
   font-style: italic;
   font-size: 12px;
+  word-wrap: break-word;
 }
 #nombreArchivoSeleccionado:hover{
   opacity: 1;

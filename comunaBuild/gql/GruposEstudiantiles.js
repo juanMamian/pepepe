@@ -59,6 +59,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         id:ID,
         nombre:String,        
         estudiantes:[PublicUsuario],
+        estudiantesIdle:[PublicUsuario],
         actividades:[ActividadGrupoEstudiantil]
     }
 
@@ -166,14 +167,17 @@ exports.resolvers = {
         },
         grupoEstudiantil: function (_, { idGrupo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
+                console.log(`||||||||||||||||||||||`);
+                console.log(`Peticion de un grupo estudiantil con id ${idGrupo}`);
                 try {
-                    var elGrupoEstudiantil = GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
+                    var elGrupoEstudiantil = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
                     if (!elGrupoEstudiantil) {
                         throw "grupo no encontrado";
                     }
+                    elGrupoEstudiantil.calcularIdleStudents();
                 }
                 catch (error) {
-                    console.log(`Error buscando el grupo con id ${idGrupo} en la base de datos`);
+                    console.log(`Error buscando el grupo con id ${idGrupo} en la base de datos. E:${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`enviando el grupo estudiantil`);
@@ -205,6 +209,9 @@ exports.resolvers = {
                 console.log(`Usuario logeado: ${credencialesUsuario.id}`);
                 try {
                     var gruposEstudiantiles = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.find({}).exec();
+                    for (var i = 0; i < gruposEstudiantiles.length; i++) {
+                        gruposEstudiantiles[i].calcularIdleStudents();
+                    }
                 }
                 catch (error) {
                     console.log("Error descargando los grupos estudiantiles de la base de datos. E: " + error);
@@ -662,6 +669,22 @@ exports.resolvers = {
                     return [];
                 }
                 return usuariosEstudiantes;
+            });
+        },
+        estudiantesIdle: function (parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!parent.estudiantesIdle) {
+                    return [];
+                }
+                let idsEstudiantesIdle = parent.estudiantesIdle;
+                try {
+                    var usuariosEstudiantesIdle = yield Usuario_1.ModeloUsuario.find({ _id: { $in: idsEstudiantesIdle } }).exec();
+                }
+                catch (error) {
+                    console.log(`error buscando a los estudiantesIdle del proyecto. E: ${error}`);
+                    return [];
+                }
+                return usuariosEstudiantesIdle;
             });
         },
     },

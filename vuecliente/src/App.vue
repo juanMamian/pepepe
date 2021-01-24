@@ -2,13 +2,17 @@
   <div id="app">
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
-      <router-link to="/atlas" class="hoverGris">
+      
+      <!-- <router-link to="/atlas" class="hoverGris">
         <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
-      </router-link>
-      <router-link to="/proyectos" class="hoverGris">
+      </router-link> -->
+      
+      <!-- <router-link to="/proyectos" class="hoverGris">
         <div class="botonNav" id="navProyectos">Proyectos</div>
-      </router-link>
+      </router-link> -->
+      
       <!-- <div class="botonNav" id="navTrabajos">Trabajos</div> -->
+      
       <router-link
         to="/actividadesVirtuales2021"
         v-if="usuarioLogeado == true"

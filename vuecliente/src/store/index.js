@@ -18,7 +18,7 @@ export default new Vuex.Store({
     state: {
         usuario: {
             username: null,
-            permisos: null,
+            permisos: [],
             id:null,
             idGrupoEstudiantil:null,
             nombreGrupoEstudiantil:null,

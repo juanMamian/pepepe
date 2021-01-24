@@ -170,7 +170,7 @@ export default {
 }
 .actividad {
   margin: 10px auto;
-  max-width: 500px;
+  max-width: 700px;
   box-shadow: 2px 2px 2px 2px rgb(190, 190, 190);
 }
 .deshabilitada {

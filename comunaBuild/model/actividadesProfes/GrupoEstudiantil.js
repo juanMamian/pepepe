@@ -107,4 +107,17 @@ esquemaGrupoEstudiantil.pre('validate', function () {
         this.actividades = [];
     }
 });
+esquemaGrupoEstudiantil.methods.calcularIdleStudents = function () {
+    console.log(`Listando estudiantes idle`);
+    let idles = [];
+    this.estudiantes.forEach(idEsteEstudiante => {
+        console.log(`Evaluando estudiante ${idEsteEstudiante}`);
+        //Buscando si en alguna actividad no tiene desarrollo o, si lo tiene, está incompleto
+        if (!this.actividades.some(a => !a.desarrollos.some(d => (d.idEstudiante == idEsteEstudiante && d.estado == "completado")))) {
+            console.log(`Estudiante ${idEsteEstudiante} idle`);
+            idles.push(idEsteEstudiante);
+        }
+    });
+    this.estudiantesIdle = idles;
+};
 exports.ModeloGrupoEstudiantil = mongoose_1.default.model("GrupoEstudiantil", esquemaGrupoEstudiantil);
