@@ -180,23 +180,14 @@ body {
   height: 100vh;
   background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
     no-repeat;
-  font-family: cursive;
+  font-family: "Brush Script MT", "Trebuchet MS", sans-serif;
 }
 
 textarea {
   font-family: cursive;
 }
 
-.botonNav {
-  padding-top: 13px;
-  padding-left: 15px;
-  padding-right: 15px;
-  cursor: pointer;
-  user-select: none;
-  font-size: 16px;
-  font-family: "Poppins", sans-serif;
-  color: white;
-}
+
 
 .hoverGris:hover {
   background-color: rgb(201, 201, 201);
@@ -292,7 +283,7 @@ input {
   grid-column: 1/2;
   grid-row: 1/2;
   display: flex;
-  z-index: 100;
+  z-index: 100;  
   background: linear-gradient(
     to right,
     rgb(239, 174, 74) 0%,
@@ -301,6 +292,16 @@ input {
 }
 #navLogged {
   position: relative;
+}
+.botonNav {
+  padding-top: 13px;
+  padding-left: 15px;
+  padding-right: 15px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 18px;
+  font-family: "Poppins", sans-serif;
+  color: white;
 }
 #botonesNavDerecha {
   margin-left: auto;

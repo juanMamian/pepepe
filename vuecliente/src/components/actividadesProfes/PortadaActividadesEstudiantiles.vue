@@ -36,5 +36,6 @@ export default {
     padding: 10px 20px;
     border-radius: 10px;
     text-align: center;
+    font-size: 25px;
 }
 </style>

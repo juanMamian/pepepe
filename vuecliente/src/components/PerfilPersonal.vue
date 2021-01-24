@@ -85,9 +85,9 @@
         />
 
         <template v-if="!editandoDatosContacto">
-          <div id="miResidencia">Residencia: {{ yo.lugarResidencia }}</div>
-          <div id="miEmail">Correo electrónico: {{ yo.email }}</div>
-          <div id="miTelefono">Mi número telefónico: {{ yo.numeroTel }}</div>
+          <div id="miResidencia" class="infoContacto">Residencia: {{ yo.lugarResidencia }}</div>
+          <div id="miEmail" class="infoContacto">Correo electrónico: {{ yo.email }}</div>
+          <div id="miTelefono" class="infoContacto">Mi número telefónico: {{ yo.numeroTel }}</div>
         </template>
         <template v-else>
           <input
@@ -471,6 +471,7 @@ export default {
 .perfilPersonal {
   display: grid;
   grid-template-columns: 250px 1fr;
+  font-size: 22px;
 }
 
 #categorias {
@@ -598,5 +599,8 @@ export default {
 }
 .loading {
   position: relative;
+}
+.infoContacto{
+  margin-bottom: 10px;
 }
 </style>

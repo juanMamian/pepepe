@@ -153,7 +153,7 @@ export default {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-columns: 150px 1fr;
+  grid-template-columns: 170px 1fr;
 }
 .deshabilitado {
   opacity: 0.5;
@@ -165,7 +165,7 @@ export default {
   background-color: burlywood;
 }
 .selectorBarra {
-  font-size: 18px;
+  font-size: 21px;
   padding: 10px 10px;
   cursor: pointer;
 }
