@@ -3,11 +3,11 @@
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
       
-      <!-- <router-link to="/atlas" class="hoverGris">
+      <!-- <router-link to="/atlas" class="hoverNegro">
         <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
       </router-link> -->
       
-      <!-- <router-link to="/proyectos" class="hoverGris">
+      <!-- <router-link to="/proyectos" class="hoverNegro">
         <div class="botonNav" id="navProyectos">Proyectos</div>
       </router-link> -->
       
@@ -16,7 +16,7 @@
       <router-link
         to="/actividadesVirtuales2021"
         v-if="usuarioLogeado == true"
-        class="hoverGris"
+        class="hoverNegro"
       >
         <div class="botonNav" id="navActividadesVirtuales">
           Actividades virtuales
@@ -25,13 +25,13 @@
       <router-link
         to="/personas"
         v-if="usuarioAdministrador || usuarioSuperadministrador"
-        class="hoverGris"
+        class="hoverNegro"
       >
         <div class="botonNav" id="navActividadesVirtuales">Personas</div>
       </router-link>
       <router-link
         to="/registro"
-        class="botonNav hoverGris"
+        class="botonNav hoverNegro"
         id="navRegistro"
         v-if="usuarioSuperadministrador"
       >
@@ -40,19 +40,18 @@
       <div id="botonesNavDerecha">
         <template v-if="logeado">
           <div
-            class="botonNav navLogin hoverGris"
+            class="botonNav navLogin hoverNegro"
             id="navLogged"
-            :style="[colorBlancoAccionLogeado]"
             @click="accionesLogeado = !accionesLogeado"
             @mouseleave="accionesLogeado = false"
           >
             {{ username }}
             <div id="botonesLogeado" v-if="accionesLogeado">
               <router-link to="/miperfil">
-                <div class="botonesLogeado hoverGris" id="Perfil">Perfil</div>
+                <div class="botonesLogeado hoverNegro" id="Perfil">Perfil</div>
               </router-link>
               <div
-                class="botonesLogeado hoverGris"
+                class="botonesLogeado hoverNegro"
                 id="desconexion"
                 @click="deslogeo"
               >
@@ -64,7 +63,7 @@
         <template v-else>
           <router-link
             to="/login"
-            class="botonNav navLogin hoverGris"
+            class="botonNav navLogin hoverNegro"
             id="navLogin"
           >
             <div>Login</div></router-link
@@ -187,21 +186,20 @@ textarea{
 }
 
 .botonNav {
-  padding-top: 10px;
+  padding-top: 13px;
   padding-left: 15px;
   padding-right: 15px;
   cursor: pointer;
   user-select: none;
   font-size: 16px;
-  font-family: garamond, serif;
+  font-family:"Poppins",sans-serif;
+  color:white;
 }
 
 .hoverGris:hover {
   background-color: rgb(201, 201, 201);
 }
-.router-link-active {
-  background-color: rgb(201, 201, 201);
-}
+
 .tooltip .tooltiptext {
   visibility: hidden;
   width: 120px;
@@ -249,6 +247,9 @@ a{
   text-decoration: none;
   color: black;
 }
+input {
+  border: 1px solid black;
+}
 </style>
 
 <style scoped>
@@ -267,6 +268,9 @@ a{
   #app {
     grid-template-rows: 65px 1fr 5px;
   }
+}
+.router-link-active {
+  background-color: rgba(0, 0, 0, 0.247);
 }
 #visorRouter {
   grid-column: 1/2;
@@ -287,6 +291,7 @@ a{
   grid-row: 1/2;
   display: flex;
   z-index: 100;
+  background: linear-gradient(to right, rgb(239, 174, 74) 0%, rgb(243, 138, 58) 100%);
 }
 #navLogged {
   position: relative;
@@ -299,7 +304,8 @@ a{
   position: absolute;
   right: 0;
   top: 100%;
-  background-color: white;
+    background-color:rgb(243, 138, 58);
+
 }
 .botonesLogeado {
   padding-top: 10px;
@@ -307,8 +313,9 @@ a{
   padding-bottom: 5px;
   padding-right: 35px;
   min-width: 150px;
+
 }
-input {
-  border: 1px solid black;
+.hoverNegro:hover{
+  background-color: rgba(0, 0, 0, 0.315);
 }
 </style>
