@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesEstudiantiles-profe", "actividadesEstudiantiles-administrador"];
+export const permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesEstudiantiles-profe", "actividadesEstudiantiles-administrador", "actividadesEstudiantiles-guia"];
 
 
 

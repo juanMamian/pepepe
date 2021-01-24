@@ -6,14 +6,17 @@
       participacionOtro: !participacionEstudiante,
     }"
   >
-    <div id="titulo">Responder</div>
-    <img
-      src="@/assets/iconos/mensaje.png"
-      alt="Enviar respuesta"
-      id="iconoMensaje"
-      :title="cuadroAbierto ? 'cerrar' : 'abrir'"
-      @click="abrirCerrar"
-    /><br />
+    <div id="titulo">
+      Responder
+      <img
+        src="@/assets/iconos/mensaje.png"
+        alt="Enviar respuesta"
+        id="iconoMensaje"
+        :title="cuadroAbierto ? 'cerrar' : 'abrir'"
+        @click="abrirCerrar"
+      /><br />
+    </div>
+
     <textarea
       v-model="comentario"
       :class="{
@@ -174,6 +177,16 @@ export default {
   border: 2px solid pink;
   border-radius: 10px;
   padding: 10px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 10% 1fr 10%;
+  grid-template-rows: 10% 1fr 15px 60px;
+  grid-template-areas:
+    "........ titulo ..."
+    "adjuntar comentario ..."
+    "........ loading ......"
+    "........ enviar ......."
+    ;
 }
 
 .participacionPropia {
@@ -188,6 +201,8 @@ export default {
   border-radius: 5px;
   resize: none;
   padding: 5px 7px;
+  grid-area: comentario;
+  display: block;
 }
 
 .comentarioPropio {
@@ -203,13 +218,16 @@ export default {
   width: 50px;
   height: 50px;
   cursor: pointer;
-  margin-left: auto;
-  margin-right: auto;
+
+  grid-area: enviar;
   border-radius: 50%;
   background-color: rgb(153, 130, 204);
 }
 #imgEnviar:hover {
   background-color: rgb(137, 108, 199);
+}
+.miParticipacion .loading{
+  grid-area: loading;
 }
 #imgAdjuntar {
   margin-top: 5px;
@@ -223,12 +241,22 @@ export default {
 #imgAdjuntar:hover {
   background-color: indianred;
 }
+#nombreArchivoSeleccionado{
+  opacity: 0.8;
+  color: gray;
+  font-style: italic;
+  font-size: 12px;
+}
+#nombreArchivoSeleccionado:hover{
+  opacity: 1;
+}
 #iconoMensaje {
-  margin-left: auto;
-  margin-right: auto;
-  width: 60px;
-  height: 60px;
-  display: block;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  margin-left: 10px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
   background-color: rgb(156, 204, 156);
   border-radius: 50%;
@@ -238,16 +266,19 @@ export default {
 }
 #adjuntarArchivo {
   text-align: left;
+  grid-area: adjuntar;
 }
 #enviar {
   text-align: center;
+  grid-area: enviar;
 }
 #inputArchivoAdjunto {
   display: none;
 }
 #titulo {
   text-align: center;
-  margin-bottom: 15px;
+  grid-area: titulo;
+
 }
 .deshabilitado {
   opacity: 0.5;

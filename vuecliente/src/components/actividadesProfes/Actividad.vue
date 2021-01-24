@@ -74,7 +74,10 @@
     </div>
     <span
       id="nombreCreador"
-      v-if="usuarioAdministradorActividadesEstudiantiles == true"
+      v-if="
+        usuarioAdministradorActividadesEstudiantiles == true ||
+        $store.state.usuario.permisos.includes('actividadesEstudiantiles-guia')
+      "
       >{{ estaActividad.creador.nombres }}</span
     >
     <br />
@@ -116,7 +119,9 @@
       id="zonaParticipantes"
       class="zona"
       v-if="
-        usuarioCreadorActividad || usuarioAdministradorActividadesEstudiantiles
+        usuarioCreadorActividad ||
+        usuarioAdministradorActividadesEstudiantiles ||
+        $store.state.usuario.permisos.includes('actividadesEstudiantiles-guia')
       "
       v-show="seleccionada"
     >
@@ -505,7 +510,7 @@ export default {
         });
     },
     eliminarParticipacion(idParticipacion, idDesarrollo) {
-      let dis=this;
+      let dis = this;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -520,7 +525,11 @@ export default {
           },
         })
         .then(() => {
-          dis.$emit("participacionEliminada", {idParticipacion, idDesarrollo, idActividad:this.estaActividad.id});
+          dis.$emit("participacionEliminada", {
+            idParticipacion,
+            idDesarrollo,
+            idActividad: this.estaActividad.id,
+          });
           //this.reloadDesarrollo(idDesarrollo);
         })
         .catch((error) => {
@@ -766,9 +775,7 @@ export default {
 .participacionEstudiante {
   margin-top: 15px;
 }
-.miParticipacion {
-  margin-top: 20px;
-}
+
 #triangulito {
   position: absolute;
 

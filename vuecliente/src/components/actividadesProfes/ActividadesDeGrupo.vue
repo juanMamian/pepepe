@@ -56,7 +56,12 @@
       <div id="controlesActividades" class="controlesZona">
         <div
           class="controlesActividades botonesControles hoverGris"
-          v-if="usuarioAdministradorActividadesEstudiantiles"
+          v-if="
+            usuarioAdministradorActividadesEstudiantiles ||
+            $store.state.usuario.permisos.includes(
+              'actividadesEstudiantiles-guia'
+            )
+          "
           @click="verTodasActividades = !verTodasActividades"
         >
           {{
@@ -93,7 +98,10 @@
           @eliminandose="eliminarActividad"
           v-show="
             (verTodasActividades == true &&
-              usuarioAdministradorActividadesEstudiantiles == true) ||
+              (usuarioAdministradorActividadesEstudiantiles == true ||
+                $store.state.usuario.permisos.includes(
+                  'actividadesEstudiantiles-guia'
+                ))) ||
             actividad.creador.id == $store.state.usuario.id
           "
           @participacionEliminada="eliminarParticipacionDeCache"
@@ -334,9 +342,15 @@ export default {
           console.log("error: " + error);
         });
     },
-    eliminarParticipacionDeCache({idParticipacion, idDesarrollo, idActividad}) {
-      console.log(`Eliminando participacion ${idParticipacion} del desarrollo ${idDesarrollo} de la actividad ${idActividad} de cache`);
-      let apolloProv=this.$apollo.provider.defaultClient;
+    eliminarParticipacionDeCache({
+      idParticipacion,
+      idDesarrollo,
+      idActividad,
+    }) {
+      console.log(
+        `Eliminando participacion ${idParticipacion} del desarrollo ${idDesarrollo} de la actividad ${idActividad} de cache`
+      );
+      let apolloProv = this.$apollo.provider.defaultClient;
       let data = apolloProv.readQuery({
         query: QUERY_GRUPO,
         variables: {
@@ -345,24 +359,31 @@ export default {
       });
       console.log(`data: ${JSON.stringify(data.grupoEstudiantil).length}`);
 
-      let elDesarrollo=data.grupoEstudiantil.actividades.find(a=>a.id==idActividad).desarrollos.find(d=>d.id==idDesarrollo);
-      let index=elDesarrollo.participaciones.findIndex(p=>p.id==idParticipacion);
+      let elDesarrollo = data.grupoEstudiantil.actividades
+        .find((a) => a.id == idActividad)
+        .desarrollos.find((d) => d.id == idDesarrollo);
+      let index = elDesarrollo.participaciones.findIndex(
+        (p) => p.id == idParticipacion
+      );
       elDesarrollo.participaciones.splice(index, 1);
       console.log(`data: ${JSON.stringify(data.grupoEstudiantil).length}`);
-      if(elDesarrollo.participaciones.length<1){
+      if (elDesarrollo.participaciones.length < 1) {
         console.log(`Este desarrollo se quedó sin participaciones`);
-        let laActividad=data.grupoEstudiantil.actividades.find(a=>a.id==idActividad);
-        let indexA=laActividad.desarrollos.findIndex(d=>d.id==idDesarrollo);
+        let laActividad = data.grupoEstudiantil.actividades.find(
+          (a) => a.id == idActividad
+        );
+        let indexA = laActividad.desarrollos.findIndex(
+          (d) => d.id == idDesarrollo
+        );
         laActividad.desarrollos.splice(indexA, 1);
       }
       apolloProv.writeQuery({
         query: QUERY_GRUPO,
-        variables:{
-          idGrupo: this.$route.params.idGrupo,          
+        variables: {
+          idGrupo: this.$route.params.idGrupo,
         },
-        data
-      })
-
+        data,
+      });
     },
   },
   beforeRouteUpdate(to, from, next) {
@@ -414,7 +435,7 @@ export default {
 .iconoPersona {
   margin-left: 10px;
   margin-right: 10px;
-  margin-bottom: 50px;
+  margin-bottom: 65px;
 }
 
 .zonaPrimerNivel {

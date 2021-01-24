@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloUsuario = exports.validarDatosUsuario = exports.permisosDeUsuario = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
-exports.permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesEstudiantiles-profe", "actividadesEstudiantiles-administrador"];
+exports.permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesEstudiantiles-profe", "actividadesEstudiantiles-administrador", "actividadesEstudiantiles-guia"];
 const esquemaUsuario = new mongoose_1.default.Schema({
     username: {
         type: String,

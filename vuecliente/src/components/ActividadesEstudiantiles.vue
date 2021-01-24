@@ -4,10 +4,18 @@
       <div id="barraGrupos" class="barraSeleccion">
         <div
           class="selectoresActividadesByGrupo paraProfes"
-          v-if="usuarioProfe"
+          v-if="
+            usuarioProfe ||
+            $store.state.usuario.permisos.includes(
+              'actividadesEstudiantiles-guia'
+            )
+          "
         >
           <div class="categoriaSelectores">Grupos</div>
-          <loading v-show="cargandoGruposEstudiantiles" texto="Cargando grupos..." />
+          <loading
+            v-show="cargandoGruposEstudiantiles"
+            texto="Cargando grupos..."
+          />
           <div
             class="selectorGrupoEstudiantil selectorBarra"
             :class="{
@@ -23,7 +31,10 @@
             {{ grupo.nombre }}
           </div>
         </div>
-        <div class="selectoresActividadesByProfe paraEstudiantes" v-if="usuarioLogeado">
+        <div
+          class="selectoresActividadesByProfe paraEstudiantes"
+          v-if="usuarioLogeado"
+        >
           <div class="categoriaSelectores">Profes</div>
           <loading v-show="cargandoProfes" texto="Cargando profes..." />
           <div
@@ -51,7 +62,7 @@
 <script>
 import gql from "graphql-tag";
 import { fragmentoResponsables } from "./utilidades/recursosGql";
-import Loading from './utilidades/Loading.vue';
+import Loading from "./utilidades/Loading.vue";
 
 export default {
   components: { Loading },
@@ -66,8 +77,8 @@ export default {
           }
         }
       `,
-      update: function ({ gruposEstudiantiles }) {    
-        this.cargandoGruposEstudiantiles=false;    
+      update: function ({ gruposEstudiantiles }) {
+        this.cargandoGruposEstudiantiles = false;
         return gruposEstudiantiles;
       },
     },
@@ -81,20 +92,19 @@ export default {
         ${fragmentoResponsables}
       `,
       update: function ({ usuariosProfe }) {
-        this.cargandoProfes=false;
+        this.cargandoProfes = false;
         return usuariosProfe;
       },
     },
   },
   data() {
-
     return {
       gruposEstudiantiles: [],
       idGrupoEstudiantilSeleccionado: null,
       idProfeSeleccionado: null,
-      outletDeshabilitado:false,
-      cargandoGruposEstudiantiles:true,
-      cargandoProfes:true
+      outletDeshabilitado: false,
+      cargandoGruposEstudiantiles: true,
+      cargandoProfes: true,
     };
   },
   computed: {
@@ -112,11 +122,10 @@ export default {
     abrirActividadesProfe(id) {
       this.$router.push("/actividadesVirtuales2021/actividadesProfes/" + id);
     },
-    navegacionCompleta(){
+    navegacionCompleta() {
       console.log(`Navacion completada`);
-    }
+    },
   },
-  
 };
 </script>
 
@@ -127,7 +136,7 @@ export default {
   display: grid;
   grid-template-columns: 150px 1fr;
 }
-.deshabilitado{
+.deshabilitado {
   opacity: 0.5;
   user-select: none;
   pointer-events: none;
