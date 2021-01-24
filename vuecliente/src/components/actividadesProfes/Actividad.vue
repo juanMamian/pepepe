@@ -645,7 +645,6 @@ export default {
   padding: 5px 10px;
   position: relative;
   border-radius: 10px;
-  font-family: "Noto Sans", Sans-Serif;
 }
 .actividad:not(.seleccionada) {
   cursor: pointer;
@@ -759,6 +758,7 @@ export default {
 .iconoPersona {
   margin-left: 5px;
   margin-right: 5px;
+  margin-bottom: 55px;
 }
 
 .participacionEstudiante {

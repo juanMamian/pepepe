@@ -35,7 +35,7 @@
         usuarioSuperadministrador
       "
     >
-      <div class="controlesParticipacion hoverGris" @click="eliminarse">
+      <div id="bEliminarParticipacion" class="controlesParticipacion hoverGris" @click="eliminarse">
         Eliminar
       </div>
     </div>
@@ -149,5 +149,8 @@ export default {
 }
 .controlesParticipacion {
   cursor: pointer;
+}
+#bEliminarParticipacion:hover{
+  background-color: red;
 }
 </style>

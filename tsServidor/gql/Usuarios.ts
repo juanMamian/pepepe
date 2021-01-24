@@ -1,5 +1,5 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
-import { ModeloUsuario as Usuario, permisosDeUsuario } from "../model/Usuario"
+import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario } from "../model/Usuario"
 import { GraphQLDateTime } from "graphql-iso-date";
 import {ModeloGrupoEstudiantil as GrupoEstudiantil} from "../model/actividadesProfes/GrupoEstudiantil";
 
@@ -154,7 +154,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            let errores: Array<string> = elUsuario.validarDatosUsuario(nuevosDatos);
+            let errores: Array<string> = validarDatosUsuario(nuevosDatos);
 
             if (errores.length > 0) {
                 console.log(`Error validando datos: ${errores}`);

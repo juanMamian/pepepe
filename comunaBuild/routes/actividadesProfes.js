@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const multer = require("multer");
-const upload = multer({ limits: { fileSize: 5000000 } });
+const upload = multer({ limits: { fileSize: 7000000 } });
 const router = require("express").Router();
 const Usuario_1 = require("../model/Usuario");
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
@@ -25,6 +25,7 @@ const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
 const utilidades_1 = require("./utilidades");
 const streamifier_1 = __importDefault(require("streamifier"));
+const sharp_1 = __importDefault(require("sharp"));
 router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err, req, res, next) {
     console.log(`Errores: <<${err.message}>>`);
     let mensaje = "Archivo no permitido";
@@ -52,7 +53,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         if ("file" in req) {
             console.log(`Participacion con archivo adjunto`);
             console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
-            let tiposDeArchivoPermitidos = ["application/pdf", "image/png", "image/jpg, image/jpeg"];
+            let tiposDeArchivoPermitidos = ["application/pdf", "image/png", "image/jpg", "image/jpeg"];
             if (!tiposDeArchivoPermitidos.includes(req.file.mimetype)) {
                 console.log(`Se intentó subir un archivo que no estaba permitido. era ${req.file.mimetype}`);
                 return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
@@ -134,6 +135,18 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
         //Guardando el archivo
         if ("file" in req) {
+            //resize
+            let archivoFinal = req.file.buffer;
+            if ((req.file.mimetype == "image/png" || req.file.mimetype == "image/jpg" || req.file.mimetype == "image/jpeg") && req.file.size > 2000000) {
+                try {
+                    let imgPeque = yield sharp_1.default(req.file.buffer).resize({ width: 800 }).toBuffer();
+                    archivoFinal = imgPeque;
+                }
+                catch (error) {
+                    console.log(`Error resizing image. E: ${error}`);
+                    return res.status(500).send("Error guardando el archivo");
+                }
+            }
             let idCarpetaEvidencias = "1DJR9u-rv7_jQweBMUesurZpmIPT-8MpO";
             try {
                 yield utilidades_1.jwToken.authorize();
@@ -148,7 +161,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             };
             var media = {
                 mimeType: req.file.mimetype,
-                body: streamifier_1.default.createReadStream(req.file.buffer)
+                body: streamifier_1.default.createReadStream(archivoFinal)
             };
             try {
                 let respuesta = yield utilidades_1.drive.files.create({

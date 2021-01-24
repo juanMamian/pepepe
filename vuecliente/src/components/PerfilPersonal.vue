@@ -109,7 +109,11 @@
         </template>
       </div>
 
-      <div v-if="usuarioProfe" class="contenidos editables" id="informacionPassword">
+      <div
+        v-if="usuarioProfe"
+        class="contenidos editables"
+        id="informacionPassword"
+      >
         <div class="zonaBotonEditar">
           Cambiar contraseña
           <img
@@ -126,49 +130,46 @@
         </div>
 
         <template v-if="!editandoDatosPassword"> </template>
-          <form id="zonaInputsNuevoPassword" v-else>
-            <label for="viejoPassword">Escribe tu contraseña actual: </label>
-            <input
-              v-model="edicionDatosPassword.viejoPassword"
-              name="viejoPassword"
-              type="password"
-              placeholder="Contraseña actual"
-              class="inputsNuevoPassword"
-            />
-            <label for="nuevoPassword">Escribe tu nueva contraseña: </label>
-            <input
-              name="nuevoPassword"
-              v-model="edicionDatosPassword.nuevoPassword"
-              type="password"
-              placeholder="Nueva contraseña"
-              class="inputsNuevoPassword"
-              @input="compararNuevoPassConfirmacion"
-            />
-            <label for="nuevoPasswordConfirmacion"
-              >Confirma tu nueva contraseña:
-            </label>
-            <input
-              name="nuevoPasswordConfirmacion"
-              v-model="edicionDatosPassword.nuevoPasswordConfirmacion"
-              type="password"
-              placeholder="Nueva contraseña"
-              class="inputsNuevoPassword"
-              :class="{ enRojo: !nuevoPasswordConfirmado }"
-              @input="compararNuevoPassConfirmacion"
-            />
-            <button
-              :disabled="!nuevoPasswordConfirmado"
-              @click.prevent="enviarDatosPassword"
-            >
-              Enviar
-            </button>
-            <div
-              id="resultadoEdicionPassword"
-              v-show="resultadoEdicionPassword"
-            >
-              {{ this.resultadoEdicionPassword }}
-            </div>
-          </form>
+        <form id="zonaInputsNuevoPassword" v-else>
+          <label for="viejoPassword">Escribe tu contraseña actual: </label>
+          <input
+            v-model="edicionDatosPassword.viejoPassword"
+            name="viejoPassword"
+            type="password"
+            placeholder="Contraseña actual"
+            class="inputsNuevoPassword"
+          />
+          <label for="nuevoPassword">Escribe tu nueva contraseña: </label>
+          <input
+            name="nuevoPassword"
+            v-model="edicionDatosPassword.nuevoPassword"
+            type="password"
+            placeholder="Nueva contraseña"
+            class="inputsNuevoPassword"
+            @input="compararNuevoPassConfirmacion"
+          />
+          <label for="nuevoPasswordConfirmacion"
+            >Confirma tu nueva contraseña:
+          </label>
+          <input
+            name="nuevoPasswordConfirmacion"
+            v-model="edicionDatosPassword.nuevoPasswordConfirmacion"
+            type="password"
+            placeholder="Nueva contraseña"
+            class="inputsNuevoPassword"
+            :class="{ enRojo: !nuevoPasswordConfirmado }"
+            @input="compararNuevoPassConfirmacion"
+          />
+          <button
+            :disabled="!nuevoPasswordConfirmado"
+            @click.prevent="enviarDatosPassword"
+          >
+            Enviar
+          </button>
+          <div id="resultadoEdicionPassword" v-show="resultadoEdicionPassword">
+            {{ this.resultadoEdicionPassword }}
+          </div>
+        </form>
         <loading v-show="enviandoDatosPassword" texto="Enviando..." />
       </div>
     </div>
@@ -345,9 +346,11 @@ export default {
     enviarDatosContacto() {
       let datosEscritos = new Object();
       for (var dato in this.edicionDatosContacto) {
+        console.log(`${dato} vale ${this.edicionDatosContacto[dato]}`);
         if (
-          this.edicionDatosContacto[dato] != null ||
-          this.edicionDatosContacto[dato] != undefined
+          this.edicionDatosContacto[dato] != null &&
+          this.edicionDatosContacto[dato] != undefined &&
+          this.edicionDatosContacto[dato] != ""
         ) {
           datosEscritos[dato] = this.edicionDatosContacto[dato];
         }

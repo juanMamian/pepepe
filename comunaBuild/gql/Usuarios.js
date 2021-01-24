@@ -158,7 +158,7 @@ exports.resolvers = {
                     console.log("Error buscando el usuario en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                let errores = elUsuario.validarDatosUsuario(nuevosDatos);
+                let errores = Usuario_1.validarDatosUsuario(nuevosDatos);
                 if (errores.length > 0) {
                     console.log(`Error validando datos: ${errores}`);
                     throw new apollo_server_express_1.ApolloError("Datos invalidos");

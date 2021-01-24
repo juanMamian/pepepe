@@ -11,7 +11,7 @@
       <!-- <div class="botonNav" id="navTrabajos">Trabajos</div> -->
       <router-link
         to="/actividadesVirtuales2021"
-        v-if="usuarioLogeado==true"
+        v-if="usuarioLogeado == true"
         class="hoverGris"
       >
         <div class="botonNav" id="navActividadesVirtuales">
@@ -40,7 +40,7 @@
             id="navLogged"
             :style="[colorBlancoAccionLogeado]"
             @click="accionesLogeado = !accionesLogeado"
-            @mouseleave="accionesLogeado=false"
+            @mouseleave="accionesLogeado = false"
           >
             {{ username }}
             <div id="botonesLogeado" v-if="accionesLogeado">
@@ -119,7 +119,7 @@ export default {
         };
       }
       return {};
-    },    
+    },
   },
   methods: {
     deslogeo() {
@@ -175,6 +175,11 @@ body {
   height: 100vh;
   background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
     no-repeat;
+  font-family: "Brush Script MT", "Lucida Handwriting", cursive;
+}
+
+textarea{
+  font-family: "Brush Script MT", "Lucida Handwriting", cursive;
 }
 
 .botonNav {
@@ -184,7 +189,7 @@ body {
   cursor: pointer;
   user-select: none;
   font-size: 16px;
-  font-family: Avenir, helvetica;
+  font-family: garamond, serif;
 }
 
 .hoverGris:hover {
@@ -238,12 +243,11 @@ body {
 
 a:-webkit-any-link {
   text-decoration: none;
-  color:black
+  color: black;
 }
 </style>
 
 <style scoped>
-
 #app {
   width: 100%;
   height: 100%;
@@ -257,7 +261,7 @@ a:-webkit-any-link {
 }
 @media only screen and (max-width: 600px) {
   #app {
-  grid-template-rows: 65px 1fr 5px;
+    grid-template-rows: 65px 1fr 5px;
   }
 }
 #visorRouter {
@@ -300,7 +304,7 @@ a:-webkit-any-link {
   padding-right: 35px;
   min-width: 150px;
 }
-input{
-  border:1px solid black
+input {
+  border: 1px solid black;
 }
 </style>

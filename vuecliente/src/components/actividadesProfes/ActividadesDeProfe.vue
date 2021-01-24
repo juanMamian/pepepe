@@ -111,7 +111,7 @@ export default {
   margin-top: 30px;
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 60px;
+  margin-bottom: 80px;
 }
 .loading{
   top:10%;

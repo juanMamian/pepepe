@@ -239,7 +239,7 @@ router.post("/updateFoto", upload.single("nuevaFoto"), function (req, res) {
         }
         try {
             const imagenPeque = yield sharp_1.default(req.file.buffer)
-                .resize({ height: 200, width: 200 })
+                .resize({ width: 600 })
                 .toBuffer();
             elUsuario.fotografia = imagenPeque;
         }
