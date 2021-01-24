@@ -2,13 +2,19 @@
   <div class="iconoPersona" :class="{ yo: soyYo, seleccionado: seleccionado }">
     <img
       id="fotografia"
-      :src="this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id"
+      :src="
+        fotografiaEnabled
+          ? this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id
+          : this.serverUrl + '/api/usuarios/fotografias/-1'
+      "
       alt=""
     />
     <div id="contenedorAlertas">
       <slot name="alertas"></slot>
     </div>
-    <div id="nombres">{{ estaPersona.nombres }}</div>
+    <div class="nombres" :class="{ nombreSeleccionado: seleccionado }">
+      {{ estaPersona.nombres }}
+    </div>
     <div id="menuCxPersona" v-show="menuContextual">
       <div class="botonMenuCx" @click.stop="copiarId">{{ estaPersona.id }}</div>
       <div
@@ -55,10 +61,14 @@ export default {
     opcionesMenuCx: {
       type: Array,
     },
+    fotografiaEnabled: {
+      type: Boolean,
+      default: true,
+    },
   },
   computed: {
     soyYo() {
-      if (this.mounted && this.estaPersona && this.$store.state.usuario) {        
+      if (this.mounted && this.estaPersona && this.$store.state.usuario) {
         return this.$store.state.usuario.id == this.estaPersona.id
           ? true
           : false;
@@ -118,9 +128,11 @@ export default {
   user-select: none;
   width: 70px;
   height: 70px;
+  border: 1px solid transparent;
+
 }
-.iconoPersona:hover{
-  background-color: rgb(218, 218, 218);
+.iconoPersona:hover {
+  border-color:purple;
 }
 
 #fotografia {
@@ -130,7 +142,10 @@ export default {
   position: absolute;
   pointer-events: none;
 }
-#contenedorAlertas{
+.seleccionado {
+  border-color: purple;
+}
+#contenedorAlertas {
   position: absolute;
   top: 0;
   right: 0;
@@ -139,16 +154,23 @@ export default {
   border: 1px solid purple;
 }
 
-#nombres {
+.nombres {
+  background-color: rgb(243, 216, 204);
   position: absolute;
   top: 105%;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
+  border: 1px solid rgb(105, 24, 24);
+  padding: 3px 5px;
+  border-radius: 5px;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
-.seleccionado {
-  border: 2px solid black;
+.nombreSeleccionado {
+  background-color: rgb(241, 175, 147);
 }
+
 .botonMenuCx {
   cursor: pointer;
   font-size: 14px;

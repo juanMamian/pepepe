@@ -1,7 +1,7 @@
 <template>
   <div class="actividadesDeProfe" :class="{deshabilitada:ventanaDeshabilitada}">
     <loading v-show="ventanaDeshabilitada"/>
-    <icono-persona v-show="!ventanaDeshabilitada" :estaPersona="esteProfe"></icono-persona>
+    <icono-persona :fotografiaEnabled="fotoProfeVisible" v-show="!ventanaDeshabilitada" :estaPersona="esteProfe"></icono-persona>
     <div id="listaActividades" @click.self="idActividadSeleccionada=null">
       <actividad
         v-for="actividad of actividadesOrdenadas"
@@ -66,6 +66,7 @@ export default {
       idActividadSeleccionada: null,
       actividades:[],
       ventanaDeshabilitada:true,
+      fotoProfeVisible:true,
     };
   },
   computed:{
@@ -85,6 +86,8 @@ export default {
     console.log(`Saliendo de ${from.name} hacia ${to.name} `);
     if(from.name=="ActividadesDeGrupo" || from.name=="ActividadesDeProfe"){
       this.ventanaDeshabilitada=true;
+      this.fotoProfeVisible=false;
+      this.esteProfe.nombre="Profe";
     }
     next();
   },    
@@ -92,6 +95,9 @@ export default {
 </script>
 
 <style scoped>
+.actividadesDeProfe{
+  position:relative
+}
 .actividad{
   margin: 10px auto;
   max-width: 500px;
@@ -106,5 +112,11 @@ export default {
   margin-left: auto;
   margin-right: auto;
   margin-bottom: 60px;
+}
+.loading{
+  top:10%;
+  left: 50%;
+  transform: translate(-50% ,-50%);
+  position: absolute;
 }
 </style>

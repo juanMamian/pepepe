@@ -1,5 +1,5 @@
 const multer = require("multer");
-const upload = multer({ limits: { fileSize: 5000000 } });
+const upload = multer({ limits: { fileSize: 7000000 } });
 const router = require("express").Router();
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil"
@@ -13,6 +13,7 @@ import { drive, jwToken } from "./utilidades"
 import { errorApi } from "../errorHandling"
 import { Request, Response } from "express";
 import streamifier from "streamifier";
+import sharp from "sharp";
 //Google Drive
 
 
@@ -42,15 +43,15 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
 
     var charProhibidosComentario = /[^ a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/g;
     var comentario = req.body.comentario;
-    if(charProhibidosComentario.test(comentario)){
-        return res.status(400).send({msjUsuario: "El comentario contenía caracteres no válidos"});
+    if (charProhibidosComentario.test(comentario)) {
+        return res.status(400).send({ msjUsuario: "El comentario contenía caracteres no válidos" });
     }
 
     var extensionDeArchivo = "";
     if ("file" in req) {
         console.log(`Participacion con archivo adjunto`);
         console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
-        let tiposDeArchivoPermitidos = ["application/pdf", "image/png", "image/jpg, image/jpeg"];
+        let tiposDeArchivoPermitidos = ["application/pdf", "image/png", "image/jpg", "image/jpeg"];
 
         if (!tiposDeArchivoPermitidos.includes(req.file.mimetype)) {
             console.log(`Se intentó subir un archivo que no estaba permitido. era ${req.file.mimetype}`);
@@ -81,8 +82,8 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     }
 
     try {
-        var elUsuario:any = await Usuario.findById(idUsuario, "username nombres apellidos id").exec();
-        var nombreApellidoUsuario=elUsuario.nombres+" "+elUsuario.apellidos;
+        var elUsuario: any = await Usuario.findById(idUsuario, "username nombres apellidos id").exec();
+        var nombreApellidoUsuario = elUsuario.nombres + " " + elUsuario.apellidos;
     }
     catch (error) {
         console.log(`error buscando el usuario para publicar respuesta. e: ` + error);
@@ -131,14 +132,14 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             console.log(`Este desarrollo estaba marcado como completado.`);
             throw new Error("El desarrollo ya esta completado");
         }
-        
+
         var laParticipacion = elDesarrollo.participaciones.create(nuevaParticipacion);
         var idParticipacion = laParticipacion._id;
         laParticipacion.archivo.nombre = idParticipacion;
 
-        if(elDesarrollo.idEstudiante==laParticipacion.idAutor){
+        if (elDesarrollo.idEstudiante == laParticipacion.idAutor) {
             console.log(`Modificado por el propio estudiante`);
-            elDesarrollo.leidoPorProfe=false;
+            elDesarrollo.leidoPorProfe = false;
         }
 
 
@@ -149,6 +150,19 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
 
     //Guardando el archivo
     if ("file" in req) {
+
+        //resize
+        let archivoFinal = req.file.buffer;
+        if ((req.file.mimetype == "image/png" || req.file.mimetype == "image/jpg" || req.file.mimetype == "image/jpeg") && req.file.size > 2000000) {
+            try {
+                let imgPeque = await sharp(req.file.buffer).resize({ width: 800 }).toBuffer();
+                archivoFinal = imgPeque;
+            } catch (error) {
+                console.log(`Error resizing image. E: ${error}`);
+                return res.status(500).send("Error guardando el archivo");
+            }
+        }
+
         let idCarpetaEvidencias = "1DJR9u-rv7_jQweBMUesurZpmIPT-8MpO";
         try {
             await jwToken.authorize();
@@ -159,12 +173,12 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
 
         var fileMetadata = {
-            'name': laActividad.nombre+'-'+ nombreApellidoUsuario+ '.' + laParticipacion.archivo.extension,
+            'name': laActividad.nombre + '-' + nombreApellidoUsuario + '.' + laParticipacion.archivo.extension,
             parents: [idCarpetaEvidencias],
         };
         var media = {
             mimeType: req.file.mimetype,
-            body: streamifier.createReadStream(req.file.buffer)
+            body: streamifier.createReadStream(archivoFinal)
         };
 
         try {
@@ -249,7 +263,7 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
     }
 
     try {
-        var elUsuario:any = await Usuario.findById(idUsuario, "username nombres apellidos id").exec();
+        var elUsuario: any = await Usuario.findById(idUsuario, "username nombres apellidos id").exec();
     }
     catch (error) {
         console.log(`error buscando el usuario para cambio de guia. e: ` + error);
@@ -278,7 +292,7 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
     }
 
     var fileMetadata = {
-        name: nombreActividad+'-Guia.pdf',
+        name: nombreActividad + '-Guia.pdf',
         parents: [idCarpetaGuias],
     };
     var media = {

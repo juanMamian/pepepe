@@ -713,7 +713,7 @@ export default {
   margin-left: 5px;
   vertical-align: middle;
   margin-top: 5px;
-  margin-bottom: 5px;
+  margin-bottom: 55px;
 }
 .personaPosibleResponsable{
   opacity: 0.5;

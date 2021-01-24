@@ -753,6 +753,7 @@ export default {
 #listaParticipantes {
   display: flex;
   padding-bottom: 40px;
+  flex-flow: row wrap;
 }
 
 .iconoPersona {

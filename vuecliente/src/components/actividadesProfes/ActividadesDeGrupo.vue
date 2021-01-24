@@ -168,7 +168,7 @@ export default {
     },
     actividadesOrdenadas: function () {
       let lasActividades = this.esteGrupo.actividades;
-      lasActividades.sort((a, b) => {        
+      lasActividades.sort((a, b) => {
         return new Date(b.fechaUpload) - new Date(a.fechaUpload);
       });
       return lasActividades;
@@ -339,7 +339,7 @@ export default {
     if (
       from.name == "ActividadesDeGrupo" ||
       from.name == "ActividadesDeProfe"
-    ) {
+    ) {      
       this.ventanaDeshabilitada = true;
     }
     next();
@@ -377,11 +377,13 @@ export default {
   padding-top: 10px;
   padding-bottom: 40px;
   display: flex;
+  flex-flow: row wrap;
 }
 
 .iconoPersona {
   margin-left: 10px;
   margin-right: 10px;
+  margin-bottom: 50px
 }
 
 .zonaPrimerNivel {

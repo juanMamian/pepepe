@@ -170,10 +170,9 @@ export default {
   flex-flow: row wrap;
 }
 .iconoPersona {
-  margin-left: 15px;
-  margin-right: 15px;
-  margin-bottom: 50px;
-  border: 1px solid black;
+  margin-left: 25px;
+  margin-right: 25px;
+  margin-bottom: 60px;
 }
 .loading {
   margin: 20px auto;
