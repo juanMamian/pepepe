@@ -4,8 +4,7 @@
     :class="{ deshabilitada: ventanaDeshabilitada }"
   >
     <loading v-show="ventanaDeshabilitada" />
-    <icono-persona
-      :fotografiaEnabled="fotoProfeVisible"
+    <icono-persona      
       v-show="!ventanaDeshabilitada"
       :estaPersona="esteProfe"
     ></icono-persona>
@@ -87,8 +86,7 @@ export default {
     return {
       idActividadSeleccionada: null,
       actividades: [],
-      ventanaDeshabilitada: true,
-      fotoProfeVisible: true,
+      ventanaDeshabilitada: true,      
     };
   },
   computed: {
@@ -155,8 +153,7 @@ export default {
       from.name == "ActividadesDeGrupo" ||
       from.name == "ActividadesDeProfe"
     ) {
-      this.ventanaDeshabilitada = true;
-      this.fotoProfeVisible = false;
+      this.ventanaDeshabilitada = true;      
       this.esteProfe.nombre = "Profe";
     }
     next();

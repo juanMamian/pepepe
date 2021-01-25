@@ -1,12 +1,10 @@
 <template>
   <div class="iconoPersona" :class="{ yo: soyYo, seleccionado: seleccionado }">
     <img
-      id="fotografia"
-      :src="
-        fotografiaEnabled
-          ? this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id
-          : this.serverUrl + '/api/usuarios/fotografias/-1'
-      "
+      class="fotografia"
+      :src="this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id"
+      v-show="fotografiaEnabled"
+      @load="fotografiaEnabled=true"
       alt=""
     />
     <div id="contenedorAlertas">
@@ -63,7 +61,7 @@ export default {
     },
     fotografiaEnabled: {
       type: Boolean,
-      default: true,
+      default: false,
     },
   },
   computed: {
@@ -113,10 +111,16 @@ export default {
       document.execCommand("copy");
       document.body.removeChild(el);
     },
+    fotografiaCargada(){
+      console.log(`Fotografía cargada`);
+    }
   },
   mounted() {
     this.mounted = true;
   },
+  beforeRouteUpdate() {
+    console.log(`Before update`);
+  }
 };
 </script>
 
@@ -135,7 +139,7 @@ export default {
   border-color:purple;
 }
 
-#fotografia {
+.fotografia {
   width: 100%;
   height: 100%;
   border-radius: 50%;
