@@ -180,7 +180,7 @@ body {
   height: 100vh;
   background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
     no-repeat;
-  font-family: "Brush Script MT", "Trebuchet MS", sans-serif;
+  font-family: cursive;
 }
 
 textarea {
