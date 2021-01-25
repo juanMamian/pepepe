@@ -110,7 +110,7 @@
       </div>
 
       <div
-        v-if="usuarioProfe"
+        v-if="usuarioLogeado"
         class="contenidos editables"
         id="informacionPassword"
       >
