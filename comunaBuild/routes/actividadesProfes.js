@@ -44,7 +44,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
         let idUsuario = req.user.id;
         console.log(`Recibida peticion de subir respuesta por el usuario ${req.user.username}`);
-        var charProhibidosComentario = /[^ a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/g;
+        var charProhibidosComentario = /[^\n a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/g;
         var comentario = req.body.comentario;
         if (charProhibidosComentario.test(comentario)) {
             return res.status(400).send({ msjUsuario: "El comentario contenía caracteres no válidos" });

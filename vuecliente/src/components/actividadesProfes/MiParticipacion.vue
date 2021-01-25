@@ -68,7 +68,7 @@
 import axios from "axios";
 import Loading from "../utilidades/Loading.vue";
 
-var charProhibidosComentario = /[^ a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/g;
+var charProhibidosComentario = /[^\n a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/g;
 
 export default {
   name: "MiParticipacion",
@@ -104,7 +104,7 @@ export default {
       let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
       var datos = new FormData();
       var comentario = this.comentario.trim();
-      comentario = comentario.replace(charProhibidosComentario, "");
+      comentario = comentario.replace(charProhibidosComentario, " ");
 
       if (comentario == "") {
         alert("¡Tu mensaje está vacío!");

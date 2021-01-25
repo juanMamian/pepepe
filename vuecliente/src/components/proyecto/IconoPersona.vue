@@ -42,7 +42,7 @@ import gql from "graphql-tag";
 export default {
   name: "IconoPersona",
   data() {
-    return { nuevoPermiso: null, mounted: false };
+    return { nuevoPermiso: null, mounted: false, fotografiaEnabled:false };
   },
   props: {
     estaPersona: {
@@ -59,10 +59,7 @@ export default {
     opcionesMenuCx: {
       type: Array,
     },
-    fotografiaEnabled: {
-      type: Boolean,
-      default: false,
-    },
+    
   },
   computed: {
     soyYo() {
