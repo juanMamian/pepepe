@@ -4,7 +4,7 @@
     :class="{ deshabilitada: ventanaDeshabilitada }"
   >
     <loading v-show="ventanaDeshabilitada" />
-    <icono-persona      
+    <icono-persona
       v-show="!ventanaDeshabilitada"
       :estaPersona="esteProfe"
     ></icono-persona>
@@ -36,6 +36,7 @@ import IconoPersona from "../proyecto/IconoPersona";
 import {
   fragmentoActividad,
   fragmentoResponsables,
+  fragmentoParticipacion,
 } from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 import Loading from "../utilidades/Loading.vue";
@@ -80,13 +81,77 @@ export default {
         this.ventanaDeshabilitada = false;
         return misActividadesEstudiantilesDeProfe;
       },
+      fetchPolicy:"cache-and-network",
+      subscribeToMore: {
+        document: gql`
+          subscription($idProfe: ID) {
+            nuevaRespuestaDesarrolloEstudiantil(idProfe: $idProfe) {
+              idDesarrollo
+              participacion {
+                ...fragParticipacion
+              }
+            }
+          }
+          ${fragmentoParticipacion}
+        `,
+        variables() {
+          return {
+            idProfe: this.$route.params.idProfe,
+          };
+        },
+        updateQuery: (previousResult, { subscriptionData: { data } }) => {
+          console.log(`Subscription response de nueva respuesta`);
+          
+          let indexActividad = previousResult.misActividadesEstudiantilesDeProfe.findIndex(
+            (a) =>
+              a.desarrollos.some(
+                (d) =>
+                  d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
+              )
+          );
+          if (indexActividad > -1) {
+            console.log(
+              `En ${previousResult.misActividadesEstudiantilesDeProfe[indexActividad].nombre}`
+            );
+            let elDesarrollo = previousResult.misActividadesEstudiantilesDeProfe[
+              indexActividad
+            ].desarrollos.find(
+              (d) =>
+                d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
+            );
+
+            if (!elDesarrollo) {
+              console.log(`El desarrollo no estaba en estaba actividad`);
+            } else {
+              //Verificar si esta respuesta no ha llegado de algún otro lado.
+              if (
+                !elDesarrollo.participaciones.some(
+                  (p) =>
+                    p.id ==
+                    data.nuevaRespuestaDesarrolloEstudiantil.participacion.id
+                )
+              ) {
+                elDesarrollo.participaciones.push(
+                  data.nuevaRespuestaDesarrolloEstudiantil.participacion
+                );
+              }
+            }
+          } else {
+            console.log(
+              `Subscription response no encontró actividad que tuviera ese desarrollo`
+            );
+          }
+
+          return previousResult;
+        },
+      },
     },
   },
   data() {
     return {
       idActividadSeleccionada: null,
       actividades: [],
-      ventanaDeshabilitada: true,      
+      ventanaDeshabilitada: true,
     };
   },
   computed: {
@@ -115,10 +180,14 @@ export default {
       let data = apolloProv.readQuery({
         query: QUERY_MIS_ACTIVIDADES_PROFE,
         variables: {
-          idProfe: this.$route.params.idProfe
+          idProfe: this.$route.params.idProfe,
         },
       });
-      console.log(`data: ${JSON.stringify(data.misActividadesEstudiantilesDeProfe).length}`);
+      console.log(
+        `data: ${
+          JSON.stringify(data.misActividadesEstudiantilesDeProfe).length
+        }`
+      );
 
       let elDesarrollo = data.misActividadesEstudiantilesDeProfe
         .find((a) => a.id == idActividad)
@@ -127,7 +196,11 @@ export default {
         (p) => p.id == idParticipacion
       );
       elDesarrollo.participaciones.splice(index, 1);
-      console.log(`data: ${JSON.stringify(data.misActividadesEstudiantilesDeProfe).length}`);
+      console.log(
+        `data: ${
+          JSON.stringify(data.misActividadesEstudiantilesDeProfe).length
+        }`
+      );
       if (elDesarrollo.participaciones.length < 1) {
         console.log(`Este desarrollo se quedó sin participaciones`);
         let laActividad = data.misActividadesEstudiantilesDeProfe.find(
@@ -141,7 +214,7 @@ export default {
       apolloProv.writeQuery({
         query: QUERY_MIS_ACTIVIDADES_PROFE,
         variables: {
-          idProfe: this.$route.params.idProfe
+          idProfe: this.$route.params.idProfe,
         },
         data,
       });
@@ -153,7 +226,7 @@ export default {
       from.name == "ActividadesDeGrupo" ||
       from.name == "ActividadesDeProfe"
     ) {
-      this.ventanaDeshabilitada = true;      
+      this.ventanaDeshabilitada = true;
       this.esteProfe.nombre = "Profe";
     }
     next();
