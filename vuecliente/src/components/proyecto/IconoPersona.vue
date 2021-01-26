@@ -15,6 +15,7 @@
     </div>
     <div id="menuCxPersona" v-show="menuContextual">
       <div class="botonMenuCx" @click.stop="copiarId">{{ estaPersona.id }}</div>
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador">{{ estaPersona.username }}</div>
       <div
         class="infoMenuCx"
         :key="index"
