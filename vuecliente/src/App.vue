@@ -257,7 +257,7 @@ input {
   box-sizing: border-box;
   z-index: 0;
 }
-@media only screen and (max-width: 600px) {
+@media only screen and (max-width: 1150px) {
   #app {
     grid-template-rows: 65px 1fr 5px;
   }
