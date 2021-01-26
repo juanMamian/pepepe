@@ -224,7 +224,7 @@ export default {
   padding: 5px 7px;
   grid-area: comentario;
   display: block;
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .comentarioPropio {

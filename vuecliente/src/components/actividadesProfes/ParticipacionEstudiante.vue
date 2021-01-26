@@ -117,6 +117,7 @@ export default {
   margin-left: auto;
   max-width: auto;
   min-height: 100px;
+  font-size:18px;
 }
 
 .comentarioPropio {
