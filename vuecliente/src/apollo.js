@@ -20,6 +20,10 @@ export const serverUrl=process.env.NODE_ENV === 'production'
 ? 'https://pe-pe-pe.herokuapp.com'
 : 'http://localhost:3000'
 
+export const wsServerUrl=process.env.NODE_ENV === 'production'
+? 'wss://'+serverUrl.substr(7)+'/subscripciones'
+: 'ws://'+serverUrl.substr(7)+'/subscripciones'
+
 console.log(`Server url: ${serverUrl}`);
 
 
@@ -30,7 +34,7 @@ const httpLink = createHttpLink({
 console.log(`Direccion subscripciones ${'ws://'+serverUrl.substr(7)+'/subscripciones'}`);
 
 const wsLink = new WebSocketLink({
-  uri: 'ws://'+serverUrl.substr(7)+'/subscripciones',
+  uri: wsServerUrl,
   options: {
     reconnect: true,
     connectionParams: {
