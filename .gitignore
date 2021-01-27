@@ -11,3 +11,4 @@ tsServidor/archivosDeUsuario/evidencias/*
 credencialesServicioGoogleDrive.json
 pruebaApiDrive.js
 
+migrarActividades.js

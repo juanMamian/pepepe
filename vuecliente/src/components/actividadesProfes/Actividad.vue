@@ -76,7 +76,10 @@
       id="nombreCreador"
       v-if="
         usuarioAdministradorActividadesEstudiantiles == true ||
-        $store.state.usuario.permisos.includes('actividadesEstudiantiles-guia')
+        $store.state.usuario.permisos.includes(
+          'actividadesEstudiantiles-guia'
+        ) ||
+        $store.state.usuario.permisos.includes('actividadesEstudiantiles-profe')
       "
       >{{ estaActividad.creador.nombres }}</span
     >
@@ -121,7 +124,8 @@
       v-if="
         usuarioCreadorActividad ||
         usuarioAdministradorActividadesEstudiantiles ||
-        $store.state.usuario.permisos.includes('actividadesEstudiantiles-guia')
+        $store.state.usuario.permisos.includes('actividadesEstudiantiles-guia') ||
+        $store.state.usuario.permisos.includes('actividadesEstudiantiles-profe')
       "
       v-show="seleccionada"
     >
@@ -218,7 +222,7 @@
             :participacionEstudiante="
               desarrollo.estudiante.id == $store.state.usuario.id
             "
-            v-if="desarrollo.estado != 'completado'"
+            v-if="desarrollo.estado != 'completado' && (usuarioCreadorActividad || desarrollo.estudiante.id == $store.state.usuario.id )"
             @reloadDesarrollo="reloadDesarrollo(desarrollo.id)"
           />
           <div v-if="usuarioCreadorActividad" id="toggleDesarrolloCompletado">
@@ -391,7 +395,6 @@ export default {
       });
     },
     cancelarEdicionNombre() {
-
       this.nombreEditandose = false;
       this.$refs.inputNuevoNombre.blur();
     },
@@ -479,8 +482,7 @@ export default {
             idActividad,
           },
         })
-        .then(() => {
-        })
+        .then(() => {})
         .catch((error) => {
           console.log(
             `Error en query de actualizacion de mi desarrollo. E: ${error}`
@@ -532,7 +534,6 @@ export default {
         });
     },
     toggleDesarrolloCompletado(idDesarrollo, actualEstado) {
-      
       let nuevoEstado =
         actualEstado == "completado" ? "desarrollando" : "completado";
       this.$apollo
@@ -565,7 +566,7 @@ export default {
         let idDesarrollo = this.estaActividad.desarrollos.find(
           (d) => d.estudiante.id == idEstudiante
         ).id;
-       
+
         this.$apollo.mutate({
           mutation: gql`
             mutation($idDesarrollo: ID!) {
@@ -591,7 +592,6 @@ export default {
     },
     usuarioTieneDesarrollo: function () {
       if (this.estaActividad.desarrollos.length < 1) {
-
         return false;
       }
       return this.estaActividad.desarrollos.some(

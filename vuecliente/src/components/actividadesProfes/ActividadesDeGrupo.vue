@@ -70,6 +70,9 @@
             usuarioAdministradorActividadesEstudiantiles ||
             $store.state.usuario.permisos.includes(
               'actividadesEstudiantiles-guia'
+            ) ||
+            $store.state.usuario.permisos.includes(
+              'actividadesEstudiantiles-profe'
             )
           "
           @click="verTodasActividades = !verTodasActividades"
@@ -111,6 +114,9 @@
               (usuarioAdministradorActividadesEstudiantiles == true ||
                 $store.state.usuario.permisos.includes(
                   'actividadesEstudiantiles-guia'
+                ) ||
+                $store.state.usuario.permisos.includes(
+                  'actividadesEstudiantiles-profe'
                 ))) ||
             actividad.creador.id == $store.state.usuario.id
           "
@@ -164,7 +170,7 @@ export default {
         this.ventanaDeshabilitada = false;
         return grupoEstudiantil;
       },
-      fetchPolicy:"cache-and-network",
+      fetchPolicy: "cache-and-network",
       subscribeToMore: {
         document: gql`
           subscription($idGrupo: ID) {
