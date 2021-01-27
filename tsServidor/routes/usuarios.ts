@@ -260,8 +260,11 @@ router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res)
     }
 
     try {
-        const imagenPeque=await sharp(req.file.buffer)
-        .resize({width: 600 })
+        const imagen=await sharp(req.file.buffer);
+
+        const imagenPeque=await imagen
+        .resize({width: 300, height:300, options:{fit:"outside"} })
+        .rotate()
         .toBuffer();    
         elUsuario.fotografia = imagenPeque;
     } catch (error) {

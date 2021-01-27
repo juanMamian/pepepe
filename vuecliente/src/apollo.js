@@ -24,14 +24,14 @@ export const wsServerUrl=process.env.NODE_ENV === 'production'
 ? 'wss://'+serverUrl.substr(7)+'/subscripciones'
 : 'ws://'+serverUrl.substr(7)+'/subscripciones'
 
-console.log(`Server url: ${serverUrl}`);
+//console.log(`Server url: ${serverUrl}`);
 
 
 const httpLink = createHttpLink({
   uri: serverUrl+"/graphql"
 });
 
-console.log(`Direccion subscripciones ${'ws://'+serverUrl.substr(7)+'/subscripciones'}`);
+//console.log(`Direccion subscripciones ${wsServerUrl}`);
 
 const wsLink = new WebSocketLink({
   uri: wsServerUrl,
