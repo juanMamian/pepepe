@@ -102,7 +102,7 @@ const esquemaGrupoEstudiantil = new mongoose.Schema({
     estudiantes: {
         type: [String],
         default: []
-    },    
+    },
     actividades: {
         type: [esquemaActividad],
         required: true,
@@ -118,17 +118,17 @@ esquemaGrupoEstudiantil.pre('validate', function (this: any) {
 });
 
 esquemaGrupoEstudiantil.methods.calcularIdleStudents = function (this: any) {
-    console.log(`Listando estudiantes idle`);
-    let idles:Array<string>=[]
+
+    let idles: Array<string> = []
     this.estudiantes.forEach(idEsteEstudiante => {
-        console.log(`Evaluando estudiante ${idEsteEstudiante}`);
+
         //Buscando si en alguna actividad no tiene desarrollo o, si lo tiene, está incompleto
-        if (!this.actividades.some(a =>!a.desarrollos.some(d => (d.idEstudiante == idEsteEstudiante && d.estado=="completado")))){
-            console.log(`Estudiante ${idEsteEstudiante} idle`);
+        if (!this.actividades.some(a => !a.desarrollos.some(d => (d.idEstudiante == idEsteEstudiante && d.estado == "completado")))) {
+
             idles.push(idEsteEstudiante);
         }
     })
-    this.estudiantesIdle=idles;
+    this.estudiantesIdle = idles;
 }
 
 

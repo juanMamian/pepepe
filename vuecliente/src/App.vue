@@ -97,6 +97,24 @@ function parseJwt(token) {
 
 export default {
   name: "App",
+  // apollo: {
+  //   $subscribe: {
+  //     tags: {
+  //       query: gql`
+  //         subscription {
+  //           nuevaRespuestaDesarrolloEstudiantil {
+  //             idDesarrollo
+              
+  //           }
+  //         }
+          
+  //       `,
+  //       result({ data }) {
+  //         this.tags = data.tags;
+  //       },
+  //     },
+  //   },
+  // },
   components: {},
   data() {
     return {
@@ -187,8 +205,6 @@ body {
 textarea {
   font-family: 'Varela Round', sans-serif;
 }
-
-
 
 .hoverGris:hover {
   background-color: rgb(201, 201, 201);
@@ -284,7 +300,7 @@ input {
   grid-column: 1/2;
   grid-row: 1/2;
   display: flex;
-  z-index: 100;  
+  z-index: 100;
   background: linear-gradient(
     to right,
     rgb(239, 174, 74) 0%,
@@ -324,8 +340,8 @@ input {
 .hoverNegro:hover {
   background-color: rgba(0, 0, 0, 0.315);
 }
-.disabled{
-  opacity:0.8;
+.disabled {
+  opacity: 0.8;
   pointer-events: none;
 }
 </style>

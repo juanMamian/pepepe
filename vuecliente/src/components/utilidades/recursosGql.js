@@ -12,16 +12,9 @@ fragment fragResponsables on PublicUsuario {
 }
 `;
 
-export const fragmentoDesarrollo = gql`
-fragment fragDesarrollo on DesarrolloActividadGrupoEstudiantil{
-  id
-    estado
-    leidoPorProfe
-    estudiante {
-      ...fragResponsables
-    }
-    participaciones {
-      id
+export const fragmentoParticipacion = gql`
+  fragment fragParticipacion on ParticipacionActividadGrupoEstudiantil{
+    id
       fechaUpload
       archivo {
         extension
@@ -32,9 +25,23 @@ fragment fragDesarrollo on DesarrolloActividadGrupoEstudiantil{
       autor {
         ...fragResponsables
       }
+  }
+  ${fragmentoResponsables}
+`
+
+export const fragmentoDesarrollo = gql`
+fragment fragDesarrollo on DesarrolloActividadGrupoEstudiantil{
+  id
+    estado
+    leidoPorProfe
+    estudiante {
+      ...fragResponsables
+    }
+    participaciones {
+      ...fragParticipacion
     }
 }
-${fragmentoResponsables}
+${fragmentoParticipacion}
 `;
 
 export const fragmentoActividad = gql`
@@ -50,6 +57,5 @@ fragment fragActividad on ActividadGrupoEstudiantil {
     ...fragDesarrollo 
   }
 }
-${fragmentoResponsables}
 ${fragmentoDesarrollo}
 `;

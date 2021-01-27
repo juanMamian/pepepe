@@ -1,4 +1,4 @@
-import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
+import { ApolloError, AuthenticationError, gql, withFilter } from "apollo-server-express";
 import fs from "fs";
 import util from "util";
 import mongoose from "mongoose";
@@ -7,11 +7,24 @@ import { ModeloUsuario as Usuario } from "../model/Usuario";
 import path from "path"
 import { contextoQuery } from "./tsObjetos"
 import { drive, jwToken } from "../routes/utilidades"
-import { createCipher } from "crypto";
+
 
 const access = util.promisify(fs.access);
 
+interface interfacePayloadNuevaRespuesta{
+        nuevaRespuestaDesarrolloEstudiantil: any,
+        idEstudianteDesarrollo: string,
+        idDesarrollo: string,
+        idCreadorActividad:string,
+        idGrupo: string
+}
+
 export const typeDefs = gql`
+
+    type InfoParticipacionEnDesarrolloEstudiantil{        
+        idDesarrollo:ID,
+        participacion:ParticipacionActividadGrupoEstudiantil,
+    }
 
     type InfoArchivo{
         nombre: String,
@@ -75,20 +88,64 @@ export const typeDefs = gql`
         setLeidoPorProfeDesarrolloEstudiantil(idDesarrollo:ID!, nuevoLeidoPorProfe:Boolean):DesarrolloActividadGrupoEstudiantil
     }
 
-    type Subscription{
-        nuevaActividadEstudiantil:ActividadGrupoEstudiantil!,
-        eliminadaParticipacionActividadEstudiantil:ID!
+    type Subscription{        
+        nuevaRespuestaDesarrolloEstudiantil(idGrupo:ID, idProfe: ID):InfoParticipacionEnDesarrolloEstudiantil
     }
 `;
 
-const NUEVA_ACTIVIDAD = "nueva_actividad_estudiantil"
+export const NUEVA_PARTICIPACION_ESTUDIANTIL = "nueva_participacion_estudiantil"
 
 export const resolvers = {
     Subscription: {
-        nuevaActividadEstudiantil: {
-            subscribe: (_: any, args: any, contexto) => {
-                return contexto.pubsub.asyncIterator([NUEVA_ACTIVIDAD]);
-            }
+        nuevaRespuestaDesarrolloEstudiantil: {
+            subscribe: withFilter(
+                (_: any, { idGrupo, idProfe }: any, contexto: contextoQuery) => {
+                    console.log(`--------------------------Creando una subscripción de ${contexto.usuario.username}`);
+                    if (idGrupo) {
+                        console.log(`A nuevas respuestas en el grupo ${idGrupo}`);
+                    }
+                    if (idProfe) {
+                        console.log(`A nuevas respuestas del profe ${idProfe}`);
+                    }
+
+                    return contexto.pubsub.asyncIterator(NUEVA_PARTICIPACION_ESTUDIANTIL)
+                },
+                (payloadNuevaRespuesta:interfacePayloadNuevaRespuesta, variables, contexto: contextoQuery) => {
+                                        
+                    //Si la respuesta ocurre en un profe distinto al target de la subscricpion
+                    if (variables.idProfe) {
+                        if (payloadNuevaRespuesta.idCreadorActividad != variables.idProfe) {
+                            return false
+                        }
+                    }
+                    //Si la respuesta ocurre en un grupo distinto al target de la subscricpion
+                    if (variables.idGrupo) {
+                        if (variables.idGrupo != payloadNuevaRespuesta.idGrupo) {
+                            return false
+                        }
+                    }
+
+                    //El usuario es el mismo que publicó la respuesta. No se le notifica, se maneja en el cliente con cache de apollo-vue
+                    if(payloadNuevaRespuesta.nuevaRespuestaDesarrolloEstudiantil.participacion.idAutor==contexto.usuario.id){
+                        return false;
+                    }
+
+                    let permisosAmplios = [
+                        "actividadesEstudiantiles-profe",
+                        "actividadesEstudiantiles-administrador", 
+                        "actividadesEstudiantiles-guia"
+                    ];
+
+                    //Si no hace parte de los permisos amplios, es un estudiante. Solo tiene acceso a respuestas publicadas en sus propios desarrollos
+                    if(!contexto.usuario.permisos.some(p=>permisosAmplios.includes(p))){
+                        if(payloadNuevaRespuesta.idEstudianteDesarrollo!=contexto.usuario.id){
+                            return false
+                        }
+                    }
+                    console.log(`Notificando a ${contexto.usuario.username}`);
+                    return true;
+                }
+            )
         }
     },
     Query: {
@@ -208,8 +265,8 @@ export const resolvers = {
             console.log(`Usuario logeado: ${credencialesUsuario.id}`);
 
             try {
-                var gruposEstudiantiles:any = await GrupoEstudiantil.find({}).exec();
-                for( var i=0; i<gruposEstudiantiles.length;i++){
+                var gruposEstudiantiles: any = await GrupoEstudiantil.find({}).exec();
+                for (var i = 0; i < gruposEstudiantiles.length; i++) {
                     gruposEstudiantiles[i].calcularIdleStudents();
                 }
             }
@@ -272,16 +329,16 @@ export const resolvers = {
             if (!credencialesUsuario || !credencialesUsuario.id) {
                 console.log("No habia credenciales de usuario")
                 throw new AuthenticationError("No autorizado");
-            }            
+            }
 
-            let idUsuario=credencialesUsuario.id;
+            let idUsuario = credencialesUsuario.id;
 
             try {
-                var losGrupos: any = await GrupoEstudiantil.find({estudiantes:idUsuario}, "actividades").exec();
+                var losGrupos: any = await GrupoEstudiantil.find({ estudiantes: idUsuario }, "actividades").exec();
                 if (!losGrupos) {
                     throw "grupo no encontrado"
                 }
-                if(losGrupos.length<1){
+                if (losGrupos.length < 1) {
                     console.log(`Usuario no hacia parte de ningún grupo`);
                     return [];
                 }
@@ -290,7 +347,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             let actividadesDelProfe = losGrupos.reduce((acc, g) => { return acc.concat(g.actividades) }, []).filter(a => a.idCreador == idProfe);
-            
+
             console.log(`Enviando actividades del profe`);
 
             return actividadesDelProfe;
@@ -306,10 +363,7 @@ export const resolvers = {
                     throw "grupo no encontrado"
                 }
                 else {
-                    console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
-
                     let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d => d._id == idDesarrollo));
-                    console.log(`Actividad: ${laActividad.nombre}`);
                     var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                     elDesarrollo.leidoPorProfe = nuevoLeidoPorProfe;
                 }
@@ -324,8 +378,8 @@ export const resolvers = {
                 console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+            console.log(`Set leido ok`);
 
-            console.log(`Leido por profe de desarrollo cambiado`);
             return elDesarrollo;
 
         },
@@ -351,7 +405,7 @@ export const resolvers = {
             }
 
             try {
-                
+
                 await elGrupo.save();
             } catch (error) {
                 console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
@@ -412,7 +466,7 @@ export const resolvers = {
             console.log(`Usuario añadido a la lista de estudiantes`);
 
 
-            try {                
+            try {
                 await elGrupoEstudiantil.save();
             }
             catch (error) {
@@ -509,7 +563,7 @@ export const resolvers = {
             try {
                 var nuevaActividad = elGrupoEstudiantil.actividades.create({ fechaCreacion: Date.now(), idCreador: credencialesUsuario.id });
 
-                elGrupoEstudiantil.actividades.push(nuevaActividad);                
+                elGrupoEstudiantil.actividades.push(nuevaActividad);
                 await elGrupoEstudiantil.save();
             }
             catch (error) {
@@ -517,7 +571,6 @@ export const resolvers = {
                 throw new ApolloError("Error introduciendo la actividad en el proyecto");
             }
             console.log(`Actividad creada exitosamente: ${nuevaActividad}`);
-            contexto.pubsub.publish(NUEVA_ACTIVIDAD, { nuevaActividadEstudiantil: nuevaActividad });
 
             return nuevaActividad;
 
@@ -554,7 +607,7 @@ export const resolvers = {
                 console.log(`Actividad ${idActividad} no encontrado. E: ` + error);
                 throw new ApolloError("");
             }
-            try {                
+            try {
                 await elGrupo.save();
             }
             catch (error) {
@@ -576,7 +629,7 @@ export const resolvers = {
 
             return true;
         },
-        async cambiarNombreActividadEstudiantil(_: any, {idActividad, nuevoNombre }, contexto: contextoQuery) {
+        async cambiarNombreActividadEstudiantil(_: any, { idActividad, nuevoNombre }, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||||||||`);
             console.log(`cambiando el nombre de la actividad con id ${idActividad}`);
             var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
@@ -589,7 +642,7 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elGrupo: any = await GrupoEstudiantil.findOne({"actividades._id":idActividad}).exec();
+                var elGrupo: any = await GrupoEstudiantil.findOne({ "actividades._id": idActividad }).exec();
                 if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
@@ -676,7 +729,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            try {                
+            try {
                 await elGrupo.save();
             } catch (error) {
                 console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
@@ -809,11 +862,9 @@ export const resolvers = {
             }
 
             if (parent.guiaGoogleDrive && parent.guiaGoogleDrive.enlace) {
-                console.log(`Enviando enlace de guia: ${parent.guiaGoogleDrive.enlace}`);
                 return parent.guiaGoogleDrive.enlace;
             }
             else {
-                console.log(`La actividad no tenia campo 'guiaGoogleDrive'`);
                 return "";
             }
             return "";
@@ -876,7 +927,6 @@ export const resolvers = {
             }
 
             if (parent.idGoogleDrive) {
-                console.log(`Verificando existencia de archivo en google drive`);
                 try {
                     await jwToken.authorize();
                 }
@@ -885,7 +935,6 @@ export const resolvers = {
                 }
                 try {
                     let respuesta = await drive.files.get({ fileId: parent.idGoogleDrive, auth: jwToken });
-                    console.log(`El link es: ${parent.googleDriveDirectLink}`);
                     if (parent.googleDriveDirectLink) {
                         return parent.googleDriveDirectLink;
                     }

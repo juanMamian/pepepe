@@ -128,6 +128,7 @@ import gql from "graphql-tag";
 import {
   fragmentoActividad,
   fragmentoResponsables,
+  fragmentoParticipacion,
 } from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 
@@ -162,6 +163,67 @@ export default {
       update: function ({ grupoEstudiantil }) {
         this.ventanaDeshabilitada = false;
         return grupoEstudiantil;
+      },
+      fetchPolicy:"cache-and-network",
+      subscribeToMore: {
+        document: gql`
+          subscription($idGrupo: ID) {
+            nuevaRespuestaDesarrolloEstudiantil(idGrupo: $idGrupo) {
+              idDesarrollo
+              participacion {
+                ...fragParticipacion
+              }
+            }
+          }
+          ${fragmentoParticipacion}
+        `,
+        variables() {
+          return { idGrupo: this.$route.params.idGrupo };
+        },
+        updateQuery: (previousResult, { subscriptionData: { data } }) => {
+          console.log(`Subscription response nueva respuesta`);
+          let indexActividad = previousResult.grupoEstudiantil.actividades.findIndex(
+            (a) =>
+              a.desarrollos.some(
+                (d) =>
+                  d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
+              )
+          );
+          if (indexActividad > -1) {
+            console.log(
+              `En ${previousResult.grupoEstudiantil.actividades[indexActividad].nombre}`
+            );
+            let elDesarrollo = previousResult.grupoEstudiantil.actividades[
+              indexActividad
+            ].desarrollos.find(
+              (d) =>
+                d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
+            );
+
+            if (!elDesarrollo) {
+              console.log(`El desarrollo no estaba en estaba actividad`);
+            } else {
+              //Verificar si esta respuesta no ha llegado de algún otro lado
+              if (
+                !elDesarrollo.participaciones.some(
+                  (p) =>
+                    p.id ==
+                    data.nuevaRespuestaDesarrolloEstudiantil.participacion.id
+                )
+              ) {
+                elDesarrollo.participaciones.push(
+                  data.nuevaRespuestaDesarrolloEstudiantil.participacion
+                );
+              }
+            }
+          } else {
+            console.log(
+              `Subscripcion response no encontró actividad que tuviera ese desarrollo`
+            );
+          }
+
+          return previousResult;
+        },
       },
     },
   },
@@ -412,7 +474,7 @@ export default {
             }
           }
         `,
-        fetchPolicy:"network-only",
+        fetchPolicy: "network-only",
         variables: {
           idGrupo: this.$route.params.idGrupo,
         },
@@ -440,7 +502,6 @@ export default {
   max-width: 700px;
   border-radius: 10px;
   box-shadow: 2px 2px 2px 2px rgb(190, 190, 190);
-
 }
 .deshabilitada {
   pointer-events: none;

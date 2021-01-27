@@ -36,7 +36,7 @@ export const esquema = makeExecutableSchema({
     resolvers
 });
 
-const pubsub = new PubSub();
+export const pubsub = new PubSub();
 
 const context = ({ req, res, connection }: any) => {
     // console.log(`creando contexto`);
@@ -44,8 +44,8 @@ const context = ({ req, res, connection }: any) => {
         id: "",
         permisos: []
     }
-    if (connection) {
-        console.log(`Una conexion ws`);
+    if (connection) {        
+        return connection.context;
     }
     else {
         //console.log(`Conexion normal`);
@@ -54,6 +54,7 @@ const context = ({ req, res, connection }: any) => {
         //console.log(`headers: ${JSON.stringify(headers)}`);
 
         if (!headers.authorization) return { usuario };
+        
         const token: string = headers.authorization;
         try {
             usuario = jwt.verify(token, process.env.JWT_SECRET);
@@ -70,14 +71,38 @@ const context = ({ req, res, connection }: any) => {
 
 }
 
+const onConnect=function(connectionParams, webSocket){
+    
+    var usuario: InterfaceCredencialesUsuario = {
+        id: "",
+        permisos: []
+    }
+    if (connectionParams.headers && connectionParams.headers.Authorization) {
+        let token=connectionParams.headers.Authorization.substr(7);
+        try {
+            usuario = jwt.verify(token, process.env.JWT_SECRET);
+            
+        }
+        catch (error) {
+            console.log(`Error verificando el token.E: ${error}`);
+            usuario = {
+                id: "",
+                permisos: []
+            }
+        }
+    }
+    else{
+        console.log(`Sin token`);
+    }
+    return { usuario: usuario, pubsub };
+}
+
 export const aServer = new ApolloServer({
     typeDefs,
     resolvers,
     context,
     subscriptions: {
         path: "/subscripciones",
-        onConnect() {
-            console.log(`Nueva conexion`);
-        }
+        onConnect,
     }
 });

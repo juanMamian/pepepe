@@ -14,6 +14,8 @@ import { errorApi } from "../errorHandling"
 import { Request, Response } from "express";
 import streamifier from "streamifier";
 import sharp from "sharp";
+import { pubsub } from "../gql/Schema";
+import { NUEVA_PARTICIPACION_ESTUDIANTIL } from "../gql/GruposEstudiantiles"
 //Google Drive
 
 
@@ -76,9 +78,6 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
 
 
-    }
-    else {
-        console.log(`Participacion sin archivo adjunto`);
     }
 
     try {
@@ -220,12 +219,24 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
 
     //Guardando elGrupo
 
-    try {        
+    try {
         await elGrupo.save();
     } catch (error) {
         console.log(`Error guardando el grupo: E: ${error}`);
         return res.status(500).send("Error guardando la respuesta");
     }
+    console.log(`publicando con idDesarrollo: ${elDesarrollo._id}`);
+
+    pubsub.publish(NUEVA_PARTICIPACION_ESTUDIANTIL, {
+        nuevaRespuestaDesarrolloEstudiantil: {
+            participacion: laParticipacion,
+            idDesarrollo:elDesarrollo.id
+        },
+        idEstudianteDesarrollo: elDesarrollo.idEstudiante,
+        idDesarrollo: elDesarrollo._id,
+        idCreadorActividad:laActividad.idCreador,
+        idGrupo: elGrupo._id
+    });
 
     console.log(`Respuesta publicada`);
 

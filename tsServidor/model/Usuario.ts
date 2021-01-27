@@ -1,6 +1,14 @@
 import mongoose from "mongoose";
 
-export const permisosDeUsuario = ["usuario", "administrador", "atlasAdministrador", "superadministrador", "actividadesEstudiantiles-profe", "actividadesEstudiantiles-administrador", "actividadesEstudiantiles-guia"];
+export const permisosDeUsuario = [
+    "usuario",
+    "administrador",
+    "atlasAdministrador",
+    "superadministrador",
+    "actividadesEstudiantiles-profe",
+    "actividadesEstudiantiles-administrador",
+    "actividadesEstudiantiles-guia"
+];
 
 
 
@@ -81,7 +89,7 @@ const esquemaUsuario = new mongoose.Schema({
     }
 });
 
-esquemaUsuario.methods.getEdad = function (this:any) {
+esquemaUsuario.methods.getEdad = function (this: any) {
     console.log(`convirtiendo ${this.fechaNacimiento} a edad`);
     let hoy = new Date();
     let edad = hoy.getTime() - this.fechaNacimiento.getTime();
@@ -97,16 +105,16 @@ var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
 var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
 
 export const validarDatosUsuario = function (datosUsuario) {
-    var errores:Array<string> = [];
+    var errores: Array<string> = [];
 
     for (let dato in datosUsuario) {
 
-        if(!datosUsuario[dato]){
+        if (!datosUsuario[dato]) {
             errores.push(`El dato ${dato} no tenia valor`);
             return errores;
         }
-        
-        datosUsuario[dato]=datosUsuario[dato].trim();
+
+        datosUsuario[dato] = datosUsuario[dato].trim();
 
         if (dato == "nombres") {
             if (datosUsuario.nombres.length < 2) {
@@ -178,5 +186,5 @@ export const validarDatosUsuario = function (datosUsuario) {
 }
 
 
-export const ModeloUsuario= mongoose.model("Usuario", esquemaUsuario);
+export const ModeloUsuario = mongoose.model("Usuario", esquemaUsuario);
 

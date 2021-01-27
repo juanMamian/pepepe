@@ -132,9 +132,8 @@ export default {
           Authorization: "Bearer " + this.$store.state.token,
         },
       })
-        .then((res) => {
-          this.enviandoRespuesta = false;
-          console.log(`res: ${JSON.stringify(res)}`);
+        .then(() => {
+          this.enviandoRespuesta = false;          
           dis.$emit("reloadDesarrollo");
           dis.comentario = "";
           dis.$refs.inputArchivoAdjunto.value = null;
