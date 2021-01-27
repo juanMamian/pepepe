@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolvers = exports.typeDefs = void 0;
+exports.resolvers = exports.NUEVA_PARTICIPACION_ESTUDIANTIL = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const fs_1 = __importDefault(require("fs"));
 const util_1 = __importDefault(require("util"));
@@ -23,6 +23,11 @@ const path_1 = __importDefault(require("path"));
 const utilidades_1 = require("../routes/utilidades");
 const access = util_1.default.promisify(fs_1.default.access);
 exports.typeDefs = apollo_server_express_1.gql `
+
+    type InfoParticipacionEnDesarrolloEstudiantil{        
+        idDesarrollo:ID,
+        participacion:ParticipacionActividadGrupoEstudiantil,
+    }
 
     type InfoArchivo{
         nombre: String,
@@ -86,18 +91,54 @@ exports.typeDefs = apollo_server_express_1.gql `
         setLeidoPorProfeDesarrolloEstudiantil(idDesarrollo:ID!, nuevoLeidoPorProfe:Boolean):DesarrolloActividadGrupoEstudiantil
     }
 
-    type Subscription{
-        nuevaActividadEstudiantil:ActividadGrupoEstudiantil!,
-        eliminadaParticipacionActividadEstudiantil:ID!
+    type Subscription{        
+        nuevaRespuestaDesarrolloEstudiantil(idGrupo:ID, idProfe: ID):InfoParticipacionEnDesarrolloEstudiantil
     }
 `;
-const NUEVA_ACTIVIDAD = "nueva_actividad_estudiantil";
+exports.NUEVA_PARTICIPACION_ESTUDIANTIL = "nueva_participacion_estudiantil";
 exports.resolvers = {
     Subscription: {
-        nuevaActividadEstudiantil: {
-            subscribe: (_, args, contexto) => {
-                return contexto.pubsub.asyncIterator([NUEVA_ACTIVIDAD]);
-            }
+        nuevaRespuestaDesarrolloEstudiantil: {
+            subscribe: apollo_server_express_1.withFilter((_, { idGrupo, idProfe }, contexto) => {
+                console.log(`--------------------------Creando una subscripción de ${contexto.usuario.username}`);
+                if (idGrupo) {
+                    console.log(`A nuevas respuestas en el grupo ${idGrupo}`);
+                }
+                if (idProfe) {
+                    console.log(`A nuevas respuestas del profe ${idProfe}`);
+                }
+                return contexto.pubsub.asyncIterator(exports.NUEVA_PARTICIPACION_ESTUDIANTIL);
+            }, (payloadNuevaRespuesta, variables, contexto) => {
+                //Si la respuesta ocurre en un profe distinto al target de la subscricpion
+                if (variables.idProfe) {
+                    if (payloadNuevaRespuesta.idCreadorActividad != variables.idProfe) {
+                        return false;
+                    }
+                }
+                //Si la respuesta ocurre en un grupo distinto al target de la subscricpion
+                if (variables.idGrupo) {
+                    if (variables.idGrupo != payloadNuevaRespuesta.idGrupo) {
+                        return false;
+                    }
+                }
+                //El usuario es el mismo que publicó la respuesta. No se le notifica, se maneja en el cliente con cache de apollo-vue
+                if (payloadNuevaRespuesta.nuevaRespuestaDesarrolloEstudiantil.participacion.idAutor == contexto.usuario.id) {
+                    return false;
+                }
+                let permisosAmplios = [
+                    "actividadesEstudiantiles-profe",
+                    "actividadesEstudiantiles-administrador",
+                    "actividadesEstudiantiles-guia"
+                ];
+                //Si no hace parte de los permisos amplios, es un estudiante. Solo tiene acceso a respuestas publicadas en sus propios desarrollos
+                if (!contexto.usuario.permisos.some(p => permisosAmplios.includes(p))) {
+                    if (payloadNuevaRespuesta.idEstudianteDesarrollo != contexto.usuario.id) {
+                        return false;
+                    }
+                }
+                console.log(`Notificando a ${contexto.usuario.username}`);
+                return true;
+            })
         }
     },
     Query: {
@@ -314,9 +355,7 @@ exports.resolvers = {
                         throw "grupo no encontrado";
                     }
                     else {
-                        console.log(`Encontrado grupo ${JSON.stringify(elGrupo.nombre)}`);
                         let laActividad = elGrupo.actividades.find(a => a.desarrollos.some(d => d._id == idDesarrollo));
-                        console.log(`Actividad: ${laActividad.nombre}`);
                         var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                         elDesarrollo.leidoPorProfe = nuevoLeidoPorProfe;
                     }
@@ -332,7 +371,7 @@ exports.resolvers = {
                     console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Leido por profe de desarrollo cambiado`);
+                console.log(`Set leido ok`);
                 return elDesarrollo;
             });
         },
@@ -502,7 +541,6 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error introduciendo la actividad en el proyecto");
                 }
                 console.log(`Actividad creada exitosamente: ${nuevaActividad}`);
-                contexto.pubsub.publish(NUEVA_ACTIVIDAD, { nuevaActividadEstudiantil: nuevaActividad });
                 return nuevaActividad;
             });
         },
@@ -775,11 +813,9 @@ exports.resolvers = {
                     return "";
                 }
                 if (parent.guiaGoogleDrive && parent.guiaGoogleDrive.enlace) {
-                    console.log(`Enviando enlace de guia: ${parent.guiaGoogleDrive.enlace}`);
                     return parent.guiaGoogleDrive.enlace;
                 }
                 else {
-                    console.log(`La actividad no tenia campo 'guiaGoogleDrive'`);
                     return "";
                 }
                 return "";
@@ -843,7 +879,6 @@ exports.resolvers = {
                     return "";
                 }
                 if (parent.idGoogleDrive) {
-                    console.log(`Verificando existencia de archivo en google drive`);
                     try {
                         yield utilidades_1.jwToken.authorize();
                     }
@@ -852,7 +887,6 @@ exports.resolvers = {
                     }
                     try {
                         let respuesta = yield utilidades_1.drive.files.get({ fileId: parent.idGoogleDrive, auth: utilidades_1.jwToken });
-                        console.log(`El link es: ${parent.googleDriveDirectLink}`);
                         if (parent.googleDriveDirectLink) {
                             return parent.googleDriveDirectLink;
                         }

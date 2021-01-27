@@ -344,7 +344,6 @@ export default {
     },
     async guardarNombre() {
       this.enviandoNuevoNombre = true;
-      console.log(`Evento de cambio de nombre`);
       let nuevoNombre = this.nuevoNombre.trim();
       let idActividad = this.estaActividad.id;
 
@@ -375,9 +374,8 @@ export default {
             nuevoNombre,
           },
         })
-        .then((data) => {
+        .then(() => {
           this.enviandoNuevoNombre = false;
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
         })
         .catch((error) => {
           this.enviandoNuevoNombre = false;
@@ -386,7 +384,6 @@ export default {
     },
     iniciarEdicionNombre() {
       if (!this.usuarioCreadorActividad || !this.seleccionada) return;
-      console.log(`iniciando edicion de nombre`);
       this.nuevoNombre = this.estaActividad.nombre;
       this.nombreEditandose = true;
       this.$nextTick(() => {
@@ -394,7 +391,6 @@ export default {
       });
     },
     cancelarEdicionNombre() {
-      console.log(`cancelando edición de nombre`);
 
       this.nombreEditandose = false;
       this.$refs.inputNuevoNombre.blur();
@@ -408,12 +404,9 @@ export default {
       let inputGuia = this.$refs.inputNuevaGuia;
       var datos = new FormData();
       const nuevaGuia = inputGuia.files[0];
-      const fileType = nuevaGuia["type"];
-      console.log(`subiendo un ${fileType}`);
       datos.append("nuevaGuia", nuevaGuia);
       datos.append("idActividad", this.estaActividad.id);
       datos.append("idGrupo", this.idGrupo);
-      //console.log(`enviando nuevo icono con datos: : `);
       axios({
         method: "post",
         url: this.serverUrl + "/api/actividadesProfes/updateGuia",
@@ -423,9 +416,8 @@ export default {
           Authorization: "Bearer " + this.$store.state.token,
         },
       })
-        .then((res) => {
+        .then(() => {
           this.uploadingGuia = false;
-          console.log(`res: ${JSON.stringify(res)}`);
           dis.$apollo.query({
             query: gql`
               query($idGrupo: ID!, $idActividad: ID!) {
@@ -464,14 +456,12 @@ export default {
         "/" +
         this.estaActividad.id +
         "/";
-      console.log(`solicitando guia a ${direccion}`);
       axios({
         method: "get",
         url: direccion,
         responseType: "blob",
       })
         .then((res) => {
-          console.log(`Respuesta: ${JSON.stringify(res)}`);
           FileDownload(res.data, this.estaActividad.nombre + "-Guia.pdf");
         })
         .catch((error) => {
@@ -490,7 +480,6 @@ export default {
           },
         })
         .then(() => {
-          console.log(`Desarrollos de actividad reloaded`);
         })
         .catch((error) => {
           console.log(
@@ -543,9 +532,7 @@ export default {
         });
     },
     toggleDesarrolloCompletado(idDesarrollo, actualEstado) {
-      console.log(
-        `Toggling estado de desarrollo ${idDesarrollo} que estaba en ${actualEstado}`
-      );
+      
       let nuevoEstado =
         actualEstado == "completado" ? "desarrollando" : "completado";
       this.$apollo
@@ -578,9 +565,7 @@ export default {
         let idDesarrollo = this.estaActividad.desarrollos.find(
           (d) => d.estudiante.id == idEstudiante
         ).id;
-        console.log(
-          `Marcando el desarrollo con id ${idDesarrollo} como leído por profe`
-        );
+       
         this.$apollo.mutate({
           mutation: gql`
             mutation($idDesarrollo: ID!) {
@@ -606,7 +591,6 @@ export default {
     },
     usuarioTieneDesarrollo: function () {
       if (this.estaActividad.desarrollos.length < 1) {
-        console.log(`Actividad sin desarrollos`);
 
         return false;
       }

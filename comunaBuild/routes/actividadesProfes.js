@@ -26,6 +26,8 @@ const writeFile = util.promisify(fs.writeFile);
 const utilidades_1 = require("./utilidades");
 const streamifier_1 = __importDefault(require("streamifier"));
 const sharp_1 = __importDefault(require("sharp"));
+const Schema_1 = require("../gql/Schema");
+const GruposEstudiantiles_1 = require("../gql/GruposEstudiantiles");
 router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err, req, res, next) {
     console.log(`Errores: <<${err.message}>>`);
     let mensaje = "Archivo no permitido";
@@ -74,9 +76,6 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
                 console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
                 return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
             }
-        }
-        else {
-            console.log(`Participacion sin archivo adjunto`);
         }
         try {
             var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario, "username nombres apellidos id").exec();
@@ -201,6 +200,17 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             console.log(`Error guardando el grupo: E: ${error}`);
             return res.status(500).send("Error guardando la respuesta");
         }
+        console.log(`publicando con idDesarrollo: ${elDesarrollo._id}`);
+        Schema_1.pubsub.publish(GruposEstudiantiles_1.NUEVA_PARTICIPACION_ESTUDIANTIL, {
+            nuevaRespuestaDesarrolloEstudiantil: {
+                participacion: laParticipacion,
+                idDesarrollo: elDesarrollo.id
+            },
+            idEstudianteDesarrollo: elDesarrollo.idEstudiante,
+            idDesarrollo: elDesarrollo._id,
+            idCreadorActividad: laActividad.idCreador,
+            idGrupo: elGrupo._id
+        });
         console.log(`Respuesta publicada`);
         res.send({ resultado: "ok" });
     });

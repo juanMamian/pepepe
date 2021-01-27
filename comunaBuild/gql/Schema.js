@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.aServer = exports.esquema = void 0;
+exports.aServer = exports.pubsub = exports.esquema = void 0;
 const { ApolloServer, gql, PubSub } = require("apollo-server-express");
 const NodosConocimiento_1 = require("./NodosConocimiento");
 const Usuarios_1 = require("./Usuarios");
@@ -35,7 +35,7 @@ exports.esquema = apollo_server_express_1.makeExecutableSchema({
     typeDefs,
     resolvers
 });
-const pubsub = new PubSub();
+exports.pubsub = new PubSub();
 const context = ({ req, res, connection }) => {
     // console.log(`creando contexto`);
     var usuario = {
@@ -43,7 +43,7 @@ const context = ({ req, res, connection }) => {
         permisos: []
     };
     if (connection) {
-        console.log(`Una conexion ws`);
+        return connection.context;
     }
     else {
         //console.log(`Conexion normal`);
@@ -63,7 +63,30 @@ const context = ({ req, res, connection }) => {
             };
         }
     }
-    return { usuario: usuario, pubsub };
+    return { usuario: usuario, pubsub: exports.pubsub };
+};
+const onConnect = function (connectionParams, webSocket) {
+    var usuario = {
+        id: "",
+        permisos: []
+    };
+    if (connectionParams.headers && connectionParams.headers.Authorization) {
+        let token = connectionParams.headers.Authorization.substr(7);
+        try {
+            usuario = jwt.verify(token, process.env.JWT_SECRET);
+        }
+        catch (error) {
+            console.log(`Error verificando el token.E: ${error}`);
+            usuario = {
+                id: "",
+                permisos: []
+            };
+        }
+    }
+    else {
+        console.log(`Sin token`);
+    }
+    return { usuario: usuario, pubsub: exports.pubsub };
 };
 exports.aServer = new ApolloServer({
     typeDefs,
@@ -71,8 +94,6 @@ exports.aServer = new ApolloServer({
     context,
     subscriptions: {
         path: "/subscripciones",
-        onConnect() {
-            console.log(`Nueva conexion`);
-        }
+        onConnect,
     }
 });

@@ -22,9 +22,7 @@ const routes = [
         path: "/login", name: "loginArea",
         component: loginArea,
         beforeEnter: function (to, from, next) {
-            console.log(`Verificando si estaba logeado: ${store.state.usuario.id}`);
             if (store.state.usuario.id != null) {
-                console.log(`estaba logeado`);
                 next("/miperfil");
             }
             else {
@@ -38,9 +36,7 @@ const routes = [
         name: "perfilPersonal",
         component: perfilPersonal, 
         beforeEnter: function (to, from, next) {
-            console.log(`Verificando si estaba logeado: ${store.state.usuario.id}`);
             if (store.state.usuario.id != null) {
-                console.log(`estaba logeado`);
                 next();
             }
             else {

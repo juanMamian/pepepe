@@ -123,9 +123,7 @@ export default {
                 fetchPolicy: "network-only",
               })
               .then(({ data: { yo } }) => {
-                dis.enviandoDatos = false;
-
-                console.log(`Datos personales: ${JSON.stringify(yo)}`);
+                dis.enviandoDatos = false;              
                 dis.$store.commit("setDatosUsuario", yo);
                 dis.$router.push("/miperfil");
               })
@@ -136,8 +134,7 @@ export default {
           }
         })
         .catch(function (error) {
-          dis.enviandoDatos = false;
-          console.log(`response: ${JSON.stringify(error.response)}`);
+          dis.enviandoDatos = false;          
           dis.$store.commit("deslogearse");
 
           if (error.response.data.error) {

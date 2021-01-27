@@ -176,8 +176,7 @@ export default {
             `,
             fetchPolicy: "network-only",
           })
-          .then(({ data: { yo } }) => {
-            console.log(`Datos personales: ${JSON.stringify(yo)}`);
+          .then(({ data: { yo } }) => {            
             this.$store.commit("setDatosUsuario", yo);
           })
           .catch((error) => {
