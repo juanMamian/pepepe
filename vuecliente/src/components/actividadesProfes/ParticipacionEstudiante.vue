@@ -116,7 +116,7 @@ export default {
   width: 80%;
   margin-left: auto;
   max-width: auto;
-  min-height: 100px;
+  min-height: 180px;
   font-size:18px;
 }
 

@@ -44,9 +44,10 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     let idUsuario = req.user.id;
     console.log(`Recibida peticion de subir respuesta por el usuario ${req.user.username}`);
 
-    var charProhibidosComentario = /[^\n a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+    var charProhibidosComentario = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
     var comentario = req.body.comentario;
     if (charProhibidosComentario.test(comentario)) {
+        console.log(`Rechazando comentario ${comentario} por tener caracteres no válidos: ${comentario.replace(charProhibidosComentario, "*")}`);
         return res.status(400).send({ msjUsuario: "El comentario contenía caracteres no válidos" });
     }
 
@@ -87,6 +88,15 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
         else if (req.file.mimetype == "video/ogg") {
             extensionDeArchivo = "ogg"
+        }
+        else if (req.file.mimetype == "audio/amr") {
+            extensionDeArchivo = "amr"
+        }
+        else if (req.file.mimetype == "video/3gpp") {
+            extensionDeArchivo = "3gpp"
+        }
+        else if (req.file.mimetype == "video/x-m4a") {
+            extensionDeArchivo = "m4a"
         }
         else {
             console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
