@@ -391,9 +391,7 @@ export default {
             store,
             { data: { eliminarActividadDeGrupoEstudiantil } }
           ) => {
-            console.log(
-              `data: ${JSON.stringify(eliminarActividadDeGrupoEstudiantil)}`
-            );
+           
             let eliminado = eliminarActividadDeGrupoEstudiantil;
 
             if (eliminado) {

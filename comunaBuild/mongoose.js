@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.iniciarMongoose = void 0;
 const mongoose = require("mongoose");
+mongoose.set('useFindAndModify', false);
 const iniciarMongoose = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield mongoose.connect(process.env.DB_CONNECT, {

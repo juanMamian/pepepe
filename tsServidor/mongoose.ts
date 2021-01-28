@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+mongoose.set('useFindAndModify', false);
 export const iniciarMongoose = async () => {
     try {
         await mongoose.connect(

@@ -40,6 +40,27 @@
         <div>Registrar usuario</div></router-link
       >
       <div id="botonesNavDerecha">
+        <div
+          id="bloqueNotificaciones"
+          v-if="usuarioLogeado"
+          v-show="yo.notificaciones.length > 0"
+        >
+          <span id="numeroNotificaciones">{{ yo.notificaciones.length }}</span>
+          <img
+            src="@/assets/iconos/campanita.png"
+            alt="Notificaciones"
+            :title="yo.notificaciones.length + 'Notificaciones'"
+            id="imagenCampanita"
+            @click="mostrandoNotificaciones = !mostrandoNotificaciones"
+          />
+          <div id="contenedorNotificaciones" v-show="mostrandoNotificaciones">
+            <notificacion
+              :key="notificacion.id"
+              v-for="notificacion of notificacionesOrdenadas"
+              :estaNotificacion="notificacion"
+            />
+          </div>
+        </div>
         <template v-if="logeado">
           <div
             class="botonNav navLogin hoverNegro"
@@ -79,6 +100,32 @@
 
 <script>
 import gql from "graphql-tag";
+import Notificacion from "./components/usuario/Notificacion.vue";
+
+export const QUERY_YO = gql`
+  query {
+    yo {
+      id
+      nombres
+      apellidos
+      notificaciones {
+        id
+        fecha
+        texto
+        elementoTarget {
+          tipo
+          id
+          nombre
+        }
+        causante {
+          id
+          tipo
+        }
+      }
+      permisos
+    }
+  }
+`;
 
 function parseJwt(token) {
   var base64Url = token.split(".")[1];
@@ -97,28 +144,56 @@ function parseJwt(token) {
 
 export default {
   name: "App",
-  // apollo: {
-  //   $subscribe: {
-  //     tags: {
-  //       query: gql`
-  //         subscription {
-  //           nuevaRespuestaDesarrolloEstudiantil {
-  //             idDesarrollo
-              
-  //           }
-  //         }
-          
-  //       `,
-  //       result({ data }) {
-  //         this.tags = data.tags;
-  //       },
-  //     },
-  //   },
-  // },
-  components: {},
+  apollo: {
+    yo: {
+      query: QUERY_YO,
+      fetchPolicy: "network-only",
+      skip() {
+        return !this.usuarioLogeado;
+      },
+      subscribeToMore: {
+        document: gql`
+          subscription {
+            nuevaNotificacion {
+              id
+              fecha
+              texto
+              elementoTarget {
+                tipo
+                id
+                nombre
+              }
+              causante {
+                id
+                tipo
+              }
+            }
+          }
+        `,
+        updateQuery: (previousResult, { subscriptionData: { data } }) => {
+          if (
+            !previousResult.yo.notificaciones.some(
+              (n) => n.id == data.nuevaNotificacion.id
+            )
+          ) {
+            previousResult.yo.notificaciones.push(data.nuevaNotificacion);
+          }
+          return previousResult;
+        },
+        skip() {
+          return !this.usuarioLogeado;
+        },
+      },
+    },
+  },
+  components: { Notificacion },
   data() {
     return {
       accionesLogeado: false,
+      mostrandoNotificaciones: false,
+      yo: {
+        notificaciones: [],
+      },
     };
   },
   computed: {
@@ -143,6 +218,12 @@ export default {
       }
       return {};
     },
+    notificacionesOrdenadas: function () {
+      let lasNotificaciones = this.yo.notificaciones;
+      return lasNotificaciones.sort((a, b) => {
+        return new Date(b.fecha) - new Date(a.fecha);
+      });
+    },
   },
   methods: {
     deslogeo() {
@@ -154,34 +235,13 @@ export default {
     let token = localStorage.getItem("token");
     //let reloj=new Date();
     if (!token) {
-      console.log(`no habia token`);
+      console.log(``);
     } else {
       let datosU = parseJwt(token);
       let secsActual = parseInt(Date.now() / 1000);
 
       if (secsActual < datosU.exp) {
         this.$store.commit("logearse", token);
-        this.$apollo
-          .query({
-            query: gql`
-              query {
-                yo {
-                  id
-                  idGrupoEstudiantil
-                  nombreGrupoEstudiantil
-                  nombres
-                  apellidos
-                }
-              }
-            `,
-            fetchPolicy: "network-only",
-          })
-          .then(({ data: { yo } }) => {            
-            this.$store.commit("setDatosUsuario", yo);
-          })
-          .catch((error) => {
-            console.log(`Error descargando datos gql. E: ${error}`);
-          });
       } else {
         this.$store.commit("deslogearse");
       }
@@ -197,12 +257,11 @@ body {
   height: 100vh;
   background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
     no-repeat;
-
-  font-family: 'Varela Round', sans-serif;
+  font-family: "Varela Round", sans-serif;
 }
 
 textarea {
-  font-family: 'Varela Round', sans-serif;
+  font-family: "Varela Round", sans-serif;
 }
 
 .hoverGris:hover {
@@ -322,6 +381,31 @@ input {
 #botonesNavDerecha {
   margin-left: auto;
   display: flex;
+}
+#bloqueNotificaciones {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+#contenedorNotificaciones {
+  position: absolute;
+  top: 100%;
+  right: 0%;
+  align-items: center;
+}
+#numeroNotificaciones {
+  font-size: 20px;
+  color: white;
+  margin-right: 3px;
+}
+#imagenCampanita {
+  width: 25px;
+  height: 25px;
+  background-color: white;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
 }
 #botonesLogeado {
   position: absolute;

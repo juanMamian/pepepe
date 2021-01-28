@@ -15,14 +15,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = exports.NUEVA_PARTICIPACION_ESTUDIANTIL = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const fs_1 = __importDefault(require("fs"));
-const util_1 = __importDefault(require("util"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
 const Usuario_1 = require("../model/Usuario");
 const path_1 = __importDefault(require("path"));
 const utilidades_1 = require("../routes/utilidades");
-const access = util_1.default.promisify(fs_1.default.access);
 exports.typeDefs = apollo_server_express_1.gql `
+
+    type MinimoElemento{
+        tipo:String,
+        id:ID,
+        nombre:String 
+    }
 
     type InfoParticipacionEnDesarrolloEstudiantil{        
         idDesarrollo:ID,
@@ -91,21 +95,24 @@ exports.typeDefs = apollo_server_express_1.gql `
         setLeidoPorProfeDesarrolloEstudiantil(idDesarrollo:ID!, nuevoLeidoPorProfe:Boolean):DesarrolloActividadGrupoEstudiantil
     }
 
-    type Subscription{        
-        nuevaRespuestaDesarrolloEstudiantil(idGrupo:ID, idProfe: ID):InfoParticipacionEnDesarrolloEstudiantil
+    extend type Subscription{        
+        nuevaRespuestaDesarrolloEstudiantil(idGrupo:ID, idProfe: ID, idActividad:ID):InfoParticipacionEnDesarrolloEstudiantil
     }
 `;
 exports.NUEVA_PARTICIPACION_ESTUDIANTIL = "nueva_participacion_estudiantil";
 exports.resolvers = {
     Subscription: {
         nuevaRespuestaDesarrolloEstudiantil: {
-            subscribe: apollo_server_express_1.withFilter((_, { idGrupo, idProfe }, contexto) => {
-                console.log(`--------------------------Creando una subscripción de ${contexto.usuario.username}`);
+            subscribe: apollo_server_express_1.withFilter((_, { idGrupo, idProfe, idActividad }, contexto) => {
+                console.log(`--------------------------Creando una subscripción de ${contexto.usuario.username} a nuevas respuestas`);
                 if (idGrupo) {
                     console.log(`A nuevas respuestas en el grupo ${idGrupo}`);
                 }
                 if (idProfe) {
                     console.log(`A nuevas respuestas del profe ${idProfe}`);
+                }
+                if (idActividad) {
+                    console.log(`A nuevas respuestas en la actividad ${idActividad}`);
                 }
                 return contexto.pubsub.asyncIterator(exports.NUEVA_PARTICIPACION_ESTUDIANTIL);
             }, (payloadNuevaRespuesta, variables, contexto) => {
@@ -118,6 +125,11 @@ exports.resolvers = {
                 //Si la respuesta ocurre en un grupo distinto al target de la subscricpion
                 if (variables.idGrupo) {
                     if (variables.idGrupo != payloadNuevaRespuesta.idGrupo) {
+                        return false;
+                    }
+                }
+                if (variables.idActividad) {
+                    if (variables.idActividad != payloadNuevaRespuesta.idActividad) {
                         return false;
                     }
                 }
@@ -294,6 +306,7 @@ exports.resolvers = {
                     console.log(`Error buscando actividad en la base de datos. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
+                console.log(`Enviando ${laActividad.nombre}`);
                 return laActividad;
             });
         },
@@ -897,6 +910,28 @@ exports.resolvers = {
                     }
                 }
                 return "";
+            });
+        }
+    },
+    MinimoElemento: {
+        nombre: function (parent) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let nombre = "Desconocido";
+                if (parent.tipo == "actividadEstudiantil") {
+                    try {
+                        let elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ "actividades._id": parent.id }, "actividades").exec();
+                        if (!elGrupo) {
+                            console.log(`No se pudo encontrar el grupo.`);
+                            throw "Grupo no encontrado";
+                        }
+                        nombre = elGrupo.actividades.id(parent.id).nombre;
+                    }
+                    catch (error) {
+                        console.log(`Error buscando grupo en la base de datos. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de DesarrolloActividadGrupoEstudiantil");
+                    }
+                }
+                return nombre;
             });
         }
     }

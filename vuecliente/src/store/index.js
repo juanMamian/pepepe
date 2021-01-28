@@ -1,12 +1,12 @@
 import Vue from "vue"
 import Vuex from "vuex"
-import {apolloClient} from "../apollo"
+import { apolloClient } from "../apollo"
 Vue.use(Vuex);
 
-function parseJwt (token) {
+function parseJwt(token) {
     var base64Url = token.split('.')[1];
     var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
 
@@ -19,42 +19,35 @@ export default new Vuex.Store({
         usuario: {
             username: null,
             permisos: [],
-            id:null,
-            idGrupoEstudiantil:null,
-            nombreGrupoEstudiantil:null,
+            id: null,
         },
-        token:null
+        token: null
 
     },
     mutations: {
         logearse: function (state, token) {
 
-            let usuario=parseJwt(token);
-            state.token=token;
+            let usuario = parseJwt(token);
+
+            state.token = token;
             state.usuario.username = usuario.username;
             state.usuario.permisos = usuario.permisos;
-            state.usuario.id=usuario.id;
+            state.usuario.id = usuario.id;
 
-            let usuarioLS=JSON.stringify(state.usuario);
+            let usuarioLS = JSON.stringify(state.usuario);
 
             localStorage.setItem("pepepe_usuario", usuarioLS);
             localStorage.setItem("token", token);
-            
-        },
-        setDatosUsuario:function(state, yo){
-            state.usuario.idGrupoEstudiantil = yo.idGrupoEstudiantil;
-            state.usuario.nombreGrupoEstudiantil = yo.nombreGrupoEstudiantil;            
+
         },
         deslogearse(state) {
             localStorage.clear();
 
             state.usuario.username = null,
-            state.usuario.permisos = null,
-            state.usuario.id = null,
-            state.usuario.idGrupoEstudiantil=null,
-            state.usuario.nombreGrupoEstudiantil=null,
-           
-            state.token=null
+                state.usuario.permisos = null,
+                state.usuario.id = null,
+
+                state.token = null
             apolloClient.cache.data.clear();
         }
     }

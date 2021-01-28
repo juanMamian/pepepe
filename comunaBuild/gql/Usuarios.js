@@ -9,13 +9,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolvers = exports.typeDefs = void 0;
+exports.resolvers = exports.NUEVA_NOTIFICACION_PERSONAL = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Usuario_1 = require("../model/Usuario");
 const graphql_iso_date_1 = require("graphql-iso-date");
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
 exports.typeDefs = apollo_server_express_1.gql `
     scalar Date
+
+    type MinimoCausante{
+        id:ID,
+        tipo:String,
+    }
+
+    type Notificacion{
+        id:ID,
+        texto:String,
+        causante:MinimoCausante,
+        elementoTarget: MinimoElemento,
+        fecha:Date
+    }
 
     type infoAtlas{
         centroVista:Coords
@@ -47,6 +60,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         permisos:[String]
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
+        notificaciones:[Notificacion]
     }
     input DatosEditablesUsuario{
         nombres:String,
@@ -79,10 +93,31 @@ exports.typeDefs = apollo_server_express_1.gql `
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
         editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
         addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
-        eliminarUsuario(idUsuario:ID!):Boolean,      
+        eliminarUsuario(idUsuario:ID!):Boolean,
+        eliminarNotificacion(idNotificacion:ID!):Boolean,
     }
+    extend type Subscription{
+        nuevaNotificacion:Notificacion
+    }
+
 `;
+exports.NUEVA_NOTIFICACION_PERSONAL = "nueva_notificacion_personal";
 exports.resolvers = {
+    Subscription: {
+        nuevaNotificacion: {
+            subscribe: apollo_server_express_1.withFilter((_, __, contexto) => {
+                console.log(`--------------------------Creando una subscripción a notificaciones personales de ${contexto.usuario.username}`);
+                return contexto.pubsub.asyncIterator(exports.NUEVA_NOTIFICACION_PERSONAL);
+            }, (payloadNuevaNotificacion, variables, contexto) => {
+                console.log(`Decidiendo si notificar a ${contexto.usuario.id} con idNotificado=${payloadNuevaNotificacion.idNotificado}`);
+                if (payloadNuevaNotificacion.idNotificado != contexto.usuario.id) {
+                    return false;
+                }
+                console.log(`Nueva notificacion personal para ${contexto.usuario.username}`);
+                return true;
+            })
+        }
+    },
     Query: {
         usuariosProfe: function (_, args, context) {
             return __awaiter(this, void 0, void 0, function* () {
@@ -267,7 +302,28 @@ exports.resolvers = {
                 }
                 return true;
             });
-        }
+        },
+        eliminarNotificacion: function (_, { idNotificacion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||||1`);
+                console.log(`Peticion de eliminar una notificacion con id ${idNotificacion}`);
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                if (credencialesUsuario.permisos.length < 1) {
+                    console.log(`El usuario no estaba logeado`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    yield Usuario_1.ModeloUsuario.findByIdAndUpdate(credencialesUsuario.id, { $pull: { notificaciones: { _id: idNotificacion } } }).exec();
+                }
+                catch (error) {
+                    console.log(`Error eliminando la notificacion de la base de datos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Notificacion eliminada`);
+                return true;
+            });
+        },
     },
     Usuario: {
         edad: function (parent, _, __) {

@@ -216,8 +216,6 @@ export default {
             numeroTel
             email
             username
-            idGrupoEstudiantil
-            nombreGrupoEstudiantil
             nodosConocimiento {
               nodoConocimiento {
                 id
@@ -228,6 +226,9 @@ export default {
         }
       `,
       fetchPolicy: "network-only",
+      skip(){
+        return !this.usuarioLogeado;
+      }
     },
   },
   data() {

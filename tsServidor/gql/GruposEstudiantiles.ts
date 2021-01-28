@@ -9,17 +9,23 @@ import { contextoQuery } from "./tsObjetos"
 import { drive, jwToken } from "../routes/utilidades"
 
 
-const access = util.promisify(fs.access);
 
 interface interfacePayloadNuevaRespuesta{
         nuevaRespuestaDesarrolloEstudiantil: any,
         idEstudianteDesarrollo: string,
         idDesarrollo: string,
         idCreadorActividad:string,
-        idGrupo: string
+        idGrupo: string,
+        idActividad:string
 }
 
 export const typeDefs = gql`
+
+    type MinimoElemento{
+        tipo:String,
+        id:ID,
+        nombre:String 
+    }
 
     type InfoParticipacionEnDesarrolloEstudiantil{        
         idDesarrollo:ID,
@@ -88,8 +94,8 @@ export const typeDefs = gql`
         setLeidoPorProfeDesarrolloEstudiantil(idDesarrollo:ID!, nuevoLeidoPorProfe:Boolean):DesarrolloActividadGrupoEstudiantil
     }
 
-    type Subscription{        
-        nuevaRespuestaDesarrolloEstudiantil(idGrupo:ID, idProfe: ID):InfoParticipacionEnDesarrolloEstudiantil
+    extend type Subscription{        
+        nuevaRespuestaDesarrolloEstudiantil(idGrupo:ID, idProfe: ID, idActividad:ID):InfoParticipacionEnDesarrolloEstudiantil
     }
 `;
 
@@ -99,13 +105,16 @@ export const resolvers = {
     Subscription: {
         nuevaRespuestaDesarrolloEstudiantil: {
             subscribe: withFilter(
-                (_: any, { idGrupo, idProfe }: any, contexto: contextoQuery) => {
-                    console.log(`--------------------------Creando una subscripción de ${contexto.usuario.username}`);
+                (_: any, { idGrupo, idProfe, idActividad }: any, contexto: contextoQuery) => {
+                    console.log(`--------------------------Creando una subscripción de ${contexto.usuario.username} a nuevas respuestas`);
                     if (idGrupo) {
                         console.log(`A nuevas respuestas en el grupo ${idGrupo}`);
                     }
                     if (idProfe) {
                         console.log(`A nuevas respuestas del profe ${idProfe}`);
+                    }
+                    if(idActividad){
+                        console.log(`A nuevas respuestas en la actividad ${idActividad}`);
                     }
 
                     return contexto.pubsub.asyncIterator(NUEVA_PARTICIPACION_ESTUDIANTIL)
@@ -121,6 +130,11 @@ export const resolvers = {
                     //Si la respuesta ocurre en un grupo distinto al target de la subscricpion
                     if (variables.idGrupo) {
                         if (variables.idGrupo != payloadNuevaRespuesta.idGrupo) {
+                            return false
+                        }
+                    }
+                    if (variables.idActividad) {
+                        if (variables.idActividad != payloadNuevaRespuesta.idActividad) {
                             return false
                         }
                     }
@@ -305,6 +319,7 @@ export const resolvers = {
                 console.log(`Error buscando actividad en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+            console.log(`Enviando ${laActividad.nombre}`);
             return laActividad;
         },
         actividadesEstudiantilesDeProfe: async function (_: any, { idProfe }: any, contexto: contextoQuery) {
@@ -945,6 +960,26 @@ export const resolvers = {
                 }
             }
             return "";
+        }
+    },
+    MinimoElemento:{
+        nombre: async function(parent:any) {
+            let nombre="Desconocido";
+            if(parent.tipo=="actividadEstudiantil"){
+                try {
+                    let elGrupo:any=await GrupoEstudiantil.findOne({"actividades._id":parent.id}, "actividades").exec();
+                    if(!elGrupo){
+                        console.log(`No se pudo encontrar el grupo.`);
+                        throw "Grupo no encontrado"
+                    }
+                    nombre=elGrupo.actividades.id(parent.id).nombre;
+                } catch (error) {
+                    console.log(`Error buscando grupo en la base de datos. E: ${error}`);
+                    throw new ApolloError("Error conectando con la base de DesarrolloActividadGrupoEstudiantil");
+                }
+                
+            }
+            return nombre;
         }
     }
 

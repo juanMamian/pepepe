@@ -12,9 +12,10 @@ import Vue from 'vue'
 Vue.use(VueApollo);
 
 const cache= new InMemoryCache();
-const getToken=()=>{
-  return localStorage.getItem("token") || "";
-}
+
+
+let getToken = ()=> localStorage.getItem('token');
+
 
 export const serverUrl=process.env.NODE_ENV === 'production'
 ? 'https://pe-pe-pe.herokuapp.com'

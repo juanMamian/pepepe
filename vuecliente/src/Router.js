@@ -13,10 +13,13 @@ import ActividadesDeGrupo from "./components/actividadesProfes/ActividadesDeGrup
 import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
 import store from "./store/index"
 import PortadaActividadesEstudiantiles from "./components/actividadesProfes/PortadaActividadesEstudiantiles";
+import ActividadEspecifica from "./components/actividadesProfes/ActividadEspecifica"
+import Home from "./components/Home"
 
 Vue.use(Router);
 
 const routes = [
+    {path: "/home", name:"home", component: Home},
     { path: "/atlas", name: "atlas", component: atlasConocimiento },
     {
         path: "/login", name: "loginArea",
@@ -66,8 +69,9 @@ const routes = [
             }
         ]
     },
+    {path: "/actividad/:idActividad", component: ActividadEspecifica},
     { path: "/personas", name: "personas", component: Personas },
-    { path: "/", redirect: "/miPerfil" }
+    { path: "/", redirect: "/home" }
 ];
 
 export const router = new Router({

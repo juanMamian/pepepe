@@ -28,6 +28,7 @@ const streamifier_1 = __importDefault(require("streamifier"));
 const sharp_1 = __importDefault(require("sharp"));
 const Schema_1 = require("../gql/Schema");
 const GruposEstudiantiles_1 = require("../gql/GruposEstudiantiles");
+const Usuarios_1 = require("../gql/Usuarios");
 router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err, req, res, next) {
     console.log(`Errores: <<${err.message}>>`);
     let mensaje = "Archivo no permitido";
@@ -195,20 +196,6 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             }
         }
         elDesarrollo.participaciones.push(laParticipacion);
-        // if ("file" in req) {
-        //     console.log(`Verificando la existencia de la carpeta de esta actividad: ${idActividad}`);
-        //     let carpetaEvidencias = "../archivosDeUsuario/actividadesProfes/evidencias";
-        //     console.log(`guardando el archivo con nombre idParticipacion`);
-        //     let archivo = path.join(__dirname, carpetaEvidencias) + "/" + idParticipacion + "." + laParticipacion.archivo.extension;
-        //     console.log(`el archivo quedará: ${archivo}`);
-        //     try {
-        //         await writeFile(archivo, req.file.buffer);
-        //     } catch (error) {
-        //         console.log(`error escribiendo el archivo. E: ${error}`);
-        //         return res.status(500).send("Error guardando archivo");
-        //     }
-        // }
-        //Guardando elGrupo
         try {
             yield elGrupo.save();
         }
@@ -217,16 +204,57 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             return res.status(500).send("Error guardando la respuesta");
         }
         console.log(`publicando con idDesarrollo: ${elDesarrollo._id}`);
-        Schema_1.pubsub.publish(GruposEstudiantiles_1.NUEVA_PARTICIPACION_ESTUDIANTIL, {
-            nuevaRespuestaDesarrolloEstudiantil: {
-                participacion: laParticipacion,
-                idDesarrollo: elDesarrollo.id
+        //creando una notificacion en la base de datos
+        var notificacion = new Usuario_1.ModeloNotificacion({
+            texto: "Nueva respuesta",
+            elementoTarget: {
+                tipo: "actividadEstudiantil",
+                id: laActividad._id
             },
-            idEstudianteDesarrollo: elDesarrollo.idEstudiante,
-            idDesarrollo: elDesarrollo._id,
-            idCreadorActividad: laActividad.idCreador,
-            idGrupo: elGrupo._id
+            causante: {
+                tipo: "persona",
+                id: elUsuario._id
+            }
         });
+        //Pregunta si notificar al estudiante del desarrollo de la actividad.
+        if (laParticipacion.idAutor != elDesarrollo.idEstudiante) {
+            try {
+                yield Usuario_1.ModeloUsuario.findByIdAndUpdate(elDesarrollo.idEstudiante, { $push: { notificaciones: notificacion } }).exec();
+                Schema_1.pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: elDesarrollo.idEstudiante, nuevaNotificacion: notificacion });
+                console.log(`Crendo notificacion personal para ${elDesarrollo.idEstudiante}`);
+            }
+            catch (error) {
+                console.log(`Error creando una notificacion con para ${elDesarrollo.idEstudiante}`);
+            }
+        }
+        //Pregunta si notificar al autor de la actividad
+        if (laParticipacion.idAutor != laActividad.idCreador) {
+            try {
+                yield Usuario_1.ModeloUsuario.findByIdAndUpdate(laActividad.idCreador, { $push: { notificaciones: notificacion } }).exec();
+                Schema_1.pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: laActividad.idCreador, nuevaNotificacion: notificacion });
+                console.log(`Crendo notificacion personal para ${laActividad.idCreador}`);
+            }
+            catch (error) {
+                console.log(`Error creando una notificacion para ${laActividad.idCreador}`);
+            }
+        }
+        try {
+            //El estudiante de este desarrollo es notificado
+            Schema_1.pubsub.publish(GruposEstudiantiles_1.NUEVA_PARTICIPACION_ESTUDIANTIL, {
+                nuevaRespuestaDesarrolloEstudiantil: {
+                    participacion: laParticipacion,
+                    idDesarrollo: elDesarrollo.id
+                },
+                idEstudianteDesarrollo: elDesarrollo.idEstudiante,
+                idDesarrollo: elDesarrollo._id,
+                idCreadorActividad: laActividad.idCreador,
+                idGrupo: elGrupo._id,
+                idActividad: laActividad._id
+            });
+        }
+        catch (error) {
+            console.log(`Error publicando en pubsub. E: ${error}`);
+        }
         console.log(`Respuesta publicada`);
         res.send({ resultado: "ok" });
     });
@@ -313,24 +341,6 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
             console.log(`Error guardando el grupo: E: ${error}`);
             return res.status(500).send("Error guardando la guia");
         }
-        // console.log(`Verificando la existencia de las carpetas ${idGrupo}, actividades y ${idUsuario}`);
-        // let carpetaActividades = "../archivosDeUsuario/actividadesProfes/actividades";
-        // try {
-        //     await mkdir(path.join(__dirname, carpetaActividades, idActividad));
-        // } catch (error) {
-        //     if (error.message.substr(0, 6) != "EEXIST") {
-        //         console.log(`Error creando la carpeta de la actividad. E: ${error.message.substr(0, 6)}`);
-        //         return res.status(500).send("Error accediendo al servidor");
-        //     }
-        // }
-        // console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
-        // let archivo = path.join(__dirname, carpetaActividades, idActividad, "guia.pdf");
-        // try {
-        //     await writeFile(archivo, req.file.buffer);
-        // } catch (error) {
-        //     console.log(`error escribiendo el archivo. E: ${error}`);
-        //     return res.status(500).send("Error guardando archivo");
-        // }
         console.log(`update terminado`);
         res.send({ resultado: "ok" });
     });

@@ -20,8 +20,7 @@
           class="inputs"
           :style="colorPassword"
           v-model="password"
-          placeholder="password"
-          @keypress.enter="iniciarSesion"
+          placeholder="password"          
           @input="loginFail = false"
         />
         <br />
@@ -41,7 +40,6 @@
 
 <script>
 import axios from "axios";
-import gql from "graphql-tag";
 import Loading from "./utilidades/Loading.vue";
 
 var charProhibidosUsername = /[^a-zA-Z0-9_ñÑ]/g;
@@ -89,6 +87,7 @@ export default {
   },
   methods: {
     iniciarSesion: function () {
+      console.log(`Iniciando login`);
       let dis = this;
       //Validacion de caracteres
       if (
@@ -105,46 +104,26 @@ export default {
           password: this.password,
         })
         .then(function (respuesta) {
+          console.log(`Logeado`);
+
           if (respuesta.data.username == dis.username) {
-            dis.$store.commit("logearse", respuesta.data.token);
-            dis.$apollo
-              .query({
-                query: gql`
-                  query {
-                    yo {
-                      id
-                      idGrupoEstudiantil
-                      nombreGrupoEstudiantil
-                      nombres
-                      apellidos
-                    }
-                  }
-                `,
-                fetchPolicy: "network-only",
-              })
-              .then(({ data: { yo } }) => {
-                dis.enviandoDatos = false;              
-                dis.$store.commit("setDatosUsuario", yo);
-                dis.$router.push("/miperfil");
-              })
-              .catch((error) => {
-                dis.enviandoDatos = false;
-                console.log(`Error descargando datos gql. E: ${error}`);
-              });
+            dis.$store.commit("logearse", respuesta.data.token);            
+            window.location.href = dis.clienteUrl;
+            dis.enviandoDatos = false;
           }
         })
         .catch(function (error) {
-          dis.enviandoDatos = false;          
+          dis.enviandoDatos = false;
           dis.$store.commit("deslogearse");
 
-          if (error.response.data.error) {
+          if (error.response && error.response.data.error) {
             if (error.response.data.error == "badLogin") {
               dis.loginFail = true;
               dis.loginFailMsg = "Datos inválidos";
               return;
             }
           }
-          if (error.response.data.msjUsuario) {
+          if (error.response && error.response.data.msjUsuario) {
             alert(error.response.data.msjUsuario);
           }
           console.log(`error: ${error}`);
@@ -153,9 +132,12 @@ export default {
     deslogearse: function () {
       //Logout en vuex y en apollo
       this.$store.commit("deslogearse");
+      window.location.href = this.clienteUrl;
+
       /////////
     },
   },
+ 
 };
 </script>
 

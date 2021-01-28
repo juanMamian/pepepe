@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloUsuario = exports.validarDatosUsuario = exports.permisosDeUsuario = void 0;
+exports.ModeloUsuario = exports.validarDatosUsuario = exports.ModeloNotificacion = exports.permisosDeUsuario = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 exports.permisosDeUsuario = [
     "usuario",
@@ -14,6 +14,29 @@ exports.permisosDeUsuario = [
     "actividadesEstudiantiles-administrador",
     "actividadesEstudiantiles-guia"
 ];
+const esquemaNotificacion = new mongoose_1.default.Schema({
+    texto: {
+        type: String,
+        default: "Nueva notificacion",
+    },
+    causante: {
+        tipo: String,
+        id: String
+    },
+    elementoTarget: {
+        tipo: {
+            type: String,
+            enum: ["actividadEstudiantil"]
+        },
+        id: String
+    },
+    fecha: {
+        type: Date,
+        required: true,
+        default: Date.now
+    }
+});
+exports.ModeloNotificacion = mongoose_1.default.model("Notificacion", esquemaNotificacion);
 const esquemaUsuario = new mongoose_1.default.Schema({
     username: {
         type: String,
@@ -88,6 +111,11 @@ const esquemaUsuario = new mongoose_1.default.Schema({
                 default: 0
             }
         }
+    },
+    notificaciones: {
+        type: [esquemaNotificacion],
+        required: true,
+        default: []
     }
 });
 esquemaUsuario.methods.getEdad = function () {

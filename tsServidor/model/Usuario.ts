@@ -10,6 +10,31 @@ export const permisosDeUsuario = [
     "actividadesEstudiantiles-guia"
 ];
 
+const esquemaNotificacion=new mongoose.Schema({
+    texto:{
+        type:String,
+        default: "Nueva notificacion",
+    },
+    causante:{
+        tipo:String,
+        id:String
+    },
+    elementoTarget:{
+        tipo:{
+            type:String,
+            enum:["actividadEstudiantil"]
+        },
+        id:String
+    },
+    fecha:{
+        type:Date,
+        required:true,
+        default:Date.now
+    }
+
+})
+
+export const ModeloNotificacion = mongoose.model("Notificacion", esquemaNotificacion);
 
 
 const esquemaUsuario = new mongoose.Schema({
@@ -86,6 +111,11 @@ const esquemaUsuario = new mongoose.Schema({
                 default: 0
             }
         }
+    },
+    notificaciones:{
+        type:[esquemaNotificacion],
+        required:true,
+        default:[]
     }
 });
 

@@ -18,6 +18,9 @@ const globalTypeDefs = gql`
     type Mutation{
         fakeMutation:String
     }
+    type Subscription{
+        fakeSubscription:String
+    }
     type Coords{
         x: Int,
         y: Int
@@ -60,7 +63,7 @@ const context = ({ req, res, connection }: any) => {
             usuario = jwt.verify(token, process.env.JWT_SECRET);
         }
         catch (error) {
-            console.log(`Error verificando el token.E: ${error}`);
+            console.log(`HTTP: Error verificando el token ${token}.E: ${error}`);
             usuario = {
                 id: "",
                 permisos: []
@@ -84,7 +87,7 @@ const onConnect=function(connectionParams, webSocket){
             
         }
         catch (error) {
-            console.log(`Error verificando el token.E: ${error}`);
+            console.log(`WS Error verificando el token ${token}.E: ${error}`);
             usuario = {
                 id: "",
                 permisos: []

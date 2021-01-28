@@ -4,12 +4,14 @@ import store from "./store/index"
 import { apolloProvider, serverUrl } from "./apollo"
 import { router } from "./Router"
 
+const clienteUrl = process.env.NODE_ENV === 'production'? serverUrl+'/pepepe' : 'http://localhost:8080'
 
 Vue.mixin({
 
   data() {
     return {
       serverUrl,      
+      clienteUrl
     }
   },
   computed: {
@@ -26,7 +28,10 @@ Vue.mixin({
       }
     },
     usuarioLogeado: function () {
-      return this.$store.state.usuario.id ? true : false;
+      if(!this.$store.state.token){
+        return false;
+      }
+      return true;
     },
     usuarioAdministrador: function () {
       if (!this.$store.state.usuario.permisos) return false;

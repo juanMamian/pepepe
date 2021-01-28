@@ -1,7 +1,7 @@
 const multer = require("multer");
 const upload = multer({ limits: { fileSize: 7000000 } });
 const router = require("express").Router();
-import { ModeloUsuario as Usuario } from "../model/Usuario";
+import { ModeloNotificacion, ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil"
 const path = require("path");
 const fs = require("fs");
@@ -16,6 +16,7 @@ import streamifier from "streamifier";
 import sharp from "sharp";
 import { pubsub } from "../gql/Schema";
 import { NUEVA_PARTICIPACION_ESTUDIANTIL } from "../gql/GruposEstudiantiles"
+import { NUEVA_NOTIFICACION_PERSONAL } from "../gql/Usuarios";
 //Google Drive
 
 
@@ -53,7 +54,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     if ("file" in req) {
         console.log(`Participacion con archivo adjunto`);
         console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
-    
+
         if (req.file.mimetype == "application/pdf") {
             extensionDeArchivo = "pdf"
         }
@@ -89,7 +90,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
         else {
             console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
-            return res.status(400).send({ msjUsuario: "El mimetype "+req.file.mimetype+" no está soportado" });
+            return res.status(400).send({ msjUsuario: "El mimetype " + req.file.mimetype + " no está soportado" });
         }
 
 
@@ -215,24 +216,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
 
     elDesarrollo.participaciones.push(laParticipacion)
 
-    // if ("file" in req) {
-    //     console.log(`Verificando la existencia de la carpeta de esta actividad: ${idActividad}`);
 
-    //     let carpetaEvidencias = "../archivosDeUsuario/actividadesProfes/evidencias";
-
-    //     console.log(`guardando el archivo con nombre idParticipacion`);
-    //     let archivo = path.join(__dirname, carpetaEvidencias) + "/" + idParticipacion + "." + laParticipacion.archivo.extension;
-    //     console.log(`el archivo quedará: ${archivo}`);
-    //     try {
-    //         await writeFile(archivo, req.file.buffer);
-    //     } catch (error) {
-    //         console.log(`error escribiendo el archivo. E: ${error}`);
-    //         return res.status(500).send("Error guardando archivo");
-    //     }
-    // }
-
-
-    //Guardando elGrupo
 
     try {
         await elGrupo.save();
@@ -242,16 +226,62 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     }
     console.log(`publicando con idDesarrollo: ${elDesarrollo._id}`);
 
-    pubsub.publish(NUEVA_PARTICIPACION_ESTUDIANTIL, {
-        nuevaRespuestaDesarrolloEstudiantil: {
-            participacion: laParticipacion,
-            idDesarrollo: elDesarrollo.id
+    //creando una notificacion en la base de datos
+    var notificacion= new ModeloNotificacion({
+        texto: "Nueva respuesta",
+        elementoTarget: {
+            tipo: "actividadEstudiantil",
+            id: laActividad._id
         },
-        idEstudianteDesarrollo: elDesarrollo.idEstudiante,
-        idDesarrollo: elDesarrollo._id,
-        idCreadorActividad: laActividad.idCreador,
-        idGrupo: elGrupo._id
+        causante: {
+            tipo: "persona",
+            id: elUsuario._id
+        }
+
     });
+    
+    //Pregunta si notificar al estudiante del desarrollo de la actividad.
+    if (laParticipacion.idAutor != elDesarrollo.idEstudiante) {
+        try {
+            await Usuario.findByIdAndUpdate(elDesarrollo.idEstudiante, { $push: { notificaciones: notificacion } }).exec();
+            pubsub.publish(NUEVA_NOTIFICACION_PERSONAL, { idNotificado: elDesarrollo.idEstudiante, nuevaNotificacion: notificacion });
+            console.log(`Crendo notificacion personal para ${elDesarrollo.idEstudiante}`);
+        } catch (error) {
+            console.log(`Error creando una notificacion con para ${elDesarrollo.idEstudiante}`);
+        }
+    }
+
+    //Pregunta si notificar al autor de la actividad
+    if (laParticipacion.idAutor != laActividad.idCreador) {
+        try {
+            await Usuario.findByIdAndUpdate(laActividad.idCreador, { $push: { notificaciones: notificacion } }).exec();
+            pubsub.publish(NUEVA_NOTIFICACION_PERSONAL, { idNotificado: laActividad.idCreador, nuevaNotificacion: notificacion });
+            console.log(`Crendo notificacion personal para ${laActividad.idCreador}`);
+        } catch (error) {
+            console.log(`Error creando una notificacion para ${laActividad.idCreador}`);
+        }
+    }
+
+
+    try {
+        //El estudiante de este desarrollo es notificado
+
+
+        pubsub.publish(NUEVA_PARTICIPACION_ESTUDIANTIL, {
+            nuevaRespuestaDesarrolloEstudiantil: {
+                participacion: laParticipacion,
+                idDesarrollo: elDesarrollo.id
+            },
+            idEstudianteDesarrollo: elDesarrollo.idEstudiante,
+            idDesarrollo: elDesarrollo._id,
+            idCreadorActividad: laActividad.idCreador,
+            idGrupo: elGrupo._id,
+            idActividad: laActividad._id
+        });
+    } catch (error) {
+        console.log(`Error publicando en pubsub. E: ${error}`);
+    }
+
 
     console.log(`Respuesta publicada`);
 
@@ -350,30 +380,6 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
         return res.status(500).send("Error guardando la guia");
     }
 
-
-
-
-    // console.log(`Verificando la existencia de las carpetas ${idGrupo}, actividades y ${idUsuario}`);
-    // let carpetaActividades = "../archivosDeUsuario/actividadesProfes/actividades";
-
-    // try {
-    //     await mkdir(path.join(__dirname, carpetaActividades, idActividad));
-    // } catch (error) {
-    //     if (error.message.substr(0, 6) != "EEXIST") {
-    //         console.log(`Error creando la carpeta de la actividad. E: ${error.message.substr(0, 6)}`);
-    //         return res.status(500).send("Error accediendo al servidor");
-    //     }
-    // }
-
-    // console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
-
-    // let archivo = path.join(__dirname, carpetaActividades, idActividad, "guia.pdf");
-    // try {
-    //     await writeFile(archivo, req.file.buffer);
-    // } catch (error) {
-    //     console.log(`error escribiendo el archivo. E: ${error}`);
-    //     return res.status(500).send("Error guardando archivo");
-    // }
 
     console.log(`update terminado`);
     res.send({ resultado: "ok" });

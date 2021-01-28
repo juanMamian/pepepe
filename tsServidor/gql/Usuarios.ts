@@ -1,7 +1,8 @@
-import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
+import { ApolloError, AuthenticationError, gql, withFilter } from "apollo-server-express";
 import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario } from "../model/Usuario"
 import { GraphQLDateTime } from "graphql-iso-date";
-import {ModeloGrupoEstudiantil as GrupoEstudiantil} from "../model/actividadesProfes/GrupoEstudiantil";
+import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
+import { contextoQuery } from "./tsObjetos"
 
 
 interface Usuario {
@@ -10,12 +11,27 @@ interface Usuario {
     id: string
 }
 
-interface contextoQuery {
-    usuario: Usuario
+
+interface InterfacePayloadNuevaNotificacion {
+    idNotificado: string,
+    nuevaNotificacion: any
 }
 
 export const typeDefs = gql`
     scalar Date
+
+    type MinimoCausante{
+        id:ID,
+        tipo:String,
+    }
+
+    type Notificacion{
+        id:ID,
+        texto:String,
+        causante:MinimoCausante,
+        elementoTarget: MinimoElemento,
+        fecha:Date
+    }
 
     type infoAtlas{
         centroVista:Coords
@@ -47,6 +63,7 @@ export const typeDefs = gql`
         permisos:[String]
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
+        notificaciones:[Notificacion]
     }
     input DatosEditablesUsuario{
         nombres:String,
@@ -79,16 +96,42 @@ export const typeDefs = gql`
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
         editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
         addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
-        eliminarUsuario(idUsuario:ID!):Boolean,      
+        eliminarUsuario(idUsuario:ID!):Boolean,
+        eliminarNotificacion(idNotificacion:ID!):Boolean,
     }
+    extend type Subscription{
+        nuevaNotificacion:Notificacion
+    }
+
 `
 
+export const NUEVA_NOTIFICACION_PERSONAL = "nueva_notificacion_personal";
+
 export const resolvers = {
+    Subscription: {
+        nuevaNotificacion: {
+            subscribe: withFilter(
+                (_: any, __: any, contexto: contextoQuery) => {
+                    console.log(`--------------------------Creando una subscripción a notificaciones personales de ${contexto.usuario.username}`);
+
+                    return contexto.pubsub.asyncIterator(NUEVA_NOTIFICACION_PERSONAL)
+                },
+                (payloadNuevaNotificacion: InterfacePayloadNuevaNotificacion, variables, contexto: contextoQuery) => {
+                    console.log(`Decidiendo si notificar a ${contexto.usuario.id} con idNotificado=${payloadNuevaNotificacion.idNotificado}`);
+                    if (payloadNuevaNotificacion.idNotificado != contexto.usuario.id) {
+                        return false;
+                    }
+                    console.log(`Nueva notificacion personal para ${contexto.usuario.username}`);
+                    return true;
+                }
+            )
+        }
+    },
     Query: {
         usuariosProfe: async function (_: any, args: any, context: contextoQuery) {
             console.log(`Fetching la lista de todos los profes`);
             try {
-                var profes=await Usuario.find({permisos:"actividadesEstudiantiles-profe"}).exec();
+                var profes = await Usuario.find({ permisos: "actividadesEstudiantiles-profe" }).exec();
             } catch (error) {
                 console.log(`Error buscando profes en la base de datos`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -144,8 +187,8 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario:any = await Usuario.findById(credencialesUsuario.id).exec();
-                if(!elUsuario){                    
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) {
                     throw "Usuario no encontrado"
                 }
             }
@@ -176,8 +219,8 @@ export const resolvers = {
         },
         setCentroVista: async function (_: any, { idUsuario, centroVista }: any, context: contextoQuery) {
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario, "atlas").exec();
-                if(!elUsuario){
+                var elUsuario: any = await Usuario.findById(idUsuario, "atlas").exec();
+                if (!elUsuario) {
                     throw "Error recopilando datos";
                 }
             } catch (error) {
@@ -218,16 +261,16 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!Array.isArray(elUsuario.permisos)) {
                     console.log(`Los permisos no eran un array: Eran: ${elUsuario.permisos}`);
                 }
                 if (!elUsuario.permisos.includes(nuevoPermiso)) {
                     console.log(`Añadiendo ${nuevoPermiso} a la lista de permisos`);
                     elUsuario.permisos.push(nuevoPermiso);
-                    elUsuario.permisos=elUsuario.permisos.filter(p=>p!="actividadesProfes-profe");
+                    elUsuario.permisos = elUsuario.permisos.filter(p => p != "actividadesProfes-profe");
                 }
-                else{
+                else {
                     console.log(`El usuario ya tenía ese permiso`);
                 }
                 await elUsuario.save();
@@ -239,7 +282,7 @@ export const resolvers = {
             console.log(`Permiso añadido.Quedó con: ${elUsuario.permisos}`);
             return elUsuario;
         },
-        eliminarUsuario:async function(_: any, { idUsuario}, contexto: contextoQuery) {
+        eliminarUsuario: async function (_: any, { idUsuario }, contexto: contextoQuery) {
             console.log(`||||||||||||||||||||||`);
             console.log(`Solicitud de eliminar un usuario con id ${idUsuario} de la base de datos`);
 
@@ -258,9 +301,9 @@ export const resolvers = {
             }
 
             try {
-                let elEliminado:any=await Usuario.findByIdAndDelete(idUsuario).exec();                
-                if(!elEliminado){
-                    throw "Usuario no encontrado"    ;
+                let elEliminado: any = await Usuario.findByIdAndDelete(idUsuario).exec();
+                if (!elEliminado) {
+                    throw "Usuario no encontrado";
                 }
                 console.log(`Eliminado ${elEliminado.username}`);
             } catch (error) {
@@ -270,7 +313,26 @@ export const resolvers = {
             return true;
 
 
-        }
+        },
+        eliminarNotificacion: async function (_: any, { idNotificacion }, contexto: contextoQuery) {
+            console.log(`|||||||||||||||||||||1`);
+            console.log(`Peticion de eliminar una notificacion con id ${idNotificacion}`);
+            //Authorización
+            let credencialesUsuario = contexto.usuario;
+            if(credencialesUsuario.permisos.length<1){
+                console.log(`El usuario no estaba logeado`);
+                throw new AuthenticationError("No autorizado");
+            }
+            
+            try {
+                await Usuario.findByIdAndUpdate(credencialesUsuario.id, {$pull:{notificaciones:{_id:idNotificacion}}}).exec();
+            } catch (error) {
+                console.log(`Error eliminando la notificacion de la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Notificacion eliminada`);
+            return true;
+        },
     },
     Usuario: {
         edad: function (parent: any, _: any, __: any) {
@@ -278,35 +340,35 @@ export const resolvers = {
                 return 0;
             }
             let edad = Date.now() - parent.fechaNacimiento;
-            console.log(`Usuario tiene edad: ${edad}`);        
+            console.log(`Usuario tiene edad: ${edad}`);
             let edadAños = Math.floor(edad / (60 * 60 * 24 * 365 * 1000));
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
         },
-        nombreGrupoEstudiantil:async function (parent:any) {
-            if(!parent._id){
-                
+        nombreGrupoEstudiantil: async function (parent: any) {
+            if (!parent._id) {
+
                 return ""
             }
             try {
-                let elGrupo:any=await GrupoEstudiantil.findOne({estudiantes: parent._id}).exec();
-                if(!elGrupo)return ""
-                var nombreGrupo=elGrupo.nombre;
+                let elGrupo: any = await GrupoEstudiantil.findOne({ estudiantes: parent._id }).exec();
+                if (!elGrupo) return ""
+                var nombreGrupo = elGrupo.nombre;
             } catch (error) {
                 console.log(`Error buscando grupo en la base de datos. E: ${error}`);
                 return ""
             }
             return nombreGrupo;
         },
-        idGrupoEstudiantil:async function (parent:any) {
-            if(!parent._id){
-                
+        idGrupoEstudiantil: async function (parent: any) {
+            if (!parent._id) {
+
                 return ""
             }
             try {
-                let elGrupo=await GrupoEstudiantil.findOne({estudiantes: parent._id});
-                if(!elGrupo)return ""
-                var idGrupo=elGrupo._id;
+                let elGrupo = await GrupoEstudiantil.findOne({ estudiantes: parent._id });
+                if (!elGrupo) return ""
+                var idGrupo = elGrupo._id;
             } catch (error) {
                 console.log(`Error buscando grupo en la base de datos. E: ${error}`);
                 return ""
@@ -324,30 +386,30 @@ export const resolvers = {
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
         },
-        nombreGrupoEstudiantil:async function (parent:any) {
-            if(!parent._id){
-                
+        nombreGrupoEstudiantil: async function (parent: any) {
+            if (!parent._id) {
+
                 return ""
             }
             try {
-                let elGrupo:any=await GrupoEstudiantil.findOne({estudiantes: parent._id}).exec();
-                if(!elGrupo)return ""
-                var nombreGrupo=elGrupo.nombre;
+                let elGrupo: any = await GrupoEstudiantil.findOne({ estudiantes: parent._id }).exec();
+                if (!elGrupo) return ""
+                var nombreGrupo = elGrupo.nombre;
             } catch (error) {
                 console.log(`Error buscando grupo en la base de datos. E: ${error}`);
                 return ""
             }
             return nombreGrupo;
         },
-        idGrupoEstudiantil:async function (parent:any) {
-            if(!parent._id){
-                
+        idGrupoEstudiantil: async function (parent: any) {
+            if (!parent._id) {
+
                 return ""
             }
             try {
-                let elGrupo:any=await GrupoEstudiantil.findOne({estudiantes: parent._id}).exec();
-                if(!elGrupo)return ""
-                var idGrupo=elGrupo._id;
+                let elGrupo: any = await GrupoEstudiantil.findOne({ estudiantes: parent._id }).exec();
+                if (!elGrupo) return ""
+                var idGrupo = elGrupo._id;
             } catch (error) {
                 console.log(`Error buscando grupo en la base de datos. E: ${error}`);
                 return ""
@@ -358,6 +420,6 @@ export const resolvers = {
     Date: {
         GraphQLDateTime
     }
-    
+
 
 }

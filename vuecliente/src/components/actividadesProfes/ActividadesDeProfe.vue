@@ -121,7 +121,7 @@ export default {
             );
 
             if (!elDesarrollo) {
-              console.log(`El desarrollo no estaba en estaba actividad`);
+              console.log(`El desarrollo no estaba en esta actividad`);
             } else {
               //Verificar si esta respuesta no ha llegado de algún otro lado.
               if (

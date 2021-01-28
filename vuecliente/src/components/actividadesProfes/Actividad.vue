@@ -334,6 +334,10 @@ export default {
         return {
           desarrollos: new Array(),
           hayGuia: "",
+          creador:{
+            id:"0",
+            nombre:"?"
+          }
         };
       },
     },
@@ -639,6 +643,11 @@ export default {
         : false;
     },
   },
+  watch:{
+    usuarioLogeado:function(){
+      this.idEstudianteSeleccionado=this.$store.state.usuario.id
+    }
+  }
 };
 </script>
 
