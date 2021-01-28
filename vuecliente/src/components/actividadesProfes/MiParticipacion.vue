@@ -35,7 +35,6 @@
         type="file"
         id="inputArchivoAdjunto"
         ref="inputArchivoAdjunto"
-        accept="application/pdf, .png, .jpg, .jpeg, image/png, image/jpg, image/jpeg"
         @change="actualizarNombreDeArchivo"
       />
       <img

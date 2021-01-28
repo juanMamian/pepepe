@@ -53,13 +53,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     if ("file" in req) {
         console.log(`Participacion con archivo adjunto`);
         console.log(`El archivo uploaded pesaba ${req.file.size} de tipo ${req.file.mimetype}`);
-        let tiposDeArchivoPermitidos = ["application/pdf", "image/png", "image/jpg", "image/jpeg"];
-
-        if (!tiposDeArchivoPermitidos.includes(req.file.mimetype)) {
-            console.log(`Se intentó subir un archivo que no estaba permitido. era ${req.file.mimetype}`);
-            return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
-        }
-
+    
         if (req.file.mimetype == "application/pdf") {
             extensionDeArchivo = "pdf"
         }
@@ -72,9 +66,30 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         else if (req.file.mimetype == "image/jpeg") {
             extensionDeArchivo = "jpg"
         }
+        else if (req.file.mimetype == "audio/aac") {
+            extensionDeArchivo = "aac"
+        }
+        else if (req.file.mimetype == "audio/x-wav") {
+            extensionDeArchivo = "wav"
+        }
+        else if (req.file.mimetype == "audio/webm") {
+            extensionDeArchivo = "weba"
+        }
+        else if (req.file.mimetype == "audio/mpeg") {
+            extensionDeArchivo = "mpga"
+        }
+        else if (req.file.mimetype == "audio/mp4") {
+            extensionDeArchivo = "mp4a"
+        }
+        else if (req.file.mimetype == "audio/ogg") {
+            extensionDeArchivo = "oga"
+        }
+        else if (req.file.mimetype == "video/ogg") {
+            extensionDeArchivo = "ogg"
+        }
         else {
             console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
-            return res.status(400).send({ msjUsuario: "Este tipo de archivos no está soportado" });
+            return res.status(400).send({ msjUsuario: "El mimetype "+req.file.mimetype+" no está soportado" });
         }
 
 
@@ -230,11 +245,11 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
     pubsub.publish(NUEVA_PARTICIPACION_ESTUDIANTIL, {
         nuevaRespuestaDesarrolloEstudiantil: {
             participacion: laParticipacion,
-            idDesarrollo:elDesarrollo.id
+            idDesarrollo: elDesarrollo.id
         },
         idEstudianteDesarrollo: elDesarrollo.idEstudiante,
         idDesarrollo: elDesarrollo._id,
-        idCreadorActividad:laActividad.idCreador,
+        idCreadorActividad: laActividad.idCreador,
         idGrupo: elGrupo._id
     });
 
