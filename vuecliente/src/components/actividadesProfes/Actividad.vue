@@ -875,7 +875,7 @@ export default {
 #contenedorAvancesGrupo {
   position: absolute;
   top: 0%;
-  left: 50px;
+  left: 30px;
   display: flex;
   padding: 5px;
 }
