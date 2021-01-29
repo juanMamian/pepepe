@@ -122,7 +122,9 @@
           "
           @participacionEliminada="eliminarParticipacionDeCache"
           @posibleCambioEstudiantesIdle="reloadEstudiantesIdle()"
-        />
+        >
+       
+        </actividad>
       </div>
     </div>
   </div>
@@ -579,4 +581,5 @@ export default {
   border: 1px solid rgb(255, 115, 0);
   border-radius: 50%;
 }
+
 </style>

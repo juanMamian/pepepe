@@ -6,6 +6,29 @@
       completada: usuarioCompletoActividad,
     }"
   >
+    <div id="contenedorAvancesGrupo" v-if="usuarioCreadorActividad">
+      <div class="indicadorAvance" v-show="estadoAvanceGrupo.numCompletados>0">
+        <div class="numeroIndicadorAvance">{{estadoAvanceGrupo.numCompletados}}</div>
+        <img
+          src="@/assets/iconos/estudiante.png"
+          alt="Estudiantes que completaron"
+          id="imagenEstudianteCompletado"
+          class="imagenAvancesGrupo"
+          title="Estudiantes que completaron la actividad"
+        />
+      </div>
+      <div class="indicadorAvance" v-show="estadoAvanceGrupo.numDesarrollando>0">
+        <div class="numeroIndicadorAvance">{{estadoAvanceGrupo.numDesarrollando}}</div>
+        <img
+          src="@/assets/iconos/estudiante.png"
+          alt="Estudiantes desarrollando"
+          id="imagenEstudianteDesarrollando"
+          class="imagenAvancesGrupo"
+          title="Estudiantes desarrollando actividad"
+        />
+      </div>
+      <slot name="avancesGrupo"> </slot>
+    </div>
     <div id="contenedorAlertas">
       <img
         v-if="actividadConNuevasRespuestasParaProfe"
@@ -124,7 +147,9 @@
       v-if="
         usuarioCreadorActividad ||
         usuarioAdministradorActividadesEstudiantiles ||
-        $store.state.usuario.permisos.includes('actividadesEstudiantiles-guia') ||
+        $store.state.usuario.permisos.includes(
+          'actividadesEstudiantiles-guia'
+        ) ||
         $store.state.usuario.permisos.includes('actividadesEstudiantiles-profe')
       "
       v-show="seleccionada"
@@ -222,7 +247,11 @@
             :participacionEstudiante="
               desarrollo.estudiante.id == $store.state.usuario.id
             "
-            v-if="desarrollo.estado != 'completado' && (usuarioCreadorActividad || desarrollo.estudiante.id == $store.state.usuario.id )"
+            v-if="
+              desarrollo.estado != 'completado' &&
+              (usuarioCreadorActividad ||
+                desarrollo.estudiante.id == $store.state.usuario.id)
+            "
             @reloadDesarrollo="reloadDesarrollo(desarrollo.id)"
           />
           <div v-if="usuarioCreadorActividad" id="toggleDesarrolloCompletado">
@@ -334,10 +363,10 @@ export default {
         return {
           desarrollos: new Array(),
           hayGuia: "",
-          creador:{
-            id:"0",
-            nombre:"?"
-          }
+          creador: {
+            id: "0",
+            nombre: "?",
+          },
         };
       },
     },
@@ -642,12 +671,26 @@ export default {
         ? true
         : false;
     },
-  },
-  watch:{
-    usuarioLogeado:function(){
-      this.idEstudianteSeleccionado=this.$store.state.usuario.id
+    estadoAvanceGrupo(){
+      let estadoAvanceGrupo={
+        numCompletados:0,
+        numDesarrollando:0
+      }
+
+      if(!this.estaActividad.desarrollos){
+        return estadoAvanceGrupo
+      }
+
+      estadoAvanceGrupo.numCompletados=this.estaActividad.desarrollos.filter(d=>d.estado=="completado").length;
+      estadoAvanceGrupo.numDesarrollando=this.estaActividad.desarrollos.filter(d=>d.estado=="desarrollando").length;
+      return estadoAvanceGrupo;
     }
-  }
+  },
+  watch: {
+    usuarioLogeado: function () {
+      this.idEstudianteSeleccionado = this.$store.state.usuario.id;
+    },
+  },
 };
 </script>
 
@@ -668,6 +711,7 @@ export default {
   background-color: rgb(240, 240, 240);
   padding-bottom: 30px;
 }
+
 #contenedorAlertas {
   position: absolute;
   top: 0;
@@ -827,5 +871,38 @@ export default {
   min-width: 40%;
   margin-left: auto;
   margin-right: auto;
+}
+#contenedorAvancesGrupo {
+  position: absolute;
+  top: 0%;
+  left: 50px;
+  display: flex;
+  padding: 5px;
+}
+.imagenAvancesGrupo {
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+.indicadorAvance{
+  position:relative;
+}
+#imagenEstudianteDesarrollando{
+  background-color: rgb(223, 221, 126);
+  border: 1px solid rgb(129, 117, 8);
+}
+#imagenEstudianteCompletado{
+  background-color: rgb(149, 224, 149);
+  border:1px solid green;
+}
+.numeroIndicadorAvance{
+  position:absolute;
+  font-size: 15px;
+  color:black;
+  top:100%;
+  left:50%;
+  transform: translateX(-50%);
 }
 </style>

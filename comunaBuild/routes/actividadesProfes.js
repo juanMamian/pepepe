@@ -99,6 +99,9 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             else if (req.file.mimetype == "video/x-m4a") {
                 extensionDeArchivo = "m4a";
             }
+            else if (req.file.mimetype == "audio/x-m4a") {
+                extensionDeArchivo = "m4a";
+            }
             else {
                 console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
                 return res.status(400).send({ msjUsuario: "El mimetype " + req.file.mimetype + " no está soportado" });
