@@ -33,10 +33,9 @@ const esquemaProyecto = new mongoose.Schema({
         type: [String],
         default: []
     },
-    conversaciones:{
-        type: [String],
-        default:[],
-        required:true
+    idForo:{
+        type:String,
+        required:true,
     }
 
 });

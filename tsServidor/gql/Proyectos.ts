@@ -3,6 +3,7 @@ import {ModeloProyecto as Proyecto} from "../model/Proyecto";
 import {ModeloTrabajo as Trabajo} from "../model/Trabajo";
 import { contextoQuery } from "./tsObjetos"
 import {ModeloUsuario as Usuario} from "../model/Usuario";
+import {ModeloForo as Foro} from "../model/Foros/Foro"
 
 export const typeDefs = gql`
     type Proyecto{
@@ -12,7 +13,8 @@ export const typeDefs = gql`
         responsables: [PublicUsuario],
         posiblesResponsables:[PublicUsuario],
         trabajos: [Trabajo],
-        objetivos: [Objetivo]
+        objetivos: [Objetivo],
+        idForo:ID,
     }
     type Objetivo{
        id: ID,
@@ -43,7 +45,6 @@ export const typeDefs = gql`
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
         editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
         editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
-
     }
     
 `;
@@ -70,6 +71,47 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error buscando el proyecto. E:${error}`);
                 throw new ApolloError("Error en la conexión con la base de datos");
+            }
+            let tieneForo=true;
+            
+            if(!elProyecto.idForo){
+                tieneForo=false;
+            }
+            else {
+                try {
+                    let elForo:any=await Foro.findById(elProyecto.idForo).exec();
+                    if(!elForo){
+                        console.log(`El foro no existía. Se creará uno nuevo`);
+                        tieneForo=false;
+                    }
+                } catch (error) {
+                    console.log(`Error buscando foro en la base de datos. E :${error}`);
+                }
+            }
+
+            if(!tieneForo){
+                console.log(`El proyecto ${elProyecto.nombre} no tenía foro. Creando con responsables: ${elProyecto.responsables}.`);
+                try {
+                    var nuevoForo:any=await Foro.create({
+                        categorias:[{nombre:"General"}],
+                        acceso:"privado",
+                        miembros:elProyecto.responsables,
+                    });
+                    var idNuevoForo=nuevoForo._id;
+                    await nuevoForo.save();
+                } catch (error) {
+                    console.log(`Error creando el nuevo foro. E: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo foro creado`);
+                try {
+                    elProyecto.idForo=idNuevoForo;
+                    await elProyecto.save();
+                } catch (error) {
+                    console.log(`Error guardando el proyecto`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
             }
             return elProyecto
         }
@@ -164,6 +206,7 @@ export const resolvers = {
                 console.log(`El usuario ya era responsable de este proyecto`);
                 throw new ApolloError("El usuario ya estaba incluido");
             }
+            
 
             elProyecto.responsables.push(idUsuario);
             console.log(`Usuario añadido a la lista de responsables`);
@@ -180,6 +223,13 @@ export const resolvers = {
             catch (error) {
                 console.log("Error guardando datos en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
+            }
+            
+            //Mirror responsables del proyecto hacia miembros del foro
+            try {
+                await Foro.findByIdAndUpdate(elProyecto.idForo, {miembros:elProyecto.responsables});
+            } catch (error) {
+                console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
             console.log(`Proyecto guardado`);
             return elProyecto
@@ -240,6 +290,14 @@ export const resolvers = {
                 console.log("Error guardando datos en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+
+            //Mirror responsables del proyecto hacia miembros del foro
+            try {
+                await Foro.findByIdAndUpdate(elProyecto.idForo, {miembros:elProyecto.responsables});
+            } catch (error) {
+                console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+            }
+
             console.log(`Proyecto guardado`);
             return elProyecto
 
@@ -333,11 +391,26 @@ export const resolvers = {
                 throw new ApolloError("No ID");
             }
             console.log(`el usuario ${usuario.username} intenta crear un nuevo proyecto`);
-            let elProyecto = await new Proyecto({
+            let elProyecto :any= await new Proyecto({
                 responsables: [usuario.id]
             });
 
             try {
+                var nuevoForo:any=await Foro.create({
+                    categorias:[{nombre:"General"}],
+                    acceso:"privado",
+                    miembros:elProyecto.responsables,
+                });
+                var idNuevoForo=nuevoForo._id;
+                await nuevoForo.save();
+            } catch (error) {
+                console.log(`Error creando el nuevo foro. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Nuevo foro creado`);
+
+            try {
+                elProyecto.idForo=idNuevoForo;
                 await elProyecto.save();
             } catch (error) {
                 console.log(`error guardando el nuevo proyecto. E: ${error}`);
@@ -842,7 +915,7 @@ export const resolvers = {
             }
             console.log(`Descripcion guardado`);
             return elObjetivo;
-        }
+        },        
     },
     Proyecto: {
         responsables: async function (parent: any, _: any, __: any) {

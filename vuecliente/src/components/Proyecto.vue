@@ -32,6 +32,13 @@
         @keypress.enter="guardarNuevoNombre"
       />
       <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
+      <img
+        src="@/assets/iconos/foro.png"
+        alt="Enlace al foro"
+        id="enlaceForo"
+        title="Ir al foro de este proyecto"
+        @click="navegarAlForo"
+      />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="nombreZona">Descripcion</div>
@@ -204,6 +211,12 @@
         />
       </div>
     </div>
+
+    <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
+      <div class="nombreZona">foro</div>
+      <foro :idForo="esteProyecto.idForo"/>
+
+    </div>
   </div>
 </template>
 
@@ -217,6 +230,7 @@ import {
   fragmentoResponsables,
 } from "./utilidades/recursosGql";
 import Loading from "./utilidades/Loading.vue";
+import Foro from './Foro.vue';
 
 const QUERY_PROYECTO = gql`
   query($idProyecto: ID!) {
@@ -230,7 +244,7 @@ const charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionProyecto = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
-  components: { IconoTrabajo, IconoPersona, IconoObjetivo, Loading },
+  components: { IconoTrabajo, IconoPersona, IconoObjetivo, Loading, Foro },
   name: "proyecto",
   apollo: {
     esteProyecto: {
@@ -400,7 +414,8 @@ export default {
       this.nuevoNombre = this.esteProyecto.nombre;
     },
     toggleEditandoDescripcion() {
-      this.$refs.inputNuevoDescripcion.style.height=this.$refs.descripcion.offsetHeight+"px";
+      this.$refs.inputNuevoDescripcion.style.height =
+        this.$refs.descripcion.offsetHeight + "px";
       this.editandoDescripcion = !this.editandoDescripcion;
       this.nuevoDescripcion = this.esteProyecto.descripcion;
     },
@@ -692,6 +707,26 @@ export default {
         data: cache,
       });
     },
+    crearForoProyecto() {
+      console.log(`Creando foro para este proyecto`);
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idProyecto: ID!) {
+            crearForoProyecto(idProyecto: $idProyecto) {
+              id
+              idForo
+            }
+          }
+        `,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+      });
+    },
+    navegarAlForo() {
+      console.log(`Navegando al foro de este proyecto`);
+      this.$refs.zonaForo.scrollIntoView();
+    },
   },
 };
 </script>
@@ -715,6 +750,18 @@ export default {
   font-size: 23px;
   display: block;
   margin: 10px auto;
+}
+#enlaceForo {
+  display: block;
+  margin: 10px auto;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  padding: 5px;
+}
+#enlaceForo:hover {
+  background-color: rgb(197, 197, 197);
 }
 #descripcion {
   font-size: 19px;

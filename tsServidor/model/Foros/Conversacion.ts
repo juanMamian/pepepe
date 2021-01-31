@@ -2,8 +2,10 @@ import mongoose from "mongoose";
 
 const esquemaRespuestaConversacion = new mongoose.Schema({
 
-    fechaUpload: {
-        type: Date
+    fecha: {
+        type: Date,
+        required: true,
+        default:Date.now
     },
     archivo: {
         nombre: String,
@@ -11,8 +13,9 @@ const esquemaRespuestaConversacion = new mongoose.Schema({
         idGoogleDrive: String,
         googleDriveDirectLink: String,
     },
-    comentario: {
+    mensaje: {
         type: String,
+        required:true,
     },
     idAutor: {
         type: String,
@@ -22,13 +25,12 @@ const esquemaRespuestaConversacion = new mongoose.Schema({
 });
 
 
-const esquemaConversacion = new mongoose.Schema({    
-    visibilidad:{
-        type: String,
-        default: "publica",
-        required:true,
-        enum:["publica", "privada"],
-    },
+export const esquemaConversacion = new mongoose.Schema({    
+    titulo:{
+        type:String,
+        default:"Nueva conversación",
+        required:true
+    },   
     estado: {
         type: String,
         default: "abierta",
@@ -39,7 +41,14 @@ const esquemaConversacion = new mongoose.Schema({
         type: [esquemaRespuestaConversacion],
         required: true,
         default: []
-    },    
+    },
+    idCreador:{
+        type:String,
+        required:true,
+    }
 });
+
+export const charProhibidosMensajeRespuesta = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+
 
 export const ModeloConversacion=mongoose.model("Conversacion", esquemaConversacion);
