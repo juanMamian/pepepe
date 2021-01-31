@@ -35,7 +35,6 @@ export const resolvers ={
     },
     Trabajo:{
         responsables:async function(parent:any, _:any, __:any){
-            console.log(`parent (responsables): ${JSON.stringify(parent.responsables)}`);
             if(!parent.responsables){
                 return [];
             }

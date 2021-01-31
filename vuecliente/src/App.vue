@@ -12,7 +12,7 @@
         </div>
       </router-link>
 
-      <router-link to="/proyectos" class="hoverNegro disabled">
+      <router-link to="/proyectos" class="hoverNegro">
         <div class="botonNav" id="navProyectos">Proyectos</div>
       </router-link>
 
@@ -317,6 +317,17 @@ a {
 }
 input {
   border: 1px solid black;
+}
+.letrasRojas{
+  color:red;
+}
+.bordeAbajo{
+  border-bottom: 2px solid black;
+}
+.deshabilitado {
+  opacity: 0.5;
+  user-select: none;
+  pointer-events: none;
 }
 </style>
 

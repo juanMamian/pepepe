@@ -8,6 +8,7 @@ export const typeDefs = gql`
     type Proyecto{
         id: ID,
         nombre: String,
+        descripcion:String,
         responsables: [PublicUsuario],
         posiblesResponsables:[PublicUsuario],
         trabajos: [Trabajo],
@@ -24,24 +25,24 @@ export const typeDefs = gql`
     }
     extend type Mutation{
         editarNombreProyecto(idProyecto: ID!, nuevoNombre: String!):Proyecto,
-        crearProyecto:Proyecto,        
+        editarDescripcionProyecto(idProyecto: ID!, nuevoDescripcion: String!):Proyecto,
+        crearProyecto:Proyecto, 
+        eliminarProyecto(idProyecto:ID!):Boolean,       
         addResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         addPosibleResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         removeResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         
         crearTrabajoEnProyecto(idProyecto: ID!):Trabajo,
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
-        cambiarNombreTrabajo(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
-        cambiarDescripcionTrabajo(idProyecto:ID!, idTrabajo:ID!, nuevaDescripcion: String!):Trabajo,
+        editarNombreTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
+        editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
         addResponsableTrabajo(idProyecto:ID!, idTrabajo:ID!,idUsuario:ID!):Trabajo,
         removeResponsableTrabajo(idProyecto:ID!, idTrabajo:ID!, idUsuario:ID!):Trabajo,
 
-
-
         crearObjetivoEnProyecto(idProyecto: ID!):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
-        cambiarNombreObjetivo(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
-        cambiarDescripcionObjetivo(idProyecto:ID!, idObjetivo:ID!, nuevaDescripcion: String!):Objetivo,
+        editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
+        editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
 
     }
     
@@ -138,12 +139,12 @@ export const resolvers = {
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
                 throw new ApolloError("Error de conexión con la base de datos");
-            }
+            }            
 
             //Authorización
 
             if (elProyecto.responsables.length>0 && !elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+                console.log(`Error de autenticacion. Hay ${elProyecto.responsables.length} responsable: ${elProyecto.responsables}`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -256,13 +257,13 @@ export const resolvers = {
             }
 
             //Authorización
-
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+            let permisosEspeciales=["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            var charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+            const charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
             if (charProhibidosNombreProyecto.test(nuevoNombre)) {
@@ -270,15 +271,55 @@ export const resolvers = {
             }
 
 
-            elProyecto.nombre = nuevoNombre.trim();
+            nuevoNombre = nuevoNombre.trim();
 
             try {
                 console.log(`guardando nuevo nombre ${elProyecto.nombre} en la base de datos`);
-                await elProyecto.save();
+                var resProyecto:any=await Proyecto.findByIdAndUpdate(idProyecto, {nombre: nuevoNombre}, {new: true}).exec();
             } catch (error) {
                 console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
             }
-            return elProyecto
+            console.log(`Nombre guardado`);
+            return resProyecto;
+        },
+        editarDescripcionProyecto: async function (_: any, { idProyecto, nuevoDescripcion }: any, contexto: contextoQuery) {
+            console.log(`|||||||||||||||||||`);
+            console.log(`Solicitud de set descripcion del proyecto con id ${elProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales=["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Descripcion de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            const charProhibidosDescripcionProyecto = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+
+            if (charProhibidosDescripcionProyecto.test(nuevoDescripcion)) {
+                throw new ApolloError("Descripcion ilegal");
+            }
+
+
+            nuevoDescripcion = nuevoDescripcion.trim();
+
+            try {
+                console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
+                var resProyecto:any=await Proyecto.findByIdAndUpdate(idProyecto, {descripcion: nuevoDescripcion}, {new: true}).exec();
+            } catch (error) {
+                console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+            }
+            console.log(`Descripcion guardado`);
+            return resProyecto;
         },
         async crearProyecto(_: any, args: any, contexto: contextoQuery) {
             console.log(`mutacion`);
@@ -305,6 +346,42 @@ export const resolvers = {
             console.log(`proyecto creado`);
 
             return elProyecto;
+        },
+        async eliminarProyecto(_: any, { idProyecto }: any, contexto: contextoQuery) {
+            console.log(`peticion de eliminar un proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+
+            try {
+                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
+                if(!elProyecto){
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el proyecto en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            //Authorización
+
+            let permisosEspeciales=["superadministrador"];
+            let esUltimoResponsable=(elProyecto.responsables.length==1 && elProyecto.responsables[0]==credencialesUsuario.id);
+            
+            if (!esUltimoResponsable && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando nombre de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+                                    
+            try {
+                await Proyecto.findByIdAndDelete(idProyecto).exec();
+            }
+            catch (error) {
+                console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
+                throw new ApolloError("Error introduciendo el trabajo en el proyecto");
+            }
+
+            console.log(`eliminado`);
+
+            return true;
         },
         async crearTrabajoEnProyecto(_: any, { idProyecto }: any, contexto: contextoQuery) {
             console.log(`Peticion de crear un nuevo trabajo en el proyecto con id ${idProyecto}`);
@@ -358,21 +435,17 @@ export const resolvers = {
             }
 
             //Authorización
+            let permisosEspeciales=["superadministrador"];
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
 
+            
             try {
-                await elProyecto.trabajos.id(idTrabajo).remove();
-            }
-            catch (error) {
-                console.log(`Trabajo ${idTrabajo} no encontrado. E: ` + error);
-                throw new ApolloError("");
-            }
-            try {
-                await elProyecto.save();
+                await Proyecto.findByIdAndUpdate(idProyecto, {$pull:{trabajos:{"_id": idTrabajo}}});            
             }
             catch (error) {
                 console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
@@ -383,14 +456,13 @@ export const resolvers = {
 
             return true;
         },
-        async cambiarNombreTrabajo(_: any, { idProyecto, idTrabajo, nuevoNombre }, contexto: contextoQuery) {
-            let credencialesUsuario = contexto.usuario;
+        async editarNombreTrabajoProyecto(_: any, { idProyecto, idTrabajo, nuevoNombre }, contexto: contextoQuery) {
 
             console.log(`cambiando el nombre del trabajo con id ${idTrabajo} del proyecto con id ${idProyecto}`);
-            var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+            const charProhibidosNombreTrabajo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-            if (charProhibidosNombre.test(nuevoNombre)) {
+            if (charProhibidosNombreTrabajo.test(nuevoNombre)) {
                 throw new ApolloError("Nombre ilegal");
             }
 
@@ -408,14 +480,20 @@ export const resolvers = {
             }
 
             //Authorización
-
+            let credencialesUsuario = contexto.usuario;
             if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
+            
 
             try {
-                elProyecto.trabajos.id(idTrabajo).nombre = nuevoNombre;
+                var elTrabajo=elProyecto.trabajos.id(idTrabajo);
+                if(!elTrabajo){
+                    console.log(`Trabajo no esxistía en el proyecto`);
+                    throw "No existía el trabajo";                    
+                }
+                elTrabajo.nombre = nuevoNombre;
             }
             catch (error) {
                 console.log("Error cambiando el nombre en la base de datos. E: " + error);
@@ -429,18 +507,12 @@ export const resolvers = {
                 throw new ApolloError("Error introduciendo el trabajo en el proyecto");
             }
             console.log(`Nombre cambiado`);
-            return elProyecto.trabajos.id(idTrabajo);
+            return elTrabajo;
         },
-        async cambiarDescripcionTrabajo(_: any, { idProyecto, idTrabajo, nuevaDescripcion }, contexto: contextoQuery) {
+        async editarDescripcionTrabajoProyecto(_: any, { idProyecto, idTrabajo, nuevoDescripcion }, contexto: contextoQuery) {
+            console.log(`|||||||||||||||||||`);
+            console.log(`Solicitud de set descripcion de trabajo con id ${idTrabajo} del proyecto con id ${elProyecto}`);
             let credencialesUsuario = contexto.usuario;
-            console.log(`cambiando la descripcion del trabajo con id ${idTrabajo} del proyecto con id ${idProyecto}`);
-            var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-
-            nuevaDescripcion = nuevaDescripcion.replace(/\s\s+/g, " ");
-            if (charProhibidosNombre.test(nuevaDescripcion)) {
-                throw new ApolloError("Descripcion ilegal");
-            }
-            nuevaDescripcion = nuevaDescripcion.trim();
             try {
                 var elProyecto:any = await Proyecto.findById(idProyecto).exec();
                 if(!elProyecto){
@@ -448,33 +520,37 @@ export const resolvers = {
                 }
             }
             catch (error) {
-                console.log("Error buscando el proyecto. E: " + error);
-                throw new ApolloError("Error en la conexión con la base de datos");
+                console.log(`error buscando el proyecto. E: ` + error);
             }
 
             //Authorización
-
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            let permisosEspeciales=["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Descripcion de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {
-                elProyecto.trabajos.id(idTrabajo).descripcion = nuevaDescripcion;
+            const charProhibidosDescripcionTrabajo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+
+            if (charProhibidosDescripcionTrabajo.test(nuevoDescripcion)) {
+                throw new ApolloError("Descripcion ilegal");
             }
-            catch (error) {
-                console.log("Error cambiando la descripcion en la base de datos. E: " + error);
-                throw new ApolloError("Error guardando la descripcion en la base de datos");
+
+            nuevoDescripcion = nuevoDescripcion.trim();
+            let elTrabajo=elProyecto.trabajos.id(idTrabajo);
+            if(!elTrabajo){
+                console.log(`No existía el trabajo`);
+                throw new ApolloError("Error conectando con la base de datos");
             }
+            elTrabajo.descripcion=nuevoDescripcion;
             try {
+                console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
                 await elProyecto.save();
+            } catch (error) {
+                console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
             }
-            catch (error) {
-                console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
-                throw new ApolloError("Error introduciendo el trabajo en el proyecto");
-            }
-            console.log(`Descripcion cambiada`);
-            return elProyecto.trabajos.id(idTrabajo);
+            console.log(`Descripcion guardado`);
+            return elTrabajo;
         },
         addResponsableTrabajo: async function (_: any, { idProyecto, idTrabajo, idUsuario }: any, contexto: contextoQuery) {
             console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo} en un proyecto con id ${idProyecto}`);
@@ -637,6 +713,7 @@ export const resolvers = {
         },
         async eliminarObjetivoDeProyecto(_: any, { idObjetivo, idProyecto }: any, contexto: contextoQuery) {
             console.log(`peticion de eliminar un objetivo con id ${idObjetivo} de un proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
 
             try {
                 var elProyecto:any = await Proyecto.findById(idProyecto).exec();
@@ -648,39 +725,36 @@ export const resolvers = {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+
             //Authorización
-            let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+            let permisosEspeciales=["superadministrador"];
+
+
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
 
+            
             try {
-                await elProyecto.objetivos.id(idObjetivo).remove();
+                await Proyecto.findByIdAndUpdate(idProyecto, {$pull:{objetivos:{"_id": idObjetivo}}});            
             }
             catch (error) {
-                console.log(`Objetivo ${idObjetivo} no encontrado. E: ` + error);
-                throw new ApolloError("");
-            }
-            try {
-                await elProyecto.save();
-            }
-            catch (error) {
-                console.log("Error guardando el objetivo creado en el proyecto. E: " + error);
-                throw new ApolloError("Error introduciendo el objetivo en el proyecto");
+                console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
+                throw new ApolloError("Error introduciendo el trabajo en el proyecto");
             }
 
             console.log(`eliminado`);
 
             return true;
         },
-        async cambiarNombreObjetivo(_: any, { idProyecto, idObjetivo, nuevoNombre }, contexto: contextoQuery) {
+        async editarNombreObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoNombre }, contexto: contextoQuery) {
 
             console.log(`cambiando el nombre del objetivo con id ${idObjetivo} del proyecto con id ${idProyecto}`);
-            var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+            const charProhibidosNombreObjetivo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-            if (charProhibidosNombre.test(nuevoNombre)) {
+            if (charProhibidosNombreObjetivo.test(nuevoNombre)) {
                 throw new ApolloError("Nombre ilegal");
             }
 
@@ -705,7 +779,12 @@ export const resolvers = {
             }
 
             try {
-                elProyecto.objetivos.id(idObjetivo).nombre = nuevoNombre;
+                var elObjetivo=elProyecto.objetivos.id(idObjetivo);
+                if(!elObjetivo){
+                    console.log(`Objetivo no encontrado en el proyecto`);
+                    throw "No existía el objetivo";
+                }
+                elObjetivo.nombre = nuevoNombre;
             }
             catch (error) {
                 console.log("Error cambiando el nombre en la base de datos. E: " + error);
@@ -719,18 +798,12 @@ export const resolvers = {
                 throw new ApolloError("Error introduciendo el objetivo en el proyecto");
             }
             console.log(`Nombre cambiado`);
-            return elProyecto.objetivos.id(idObjetivo);
+            return elObjetivo;
         },
-        async cambiarDescripcionObjetivo(_: any, { idProyecto, idObjetivo, nuevaDescripcion }, contexto: contextoQuery) {
-
-            console.log(`cambiando la descripcion del objetivo con id ${idObjetivo} del proyecto con id ${idProyecto}`);
-            var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
-
-            nuevaDescripcion = nuevaDescripcion.replace(/\s\s+/g, " ");
-            if (charProhibidosNombre.test(nuevaDescripcion)) {
-                throw new ApolloError("Descripcion ilegal");
-            }
-            nuevaDescripcion = nuevaDescripcion.trim();
+        async editarDescripcionObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoDescripcion }, contexto: contextoQuery) {
+            console.log(`|||||||||||||||||||`);
+            console.log(`Solicitud de set descripcion de objetivo con id ${idObjetivo} del proyecto con id ${elProyecto}`);
+            let credencialesUsuario = contexto.usuario;
             try {
                 var elProyecto:any = await Proyecto.findById(idProyecto).exec();
                 if(!elProyecto){
@@ -738,35 +811,43 @@ export const resolvers = {
                 }
             }
             catch (error) {
-                console.log("Error buscando el proyecto. E: " + error);
-                throw new ApolloError("Error en la conexión con la base de datos");
+                console.log(`error buscando el proyecto. E: ` + error);
             }
+
             //Authorización
-            let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            let permisosEspeciales=["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Descripcion de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
-            try {
-                elProyecto.objetivos.id(idObjetivo).descripcion = nuevaDescripcion;
+
+            const charProhibidosDescripcionObjetivo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+
+            if (charProhibidosDescripcionObjetivo.test(nuevoDescripcion)) {
+                throw new ApolloError("Descripcion ilegal");
             }
-            catch (error) {
-                console.log("Error cambiando la descripcion en la base de datos. E: " + error);
-                throw new ApolloError("Error guardando la descripcion en la base de datos");
+
+            nuevoDescripcion = nuevoDescripcion.trim();
+            let elObjetivo=elProyecto.objetivos.id(idObjetivo);
+            if(!elObjetivo){
+                console.log(`No existía el objetivo`);
+                throw new ApolloError("Error conectando con la base de datos");
             }
+            elObjetivo.descripcion=nuevoDescripcion;
             try {
+                console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
                 await elProyecto.save();
+            } catch (error) {
+                console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
             }
-            catch (error) {
-                console.log("Error guardando el objetivo creado en el proyecto. E: " + error);
-                throw new ApolloError("Error introduciendo el objetivo en el proyecto");
-            }
-            console.log(`Descripcion cambiada`);
-            return elProyecto.objetivos.id(idObjetivo);
+            console.log(`Descripcion guardado`);
+            return elObjetivo;
         }
     },
     Proyecto: {
         responsables: async function (parent: any, _: any, __: any) {
+            console.log(`parent responsables (proyecto): ${JSON.stringify(parent.responsables)}`);
+
             if (!parent.responsables) {
                 return [];
             }
@@ -774,6 +855,9 @@ export const resolvers = {
 
             try {
                 var usuariosResponsables = await Usuario.find({ _id: { $in: idsResponsables } }).exec();
+                if(!usuariosResponsables){
+                    console.log(`No habia usuarios responsables`);                    
+                }
             } catch (error) {
                 console.log(`error buscando a los responsables del proyecto. E: ${error}`);
                 return [];

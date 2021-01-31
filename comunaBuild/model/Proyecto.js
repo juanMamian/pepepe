@@ -16,7 +16,9 @@ const esquemaProyecto = new mongoose_1.default.Schema({
         default: "Nuevo proyecto"
     },
     descripcion: {
-        type: String
+        type: String,
+        default: "Sin descripción",
+        required: true,
     },
     objetivos: {
         type: [Objetivo_1.esquemaObjetivo],
@@ -34,6 +36,11 @@ const esquemaProyecto = new mongoose_1.default.Schema({
     posiblesResponsables: {
         type: [String],
         default: []
+    },
+    conversaciones: {
+        type: [String],
+        default: [],
+        required: true
     }
 });
 exports.ModeloProyecto = mongoose_1.default.model("Proyecto", esquemaProyecto);

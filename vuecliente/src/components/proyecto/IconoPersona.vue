@@ -54,7 +54,6 @@ export default {
         };
       },
     },
-    aceptado: Boolean,
     seleccionado: Boolean,
     menuContextual: Boolean,
     opcionesMenuCx: {

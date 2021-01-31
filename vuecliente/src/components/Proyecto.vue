@@ -1,12 +1,88 @@
 <template>
   <div class="proyecto">
-    <div id="nombreProyecto">{{ esteProyecto.nombre }}</div>
+    <div id="zonaNombre" class="zonaPrimerNivel">
+      <div class="controlesZona" v-show="usuarioResponsableProyecto">
+        <img
+          src="@/assets/iconos/editar.png"
+          alt="Editar"
+          id="bEditarrNombre"
+          class="bEditar"
+          title="Editar nombre del proyecto"
+          @click="toggleEditandoNombre"
+        />
+        <img
+          src="@/assets/iconos/guardar.png"
+          alt="Guardar"
+          title="guardar"
+          class="bGuardar"
+          id="bGuardarNuevoNombre"
+          v-show="editandoNombre == true && nuevoNombreIlegal == false"
+          @click="guardarNuevoNombre"
+        />
+      </div>
+      <div id="nombreProyecto" v-show="!editandoNombre">
+        {{ esteProyecto.nombre }}
+      </div>
+      <input
+        type="text"
+        id="inputNuevoNombre"
+        :class="{ letrasRojas: nuevoNombreIlegal }"
+        v-model="nuevoNombre"
+        v-show="editandoNombre"
+        @keypress.enter="guardarNuevoNombre"
+      />
+      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
+    </div>
+    <div id="zonaDescripcion" class="zonaPrimerNivel">
+      <div class="nombreZona">Descripcion</div>
+      <div class="controlesZona" v-show="usuarioResponsableProyecto">
+        <img
+          src="@/assets/iconos/editar.png"
+          alt="Editar"
+          id="bEditarrDescripcion"
+          class="bEditar"
+          title="Editar descripcion del proyecto"
+          @click="toggleEditandoDescripcion"
+        />
+        <img
+          src="@/assets/iconos/guardar.png"
+          alt="Guardar"
+          title="guardar"
+          class="bGuardar"
+          id="bGuardarNuevoDescripcion"
+          v-show="
+            editandoDescripcion == true && nuevoDescripcionIlegal == false
+          "
+          @click="guardarNuevoDescripcion"
+        />
+      </div>
 
+      <!-- <textarea
+        id="descripcion"
+        readonly
+        :value="esteProyecto.descripcion"
+        v-show="!editandoDescripcion"
+      /> -->
+      <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
+        {{ esteProyecto.descripcion }}
+      </div>
+
+      <textarea
+        id="inputNuevoDescripcion"
+        ref="inputNuevoDescripcion"
+        :class="{ letrasRojas: nuevoDescripcionIlegal }"
+        v-model="nuevoDescripcion"
+        v-show="editandoDescripcion"
+      />
+      <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
+    </div>
     <div id="zonaResponsables" class="zonaPrimerNivel">
       <div class="nombreZona">Responsables</div>
       <div id="controlesResponsables" class="controlesZona">
+        <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
         <div
           class="controlesResponsables hoverGris botonesControles"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
           v-if="usuarioLogeado == true && esteProyecto.responsables.length < 1"
           id="asumirResponsable"
           @click="asumirComoResponsable"
@@ -15,6 +91,7 @@
         </div>
         <div
           class="controlesResponsables hoverGris botonesControles"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
           v-if="
             usuarioLogeado &&
             !usuarioResponsableProyecto &&
@@ -28,26 +105,51 @@
         </div>
         <div
           class="controlesResponsables hoverGris botonesControles"
-          v-if="usuarioLogeado == true && (usuarioResponsableProyecto == true || usuarioPosibleResponsableProyecto==true)"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
+          v-if="
+            usuarioLogeado == true &&
+            (usuarioResponsableProyecto == true ||
+              usuarioPosibleResponsableProyecto == true)
+          "
           @click="abandonarListaResponsables"
         >
           Abandonar
+        </div>
+        <div
+          class="controlesResponsables hoverGris botonesControles"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
+          v-if="usuarioLogeado == true && usuarioResponsableProyecto == true"
+          v-show="
+            idResponsableSeleccionado != null &&
+            responsableSeleccionadoEstaAceptado == false
+          "
+          @click="aceptarResponsable(idResponsableSeleccionado)"
+        >
+          Aceptar como responsable
         </div>
       </div>
       <div id="listaResponsables">
         <icono-persona
           :estaPersona="persona"
-          :aceptado="true"
           :key="persona.id"
           v-for="persona of esteProyecto.responsables"
+          :seleccionado="idResponsableSeleccionado == persona.id"
+          @click.native.stop="
+            idResponsableSeleccionado = persona.id;
+            responsableSeleccionadoEstaAceptado = true;
+          "
         />
 
         <icono-persona
           class="personaPosibleResponsable"
           :estaPersona="persona"
           :key="persona.id"
-          :aceptado="false"
           v-for="persona of esteProyecto.posiblesResponsables"
+          :seleccionado="idResponsableSeleccionado == persona.id"
+          @click.native.stop="
+            idResponsableSeleccionado = persona.id;
+            responsableSeleccionadoEstaAceptado = false;
+          "
           @dblclick.native.shift="aceptarResponsable(persona.id)"
         />
       </div>
@@ -68,13 +170,12 @@
         <iconoObjetivo
           v-for="objetivo of esteProyecto.objetivos"
           :key="objetivo.id"
+          :idProyecto="esteProyecto.id"
           :esteObjetivo="objetivo"
-          :idObjetivoSeleccionado="idObjetivoSeleccionado"
-          :permisosEdicion="permisosEdicion"
+          :seleccionado="idObjetivoSeleccionado == objetivo.id"
+          :usuarioResponsableProyecto="usuarioResponsableProyecto"
           @click.native="idObjetivoSeleccionado = objetivo.id"
-          @eliminandose="eliminarObjetivo"
-          @cambiandoNombre="cambiarNombreObjetivo"
-          @cambiandoDescripcion="cambiarDescripcionObjetivo"
+          @meElimine="eliminarObjetivoDeCache(objetivo.id)"
         />
       </div>
     </div>
@@ -93,18 +194,13 @@
       <div id="listaTrabajos" @click.self="idTrabajoSeleccionado = null">
         <iconoTrabajo
           v-for="trabajo of esteProyecto.trabajos"
-          :class="{opacar: (idTrabajoSeleccionado!=null && idTrabajoSeleccionado != trabajo.id)}"
           :key="trabajo.id"
           :esteTrabajo="trabajo"
-          :idEsteProyecto="esteProyecto.id"
-          :idTrabajoSeleccionado="idTrabajoSeleccionado"
-          :permisosEdicion="permisosEdicion"
-          :usuarioLogeado="usuarioLogeado"
+          :idProyecto="esteProyecto.id"
+          :seleccionado="idTrabajoSeleccionado == trabajo.id"
           :usuarioResponsableProyecto="usuarioResponsableProyecto"
           @click.native="idTrabajoSeleccionado = trabajo.id"
-          @eliminandose="eliminarTrabajo"
-          @cambiandoNombre="cambiarNombreTrabajo"
-          @cambiandoDescripcion="cambiarDescripcionTrabajo"
+          @meElimine="eliminarTrabajoDeCache(trabajo.id)"
         />
       </div>
     </div>
@@ -116,40 +212,25 @@ import gql from "graphql-tag";
 import IconoTrabajo from "./proyecto/IconoTrabajo.vue";
 import IconoPersona from "./proyecto/IconoPersona.vue";
 import IconoObjetivo from "./proyecto/IconoObjetivo.vue";
-import {fragmentoResponsables} from "./utilidades/recursosGql"
-
+import {
+  fragmentoProyecto,
+  fragmentoResponsables,
+} from "./utilidades/recursosGql";
+import Loading from "./utilidades/Loading.vue";
 
 const QUERY_PROYECTO = gql`
   query($idProyecto: ID!) {
     proyecto(idProyecto: $idProyecto) {
-      id
-      nombre
-      responsables {
-        ...fragResponsables
-      }
-      posiblesResponsables {
-        ...fragResponsables
-      }
-      trabajos {
-        id
-        nombre
-        descripcion
-        responsables {
-          ...fragResponsables
-        }
-      }
-      objetivos {
-        id
-        nombre
-        descripcion
-      }
+      ...fragProyecto
     }
   }
-  ${fragmentoResponsables}
+  ${fragmentoProyecto}
 `;
+const charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+const charProhibidosDescripcionProyecto = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
-  components: { IconoTrabajo, IconoPersona, IconoObjetivo },
+  components: { IconoTrabajo, IconoPersona, IconoObjetivo, Loading },
   name: "proyecto",
   apollo: {
     esteProyecto: {
@@ -169,8 +250,19 @@ export default {
       esteProyecto: {
         responsables: [],
       },
+      idResponsableSeleccionado: null,
+      responsableSeleccionadoEstaAceptado: false,
+      enviandoQueryResponsables: false,
+
       idTrabajoSeleccionado: null,
       idObjetivoSeleccionado: null,
+      nuevoNombre: "Nuevo nombre",
+      editandoNombre: false,
+      enviandoNuevoNombre: false,
+
+      nuevoDescripcion: "Nueva descripcion",
+      editandoDescripcion: false,
+      enviandoNuevoDescripcion: false,
     };
   },
   computed: {
@@ -207,11 +299,114 @@ export default {
       }
       return false;
     },
-    
+    nuevoNombreIlegal() {
+      if (this.nuevoNombre.length < 1) {
+        return true;
+      }
+      if (charProhibidosNombreProyecto.test(this.nuevoNombre)) {
+        return true;
+      }
+      return false;
+    },
+    nuevoDescripcionIlegal() {
+      if (this.nuevoDescripcion.length < 1) {
+        return true;
+      }
+      if (charProhibidosDescripcionProyecto.test(this.nuevoDescripcion)) {
+        return true;
+      }
+      return false;
+    },
   },
   methods: {
+    guardarNuevoNombre() {
+      if (this.nuevoNombreIlegal) {
+        console.log(`No enviado`);
+        return;
+      }
+      if (this.nuevoNombre == this.esteProyecto.nombre) {
+        this.editandoNombre = false;
+        return;
+      }
+      console.log(`guardando nuevo nombre`);
+      this.enviandoNuevoNombre = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idProyecto: ID!, $nuevoNombre: String!) {
+              editarNombreProyecto(
+                idProyecto: $idProyecto
+                nuevoNombre: $nuevoNombre
+              ) {
+                id
+                nombre
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.esteProyecto.id,
+            nuevoNombre: this.nuevoNombre,
+          },
+        })
+        .then(() => {
+          this.enviandoNuevoNombre = false;
+          this.editandoNombre = false;
+        })
+        .catch((error) => {
+          this.enviandoNuevoNombre = false;
+          console.log(`Error. E :${error}`);
+        });
+    },
+    guardarNuevoDescripcion() {
+      if (this.nuevoDescripcionIlegal) {
+        console.log(`No enviado`);
+        return;
+      }
+      if (this.nuevoDescripcion == this.esteProyecto.descripcion) {
+        this.editandoDescripcion = false;
+        return;
+      }
+      console.log(`guardando nuevo descripcion`);
+      this.enviandoNuevoDescripcion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idProyecto: ID!, $nuevoDescripcion: String!) {
+              editarDescripcionProyecto(
+                idProyecto: $idProyecto
+                nuevoDescripcion: $nuevoDescripcion
+              ) {
+                id
+                descripcion
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.esteProyecto.id,
+            nuevoDescripcion: this.nuevoDescripcion,
+          },
+        })
+        .then(() => {
+          this.enviandoNuevoDescripcion = false;
+          this.editandoDescripcion = false;
+        })
+        .catch((error) => {
+          this.enviandoNuevoDescripcion = false;
+          console.log(`Error. E :${error}`);
+        });
+    },
+    toggleEditandoNombre() {
+      this.editandoNombre = !this.editandoNombre;
+      this.nuevoNombre = this.esteProyecto.nombre;
+    },
+    toggleEditandoDescripcion() {
+      this.$refs.inputNuevoDescripcion.style.height=this.$refs.descripcion.offsetHeight+"px";
+      this.editandoDescripcion = !this.editandoDescripcion;
+      this.nuevoDescripcion = this.esteProyecto.descripcion;
+    },
     abandonarListaResponsables() {
       console.log(`Abandonando la responsabilidad en este proyecto`);
+      this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -236,8 +431,11 @@ export default {
             idUsuario: this.$store.state.usuario.id,
           },
         })
-        .then(() => {})
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+        })
         .catch((error) => {
+          this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
     },
@@ -245,6 +443,7 @@ export default {
       console.log(
         `aceptando como responsable al usuario ${idPosibleResponsable}`
       );
+      this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -269,8 +468,12 @@ export default {
             idUsuario: idPosibleResponsable,
           },
         })
-        .then(() => {})
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+          this.responsableSeleccionadoEstaAceptado = true;
+        })
         .catch((error) => {
+          this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
     },
@@ -278,11 +481,15 @@ export default {
       console.log(
         `Enviando peticion de entrar a la lista de posibles responsables del proyecto con id ${this.esteProyecto.id}`
       );
+      this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
             mutation($idProyecto: ID!, $idUsuario: ID!) {
-              addPosibleResponsableProyecto(idProyecto: $idProyecto, idUsuario: $idUsuario) {
+              addPosibleResponsableProyecto(
+                idProyecto: $idProyecto
+                idUsuario: $idUsuario
+              ) {
                 id
                 posiblesResponsables {
                   ...fragResponsables
@@ -296,8 +503,11 @@ export default {
             idUsuario: this.$store.state.usuario.id,
           },
         })
-        .then(() => {})
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+        })
         .catch((error) => {
+          this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
     },
@@ -305,6 +515,7 @@ export default {
       console.log(
         `enviando id ${this.$store.state.usuario.id} para la lista de responsables del proyecto con id ${this.esteProyecto.id}`
       );
+      this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -317,6 +528,9 @@ export default {
                 responsables {
                   ...fragResponsables
                 }
+                posiblesResponsables {
+                  ...fragResponsables
+                }
               }
             }
             ${fragmentoResponsables}
@@ -326,8 +540,11 @@ export default {
             idUsuario: this.$store.state.usuario.id,
           },
         })
-        .then(() => {})
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+        })
         .catch((error) => {
+          this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
     },
@@ -375,115 +592,6 @@ export default {
         })
         .then((respuesta) => {
           console.log(`respuesta. ${respuesta}`);
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-        });
-    },
-    eliminarTrabajo(idTrabajo) {
-      if (!this.esteProyecto.trabajos.some((t) => t.id == idTrabajo)) return;
-
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idTrabajo: ID!, $idProyecto: ID!) {
-              eliminarTrabajoDeProyecto(
-                idProyecto: $idProyecto
-                idTrabajo: $idTrabajo
-              )
-            }
-          `,
-          variables: {
-            idTrabajo,
-            idProyecto: this.esteProyecto.id,
-          },
-          update: (store, { data: { eliminarTrabajoDeProyecto } }) => {
-            console.log(`data: ${JSON.stringify(eliminarTrabajoDeProyecto)}`);
-            let eliminado = eliminarTrabajoDeProyecto;
-
-            if (eliminado) {
-              try {
-                let cache = store.readQuery({
-                  query: QUERY_PROYECTO,
-                  variables: { idProyecto: this.esteProyecto.id },
-                });
-                let indexE = cache.proyecto.trabajos.findIndex(
-                  (t) => t.id == idTrabajo
-                );
-                if (indexE > -1) {
-                  cache.proyecto.trabajos.splice(indexE, 1);
-                }
-                store.writeQuery({
-                  query: QUERY_PROYECTO,
-                  variables: { idProyecto: this.esteProyecto.id },
-                  data: cache,
-                });
-              } catch (error) {
-                console.log(`Error actualizando cache`);
-              }
-            }
-          },
-        })
-        .then(() => {})
-        .catch((error) => {
-          console.log("error: " + error);
-        });
-    },
-    cambiarNombreTrabajo({ idTrabajo, nuevoNombre }) {
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idProyecto: ID!, $idTrabajo: ID!, $nuevoNombre: String!) {
-              cambiarNombreTrabajo(
-                idProyecto: $idProyecto
-                idTrabajo: $idTrabajo
-                nuevoNombre: $nuevoNombre
-              ) {
-                id
-                nombre
-              }
-            }
-          `,
-          variables: {
-            idProyecto: this.esteProyecto.id,
-            idTrabajo,
-            nuevoNombre,
-          },
-        })
-        .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-        });
-    },
-    cambiarDescripcionTrabajo({ idTrabajo, nuevaDescripcion }) {
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation(
-              $idProyecto: ID!
-              $idTrabajo: ID!
-              $nuevaDescripcion: String!
-            ) {
-              cambiarDescripcionTrabajo(
-                idProyecto: $idProyecto
-                idTrabajo: $idTrabajo
-                nuevaDescripcion: $nuevaDescripcion
-              ) {
-                id
-                descripcion
-              }
-            }
-          `,
-          variables: {
-            idProyecto: this.esteProyecto.id,
-            idTrabajo,
-            nuevaDescripcion,
-          },
-        })
-        .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
         })
         .catch((error) => {
           console.log(`error: ${error}`);
@@ -538,118 +646,51 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    eliminarObjetivo(idObjetivo) {
-      if (!this.esteProyecto.objetivos.some((t) => t.id == idObjetivo)) return;
-
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idObjetivo: ID!, $idProyecto: ID!) {
-              eliminarObjetivoDeProyecto(
-                idProyecto: $idProyecto
-                idObjetivo: $idObjetivo
-              )
-            }
-          `,
-          variables: {
-            idObjetivo,
-            idProyecto: this.esteProyecto.id,
-          },
-          update: (store, { data: { eliminarObjetivoDeProyecto } }) => {
-            console.log(`data: ${JSON.stringify(eliminarObjetivoDeProyecto)}`);
-            let eliminado = eliminarObjetivoDeProyecto;
-
-            if (eliminado) {
-              try {
-                let cache = store.readQuery({
-                  query: QUERY_PROYECTO,
-                  variables: { idProyecto: this.esteProyecto.id },
-                });
-                let indexE = cache.proyecto.objetivos.findIndex(
-                  (o) => o.id == idObjetivo
-                );
-                if (indexE > -1) {
-                  cache.proyecto.objetivos.splice(indexE, 1);
-                }
-                store.writeQuery({
-                  query: QUERY_PROYECTO,
-                  variables: { idProyecto: this.esteProyecto.id },
-                  data: cache,
-                });
-              } catch (error) {
-                console.log(`Error actualizando cache`);
-              }
-            }
-          },
-        })
-        .then(() => {})
-        .catch((error) => {
-          console.log("error: " + error);
-        });
+    eliminarTrabajoDeCache(idTrabajo) {
+      let store = this.$apollo.provider.defaultClient;
+      let cache = store.readQuery({
+        query: QUERY_PROYECTO,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+      });
+      let indexT = cache.proyecto.trabajos.findIndex((t) => t.id == idTrabajo);
+      if (indexT > -1) {
+        cache.proyecto.trabajos.splice(indexT, 1);
+      } else {
+        console.log(`El trabajo no existía en el proyecto`);
+      }
+      store.writeQuery({
+        query: QUERY_PROYECTO,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+        data: cache,
+      });
     },
-    cambiarNombreObjetivo({ idObjetivo, nuevoNombre }) {
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation(
-              $idProyecto: ID!
-              $idObjetivo: ID!
-              $nuevoNombre: String!
-            ) {
-              cambiarNombreObjetivo(
-                idProyecto: $idProyecto
-                idObjetivo: $idObjetivo
-                nuevoNombre: $nuevoNombre
-              ) {
-                id
-                nombre
-              }
-            }
-          `,
-          variables: {
-            idProyecto: this.esteProyecto.id,
-            idObjetivo,
-            nuevoNombre,
-          },
-        })
-        .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-        });
-    },
-    cambiarDescripcionObjetivo({ idObjetivo, nuevaDescripcion }) {
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation(
-              $idProyecto: ID!
-              $idObjetivo: ID!
-              $nuevaDescripcion: String!
-            ) {
-              cambiarDescripcionObjetivo(
-                idProyecto: $idProyecto
-                idObjetivo: $idObjetivo
-                nuevaDescripcion: $nuevaDescripcion
-              ) {
-                id
-                descripcion
-              }
-            }
-          `,
-          variables: {
-            idProyecto: this.esteProyecto.id,
-            idObjetivo,
-            nuevaDescripcion,
-          },
-        })
-        .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-        });
+    eliminarObjetivoDeCache(idObjetivo) {
+      let store = this.$apollo.provider.defaultClient;
+      let cache = store.readQuery({
+        query: QUERY_PROYECTO,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+      });
+      let indexT = cache.proyecto.objetivos.findIndex(
+        (t) => t.id == idObjetivo
+      );
+      if (indexT > -1) {
+        cache.proyecto.objetivos.splice(indexT, 1);
+      } else {
+        console.log(`El objetivo no existía en el proyecto`);
+      }
+      store.writeQuery({
+        query: QUERY_PROYECTO,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+        data: cache,
+      });
     },
   },
 };
@@ -657,6 +698,8 @@ export default {
 
 <style scoped>
 .proyecto {
+  margin: 5px auto;
+  width: min(90%, 1000px);
   padding: 5px 20px;
 }
 
@@ -667,12 +710,60 @@ export default {
   text-align: center;
   margin-bottom: 15px;
 }
+
+#inputNuevoNombre {
+  font-size: 23px;
+  display: block;
+  margin: 10px auto;
+}
+#descripcion {
+  font-size: 19px;
+  width: 95%;
+  margin: 10px auto;
+  padding: 10px;
+  min-height: 100px;
+  resize: vertical;
+  border: none;
+  background-color: transparent;
+  white-space: pre-wrap;
+}
+
+#inputNuevoDescripcion {
+  width: 95%;
+  font-size: 19px;
+  height: 70px;
+  display: block;
+  margin: 10px auto;
+  resize: vertical;
+}
+
+.bEditar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+
+  cursor: pointer;
+}
+.bEditar:hover {
+  background-color: rgb(209, 209, 209);
+}
+.bGuardar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.bGuardar:hover {
+  background-color: rgb(209, 209, 209);
+}
 #zonaResponsables {
   min-height: 40px;
   align-items: center;
 }
 .zonaPrimerNivel {
   border: 2px solid black;
+  position: relative;
+  min-height: 50px;
 }
 
 #listaTrabajos {
@@ -681,7 +772,7 @@ export default {
 .iconoTrabajo {
   margin-bottom: 30px;
 }
-.opacar{
+.opacar {
   opacity: 0.3;
 }
 #listaObjetivos {
@@ -706,16 +797,17 @@ export default {
 }
 #listaResponsables {
   display: flex;
-  padding-bottom:40px;
+  padding: 10px 20px;
+  padding-bottom: 65px;
 }
 .iconoPersona {
-  margin-right: 10px;
-  margin-left: 5px;
+  margin-right: 20px;
+  margin-left: 15px;
   vertical-align: middle;
   margin-top: 5px;
   margin-bottom: 55px;
 }
-.personaPosibleResponsable{
+.personaPosibleResponsable {
   opacity: 0.5;
 }
 </style>

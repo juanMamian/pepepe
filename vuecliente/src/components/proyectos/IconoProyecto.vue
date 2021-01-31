@@ -1,17 +1,12 @@
 <template>
   <div
     class="iconoProyecto"
-    :class="{ proyectoPropio: usuarioResponsableProyecto }"
+    :class="{ proyectoPropio: usuarioResponsableProyecto, seleccionado }"
     @dblclick="navegarAlProyecto"
   >
     <p
       id="nombre"
-      ref="nombre"
-      :contenteditable="permisosEdicion"
-      @blur="guardarNombre"
-      @input="setNombreEditandose"
-      @keypress.enter="blurNombre"
-      @dblclick.stop=""
+      ref="nombre"      
     >
       {{ esteProyecto.nombre }}
     </p>
@@ -19,12 +14,12 @@
 </template>
 
 <script>
-var charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
 export default {
   name: "IconoProyecto",
   props: {
     esteProyecto: Object,
+    seleccionado:Boolean
   },
   data() {
     return {
@@ -43,44 +38,9 @@ export default {
       }
       return false;
     },
-    permisosEdicion: function () {
-      if (
-        this.usuarioResponsableProyecto ||
-        this.$store.state.usuario.permisos == "superadministrador"
-      ) {
-        return true;
-      }
-      return false;
-    },
+    
   },
-  methods: {
-    guardarNombre() {
-      console.log(`guardando nombre`);
-      let nuevoNombre = this.$refs.nombre.innerText.trim();
-      let idProyecto = this.esteProyecto.id;
-
-      if (!this.nombreEditandose || nuevoNombre == this.esteProyecto.nombre) {
-        return;
-      }
-      console.log(`guardando nombres`);
-
-      nuevoNombre = nuevoNombre.replace(charProhibidosNombreProyecto, "");
-      nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-
-      this.$emit("cambioDeNombre", { idProyecto, nuevoNombre });
-
-      this.nombreEditandose = false;
-    },
-    setNombreEditandose() {
-      if (this.esteProyecto.nombre != this.$refs.nombre.innerText.trim()) {
-        this.nombreEditandose = true;
-      } else {
-        this.nombreEditandose = false;
-      }
-    },
-    blurNombre() {
-      this.$refs.nombre.blur();
-    },
+  methods: {    
     navegarAlProyecto(){
       this.$router.push("/proyecto/"+this.esteProyecto.id)
     }
@@ -109,5 +69,8 @@ export default {
 }
 .proyectoPropio {
   border-bottom: 2px solid purple;
+}
+.seleccionado{
+  background-color: rgb(187, 132, 60);
 }
 </style>

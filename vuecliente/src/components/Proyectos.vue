@@ -2,16 +2,33 @@
   <div id="proyectos">
     <center><h3>Proyectos</h3></center>
     <div id="controles">
-      <div v-if="username" id="crearProyecto" class="controles hoverGris" @click="crearNuevoProyecto">
+      <div
+        v-if="usuarioLogeado"
+        id="crearProyecto"
+        class="controles hoverGris"
+        @click="crearNuevoProyecto"
+      >
         Crear nuevo proyecto
       </div>
+      <div
+        v-if="
+          usuarioSuperadministrador &&
+          proyectos.some((p) => p.id == idProyectoSeleccionado)
+        "
+        id="bEliminarProyecto"
+        class="controles hoverGris"
+        @click="eliminarProyecto(idProyectoSeleccionado)"
+      >
+        Eliminar proyecto
+      </div>
     </div>
-    <div id="listaProyectos">
+    <div id="listaProyectos" @click.self="idProyectoSeleccionado=null">
       <icono-proyecto
         v-for="proyecto of proyectos"
         :key="proyecto.id"
         :esteProyecto="proyecto"
-        @cambioDeNombre="cambiarNombreProyecto"
+        :seleccionado="idProyectoSeleccionado == proyecto.id"
+        @click.native="idProyectoSeleccionado = proyecto.id"
       />
     </div>
   </div>
@@ -21,23 +38,26 @@
 import gql from "graphql-tag";
 import IconoProyecto from "./proyectos/IconoProyecto.vue";
 
+const QUERY_PROYECTOS=gql`
+query {
+    proyectos {
+      id
+      nombre
+      responsables {
+        id
+        username
+      }
+    }
+  }
+`;
+
 export default {
   components: { IconoProyecto },
   name: "Proyectos",
   apollo: {
     proyectos: {
-      query: gql`
-        query {
-          proyectos {
-            id
-            nombre
-            responsables {
-              id
-              username
-            }
-          }
-        }
-      `,
+      query: QUERY_PROYECTOS,
+      fetchPolicy: "cache-and-network",
       update:function({proyectos}){
         return proyectos.sort((a, b)=>{
           let res=0;
@@ -55,33 +75,10 @@ export default {
   data() {
     return {
       proyectos: [],
+      idProyectoSeleccionado:null
     };
   },
   methods:{
-    cambiarNombreProyecto({idProyecto, nuevoNombre}){
-      console.log(`cambiando nombre de un proyecto a ${nuevoNombre}`);
-        this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idProyecto: ID!, $nuevoNombre: String!) {
-              editarNombreProyecto(idProyecto: $idProyecto, nuevoNombre: $nuevoNombre){
-                  id
-                  nombre
-              }                               
-            }
-          `,
-          variables: {
-            idProyecto,
-            nuevoNombre,
-          },
-        })
-        .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-        });
-    },
     crearNuevoProyecto(){
       this.$apollo.mutate({
         mutation: gql`
@@ -90,16 +87,51 @@ export default {
               id
               nombre
               responsables{
+                id
                 username
+                nombres
               }
             }
           }
         `,
-      }).then(()=>{
-
+      }).then(({data:{crearProyecto}})=>{
+        this.$router.push('/proyecto/'+crearProyecto.id);
       }).catch(()=>{
 
       });
+    },
+    eliminarProyecto(idProyecto){
+      console.log(`Eliminando proyecto ${idProyecto}`);
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idProyecto:ID!){
+            eliminarProyecto(idProyecto: $idProyecto)
+          }
+        `,
+        variables:{
+          idProyecto
+        },
+        update: (store, {data:{eliminarProyecto}})=>{
+          console.log(`Actualizando cache`);
+          if(eliminarProyecto){
+            let cache=store.readQuery({query: QUERY_PROYECTOS});
+            let indexP=cache.proyectos.findIndex(p=>p.id==idProyecto);
+            if(indexP>-1){
+              cache.proyectos.splice(indexP, 1);
+              store.writeQuery({query: QUERY_PROYECTOS, data: cache});
+              console.log(`Caché actualizado`);
+            }
+            else{
+              console.log(`No existía ese proyecto en el cache`);
+            }
+            
+          }
+        }
+      }).then(()=>{
+
+      }).catch((error)=>{
+        console.log(`Error. E:${error}`);
+      })
     }
   },
   computed:{
@@ -117,7 +149,7 @@ export default {
   padding-left: 30px;
   padding-right: 30px;
   max-width: 100%;
-  flex-flow:row wrap;
+  flex-flow: row wrap;
 }
 
 #controles {

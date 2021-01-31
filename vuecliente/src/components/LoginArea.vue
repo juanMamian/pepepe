@@ -29,7 +29,7 @@
         <button
           class="botonEnviar"
           @click.stop.prevent="iniciarSesion"
-          :class="{ loginFail, deshabilitado: enviandoDatos }"
+          :class="{ loginFail, desaparecido: enviandoDatos }"
         >
           {{ loginFail ? loginFailMsg : "Conectarse" }}
         </button>
@@ -177,7 +177,7 @@ export default {
   font-style: italic;
   font-size: 12px;
 }
-.deshabilitado {
+.desaparecido {
   display: none;
   pointer-events: none;
 }

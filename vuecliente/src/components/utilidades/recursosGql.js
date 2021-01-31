@@ -59,3 +59,33 @@ fragment fragActividad on ActividadGrupoEstudiantil {
 }
 ${fragmentoDesarrollo}
 `;
+
+
+export const fragmentoProyecto = gql`
+  fragment fragProyecto on Proyecto{
+    id
+    nombre
+    descripcion
+    responsables {
+      ...fragResponsables
+    }
+    posiblesResponsables {
+      ...fragResponsables
+    }
+    trabajos {
+      id
+      nombre
+      descripcion
+      responsables {
+        ...fragResponsables
+      }
+    }
+    objetivos {
+      id
+      nombre
+      descripcion
+    }
+  }
+  ${fragmentoResponsables}
+  
+`;

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import {esquemaObjetivo} from "./Objetivo"
 import {esquemaTrabajo} from "./Trabajo"
 
+
 const esquemaProyecto = new mongoose.Schema({
     nombre: {
         type: String,
@@ -11,7 +12,9 @@ const esquemaProyecto = new mongoose.Schema({
         default: "Nuevo proyecto"
     },
     descripcion: {
-        type: String
+        type: String,
+        default:"Sin descripción",
+        required:true,
     },
     objetivos: {
         type: [esquemaObjetivo],
@@ -29,6 +32,11 @@ const esquemaProyecto = new mongoose.Schema({
     posiblesResponsables: {
         type: [String],
         default: []
+    },
+    conversaciones:{
+        type: [String],
+        default:[],
+        required:true
     }
 
 });

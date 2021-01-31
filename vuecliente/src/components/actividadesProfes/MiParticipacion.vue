@@ -67,7 +67,7 @@
 import axios from "axios";
 import Loading from "../utilidades/Loading.vue";
 
-var charProhibidosComentario = /[^\n a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/g;
+var charProhibidosComentario = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
   name: "MiParticipacion",
@@ -297,10 +297,6 @@ export default {
   display: none;
 }
 
-.deshabilitado {
-  opacity: 0.5;
-  pointer-events: none;
-}
 .miParticipacion .loading{
   grid-area: loading;
 }

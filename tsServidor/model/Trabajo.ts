@@ -15,7 +15,8 @@ esquemaTrabajo.add({
     descripcion: {
         type: String,
         max: 10000,
-        default:""
+        default:"Sin descripcion",
+        required:true
     },
     responsables:{
         type: [String],

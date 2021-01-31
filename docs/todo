@@ -9,8 +9,9 @@ Reestructuracion no-urgente
 *Verificar en las querys de mongoose que se pidan los datos requeridos, no todos
 *Para solucionar los avisos de typescript puse tipo ANY en los objetos creados mediante el constructor de un modelo mongoose. Habrá que revisar ese asunto en el futuro.
 *Refresh de tokens.
-proteger con check de auth la funcion de set estado de desarrollo estudiantil
-
+*proteger con check de auth la funcion de set estado de desarrollo estudiantil
+*Cuando un usuario es eliminado, se daña el funcionamiento de una lista de cosas. Solucionar.
+ -Responsables de proyecto y trabajos.
 
 Funcionalidad urgente
 

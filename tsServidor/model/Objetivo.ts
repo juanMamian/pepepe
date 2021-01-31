@@ -10,6 +10,8 @@ export const esquemaObjetivo = new mongoose.Schema({
     },
     descripcion: {
         type: String,
+        default:"Sin descripcion",
+        required:true,
         max:2000
     },
     vinculos: [

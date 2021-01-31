@@ -155,11 +155,7 @@ export default {
   display: grid;
   grid-template-columns: 170px 1fr;
 }
-.deshabilitado {
-  opacity: 0.5;
-  user-select: none;
-  pointer-events: none;
-}
+
 #barraGrupos {
   grid-column: 1/2;
   background-color: burlywood;

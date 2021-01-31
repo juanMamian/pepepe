@@ -15,6 +15,8 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
     },
     descripcion: {
         type: String,
+        default: "Sin descripcion",
+        required: true,
         max: 2000
     },
     vinculos: [

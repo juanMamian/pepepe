@@ -1,140 +1,327 @@
 <template>
-  <div class="iconoTrabajo" :class="{ trabajoSeleccionado: seleccionado }">
-    <div
-      id="nombre"
-      ref="nombre"
-      :contenteditable="permisosEdicion == true && seleccionado == true"
-      @blur="guardarNombre"
-      @input="setNombreEditandose"
-      @keypress.enter="blurNombre"
-    >
-      {{ esteTrabajo.nombre }}
+  <div class="iconoTrabajo" :class="{ seleccionado: seleccionado }">
+    <div id="zonaNombre" :class="{ bordeAbajo: seleccionado }">
+      <div class="barraSuperiorZona">
+        <div
+          class="controlesZona"
+          v-show="seleccionado && usuarioResponsableProyecto"
+        >
+          <img
+            src="@/assets/iconos/editar.png"
+            alt="Editar"
+            id="bEditarrNombre"
+            class="bEditar"
+            title="Editar nombre del trabajo"
+            v-show="usuarioResponsableProyecto"
+            @click.stop="toggleEditandoNombre"
+          />
+          <img
+            src="@/assets/iconos/guardar.png"
+            alt="Guardar"
+            title="guardar"
+            class="bGuardar"
+            id="bGuardarNuevoNombre"
+            v-show="editandoNombre == true && nuevoNombreIlegal == false"
+            @click.stop="guardarNuevoNombre"
+          />
+        </div>
+      </div>
+      <div id="nombre" v-show="!editandoNombre">
+        {{ esteTrabajo.nombre }}
+      </div>
+      <input
+        type="text"
+        id="inputNuevoNombre"
+        :class="{ letrasRojas: nuevoNombreIlegal }"
+        v-model="nuevoNombre"
+        v-show="editandoNombre"
+        @keypress.enter="guardarNuevoNombre"
+      />
+      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
+      <img src="@/assets/iconos/iconoTrabajo.png" alt="" id="imagenIcono" />
     </div>
-    <img src="@/assets/iconos/iconoTrabajo.png" alt="" id="imagenIcono" />
+    <div id="zonaDescripcion" class="zonaPrimerNivel" v-show="seleccionado">
+      <div class="barraSuperiorZona">
+        <span class="nombreZona">Descripcion</span>
+        <div
+          class="controlesZona"
+          v-show="seleccionado && usuarioResponsableProyecto"
+        >
+          <img
+            src="@/assets/iconos/editar.png"
+            alt="Editar"
+            id="bEditarDescripcion"
+            class="bEditar"
+            title="Editar descripcion del trabajo"
+            v-show="usuarioResponsableProyecto"
+            @click.stop="toggleEditandoDescripcion"
+          />
+          <img
+            src="@/assets/iconos/guardar.png"
+            alt="Guardar"
+            title="guardar"
+            class="bGuardar"
+            id="bGuardarNuevoDescripcion"
+            v-show="
+              editandoDescripcion == true && nuevoDescripcionIlegal == false
+            "
+            @click.stop="guardarNuevoDescripcion"
+          />
+        </div>
+      </div>
 
-    <template v-if="seleccionado">
-      <div id="zonaDescripcion">
-        <div class="nombreZona">Descripcion</div>
+      <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
+        {{ esteTrabajo.descripcion }}
+      </div>
+
+      <textarea
+        id="inputNuevoDescripcion"
+        ref="inputNuevoDescripcion"
+        :class="{ letrasRojas: nuevoDescripcionIlegal }"
+        v-model="nuevoDescripcion"
+        v-show="editandoDescripcion"
+      />
+      <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
+    </div>
+
+    <div id="zonaResponsables" class="zonaPrimerNivel" v-show="seleccionado">
+      <div class="nombreZona">Responsables</div>
+      <div id="controlesResponsables" class="controlesZona">
+        <div
+          class="controlesResponsables hoverGris botonesControles"
+          v-if="usuarioLogeado == true && usuarioResponsableTrabajo == false"
+          id="botonParticipar"
+          @click="asumirComoResponsable"
+        >
+          Participar
+        </div>
 
         <div
-          id="descripcion"
-          ref="descripcion"
-          :contenteditable="permisosEdicion == true && seleccionado == true"
-          @blur="guardarDescripcion"
-          @input="setDescripcionEditandose"
-          @keypress.enter="blurDescripcion"
+          class="controlesResponsables hoverGris botonesControles"
+          v-if="usuarioResponsableTrabajo == true"
+          @click="abandonarListaResponsables"
         >
-          {{ esteTrabajo.descripcion }}
+          Abandonar
         </div>
       </div>
+      <div id="listaResponsables">
+        <icono-persona
+          :estaPersona="persona"
+          :aceptado="true"
+          :key="persona.id"
+          v-for="persona of esteTrabajo.responsables"
+        />
+      </div>
+    </div>
 
-      <div id="zonaResponsables" class="zonaPrimerNivel">
-        <div class="nombreZona">Responsables</div>
-        <div id="controlesResponsables" class="controlesZona">
-          <div
-            class="controlesResponsables hoverGris botonesControles"
-            v-if="usuarioLogeado == true && usuarioResponsableTrabajo == false"
-            id="botonParticipar"
-            @click="asumirComoResponsable"
-          >
-            Participar
-          </div>
-
-          <div
-            class="controlesResponsables hoverGris botonesControles"
-            v-if="usuarioResponsableTrabajo == true"
-            @click="abandonarListaResponsables"
-          >
-            Abandonar
-          </div>
+    <div
+      id="zonaNodosConocimiento"
+      class="zonaPrimerNivel"
+      v-show="seleccionado && false"
+    >
+      <div class="nombreZona">Nodos de conocimiento involucrados</div>
+      <div id="controlesNodosConocimiento" class="controlesZona">
+        <div
+          class="controlesNodosConocimiento hoverGris botonesControles"
+          v-if="usuarioResponsableProyecto == true"
+        >
+          Añadir
         </div>
-        <div id="listaResponsables">
-          <icono-persona
-            :estaPersona="persona"
-            :aceptado="true"
-            :key="persona.id"
-            v-for="persona of esteTrabajo.responsables"
-          />
+        <div
+          class="controlesNodosConocimiento hoverGris botonesControles"
+          v-if="
+            usuarioResponsableProyecto == true &&
+            idNodoSeleccionado != null &&
+            esteTrabajo.nodosConocimiento.some(
+              (n) => n.id == idNodoSeleccionado
+            )
+          "
+        >
+          Remover
         </div>
       </div>
-
-      <div id="zonaNodosConocimiento" class="zonaPrimerNivel">
-        <div class="nombreZona">Nodos de conocimiento involucrados</div>
-        <div id="controlesNodosConocimiento" class="controlesZona">
-          <div
-            class="controlesNodosConocimiento hoverGris botonesControles"
-            v-if="usuarioResponsableProyecto == true"
-          >
-            Añadir
-          </div>
-          <div
-            class="controlesNodosConocimiento hoverGris botonesControles"
-            v-if="usuarioResponsableProyecto == true && idNodoSeleccionado!=null && esteTrabajo.nodosConocimiento.some(n=>n.id==idNodoSeleccionado)"
-          >
-            Remover
-          </div>
-        </div>
-        <div id="listaNodosConocimiento" @click.self="idNodoSeleccionado=null">
-          <icono-nodo-conocimiento
-            :esteNodo="nodo"
-            :key="nodo.id"
-            v-for="nodo of esteTrabajo.nodosConocimiento"
-            @click.native="idNodoSeleccionado=nodo.id"
-          />
-          <buscador-nodos-conocimiento/>
-        </div>
+      <div id="listaNodosConocimiento" @click.self="idNodoSeleccionado = null">
+        <icono-nodo-conocimiento
+          :esteNodo="nodo"
+          :key="nodo.id"
+          v-for="nodo of esteTrabajo.nodosConocimiento"
+          @click.native="idNodoSeleccionado = nodo.id"
+        />
+        <buscador-nodos-conocimiento />
       </div>
+    </div>
 
-      <div id="controlesTrabajo" v-show="seleccionado">
-        <div class="controlesTrabajo hoverGris" @click="eliminarse" v-if="usuarioResponsableProyecto==true">
-          Eliminar
-        </div>
+    <div id="controlesTrabajo" v-show="seleccionado">
+      <div
+        class="controlesTrabajo hoverGris bEliminar"
+        @click="eliminarse"
+        v-if="usuarioResponsableProyecto == true"
+      >
+        Eliminar
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
 <script>
-import gql from "graphql-tag"
-import {fragmentoResponsables} from "../utilidades/recursosGql"
-import IconoPersona from "./IconoPersona.vue"
-import BuscadorNodosConocimiento from '../atlasConocimiento/BuscadorNodosConocimiento.vue';
+import gql from "graphql-tag";
+import { fragmentoResponsables } from "../utilidades/recursosGql";
+import IconoPersona from "./IconoPersona.vue";
+import BuscadorNodosConocimiento from "../atlasConocimiento/BuscadorNodosConocimiento.vue";
+import Loading from "../utilidades/Loading.vue";
 
-var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+const charProhibidosNombreTrabajo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+const charProhibidosDescripcionTrabajo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
   name: "IconoTrabajo",
-  components:{
+  components: {
     IconoPersona,
-    BuscadorNodosConocimiento
+    BuscadorNodosConocimiento,
+    Loading,
   },
   data() {
     return {
-      nombreEditandose: false,
-      descripcionEditandose: false,
-      idNodoSeleccionado:null,
+      idNodoSeleccionado: null,
+      deshabilitado: false,
+
+      nuevoNombre: "Nuevo nombre",
+      editandoNombre: false,
+      enviandoNuevoNombre: false,
+
+      nuevoDescripcion: "Nueva descripcion",
+      editandoDescripcion: false,
+      enviandoNuevoDescripcion: false,
     };
   },
   props: {
     esteTrabajo: Object,
-    idEsteProyecto:String,
-    idTrabajoSeleccionado: String,
-    permisosEdicion: Boolean,
+    idProyecto: String,
+    seleccionado: Boolean,
     usuarioResponsableProyecto: Boolean,
   },
   computed: {
-    seleccionado: function () {
-      return this.idTrabajoSeleccionado == this.esteTrabajo.id ? true : false;
-    },
     usuarioResponsableTrabajo: function () {
-      return this.esteTrabajo.responsables.some(r=>
-        r.id==this.$store.state.usuario.id
+      return this.esteTrabajo.responsables.some(
+        (r) => r.id == this.$store.state.usuario.id
       )
         ? true
         : false;
     },
+    nuevoNombreIlegal() {
+      if (this.nuevoNombre.length < 1) {
+        return true;
+      }
+      if (charProhibidosNombreTrabajo.test(this.nuevoNombre)) {
+        return true;
+      }
+      return false;
+    },
+    nuevoDescripcionIlegal() {
+      if (this.nuevoDescripcion.length < 1) {
+        return true;
+      }
+      if (charProhibidosDescripcionTrabajo.test(this.nuevoDescripcion)) {
+        return true;
+      }
+      return false;
+    },
   },
   methods: {
+    guardarNuevoNombre() {
+      if (this.nuevoNombreIlegal) {
+        console.log(`No enviado`);
+        return;
+      }
+      if (this.nuevoNombre == this.esteTrabajo.nombre) {
+        this.editandoNombre = false;
+        return;
+      }
+      console.log(`guardando nuevo nombre`);
+      this.enviandoNuevoNombre = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idProyecto: ID!, $idTrabajo: ID!, $nuevoNombre: String!) {
+              editarNombreTrabajoProyecto(
+                idProyecto: $idProyecto
+                idTrabajo: $idTrabajo
+                nuevoNombre: $nuevoNombre
+              ) {
+                id
+                nombre
+              }
+            }
+          `,
+          variables: {
+            idTrabajo: this.esteTrabajo.id,
+            idProyecto: this.idProyecto,
+            nuevoNombre: this.nuevoNombre,
+          },
+        })
+        .then(() => {
+          this.enviandoNuevoNombre = false;
+          this.editandoNombre = false;
+        })
+        .catch((error) => {
+          this.enviandoNuevoNombre = false;
+          console.log(`Error. E :${error}`);
+        });
+    },
+    guardarNuevoDescripcion() {
+      if (this.nuevoDescripcionIlegal) {
+        console.log(`No enviado`);
+        return;
+      }
+      if (this.nuevoDescripcion == this.esteTrabajo.descripcion) {
+        this.editandoDescripcion = false;
+        return;
+      }
+      console.log(`guardando nuevo descripcion`);
+      this.enviandoNuevoDescripcion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idProyecto: ID!
+              $idTrabajo: ID!
+              $nuevoDescripcion: String!
+            ) {
+              editarDescripcionTrabajoProyecto(
+                idProyecto: $idProyecto
+                idTrabajo: $idTrabajo
+                nuevoDescripcion: $nuevoDescripcion
+              ) {
+                id
+                descripcion
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.idProyecto,
+            idTrabajo: this.esteTrabajo.id,
+            nuevoDescripcion: this.nuevoDescripcion,
+          },
+        })
+        .then(() => {
+          this.enviandoNuevoDescripcion = false;
+          this.editandoDescripcion = false;
+        })
+        .catch((error) => {
+          this.enviandoNuevoDescripcion = false;
+          console.log(`Error. E :${error}`);
+        });
+    },
+    toggleEditandoNombre() {
+      this.editandoNombre = !this.editandoNombre;
+      this.nuevoNombre = this.esteTrabajo.nombre;
+    },
+    toggleEditandoDescripcion() {
+      this.$refs.inputNuevoDescripcion.style.height =
+        this.$refs.descripcion.offsetHeight + "px";
+      this.editandoDescripcion = !this.editandoDescripcion;
+      this.nuevoDescripcion = this.esteTrabajo.descripcion;
+    },
     asumirComoResponsable() {
       console.log(
         `enviando id ${this.$store.state.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.idEsteProyecto}`
@@ -145,8 +332,8 @@ export default {
             mutation($idProyecto: ID!, $idTrabajo: ID!, $idUsuario: ID!) {
               addResponsableTrabajo(
                 idProyecto: $idProyecto
-                idTrabajo:$idTrabajo
-                idUsuario: $idUsuario                
+                idTrabajo: $idTrabajo
+                idUsuario: $idUsuario
               ) {
                 id
                 responsables {
@@ -157,7 +344,7 @@ export default {
             ${fragmentoResponsables}
           `,
           variables: {
-            idProyecto: this.idEsteProyecto,
+            idProyecto: this.idProyecto,
             idTrabajo: this.esteTrabajo.id,
             idUsuario: this.$store.state.usuario.id,
           },
@@ -172,23 +359,23 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $idTrabajo:ID! $idUsuario: ID!) {
+            mutation($idProyecto: ID!, $idTrabajo: ID!, $idUsuario: ID!) {
               removeResponsableTrabajo(
                 idProyecto: $idProyecto
-                idTrabajo:$idTrabajo
+                idTrabajo: $idTrabajo
                 idUsuario: $idUsuario
               ) {
                 id
                 responsables {
                   ...fragResponsables
-                }                
+                }
               }
             }
             ${fragmentoResponsables}
           `,
           variables: {
-            idProyecto: this.idEsteProyecto,
-            idTrabajo:this.esteTrabajo.id,
+            idProyecto: this.idProyecto,
+            idTrabajo: this.esteTrabajo.id,
             idUsuario: this.$store.state.usuario.id,
           },
         })
@@ -198,52 +385,35 @@ export default {
         });
     },
     eliminarse() {
-      this.$emit("eliminandose", this.esteTrabajo.id);
-    },
-    setNombreEditandose() {
-      if (this.esteTrabajo.nombre != this.$refs.nombre.innerText.trim()) {
-        this.nombreEditandose = true;
-      } else {
-        this.nombreEditandose = false;
-      }
-    },
-    setDescripcionEditandose() {
-      this.descripcionEditandose = true;
-    },
-    blurNombre() {
-      this.$refs.nombre.blur();
-    },
-    blurDescripcion() {
-      this.$refs.descripcion.blur();
-    },
-    async guardarNombre() {
-      let nuevoNombre = this.$refs.nombre.innerText.trim();
-      let idTrabajo = this.esteTrabajo.id;
-
-      if (!this.nombreEditandose || nuevoNombre == this.esteTrabajo.nombre) {
+      console.log(`Trabajo eliminandose`);
+      if (!confirm("¿Seguro de eliminar este trabajo?")) {
         return;
       }
-
-      nuevoNombre = nuevoNombre.replace(charProhibidosNombre, "");
-      nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-
-      this.$emit("cambiandoNombre", { idTrabajo, nuevoNombre });
-    },
-    async guardarDescripcion() {
-      let nuevaDescripcion = this.$refs.descripcion.innerText.trim();
-      let idTrabajo = this.esteTrabajo.id;
-
-      if (
-        !this.descripcionEditandose ||
-        nuevaDescripcion == this.esteTrabajo.descripcion
-      ) {
-        return;
-      }
-
-      nuevaDescripcion = nuevaDescripcion.replace(charProhibidosNombre, "");
-      nuevaDescripcion = nuevaDescripcion.replace(/\s\s+/g, " ");
-
-      this.$emit("cambiandoDescripcion", { idTrabajo, nuevaDescripcion });
+      this.deshabilitado = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idProyecto: ID!, $idTrabajo: ID!) {
+              eliminarTrabajoDeProyecto(
+                idProyecto: $idProyecto
+                idTrabajo: $idTrabajo
+              )
+            }
+          `,
+          variables: {
+            idProyecto: this.idProyecto,
+            idTrabajo: this.esteTrabajo.id,
+          },
+        })
+        .then(({ data: { eliminarTrabajoDeProyecto } }) => {
+          this.deshabilitado = false;
+          console.log(`Resultado: ${eliminarTrabajoDeProyecto}`);
+          this.$emit("meElimine");
+        })
+        .catch((error) => {
+          this.deshabilitado = false;
+          console.log(`Error. E: ${error}`);
+        });
     },
   },
 };
@@ -251,17 +421,20 @@ export default {
 
 <style scoped>
 .iconoTrabajo {
-  border: 2px solid blue;
+  border: 2px solid #0b8794;
   border-radius: 5px;
   min-height: 50px;
-  cursor: pointer;
   position: relative;
   padding: 5px 10px;
   padding-bottom: 20px;
   background-color: rgb(230, 247, 247);
 }
 
-.trabajoSeleccionado {
+.iconoTrabajo:not(.seleccionado) {
+  cursor: pointer;
+}
+
+.seleccionado {
   padding-bottom: 40px;
   box-shadow: 2px 2px 2px 2px rgb(54, 54, 54);
 }
@@ -272,49 +445,107 @@ export default {
   right: 0px;
   display: flex;
   flex-direction: row-reverse;
+  
 }
 .controlesTrabajo {
   padding: 3px 5px;
-}
-#nombre {
-  padding-top: 10px;
-  padding-bottom: 10px;
-  margin-top: 10px;
-  text-align: center;
-  font-weight: bold;
-  font-size: 18px;
+  cursor:pointer;
 }
 #descripcion {
   min-width: 100px;
   min-height: 50px;
   border: 2px solid pink;
   padding: 3px 30px;
+  white-space: pre-wrap;
 }
 #imagenIcono {
   width: 30px;
   height: 30px;
-  margin-bottom: 10px;
 }
+
 .zonaPrimerNivel {
-  border: 2px solid black;
+  position: relative;
+  min-height: 50px;
+  border-bottom: 2px solid black;
+}
+.barraSuperiorZona {
+  display: flex;
+}
+.nombreZona {
+  font-size: 18px;
+  padding: 5px 20px;
+}
+#zonaNombre {
+  position: relative;
+  min-height: 50px;
+}
+#nombre {
+  margin-top: 15px;
+  font-size: 19px;
+  padding: 5px 20px;
+  font-weight: bolder;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+#inputNuevoNombre {
+  font-size: 23px;
+  display: block;
+  margin: 10px auto;
+  width: 80%;
+}
+#descripcion {
+  font-size: 19px;
+  width: 95%;
+  margin: 10px auto;
+  padding: 10px;
+  min-height: 100px;
+  resize: vertical;
+  border: none;
+  background-color: transparent;
+}
+
+#inputNuevoDescripcion {
+  width: 95%;
+  font-size: 19px;
+  height: 70px;
+  display: block;
+  margin: 10px auto;
+  resize: vertical;
+}
+
+.bEditar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+
+  cursor: pointer;
+}
+.bEditar:hover {
+  background-color: rgb(209, 209, 209);
+}
+.bGuardar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.bGuardar:hover {
+  background-color: rgb(209, 209, 209);
 }
 .controlesZona {
+  margin-left: auto;
   display: flex;
   font-size: 13px;
   flex-direction: row-reverse;
 }
-.botonesControles {
-  padding: 3px 5px;
-  cursor: pointer;
-}
-.nombreZona {
-  font-size: 18px;
-  background-color: rgb(199, 110, 8);
-  padding: 3px 5px;
+.bEliminar:hover {
+  background-color: red;
 }
 #listaResponsables {
   display: flex;
-  padding-bottom:40px;
+  padding: 10px 20px;
+  padding-bottom: 65px;
 }
 .iconoPersona {
   margin-right: 10px;

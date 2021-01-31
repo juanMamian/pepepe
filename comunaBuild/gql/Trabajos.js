@@ -47,7 +47,6 @@ exports.resolvers = {
     Trabajo: {
         responsables: function (parent, _, __) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`parent (responsables): ${JSON.stringify(parent.responsables)}`);
                 if (!parent.responsables) {
                     return [];
                 }
