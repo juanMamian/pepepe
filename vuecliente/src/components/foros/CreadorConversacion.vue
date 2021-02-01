@@ -17,9 +17,10 @@
       />
     </div>
     <div id="controles">
-      <div class="controles hoverGris" id="bFinalizar" @click="finalizar">
+      <img src="@/assets/iconos/enviar.png" alt="Enviar" title="Crear conversación" id="bFinalizar" @click="finalizar"/>  
+      <!-- <div class="controles hoverGris" id="bFinalizar" @click="finalizar">
         Finalizar
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -101,5 +102,16 @@ export default {
 .controles {
   cursor: pointer;
   padding: 3px;
+}
+#bFinalizar{
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+
+}
+#bFinalizar:hover{
+    background-color: white;
+
 }
 </style>

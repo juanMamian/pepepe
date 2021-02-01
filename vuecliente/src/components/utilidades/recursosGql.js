@@ -110,10 +110,7 @@ export const fragmentoConversacion = gql`
     estado
     creador {
       ...fragResponsables
-    }
-    respuestas {
-      ...fragRespuesta  
-    }
+    }   
   }
-  ${fragmentoRespuesta}
+  ${fragmentoResponsables}
 `;

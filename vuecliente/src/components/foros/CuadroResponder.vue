@@ -6,10 +6,12 @@
       alt="Contestar"
       title="Contestar en esta conversación"
       id="imgMensaje"
+      @click="toggleCuadroAbierto"
     />
     <span id="tituloCuadro">Envía una respuesta</span>
     </div>
     <textarea
+    v-show="cuadroAbierto"
       name="inputMensaje"
       id="inputMensaje"
       :class="{letrasRojas:mensajeIlegal}"
@@ -17,7 +19,7 @@
       placeholder="Escribe aquí tu respuesta"
     ></textarea>
 
-    <img src="@/assets/iconos/enviar.png" alt="Enviar" title="Enviar respuesta" id="bEnviar" @click="enviarRespuesta">
+    <img v-show="cuadroAbierto" src="@/assets/iconos/enviar.png" alt="Enviar" title="Enviar respuesta" id="bEnviar" @click="enviarRespuesta">
   </div>
 </template>
 
@@ -28,7 +30,8 @@ export default {
     name:"CuadroResponder",
     data(){
         return {
-            mensaje:null
+            mensaje:null,
+            cuadroAbierto:false,
         }
     },
     methods:{
@@ -37,6 +40,9 @@ export default {
                 return
             }
             this.$emit("enviarRespuesta", {mensaje: this.mensaje});
+        },
+        toggleCuadroAbierto(){
+          this.cuadroAbierto=!this.cuadroAbierto;
         }
     },
     computed:{
@@ -58,7 +64,7 @@ export default {
 .cuadroResponder {
   border: 2px solid rgb(3, 49, 87);
   background-color: rgb(194, 213, 238);
-  margin-top: 5px;
+  margin: 5px;
   border-radius: 10px;
 }
 #barraSuperior{

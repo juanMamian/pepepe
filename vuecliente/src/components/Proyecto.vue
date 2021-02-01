@@ -736,6 +736,7 @@ export default {
   margin: 5px auto;
   width: min(90%, 1000px);
   padding: 5px 20px;
+  padding-bottom: 300px;
 }
 
 #nombreProyecto {

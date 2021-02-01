@@ -8,6 +8,7 @@
       >
         <div
           class="barraSuperiorCategorias"
+          :class="{seleccionable:conversacionAbierta}"
           @click="idConversacionSeleccionada = null"
         >
           <div class="nombreCategoria">{{ categoria.nombre }}</div>
@@ -19,7 +20,7 @@
                 categoria.creandoConversacion = !categoria.creandoConversacion
               "
             >
-              Crear conversación
+              {{categoria.creandoConversacion ? 'Cancelar' : 'Crear conversación'}}
             </div>
           </div>
         </div>
@@ -40,17 +41,12 @@
             :key="conversacion.id"
             :estaConversacion="conversacion"
             :seleccionado="idConversacionSeleccionada == conversacion.id"
+            :usuarioMiembro="usuarioMiembro"
             v-show="
               idConversacionSeleccionada == conversacion.id ||
               !conversacionAbierta
             "
-            @click.native="idConversacionSeleccionada = conversacion.id"
-            @respuestaEliminada="
-              eliminarRespuestaCache($event, conversacion.id, categoria.id)
-            "
-            @tengoNuevaRespuesta="
-              pushRespuestaCache($event, conversacion.id, categoria.id)
-            "
+            @click.native="idConversacionSeleccionada = conversacion.id"                   
           />
         </div>
       </div>
@@ -174,72 +170,7 @@ export default {
         },
       });
     },
-    eliminarRespuestaCache(idRespuesta, idConversacion, idCategoria) {
-      console.log(
-        `Eliminando del cache la respuesta ${idRespuesta} de la conversación ${idConversacion} de la categoria ${idCategoria}`
-      );
-      let store = this.$apollo.provider.defaultClient;
-      let cache = store.readQuery({
-        query: QUERY_FORO,
-        variables: { idForo: this.idForo },
-      });
-      let laCategoria = cache.foro.categorias.find((c) => c.id == idCategoria);
-      if (!laCategoria) {
-        console.log(`Categoria no encontrada`);
-        return;
-      }
-      let laConversacion = laCategoria.conversaciones.find(
-        (c) => c.id == idConversacion
-      );
-      if (!laConversacion) {
-        console.log(`La conversación no encontrada`);
-        return;
-      }
-      let indexR = laConversacion.respuestas.findIndex(
-        (r) => r.id == idRespuesta
-      );
-      if (indexR > -1) {
-        laConversacion.respuestas.splice(indexR, 1);
-        if (laConversacion.respuestas.length < 1) {
-          let indexC = laCategoria.conversaciones.findIndex(
-            (c) => c.id == idConversacion
-          );
-          if (indexC > -1) {
-            laCategoria.conversaciones.splice(indexC, 1);
-          }
-        }
-      } else {
-        console.log(`Respuesta no encontrada`);
-      }
-      store.writeQuery({
-        query: QUERY_FORO,
-        variables: { idForo: this.idForo },
-        data: cache,
-      });
-    },
-    pushRespuestaCache(nuevaRespuesta, idConversacion, idCategoria) {
-      console.log(
-        `Pushing una nueva respuesta con id ${nuevaRespuesta} al cache`
-      );
-      let store = this.$apollo.provider.defaultClient;
-      let cache = store.readQuery({
-        query: QUERY_FORO,
-        variables: { idForo: this.idForo },
-      });
-      let laCategoria = cache.foro.categorias.find((c) => c.id == idCategoria);
-      if (!laCategoria) {
-        console.log(`Categoria no encontrada`);
-        return;
-      }
-      let laConversacion = laCategoria.conversaciones.find(
-        (c) => c.id == idConversacion
-      );
-      if (!laConversacion) {
-        console.log(`La conversación no encontrada`);
-        return;
-      }
-      laConversacion.respuestas.push(nuevaRespuesta);
-    },
+   
   },
   computed: {
     usuarioMiembro() {
@@ -271,7 +202,7 @@ export default {
 .foro {
   border: 2px solid black;
   background-color: rgb(241, 241, 241);
-  margin: 5px auto;
+  margin: 0px auto;
 }
 #nombreForo {
   text-align: center;
@@ -284,7 +215,10 @@ export default {
 }
 .barraSuperiorCategorias {
   display: flex;
-  background-color: rgb(146, 236, 236);
+  background-color:#d2d2d2;
+}
+.barraSuperiorCategorias:not(.seleccionable) {
+  background-color:  #BDC2BF;
 }
 #controlesCategoria {
   margin-left: auto;
@@ -299,6 +233,13 @@ export default {
   cursor: pointer;
 }
 .zonaConversaciones {
-  padding-left: 10px;
+  padding-left: 0px;
+}
+.seleccionable{
+  background-color:#BDC2BF;
+  cursor: pointer;
+}
+.seleccionable:hover{
+  background-color: #d2d2d2;
 }
 </style>

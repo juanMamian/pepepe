@@ -13,7 +13,12 @@
     </div>
 
     <div class="controles">
-      <div class="controlRespuesta" id="bEliminar" v-if="usuarioAutor" @click="eliminarse">
+      <div
+        class="controlRespuesta"
+        id="bEliminar"
+        v-if="usuarioAutor"
+        @click="eliminarse"
+      >
         Eliminar
       </div>
     </div>
@@ -21,63 +26,65 @@
 </template>
 
 <script>
-import gql from 'graphql-tag';
+import gql from "graphql-tag";
 export default {
-    name:"Respuesta",
-    props:{
-      estaRespuesta:{
-        type:Object,        
-      }
+  name: "Respuesta",
+  props: {
+    estaRespuesta: {
+      type: Object,
     },
-    computed:{
-      fechaFormateada:function(){
-            let laFecha=new Date(this.estaRespuesta.fecha).toString();
-            let indexParentesis=laFecha.indexOf("(");
-            let fechaCorta=laFecha.substr(0, indexParentesis);
-            let indexGMT=fechaCorta.indexOf("GMT");
-            if(indexGMT>-1){
-                fechaCorta=fechaCorta.substr(0, indexGMT);
-            }
-            return fechaCorta;
+    idConversacion:String
+  },
+  computed: {
+    fechaFormateada: function () {
+      let laFecha = new Date(this.estaRespuesta.fecha).toString();
+      let indexParentesis = laFecha.indexOf("(");
+      let fechaCorta = laFecha.substr(0, indexParentesis);
+      let indexGMT = fechaCorta.indexOf("GMT");
+      if (indexGMT > -1) {
+        fechaCorta = fechaCorta.substr(0, indexGMT);
+      }
+      return fechaCorta;
+    },
+    usuarioAutor: function () {
+      if (this.$store.state.usuario.id == this.estaRespuesta.autor.id) {
+        return true;
+      }
+      return false;
+    },
+  },
+  methods: {
+    eliminarse() {
+      let dis = this;
+      if (!confirm("Eliminando respuesta ¿Continuar?")) {
+        return;
+      }
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idRespuesta: ID!, $idConversacion:ID!) {
+            eliminarRespuesta(idRespuesta: $idRespuesta, idConversacion:$idConversacion)
+          }
+        `,
+        variables: {
+          idRespuesta: this.estaRespuesta.id,
+          idConversacion:this.idConversacion
         },
-        usuarioAutor:function(){
-          if(this.$store.state.usuario.id==this.estaRespuesta.autor.id){
-            return true
+        update(store, { data: { eliminarRespuesta } }) {
+          if (eliminarRespuesta) {
+            console.log(`Respuesta eliminada`);
+            dis.$emit("meElimine");
           }
-          return false
-        }
+        },
+      });
     },
-    methods:{
-      eliminarse(){
-        let dis=this;
-        if(!confirm("Eliminando respuesta ¿Continuar?")){
-          return
-        }
-        this.$apollo.mutate({
-          mutation:gql`
-            mutation($idRespuesta:ID!){
-              eliminarRespuesta(idRespuesta:$idRespuesta)
-            }
-          `,
-          variables:{
-            idRespuesta:this.estaRespuesta.id
-          },
-          update(store, {data:{eliminarRespuesta}}){
-            if(eliminarRespuesta){
-              console.log(`Respuesta eliminada`);
-              dis.$emit("meElimine");
-            }
-          }
-        })
-      }
-    }
-}
+  },
+};
 </script>
 
 <style scoped>
 .respuesta {
-  background-color: rgb(245, 199, 191);
-  border: 2px solid rgb(105, 36, 4);
+  background-color: rgb(168, 213, 234);
+  border: 2px solid rgb(16, 89, 122);
   border-radius: 5px;
   display: grid;
   grid-template-areas:
@@ -104,6 +111,7 @@ export default {
   width: 100%;
   height: 100%;
   padding: 10px;
+  white-space: pre-wrap;
 }
 .caritaAutor {
   width: 70px;

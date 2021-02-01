@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import fs from "fs";
 import { ModeloForo as Foro } from "../model/Foros/Foro";
 import { ModeloProyecto as Proyecto } from "../model/Proyecto";
-import { ModeloConversacion as Conversacion, charProhibidosMensajeRespuesta } from "../model/Foros/Conversacion";
+import { ModeloConversacion as Conversacion, esquemaRespuestaConversacion, charProhibidosMensajeRespuesta } from "../model/Foros/Conversacion";
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import path from "path"
 import { contextoQuery } from "./tsObjetos"
@@ -33,7 +33,6 @@ export const typeDefs = gql`
         titulo: String,
         estado:String,
         creador: PublicUsuario,
-        respuestas: [Respuesta]
     }
 
     type Categoria{
@@ -51,17 +50,20 @@ export const typeDefs = gql`
 
     extend type Query{
         foro(idForo:ID!):Foro,
-
+        numPaginasConversacion(idConversacion: ID!):Int,
+        respuestasPaginaDeConversacion(idConversacion:ID!, pagina: Int!):[Respuesta]
     }
 
     extend type Mutation{
         crearForoProyecto(idProyecto: ID!):Proyecto,
         iniciarConversacionConPrimerMensajeForo(idForo: ID!, idCategoria: ID!, input: InputIniciarConversacion):Conversacion,
-        eliminarRespuesta(idRespuesta:ID!):Boolean,
+        eliminarRespuesta(idRespuesta:ID!, idConversacion:ID!):Boolean,
         postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta):Respuesta
     }
 
 `;
+
+const sizePaginaConversacion=10;
 
 export const resolvers = {
     Query: {
@@ -81,6 +83,32 @@ export const resolvers = {
             console.log(`enviando el foro`);
             return elForo;
         },
+        async numPaginasConversacion(_:any, {idConversacion}, __:any){
+            console.log(`||||||||||||`);
+            
+            
+            let Respuesta=mongoose.model("respuestasDeConversacion"+idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion"+idConversacion);
+            try {
+                var num:any=await Respuesta.countDocuments().exec();
+                var pags=Math.ceil(num/sizePaginaConversacion);
+            } catch (error) {
+                console.log(`Error contando las respuestas. E: ${error}`);
+                return 0
+            }            
+            return pags;            
+        },
+        async respuestasPaginaDeConversacion(_:any, {idConversacion, pagina}, __:any){
+
+            let Respuesta=mongoose.model("respuestasDeConversacion"+idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion"+idConversacion);
+
+            try {
+                var lasRespuestas:any=await Respuesta.find({}).limit(sizePaginaConversacion).skip((pagina-1)*sizePaginaConversacion).exec();
+            } catch (error) {
+                console.log(`Error descargando respuestas`);
+                new ApolloError("Error conectando con la base de datos");
+            }
+            return lasRespuestas;
+        }   
 
 
     },
@@ -206,39 +234,34 @@ export const resolvers = {
             return nuevaConversacion;
 
         },
-        async eliminarRespuesta(_: any, { idRespuesta }: any, contexto: contextoQuery) {
+        async eliminarRespuesta(_: any, { idRespuesta, idConversacion }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||`);
             console.log(`Solicitud de eliminar una respuesta con id ${idRespuesta}`);
+
+            let Respuesta=mongoose.model("respuestasDeConversacion"+idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion"+idConversacion);
+            try {
+                var laRespuesta:any=await Respuesta.findById(idRespuesta).exec();
+                if(!laRespuesta){
+                    throw "Respuesta no encontrada"
+                }
+            } catch (error) {
+                console.log(`Error buscando la respuesta. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
 
             //Authorización
             let permisosEspeciales = ["superadministrador"]
             let credencialesUsuario = contexto.usuario;
 
-            try {
-                var elForo: any = await Foro.findOne({ "categorias.conversaciones.respuestas._id": idRespuesta }).exec();
-                if (!elForo) {
-                    console.log(`El foro no existía`);
-                    throw "Foro no encontrado"
-                }
-            } catch (error) {
-                console.log(`Error buscando el foro del que se eliminará la respuesta. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+            if(credencialesUsuario.id!=laRespuesta.idAutor && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))){
+                console.log(`Error de autorización`);
+                throw new AuthenticationError("No autorizado");
             }
-
-            console.log(`En el foro ${elForo._id}`);
-            let laCategoria = elForo.categorias.find(c => c.conversaciones.some(conv => conv.respuestas.some(r => r._id == idRespuesta)));
-            let laConversacion = laCategoria.conversaciones.find(conv => conv.respuestas.some(r => r._id == idRespuesta));
-            console.log(`En la conversación ${laConversacion.titulo}`);
-            laConversacion.respuestas.pull({ _id: idRespuesta });
-            if (laConversacion.respuestas.length < 1) {
-                console.log(`Esta conversación se quedó sin respuestas. Eliminando`);
-                laCategoria.conversaciones.pull({ _id: laConversacion._id });
-            }
+        
             try {
-                await elForo.save();
+                await Respuesta.findByIdAndDelete(idRespuesta).exec();
             } catch (error) {
-                console.log(`Error guardando el foro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                console.log(`Error eliminando respuesta. E: ${error}`);
             }
 
             console.log(`Respuesta eliminada`);
@@ -295,11 +318,12 @@ export const resolvers = {
             let laConversacion = laCategoria.conversaciones.find(conv => conv._id==idConversacion);
             console.log(`En la conversación ${laConversacion.titulo}`);
             
+            let Respuesta=mongoose.model("respuestasDeConversacion"+idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion"+idConversacion);
 
-            try {
-                var laRespuesta=await laConversacion.respuestas.create(nuevaRespuesta);                
-                laConversacion.respuestas.push(laRespuesta);
-                await elForo.save();
+            const laRespuesta=new Respuesta(nuevaRespuesta);
+
+            try {                                               
+                await laRespuesta.save();
             } catch (error) {
                 console.log(`Error guardando el foro. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");

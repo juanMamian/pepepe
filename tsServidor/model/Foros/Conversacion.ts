@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const esquemaRespuestaConversacion = new mongoose.Schema({
+export const esquemaRespuestaConversacion = new mongoose.Schema({
 
     fecha: {
         type: Date,
