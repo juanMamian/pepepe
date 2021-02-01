@@ -10,6 +10,7 @@
     >
       {{ esteProyecto.nombre }}
     </p>
+    <img @click.stop="navegarAlProyecto" v-show="seleccionado" src="@/assets/iconos/enviar.png" alt="entrar" title="Entrar a este proyecto" id="bEntrarProyecto">
   </div>
 </template>
 
@@ -66,6 +67,15 @@ export default {
 #nombre {
   text-align: center;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+#bEntrarProyecto{
+  width: 45px;
+  height: 45px;
+  display: block;
+  margin: 10px auto;
+  background-color: gray;
+  cursor: pointer;
+  border-radius: 50%;
 }
 .proyectoPropio {
   border-bottom: 2px solid purple;

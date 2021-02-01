@@ -6,7 +6,7 @@
       completada: usuarioCompletoActividad,
     }"
   >
-    <div id="contenedorAvancesGrupo" v-if="usuarioCreadorActividad">
+    <div id="contenedorAvancesGrupo" v-if="usuarioCreadorActividad || usuarioProfe">
       <div class="indicadorAvance" v-show="estadoAvanceGrupo.numCompletados>0">
         <div class="numeroIndicadorAvance">{{estadoAvanceGrupo.numCompletados}}</div>
         <img
