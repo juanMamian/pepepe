@@ -13,6 +13,7 @@ exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Proyecto_1 = require("../model/Proyecto");
 const Usuario_1 = require("../model/Usuario");
+const Foro_1 = require("../model/Foros/Foro");
 exports.typeDefs = apollo_server_express_1.gql `
     type Proyecto{
         id: ID,
@@ -21,7 +22,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         responsables: [PublicUsuario],
         posiblesResponsables:[PublicUsuario],
         trabajos: [Trabajo],
-        objetivos: [Objetivo]
+        objetivos: [Objetivo],
+        idForo:ID,
     }
     type Objetivo{
        id: ID,
@@ -52,7 +54,6 @@ exports.typeDefs = apollo_server_express_1.gql `
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
         editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
         editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
-
     }
     
 `;
@@ -83,6 +84,46 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`Error buscando el proyecto. E:${error}`);
                     throw new apollo_server_express_1.ApolloError("Error en la conexión con la base de datos");
+                }
+                let tieneForo = true;
+                if (!elProyecto.idForo) {
+                    tieneForo = false;
+                }
+                else {
+                    try {
+                        let elForo = yield Foro_1.ModeloForo.findById(elProyecto.idForo).exec();
+                        if (!elForo) {
+                            console.log(`El foro no existía. Se creará uno nuevo`);
+                            tieneForo = false;
+                        }
+                    }
+                    catch (error) {
+                        console.log(`Error buscando foro en la base de datos. E :${error}`);
+                    }
+                }
+                if (!tieneForo) {
+                    console.log(`El proyecto ${elProyecto.nombre} no tenía foro. Creando con responsables: ${elProyecto.responsables}.`);
+                    try {
+                        var nuevoForo = yield Foro_1.ModeloForo.create({
+                            miembros: elProyecto.responsables,
+                            acceso: "privado"
+                        });
+                        var idNuevoForo = nuevoForo._id;
+                        yield nuevoForo.save();
+                    }
+                    catch (error) {
+                        console.log(`Error creando el nuevo foro. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                    console.log(`Nuevo foro creado`);
+                    try {
+                        elProyecto.idForo = idNuevoForo;
+                        yield elProyecto.save();
+                    }
+                    catch (error) {
+                        console.log(`Error guardando el proyecto`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
                 }
                 return elProyecto;
             });
@@ -183,6 +224,13 @@ exports.resolvers = {
                     console.log("Error guardando datos en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
+                //Mirror responsables del proyecto hacia miembros del foro
+                try {
+                    yield Foro_1.ModeloForo.findByIdAndUpdate(elProyecto.idForo, { miembros: elProyecto.responsables });
+                }
+                catch (error) {
+                    console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+                }
                 console.log(`Proyecto guardado`);
                 return elProyecto;
             });
@@ -233,6 +281,13 @@ exports.resolvers = {
                 catch (error) {
                     console.log("Error guardando datos en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Mirror responsables del proyecto hacia miembros del foro
+                try {
+                    yield Foro_1.ModeloForo.findByIdAndUpdate(elProyecto.idForo, { miembros: elProyecto.responsables });
+                }
+                catch (error) {
+                    console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 console.log(`Proyecto guardado`);
                 return elProyecto;
@@ -326,6 +381,21 @@ exports.resolvers = {
                     responsables: [usuario.id]
                 });
                 try {
+                    var nuevoForo = yield Foro_1.ModeloForo.create({
+                        categorias: [{ nombre: "General" }],
+                        acceso: "privado",
+                        miembros: elProyecto.responsables,
+                    });
+                    var idNuevoForo = nuevoForo._id;
+                    yield nuevoForo.save();
+                }
+                catch (error) {
+                    console.log(`Error creando el nuevo foro. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo foro creado`);
+                try {
+                    elProyecto.idForo = idNuevoForo;
                     yield elProyecto.save();
                 }
                 catch (error) {
@@ -781,12 +851,11 @@ exports.resolvers = {
                 console.log(`Descripcion guardado`);
                 return elObjetivo;
             });
-        }
+        },
     },
     Proyecto: {
         responsables: function (parent, _, __) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`parent responsables (proyecto): ${JSON.stringify(parent.responsables)}`);
                 if (!parent.responsables) {
                     return [];
                 }

@@ -1,0 +1,240 @@
+<template>
+  <div
+    class="conversacion"
+    :class="{ seleccionado, deshabilitado: seleccionado && loading }"
+  >
+    <div class="tituloConversacion">
+      <img
+        src="@/assets/iconos/conversacion.png"
+        alt="Conversacion"
+        class="imagenConversacion"
+      />
+      {{ estaConversacion.titulo }}
+    </div>
+    <div
+      class="zonaSelectorPaginas"
+      v-if="numPaginas > 0"
+      v-show="seleccionado"
+    >
+      <div
+        class="selectorPagina"
+        :class="{ selectorSeleccionado: index == numPaginaSeleccionada }"
+        v-for="index in numPaginas"
+        :key="index"
+        @click="numPaginaSeleccionada = index"
+      >
+        {{ index }}
+      </div>
+    </div>
+    <div class="zonaRespuestas" v-show="seleccionado">
+      <div class="zonaPaginas">
+        <div
+          class="pagina"
+          v-for="index in numPaginas"
+          :key="'pagina' + index"
+          v-show="numPaginaSeleccionada == index"
+        >
+          <respuesta
+            v-for="respuesta of respuestasPorPagina[index]"
+            :key="respuesta.id"
+            :idConversacion="estaConversacion.id"
+            :estaRespuesta="respuesta"
+            @meElimine="updateRespuestaEliminada(respuesta.id, index)"
+          />
+        </div>
+      </div>
+      <cuadro-responder
+        ref="cuadroResponder"
+        v-if="
+          usuarioLogeado &&
+          (estaConversacion.acceso == 'publico' || usuarioMiembro == true) &&
+          estaConversacion.id
+        "
+        v-show="numPaginaSeleccionada == numPaginas"
+        :idConversacion="estaConversacion.id"
+        @hiceRespuesta="addRespuesta($event)"
+      />
+    </div>
+
+    <div class="controlesConversacion">
+      <!-- <div class="bEliminarConversacion">Eliminar</div> -->
+    </div>
+  </div>
+</template>
+
+<script>
+import gql from "graphql-tag";
+import CuadroResponder from "./CuadroResponder.vue";
+import Respuesta from "./Respuesta.vue";
+import { fragmentoRespuesta } from "../utilidades/recursosGql";
+
+const QUERY_RESPUESTAS = gql`
+  query($idConversacion: ID!, $pagina: Int!) {
+    respuestasPaginaDeConversacion(
+      idConversacion: $idConversacion
+      pagina: $pagina
+    ) {
+      pagina
+      numPaginas
+      respuestas {
+        ...fragRespuesta
+      }
+    }
+  }
+  ${fragmentoRespuesta}
+`;
+
+export default {
+  components: { Respuesta, CuadroResponder },
+  name: "Conversacion",
+  apollo: {
+    numPaginas: {
+      query: QUERY_RESPUESTAS,
+      variables() {
+        return {
+          idConversacion: this.estaConversacion.id,
+          pagina: this.numPaginaSeleccionada,
+        };
+      },
+      update({
+        respuestasPaginaDeConversacion: { pagina, numPaginas, respuestas },
+      }) {
+        console.log(
+          `Llenando con ${respuestas.length} respuestas la pagina ${pagina} de ${numPaginas}`
+        );
+        this.$set(this.respuestasPorPagina, pagina, respuestas);
+        if (this.numPaginaSeleccionada != pagina) {
+          this.numPaginaSeleccionada = pagina;
+        }
+        this.loading = false;
+        return numPaginas;
+      },
+      skip() {
+        return !this.seleccionado;
+      },
+      fetchPolicy: "no-cache",
+    },
+  },
+  data() {
+    return {
+      numPaginas: 0,
+      numPaginaSeleccionada: 0,
+      respuestasPorPagina: {},
+      loading: true,
+    };
+  },
+  props: {
+    estaConversacion: {
+      type: Object,
+      default() {
+        return {
+          respuestas: [],
+        };
+      },
+    },
+    seleccionado: Boolean,
+    usuarioMiembro: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  methods: {
+    addRespuesta(nuevaRespuesta) {
+      var targetPagina = this.numPaginas;
+      if (
+        this.respuestasPorPagina[targetPagina].length >= 5 ||
+        targetPagina < 1
+      ) {
+        targetPagina++;
+        if (!this.respuestasPorPagina[targetPagina]) {
+          this.$set(this.respuestasPorPagina, targetPagina, []);
+        }
+      }
+      console.log(`Pushing en targetPagina ${targetPagina}`);
+      this.respuestasPorPagina[targetPagina].push(nuevaRespuesta);
+      this.$refs.cuadroResponder.cerrarse();
+      if (this.numPaginaSeleccionada != targetPagina) {
+        this.numPaginaSeleccionada = targetPagina;
+      }
+    },
+    updateRespuestaEliminada(idRespuesta, pagina) {
+      console.log(`Respuesta ${idRespuesta} eliminada de la pagina ${pagina}`);
+      if (this.numPaginas == 1 && this.respuestasPorPagina[1].length < 2) {
+        console.log(`Era la ultima respuesta`);
+        this.$emit("meElimine");
+      } else {
+        console.log(`Refreshing respuestas pagina`);
+        this.$apollo.queries.numPaginas.refresh();
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.conversacion {
+  background-color: #91bfec;
+  border: 1px solid #023004;
+  padding: 0px 0px;
+}
+.conversacion:hover {
+  background-color: #aec6de;
+}
+.seleccionado {
+  background-color: #aec6de;
+}
+.respuesta {
+  margin: 5px;
+}
+.conversacion:not(.seleccionado) {
+  cursor: pointer;
+}
+.tituloConversacion {
+  padding: 15px 10px;
+  margin: 5px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+.imagenConversacion {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+.zonaRespuestas {
+  padding-left: 0px;
+}
+.controlesConversacion {
+  display: flex;
+  flex-flow: row-reverse;
+}
+.bEliminarConversacion {
+  padding: 3px;
+}
+.bEliminarConversacion:hover {
+  padding: 3px;
+  background-color: red;
+  cursor: pointer;
+}
+.zonaSelectorPaginas {
+  display: flex;
+  padding: 2px 10px;
+}
+.selectorPagina {
+  border: 1px solid black;
+  padding: 3px 5px;
+  margin:2px;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #aec6de;
+}
+
+.selectorPagina:hover {
+  background-color: #cddbe9;
+}
+.selectorSeleccionado {
+  background-color: #cddbe9;
+  pointer-events: none;
+}
+</style>
