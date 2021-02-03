@@ -28,42 +28,51 @@ export const typeDefs = gql`
         autor: PublicUsuario
     }
 
+    type InfoRespuestasPaginasConversacion{
+        numPaginas: Int,
+        pagina:Int,
+        respuestas: [Respuesta]
+    }
+
+    type InfoConversacionesPaginaForo{
+        numPaginas: Int,
+        pagina:Int,
+        conversaciones: [Conversacion]
+    }
+
     type Conversacion{
         id:ID,
         titulo: String,
         estado:String,
         creador: PublicUsuario,
+        acceso:String
     }
-
-    type Categoria{
-        id: ID
-        nombre: String,
-        conversaciones:[Conversacion],
-    }
-
+  
     type Foro{
         id:ID,
-        categorias:[Categoria],
         acceso:String,
-        miembros:[PublicUsuario]        
+        miembros:[PublicUsuario]       
+        conversaciones:[Conversacion], 
     }
 
     extend type Query{
         foro(idForo:ID!):Foro,
-        numPaginasConversacion(idConversacion: ID!):Int,
-        respuestasPaginaDeConversacion(idConversacion:ID!, pagina: Int!):[Respuesta]
+        numPaginasConversacion(idConversacion: ID!):Int
+        numPagsConversacionesForo(idForo: ID!):Int
+        respuestasPaginaDeConversacion(idConversacion:ID!, pagina: Int!):InfoRespuestasPaginasConversacion,
+        conversacionesPaginaForo(idForo:ID!, pagina: Int!):InfoConversacionesPaginaForo
     }
 
     extend type Mutation{
-        crearForoProyecto(idProyecto: ID!):Proyecto,
-        iniciarConversacionConPrimerMensajeForo(idForo: ID!, idCategoria: ID!, input: InputIniciarConversacion):Conversacion,
+        iniciarConversacionConPrimerMensajeForo(idForo: ID!, input: InputIniciarConversacion):Conversacion,
         eliminarRespuesta(idRespuesta:ID!, idConversacion:ID!):Boolean,
         postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta):Respuesta
     }
 
 `;
 
-const sizePaginaConversacion=10;
+const sizePaginaConversacion = 5;
+const sizePaginaForo=6
 
 export const resolvers = {
     Query: {
@@ -83,84 +92,95 @@ export const resolvers = {
             console.log(`enviando el foro`);
             return elForo;
         },
-        async numPaginasConversacion(_:any, {idConversacion}, __:any){
+        async numPaginasConversacion(_: any, { idConversacion }, __: any) {
             console.log(`||||||||||||`);
-            
-            
-            let Respuesta=mongoose.model("respuestasDeConversacion"+idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion"+idConversacion);
+
+
+            let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
             try {
-                var num:any=await Respuesta.countDocuments().exec();
-                var pags=Math.ceil(num/sizePaginaConversacion);
+                var num: any = await Respuesta.countDocuments().exec();
+                var pags = Math.ceil(num / sizePaginaConversacion);
             } catch (error) {
                 console.log(`Error contando las respuestas. E: ${error}`);
                 return 0
-            }            
-            return pags;            
+            }
+            console.log(`Enviando numpags: ${pags}`);
+            return pags;
         },
-        async respuestasPaginaDeConversacion(_:any, {idConversacion, pagina}, __:any){
+        async numPagsConversacionesForo(_: any, { idForo }, __: any) {
+            console.log(`||||||||||||`);
+            
+            try {
+                let elForo:any=await Foro.findById(idForo).exec();
+                let num=elForo.conversaciones.length;
+                var pags = Math.ceil(num / sizePaginaForo);
+            } catch (error) {
+                console.log(`Error contando las conversaciones. E: ${error}`);
+                return 0
+            }
+            console.log(`Enviando numpags: ${pags}`);
+            return pags;
+        },
+        async respuestasPaginaDeConversacion(_: any, { idConversacion, pagina }, __: any) {
+            console.log(`Peticion de respuestas de la pagina ${pagina} en la conversacion ${idConversacion}`);
+            let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
+            let numRespuestas:any=await Respuesta.countDocuments().exec();
+            
+            var numPaginas=0;
+            if(numRespuestas>0){
+                 numPaginas=Math.ceil(numRespuestas / sizePaginaConversacion);
+            }
+            
 
-            let Respuesta=mongoose.model("respuestasDeConversacion"+idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion"+idConversacion);
+            if(pagina<1 || pagina>numPaginas){
+                pagina=numPaginas;
+            }
 
             try {
-                var lasRespuestas:any=await Respuesta.find({}).limit(sizePaginaConversacion).skip((pagina-1)*sizePaginaConversacion).exec();
+                var lasRespuestas: any = await Respuesta.find({}).limit(sizePaginaConversacion).skip((pagina - 1) * sizePaginaConversacion).exec();
             } catch (error) {
                 console.log(`Error descargando respuestas`);
                 new ApolloError("Error conectando con la base de datos");
             }
-            return lasRespuestas;
-        }   
+            console.log(`Enviando ${lasRespuestas.length} respuestas en la pagina ${pagina} de ${numPaginas}`);
+            return {numPaginas, pagina, respuestas: lasRespuestas};
+        },
+        async conversacionesPaginaForo(_: any, { idForo, pagina }, __: any) {
+            console.log(`Peticion de respuestas de la pagina ${pagina} en el foro ${idForo}`);
+         
+            try {
+                var elForo: any = await Foro.findById(idForo).exec();
+                if(!elForo){
+                    throw "Foro no encontrado"
+                }
+            } catch (error) {
+                console.log(`Error buscando el foro`);
+                new ApolloError("Error conectando con la base de datos");
+            }
+
+            let todasConversaciones=elForo.conversaciones;
+            let numConversaciones=todasConversaciones.length;
+            
+            var numPaginas=0;
+            if(numConversaciones>0){
+                 numPaginas=Math.ceil(numConversaciones / sizePaginaConversacion);
+            }
+            if(pagina<1 || pagina>numPaginas){
+                pagina=numPaginas;
+            }
+                
+            let conversacionesPagina=todasConversaciones.splice((pagina-1)*sizePaginaForo, sizePaginaForo);
+            console.log(`Enviando ${conversacionesPagina.length} conversaciones para la pagina ${pagina} de ${numPaginas}`);
+            return {pagina, numPaginas, conversaciones: conversacionesPagina};
+        }
 
 
     },
     Mutation: {
-        async crearForoProyecto(_: any, { idProyecto }: any, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||||||||`);
-            console.log(`Solicitud de crear un foro para el proyecto con id ${idProyecto}`);
-
-            try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    console.log(`El proyecto no fue encontrado`);
-                    throw "Proyecto no encontrado";
-                }
-            } catch (error) {
-                console.log(`Error buscando el proyecto en la base de datos. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-
-            if (!elProyecto.idForo) {
-                console.log(`Creando nuevo foro para este proyecto`);
-
-                try {
-                    var nuevoForo = await Foro.create({
-                        categorias: [{ nombre: "General" }]
-                    });
-                    var idNuevoForo = nuevoForo._id;
-                    await nuevoForo.save();
-                } catch (error) {
-                    console.log(`Error creando el nuevo foro. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-                console.log(`Nuevo foro creado`);
-                try {
-                    elProyecto.idForo = idNuevoForo;
-                    await elProyecto.save();
-                } catch (error) {
-                    console.log(`Error guardando el proyecto`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-
-            }
-            else {
-                console.log(`El proyecto ya tenía un foro.`);
-                throw new ApolloError("Operacion ilegal");
-            }
-
-            return elProyecto;
-        },
-        async iniciarConversacionConPrimerMensajeForo(_: any, { idForo, idCategoria, input }: any, contexto: contextoQuery) {
+       
+        async iniciarConversacionConPrimerMensajeForo(_: any, { idForo, input }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||`);
-            console.log(`Recibida solicitud de iniciar una conversacion con primera respuesta en foro con id ${idForo} en categoria con id ${idCategoria}, con input: ${JSON.stringify(input)}`);
+            console.log(`Recibida solicitud de iniciar una conversacion con primera respuesta en foro con id ${idForo} con input: ${JSON.stringify(input)}`);
 
             try {
                 var elForo: any = await Foro.findById(idForo).exec();
@@ -211,21 +231,22 @@ export const resolvers = {
                 mensaje: primeraRespuesta,
                 idAutor: credencialesUsuario.id
             }
-            let laCategoria = elForo.categorias.id(idCategoria);
-            if (!laCategoria) {
-                console.log(`La categoría no existía`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
 
-            let nuevaConversacion = laCategoria.conversaciones.create({
+            let nuevaConversacion = elForo.conversaciones.create({
                 titulo,
                 idCreador: credencialesUsuario.id,
-                respuestas: [respuesta]
+                respuestas: [respuesta],
+                acceso:"publico"
             });
 
+            let idConversacion=nuevaConversacion._id;
+
             try {
-                await laCategoria.conversaciones.push(nuevaConversacion);
+                await elForo.conversaciones.push(nuevaConversacion);
                 await elForo.save();
+                let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
+                let laRespuesta=new Respuesta(respuesta);
+                await laRespuesta.save();
             } catch (error) {
                 console.log(`Error guardando el foro con la nueva conversacion. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -238,10 +259,10 @@ export const resolvers = {
             console.log(`|||||||||||||||||`);
             console.log(`Solicitud de eliminar una respuesta con id ${idRespuesta}`);
 
-            let Respuesta=mongoose.model("respuestasDeConversacion"+idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion"+idConversacion);
+            let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
             try {
-                var laRespuesta:any=await Respuesta.findById(idRespuesta).exec();
-                if(!laRespuesta){
+                var laRespuesta: any = await Respuesta.findById(idRespuesta).exec();
+                if (!laRespuesta) {
                     throw "Respuesta no encontrada"
                 }
             } catch (error) {
@@ -253,17 +274,45 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"]
             let credencialesUsuario = contexto.usuario;
 
-            if(credencialesUsuario.id!=laRespuesta.idAutor && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))){
+            if (credencialesUsuario.id != laRespuesta.idAutor && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autorización`);
                 throw new AuthenticationError("No autorizado");
             }
-        
+
             try {
                 await Respuesta.findByIdAndDelete(idRespuesta).exec();
             } catch (error) {
                 console.log(`Error eliminando respuesta. E: ${error}`);
             }
 
+            if (await Respuesta.countDocuments().exec() < 1) {
+                console.log(`La conversación quedó vacía. Eliminando`);
+
+
+                try {
+                    let elForo: any = await Foro.findOne({ "conversaciones._id": idConversacion }).exec();
+                    if (!elForo) {
+                        console.log(`Foro no encontrado`);
+                        throw "Foro no encontrado";
+                    }
+                    elForo.conversaciones.id(idConversacion).remove();
+                    await elForo.save();
+                } catch (error) {
+                    console.log(`Error buscando y guardando el foro para eliminar la conversación`);
+                }
+                console.log(`Conversación eliminada del foro`);
+                
+                mongoose.connection.db.dropCollection("respuestasDeConversacion"+idConversacion, function(
+                    err,
+                    result
+                ) {
+                    if(err){
+                        console.log(`Error eliminando la coleccion. E: ${err}`);
+                    }
+                    console.log("Collection droped");
+                });
+
+            }
             console.log(`Respuesta eliminada`);
 
             return true;
@@ -275,12 +324,12 @@ export const resolvers = {
             console.log(`La respuesta será: ${JSON.stringify(nuevaRespuesta)}`);
 
             try {
-                var elForo: any = await Foro.findOne({ "categorias.conversaciones._id": idConversacion }).exec();
+                var elForo: any = await Foro.findOne({ "conversaciones._id": idConversacion }).exec();
                 if (!elForo) {
                     throw "Foro no existía"
                 }
             } catch (error) {
-                console.log(`Error buscando el foro de la conversación`);
+                console.log(`Error buscando el foro de la conversación. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
@@ -295,7 +344,13 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            if (elForo.acceso == "privado") {
+            let laConversacion=elForo.conversaciones.id(idConversacion);
+            if(!laConversacion){
+                console.log(`La conversación no existía`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            if (laConversacion.acceso == "privado") {
                 if (!elForo.miembros.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                     console.log(`Error de autenticacion para crear conversacio en el foro`);
                     throw new AuthenticationError("No autorizado");
@@ -310,19 +365,17 @@ export const resolvers = {
             }
 
             nuevaRespuesta.mensaje = mensaje;
-            if(!nuevaRespuesta.idAutor){
-                nuevaRespuesta.idAutor=credencialesUsuario.id;
+            if (!nuevaRespuesta.idAutor) {
+                nuevaRespuesta.idAutor = credencialesUsuario.id;
             }
 
-            let laCategoria = elForo.categorias.find(c => c.conversaciones.some(conv => conv._id==idConversacion));
-            let laConversacion = laCategoria.conversaciones.find(conv => conv._id==idConversacion);
             console.log(`En la conversación ${laConversacion.titulo}`);
-            
-            let Respuesta=mongoose.model("respuestasDeConversacion"+idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion"+idConversacion);
 
-            const laRespuesta=new Respuesta(nuevaRespuesta);
+            let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
 
-            try {                                               
+            const laRespuesta = new Respuesta(nuevaRespuesta);
+
+            try {
                 await laRespuesta.save();
             } catch (error) {
                 console.log(`Error guardando el foro. E: ${error}`);
@@ -337,7 +390,7 @@ export const resolvers = {
     },
     Foro: {
         miembros: async function (parent: any, _: any, __: any) {
-            console.log(`parent miembros (foro): ${JSON.stringify(parent.miembros)}`);
+            
 
             if (!parent.miembros) {
                 return [];

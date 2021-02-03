@@ -1,5 +1,8 @@
 <template>
-  <div class="conversacion" :class="{ seleccionado }">
+  <div
+    class="conversacion"
+    :class="{ seleccionado, deshabilitado: seleccionado && loading }"
+  >
     <div class="tituloConversacion">
       <img
         src="@/assets/iconos/conversacion.png"
@@ -31,7 +34,6 @@
           :key="'pagina' + index"
           v-show="numPaginaSeleccionada == index"
         >
-          pagina{{ index }}
           <respuesta
             v-for="respuesta of respuestasPorPagina[index]"
             :key="respuesta.id"
@@ -42,8 +44,15 @@
         </div>
       </div>
       <cuadro-responder
-        v-if="usuarioMiembro"
-        @enviarRespuesta="enviarNuevaRespuesta($event)"
+        ref="cuadroResponder"
+        v-if="
+          usuarioLogeado &&
+          (estaConversacion.acceso == 'publico' || usuarioMiembro == true) &&
+          estaConversacion.id
+        "
+        v-show="numPaginaSeleccionada == numPaginas"
+        :idConversacion="estaConversacion.id"
+        @hiceRespuesta="addRespuesta($event)"
       />
     </div>
 
@@ -59,19 +68,17 @@ import CuadroResponder from "./CuadroResponder.vue";
 import Respuesta from "./Respuesta.vue";
 import { fragmentoRespuesta } from "../utilidades/recursosGql";
 
-const QUERY_PAGINAS = gql`
-  query($idConversacion: ID!) {
-    numPaginasConversacion(idConversacion: $idConversacion)
-  }
-`;
-
 const QUERY_RESPUESTAS = gql`
   query($idConversacion: ID!, $pagina: Int!) {
     respuestasPaginaDeConversacion(
       idConversacion: $idConversacion
       pagina: $pagina
     ) {
-      ...fragRespuesta
+      pagina
+      numPaginas
+      respuestas {
+        ...fragRespuesta
+      }
     }
   }
   ${fragmentoRespuesta}
@@ -82,27 +89,38 @@ export default {
   name: "Conversacion",
   apollo: {
     numPaginas: {
-      query: QUERY_PAGINAS,
+      query: QUERY_RESPUESTAS,
       variables() {
-        return { idConversacion: this.estaConversacion.id };
+        return {
+          idConversacion: this.estaConversacion.id,
+          pagina: this.numPaginaSeleccionada,
+        };
       },
-      update(respuesta) {
-        for (let i = 1; i <= this.numPaginasConversacion; i++) {
-          this.respuestasPorPagina[i] = [];
+      update({
+        respuestasPaginaDeConversacion: { pagina, numPaginas, respuestas },
+      }) {
+        console.log(
+          `Llenando con ${respuestas.length} respuestas la pagina ${pagina} de ${numPaginas}`
+        );
+        this.$set(this.respuestasPorPagina, pagina, respuestas);
+        if (this.numPaginaSeleccionada != pagina) {
+          this.numPaginaSeleccionada = pagina;
         }
-        this.numPaginaSeleccionada = respuesta.numPaginasConversacion;
-        return respuesta.numPaginasConversacion;
+        this.loading = false;
+        return numPaginas;
       },
       skip() {
         return !this.seleccionado;
       },
+      fetchPolicy: "no-cache",
     },
   },
   data() {
     return {
       numPaginas: 0,
-      numPaginaSeleccionada: null,
+      numPaginaSeleccionada: 0,
       respuestasPorPagina: {},
+      loading: true,
     };
   },
   props: {
@@ -121,100 +139,33 @@ export default {
     },
   },
   methods: {
-    enviarNuevaRespuesta(nuevaRespuesta) {
-      let dis = this;
-      console.log(
-        `Enviando nueva respuesta a la conversación con id ${this.estaConversacion.id}`
-      );
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idConversacion: ID!, $nuevaRespuesta: InputNuevaRespuesta) {
-            postRespuestaConversacion(
-              idConversacion: $idConversacion
-              nuevaRespuesta: $nuevaRespuesta
-            ) {
-              ...fragRespuesta
-            }
-          }
-          ${fragmentoRespuesta}
-        `,
-        variables: {
-          idConversacion: dis.estaConversacion.id,
-          nuevaRespuesta,
-        },
-        update(store, { data: { postRespuestaConversacion } }) {
-          let paginaTarget = dis.numPaginas;
-          console.log(`pagina target: ${paginaTarget}`);
-          if (dis.respuestasPorPagina[paginaTarget].length >= 10) {
-            paginaTarget++;
-          }
-          if (!dis.respuestasPorPagina[paginaTarget]) {
-            dis.numPaginas = paginaTarget;
-            dis.$set(dis.respuestasPorPagina, paginaTarget, []);
-          }
-          dis.respuestasPorPagina[paginaTarget].push(postRespuestaConversacion);
-          dis.numPaginaSeleccionada = paginaTarget;
-        },
-      });
-    },
-    getRespuestasPagina(pagina) {
-      this.$apollo
-        .query({
-          query: QUERY_RESPUESTAS,
-          variables: {
-            idConversacion: this.estaConversacion.id,
-            pagina,
-          },
-          fetchPolicy: "cache-and-netowrk",
-        })
-        .then(({ data: { respuestasPaginaDeConversacion } }) => {
-          this.$set(
-            this.respuestasPorPagina,
-            pagina,
-            respuestasPaginaDeConversacion
-          );
-          console.log(`Respuestas de pagina ${pagina} descargadas`);
-        })
-        .catch((error) => {
-          console.log(
-            `Error descardando respuestas de pagina ${pagina}. E: ${error}`
-          );
-        });
+    addRespuesta(nuevaRespuesta) {
+      var targetPagina = this.numPaginas;
+      if (
+        this.respuestasPorPagina[targetPagina].length >= 5 ||
+        targetPagina < 1
+      ) {
+        targetPagina++;
+        if (!this.respuestasPorPagina[targetPagina]) {
+          this.$set(this.respuestasPorPagina, targetPagina, []);
+        }
+      }
+      console.log(`Pushing en targetPagina ${targetPagina}`);
+      this.respuestasPorPagina[targetPagina].push(nuevaRespuesta);
+      this.$refs.cuadroResponder.cerrarse();
+      if (this.numPaginaSeleccionada != targetPagina) {
+        this.numPaginaSeleccionada = targetPagina;
+      }
     },
     updateRespuestaEliminada(idRespuesta, pagina) {
       console.log(`Respuesta ${idRespuesta} eliminada de la pagina ${pagina}`);
-      let indexR = this.respuestasPorPagina[pagina].findIndex(
-        (r) => r.id == idRespuesta
-      );
-      if (indexR > -1) {
-        this.respuestasPorPagina[pagina].splice(indexR, 1);
-        for (var i = pagina; i < this.numPaginas; i++) {
-          console.log(`pushpoping en pagina ${pagina}`);
-          this.respuestasPorPagina[pagina].push(
-            this.respuestasPorPagina[pagina + 1][0]
-          );
-          this.respuestasPorPagina[pagina + 1].splice(0, 1);
-        }
-        if (this.respuestasPorPagina[i].length < 1) {
-          console.log(`Pagina ${i} quedó vacía`);
-          this.$delete(this.respuestasPorPagina, i);
-          this.numPaginas = i - 1;
-        }
-        if (!this.respuestasPorPagina[this.numPaginaSeleccionada]) {
-          this.numPaginaSeleccionada--;
-        }
+      if (this.numPaginas == 1 && this.respuestasPorPagina[1].length < 2) {
+        console.log(`Era la ultima respuesta`);
+        this.$emit("meElimine");
       } else {
-        console.log(`Respuesta no existía`);
+        console.log(`Refreshing respuestas pagina`);
+        this.$apollo.queries.numPaginas.refresh();
       }
-    },
-  },
-  watch: {
-    numPaginaSeleccionada() {
-      if (this.numPaginaSeleccionada < 1) {
-        return;
-      }
-      console.log(`pag seleccionada: ${this.numPaginaSeleccionada}`);
-      this.getRespuestasPagina(this.numPaginaSeleccionada);
     },
   },
 };
@@ -222,15 +173,15 @@ export default {
 
 <style scoped>
 .conversacion {
-  background-color: #bdc2bf;
+  background-color: #91bfec;
   border: 1px solid #023004;
   padding: 0px 0px;
 }
 .conversacion:hover {
-  background-color: #d2d2d2;
+  background-color: #aec6de;
 }
 .seleccionado {
-  background-color: #d2d2d2;
+  background-color: #aec6de;
 }
 .respuesta {
   margin: 5px;
@@ -272,15 +223,18 @@ export default {
 }
 .selectorPagina {
   border: 1px solid black;
-  padding: 3px;
+  padding: 3px 5px;
+  margin:2px;
+  border-radius: 5px;
   cursor: pointer;
+  background-color: #aec6de;
 }
 
 .selectorPagina:hover {
-  background-color: gray;
+  background-color: #cddbe9;
 }
 .selectorSeleccionado {
-  background-color: gray;
+  background-color: #cddbe9;
   pointer-events: none;
 }
 </style>

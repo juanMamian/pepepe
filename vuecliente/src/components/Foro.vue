@@ -1,54 +1,68 @@
 <template>
   <div class="foro">
-    <div id="zonaCategorias" class="zonaPrimerNivel">
-      <div
-        :key="categoria.id"
-        v-for="categoria of esteForo.categorias"
-        class="categoria"
-      >
+    <div
+      class="barraSuperiorForo"
+      :class="{ seleccionable: conversacionAbierta }"
+      @click="idConversacionSeleccionada = null"
+    >
+      <div id="anuncio">Conversaciones</div>
+      <div id="controlesForo">
         <div
-          class="barraSuperiorCategorias"
-          :class="{seleccionable:conversacionAbierta}"
-          @click="idConversacionSeleccionada = null"
+          class="controlesForo botonesControles"
+          id="bCrearConversacion"
+          v-if="
+            usuarioLogeado &&
+            (esteForo.acceso == 'publico' || usuarioMiembro == true) &&
+            esteForo.id
+          "
+          v-show="!conversacionAbierta"
+          @click="creandoConversacion = !creandoConversacion"
         >
-          <div class="nombreCategoria">{{ categoria.nombre }}</div>
-          <div id="controlesCategoria">
-            <div
-              class="controlesCategoria hoverGris botonesControles"
-              id="bCrearConversacion"
-              @click="
-                categoria.creandoConversacion = !categoria.creandoConversacion
-              "
-            >
-              {{categoria.creandoConversacion ? 'Cancelar' : 'Crear conversación'}}
-            </div>
-          </div>
+          {{ creandoConversacion ? "Cancelar" : "Crear conversación" }}
         </div>
-        <div class="zonaConversaciones">
-          <creador-conversacion
-            v-if="
-              usuarioLogeado &&
-              (categoria.visibilidad == 'publica' || usuarioMiembro == true) &&
-              categoria.creandoConversacion == true
-            "
-            v-show="categoria.creandoConversacion"
-            @crearConversacion="
-              crearConversacionConPrimeraRespuesta($event, categoria.id)
-            "
-          />
-          <conversacion
-            v-for="conversacion of categoria.conversaciones"
-            :key="conversacion.id"
-            :estaConversacion="conversacion"
-            :seleccionado="idConversacionSeleccionada == conversacion.id"
-            :usuarioMiembro="usuarioMiembro"
-            v-show="
-              idConversacionSeleccionada == conversacion.id ||
-              !conversacionAbierta
-            "
-            @click.native="idConversacionSeleccionada = conversacion.id"                   
-          />
+      </div>
+    </div>
+    <div class="zonaConversaciones">
+      <creador-conversacion
+        v-if="
+          usuarioLogeado &&
+          (esteForo.acceso == 'publico' || usuarioMiembro == true) &&
+          esteForo.id
+        "
+        :idForo="esteForo.id"
+        v-show="creandoConversacion"
+        @hiceConversacion="addConversacion($event)"
+      />
+      <div class="zonaSelectorPagina" v-if="numPaginas && !conversacionAbierta">
+        <div
+          class="selectorPagina"
+          v-for="index in numPaginas"
+          :key="index"
+          :class="{ selectorSeleccionado: index == numPaginaSeleccionada }"
+          @click="numPaginaSeleccionada = index"
+        >
+          {{ index }}
         </div>
+      </div>
+      <div class="zonaPaginasConversaciones" v-if="numPaginas">
+        <div
+          class="paginaConversaciones"
+          :key="index"
+          v-for="index in numPaginas"
+        ></div>
+        <conversacion
+          v-for="conversacion of conversacionesPorPagina[numPaginaSeleccionada]"
+          :key="conversacion.id"
+          :estaConversacion="conversacion"
+          :seleccionado="idConversacionSeleccionada == conversacion.id"
+          :usuarioMiembro="usuarioMiembro"
+          v-show="
+            idConversacionSeleccionada == conversacion.id ||
+            !conversacionAbierta
+          "
+          @click.native="idConversacionSeleccionada = conversacion.id"
+          @meElimine="refreshPagina"
+        />
       </div>
     </div>
   </div>
@@ -57,7 +71,10 @@
 <script>
 import gql from "graphql-tag";
 import CreadorConversacion from "./foros/CreadorConversacion.vue";
-import { fragmentoConversacion } from "./utilidades/recursosGql";
+import {
+  fragmentoConversacion,
+  fragmentoResponsables,
+} from "./utilidades/recursosGql";
 import Conversacion from "./foros/Conversacion.vue";
 
 const QUERY_FORO = gql`
@@ -68,12 +85,18 @@ const QUERY_FORO = gql`
       miembros {
         ...fragResponsables
       }
-      categorias {
-        id
-        nombre
-        conversaciones {
-          ...fragConversacion
-        }
+    }
+  }
+  ${fragmentoResponsables}
+`;
+
+const QUERY_CONVERSACIONES_PAGINA = gql`
+  query($idForo: ID!, $pagina: Int!) {
+    conversacionesPaginaForo(idForo: $idForo, pagina: $pagina) {
+      pagina
+      numPaginas
+      conversaciones {
+        ...fragConversacion
       }
     }
   }
@@ -93,13 +116,32 @@ export default {
       },
       fetchPolicy: "cache-and-network",
       update: (data) => {
-        data.foro.categorias.forEach((c) => {
-          c.creandoConversacion = false;
-        });
         return data.foro;
       },
       skip() {
         return !this.idForo;
+      },
+    },
+    numPaginas: {
+      query: QUERY_CONVERSACIONES_PAGINA,
+      variables() {
+        return {
+          idForo: this.idForo,
+          pagina: this.numPaginaSeleccionada,
+        };
+      },
+      fetchPolicy: "no-cache",
+      skip() {
+        return !this.idForo;
+      },
+      update({
+        conversacionesPaginaForo: { conversaciones, pagina, numPaginas },
+      }) {
+        if (this.numPaginaSeleccionada != pagina) {
+          this.numPaginaSeleccionada = pagina;
+        }
+        this.$set(this.conversacionesPorPagina, pagina, conversaciones);
+        return numPaginas;
       },
     },
   },
@@ -110,67 +152,39 @@ export default {
     return {
       esteForo: {
         miembros: [],
+        conversaciones: [],
       },
-      creandoNuevaConversacion: false,
       idConversacionSeleccionada: null,
+      creandoConversacion: false,
+      numPaginaSeleccionada: 0,
+      conversacionesPorPagina: {},
     };
   },
   methods: {
-    crearConversacionConPrimeraRespuesta(evento, idCategoria) {
-      let dis = this;
-      console.log(
-        `Creando conversacion con args. ${JSON.stringify(
-          evento
-        )} en la categoria ${idCategoria}`
-      );
-      let input = {
-        titulo: evento.conversacion.titulo,
-        primeraRespuesta: evento.primeraRespuesta.mensaje,
-      };
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation(
-            $idForo: ID!
-            $idCategoria: ID!
-            $input: InputIniciarConversacion
-          ) {
-            iniciarConversacionConPrimerMensajeForo(
-              idForo: $idForo
-              idCategoria: $idCategoria
-              input: $input
-            ) {
-              ...fragConversacion
-            }
-          }
-          ${fragmentoConversacion}
-        `,
-        variables: {
-          idForo: dis.esteForo.id,
-          idCategoria,
-          input,
-        },
-        update(store, { data: { iniciarConversacionConPrimerMensajeForo } }) {
-          console.log(`Updating cache`);
-          let cache = store.readQuery({
-            query: QUERY_FORO,
-            variables: { idForo: dis.idForo },
-          });
-          let laCategoria = cache.foro.categorias.find(
-            (c) => c.id == idCategoria
-          );
-          laCategoria.conversaciones.push(
-            iniciarConversacionConPrimerMensajeForo
-          );
-          store.writeQuery({
-            query: QUERY_FORO,
-            variables: { idForo: dis.idForo },
-            data: cache,
-          });
-          console.log(`Cache actualizado`);
-        },
-      });
+    addConversacion(nuevaConversacion) {
+      this.creandoConversacion = false;
+      var targetPagina = this.numPaginas;
+      console.log(`Target página: ${targetPagina}`);
+      if (
+        this.conversacionesPorPagina[targetPagina].length >= 6 ||
+        targetPagina < 1
+      ) {
+        targetPagina++;
+        if (!this.conversacionesPorPagina[targetPagina]) {
+          this.$set(this.conversacionesPorPagina, targetPagina, []);
+        }
+      }
+      console.log(`Pushing en targetPagina ${targetPagina}`);
+      this.conversacionesPorPagina[targetPagina].push(nuevaConversacion);
+      if (this.numPaginaSeleccionada != targetPagina) {
+        this.numPaginaSeleccionada = targetPagina;
+      }
     },
-   
+    refreshPagina() {
+      //let store = this.$apollo.provider.defaultClient;
+      this.idConversacionSeleccionada = null;
+      this.$apollo.queries.numPaginas.refresh();
+    },
   },
   computed: {
     usuarioMiembro() {
@@ -188,11 +202,7 @@ export default {
       return false;
     },
     conversacionAbierta() {
-      return this.esteForo.categorias.some((c) =>
-        c.conversaciones.some(
-          (conv) => conv.id == this.idConversacionSeleccionada
-        )
-      );
+      return this.idConversacionSeleccionada;
     },
   },
 };
@@ -210,36 +220,59 @@ export default {
   margin-bottom: 20px;
 }
 
-.nombreCategoria {
-  font-size: 18px;
-}
-.barraSuperiorCategorias {
+.barraSuperiorForo {
   display: flex;
-  background-color:#d2d2d2;
 }
-.barraSuperiorCategorias:not(.seleccionable) {
-  background-color:  #BDC2BF;
+.barraSuperiorForo:not(.seleccionable) {
+  background-color: #4db9b9;
 }
-#controlesCategoria {
+#controlesForo {
   margin-left: auto;
   display: flex;
   flex-flow: row-reverse;
 }
-.controlesCategoria {
+.controlesForo {
   margin-left: 10px;
 }
 .botonesControles {
   padding: 3px 5px;
   cursor: pointer;
 }
+.botonesControles:hover {
+  background-color: #95cccc;
+}
 .zonaConversaciones {
   padding-left: 0px;
 }
-.seleccionable{
-  background-color:#BDC2BF;
+.seleccionable {
+  background-color: #95cccc;
   cursor: pointer;
 }
-.seleccionable:hover{
-  background-color: #d2d2d2;
+.seleccionable:hover {
+  background-color: #4db9b9;
+}
+.zonaSelectorPagina {
+  display: flex;
+  padding: 2px 10px;
+  background-color: #4db9b9;
+}
+.selectorPagina {
+  border: 1px solid black;
+  padding: 3px 5px;
+  margin: 2px;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #4db9b9;
+}
+
+.selectorPagina:hover {
+  background-color: #95cccc;
+}
+.selectorSeleccionado {
+  background-color: #95cccc;
+  pointer-events: none;
+}
+#anuncio {
+  padding: 5px 5px;
 }
 </style>

@@ -108,6 +108,7 @@ export const fragmentoConversacion = gql`
     id
     titulo    
     estado
+    acceso
     creador {
       ...fragResponsables
     }   

@@ -706,23 +706,7 @@ export default {
         },
         data: cache,
       });
-    },
-    crearForoProyecto() {
-      console.log(`Creando foro para este proyecto`);
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idProyecto: ID!) {
-            crearForoProyecto(idProyecto: $idProyecto) {
-              id
-              idForo
-            }
-          }
-        `,
-        variables: {
-          idProyecto: this.esteProyecto.id,
-        },
-      });
-    },
+    },    
     navegarAlForo() {
       console.log(`Navegando al foro de este proyecto`);
       this.$refs.zonaForo.scrollIntoView();

@@ -17,43 +17,85 @@
       />
     </div>
     <div id="controles">
-      <img src="@/assets/iconos/enviar.png" alt="Enviar" title="Crear conversación" id="bFinalizar" @click="finalizar"/>  
-      <!-- <div class="controles hoverGris" id="bFinalizar" @click="finalizar">
-        Finalizar
-      </div> -->
+      <img
+        src="@/assets/iconos/enviar.png"
+        alt="Enviar"
+        title="Crear conversación"
+        id="bFinalizar"
+        @click="finalizar"
+        v-show="!enviandoConversacion"
+      />
+      <loading texto="Creando conversación..." v-show="enviandoConversacion" />
     </div>
   </div>
 </template>
 
 <script>
+import gql from "graphql-tag";
+import Loading from "../utilidades/Loading.vue";
+import { fragmentoConversacion } from "../utilidades/recursosGql";
 var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 const charProhibidosTitulo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
 export default {
+  components: { Loading },
   name: "CreadorConversacion",
+  props: {
+    idForo: String,
+  },
   data() {
     return {
       titulo: null,
       mensaje: null,
+      enviandoConversacion: false,
     };
   },
   methods: {
     finalizar() {
-        if(this.tituloIlegal || this.mensajeIlegal){
-            return
-        }
-      let conversacion = {
+      if (this.tituloIlegal || this.mensajeIlegal) {
+        return;
+      }
+
+      var input = {
         titulo: this.titulo,
+        primeraRespuesta: this.mensaje,
       };
-      let primeraRespuesta = {
-        mensaje: this.mensaje,
-      };
-      this.$emit("crearConversacion", { conversacion, primeraRespuesta });
+      this.enviandoConversacion = true;
+      var dis = this;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idForo: ID!, $input: InputIniciarConversacion) {
+              iniciarConversacionConPrimerMensajeForo(
+                idForo: $idForo
+                input: $input
+              ) {
+                ...fragConversacion
+              }
+            }
+            ${fragmentoConversacion}
+          `,
+          variables: {
+            idForo: dis.idForo,
+            input,
+          },
+        })
+        .then(({ data: { iniciarConversacionConPrimerMensajeForo } }) => {
+          dis.enviandoConversacion = false;
+          dis.$emit(
+            "hiceConversacion",
+            iniciarConversacionConPrimerMensajeForo
+          );
+        })
+        .catch((error) => {
+          dis.enviandoConversacion = false;
+          console.log(`Error. E: ${error}`);
+        });
     },
   },
   computed: {
     tituloIlegal() {
-      if (!this.titulo ||this.titulo.length < 1) {
+      if (!this.titulo || this.titulo.length < 1) {
         return true;
       }
       if (charProhibidosTitulo.test(this.titulo)) {
@@ -103,15 +145,13 @@ export default {
   cursor: pointer;
   padding: 3px;
 }
-#bFinalizar{
+#bFinalizar {
   width: 45px;
   height: 45px;
   border-radius: 50%;
   cursor: pointer;
-
 }
-#bFinalizar:hover{
-    background-color: white;
-
+#bFinalizar:hover {
+  background-color: white;
 }
 </style>

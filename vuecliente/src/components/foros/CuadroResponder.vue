@@ -1,51 +1,100 @@
 <template>
   <div class="cuadroResponder">
-      <div id="barraSuperior">
-    <img
-      src="@/assets/iconos/mensaje.png"
-      alt="Contestar"
-      title="Contestar en esta conversación"
-      id="imgMensaje"
-      @click="toggleCuadroAbierto"
-    />
-    <span id="tituloCuadro">Envía una respuesta</span>
+    <div id="barraSuperior">
+      <img
+        src="@/assets/iconos/mensaje.png"
+        alt="Contestar"
+        title="Contestar en esta conversación"
+        id="imgMensaje"
+        @click="toggleCuadroAbierto"
+      />
+      <span id="tituloCuadro">Envía una respuesta</span>
     </div>
     <textarea
-    v-show="cuadroAbierto"
+      v-show="cuadroAbierto"
       name="inputMensaje"
       id="inputMensaje"
-      :class="{letrasRojas:mensajeIlegal}"
+      :class="{ letrasRojas: mensajeIlegal }"
       v-model="mensaje"
       placeholder="Escribe aquí tu respuesta"
     ></textarea>
 
-    <img v-show="cuadroAbierto" src="@/assets/iconos/enviar.png" alt="Enviar" title="Enviar respuesta" id="bEnviar" @click="enviarRespuesta">
+    <img
+      v-show="cuadroAbierto && !enviandoRespuesta"
+      src="@/assets/iconos/enviar.png"
+      alt="Enviar"
+      title="Enviar respuesta"
+      id="bEnviar"
+      @click="enviarRespuesta"
+    />
+    <loading texto="Enviando respuesta..." v-show="enviandoRespuesta" />
   </div>
 </template>
 
 <script>
+import gql from 'graphql-tag';
+import Loading from "../utilidades/Loading.vue";
+import { fragmentoRespuesta } from '../utilidades/recursosGql';
 var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
-    name:"CuadroResponder",
-    data(){
-        return {
-            mensaje:null,
-            cuadroAbierto:false,
-        }
-    },
-    methods:{
-        enviarRespuesta(){
-            if(this.mensajeIlegal){
-                return
+  components: { Loading },
+  name: "CuadroResponder",
+  props: {
+    idConversacion: String,
+  },
+  data() {
+    return {
+      mensaje: null,
+      cuadroAbierto: false,
+      enviandoRespuesta:false,
+    };
+  },
+  methods: {
+    enviarRespuesta() {      
+      if (this.mensajeIlegal) {
+        return;
+      }
+      var nuevaRespuesta={
+        mensaje:this.mensaje
+      }
+      var dis=this;
+      this.enviandoRespuesta=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idConversacion: ID!, $nuevaRespuesta: InputNuevaRespuesta) {
+            postRespuestaConversacion(
+              idConversacion: $idConversacion
+              nuevaRespuesta: $nuevaRespuesta
+            ) {
+              ...fragRespuesta
             }
-            this.$emit("enviarRespuesta", {mensaje: this.mensaje});
-        },
-        toggleCuadroAbierto(){
-          this.cuadroAbierto=!this.cuadroAbierto;
-        }
+          }
+          ${fragmentoRespuesta}
+        `,
+        variables: {
+          idConversacion: dis.idConversacion,
+          nuevaRespuesta,
+        }        
+      }).then(({data:{postRespuestaConversacion}})=>{
+        dis.enviandoRespuesta=false;        
+        this.$emit("hiceRespuesta", postRespuestaConversacion);
+      }).catch((error)=>{
+        dis.enviandoRespuesta=false;
+        console.log(`Error. E: ${error}`);
+      })
+
+      ;
     },
-    computed:{
+    toggleCuadroAbierto() {
+      this.cuadroAbierto = !this.cuadroAbierto;
+    },
+    cerrarse() {
+      this.mensaje = null;
+      this.cuadroAbierto = false;
+    },
+  },
+  computed: {
     mensajeIlegal() {
       if (!this.mensaje || this.mensaje.length < 1) {
         return true;
@@ -55,8 +104,7 @@ export default {
       }
       return false;
     },
-    }
-
+  },
 };
 </script>
 
@@ -67,12 +115,11 @@ export default {
   margin: 5px;
   border-radius: 10px;
 }
-#barraSuperior{
-    display: flex;
-    align-items: center;
+#barraSuperior {
+  display: flex;
+  align-items: center;
 }
 #imgMensaje {
-  
   margin: 5px;
   cursor: pointer;
   border-radius: 50%;

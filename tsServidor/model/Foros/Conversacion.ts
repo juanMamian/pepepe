@@ -37,14 +37,15 @@ export const esquemaConversacion = new mongoose.Schema({
         required: true,
         enum: ["abierta", "cerrada"]
     },
-    respuestas: {
-        type: [esquemaRespuestaConversacion],
-        required: true,
-        default: []
-    },
     idCreador:{
         type:String,
         required:true,
+    },
+    acceso:{
+        type:String,
+        required:true,  
+        default:"publico",
+        enum:["publico", "privado"]
     }
 });
 

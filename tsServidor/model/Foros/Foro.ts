@@ -2,17 +2,6 @@ import mongoose from "mongoose";
 import {esquemaConversacion} from "./Conversacion"
 
 
-const esquemaCategoria= new mongoose.Schema({
-    nombre: {
-        type: String,        
-        default: "Nueva categoria"
-    },   
-    conversaciones: {
-        type: [esquemaConversacion],
-        required: true,
-        default: []
-    }
-})
 
 const esquemaForo = new mongoose.Schema({
     acceso:{
@@ -26,11 +15,11 @@ const esquemaForo = new mongoose.Schema({
         required:true,
         default:[]
     },
-    categorias: {
-        type:[esquemaCategoria],
-        required:true,
-        default:[]
-    },
+    conversaciones: {
+        type: [esquemaConversacion],
+        required: true,
+        default: []
+    }
     
 });
 

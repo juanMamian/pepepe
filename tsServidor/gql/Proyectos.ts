@@ -92,10 +92,9 @@ export const resolvers = {
             if(!tieneForo){
                 console.log(`El proyecto ${elProyecto.nombre} no tenía foro. Creando con responsables: ${elProyecto.responsables}.`);
                 try {
-                    var nuevoForo:any=await Foro.create({
-                        categorias:[{nombre:"General"}],
-                        acceso:"privado",
+                    var nuevoForo:any=await Foro.create({                        
                         miembros:elProyecto.responsables,
+                        acceso:"privado"
                     });
                     var idNuevoForo=nuevoForo._id;
                     await nuevoForo.save();
@@ -919,7 +918,6 @@ export const resolvers = {
     },
     Proyecto: {
         responsables: async function (parent: any, _: any, __: any) {
-            console.log(`parent responsables (proyecto): ${JSON.stringify(parent.responsables)}`);
 
             if (!parent.responsables) {
                 return [];

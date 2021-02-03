@@ -37,10 +37,9 @@ const esquemaProyecto = new mongoose_1.default.Schema({
         type: [String],
         default: []
     },
-    conversaciones: {
-        type: [String],
-        default: [],
-        required: true
+    idForo: {
+        type: String,
+        required: true,
     }
 });
 exports.ModeloProyecto = mongoose_1.default.model("Proyecto", esquemaProyecto);
