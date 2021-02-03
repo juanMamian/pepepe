@@ -14,8 +14,8 @@ Reestructuracion no-urgente
  -Responsables de proyecto y trabajos.
  *Refactor las conversaciones en el foro porque están embedidas en el foro, con lo cual no hay buena paginacion.
 
-Funcionalidad urgente
 
+Funcionalidad urgente
 
 *Que el último responsable de un proyecto pueda eliminarlo.
 *Loading para cuando uno elimina una respuesta

@@ -40,12 +40,19 @@ export const typeDefs = gql`
         conversaciones: [Conversacion]
     }
 
+    type InfoUltimaRespuesta{
+        autor:MinimoUsuario,
+        fecha:Date
+    }
+
     type Conversacion{
         id:ID,
         titulo: String,
         estado:String,
         creador: PublicUsuario,
-        acceso:String
+        acceso:String,
+        cantidadRespuestas:Int,
+        infoUltimaRespuesta:InfoUltimaRespuesta,
     }
   
     type Foro{
@@ -372,7 +379,6 @@ export const resolvers = {
             console.log(`En la conversación ${laConversacion.titulo}`);
 
             let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
-
             const laRespuesta = new Respuesta(nuevaRespuesta);
 
             try {
@@ -380,6 +386,17 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error guardando el foro. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
+            }
+            let cantRespuestas:number=await Respuesta.countDocuments().exec();
+
+            try {
+                laConversacion.cantidadRespuestas=cantRespuestas;
+                laConversacion.infoUltimaRespuesta={
+                    idAutor:credencialesUsuario.id,                    
+                }
+                await elForo.save();
+            } catch (error) {
+                console.log(`Error guardando cant respuestas y info ultima respuesta. E: ${error}`);
             }
 
             console.log(`Respuesta posted`);
@@ -443,6 +460,37 @@ export const resolvers = {
         },
     },
     Respuesta: {
+        autor: async function (parent: any, _: any, __: any) {
+            if (!parent.idAutor) {
+                return [];
+            }
+            let idAutor = parent.idAutor;
+
+            try {
+                var usuarioAutor: any = await Usuario.findById(idAutor).exec();
+                if (!usuarioAutor) {
+                    console.log(`El usuario no existe en la base de datos enviando un dummy`);
+                    return {
+                        id: "-1",
+                        username: "?",
+                        nombres: "?",
+                        apellidos: "?",
+                        email: "?",
+                        numeroTel: "?",
+                        lugarResidencia: "?",
+                        edad: 0,
+                        idGrupoEstudiantil: "?",
+                        nombreGrupoEstudiantil: "?",
+                    }
+                }
+            } catch (error) {
+                console.log(`error buscando al autor de la respuesta. E: ${error}`);
+                return [];
+            }
+            return usuarioAutor;
+        },
+    },
+    InfoUltimaRespuesta:{
         autor: async function (parent: any, _: any, __: any) {
             if (!parent.idAutor) {
                 return [];

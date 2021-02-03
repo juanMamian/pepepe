@@ -86,6 +86,12 @@ export const typeDefs = gql`
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
     }
+    type MinimoUsuario{
+        id:ID,
+        nombres:String,
+        apellidos:String
+    }
+
     extend type Query {
         todosUsuarios:[PublicUsuario],
         publicUsuario(idUsuario:ID!):PublicUsuario,

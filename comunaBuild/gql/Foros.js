@@ -49,12 +49,19 @@ exports.typeDefs = apollo_server_express_1.gql `
         conversaciones: [Conversacion]
     }
 
+    type InfoUltimaRespuesta{
+        autor:MinimoUsuario,
+        fecha:Date
+    }
+
     type Conversacion{
         id:ID,
         titulo: String,
         estado:String,
         creador: PublicUsuario,
-        acceso:String
+        acceso:String,
+        cantidadRespuestas:Int,
+        infoUltimaRespuesta:InfoUltimaRespuesta,
     }
   
     type Foro{
@@ -365,6 +372,17 @@ exports.resolvers = {
                     console.log(`Error guardando el foro. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
+                let cantRespuestas = yield Respuesta.countDocuments().exec();
+                try {
+                    laConversacion.cantidadRespuestas = cantRespuestas;
+                    laConversacion.infoUltimaRespuesta = {
+                        idAutor: credencialesUsuario.id,
+                    };
+                    yield elForo.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando cant respuestas y info ultima respuesta. E: ${error}`);
+                }
                 console.log(`Respuesta posted`);
                 return laRespuesta;
             });
@@ -425,6 +443,39 @@ exports.resolvers = {
         },
     },
     Respuesta: {
+        autor: function (parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!parent.idAutor) {
+                    return [];
+                }
+                let idAutor = parent.idAutor;
+                try {
+                    var usuarioAutor = yield Usuario_1.ModeloUsuario.findById(idAutor).exec();
+                    if (!usuarioAutor) {
+                        console.log(`El usuario no existe en la base de datos enviando un dummy`);
+                        return {
+                            id: "-1",
+                            username: "?",
+                            nombres: "?",
+                            apellidos: "?",
+                            email: "?",
+                            numeroTel: "?",
+                            lugarResidencia: "?",
+                            edad: 0,
+                            idGrupoEstudiantil: "?",
+                            nombreGrupoEstudiantil: "?",
+                        };
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando al autor de la respuesta. E: ${error}`);
+                    return [];
+                }
+                return usuarioAutor;
+            });
+        },
+    },
+    InfoUltimaRespuesta: {
         autor: function (parent, _, __) {
             return __awaiter(this, void 0, void 0, function* () {
                 if (!parent.idAutor) {

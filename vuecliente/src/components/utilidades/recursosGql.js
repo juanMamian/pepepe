@@ -12,6 +12,14 @@ fragment fragResponsables on PublicUsuario {
 }
 `;
 
+export const fragmentoMinimoPersona = gql`
+fragment fragMinimoPersona on PublicUsuario {
+  id
+  nombres
+  apellidos
+}
+`;
+
 export const fragmentoParticipacion = gql`
   fragment fragParticipacion on ParticipacionActividadGrupoEstudiantil{
     id
@@ -111,7 +119,8 @@ export const fragmentoConversacion = gql`
     acceso
     creador {
       ...fragResponsables
-    }   
+    }
+    cantidadRespuestas
   }
   ${fragmentoResponsables}
 `;

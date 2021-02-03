@@ -47,7 +47,26 @@ exports.esquemaConversacion = new mongoose_1.default.Schema({
         required: true,
         default: "publico",
         enum: ["publico", "privado"]
+    },
+    cantidadRespuestas: {
+        type: Number,
+        default: 0,
+        required: true,
+    },
+    infoUltimaRespuesta: {
+        idAutor: String,
+        fecha: {
+            type: Date,
+            default: Date.now
+        }
     }
+});
+exports.esquemaConversacion.pre('save', function (next) {
+    if (!this.cantidadRespuestas) {
+        console.log(`Llenando con cantidadRespuestas 0`);
+        this.cantidadRespuestas = 0;
+    }
+    next();
 });
 exports.charProhibidosMensajeRespuesta = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 exports.ModeloConversacion = mongoose_1.default.model("Conversacion", exports.esquemaConversacion);
