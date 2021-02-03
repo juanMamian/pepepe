@@ -21,6 +21,12 @@ const esquemaParticipacion = new mongoose_1.default.Schema({
     idAutor: {
         type: String,
         required: true,
+    },
+    infoAutor: {
+        id: String,
+        nombres: String,
+        apellidos: String,
+        username: String
     }
 });
 esquemaParticipacion.pre('validate', function () {
@@ -48,6 +54,12 @@ const esquemaDesarrollo = new mongoose_1.default.Schema({
         type: Boolean,
         required: true,
         default: true
+    },
+    infoEstudiante: {
+        id: String,
+        nombres: String,
+        apellidos: String,
+        username: String,
     }
 });
 const esquemaActividad = new mongoose_1.default.Schema({

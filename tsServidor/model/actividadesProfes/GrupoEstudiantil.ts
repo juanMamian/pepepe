@@ -17,6 +17,12 @@ const esquemaParticipacion = new mongoose.Schema({
     idAutor: {
         type: String,
         required: true,
+    },
+    infoAutor:{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String
     }
 
 });
@@ -48,6 +54,12 @@ const esquemaDesarrollo = new mongoose.Schema({
         type: Boolean,
         required: true,
         default: true
+    },
+    infoEstudiante:{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String,
     }
 
 });

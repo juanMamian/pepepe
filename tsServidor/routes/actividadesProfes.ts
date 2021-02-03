@@ -127,7 +127,13 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             extension: extensionDeArchivo
         },
         comentario,
-        idAutor: idUsuario
+        idAutor: idUsuario,
+        infoAutor:{
+            id: idUsuario,
+            nombres: elUsuario.nombres,
+            apellidos: elUsuario.apellidos,
+            username:elUsuario.username
+        }
     }
 
     let idActividad = req.body.idActividad;
@@ -143,7 +149,16 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             var elDesarrollo = laActividad.desarrollos.find(d => d.idEstudiante == idUsuario);
             if (!elDesarrollo) {
                 console.log(`Este usuario no había iniciado un desarrollo. Creando un nuevo desarrollo`);
-                var nuevoDesarrollo = laActividad.desarrollos.create({ idEstudiante: idUsuario, participaciones: [] });
+                var nuevoDesarrollo = laActividad.desarrollos.create({ 
+                    idEstudiante: idUsuario, 
+                    participaciones: [],
+                    infoEstudiante:{
+                        id: idUsuario,
+                        nombres:elUsuario.nombres,
+                        apellidos: elUsuario.apellidos,
+                        username: elUsuario.username,
+                    }
+                });
                 laActividad.desarrollos.push(nuevoDesarrollo);
                 elDesarrollo = laActividad.desarrollos.id(nuevoDesarrollo.id);
             }
