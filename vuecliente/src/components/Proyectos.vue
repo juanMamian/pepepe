@@ -1,7 +1,7 @@
 <template>
   <div id="proyectos">
     <center><h3>Proyectos</h3></center>
-    <div id="controles">
+    <div id="controles" v-show="!loading">
       <div
         v-if="usuarioLogeado"
         id="crearProyecto"
@@ -23,6 +23,7 @@
       </div>
     </div>
     <div id="listaProyectos" @click.self="idProyectoSeleccionado=null">
+      <loading texto="Cargando lista de proyectos..." v-show="loading"/>
       <icono-proyecto
         v-for="proyecto of proyectos"
         :key="proyecto.id"
@@ -37,6 +38,7 @@
 <script>
 import gql from "graphql-tag";
 import IconoProyecto from "./proyectos/IconoProyecto.vue";
+import Loading from './utilidades/Loading.vue';
 
 const QUERY_PROYECTOS=gql`
 query {
@@ -52,7 +54,7 @@ query {
 `;
 
 export default {
-  components: { IconoProyecto },
+  components: { IconoProyecto, Loading },
   name: "Proyectos",
   apollo: {
     proyectos: {
@@ -67,6 +69,7 @@ export default {
           if(b.responsables.some(r=>r.id==this.$store.state.usuario.id)){
             res++;
           }
+          this.loading=false;
           return res;
         })
       }
@@ -75,7 +78,8 @@ export default {
   data() {
     return {
       proyectos: [],
-      idProyectoSeleccionado:null
+      idProyectoSeleccionado:null,
+      loading:true,
     };
   },
   methods:{
@@ -144,6 +148,9 @@ export default {
 </script>
 
 <style scoped>
+.loading{
+  margin: 20px auto;
+}
 #listaProyectos {
   display: flex;
   padding-left: 30px;
