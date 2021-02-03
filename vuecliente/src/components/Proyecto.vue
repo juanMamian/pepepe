@@ -1,222 +1,226 @@
 <template>
   <div class="proyecto">
-    <div id="zonaNombre" class="zonaPrimerNivel">
-      <div class="controlesZona" v-show="usuarioResponsableProyecto">
-        <img
-          src="@/assets/iconos/editar.png"
-          alt="Editar"
-          id="bEditarrNombre"
-          class="bEditar"
-          title="Editar nombre del proyecto"
-          @click="toggleEditandoNombre"
+    <loading texto="Cargando proyecto..." v-show="loading" />
+    <template v-if="!loading">
+      <div id="zonaNombre" class="zonaPrimerNivel">
+        <div class="controlesZona" v-show="usuarioResponsableProyecto">
+          <img
+            src="@/assets/iconos/editar.png"
+            alt="Editar"
+            id="bEditarrNombre"
+            class="bEditar"
+            title="Editar nombre del proyecto"
+            @click="toggleEditandoNombre"
+          />
+          <img
+            src="@/assets/iconos/guardar.png"
+            alt="Guardar"
+            title="guardar"
+            class="bGuardar"
+            id="bGuardarNuevoNombre"
+            v-show="editandoNombre == true && nuevoNombreIlegal == false"
+            @click="guardarNuevoNombre"
+          />
+        </div>
+        <div id="nombreProyecto" v-show="!editandoNombre">
+          {{ esteProyecto.nombre }}
+        </div>
+        <input
+          type="text"
+          id="inputNuevoNombre"
+          :class="{ letrasRojas: nuevoNombreIlegal }"
+          v-model="nuevoNombre"
+          v-show="editandoNombre"
+          @keypress.enter="guardarNuevoNombre"
         />
+        <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
         <img
-          src="@/assets/iconos/guardar.png"
-          alt="Guardar"
-          title="guardar"
-          class="bGuardar"
-          id="bGuardarNuevoNombre"
-          v-show="editandoNombre == true && nuevoNombreIlegal == false"
-          @click="guardarNuevoNombre"
-        />
-      </div>
-      <div id="nombreProyecto" v-show="!editandoNombre">
-        {{ esteProyecto.nombre }}
-      </div>
-      <input
-        type="text"
-        id="inputNuevoNombre"
-        :class="{ letrasRojas: nuevoNombreIlegal }"
-        v-model="nuevoNombre"
-        v-show="editandoNombre"
-        @keypress.enter="guardarNuevoNombre"
-      />
-      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
-      <img
-        src="@/assets/iconos/foro.png"
-        alt="Enlace al foro"
-        id="enlaceForo"
-        title="Ir al foro de este proyecto"
-        @click="navegarAlForo"
-      />
-    </div>
-    <div id="zonaDescripcion" class="zonaPrimerNivel">
-      <div class="nombreZona">Descripcion</div>
-      <div class="controlesZona" v-show="usuarioResponsableProyecto">
-        <img
-          src="@/assets/iconos/editar.png"
-          alt="Editar"
-          id="bEditarrDescripcion"
-          class="bEditar"
-          title="Editar descripcion del proyecto"
-          @click="toggleEditandoDescripcion"
-        />
-        <img
-          src="@/assets/iconos/guardar.png"
-          alt="Guardar"
-          title="guardar"
-          class="bGuardar"
-          id="bGuardarNuevoDescripcion"
-          v-show="
-            editandoDescripcion == true && nuevoDescripcionIlegal == false
-          "
-          @click="guardarNuevoDescripcion"
+          src="@/assets/iconos/foro.png"
+          alt="Enlace al foro"
+          id="enlaceForo"
+          title="Ir al foro de este proyecto"
+          @click="navegarAlForo"
         />
       </div>
+      <div id="zonaDescripcion" class="zonaPrimerNivel">
+        <div class="nombreZona">Descripcion</div>
+        <div class="controlesZona" v-show="usuarioResponsableProyecto">
+          <img
+            src="@/assets/iconos/editar.png"
+            alt="Editar"
+            id="bEditarrDescripcion"
+            class="bEditar"
+            title="Editar descripcion del proyecto"
+            @click="toggleEditandoDescripcion"
+          />
+          <img
+            src="@/assets/iconos/guardar.png"
+            alt="Guardar"
+            title="guardar"
+            class="bGuardar"
+            id="bGuardarNuevoDescripcion"
+            v-show="
+              editandoDescripcion == true && nuevoDescripcionIlegal == false
+            "
+            @click="guardarNuevoDescripcion"
+          />
+        </div>
 
-      <!-- <textarea
+        <!-- <textarea
         id="descripcion"
         readonly
         :value="esteProyecto.descripcion"
         v-show="!editandoDescripcion"
       /> -->
-      <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
-        {{ esteProyecto.descripcion }}
-      </div>
+        <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
+          {{ esteProyecto.descripcion }}
+        </div>
 
-      <textarea
-        id="inputNuevoDescripcion"
-        ref="inputNuevoDescripcion"
-        :class="{ letrasRojas: nuevoDescripcionIlegal }"
-        v-model="nuevoDescripcion"
-        v-show="editandoDescripcion"
-      />
-      <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
-    </div>
-    <div id="zonaResponsables" class="zonaPrimerNivel">
-      <div class="nombreZona">Responsables</div>
-      <div id="controlesResponsables" class="controlesZona">
-        <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
-        <div
-          class="controlesResponsables hoverGris botonesControles"
-          :class="{ deshabilitado: enviandoQueryResponsables }"
-          v-if="usuarioLogeado == true && esteProyecto.responsables.length < 1"
-          id="asumirResponsable"
-          @click="asumirComoResponsable"
-        >
-          Asumir
-        </div>
-        <div
-          class="controlesResponsables hoverGris botonesControles"
-          :class="{ deshabilitado: enviandoQueryResponsables }"
-          v-if="
-            usuarioLogeado &&
-            !usuarioResponsableProyecto &&
-            !usuarioPosibleResponsableProyecto &&
-            esteProyecto.responsables.length > 0
-          "
-          id="botonAddResponsable"
-          @click="entrarListaPosiblesResponsables"
-        >
-          Quiero hacerme responsable
-        </div>
-        <div
-          class="controlesResponsables hoverGris botonesControles"
-          :class="{ deshabilitado: enviandoQueryResponsables }"
-          v-if="
-            usuarioLogeado == true &&
-            (usuarioResponsableProyecto == true ||
-              usuarioPosibleResponsableProyecto == true)
-          "
-          @click="abandonarListaResponsables"
-        >
-          Abandonar
-        </div>
-        <div
-          class="controlesResponsables hoverGris botonesControles"
-          :class="{ deshabilitado: enviandoQueryResponsables }"
-          v-if="usuarioLogeado == true && usuarioResponsableProyecto == true"
-          v-show="
-            idResponsableSeleccionado != null &&
-            responsableSeleccionadoEstaAceptado == false
-          "
-          @click="aceptarResponsable(idResponsableSeleccionado)"
-        >
-          Aceptar como responsable
-        </div>
-      </div>
-      <div id="listaResponsables">
-        <icono-persona
-          :estaPersona="persona"
-          :key="persona.id"
-          v-for="persona of esteProyecto.responsables"
-          :seleccionado="idResponsableSeleccionado == persona.id"
-          @click.native.stop="
-            idResponsableSeleccionado = persona.id;
-            responsableSeleccionadoEstaAceptado = true;
-          "
+        <textarea
+          id="inputNuevoDescripcion"
+          ref="inputNuevoDescripcion"
+          :class="{ letrasRojas: nuevoDescripcionIlegal }"
+          v-model="nuevoDescripcion"
+          v-show="editandoDescripcion"
         />
-
-        <icono-persona
-          class="personaPosibleResponsable"
-          :estaPersona="persona"
-          :key="persona.id"
-          v-for="persona of esteProyecto.posiblesResponsables"
-          :seleccionado="idResponsableSeleccionado == persona.id"
-          @click.native.stop="
-            idResponsableSeleccionado = persona.id;
-            responsableSeleccionadoEstaAceptado = false;
-          "
-          @dblclick.native.shift="aceptarResponsable(persona.id)"
-        />
+        <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
       </div>
-    </div>
+      <div id="zonaResponsables" class="zonaPrimerNivel">
+        <div class="nombreZona">Responsables</div>
+        <div id="controlesResponsables" class="controlesZona">
+          <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="
+              usuarioLogeado == true && esteProyecto.responsables.length < 1
+            "
+            id="asumirResponsable"
+            @click="asumirComoResponsable"
+          >
+            Asumir
+          </div>
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="
+              usuarioLogeado &&
+              !usuarioResponsableProyecto &&
+              !usuarioPosibleResponsableProyecto &&
+              esteProyecto.responsables.length > 0
+            "
+            id="botonAddResponsable"
+            @click="entrarListaPosiblesResponsables"
+          >
+            Quiero hacerme responsable
+          </div>
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="
+              usuarioLogeado == true &&
+              (usuarioResponsableProyecto == true ||
+                usuarioPosibleResponsableProyecto == true)
+            "
+            @click="abandonarListaResponsables"
+          >
+            Abandonar
+          </div>
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="usuarioLogeado == true && usuarioResponsableProyecto == true"
+            v-show="
+              idResponsableSeleccionado != null &&
+              responsableSeleccionadoEstaAceptado == false
+            "
+            @click="aceptarResponsable(idResponsableSeleccionado)"
+          >
+            Aceptar como responsable
+          </div>
+        </div>
+        <div id="listaResponsables">
+          <icono-persona
+            :estaPersona="persona"
+            :key="persona.id"
+            v-for="persona of esteProyecto.responsables"
+            :seleccionado="idResponsableSeleccionado == persona.id"
+            @click.native.stop="
+              idResponsableSeleccionado = persona.id;
+              responsableSeleccionadoEstaAceptado = true;
+            "
+          />
 
-    <div id="zonaObjetivos" class="zonaPrimerNivel">
-      <div class="nombreZona">Objetivos</div>
-      <div id="controlesObjetivos" class="controlesZona">
-        <div
-          class="controlesObjetivos botonesControles hoverGris"
-          v-if="usuarioResponsableProyecto"
-          @click="crearNuevoObjetivo"
-        >
-          Crear objetivo
+          <icono-persona
+            class="personaPosibleResponsable"
+            :estaPersona="persona"
+            :key="persona.id"
+            v-for="persona of esteProyecto.posiblesResponsables"
+            :seleccionado="idResponsableSeleccionado == persona.id"
+            @click.native.stop="
+              idResponsableSeleccionado = persona.id;
+              responsableSeleccionadoEstaAceptado = false;
+            "
+            @dblclick.native.shift="aceptarResponsable(persona.id)"
+          />
         </div>
       </div>
-      <div id="listaObjetivos" @click.self="idObjetivoSeleccionado = null">
-        <iconoObjetivo
-          v-for="objetivo of esteProyecto.objetivos"
-          :key="objetivo.id"
-          :idProyecto="esteProyecto.id"
-          :esteObjetivo="objetivo"
-          :seleccionado="idObjetivoSeleccionado == objetivo.id"
-          :usuarioResponsableProyecto="usuarioResponsableProyecto"
-          @click.native="idObjetivoSeleccionado = objetivo.id"
-          @meElimine="eliminarObjetivoDeCache(objetivo.id)"
-        />
-      </div>
-    </div>
 
-    <div id="zonaTrabajos" class="zonaPrimerNivel">
-      <div class="nombreZona">Trabajos:</div>
-      <div id="controlesTrabajos" class="controlesZona">
-        <div
-          class="controlesTrabajos hoverGris botonesControles"
-          @click="crearNuevoTrabajo"
-          v-if="usuarioResponsableProyecto"
-        >
-          Crear trabajo
+      <div id="zonaObjetivos" class="zonaPrimerNivel">
+        <div class="nombreZona">Objetivos</div>
+        <div id="controlesObjetivos" class="controlesZona">
+          <div
+            class="controlesObjetivos botonesControles hoverGris"
+            v-if="usuarioResponsableProyecto"
+            @click="crearNuevoObjetivo"
+          >
+            Crear objetivo
+          </div>
+        </div>
+        <div id="listaObjetivos" @click.self="idObjetivoSeleccionado = null">
+          <iconoObjetivo
+            v-for="objetivo of esteProyecto.objetivos"
+            :key="objetivo.id"
+            :idProyecto="esteProyecto.id"
+            :esteObjetivo="objetivo"
+            :seleccionado="idObjetivoSeleccionado == objetivo.id"
+            :usuarioResponsableProyecto="usuarioResponsableProyecto"
+            @click.native="idObjetivoSeleccionado = objetivo.id"
+            @meElimine="eliminarObjetivoDeCache(objetivo.id)"
+          />
         </div>
       </div>
-      <div id="listaTrabajos" @click.self="idTrabajoSeleccionado = null">
-        <iconoTrabajo
-          v-for="trabajo of esteProyecto.trabajos"
-          :key="trabajo.id"
-          :esteTrabajo="trabajo"
-          :idProyecto="esteProyecto.id"
-          :seleccionado="idTrabajoSeleccionado == trabajo.id"
-          :usuarioResponsableProyecto="usuarioResponsableProyecto"
-          @click.native="idTrabajoSeleccionado = trabajo.id"
-          @meElimine="eliminarTrabajoDeCache(trabajo.id)"
-        />
+
+      <div id="zonaTrabajos" class="zonaPrimerNivel">
+        <div class="nombreZona">Trabajos:</div>
+        <div id="controlesTrabajos" class="controlesZona">
+          <div
+            class="controlesTrabajos hoverGris botonesControles"
+            @click="crearNuevoTrabajo"
+            v-if="usuarioResponsableProyecto"
+          >
+            Crear trabajo
+          </div>
+        </div>
+        <div id="listaTrabajos" @click.self="idTrabajoSeleccionado = null">
+          <iconoTrabajo
+            v-for="trabajo of esteProyecto.trabajos"
+            :key="trabajo.id"
+            :esteTrabajo="trabajo"
+            :idProyecto="esteProyecto.id"
+            :seleccionado="idTrabajoSeleccionado == trabajo.id"
+            :usuarioResponsableProyecto="usuarioResponsableProyecto"
+            @click.native="idTrabajoSeleccionado = trabajo.id"
+            @meElimine="eliminarTrabajoDeCache(trabajo.id)"
+          />
+        </div>
       </div>
-    </div>
 
-    <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
-      <div class="nombreZona">foro</div>
-      <foro :idForo="esteProyecto.idForo"/>
-
-    </div>
+      <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
+        <div class="nombreZona">foro</div>
+        <foro :idForo="esteProyecto.idForo" />
+      </div>
+    </template>
   </div>
 </template>
 
@@ -255,12 +259,15 @@ export default {
         };
       },
       update(respuesta) {
+        this.loading=false;
         return respuesta.proyecto;
       },
     },
   },
   data() {
     return {
+      loading:true,
+
       esteProyecto: {
         responsables: [],
       },
