@@ -7,7 +7,8 @@ exports.ModeloGrupoEstudiantil = exports.esquemaActividad = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const esquemaParticipacion = new mongoose_1.default.Schema({
     fechaUpload: {
-        type: Date
+        type: Date,
+        default: Date.now,
     },
     archivo: {
         nombre: String,
