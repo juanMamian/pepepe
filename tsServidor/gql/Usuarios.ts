@@ -89,7 +89,8 @@ export const typeDefs = gql`
     type MinimoUsuario{
         id:ID,
         nombres:String,
-        apellidos:String
+        apellidos:String,
+        username:String,
     }
 
     extend type Query {

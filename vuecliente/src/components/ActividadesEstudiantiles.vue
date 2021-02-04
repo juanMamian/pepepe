@@ -30,20 +30,7 @@
           >
             {{ grupo.nombre }}
             <div id="alertasGrupo">
-              <span
-                v-if="grupo.estudiantesIdle.length > 0"
-                id="numeroEstudiantesIdle"
-                >{{ grupo.estudiantesIdle.length }}</span
-              ><img
-                v-if="grupo.estudiantesIdle.length > 0"
-                src="@/assets/iconos/idle.png"
-                alt="Estudiantes desocupados"
-                id="alertaEstudiantesIdle"
-                class="alertas"
-                :title="
-                  grupo.estudiantesIdle.length + ' Estudiantes sin actividades'
-                "
-              />
+              
             </div>
           </div>
         </div>
@@ -90,9 +77,6 @@ export default {
           gruposEstudiantiles {
             id
             nombre
-            estudiantesIdle {
-              id
-            }
           }
         }
       `,
@@ -189,11 +173,5 @@ export default {
   height: 20px;
   border-radius: 50%;
   cursor: pointer;
-}
-#alertaEstudiantesIdle {
-  border: 1px solid rgb(255, 115, 0);
-}
-#numeroEstudiantesIdle {
-  color: rgb(170, 38, 15);
 }
 </style>

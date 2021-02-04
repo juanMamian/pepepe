@@ -48,15 +48,7 @@
           :seleccionado="idEstudianteSeleccionado == persona.id ? true : false"
           @click.native="idEstudianteSeleccionado = persona.id"
         >
-          <template v-slot:alertas>
-            <img
-              v-if="esteGrupo.estudiantesIdle.some((ei) => ei.id == persona.id)"
-              id="alertaEstudianteIdle"
-              class="alertas"
-              src="@/assets/iconos/idle.png"
-              title="Estudiante desocupado"
-            />
-          </template>
+          <template v-slot:alertas> </template>
         </icono-persona>
       </div>
     </div>
@@ -75,7 +67,11 @@
               'actividadesEstudiantiles-profe'
             )
           "
-          @click="verTodasActividades = !verTodasActividades"
+          v-show="!loadingMisActividadesCreadas"
+          @click="
+            verTodasActividades = !verTodasActividades;
+            activarTodasActividades = true;
+          "
         >
           {{
             verTodasActividades == true
@@ -86,16 +82,27 @@
         <div
           class="controlesActividades botonesControles hoverGris"
           v-if="usuarioProfe"
+          v-show="!loadingMisActividadesCreadas"
           @click="crearNuevaActividad"
         >
           Crear actividad
         </div>
+        <loading
+          texto="cargandoActividades..."
+          v-show="loadingMisActividadesCreadas"
+        />
       </div>
-      <div id="listaActividades" @click.self="idActividadSeleccionada = null">
+      <div
+        id="listaMisActividades"
+        class="listaActividades"
+        @click.self="idActividadSeleccionada = null"
+        v-if="!loadingMisActividadesCreadas"
+        v-show="!verTodasActividades"
+      >
         <actividad
-          v-for="actividad of actividadesOrdenadas"
+          v-for="actividad of misActividadesCreadas.actividades"
           :key="actividad.id"
-          :estaActividad="actividad"
+          :idActividad="actividad.id"
           :seleccionada="idActividadSeleccionada == actividad.id"
           :idGrupo="esteGrupo.id"
           @click.native="
@@ -109,22 +116,69 @@
               : (idActividadSeleccionada = actividad.id)
           "
           @eliminandose="eliminarActividad"
-          v-show="
-            (verTodasActividades == true &&
-              (usuarioAdministradorActividadesEstudiantiles == true ||
-                $store.state.usuario.permisos.includes(
-                  'actividadesEstudiantiles-guia'
-                ) ||
-                $store.state.usuario.permisos.includes(
-                  'actividadesEstudiantiles-profe'
-                ))) ||
-            actividad.creador.id == $store.state.usuario.id
-          "
-          @participacionEliminada="eliminarParticipacionDeCache"
-          @posibleCambioEstudiantesIdle="reloadEstudiantesIdle()"
         >
-       
         </actividad>
+        <loading
+          texto="Cargando más actividades"
+          v-show="loadingMasMisActividades"
+        />
+
+        <div
+          id="finMisActividades"
+          class="bCargarMas"
+          v-show="misActividadesCreadas.hayMas && !loadingMasMisActividades"
+          @click="getMoreMisActividades"
+        >
+          Más...
+        </div>
+      </div>
+      <div
+        id="listaTodasActividades"
+        class="listaActividades"
+        @click.self="idActividadSeleccionada = null"
+        v-if="!loadingTodasActividades"
+        v-show="
+          verTodasActividades == true &&
+          (usuarioAdministradorActividadesEstudiantiles == true ||
+            $store.state.usuario.permisos.includes(
+              'actividadesEstudiantiles-guia'
+            ) ||
+            $store.state.usuario.permisos.includes(
+              'actividadesEstudiantiles-profe'
+            ))
+        "
+      >
+        <actividad
+          v-for="actividad of todasActividades.actividades"
+          :key="actividad.id"
+          :idActividad="actividad.id"
+          :seleccionada="idActividadSeleccionada == actividad.id"
+          :idGrupo="esteGrupo.id"
+          @click.native="
+            idActividadSeleccionada != actividad.id
+              ? (idActividadSeleccionada = actividad.id)
+              : null
+          "
+          @clickTrianguloSeleccion="
+            idActividadSeleccionada == actividad.id
+              ? (idActividadSeleccionada = null)
+              : (idActividadSeleccionada = actividad.id)
+          "
+          @eliminandose="eliminarActividad"
+        >
+        </actividad>
+        <div
+          id="finTodasActividades"
+          class="bCargarMas"
+          v-show="todasActividades.hayMas && !loadingMasTodasActividades"
+          @click="getMoreTodasActividades"
+        >
+          Más...
+        </div>
+        <loading
+          texto="Cargando más actividades"
+          v-show="loadingMasTodasActividades"
+        />
       </div>
     </div>
   </div>
@@ -136,9 +190,33 @@ import gql from "graphql-tag";
 import {
   fragmentoActividad,
   fragmentoResponsables,
-  fragmentoParticipacion,
 } from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
+import Loading from "../utilidades/Loading.vue";
+
+const QUERY_TODAS_ACTIVIDADES = gql`
+  query($idGrupo: ID!, $pagina: Int!) {
+    todasActividadesGrupoEstudiantil(idGrupo: $idGrupo, pagina: $pagina) {
+      hayMas
+      actividades {
+        id
+        nombre
+      }
+    }
+  }
+`;
+
+const QUERY_MIS_ACTIVIDADES_CREADAS = gql`
+  query($idGrupo: ID!, $pagina: Int!) {
+    misActividadesCreadasGrupoEstudiantil(idGrupo: $idGrupo, pagina: $pagina) {
+      hayMas
+      actividades {
+        id
+        nombre
+      }
+    }
+  }
+`;
 
 const QUERY_GRUPO = gql`
   query($idGrupo: ID!) {
@@ -148,17 +226,12 @@ const QUERY_GRUPO = gql`
       estudiantes {
         ...fragResponsables
       }
-      estudiantesIdle {
-        id
-      }
-      actividades {
-        ...fragActividad
-      }
     }
   }
   ${fragmentoResponsables}
-  ${fragmentoActividad}
 `;
+
+//const sizePaginaActividades=5;
 
 export default {
   name: "ActividadesDeGrupo",
@@ -173,71 +246,42 @@ export default {
         return grupoEstudiantil;
       },
       fetchPolicy: "cache-and-network",
-      subscribeToMore: {
-        document: gql`
-          subscription($idGrupo: ID) {
-            nuevaRespuestaDesarrolloEstudiantil(idGrupo: $idGrupo) {
-              idDesarrollo
-              participacion {
-                ...fragParticipacion
-              }
-            }
-          }
-          ${fragmentoParticipacion}
-        `,
-        variables() {
-          return { idGrupo: this.$route.params.idGrupo };
-        },
-        updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          console.log(`Subscription response nueva respuesta`);
-          let indexActividad = previousResult.grupoEstudiantil.actividades.findIndex(
-            (a) =>
-              a.desarrollos.some(
-                (d) =>
-                  d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
-              )
-          );
-          if (indexActividad > -1) {
-            console.log(
-              `En ${previousResult.grupoEstudiantil.actividades[indexActividad].nombre}`
-            );
-            let elDesarrollo = previousResult.grupoEstudiantil.actividades[
-              indexActividad
-            ].desarrollos.find(
-              (d) =>
-                d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
-            );
-
-            if (!elDesarrollo) {
-              console.log(`El desarrollo no estaba en estaba actividad`);
-            } else {
-              //Verificar si esta respuesta no ha llegado de algún otro lado
-              if (
-                !elDesarrollo.participaciones.some(
-                  (p) =>
-                    p.id ==
-                    data.nuevaRespuestaDesarrolloEstudiantil.participacion.id
-                )
-              ) {
-                elDesarrollo.participaciones.push(
-                  data.nuevaRespuestaDesarrolloEstudiantil.participacion
-                );
-              }
-            }
-          } else {
-            console.log(
-              `Subscripcion response no encontró actividad que tuviera ese desarrollo`
-            );
-          }
-
-          return previousResult;
-        },
+    },
+    misActividadesCreadas: {
+      query: QUERY_MIS_ACTIVIDADES_CREADAS,
+      variables() {
+        return {
+          idGrupo: this.$route.params.idGrupo,
+          pagina: 0,
+        };
+      },
+      update: function ({ misActividadesCreadasGrupoEstudiantil }) {
+        this.loadingMasMisActividades = false;
+        this.loadingMisActividadesCreadas = false;
+        this.ventanaDeshabilitada = false;
+        return misActividadesCreadasGrupoEstudiantil;
+      },
+    },
+    todasActividades: {
+      query: QUERY_TODAS_ACTIVIDADES,
+      variables() {
+        return {
+          idGrupo: this.$route.params.idGrupo,
+          pagina: 0,
+        };
+      },
+      update: function ({ todasActividadesGrupoEstudiantil }) {
+        this.loadingMasTodasActividades = false;
+        this.loadingTodasActividades = false;
+        this.hayMasTodasActividades = todasActividadesGrupoEstudiantil.hayMas;
+        return todasActividadesGrupoEstudiantil;
       },
     },
   },
   components: {
     IconoPersona,
     Actividad,
+    Loading,
   },
   data() {
     return {
@@ -248,8 +292,24 @@ export default {
         estudiantes: [],
         actividades: [],
       },
+      activarTodasActividades: false,
       verTodasActividades: false,
       ventanaDeshabilitada: true,
+
+      misActividadesCreadas: [],
+      todasActividades: [],
+
+      paginaMisActividades: 0,
+      paginaTodasActividades: 0,
+
+      hayMasMisActividades: true,
+      hayMasTodasActividades: true,
+
+      loadingMisActividadesCreadas: true,
+      loadingTodasActividades: true,
+
+      loadingMasMisActividades: true,
+      loadingMasTodasActividades: true,
     };
   },
   computed: {
@@ -347,14 +407,18 @@ export default {
             );
             const nuevaActividad = crearActividadEnGrupoEstudiantil;
             try {
-              let cache = store.readQuery({
-                query: QUERY_GRUPO,
-                variables: { idGrupo: this.esteGrupo.id },
+              var cache = store.readQuery({
+                query: QUERY_MIS_ACTIVIDADES_CREADAS,
+                variables: { idGrupo: this.$route.params.idGrupo, pagina: 0 },
               });
-              cache.grupoEstudiantil.actividades.push(nuevaActividad);
+              console.log(`Cache: ${JSON.stringify(cache)}`);
+              cache.misActividadesCreadasGrupoEstudiantil.actividades.unshift(
+                nuevaActividad
+              );
+              cache.misActividadesCreadasGrupoEstudiantil.actividades.pop();
               store.writeQuery({
-                query: QUERY_GRUPO,
-                variables: { idGrupo: this.esteGrupo.id },
+                query: QUERY_MIS_ACTIVIDADES_CREADAS,
+                variables: { idGrupo: this.$route.params.idGrupo, pagina: 0 },
                 data: cache,
               });
               console.log(`cache actualizado`);
@@ -365,7 +429,7 @@ export default {
           },
         })
         .then((respuesta) => {
-          console.log(`respuesta. ${respuesta}`);
+          console.log(`resp. ${respuesta}`);
         })
         .catch((error) => {
           console.log(`error: ${error}`);
@@ -373,7 +437,6 @@ export default {
     },
     eliminarActividad(idActividad) {
       console.log(`Evento de eliminar actividad ${idActividad}`);
-      if (!this.esteGrupo.actividades.some((a) => a.id == idActividad)) return;
 
       this.$apollo
         .mutate({
@@ -388,35 +451,6 @@ export default {
           variables: {
             idActividad,
             idGrupo: this.esteGrupo.id,
-          },
-          update: (
-            store,
-            { data: { eliminarActividadDeGrupoEstudiantil } }
-          ) => {
-           
-            let eliminado = eliminarActividadDeGrupoEstudiantil;
-
-            if (eliminado) {
-              try {
-                let cache = store.readQuery({
-                  query: QUERY_GRUPO,
-                  variables: { idGrupo: this.esteGrupo.id },
-                });
-                let indexE = cache.grupoEstudiantil.actividades.findIndex(
-                  (a) => a.id == idActividad
-                );
-                if (indexE > -1) {
-                  cache.grupoEstudiantil.actividades.splice(indexE, 1);
-                }
-                store.writeQuery({
-                  query: QUERY_GRUPO,
-                  variables: { idGrupo: this.esteGrupo.id },
-                  data: cache,
-                });
-              } catch (error) {
-                console.log(`Error actualizando cache`);
-              }
-            }
           },
         })
         .then(() => {})
@@ -467,24 +501,91 @@ export default {
         data,
       });
     },
-    reloadEstudiantesIdle() {
-      console.log(`Reloading estudiantes idle`);
-      this.$apollo.query({
-        query: gql`
-          query($idGrupo: ID!) {
-            grupoEstudiantil(idGrupo: $idGrupo) {
-              id
-              estudiantesIdle {
-                id
-              }
-            }
-          }
-        `,
-        fetchPolicy: "network-only",
-        variables: {
-          idGrupo: this.$route.params.idGrupo,
-        },
-      });
+    getMoreMisActividades() {
+      this.paginaMisActividades++;
+      console.log(`Fetching more`);
+      this.loadingMasMisActividades = true;
+      this.$apollo.queries.misActividadesCreadas
+        .fetchMore({
+          variables: {
+            pagina: this.paginaMisActividades,
+            idGrupo: this.$route.params.idGrupo,
+          },
+          updateQuery: (previousResult, { fetchMoreResult }) => {
+            const masActividades =
+              fetchMoreResult.misActividadesCreadasGrupoEstudiantil.actividades;
+            const hayMas =
+              fetchMoreResult.misActividadesCreadasGrupoEstudiantil.hayMas;
+
+            this.hayMasMisActividades = hayMas;
+
+            return {
+              misActividadesCreadasGrupoEstudiantil: {
+                __typename:
+                  previousResult.misActividadesCreadasGrupoEstudiantil
+                    .__typename,
+                actividades: [
+                  ...previousResult.misActividadesCreadasGrupoEstudiantil
+                    .actividades,
+                  ...masActividades,
+                ],
+                hayMas,
+              },
+            };
+          },
+        })
+        .then(() => {
+          this.loadingMasMisActividades = false;
+        })
+        .catch((error) => {
+          this.loadingMasMisActividades = false;
+          console.log(`Error en fetchMore: E: ${error}`);
+        });
+    },
+    getMoreTodasActividades() {
+      this.paginaTodasActividades++;
+      console.log(`Fetching more todasActividades`);
+      this.loadingMasTodasActividades = true;
+      this.$apollo.queries.todasActividades
+        .fetchMore({
+          variables: {
+            pagina: this.paginaTodasActividades,
+            idGrupo: this.$route.params.idGrupo,
+          },
+          updateQuery: (previousResult, { fetchMoreResult }) => {
+            const masActividades =
+              fetchMoreResult.todasActividadesGrupoEstudiantil.actividades;
+            const hayMas =
+              fetchMoreResult.todasActividadesGrupoEstudiantil.hayMas;
+
+            this.hayMasTodasActividades = hayMas;
+
+            return {
+              todasActividadesGrupoEstudiantil: {
+                __typename:
+                  previousResult.todasActividadesGrupoEstudiantil.__typename,
+                actividades: [
+                  ...previousResult.todasActividadesGrupoEstudiantil
+                    .actividades,
+                  ...masActividades,
+                ],
+                hayMas,
+              },
+            };
+          },
+        })
+        .then(() => {
+          this.loadingMasTodasActividades = false;
+        })
+        .catch((error) => {
+          this.loadingMasTodasActividades = false;
+          console.log(`Error en fetchMore: E: ${error}`);
+        });
+    },
+    addDesarrolloActividad(nuevoDesarrollo, idActividad) {
+      console.log(
+        `En la actividad ${idActividad} se añadirá un desarrollo: ${nuevoDesarrollo}`
+      );
     },
   },
   beforeRouteUpdate(to, from, next) {
@@ -493,6 +594,7 @@ export default {
       from.name == "ActividadesDeGrupo" ||
       from.name == "ActividadesDeProfe"
     ) {
+      this.esteGrupo.id = null;
       this.ventanaDeshabilitada = true;
     }
     next();
@@ -567,19 +669,18 @@ export default {
   pointer-events: none;
 }
 
-#listaActividades {
+.listaActividades {
   padding: 20px 50px;
 }
 
 .alertas {
   border-radius: 50%;
 }
-#alertaEstudianteIdle {
-  background-color: rgb(255, 219, 152);
-  width: 20px;
-  height: 20px;
-  border: 1px solid rgb(255, 115, 0);
-  border-radius: 50%;
+.bCargarMas {
+  cursor: pointer;
+  padding: 5px 3px;
 }
-
+.bCargarMas:hover {
+  background-color: gray;
+}
 </style>

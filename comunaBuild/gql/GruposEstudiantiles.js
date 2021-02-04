@@ -42,17 +42,17 @@ exports.typeDefs = apollo_server_express_1.gql `
     type ParticipacionActividadGrupoEstudiantil{
         id: ID,
         fechaUpload:Date,
-        autor:PublicUsuario,
         comentario:String,
         archivo:InfoArchivo,        
+        infoAutor:MinimoUsuario,
     }
 
     type DesarrolloActividadGrupoEstudiantil{
-        id: ID,
-        estudiante: PublicUsuario,
+        id: ID,        
         estado:String,
         participaciones: [ParticipacionActividadGrupoEstudiantil],
         leidoPorProfe:Boolean,
+        infoEstudiante:MinimoUsuario
     }
 
     type ActividadGrupoEstudiantil{        
@@ -60,20 +60,25 @@ exports.typeDefs = apollo_server_express_1.gql `
         nombre: String,
         fechaUpload:Date,
         desarrollos:[DesarrolloActividadGrupoEstudiantil],
-        creador: PublicUsuario,
+        infoCreador:MinimoUsuario
         hayGuia: String,
+    }
+
+    type PaginaActividadesGrupoEstudiantil{
+        hayMas:Boolean,
+        actividades:[ActividadGrupoEstudiantil]
     }
 
     type GrupoEstudiantil{
         id:ID,
         nombre:String,        
         estudiantes:[PublicUsuario],
-        estudiantesIdle:[PublicUsuario],
-        actividades:[ActividadGrupoEstudiantil]
     }
 
     extend type Query{
         grupoEstudiantil(idGrupo:ID!):GrupoEstudiantil,
+        misActividadesCreadasGrupoEstudiantil(idGrupo: ID!, pagina:Int!):PaginaActividadesGrupoEstudiantil,
+        todasActividadesGrupoEstudiantil(idGrupo: ID!, pagina:Int!):PaginaActividadesGrupoEstudiantil,
         gruposEstudiantiles:[GrupoEstudiantil],
         addEstudianteGrupoEstudiantil:GrupoEstudiantil,
         actividadDeGrupoEstudiantil(idGrupo:ID!, idActividad:ID!):ActividadGrupoEstudiantil,
@@ -100,6 +105,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     }
 `;
 exports.NUEVA_PARTICIPACION_ESTUDIANTIL = "nueva_participacion_estudiantil";
+const sizePaginaActividades = 5;
 exports.resolvers = {
     Subscription: {
         nuevaRespuestaDesarrolloEstudiantil: {
@@ -227,14 +233,68 @@ exports.resolvers = {
                     if (!elGrupoEstudiantil) {
                         throw "grupo no encontrado";
                     }
-                    elGrupoEstudiantil.calcularIdleStudents();
                 }
                 catch (error) {
-                    console.log(`Error buscando el grupo con id ${idGrupo} en la base de datos. E:${error}`);
+                    console.log(`Error buscando el grupo con ide ${idGrupo} en la base de datos. E:${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`enviando el grupo estudiantil`);
                 return elGrupoEstudiantil;
+            });
+        },
+        misActividadesCreadasGrupoEstudiantil(_, { idGrupo, pagina }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||||1`);
+                console.log(`Petición de actividades creadas por el usuario`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
+                    if (!elGrupo)
+                        throw "Grupo no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error buscando el grupo. E: ${error}`);
+                    return new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + elGrupo._id, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + elGrupo._id);
+                try {
+                    var numActividades = yield ColeccionActividadesEsteGrupo.countDocuments({ idCreador: credencialesUsuario.id }).exec();
+                    var actividadesCreadasUsuario = yield ColeccionActividadesEsteGrupo.find({ idCreador: credencialesUsuario.id }).limit(sizePaginaActividades).skip(pagina * sizePaginaActividades).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando actividades creadas por el usuario en la colección. E: ${error}`);
+                    return new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let hayMas = pagina * sizePaginaActividades < numActividades;
+                console.log(`Enviando actividades creadas por el usuario`);
+                return { hayMas, actividades: actividadesCreadasUsuario };
+            });
+        },
+        todasActividadesGrupoEstudiantil(_, { idGrupo, pagina }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||||1`);
+                console.log(`Petición de todas actividades de grupo`);
+                try {
+                    var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
+                    if (!elGrupo)
+                        throw "Grupo no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error buscando el grupo. E: ${error}`);
+                    return new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + elGrupo._id, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + elGrupo._id);
+                try {
+                    var numActividades = yield ColeccionActividadesEsteGrupo.countDocuments({}).exec();
+                    var actividadesGrupo = yield ColeccionActividadesEsteGrupo.find({}).sort({ fechaUpload: -1 }).limit(sizePaginaActividades).skip(pagina * sizePaginaActividades).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando actividades creadas por el usuario en la colección. E: ${error}`);
+                    return new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let hayMas = pagina * sizePaginaActividades < numActividades;
+                console.log(`Enviando todas actividades del grupo ${elGrupo.nombre}`);
+                return { hayMas, actividades: actividadesGrupo };
             });
         },
         gruposEstudiantiles: function (_, __, contexto) {
@@ -262,9 +322,6 @@ exports.resolvers = {
                 console.log(`Usuario logeado: ${credencialesUsuario.id}`);
                 try {
                     var gruposEstudiantiles = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.find({}).exec();
-                    for (var i = 0; i < gruposEstudiantiles.length; i++) {
-                        gruposEstudiantiles[i].calcularIdleStudents();
-                    }
                 }
                 catch (error) {
                     console.log("Error descargando los grupos estudiantiles de la base de datos. E: " + error);
@@ -542,10 +599,25 @@ exports.resolvers = {
                     console.log(`Error: el usuario no era profe`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error buscando usuario en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var infoCreador = {
+                    id: elUsuario._id,
+                    nombres: elUsuario.nombres,
+                    apellidos: elUsuario.apellidos,
+                    username: elUsuario.username
+                };
                 console.log(`creando una nueva actividad en el grupo ${elGrupoEstudiantil.nombre}`);
                 console.log(`las actividades eran: ${elGrupoEstudiantil.actividades}`);
                 try {
-                    var nuevaActividad = elGrupoEstudiantil.actividades.create({ fechaCreacion: Date.now(), idCreador: credencialesUsuario.id });
+                    var nuevaActividad = elGrupoEstudiantil.actividades.create({ idCreador: credencialesUsuario.id, infoCreador });
                     elGrupoEstudiantil.actividades.push(nuevaActividad);
                     yield elGrupoEstudiantil.save();
                 }
@@ -722,96 +794,8 @@ exports.resolvers = {
                 return usuariosEstudiantes;
             });
         },
-        estudiantesIdle: function (parent, _, __) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent.estudiantesIdle) {
-                    return [];
-                }
-                let idsEstudiantesIdle = parent.estudiantesIdle;
-                try {
-                    var usuariosEstudiantesIdle = yield Usuario_1.ModeloUsuario.find({ _id: { $in: idsEstudiantesIdle } }).exec();
-                }
-                catch (error) {
-                    console.log(`error buscando a los estudiantesIdle del proyecto. E: ${error}`);
-                    return [];
-                }
-                return usuariosEstudiantesIdle;
-            });
-        },
-    },
-    ParticipacionActividadGrupoEstudiantil: {
-        autor: function (parent, _, __) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent.idAutor) {
-                    return {
-                        id: "0",
-                        nombres: "?",
-                        apellidos: "?"
-                    };
-                }
-                let idAutor = parent.idAutor;
-                try {
-                    var usuarioAutor = yield Usuario_1.ModeloUsuario.findById(idAutor).exec();
-                    if (!usuarioAutor) {
-                        console.log(`El estudiante no existe en la base de datos enviando un dummy`);
-                        return {
-                            id: "-1",
-                            username: "?",
-                            nombres: "?",
-                            apellidos: "?",
-                            email: "?",
-                            numeroTel: "?",
-                            lugarResidencia: "?",
-                            edad: 0,
-                            idGrupoEstudiantil: "?",
-                            nombreGrupoEstudiantil: "?",
-                        };
-                    }
-                }
-                catch (error) {
-                    console.log(`error buscando al autor de la participacion. E: ${error}`);
-                    return {
-                        id: "0",
-                        nombres: "?",
-                        apellidos: "?"
-                    };
-                }
-                return usuarioAutor;
-            });
-        },
     },
     ActividadGrupoEstudiantil: {
-        creador: function (parent, _, __) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent.idCreador) {
-                    return [];
-                }
-                let idCreador = parent.idCreador;
-                try {
-                    var usuarioCreador = yield Usuario_1.ModeloUsuario.findById(idCreador).exec();
-                    if (!usuarioCreador) {
-                        console.log(`El estudiante no existe en la base de datos enviando un dummy`);
-                        return {
-                            id: "-1",
-                            username: "?",
-                            nombres: "?",
-                            apellidos: "?",
-                            email: "?",
-                            numeroTel: "?",
-                            lugarResidencia: "?",
-                            edad: 0,
-                            idGrupoEstudiantil: "?",
-                            nombreGrupoEstudiantil: "?",
-                        };
-                    }
-                }
-                catch (error) {
-                    console.log(`error buscando a los responsables del proyecto. E: ${error}`);
-                    return [];
-                }
-                return usuarioCreador;
-            });
-        },
         hayGuia: function (parent) {
             return __awaiter(this, void 0, void 0, function* () {
                 let idActividad = "";
@@ -839,39 +823,6 @@ exports.resolvers = {
                 return parent._id;
             });
         }
-    },
-    DesarrolloActividadGrupoEstudiantil: {
-        estudiante: function (parent, _, __) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent.idEstudiante) {
-                    return [];
-                }
-                let idEstudiante = parent.idEstudiante;
-                try {
-                    var usuarioEstudiante = yield Usuario_1.ModeloUsuario.findById(idEstudiante).exec();
-                    if (!usuarioEstudiante) {
-                        console.log(`El estudiante no existe en la base de datos enviando un dummy`);
-                        return {
-                            id: "-1",
-                            username: "?",
-                            nombres: "?",
-                            apellidos: "?",
-                            email: "?",
-                            numeroTel: "?",
-                            lugarResidencia: "?",
-                            edad: 0,
-                            idGrupoEstudiantil: "?",
-                            nombreGrupoEstudiantil: "?",
-                        };
-                    }
-                }
-                catch (error) {
-                    console.log(`error buscando a los responsables del proyecto. E: ${error}`);
-                    return [];
-                }
-                return usuarioEstudiante;
-            });
-        },
     },
     InfoArchivo: {
         accesible: function (parent) {
@@ -913,26 +864,4 @@ exports.resolvers = {
             });
         }
     },
-    MinimoElemento: {
-        nombre: function (parent) {
-            return __awaiter(this, void 0, void 0, function* () {
-                let nombre = "Desconocido";
-                if (parent.tipo == "actividadEstudiantil") {
-                    try {
-                        let elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ "actividades._id": parent.id }, "actividades").exec();
-                        if (!elGrupo) {
-                            console.log(`No se pudo encontrar el grupo.`);
-                            throw "Grupo no encontrado";
-                        }
-                        nombre = elGrupo.actividades.id(parent.id).nombre;
-                    }
-                    catch (error) {
-                        console.log(`Error buscando grupo en la base de datos. E: ${error}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de DesarrolloActividadGrupoEstudiantil");
-                    }
-                }
-                return nombre;
-            });
-        }
-    }
 };

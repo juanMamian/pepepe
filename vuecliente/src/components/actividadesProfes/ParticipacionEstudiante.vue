@@ -7,7 +7,7 @@
     }"
   >
     <div id="autorParticipacion">
-      {{ estaParticipacion.autor.nombres }} {{estaParticipacion.autor.apellidos}} - {{fechaFormateada}}
+      {{ estaParticipacion.infoAutor.nombres }} {{estaParticipacion.infoAutor.apellidos}} - {{fechaFormateada}}
     </div>
     <textarea
       disabled
@@ -19,12 +19,12 @@
       }"
     ></textarea>
     <div id="archivo">
-      <a :href="estaParticipacion.archivo.accesible">
+      <a :href="estaParticipacion.archivo.googleDriveDirectLink">
         <img
           src="@/assets/iconos/downloadFile.png"
           alt="Descargar archivo"
           id="imgDownloadArchivo"
-          v-if="estaParticipacion.archivo.accesible.length > 5"
+          v-if="estaParticipacion.archivo && estaParticipacion.archivo.googleDriveDirectLink"
         />
       </a>
     </div>
@@ -71,7 +71,7 @@ export default {
             parseInt(this.indice) +
               1 +
               " - Respuesta_" +
-              this.estaParticipacion.autor.nombres +
+              this.estaParticipacion.infoAutor.nombres +
               "." +
               this.estaParticipacion.archivo.extension
           );
@@ -82,12 +82,15 @@ export default {
         });
     },
     eliminarse() {
+      if(!confirm("¿Seguro de que quieres eliminar este mensaje?")){
+        return
+      }
       this.$emit("eliminandose", this.estaParticipacion.id);
     },
   },
   computed: {
     participacionDelPropioEstudiante: function () {
-      return this.idEstudianteDesarrollo == this.estaParticipacion.autor.id;
+      return this.idEstudianteDesarrollo == this.estaParticipacion.infoAutor.id;
     },
     fechaFormateada(){
       return new Date(this.estaParticipacion.fechaUpload);

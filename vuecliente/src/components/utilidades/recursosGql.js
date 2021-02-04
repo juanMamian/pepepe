@@ -13,10 +13,11 @@ fragment fragResponsables on PublicUsuario {
 `;
 
 export const fragmentoMinimoPersona = gql`
-fragment fragMinimoPersona on PublicUsuario {
+fragment fragMinimoPersona on MinimoUsuario {
   id
   nombres
   apellidos
+  username
 }
 `;
 
@@ -27,23 +28,23 @@ export const fragmentoParticipacion = gql`
       archivo {
         extension
         nombre
-        accesible,        
+        googleDriveDirectLink,        
       }
       comentario
-      autor {
-        ...fragResponsables
+      infoAutor{
+        ...fragMinimoPersona
       }
   }
-  ${fragmentoResponsables}
+  ${fragmentoMinimoPersona}
 `
 
 export const fragmentoDesarrollo = gql`
 fragment fragDesarrollo on DesarrolloActividadGrupoEstudiantil{
-  id
+    id
     estado
     leidoPorProfe
-    estudiante {
-      ...fragResponsables
+    infoEstudiante{
+      ...fragMinimoPersona
     }
     participaciones {
       ...fragParticipacion
@@ -58,8 +59,8 @@ fragment fragActividad on ActividadGrupoEstudiantil {
   nombre
   fechaUpload
   hayGuia
-  creador {
-    ...fragResponsables
+  infoCreador{
+    ...fragMinimoPersona
   }
   desarrollos {
     ...fragDesarrollo 

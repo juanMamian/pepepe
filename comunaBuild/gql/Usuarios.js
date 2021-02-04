@@ -86,7 +86,8 @@ exports.typeDefs = apollo_server_express_1.gql `
     type MinimoUsuario{
         id:ID,
         nombres:String,
-        apellidos:String
+        apellidos:String,
+        username:String,
     }
 
     extend type Query {

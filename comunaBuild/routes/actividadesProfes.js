@@ -108,7 +108,7 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             }
         }
         try {
-            var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario, "username nombres apellidos id").exec();
+            var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
             var nombreApellidoUsuario = elUsuario.nombres + " " + elUsuario.apellidos;
         }
         catch (error) {
@@ -237,7 +237,8 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             texto: "Nueva respuesta",
             elementoTarget: {
                 tipo: "actividadEstudiantil",
-                id: laActividad._id
+                id: laActividad._id,
+                nombre: laActividad.nombre
             },
             causante: {
                 tipo: "persona",

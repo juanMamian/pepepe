@@ -68,8 +68,8 @@ const routes = [
                 component: PortadaActividadesEstudiantiles
             }
         ]
-    },
-    {path: "/actividad/:idActividad", component: ActividadEspecifica},
+    },    
+    {path: "/actividad/:idActividad", name:"actividadEspecifica", component: ActividadEspecifica},    
     { path: "/personas", name: "personas", component: Personas },
     { path: "/", redirect: "/home" }
 ];

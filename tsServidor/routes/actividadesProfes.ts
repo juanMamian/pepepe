@@ -1,24 +1,14 @@
 const multer = require("multer");
 const upload = multer({ limits: { fileSize: 7000000 } });
 const router = require("express").Router();
-import { ModeloNotificacion, ModeloUsuario as Usuario } from "../model/Usuario";
-import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil"
+import { ModeloGrupoEstudiantil as GrupoEstudiantil, esquemaActividad } from "../model/actividadesProfes/GrupoEstudiantil"
+import {ModeloUsuario as Usuario} from "../model/Usuario";
 const path = require("path");
-const fs = require("fs");
-const util = require("util");
-import mongoose from "mongoose"
-const mkdir = util.promisify(fs.mkdir);
-const writeFile = util.promisify(fs.writeFile);
 import { drive, jwToken } from "./utilidades"
-import { errorApi } from "../errorHandling"
-import { Request, Response } from "express";
 import streamifier from "streamifier";
 import sharp from "sharp";
-import { pubsub } from "../gql/Schema";
-import { NUEVA_PARTICIPACION_ESTUDIANTIL } from "../gql/GruposEstudiantiles"
-import { NUEVA_NOTIFICACION_PERSONAL } from "../gql/Usuarios";
 //Google Drive
-
+import mongoose from "mongoose";
 
 interface UsuarioInterface {
     username: string,
@@ -26,7 +16,7 @@ interface UsuarioInterface {
 }
 
 
-router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err, req, res, next) {
+router.post("/adjuntarArchivoParaRespuestaActividadEstudiantil", upload.single("archivoAdjunto"), function (err, req, res, next) {
     console.log(`Errores: <<${err.message}>>`)
     let mensaje = "Archivo no permitido";
     if (err.message == "File too large") mensaje = "Archivo demasiado grande"
@@ -42,13 +32,15 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         return;
     }
     let idUsuario = req.user.id;
-    console.log(`Recibida peticion de subir respuesta por el usuario ${req.user.username}`);
+    console.log(`Recibida peticion de subir archivo por el usuario ${req.user.username}`);
 
-    var charProhibidosComentario = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
-    var comentario = req.body.comentario;
-    if (charProhibidosComentario.test(comentario)) {
-        console.log(`Rechazando comentario ${comentario} por tener caracteres no válidos: ${comentario.replace(charProhibidosComentario, "*")}`);
-        return res.status(400).send({ msjUsuario: "El comentario contenía caracteres no válidos" });
+    try {
+        var elUsuario:any=await Usuario.findById(idUsuario).exec();
+        if(!elUsuario)throw "Usuario no encontrado";
+        var nombreApellido=elUsuario.nombres+" "+elUsuario.apellidos;
+    } catch (error) {
+        console.log('Error buscando el usuario . E: '+error);
+        return res.status(400).send("Error identificando usuario");
     }
 
     var extensionDeArchivo = "";
@@ -105,95 +97,6 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
             console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
             return res.status(400).send({ msjUsuario: "El mimetype " + req.file.mimetype + " no está soportado" });
         }
-
-
-    }
-
-    try {
-        var elUsuario: any = await Usuario.findById(idUsuario, "username nombres apellidos id").exec();
-        var nombreApellidoUsuario = elUsuario.nombres + " " + elUsuario.apellidos;
-    }
-    catch (error) {
-        console.log(`error buscando el usuario para publicar respuesta. e: ` + error);
-        return res.status(400).send('');
-    }
-
-
-    //Creando la nueva participacion
-
-    let nuevaParticipacion = {
-        fechaUpload: Date.now(),
-        archivo: {
-            extension: extensionDeArchivo
-        },
-        comentario,
-        idAutor: idUsuario,
-        infoAutor:{
-            id: idUsuario,
-            nombres: elUsuario.nombres,
-            apellidos: elUsuario.apellidos,
-            username:elUsuario.username
-        }
-    }
-
-    let idActividad = req.body.idActividad;
-
-    //Introducir la informacion en la base de datos.
-
-    try {
-        var elGrupo: any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
-        var laActividad = elGrupo.actividades.id(idActividad);
-
-        if (req.body.idDesarrollo == 0) {
-            console.log(`Desarrollo 0. Era para el desarrollo del autor de la respuesta`);
-            var elDesarrollo = laActividad.desarrollos.find(d => d.idEstudiante == idUsuario);
-            if (!elDesarrollo) {
-                console.log(`Este usuario no había iniciado un desarrollo. Creando un nuevo desarrollo`);
-                var nuevoDesarrollo = laActividad.desarrollos.create({ 
-                    idEstudiante: idUsuario, 
-                    participaciones: [],
-                    infoEstudiante:{
-                        id: idUsuario,
-                        nombres:elUsuario.nombres,
-                        apellidos: elUsuario.apellidos,
-                        username: elUsuario.username,
-                    }
-                });
-                laActividad.desarrollos.push(nuevoDesarrollo);
-                elDesarrollo = laActividad.desarrollos.id(nuevoDesarrollo.id);
-            }
-        }
-        else {
-            elDesarrollo = laActividad.desarrollos.id(req.body.idDesarrollo);
-            if (!elDesarrollo) {
-                console.log(`No se encontro el desarrollo ${req.body.idDesarrollo}`);
-                throw new Error("Error localizando el desarrollo");
-            }
-        }
-
-        if (elDesarrollo.estado == "completado") {
-            console.log(`Este desarrollo estaba marcado como completado.`);
-            throw new Error("El desarrollo ya esta completado");
-        }
-
-        var laParticipacion = elDesarrollo.participaciones.create(nuevaParticipacion);
-        var idParticipacion = laParticipacion._id;
-        laParticipacion.archivo.nombre = idParticipacion;
-
-        if (elDesarrollo.idEstudiante == laParticipacion.idAutor) {
-            console.log(`Modificado por el propio estudiante`);
-            elDesarrollo.leidoPorProfe = false;
-        }
-
-
-    } catch (error) {
-        console.log(`Error leyendo nombre de grupo y actividad en la base de dato. E: ${error}`);
-        return res.status(500).send("Error conectando con la base de datos");
-    }
-
-    //Guardando el archivo
-    if ("file" in req) {
-
         //resize
         let archivoFinal = req.file.buffer;
         if ((req.file.mimetype == "image/png" || req.file.mimetype == "image/jpg" || req.file.mimetype == "image/jpeg") && req.file.size > 2000000) {
@@ -216,13 +119,15 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
 
         var fileMetadata = {
-            'name': laActividad.nombre + '-' + nombreApellidoUsuario + '.' + laParticipacion.archivo.extension,
+            'name': 'respuesta de '+nombreApellido+'.' + extensionDeArchivo,
             parents: [idCarpetaEvidencias],
         };
         var media = {
             mimeType: req.file.mimetype,
             body: streamifier.createReadStream(archivoFinal)
         };
+
+        var infoArchivo:any={};
 
         try {
             let respuesta = await drive.files.create({
@@ -232,8 +137,11 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
                 fields: 'id, webContentLink'
             });
             console.log(`Creado archivo ${JSON.stringify(respuesta.data)}`);
-            laParticipacion.archivo.idGoogleDrive = respuesta.data.id;
-            laParticipacion.archivo.googleDriveDirectLink = respuesta.data.webContentLink;
+            infoArchivo.idGoogleDrive = respuesta.data.id;
+            infoArchivo.googleDriveDirectLink = respuesta.data.webContentLink;
+            infoArchivo.nombre=fileMetadata.name;
+            infoArchivo.extension=extensionDeArchivo;
+
         }
         catch (error) {
             console.log(`Error creando archivo: E: ${error}`);
@@ -241,79 +149,12 @@ router.post("/publicarRespuesta", upload.single("archivoAdjunto"), function (err
         }
 
     }
-
-    elDesarrollo.participaciones.push(laParticipacion)
-
-
-
-    try {
-        await elGrupo.save();
-    } catch (error) {
-        console.log(`Error guardando el grupo: E: ${error}`);
-        return res.status(500).send("Error guardando la respuesta");
+    else{
+        res.status(400).send("No se adjuntó archivo");
     }
-    console.log(`publicando con idDesarrollo: ${elDesarrollo._id}`);
-
-    //creando una notificacion en la base de datos
-    var notificacion= new ModeloNotificacion({
-        texto: "Nueva respuesta",
-        elementoTarget: {
-            tipo: "actividadEstudiantil",
-            id: laActividad._id
-        },
-        causante: {
-            tipo: "persona",
-            id: elUsuario._id
-        }
-
-    });
     
-    //Pregunta si notificar al estudiante del desarrollo de la actividad.
-    if (laParticipacion.idAutor != elDesarrollo.idEstudiante) {
-        try {
-            await Usuario.findByIdAndUpdate(elDesarrollo.idEstudiante, { $push: { notificaciones: notificacion } }).exec();
-            pubsub.publish(NUEVA_NOTIFICACION_PERSONAL, { idNotificado: elDesarrollo.idEstudiante, nuevaNotificacion: notificacion });
-            console.log(`Crendo notificacion personal para ${elDesarrollo.idEstudiante}`);
-        } catch (error) {
-            console.log(`Error creando una notificacion con para ${elDesarrollo.idEstudiante}`);
-        }
-    }
-
-    //Pregunta si notificar al autor de la actividad
-    if (laParticipacion.idAutor != laActividad.idCreador) {
-        try {
-            await Usuario.findByIdAndUpdate(laActividad.idCreador, { $push: { notificaciones: notificacion } }).exec();
-            pubsub.publish(NUEVA_NOTIFICACION_PERSONAL, { idNotificado: laActividad.idCreador, nuevaNotificacion: notificacion });
-            console.log(`Crendo notificacion personal para ${laActividad.idCreador}`);
-        } catch (error) {
-            console.log(`Error creando una notificacion para ${laActividad.idCreador}`);
-        }
-    }
-
-
-    try {
-        //El estudiante de este desarrollo es notificado
-
-
-        pubsub.publish(NUEVA_PARTICIPACION_ESTUDIANTIL, {
-            nuevaRespuestaDesarrolloEstudiantil: {
-                participacion: laParticipacion,
-                idDesarrollo: elDesarrollo.id
-            },
-            idEstudianteDesarrollo: elDesarrollo.idEstudiante,
-            idDesarrollo: elDesarrollo._id,
-            idCreadorActividad: laActividad.idCreador,
-            idGrupo: elGrupo._id,
-            idActividad: laActividad._id
-        });
-    } catch (error) {
-        console.log(`Error publicando en pubsub. E: ${error}`);
-    }
-
-
-    console.log(`Respuesta publicada`);
-
-    res.send({ resultado: "ok" });
+    console.log(`Archivo subido`);
+    res.send({infoArchivo});
 });
 
 
@@ -360,7 +201,9 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
     try {
         var elGrupo: any = await GrupoEstudiantil.findById(idGrupo);
         var nombreGrupo = elGrupo.nombre;
-        var nombreActividad = elGrupo.actividades.id(idActividad).nombre;
+        var ColeccionActividadesEsteGrupo = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
+        var laActividad:any=await ColeccionActividadesEsteGrupo.findById(idActividad).exec();
+        var nombreActividad = laActividad.nombre;
     } catch (error) {
         console.log(`Error leyendo nombre de grupo y actividad en la base de dato. E: ${error}`);
         return res.status(500).send("Error conectando con la base de datos");
@@ -392,8 +235,8 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
             fields: 'id, webContentLink'
         });
         console.log(`Creado archivo ${JSON.stringify(respuesta.data)}`);
-        elGrupo.actividades.id(idActividad).guiaGoogleDrive.idArchivo = respuesta.data.id;
-        elGrupo.actividades.id(idActividad).guiaGoogleDrive.enlace = respuesta.data.webContentLink;
+        laActividad.guiaGoogleDrive.idArchivo = respuesta.data.id;
+        laActividad.guiaGoogleDrive.enlace = respuesta.data.webContentLink;
     }
     catch (error) {
         console.log(`Error creando archivo: E: ${error}`);
@@ -402,15 +245,15 @@ router.post("/updateGuia", upload.single("nuevaGuia"), function (err, req, res, 
 
 
     try {
-        await elGrupo.save();
+        await laActividad.save();
     } catch (error) {
-        console.log(`Error guardando el grupo: E: ${error}`);
+        console.log(`Error guardando la actividad: E: ${error}`);
         return res.status(500).send("Error guardando la guia");
     }
 
 
     console.log(`update terminado`);
-    res.send({ resultado: "ok" });
+    res.send({ resultado: "ok", enlace: laActividad.guiaGoogleDrive.enlace });
 });
 
 router.get("/guia/:idGrupo/:idProfe/:idActividad", async function (req, res) {

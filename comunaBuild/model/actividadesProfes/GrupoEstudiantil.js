@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloGrupoEstudiantil = void 0;
+exports.ModeloGrupoEstudiantil = exports.esquemaActividad = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const esquemaParticipacion = new mongoose_1.default.Schema({
     fechaUpload: {
@@ -62,7 +62,7 @@ const esquemaDesarrollo = new mongoose_1.default.Schema({
         username: String,
     }
 });
-const esquemaActividad = new mongoose_1.default.Schema({
+exports.esquemaActividad = new mongoose_1.default.Schema({
     nombre: {
         type: String,
         min: 3,
@@ -90,9 +90,15 @@ const esquemaActividad = new mongoose_1.default.Schema({
         enlace: {
             type: String
         }
+    },
+    infoCreador: {
+        id: String,
+        nombres: String,
+        apellidos: String,
+        username: String
     }
 });
-esquemaActividad.pre('save', function () {
+exports.esquemaActividad.pre('save', function () {
     if ((this.isNew || this.isModified) && !this.desarrollo) {
         this.desarrollo = [];
     }
@@ -109,10 +115,9 @@ const esquemaGrupoEstudiantil = new mongoose_1.default.Schema({
         default: []
     },
     actividades: {
-        type: [esquemaActividad],
-        required: true,
+        type: [exports.esquemaActividad],
         default: []
-    },
+    }
 });
 esquemaGrupoEstudiantil.pre('validate', function () {
     if ((this.isNew || this.isModified) && !this.actividades) {

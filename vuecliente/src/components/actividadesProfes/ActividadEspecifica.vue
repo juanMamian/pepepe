@@ -1,31 +1,34 @@
 <template>
   <div class="actividadEspecifica">
-    <icono-persona :estaPersona="laActividad.creador" v-if="actividadLoaded"/>
+    {{$route.params.idNotificacion}}
+    <icono-persona :estaPersona="laActividad.creador" v-if="actividadLoaded" />
     <loading v-show="!actividadLoaded" texto="Cargando..." />
     <actividad
       :estaActividad="laActividad"
-      :seleccionada="true"
+      ref="laActividad"
+      :seleccionada="seleccionarActividad && actividadLoaded"
+      :idActividad="laActividad.id"
+      :idGrupo="laActividad.idGrupo"
       @participacionEliminada="eliminarParticipacionDeCache"
-      v-show="actividadLoaded"
+      v-if="actividadLoaded"
     />
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
-import { fragmentoActividad, fragmentoParticipacion } from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 import Loading from "../utilidades/Loading.vue";
-import IconoPersona from '../proyecto/IconoPersona.vue';
-
+import IconoPersona from "../proyecto/IconoPersona.vue";
 
 const QUERY_ACTIVIDAD_ESPECIFICA = gql`
   query($idActividad: ID!) {
     actividadEstudiantil(idActividad: $idActividad) {
-      ...fragActividad
+      id
+      nombre
+      idGrupo
     }
   }
-  ${fragmentoActividad}
 `;
 
 export default {
@@ -35,64 +38,22 @@ export default {
     laActividad: {
       query: QUERY_ACTIVIDAD_ESPECIFICA,
       variables() {
-        return {
+        return {          
           idActividad: this.$route.params.idActividad,
         };
       },
       fetchPolicy: "network-only",
       update: function ({ actividadEstudiantil }) {
+        this.seleccionarActividad = true;
         this.actividadLoaded = true;
         return actividadEstudiantil;
-      },
-      subscribeToMore: {
-        document: gql`
-          subscription($idActividad: ID) {
-            nuevaRespuestaDesarrolloEstudiantil(idActividad: $idActividad) {
-              idDesarrollo
-              participacion {
-                ...fragParticipacion
-              }
-            }
-          }
-          ${fragmentoParticipacion}
-        `,
-        variables() {
-          return {
-            idActividad: this.$route.params.idActividad,
-          };
-        },
-        updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          console.log(`Subscription response de nueva respuesta`);
-
-          let elDesarrollo = previousResult.actividadEstudiantil.desarrollos.find(
-            (d) => d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
-          );
-
-          if (!elDesarrollo) {
-            console.log(`El desarrollo no estaba en esta actividad`);
-          } else {
-            //Verificar si esta respuesta no ha llegado de algún otro lado.
-            if (
-              !elDesarrollo.participaciones.some(
-                (p) =>
-                  p.id ==
-                  data.nuevaRespuestaDesarrolloEstudiantil.participacion.id
-              )
-            ) {
-              elDesarrollo.participaciones.push(
-                data.nuevaRespuestaDesarrolloEstudiantil.participacion
-              );
-            }
-          }
-
-          return previousResult;
-        },
       },
     },
   },
   data() {
     return {
       actividadLoaded: false,
+      seleccionarActividad: false,
     };
   },
   methods: {
@@ -151,11 +112,27 @@ export default {
       }
     },
   },
+  computed:{
+    refresh(){
+      return this.$store.state.refreshActividadEspecifica
+    }
+  },
+  beforeRouteUpdate() {
+    console.log(`Bye`);
+    this.seleccionarActividad = false;    
+  },
+  watch:{
+    refresh(){
+      this.$refs.laActividad.refresh();
+    }
+  },
+  
+  
 };
 </script>
 
 <style scoped>
-.iconoPersona{
+.iconoPersona {
   margin: 50px auto;
   margin-bottom: 100px;
 }

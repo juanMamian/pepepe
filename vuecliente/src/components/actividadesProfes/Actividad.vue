@@ -6,9 +6,17 @@
       completada: usuarioCompletoActividad,
     }"
   >
-    <div id="contenedorAvancesGrupo" v-if="usuarioCreadorActividad || usuarioProfe">
-      <div class="indicadorAvance" v-show="estadoAvanceGrupo.numCompletados>0">
-        <div class="numeroIndicadorAvance">{{estadoAvanceGrupo.numCompletados}}</div>
+    <div
+      id="contenedorAvancesGrupo"
+      v-if="usuarioCreadorActividad || usuarioProfe"
+    >
+      <div
+        class="indicadorAvance"
+        v-show="estadoAvanceGrupo.numCompletados > 0"
+      >
+        <div class="numeroIndicadorAvance">
+          {{ estadoAvanceGrupo.numCompletados }}
+        </div>
         <img
           src="@/assets/iconos/estudiante.png"
           alt="Estudiantes que completaron"
@@ -17,8 +25,13 @@
           title="Estudiantes que completaron la actividad"
         />
       </div>
-      <div class="indicadorAvance" v-show="estadoAvanceGrupo.numDesarrollando>0">
-        <div class="numeroIndicadorAvance">{{estadoAvanceGrupo.numDesarrollando}}</div>
+      <div
+        class="indicadorAvance"
+        v-show="estadoAvanceGrupo.numDesarrollando > 0"
+      >
+        <div class="numeroIndicadorAvance">
+          {{ estadoAvanceGrupo.numDesarrollando }}
+        </div>
         <img
           src="@/assets/iconos/estudiante.png"
           alt="Estudiantes desarrollando"
@@ -104,7 +117,7 @@
         ) ||
         $store.state.usuario.permisos.includes('actividadesEstudiantiles-profe')
       "
-      >{{ estaActividad.creador.nombres }}</span
+      >{{ estaActividad.infoCreador.nombres }}</span
     >
     <br />
     <div id="zonaGuia" v-show="seleccionada" class="zona">
@@ -161,22 +174,24 @@
         @click.self="idParticipanteSeleccionado = null"
       >
         <icono-persona
-          :estaPersona="desarrollo.estudiante"
-          :key="desarrollo.estudiante.id"
+          :estaPersona="desarrollo.infoEstudiante"
+          :key="desarrollo.infoEstudiante.id"
           v-for="desarrollo of estaActividad.desarrollos"
           :seleccionado="
-            idEstudianteSeleccionado == desarrollo.estudiante.id ? true : false
+            idEstudianteSeleccionado == desarrollo.infoEstudiante.id
+              ? true
+              : false
           "
           @click.native="
-            idEstudianteSeleccionado = desarrollo.estudiante.id;
-            marcarComoLeido(desarrollo.estudiante.id);
+            idEstudianteSeleccionado = desarrollo.infoEstudiante.id;
+            marcarComoLeido(desarrollo.infoEstudiante.id);
           "
         >
           <template v-slot:alertas>
             <img
               v-if="
                 idsEstudiantesConNuevaRespuestaParaProfe.includes(
-                  desarrollo.estudiante.id
+                  desarrollo.infoEstudiante.id
                 )
               "
               class="alertas alertaNuevoMensaje"
@@ -213,8 +228,11 @@
       >
         <mi-participacion
           :idActividad="estaActividad.id"
-          @reloadDesarrollo="reloadDesarrollosActividad()"
+          :idGrupo="idGrupo"
+          :nuevoDesarrollo="true"
+          :idDesarrollo="'0'"
           :participacionEstudiante="true"
+          @hiceDesarrollo="addDesarrolloCreado"
         />
       </div>
       <div id="desarrollosEstudiantes">
@@ -222,13 +240,13 @@
           class="desarrollo"
           :key="desarrollo.id"
           v-for="desarrollo of estaActividad.desarrollos"
-          v-show="idEstudianteSeleccionado == desarrollo.estudiante.id"
+          v-show="idEstudianteSeleccionado == desarrollo.infoEstudiante.id"
         >
-          {{ desarrollo.estudiante.nombres }}
+          {{ desarrollo.infoEstudiante.nombres }}
           <participacion-estudiante
             :key="participacion.id"
             :indice="index"
-            :idEstudianteDesarrollo="desarrollo.estudiante.id"
+            :idEstudianteDesarrollo="desarrollo.infoEstudiante.id"
             v-for="(participacion, index) of desarrollo.participaciones"
             :estaParticipacion="participacion"
             @eliminandose="
@@ -242,17 +260,19 @@
             ¡Actividad completada!
           </div>
           <mi-participacion
+            :idGrupo="idGrupo"
             :idActividad="estaActividad.id"
-            :enDesarrollo="desarrollo.id"
+            :idDesarrollo="desarrollo.id"
             :participacionEstudiante="
-              desarrollo.estudiante.id == $store.state.usuario.id
+              desarrollo.infoEstudiante.id == $store.state.usuario.id
             "
+            :nuevoDesarrollo="false"
             v-if="
               desarrollo.estado != 'completado' &&
               (usuarioCreadorActividad ||
-                desarrollo.estudiante.id == $store.state.usuario.id)
+                desarrollo.infoEstudiante.id == $store.state.usuario.id)
             "
-            @reloadDesarrollo="reloadDesarrollo(desarrollo.id)"
+            @hiceRespuesta="addRespuestaCreada($event, desarrollo.id)"
           />
           <div v-if="usuarioCreadorActividad" id="toggleDesarrolloCompletado">
             <img
@@ -293,49 +313,17 @@ import gql from "graphql-tag";
 import MiParticipacion from "./MiParticipacion.vue";
 import ParticipacionEstudiante from "./ParticipacionEstudiante.vue";
 import IconoPersona from "../proyecto/IconoPersona.vue";
-import {
-  fragmentoDesarrollo,
-  fragmentoResponsables,
-} from "../utilidades/recursosGql";
 import Loading from "../utilidades/Loading.vue";
+import { fragmentoActividad } from "../utilidades/recursosGql";
 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
-const QUERY_DESARROLLOS_ACTIVIDAD = gql`
-  query($idActividad: ID!) {
-    actividadEstudiantil(idActividad: $idActividad) {
-      id
-      desarrollos {
-        ...fragDesarrollo
-      }
+const QUERY_ACTIVIDAD = gql`
+  query($idGrupo: ID!, $idActividad: ID!) {
+    actividadDeGrupoEstudiantil(idGrupo: $idGrupo, idActividad: $idActividad) {
+      ...fragActividad
     }
   }
-  ${fragmentoDesarrollo}
-`;
-
-const QUERY_DESARROLLO = gql`
-  query($idDesarrollo: ID!, $idActividad: ID!) {
-    desarrolloEnActividadEstudiantil(
-      idActividad: $idActividad
-      idDesarrollo: $idDesarrollo
-    ) {
-      id
-      estado
-      participaciones {
-        id
-        fechaUpload
-        comentario
-        archivo {
-          extension
-          nombre
-          accesible
-        }
-        autor {
-          ...fragResponsables
-        }
-      }
-    }
-  }
-  ${fragmentoResponsables}
+  ${fragmentoActividad}
 `;
 
 export default {
@@ -345,32 +333,47 @@ export default {
     IconoPersona,
     Loading,
   },
+  apollo: {
+    estaActividad: {
+      query: QUERY_ACTIVIDAD,
+      variables() {
+        return {
+          idGrupo: this.idGrupo,
+          idActividad: this.idActividad,
+        };
+      },
+      update({ actividadDeGrupoEstudiantil }) {
+        this.loadingActividad = false;
+        return actividadDeGrupoEstudiantil;
+      },
+      skip() {
+        return !this.idGrupo || !this.idActividad;
+      },
+      fetchPolicy:"cache-and-network",
+    },
+  },
   name: "Actividad",
   data() {
     return {
+      estaActividad: {
+        hayGuia: "",
+        infoCreador: {},
+        desarrollos: [],
+      },
+
       nombreEditandose: false,
       idEstudianteSeleccionado: this.$store.state.usuario.id,
       uploadingGuia: false,
       nuevoNombre: "",
       botonesNombre: false,
       enviandoNuevoNombre: false,
+
+      loadingActividad: true,
     };
   },
   props: {
-    estaActividad: {
-      type: Object,
-      default() {
-        return {
-          desarrollos: new Array(),
-          hayGuia: "",
-          creador: {
-            id: "0",
-            nombre: "?",
-          },
-        };
-      },
-    },
     seleccionada: Boolean,
+    idActividad: String,
     idGrupo: String,
   },
   methods: {
@@ -396,8 +399,9 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idActividad: ID!, $nuevoNombre: String!) {
+            mutation($idActividad: ID!, $nuevoNombre: String!, $idGrupo: ID!) {
               cambiarNombreActividadEstudiantil(
+                idGrupo: $idGrupo
                 idActividad: $idActividad
                 nuevoNombre: $nuevoNombre
               ) {
@@ -408,6 +412,7 @@ export default {
           `,
           variables: {
             idActividad,
+            idGrupo: this.idGrupo,
             nuevoNombre,
           },
         })
@@ -436,7 +441,7 @@ export default {
     },
     subirNuevaGuia() {
       this.uploadingGuia = true;
-      let dis = this;
+
       let inputGuia = this.$refs.inputNuevaGuia;
       var datos = new FormData();
       const nuevaGuia = inputGuia.files[0];
@@ -452,25 +457,10 @@ export default {
           Authorization: "Bearer " + this.$store.state.token,
         },
       })
-        .then(() => {
+        .then(({ data: { enlace } }) => {
           this.uploadingGuia = false;
-          dis.$apollo.query({
-            query: gql`
-              query($idGrupo: ID!, $idActividad: ID!) {
-                actividadDeGrupoEstudiantil(
-                  idGrupo: $idGrupo
-                  idActividad: $idActividad
-                ) {
-                  id
-                  hayGuia
-                }
-              }
-            `,
-            variables: {
-              idGrupo: dis.idGrupo,
-              idActividad: dis.estaActividad.id,
-            },
-          });
+          console.log(`Enlace: ${enlace}`);
+          this.estaActividad.hayGuia = enlace;
         })
         .catch((error) => {
           this.uploadingGuia = false;
@@ -488,7 +478,7 @@ export default {
         "/" +
         this.idGrupo +
         "/" +
-        this.estaActividad.creador.id +
+        this.estaActividad.infoCreador.id +
         "/" +
         this.estaActividad.id +
         "/";
@@ -505,63 +495,89 @@ export default {
           alert("Archivo no encontrado");
         });
     },
-    reloadDesarrollosActividad() {
-      let idActividad = this.estaActividad.id;
-      this.$apollo
-        .query({
-          query: QUERY_DESARROLLOS_ACTIVIDAD,
-          fetchPolicy: "network-only",
-          variables: {
-            idActividad,
-          },
-        })
-        .then(() => {})
-        .catch((error) => {
-          console.log(
-            `Error en query de actualizacion de mi desarrollo. E: ${error}`
-          );
-        });
-    },
-    reloadDesarrollo(idDesarrollo) {
-      this.$apollo
-        .query({
-          query: QUERY_DESARROLLO,
-          fetchPolicy: "network-only",
-          variables: {
-            idDesarrollo,
-            idActividad: this.estaActividad.id,
-          },
-        })
-        .then(() => {})
-        .catch((error) => {
-          console.log(
-            `Error en query de actualizacion de mi desarrollo. E: ${error}`
-          );
-        });
-    },
     eliminarParticipacion(idParticipacion, idDesarrollo) {
-      let dis = this;
+      var dis = this;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idParticipacion: ID!) {
+            mutation(
+              $idParticipacion: ID!
+              $idDesarrollo: ID!
+              $idActividad: ID!
+              $idGrupo: ID!
+            ) {
               eliminarParticipacionActividadEstudiantil(
                 idParticipacion: $idParticipacion
+                idDesarrollo: $idDesarrollo
+                idActividad: $idActividad
+                idGrupo: $idGrupo
               )
             }
           `,
           variables: {
             idParticipacion,
+            idDesarrollo,
+            idActividad: this.idActividad,
+            idGrupo: this.idGrupo,
+          },
+          update(
+            store,
+            { data: { eliminarParticipacionActividadEstudiantil } }
+          ) {
+            if (!eliminarParticipacionActividadEstudiantil) {
+              console.log(`No se eliminó`);
+              return;
+            }
+            console.log(`Retirando participacion`);
+            var cache = store.readQuery({
+              query: QUERY_ACTIVIDAD,
+              variables: {
+                idGrupo: dis.idGrupo,
+                idActividad: dis.idActividad,
+              },
+            });
+            var elDesarrollo = dis.estaActividad.desarrollos.find(
+              (d) => d.id == idDesarrollo
+            );
+
+            if (!elDesarrollo) {
+              console.log(`Ese desarrollo no estaba`);
+              return;
+            }
+            let indexP = elDesarrollo.participaciones.findIndex(
+              (p) => p.id == idParticipacion
+            );
+            if (indexP > -1) {
+              elDesarrollo.participaciones.splice(indexP, 1);
+              if (elDesarrollo.participaciones.length < 1) {
+                console.log(`Desarrollo quedó vacío`);
+                let indexD = dis.estaActividad.desarrollos.findIndex(
+                  (d) => d.id == idDesarrollo
+                );
+                if (indexD > -1) {
+                  dis.estaActividad.desarrollos.splice(indexD, 1);
+                }
+                {
+                  console.log(`Desarrollo no encontrado`);
+                }
+              }
+
+              store.writeQuery({
+                query: QUERY_ACTIVIDAD,
+                variables: {
+                  idGrupo: dis.idGrupo,
+                  idActividad: dis.idActividad,
+                },
+                data: cache,
+              });
+              console.log(`Participacion retirada`);
+            } else {
+              console.log(`Esa respuesta ni estaba`);
+              return;
+            }
           },
         })
-        .then(() => {
-          dis.$emit("participacionEliminada", {
-            idParticipacion,
-            idDesarrollo,
-            idActividad: this.estaActividad.id,
-          });
-          //this.reloadDesarrollo(idDesarrollo);
-        })
+        .then(() => {})
         .catch((error) => {
           console.log("errores: " + error);
         });
@@ -572,10 +588,17 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idDesarrollo: ID!, $nuevoEstado: String) {
+            mutation(
+              $idDesarrollo: ID!
+              $idActividad: ID!
+              $idGrupo: ID!
+              $nuevoEstado: String
+            ) {
               setEstadoDesarrolloActividadEstudiantil(
                 idDesarrollo: $idDesarrollo
                 nuevoEstado: $nuevoEstado
+                idActividad: $idActividad
+                idGrupo: $idGrupo
               ) {
                 id
                 estado
@@ -585,26 +608,28 @@ export default {
           variables: {
             idDesarrollo,
             nuevoEstado,
+            idActividad: this.idActividad,
+            idGrupo: this.idGrupo,
           },
         })
-        .then(() => {
-          this.$emit("posibleCambioEstudiantesIdle");
-        })
+        .then(() => {})
         .catch((error) => {
           console.log(`Error: ${error}`);
         });
     },
     marcarComoLeido(idEstudiante) {
-      if (this.$store.state.usuario.id == this.estaActividad.creador.id) {
+      if (this.$store.state.usuario.id == this.estaActividad.infoCreador.id) {
         let idDesarrollo = this.estaActividad.desarrollos.find(
-          (d) => d.estudiante.id == idEstudiante
+          (d) => d.infoEstudiante.id == idEstudiante
         ).id;
 
         this.$apollo.mutate({
           mutation: gql`
-            mutation($idDesarrollo: ID!) {
+            mutation($idDesarrollo: ID!, $idActividad: ID!, $idGrupo: ID!) {
               setLeidoPorProfeDesarrolloEstudiantil(
                 idDesarrollo: $idDesarrollo
+                idActividad: $idActividad
+                idGrupo: $idGrupo
                 nuevoLeidoPorProfe: true
               ) {
                 id
@@ -614,27 +639,94 @@ export default {
           `,
           variables: {
             idDesarrollo,
+            idActividad: this.idActividad,
+            idGrupo: this.idGrupo,
           },
         });
       }
     },
+    addDesarrolloCreado(nuevoDesarrollo) {
+      let store = this.$apollo.provider.defaultClient;
+      var cache = store.readQuery({
+        query: QUERY_ACTIVIDAD,
+        variables: {
+          idGrupo: this.idGrupo,
+          idActividad: this.idActividad,
+        },
+      });
+
+      if (
+        this.estaActividad.desarrollos.some((d) => d.id == nuevoDesarrollo.id)
+      ) {
+        console.log(`Ese desarrollo ya estaba`);
+      }
+
+      this.estaActividad.desarrollos.push(nuevoDesarrollo);
+
+      store.writeQuery({
+        query: QUERY_ACTIVIDAD,
+        variables: {
+          idGrupo: this.idGrupo,
+          idActividad: this.idActividad,
+        },
+        data: cache,
+      });
+      console.log(`Nuevo desarrollo añadido`);
+    },
+    addRespuestaCreada(nuevaRespuesta, idDesarrollo) {
+      let store = this.$apollo.provider.defaultClient;
+      var cache = store.readQuery({
+        query: QUERY_ACTIVIDAD,
+        variables: {
+          idGrupo: this.idGrupo,
+          idActividad: this.idActividad,
+        },
+      });
+      var elDesarrollo = this.estaActividad.desarrollos.find(
+        (d) => d.id == idDesarrollo
+      );
+
+      if (!elDesarrollo) {
+        console.log(`Ese desarrollo no estaba`);
+        return;
+      }
+
+      if (elDesarrollo.participaciones.some((p) => p.id == nuevaRespuesta.id)) {
+        console.log(`Una respuesta con ese id ya estaba`);
+        return;
+      }
+      elDesarrollo.participaciones.push(nuevaRespuesta);
+
+      store.writeQuery({
+        query: QUERY_ACTIVIDAD,
+        variables: {
+          idGrupo: this.idGrupo,
+          idActividad: this.idActividad,
+        },
+        data: cache,
+      });
+      console.log(`Nueva respuesta añadida`);
+    },
+    refresh() {
+      this.$apollo.queries.estaActividad.refetch();
+    },
   },
   computed: {
     usuarioCreadorActividad: function () {
-      return this.$store.state.usuario.id == this.estaActividad.creador.id;
+      return this.$store.state.usuario.id == this.estaActividad.infoCreador.id;
     },
     usuarioTieneDesarrollo: function () {
       if (this.estaActividad.desarrollos.length < 1) {
         return false;
       }
       return this.estaActividad.desarrollos.some(
-        (d) => d.estudiante.id == this.$store.state.usuario.id
+        (d) => d.infoEstudiante.id == this.$store.state.usuario.id
       );
     },
     usuarioCompletoActividad: function () {
       if (this.usuarioTieneDesarrollo) {
         let desarrolloUsuario = this.estaActividad.desarrollos.find(
-          (d) => d.estudiante.id == this.$store.state.usuario.id
+          (d) => d.infoEstudiante.id == this.$store.state.usuario.id
         );
         if (desarrolloUsuario.estado == "completado") {
           return true;
@@ -662,7 +754,7 @@ export default {
         (d) => d.leidoPorProfe == false
       );
       if (this.usuarioCreadorActividad) {
-        return desarrollosConNuevaRespuesta.map((d) => d.estudiante.id);
+        return desarrollosConNuevaRespuesta.map((d) => d.infoEstudiante.id);
       }
       return [];
     },
@@ -671,24 +763,33 @@ export default {
         ? true
         : false;
     },
-    estadoAvanceGrupo(){
-      let estadoAvanceGrupo={
-        numCompletados:0,
-        numDesarrollando:0
+    estadoAvanceGrupo() {
+      let estadoAvanceGrupo = {
+        numCompletados: 0,
+        numDesarrollando: 0,
+      };
+
+      if (!this.estaActividad.desarrollos) {
+        return estadoAvanceGrupo;
       }
 
-      if(!this.estaActividad.desarrollos){
-        return estadoAvanceGrupo
-      }
-
-      estadoAvanceGrupo.numCompletados=this.estaActividad.desarrollos.filter(d=>d.estado=="completado").length;
-      estadoAvanceGrupo.numDesarrollando=this.estaActividad.desarrollos.filter(d=>d.estado=="desarrollando").length;
+      estadoAvanceGrupo.numCompletados = this.estaActividad.desarrollos.filter(
+        (d) => d.estado == "completado"
+      ).length;
+      estadoAvanceGrupo.numDesarrollando = this.estaActividad.desarrollos.filter(
+        (d) => d.estado == "desarrollando"
+      ).length;
       return estadoAvanceGrupo;
-    }
+    },
   },
   watch: {
     usuarioLogeado: function () {
       this.idEstudianteSeleccionado = this.$store.state.usuario.id;
+    },
+    seleccionada(nuevo) {
+      if (nuevo) {
+        this.$apollo.queries.estaActividad.refetch();
+      }
     },
   },
 };
@@ -886,23 +987,23 @@ export default {
   cursor: pointer;
   margin-right: 5px;
 }
-.indicadorAvance{
-  position:relative;
+.indicadorAvance {
+  position: relative;
 }
-#imagenEstudianteDesarrollando{
+#imagenEstudianteDesarrollando {
   background-color: rgb(223, 221, 126);
   border: 1px solid rgb(129, 117, 8);
 }
-#imagenEstudianteCompletado{
+#imagenEstudianteCompletado {
   background-color: rgb(149, 224, 149);
-  border:1px solid green;
+  border: 1px solid green;
 }
-.numeroIndicadorAvance{
-  position:absolute;
+.numeroIndicadorAvance {
+  position: absolute;
   font-size: 15px;
-  color:black;
-  top:100%;
-  left:50%;
+  color: black;
+  top: 100%;
+  left: 50%;
   transform: translateX(-50%);
 }
 </style>

@@ -21,7 +21,9 @@ export default new Vuex.Store({
             permisos: [],
             id: null,
         },
-        token: null
+        token: null,
+
+        refreshActividadEspecifica:0,
 
     },
     mutations: {
@@ -49,6 +51,10 @@ export default new Vuex.Store({
 
                 state.token = null
             apolloClient.cache.data.clear();
+        },
+
+        refreshActividadEspecifica(state){
+            state.refreshActividadEspecifica++;
         }
     }
 });

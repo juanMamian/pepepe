@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 const esquemaParticipacion = new mongoose.Schema({
 
     fechaUpload: {
-        type: Date
+        type: Date,
+        default: Date.now,
     },
     archivo: {
         nombre: String,
@@ -65,7 +66,7 @@ const esquemaDesarrollo = new mongoose.Schema({
 });
 
 
-const esquemaActividad = new mongoose.Schema({
+export const esquemaActividad = new mongoose.Schema({
     nombre: {
         type: String,
         min: 3,
@@ -93,6 +94,12 @@ const esquemaActividad = new mongoose.Schema({
         enlace: {
             type: String
         }
+    },
+    infoCreador:{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String
     }
 });
 
@@ -115,11 +122,10 @@ const esquemaGrupoEstudiantil = new mongoose.Schema({
         type: [String],
         default: []
     },
-    actividades: {
-        type: [esquemaActividad],
-        required: true,
-        default: []
-    },
+    actividades:{
+        type:[esquemaActividad],
+        default:[]
+    }
 
 });
 

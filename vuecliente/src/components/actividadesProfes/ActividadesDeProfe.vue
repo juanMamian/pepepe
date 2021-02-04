@@ -12,7 +12,8 @@
       <actividad
         v-for="actividad of actividadesOrdenadas"
         :key="actividad.id"
-        :estaActividad="actividad"
+        :idActividad="actividad.id"
+        :idGrupo="actividad.idGrupo"
         @click.native="
           idActividadSeleccionada != actividad.id
             ? (idActividadSeleccionada = actividad.id)
@@ -24,7 +25,6 @@
             : (idActividadSeleccionada = actividad.id)
         "
         :seleccionada="idActividadSeleccionada == actividad.id"
-        @participacionEliminada="eliminarParticipacionDeCache"
       />
     </div>
   </div>
@@ -33,21 +33,18 @@
 <script>
 import gql from "graphql-tag";
 import IconoPersona from "../proyecto/IconoPersona";
-import {
-  fragmentoActividad,
-  fragmentoResponsables,
-  fragmentoParticipacion,
-} from "../utilidades/recursosGql";
+import {fragmentoResponsables} from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 import Loading from "../utilidades/Loading.vue";
 
 const QUERY_MIS_ACTIVIDADES_PROFE = gql`
   query($idProfe: ID!) {
     misActividadesEstudiantilesDeProfe(idProfe: $idProfe) {
-      ...fragActividad
+      id
+      nombre
+      idGrupo
     }
   }
-  ${fragmentoActividad}
 `;
 
 export default {
@@ -81,70 +78,7 @@ export default {
         this.ventanaDeshabilitada = false;
         return misActividadesEstudiantilesDeProfe;
       },
-      fetchPolicy:"cache-and-network",
-      subscribeToMore: {
-        document: gql`
-          subscription($idProfe: ID) {
-            nuevaRespuestaDesarrolloEstudiantil(idProfe: $idProfe) {
-              idDesarrollo
-              participacion {
-                ...fragParticipacion
-              }
-            }
-          }
-          ${fragmentoParticipacion}
-        `,
-        variables() {
-          return {
-            idProfe: this.$route.params.idProfe,
-          };
-        },
-        updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          console.log(`Subscription response de nueva respuesta`);
-          
-          let indexActividad = previousResult.misActividadesEstudiantilesDeProfe.findIndex(
-            (a) =>
-              a.desarrollos.some(
-                (d) =>
-                  d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
-              )
-          );
-          if (indexActividad > -1) {
-            console.log(
-              `En ${previousResult.misActividadesEstudiantilesDeProfe[indexActividad].nombre}`
-            );
-            let elDesarrollo = previousResult.misActividadesEstudiantilesDeProfe[
-              indexActividad
-            ].desarrollos.find(
-              (d) =>
-                d.id == data.nuevaRespuestaDesarrolloEstudiantil.idDesarrollo
-            );
-
-            if (!elDesarrollo) {
-              console.log(`El desarrollo no estaba en esta actividad`);
-            } else {
-              //Verificar si esta respuesta no ha llegado de algún otro lado.
-              if (
-                !elDesarrollo.participaciones.some(
-                  (p) =>
-                    p.id ==
-                    data.nuevaRespuestaDesarrolloEstudiantil.participacion.id
-                )
-              ) {
-                elDesarrollo.participaciones.push(
-                  data.nuevaRespuestaDesarrolloEstudiantil.participacion
-                );
-              }
-            }
-          } else {
-            console.log(
-              `Subscription response no encontró actividad que tuviera ese desarrollo`
-            );
-          }
-
-          return previousResult;
-        },
-      },
+      fetchPolicy: "cache-and-network",
     },
   },
   data() {
@@ -217,6 +151,52 @@ export default {
           idProfe: this.$route.params.idProfe,
         },
         data,
+      });
+    },
+    addDesarrolloActividad(nuevoDesarrollo, idActividad) {
+      console.log(
+        `En la actividad ${idActividad} se añadirá un desarrollo: ${JSON.stringify(
+          nuevoDesarrollo
+        )}`
+      );
+    },
+    addRespuestaActividad({ nuevaRespuesta, idDesarrollo }, idActividad) {
+      console.log(
+        `Adding nueva respuesta ${JSON.stringify(
+          nuevaRespuesta
+        )} al desarrollo ${idDesarrollo} de la actividad ${idActividad}`
+      );
+      let store = this.$apollo.provider.defaultClient;
+      var cache = store.readQuery({
+        query: QUERY_MIS_ACTIVIDADES_PROFE,
+        variables: { idProfe: this.$route.params.idProfe },
+      });
+      var lasActividades = cache.misActividadesEstudiantilesDeProfe;
+
+      var laActividad = lasActividades.find((a) => a.id == idActividad);
+      if (!laActividad) {
+        console.log(`No existía la actividad`);
+        return;
+      }
+
+      var elDesarrollo = laActividad.desarrollos.find(
+        (d) => d.id == idDesarrollo
+      );
+      if (!elDesarrollo) {
+        console.log(`No existía el desarollo`);
+        return;
+      }
+
+      if (
+        !elDesarrollo.participaciones.some((p) => p.id == nuevaRespuesta.id)
+      ) {
+        elDesarrollo.participaciones.push(nuevaRespuesta);
+        console.log(`Nueva respuesta insertada`);
+      }
+      store.writeQuery({
+        query: QUERY_MIS_ACTIVIDADES_PROFE,
+        variables: { idProfe: this.$route.params.idProfe },
+        data: cache,
       });
     },
   },

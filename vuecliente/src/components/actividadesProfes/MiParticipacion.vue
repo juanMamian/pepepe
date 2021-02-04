@@ -18,17 +18,18 @@
     </div>
 
     <textarea
-      v-model="comentario"
+      v-model="mensaje"
       :class="{
-        comentarioPropio: participacionEstudiante,
-        comentarioOtro: !participacionEstudiante,
+        mensajePropio: participacionEstudiante,
+        mensajeOtro: !participacionEstudiante,
       }"
-      name="comentario"
-      id="comentario"
-      ref="comentario"
+      name="mensaje"
+      id="mensaje"
+      ref="mensaje"
       cols="30"
       rows="10"
       v-show="cuadroAbierto"
+      placeholder="Escribe un mensaje"
     ></textarea>
     <div id="adjuntarArchivo" v-show="cuadroAbierto">
       <input
@@ -50,14 +51,18 @@
       v-show="enviandoRespuesta"
       :texto="'Enviando respuesta...'"
     /><br />
-    <div id="enviar" v-show="cuadroAbierto">
+    <div
+      id="enviar"
+      v-show="cuadroAbierto"
+      :class="{ deshabilitado: mensajeIlegal }"
+    >
       <img
         :class="{ deshabilitado: enviandoRespuesta }"
         src="@/assets/iconos/enviar.png"
         alt="Enviar respuesta"
         id="imgEnviar"
         title="Enviar"
-        @click="enviarRespuesta"
+        @click="evaluarAdjunto"
       />
     </div>
   </div>
@@ -66,8 +71,10 @@
 <script>
 import axios from "axios";
 import Loading from "../utilidades/Loading.vue";
+import gql from "graphql-tag";
+import { fragmentoDesarrollo } from '../utilidades/recursosGql';
 
-var charProhibidosComentario = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@*=-]/;
 
 export default {
   name: "MiParticipacion",
@@ -76,7 +83,7 @@ export default {
   },
   data() {
     return {
-      comentario: "",
+      mensaje: "",
       nombreArchivoSeleccionado: null,
       cuadroAbierto: false,
       enviandoRespuesta: false,
@@ -84,69 +91,135 @@ export default {
   },
   props: {
     idActividad: String,
+    idGrupo: String,
     participacionEstudiante: {
       type: Boolean,
       default: false,
     },
-    enDesarrollo: {
-      type: String,
-      default: "0",
-    },
+    idDesarrollo: String,
+    nuevoDesarrollo:Boolean,
   },
   methods: {
     abrirSelectorDeArchivos() {
       this.$refs.inputArchivoAdjunto.click();
     },
-    enviarRespuesta() {
-      this.enviandoRespuesta = true;
-      let dis = this;
-      let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
-      var datos = new FormData();
-      var comentario = this.comentario.trim();
-      comentario = comentario.replace(charProhibidosComentario, " ");
-
-      if (comentario == "") {
-        alert("¡Tu mensaje está vacío!");
-        this.enviandoRespuesta = false;
+    evaluarAdjunto() {
+      if (this.mensajeIlegal) {
         return;
       }
+      this.enviandoRespuesta = true;
+      let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
+      var datos = new FormData();
+
       if (!inputArchivoAdjunto.value) {
         console.log(`El input de archivo adjunto estaba vacio`);
+        let nuevaRespuesta = {
+              infoArchivo: {
+                idGoogleDrive: "",
+                googleDriveDirectLink: "",
+                extension: "",
+                nombre: "",
+              },
+              mensaje: this.mensaje,
+            };
+        this.enviarNuevaRespuesta(nuevaRespuesta);
       } else {
         const archivoAdjunto = inputArchivoAdjunto.files[0];
         const fileType = archivoAdjunto["type"];
         console.log(`subiendo un ${fileType}`);
         datos.append("archivoAdjunto", archivoAdjunto);
-      }
-      datos.append("comentario", comentario);
-      datos.append("idActividad", this.idActividad);
-      datos.append("idEstudiante", this.idEstudiante);
-      datos.append("idDesarrollo", this.enDesarrollo);
-      axios({
-        method: "post",
-        url: this.serverUrl + "/api/actividadesProfes/publicarRespuesta",
-        data: datos,
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: "Bearer " + this.$store.state.token,
-        },
-      })
-        .then(() => {
-          this.enviandoRespuesta = false;          
-          dis.$emit("reloadDesarrollo");
-          dis.comentario = "";
-          dis.$refs.inputArchivoAdjunto.value = null;
-          this.nombreArchivoSeleccionado = null;
+        var dis=this;
+        axios({
+          method: "post",
+          url:
+            this.serverUrl +
+            "/api/actividadesProfes/adjuntarArchivoParaRespuestaActividadEstudiantil",
+          data: datos,
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: "Bearer " + this.$store.state.token,
+          },
         })
-        .catch((error) => {
-          this.enviandoRespuesta = false;
-          console.log(`Errores: ${error}`);
-          if (error.response) {
-            if (error.response.data.msjUsuario) {
-              alert(error.response.data.msjUsuario);
+          .then(({ data: { infoArchivo } }) => {
+            //Se ha subido el archivo. Ahora publicar la respuesta
+
+            //Creando la nueva participacion
+
+            let nuevaRespuesta = {
+              infoArchivo: {
+                idGoogleDrive: infoArchivo.idGoogleDrive,
+                googleDriveDirectLink: infoArchivo.googleDriveDirectLink,
+                extension: infoArchivo.extensionDeArchivo,
+                nombre: infoArchivo.extensionDeArchivo,
+              },
+              mensaje: dis.mensaje,
+            };
+
+            this.enviarNuevaRespuesta(nuevaRespuesta);
+          })
+          .catch((error) => {
+            this.enviandoRespuesta = false;
+            console.log(`Errores: ${error}`);
+            if (error.response) {
+              if (error.response.data.msjUsuario) {
+                alert(error.response.data.msjUsuario);
+              }
+            }
+          });
+      }
+    },
+    enviarNuevaRespuesta(nuevaRespuesta) {
+      console.log(`Enviando nueva respuesta: ${JSON.stringify(nuevaRespuesta)}`);
+      this.$apollo
+        .mutate({
+          mutation: gql`
+          mutation($idGrupo:ID, $idActividad:ID, $idDesarrollo:ID, $nuevaRespuesta:InputNuevaRespuestaActividadEstudiantil, $nuevoDesarrollo: Boolean){
+            publicarRespuestaActividadEstudiantil(idGrupo: $idGrupo, idActividad: $idActividad, idDesarrollo:$idDesarrollo, nuevaRespuesta:$nuevaRespuesta, nuevoDesarrollo:$nuevoDesarrollo){
+                nuevaRespuesta{
+                  ...fragParticipacion
+                }
+                nuevoDesarrollo{
+                  ...fragDesarrollo
+                }
+              
             }
           }
+          ${fragmentoDesarrollo}
+        `,
+          variables: {
+            idGrupo: this.idGrupo,
+            idActividad: this.idActividad,
+            idDesarrollo: this.idDesarrollo,
+            nuevaRespuesta,
+            nuevoDesarrollo: this.nuevoDesarrollo,
+          },
+        })
+        .then(
+          ({
+            data: {
+              publicarRespuestaActividadEstudiantil: {
+                nuevaRespuesta,
+                nuevoDesarrollo,
+              },
+            },
+          }) => {
+            this.enviandoRespuesta = false;
+            console.log(`Respuesta publicada`);
+            if (nuevoDesarrollo) {
+              this.$emit("hiceDesarrollo", nuevoDesarrollo);
+            } else {
+              this.$emit("hiceRespuesta", nuevaRespuesta);
+            }
+            this.mensaje = "";
+            this.$refs.inputArchivoAdjunto.value = null;
+            this.nombreArchivoSeleccionado = null;
+          }
+        )
+        .catch((error) => {
+          this.enviandoRespuesta = false;
+          console.log(`Error publicando respuesta. E: ${JSON.stringify(error.errors)}`);
         });
+      //Parte vieja
     },
     actualizarNombreDeArchivo() {
       if (!this.$refs.inputArchivoAdjunto.value) {
@@ -160,11 +233,22 @@ export default {
       if (!this.cuadroAbierto) {
         this.cuadroAbierto = true;
       } else {
-        this.comentario = "";
+        this.mensaje = "";
         this.$refs.inputArchivoAdjunto.value = null;
         this.nombreArchivoSeleccionado = null;
         this.cuadroAbierto = false;
       }
+    },
+  },
+  computed: {
+    mensajeIlegal() {
+      if (this.mensaje.length < 1) {
+        return true;
+      }
+      if (charProhibidosMensaje.test(this.mensaje)) {
+        return true;
+      }
+      return false;
     },
   },
 };
@@ -181,10 +265,9 @@ export default {
   grid-template-rows: 10% 1fr 15px 60px;
   grid-template-areas:
     "........ titulo ..."
-    "adjuntar comentario ..."
+    "adjuntar mensaje ..."
     "........ loading ......"
-    "........ enviar ......."
-    ;
+    "........ enviar .......";
 }
 
 .participacionPropia {
@@ -211,29 +294,27 @@ export default {
   border-radius: 50%;
 }
 
-
 #iconoMensaje:hover {
   background-color: rgb(68, 129, 68);
 }
 
-#comentario {
+#mensaje {
   border-radius: 5px;
   resize: none;
   padding: 5px 7px;
-  grid-area: comentario;
+  grid-area: mensaje;
   display: block;
   font-size: 22px;
 }
 
-.comentarioPropio {
+.mensajePropio {
   background-color: salmon;
   border: 2px solid rgb(165, 52, 39);
 }
-.comentarioOtro {
+.mensajeOtro {
   background-color: rgb(114, 207, 250);
   border: 2px solid rgb(22, 57, 73);
 }
-
 
 #imgAdjuntar {
   margin-top: 5px;
@@ -261,7 +342,7 @@ export default {
   background-color: rgb(137, 108, 199);
 }
 
-#nombreArchivoSeleccionado{
+#nombreArchivoSeleccionado {
   grid-area: adjuntar;
   opacity: 0.8;
   color: gray;
@@ -269,7 +350,7 @@ export default {
   font-size: 12px;
   word-wrap: break-word;
 }
-#nombreArchivoSeleccionado:hover{
+#nombreArchivoSeleccionado:hover {
   opacity: 1;
 }
 
@@ -282,14 +363,14 @@ export default {
   grid-area: enviar;
 }
 
-@media only screen and (max-width:500px) {
+@media only screen and (max-width: 500px) {
   #iconoMensaje {
-  width: 20px;
-  height: 20px;
+    width: 20px;
+    height: 20px;
   }
-  #imgAdjuntar{
-    width:25px;
-    height:25px;
+  #imgAdjuntar {
+    width: 25px;
+    height: 25px;
   }
 }
 
@@ -297,7 +378,7 @@ export default {
   display: none;
 }
 
-.miParticipacion .loading{
+.miParticipacion .loading {
   grid-area: loading;
 }
 </style>
