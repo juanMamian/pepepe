@@ -10,7 +10,7 @@
       :idGrupo="laActividad.idGrupo"
       @participacionEliminada="eliminarParticipacionDeCache"
       v-if="actividadLoaded"
-      @click.native="seleccionarActividad=!seleccionarActividad"
+      @click.native.self="seleccionarActividad=!seleccionarActividad"
     />
   </div>
 </template>
