@@ -3,9 +3,9 @@
     <div class="infoRespuesta">{{ fechaFormateada }}</div>
     <img
       :src="
-        this.serverUrl + '/api/usuarios/fotografias/' + estaRespuesta.autor.id
+        this.serverUrl + '/api/usuarios/fotografias/' + estaRespuesta.infoAutor.id
       "
-      :alt="estaRespuesta.autor.nombre"
+      :alt="estaRespuesta.infoAutor.nombre"
       class="caritaAutor"
     />
     <div class="mensajeRespuesta">
@@ -47,7 +47,7 @@ export default {
       return fechaCorta;
     },
     usuarioAutor: function () {
-      if (this.$store.state.usuario.id == this.estaRespuesta.autor.id) {
+      if (this.usuario.id == this.estaRespuesta.infoAutor.id) {
         return true;
       }
       return false;

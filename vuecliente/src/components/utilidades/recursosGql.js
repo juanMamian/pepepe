@@ -89,15 +89,17 @@ export const fragmentoProyecto = gql`
 `;
 
 export const fragmentoRespuesta = gql`
-  fragment fragRespuesta on Respuesta{
+  fragment fragRespuesta on RespuestaConversacionForo{
     id
     fecha
     mensaje
-    autor {
-      ...fragResponsables
+    infoAutor{
+      id
+      nombres
+      apellidos
+      username
     }
   }
-  ${fragmentoResponsables}
 `;
 
 export const fragmentoConversacion = gql`
@@ -105,11 +107,7 @@ export const fragmentoConversacion = gql`
     id
     titulo    
     estado
-    acceso
-    creador {
-      ...fragResponsables
-    }
+    acceso   
     cantidadRespuestas
   }
-  ${fragmentoResponsables}
 `;

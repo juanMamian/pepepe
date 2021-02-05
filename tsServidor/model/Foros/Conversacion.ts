@@ -20,6 +20,12 @@ export const esquemaRespuestaConversacion = new mongoose.Schema({
     idAutor: {
         type: String,
         required: true,
+    },
+    infoAutor:{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String
     }
 
 });
@@ -39,7 +45,6 @@ export const esquemaConversacion = new mongoose.Schema({
     },
     idCreador: {
         type: String,
-        required: true,
     },
     acceso: {
         type: String,

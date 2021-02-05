@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 const Foro = require("./comunaBuild/model/Foros/Foro").ModeloForo;
-const Conversacion=require("./comunaBuild/model/Foros/Conversacion").ModeloConversacion;
-const esquemaRespuestaConversacion=require("./comunaBuild/model/Foros/Conversacion").esquemaConversacion;
+const Conversacion = require("./comunaBuild/model/Foros/Conversacion").ModeloConversacion;
+const esquemaRespuestaConversacion = require("./comunaBuild/model/Foros/Conversacion").esquemaRespuestaConversacion;
 const Usuario = require("./comunaBuild/model/Usuario").ModeloUsuario;
 const dotenv = require("dotenv");
-const Proyecto=require("./comunaBuild/model/Proyecto").ModeloProyecto;
-const Trabajo=require("./comunaBuild/model/Trabajo").ModeloTrabajo;
+const Proyecto = require("./comunaBuild/model/Proyecto").ModeloProyecto;
+const Trabajo = require("./comunaBuild/model/Trabajo").ModeloTrabajo;
 dotenv.config();
 
 mongoose.set('useFindAndModify', false);
@@ -33,60 +33,58 @@ const exportar = async function () {
     await iniciarMongoose();
 
 
-    try {        
+    try {
         var losForos = await Foro.find({}).exec();
-        console.log(`Los foros son: ${losForos.length}`);
+        //console.log(`Los foros son: ${losForos.length}`);
     }
     catch (error) {
         console.log(`error . e: ` + error);
     }
 
-    var todasIdsConversaciones=[];
+    var todasIdsConversaciones = [];
 
-    for (var u=0;u<losForos.length;u++){
-        let esteForo=losForos[u];
-        console.log(`+${esteForo.conversaciones.length}`);
-        todasIdsConversaciones=todasIdsConversaciones.concat(esteForo.conversaciones.map(c=>c._id));
+    for (var u = 0; u < losForos.length; u++) {
+        let esteForo = losForos[u];
+        //console.log(`+${esteForo.conversaciones.length}`);
+        todasIdsConversaciones = todasIdsConversaciones.concat(esteForo.conversaciones.map(c => c._id));
     }
-
     console.log(`Hay ${todasIdsConversaciones.length} conversaciones`);
-    
-    for(var i=0;i < todasIdsConversaciones.length;i++){   
-        
-        let idConversacion=todasIdsConversaciones[i];
-        console.log(`Conversacion ${i} - ${idConversacion}:`);     
-        
+    //console.log(`Ids: ${todasIdsConversaciones}`);
 
-        try{
-            let RespuestasConversacion = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
-            let respuestasEstaConversacion=await RespuestasConversacion.find({});
+    for (var i = 0; i < todasIdsConversaciones.length; i++) {
+        let idEstaConversacion = todasIdsConversaciones[i];
+        let RespuestasEstaConversacion = mongoose.model("respuestasDeConversacion" + idEstaConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idEstaConversacion);
 
-            for(var j=0;j<respuestasEstaConversacion.length;j++){
-                
-                let estaRespuesta=respuestasEstaConversacion[j];
-                
-                if(!estaRespuesta.infoAutor || !estaRespuesta.infoAutor.id){
-                    let autorEstaRespuesta=await Usuario.findById(respuestasEstaConversacion[j].toObject().idAutor).exec();
-                    console.log(`   idAutor: ${autorEstaRespuesta._id}`);
-                    estaRespuesta.infoAutor={
-                        id: autorEstaRespuesta._id,
-                        nombres: autorEstaRespuesta.nombres,
-                        apellidos: autorEstaRespuesta.apellidos,
-                        username:autorEstaRespuesta.username,
+        let cantRespuestas = await RespuestasEstaConversacion.countDocuments().exec();
+        console.log(`Hay ${cantRespuestas} respuestas`);
+
+        let todasRespuestas = await RespuestasEstaConversacion.find({}).exec();
+
+        for (var j = 0; j < todasRespuestas.length; j++) {
+            let estaRespuesta = todasRespuestas[j];
+            if (!estaRespuesta.infoAutor || !estaRespuesta.infoAutor.id) {
+                console.log(`   Introduciendo info de Autor: ${estaRespuesta.idAutor}`);
+                try {
+                    let elAutor = await Usuario.findById(estaRespuesta.idAutor).exec();
+                    let nuevoInfoAutor = {
+                        id: elAutor._id,
+                        nombres: elAutor.nombres,
+                        apellidos: elAutor.apellidos,
+                        username: elAutor.username
                     }
-                    console.log(`Insertando info autor`);
+
+                    estaRespuesta.infoAutor = nuevoInfoAutor
                     await estaRespuesta.save();
                 }
-                else{
-                    console.log(`Tenía infoAutor: ${JSON.stringify(estaRespuesta.infoAutor)}`);
+                catch (error) {
+                    console.log(`error . e: ` + error);
+
                 }
             }
-
-        }
-        catch(error){
-            console.log(`error migrando respuestas. e: `+error);            
         }
     }
+
+
     console.log(`FINa`);
 }
 

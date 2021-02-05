@@ -24,6 +24,12 @@ exports.esquemaRespuestaConversacion = new mongoose_1.default.Schema({
     idAutor: {
         type: String,
         required: true,
+    },
+    infoAutor: {
+        id: String,
+        nombres: String,
+        apellidos: String,
+        username: String
     }
 });
 exports.esquemaConversacion = new mongoose_1.default.Schema({
@@ -40,7 +46,6 @@ exports.esquemaConversacion = new mongoose_1.default.Schema({
     },
     idCreador: {
         type: String,
-        required: true,
     },
     acceso: {
         type: String,

@@ -20,18 +20,19 @@ export const typeDefs = gql`
         primeraRespuesta:String
     }
 
-    type Respuesta{
+    type RespuestaConversacionForo{
         id: ID
         fecha:Date,
         archivo:InfoArchivo,
         mensaje:String,
-        autor: PublicUsuario
+        autor: PublicUsuario,
+        infoAutor:PublicUsuario,
     }
 
     type InfoRespuestasPaginasConversacion{
         numPaginas: Int,
         pagina:Int,
-        respuestas: [Respuesta]
+        respuestas: [RespuestaConversacionForo]
     }
 
     type InfoConversacionesPaginaForo{
@@ -52,7 +53,7 @@ export const typeDefs = gql`
         creador: PublicUsuario,
         acceso:String,
         cantidadRespuestas:Int,
-        infoUltimaRespuesta:InfoUltimaRespuesta,
+        infoUltimaRespuesta:InfoUltimaRespuesta,        
     }
   
     type Foro{
@@ -73,7 +74,7 @@ export const typeDefs = gql`
     extend type Mutation{
         iniciarConversacionConPrimerMensajeForo(idForo: ID!, input: InputIniciarConversacion):Conversacion,
         eliminarRespuesta(idRespuesta:ID!, idConversacion:ID!):Boolean,
-        postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta):Respuesta
+        postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta):RespuestaConversacionForo
     }
 
 `;
@@ -234,10 +235,20 @@ export const resolvers = {
                 throw new ApolloError("Mensaje ilegal");
             }
 
+
+            let infoAutor={
+                id:elUsuario._id,
+                nombres:elUsuario.nombres,
+                apellidos: elUsuario.apellidos,
+                username:elUsuario.username,
+            }
+
             let respuesta = {
                 mensaje: primeraRespuesta,
-                idAutor: credencialesUsuario.id
+                idAutor: credencialesUsuario.id,
+                infoAutor,
             }
+
 
             let nuevaConversacion = elForo.conversaciones.create({
                 titulo,
@@ -374,6 +385,13 @@ export const resolvers = {
             nuevaRespuesta.mensaje = mensaje;
             if (!nuevaRespuesta.idAutor) {
                 nuevaRespuesta.idAutor = credencialesUsuario.id;
+                let infoAutor={
+                    id:elUsuario._id,
+                    nombres:elUsuario.nombres,
+                    apellidos: elUsuario.apellidos,
+                    username:elUsuario.username,
+                }
+                nuevaRespuesta.infoAutor=infoAutor;
             }
 
             console.log(`En la conversación ${laConversacion.titulo}`);
@@ -459,7 +477,7 @@ export const resolvers = {
             return usuarioCreador;
         },
     },
-    Respuesta: {
+    RespuestaConversacionForo: {
         autor: async function (parent: any, _: any, __: any) {
             if (!parent.idAutor) {
                 return [];

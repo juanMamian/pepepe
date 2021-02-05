@@ -72,7 +72,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         username:String
     }
     type PublicUsuario{
-        id: ID!,
+        id: ID,
         username:String, 
         nombres:String,
         apellidos:String,
