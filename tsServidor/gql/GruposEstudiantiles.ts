@@ -196,7 +196,6 @@ export const resolvers = {
     },
     Query: {
         desarrolloEnActividadEstudiantil: async function (_: any, { idDesarrollo, idActividad }: any, contexto: contextoQuery) {
-            console.log(`|||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de desarrollo con id ${idDesarrollo} en la actividad con id ${idActividad}`);
 
             try {
@@ -267,7 +266,6 @@ export const resolvers = {
 
         },
         grupoEstudiantil: async function (_: any, { idGrupo }: any, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||`);
             console.log(`Peticion de un grupo estudiantil con id ${idGrupo}`);
             try {
                 var elGrupoEstudiantil: any = await GrupoEstudiantil.findById(idGrupo, "_id nombre estudiantes").exec();
@@ -284,7 +282,6 @@ export const resolvers = {
             return elGrupoEstudiantil;
         },
         async misActividadesCreadasGrupoEstudiantil(_: any, { idGrupo, pagina }, contexto: contextoQuery) {
-            console.log(`|||||||||||||||||||||1`);
             console.log(`Petición de actividades creadas por el usuario`);
             let credencialesUsuario = contexto.usuario;
 
@@ -315,7 +312,6 @@ export const resolvers = {
             return { hayMas, actividades: actividadesCreadasUsuario }
         },
         async todasActividadesGrupoEstudiantil(_: any, { idGrupo, pagina }, contexto: contextoQuery) {
-            console.log(`|||||||||||||||||||||1`);
             console.log(`Petición de todas actividades de grupo`);
 
             try {
@@ -360,7 +356,6 @@ export const resolvers = {
             return gruposEstudiantiles;
         },
         actividadDeGrupoEstudiantil: async function (_: any, { idGrupo, idActividad }, contexto: contextoQuery) {
-            console.log(`|||||||||||||||||||`);
             try {
                 const ColeccionActividades = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
                 var laActividad: any = await ColeccionActividades.findById(idActividad).exec();
@@ -401,7 +396,6 @@ export const resolvers = {
             return laActividad;
         },
         actividadesEstudiantilesDeProfe: async function (_: any, { idProfe }: any, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe}`);
             try {
                 var losGrupos: any = await GrupoEstudiantil.find({ "actividades.idCreador": idProfe }).exec();
@@ -415,7 +409,6 @@ export const resolvers = {
             return actividadesDelProfe;
         },
         misActividadesEstudiantilesDeProfe: async function (_: any, { idProfe }: any, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||||||||||||||||||||||`);
             console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe} para el usuario`);
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario || !credencialesUsuario.id) {
@@ -668,7 +661,6 @@ export const resolvers = {
 
         },
         eliminarActividadDeGrupoEstudiantil: async function (_: any, { idActividad, idGrupo }: any, contexto: contextoQuery) {
-            console.log(`|||||||||||||||||||||||||||`);
             console.log(`peticion de eliminar una actividad con id ${idActividad} de un proyecto con id ${idGrupo}`);
 
             try {
@@ -742,7 +734,6 @@ export const resolvers = {
             return resultado;
         },
         eliminarParticipacionActividadEstudiantil: async function (_: any, { idParticipacion, idDesarrollo, idActividad, idGrupo }: any, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||`);
             console.log(`Solicitud de eliminar participacion con id ${idParticipacion}`);
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario) {
@@ -788,7 +779,6 @@ export const resolvers = {
             return true;
         },
         async publicarRespuestaActividadEstudiantil(_: any, { idGrupo, idActividad, idDesarrollo, nuevaRespuesta, nuevoDesarrollo }: any, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||||`);
             console.log(`Solicitud de publicar respuesta ${JSON.stringify(nuevaRespuesta)}`);
             let credencialesUsuario = contexto.usuario;
             let permisosEspeciales = ["superadministrador", "actividadesEstudiantiles-administrador", "actividadesEstudiantiles-guia", "actividadesEstudiantiles-profe"];

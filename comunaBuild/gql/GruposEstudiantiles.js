@@ -185,7 +185,6 @@ exports.resolvers = {
     Query: {
         desarrolloEnActividadEstudiantil: function (_, { idDesarrollo, idActividad }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||||||||||||||`);
                 console.log(`Solicitud de desarrollo con id ${idDesarrollo} en la actividad con id ${idActividad}`);
                 try {
                     var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ "actividades._id": mongoose_1.default.Types.ObjectId(idActividad) }).exec();
@@ -246,7 +245,6 @@ exports.resolvers = {
         },
         grupoEstudiantil: function (_, { idGrupo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||||||||||||`);
                 console.log(`Peticion de un grupo estudiantil con id ${idGrupo}`);
                 try {
                     var elGrupoEstudiantil = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo, "_id nombre estudiantes").exec();
@@ -265,7 +263,6 @@ exports.resolvers = {
         },
         misActividadesCreadasGrupoEstudiantil(_, { idGrupo, pagina }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||||1`);
                 console.log(`Petición de actividades creadas por el usuario`);
                 let credencialesUsuario = contexto.usuario;
                 try {
@@ -296,7 +293,6 @@ exports.resolvers = {
         },
         todasActividadesGrupoEstudiantil(_, { idGrupo, pagina }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||||1`);
                 console.log(`Petición de todas actividades de grupo`);
                 try {
                     var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
@@ -341,7 +337,6 @@ exports.resolvers = {
         },
         actividadDeGrupoEstudiantil: function (_, { idGrupo, idActividad }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||`);
                 try {
                     const ColeccionActividades = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                     var laActividad = yield ColeccionActividades.findById(idActividad).exec();
@@ -386,7 +381,6 @@ exports.resolvers = {
         },
         actividadesEstudiantilesDeProfe: function (_, { idProfe }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||||||||||||||||||||||||||||||||`);
                 console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe}`);
                 try {
                     var losGrupos = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.find({ "actividades.idCreador": idProfe }).exec();
@@ -402,7 +396,6 @@ exports.resolvers = {
         },
         misActividadesEstudiantilesDeProfe: function (_, { idProfe }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||||||||||||||||||||||||||||||||`);
                 console.log(`Solicitud de actividades estudiantiles del profe con id ${idProfe} para el usuario`);
                 let credencialesUsuario = contexto.usuario;
                 if (!credencialesUsuario || !credencialesUsuario.id) {
@@ -628,7 +621,6 @@ exports.resolvers = {
         },
         eliminarActividadDeGrupoEstudiantil: function (_, { idActividad, idGrupo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||||||||||`);
                 console.log(`peticion de eliminar una actividad con id ${idActividad} de un proyecto con id ${idGrupo}`);
                 try {
                     var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
@@ -695,7 +687,6 @@ exports.resolvers = {
         },
         eliminarParticipacionActividadEstudiantil: function (_, { idParticipacion, idDesarrollo, idActividad, idGrupo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||||||||||||`);
                 console.log(`Solicitud de eliminar participacion con id ${idParticipacion}`);
                 let credencialesUsuario = contexto.usuario;
                 if (!credencialesUsuario) {
@@ -735,7 +726,6 @@ exports.resolvers = {
         },
         publicarRespuestaActividadEstudiantil(_, { idGrupo, idActividad, idDesarrollo, nuevaRespuesta, nuevoDesarrollo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||||||||||||||`);
                 console.log(`Solicitud de publicar respuesta ${JSON.stringify(nuevaRespuesta)}`);
                 let credencialesUsuario = contexto.usuario;
                 let permisosEspeciales = ["superadministrador", "actividadesEstudiantiles-administrador", "actividadesEstudiantiles-guia", "actividadesEstudiantiles-profe"];
