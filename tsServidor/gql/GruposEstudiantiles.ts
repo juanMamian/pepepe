@@ -243,7 +243,6 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            console.log(`Buscando el grupo`);
 
             try {
                 var elGrupo: any = await GrupoEstudiantil.findOne({ "actividades._id": mongoose.Types.ObjectId(idActividad) }).exec();
@@ -256,10 +255,8 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            console.log(`Encontrado grupo: ${elGrupo.nombre}`);
             let laActividad = elGrupo.actividades.id(idActividad);
 
-            console.log(`Encontrada actividad: ${laActividad.nombre}`);
 
             let elDesarrollo = laActividad.desarrollos.find(d => d.idEstudiante == idEstudiante);
 
@@ -364,7 +361,6 @@ export const resolvers = {
         },
         actividadDeGrupoEstudiantil: async function (_: any, { idGrupo, idActividad }, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||`);
-            console.log(`Solicitud de una actividad sola con id ${idActividad} de un grupo estudiantil con id ${idGrupo}`);
             try {
                 const ColeccionActividades = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
                 var laActividad: any = await ColeccionActividades.findById(idActividad).exec();
@@ -379,7 +375,6 @@ export const resolvers = {
         },
         actividadEstudiantil: async function (_: any, { idActividad }, contexto: contextoQuery) {
             //Get todos los ids de grupos.
-            console.log(`Solicitud de actividad con id ${idActividad}`);
             try {
                 var losGrupos: any = await GrupoEstudiantil.find({}, "_id nombre").exec();
 
@@ -389,14 +384,11 @@ export const resolvers = {
             }
 
             for (var i = 0; i < losGrupos.length; i++) {
-                console.log(`Grupo ${i}`);
                 let idGrupo = losGrupos[i]._id;                
                 try {
                     let ColeccionActividades = await mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
                     var laActividad: any = await ColeccionActividades.findById(idActividad).exec();
-                    console.log(`Resultado de actividad: ${laActividad}`);
                     if (laActividad) {
-                        console.log(`Encontrada en ${losGrupos[i].nombre}`);
                         laActividad.idGrupo = idGrupo
                         break;
                     }
@@ -406,7 +398,6 @@ export const resolvers = {
                 }
             }
 
-            console.log(`Enviando ${laActividad.nombre}`);
             return laActividad;
         },
         actividadesEstudiantilesDeProfe: async function (_: any, { idProfe }: any, contexto: contextoQuery) {
@@ -418,7 +409,6 @@ export const resolvers = {
                 console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            console.log(`Encontrados grupos: ${losGrupos}`);
             let actividadesDelProfe = losGrupos.reduce((acc, g) => { return acc.concat(g.actividades) }, []).filter(a => a.idCreador == idProfe);
 
             console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${actividadesDelProfe}`);
@@ -441,7 +431,6 @@ export const resolvers = {
                     throw "grupo no encontrado"
                 }
                 if (losGrupos.length < 1) {
-                    console.log(`Usuario no hacia parte de ningún grupo`);
                     return [];
                 }
             } catch (error) {
@@ -456,7 +445,6 @@ export const resolvers = {
                 var ColeccionActividadesEsteGrupo = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
                 try {
                     let actsProfe: any = await ColeccionActividadesEsteGrupo.find({ idCreador: idProfe }).sort({ fechaUpload: -1 }).exec();
-                    console.log(`Encontradas ${actsProfe.length} en ${losGrupos[i].nombre}`);
                     for (var j = 0; j < actsProfe.length; j++) {
                         actsProfe[j].idGrupo = idGrupo;
                     }
@@ -467,16 +455,11 @@ export const resolvers = {
                 }
             }
 
-
-            console.log(`Enviando ${actividadesDelProfe.length} actividades del profe`);
-
             return actividadesDelProfe;
         },
     },
     Mutation: {
         setLeidoPorProfeDesarrolloEstudiantil: async function (_: any, { idDesarrollo, idActividad, idGrupo, nuevoLeidoPorProfe }: any, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||||||`);
-            console.log(`Solicitud de set leidoPorProfe en ${nuevoLeidoPorProfe} en desarrollo con id ${idDesarrollo}`);
             try {
                 var ColeccionActividadesEsteGrupo = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
 
@@ -496,13 +479,10 @@ export const resolvers = {
 
         },
         setEstadoDesarrolloActividadEstudiantil: async function (_: any, { idDesarrollo, idActividad, idGrupo, nuevoEstado }: any, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||||||`);
-            console.log(`Solicitud de set estado ${nuevoEstado} en desarrollo con id ${idDesarrollo}`);
             try {
                 var ColeccionActividadesEsteGrupo = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
 
                 let laActividad: any = await ColeccionActividadesEsteGrupo.findById(idActividad).exec();
-                console.log(`Actividad: ${laActividad.nombre}`);
                 var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                 elDesarrollo.estado = nuevoEstado;
                 await laActividad.save();
@@ -573,7 +553,6 @@ export const resolvers = {
                 console.log("Error guardando datos en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            console.log(`Proyecto guardado`);
             return elGrupoEstudiantil
         },
         removeEstudianteGrupoEstudiantil: async function (_: any, { idGrupo, idEstudiante }: any, contexto: contextoQuery) {
@@ -697,7 +676,6 @@ export const resolvers = {
                 if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
-                console.log(`Grupo encontrado`);
                 var laActividad = elGrupo.actividades.id(idActividad);
             }
             catch (error) {
@@ -722,15 +700,13 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            console.log(`eliminado`);
 
             //Eliminando carpeta
             
             return true;
         },
         async cambiarNombreActividadEstudiantil(_: any, { idActividad, nuevoNombre, idGrupo }, contexto: contextoQuery) {
-            console.log(`|||||||||||||||||||||||||||`);
-            console.log(`cambiando el nombre de la actividad con id ${idActividad}`);
+        
             var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
@@ -763,7 +739,6 @@ export const resolvers = {
                 console.log("Error guardando el nombre modificado en la base de datos. E: " + error);
                 throw new ApolloError("Error cambiando el nombre de la actividad");
             }
-            console.log(`Nombre cambiado`);
             return resultado;
         },
         eliminarParticipacionActividadEstudiantil: async function (_: any, { idParticipacion, idDesarrollo, idActividad, idGrupo }: any, contexto: contextoQuery) {
@@ -788,7 +763,6 @@ export const resolvers = {
 
             try {
                 var laActividad: any = await ColeccionActividadesEsteGrupo.findById(idActividad).exec();
-                console.log(`Actividad: ${laActividad.nombre}`);
                 let elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                 let lasParticipaciones = elDesarrollo.participaciones;
 
@@ -796,7 +770,6 @@ export const resolvers = {
 
                 if (elDesarrollo.participaciones.length < 1) {
                     let idDesarrollo = elDesarrollo.id
-                    console.log(`Este desarrollo con id ${idDesarrollo} se quedó sin participaciones. Eliminando`);
                     laActividad.desarrollos.pull({ _id: idDesarrollo });
                 }
 
@@ -812,7 +785,6 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            console.log(`Participacion eliminada`);
             return true;
         },
         async publicarRespuestaActividadEstudiantil(_: any, { idGrupo, idActividad, idDesarrollo, nuevaRespuesta, nuevoDesarrollo }: any, contexto: contextoQuery) {
@@ -842,7 +814,6 @@ export const resolvers = {
             try {
                 var laActividad: any = await ColeccionActividadesEsteGrupo.findById(idActividad).exec();
                 if (!laActividad) throw "Actividad no encontrada";
-                console.log(`En ${laActividad.nombre}`);
                 if (nuevoDesarrollo) {
                     var desarrolloCreado = laActividad.desarrollos.create({
                         idEstudiante: elUsuario._id,
@@ -854,13 +825,10 @@ export const resolvers = {
                             username: elUsuario.username,
                         }
                     })
-                    console.log(`Nuevo desarrollo creado`);
                     laActividad.desarrollos.push(desarrolloCreado);
                     idDesarrollo = desarrolloCreado._id;
                     elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
-                } else {
-                    console.log(`Desarrollo ya existía`);
-                }
+                } 
                 var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
             } catch (error) {
                 console.log('Error buscando actividad y desarrollo. E: ' + error);
@@ -894,7 +862,6 @@ export const resolvers = {
             var laRespuesta = elDesarrollo.participaciones.create(nuevaRespuesta);
 
             if (elDesarrollo.idEstudiante == laRespuesta.idAutor) {
-                console.log(`Modificado por el propio estudiante`);
                 elDesarrollo.leidoPorProfe = false;
             }
 
@@ -906,8 +873,6 @@ export const resolvers = {
                 console.log(`Error guardando la actividad: E: ${error}`);
                 throw new ApolloError('Error conectando con la base de datos');
             }
-
-            console.log(`Respuesta publicada`);
 
             var notificacion = new Notificacion({
                 texto: "Nueva respuesta",
@@ -928,7 +893,6 @@ export const resolvers = {
                 try {
                     await Usuario.findByIdAndUpdate(elDesarrollo.idEstudiante, { $push: { notificaciones: notificacion } }).exec();
                     pubsub.publish(NUEVA_NOTIFICACION_PERSONAL, { idNotificado: elDesarrollo.idEstudiante, nuevaNotificacion: notificacion });
-                    console.log(`Crendo notificacion personal para ${elDesarrollo.idEstudiante}`);
                 } catch (error) {
                     console.log(`Error creando una notificacion con para ${elDesarrollo.idEstudiante}`);
                 }
@@ -939,7 +903,6 @@ export const resolvers = {
                 try {
                     await Usuario.findByIdAndUpdate(laActividad.idCreador, { $push: { notificaciones: notificacion } }).exec();
                     pubsub.publish(NUEVA_NOTIFICACION_PERSONAL, { idNotificado: laActividad.idCreador, nuevaNotificacion: notificacion });
-                    console.log(`Crendo notificacion personal para ${laActividad.idCreador}`);
                 } catch (error) {
                     console.log(`Error creando una notificacion para ${laActividad.idCreador}`);
                 }
@@ -970,8 +933,6 @@ export const resolvers = {
             if (nuevoDesarrollo) {
                 ResultadoPublicar.nuevoDesarrollo = elDesarrollo;
             }
-
-            console.log(`Pubsub publicados`);
 
             return ResultadoPublicar
         }

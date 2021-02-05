@@ -226,7 +226,6 @@ exports.resolvers = {
                     console.log(`Error buscando al usuario con id ${idEstudiante} en la base de datos. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Buscando el grupo`);
                 try {
                     var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ "actividades._id": mongoose_1.default.Types.ObjectId(idActividad) }).exec();
                     if (!elGrupo) {
@@ -237,9 +236,7 @@ exports.resolvers = {
                     console.log(`Error buscando la actividad en los grupos estudiantiles. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Encontrado grupo: ${elGrupo.nombre}`);
                 let laActividad = elGrupo.actividades.id(idActividad);
-                console.log(`Encontrada actividad: ${laActividad.nombre}`);
                 let elDesarrollo = laActividad.desarrollos.find(d => d.idEstudiante == idEstudiante);
                 if (!elDesarrollo)
                     elDesarrollo = [];
@@ -345,7 +342,6 @@ exports.resolvers = {
         actividadDeGrupoEstudiantil: function (_, { idGrupo, idActividad }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`|||||||||||||||||||`);
-                console.log(`Solicitud de una actividad sola con id ${idActividad} de un grupo estudiantil con id ${idGrupo}`);
                 try {
                     const ColeccionActividades = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                     var laActividad = yield ColeccionActividades.findById(idActividad).exec();
@@ -363,7 +359,6 @@ exports.resolvers = {
         actividadEstudiantil: function (_, { idActividad }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 //Get todos los ids de grupos.
-                console.log(`Solicitud de actividad con id ${idActividad}`);
                 try {
                     var losGrupos = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.find({}, "_id nombre").exec();
                 }
@@ -372,14 +367,11 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
                 }
                 for (var i = 0; i < losGrupos.length; i++) {
-                    console.log(`Grupo ${i}`);
                     let idGrupo = losGrupos[i]._id;
                     try {
                         let ColeccionActividades = yield mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                         var laActividad = yield ColeccionActividades.findById(idActividad).exec();
-                        console.log(`Resultado de actividad: ${laActividad}`);
                         if (laActividad) {
-                            console.log(`Encontrada en ${losGrupos[i].nombre}`);
                             laActividad.idGrupo = idGrupo;
                             break;
                         }
@@ -389,7 +381,6 @@ exports.resolvers = {
                         throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
                     }
                 }
-                console.log(`Enviando ${laActividad.nombre}`);
                 return laActividad;
             });
         },
@@ -404,7 +395,6 @@ exports.resolvers = {
                     console.log(`Error fetching grupos en la base de datos: E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Encontrados grupos: ${losGrupos}`);
                 let actividadesDelProfe = losGrupos.reduce((acc, g) => { return acc.concat(g.actividades); }, []).filter(a => a.idCreador == idProfe);
                 console.log(`Enviando ${actividadesDelProfe.length} actividades del profe: ${actividadesDelProfe}`);
                 return actividadesDelProfe;
@@ -426,7 +416,6 @@ exports.resolvers = {
                         throw "grupo no encontrado";
                     }
                     if (losGrupos.length < 1) {
-                        console.log(`Usuario no hacia parte de ningún grupo`);
                         return [];
                     }
                 }
@@ -440,7 +429,6 @@ exports.resolvers = {
                     var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                     try {
                         let actsProfe = yield ColeccionActividadesEsteGrupo.find({ idCreador: idProfe }).sort({ fechaUpload: -1 }).exec();
-                        console.log(`Encontradas ${actsProfe.length} en ${losGrupos[i].nombre}`);
                         for (var j = 0; j < actsProfe.length; j++) {
                             actsProfe[j].idGrupo = idGrupo;
                         }
@@ -450,7 +438,6 @@ exports.resolvers = {
                         console.log(`Error armando el array de actividades del profe en el grupo ${idGrupo}`);
                     }
                 }
-                console.log(`Enviando ${actividadesDelProfe.length} actividades del profe`);
                 return actividadesDelProfe;
             });
         },
@@ -458,8 +445,6 @@ exports.resolvers = {
     Mutation: {
         setLeidoPorProfeDesarrolloEstudiantil: function (_, { idDesarrollo, idActividad, idGrupo, nuevoLeidoPorProfe }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||||||||||||||||`);
-                console.log(`Solicitud de set leidoPorProfe en ${nuevoLeidoPorProfe} en desarrollo con id ${idDesarrollo}`);
                 try {
                     var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                     let laActividad = yield ColeccionActividadesEsteGrupo.findById(idActividad).exec();
@@ -476,12 +461,9 @@ exports.resolvers = {
         },
         setEstadoDesarrolloActividadEstudiantil: function (_, { idDesarrollo, idActividad, idGrupo, nuevoEstado }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||||||||||||||||`);
-                console.log(`Solicitud de set estado ${nuevoEstado} en desarrollo con id ${idDesarrollo}`);
                 try {
                     var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                     let laActividad = yield ColeccionActividadesEsteGrupo.findById(idActividad).exec();
-                    console.log(`Actividad: ${laActividad.nombre}`);
                     var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                     elDesarrollo.estado = nuevoEstado;
                     yield laActividad.save();
@@ -541,7 +523,6 @@ exports.resolvers = {
                     console.log("Error guardando datos en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Proyecto guardado`);
                 return elGrupoEstudiantil;
             });
         },
@@ -654,7 +635,6 @@ exports.resolvers = {
                     if (!elGrupo) {
                         throw "grupo no encontrado";
                     }
-                    console.log(`Grupo encontrado`);
                     var laActividad = elGrupo.actividades.id(idActividad);
                 }
                 catch (error) {
@@ -675,15 +655,12 @@ exports.resolvers = {
                     console.log(`Error eliminando la actividad. E: ` + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`eliminado`);
                 //Eliminando carpeta
                 return true;
             });
         },
         cambiarNombreActividadEstudiantil(_, { idActividad, nuevoNombre, idGrupo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||||||||||`);
-                console.log(`cambiando el nombre de la actividad con id ${idActividad}`);
                 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
                 nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
                 if (charProhibidosNombre.test(nuevoNombre)) {
@@ -713,7 +690,6 @@ exports.resolvers = {
                     console.log("Error guardando el nombre modificado en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error cambiando el nombre de la actividad");
                 }
-                console.log(`Nombre cambiado`);
                 return resultado;
             });
         },
@@ -735,13 +711,11 @@ exports.resolvers = {
                 var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                 try {
                     var laActividad = yield ColeccionActividadesEsteGrupo.findById(idActividad).exec();
-                    console.log(`Actividad: ${laActividad.nombre}`);
                     let elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                     let lasParticipaciones = elDesarrollo.participaciones;
                     lasParticipaciones.pull({ _id: idParticipacion });
                     if (elDesarrollo.participaciones.length < 1) {
                         let idDesarrollo = elDesarrollo.id;
-                        console.log(`Este desarrollo con id ${idDesarrollo} se quedó sin participaciones. Eliminando`);
                         laActividad.desarrollos.pull({ _id: idDesarrollo });
                     }
                 }
@@ -756,7 +730,6 @@ exports.resolvers = {
                     console.log(`Error guardando el grupo modificado en la base de datos. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Participacion eliminada`);
                 return true;
             });
         },
@@ -789,7 +762,6 @@ exports.resolvers = {
                     var laActividad = yield ColeccionActividadesEsteGrupo.findById(idActividad).exec();
                     if (!laActividad)
                         throw "Actividad no encontrada";
-                    console.log(`En ${laActividad.nombre}`);
                     if (nuevoDesarrollo) {
                         var desarrolloCreado = laActividad.desarrollos.create({
                             idEstudiante: elUsuario._id,
@@ -801,13 +773,9 @@ exports.resolvers = {
                                 username: elUsuario.username,
                             }
                         });
-                        console.log(`Nuevo desarrollo creado`);
                         laActividad.desarrollos.push(desarrolloCreado);
                         idDesarrollo = desarrolloCreado._id;
                         elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
-                    }
-                    else {
-                        console.log(`Desarrollo ya existía`);
                     }
                     var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                 }
@@ -837,7 +805,6 @@ exports.resolvers = {
                 };
                 var laRespuesta = elDesarrollo.participaciones.create(nuevaRespuesta);
                 if (elDesarrollo.idEstudiante == laRespuesta.idAutor) {
-                    console.log(`Modificado por el propio estudiante`);
                     elDesarrollo.leidoPorProfe = false;
                 }
                 elDesarrollo.participaciones.push(laRespuesta);
@@ -848,7 +815,6 @@ exports.resolvers = {
                     console.log(`Error guardando la actividad: E: ${error}`);
                     throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
                 }
-                console.log(`Respuesta publicada`);
                 var notificacion = new Usuario_1.ModeloNotificacion({
                     texto: "Nueva respuesta",
                     elementoTarget: {
@@ -867,7 +833,6 @@ exports.resolvers = {
                     try {
                         yield Usuario_1.ModeloUsuario.findByIdAndUpdate(elDesarrollo.idEstudiante, { $push: { notificaciones: notificacion } }).exec();
                         pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: elDesarrollo.idEstudiante, nuevaNotificacion: notificacion });
-                        console.log(`Crendo notificacion personal para ${elDesarrollo.idEstudiante}`);
                     }
                     catch (error) {
                         console.log(`Error creando una notificacion con para ${elDesarrollo.idEstudiante}`);
@@ -878,7 +843,6 @@ exports.resolvers = {
                     try {
                         yield Usuario_1.ModeloUsuario.findByIdAndUpdate(laActividad.idCreador, { $push: { notificaciones: notificacion } }).exec();
                         pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: laActividad.idCreador, nuevaNotificacion: notificacion });
-                        console.log(`Crendo notificacion personal para ${laActividad.idCreador}`);
                     }
                     catch (error) {
                         console.log(`Error creando una notificacion para ${laActividad.idCreador}`);
@@ -908,7 +872,6 @@ exports.resolvers = {
                 if (nuevoDesarrollo) {
                     ResultadoPublicar.nuevoDesarrollo = elDesarrollo;
                 }
-                console.log(`Pubsub publicados`);
                 return ResultadoPublicar;
             });
         }
