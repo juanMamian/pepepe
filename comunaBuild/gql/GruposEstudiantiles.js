@@ -92,7 +92,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     }
 
     type GrupoEstudiantil{
-        id:ID,
+        id:ID!,
         nombre:String,        
         estudiantes:[PublicUsuario],
     }
@@ -252,7 +252,7 @@ exports.resolvers = {
                 console.log(`||||||||||||||||||||||`);
                 console.log(`Peticion de un grupo estudiantil con id ${idGrupo}`);
                 try {
-                    var elGrupoEstudiantil = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
+                    var elGrupoEstudiantil = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo, "_id nombre estudiantes").exec();
                     if (!elGrupoEstudiantil) {
                         throw "grupo no encontrado";
                     }
@@ -261,7 +261,8 @@ exports.resolvers = {
                     console.log(`Error buscando el grupo con ide ${idGrupo} en la base de datos. E:${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`enviando el grupo estudiantil`);
+                elGrupoEstudiantil.id = elGrupoEstudiantil._id;
+                console.log(`enviando el grupo estudiantil ${elGrupoEstudiantil.nombre} - ${elGrupoEstudiantil.id}`);
                 return elGrupoEstudiantil;
             });
         },
@@ -356,7 +357,6 @@ exports.resolvers = {
                     console.log(`Error buscando grupo y actividad en la base de datos. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Enviando la actividad`);
                 return laActividad;
             });
         },
@@ -372,10 +372,12 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
                 }
                 for (var i = 0; i < losGrupos.length; i++) {
+                    console.log(`Grupo ${i}`);
                     let idGrupo = losGrupos[i]._id;
-                    let ColeccionActividades = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                     try {
+                        let ColeccionActividades = yield mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                         var laActividad = yield ColeccionActividades.findById(idActividad).exec();
+                        console.log(`Resultado de actividad: ${laActividad}`);
                         if (laActividad) {
                             console.log(`Encontrada en ${losGrupos[i].nombre}`);
                             laActividad.idGrupo = idGrupo;

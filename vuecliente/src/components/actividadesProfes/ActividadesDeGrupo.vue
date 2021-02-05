@@ -245,7 +245,7 @@ export default {
         this.ventanaDeshabilitada = false;
         return grupoEstudiantil;
       },
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
     },
     misActividadesCreadas: {
       query: QUERY_MIS_ACTIVIDADES_CREADAS,
@@ -453,7 +453,9 @@ export default {
             idGrupo: this.esteGrupo.id,
           },
         })
-        .then(() => {})
+        .then(({data:{eliminarActividad}}) => {
+          console.log(`resultado: ${eliminarActividad}`);
+        })
         .catch((error) => {
           console.log("error: " + error);
         });
@@ -594,7 +596,7 @@ export default {
       from.name == "ActividadesDeGrupo" ||
       from.name == "ActividadesDeProfe"
     ) {
-      this.esteGrupo.id = null;
+      //this.esteGrupo.id = null;
       this.ventanaDeshabilitada = true;
     }
     next();

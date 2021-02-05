@@ -1,7 +1,6 @@
 <template>
   <div class="actividadEspecifica">
-    {{$route.params.idNotificacion}}
-    <icono-persona :estaPersona="laActividad.creador" v-if="actividadLoaded" />
+    <icono-persona :estaPersona="laActividad.infoCreador" v-if="actividadLoaded" />
     <loading v-show="!actividadLoaded" texto="Cargando..." />
     <actividad
       :estaActividad="laActividad"
@@ -11,6 +10,7 @@
       :idGrupo="laActividad.idGrupo"
       @participacionEliminada="eliminarParticipacionDeCache"
       v-if="actividadLoaded"
+      @click.native="seleccionarActividad=!seleccionarActividad"
     />
   </div>
 </template>
@@ -27,6 +27,12 @@ const QUERY_ACTIVIDAD_ESPECIFICA = gql`
       id
       nombre
       idGrupo
+      infoCreador{
+        id
+        nombres
+        apellidos
+        username
+      }
     }
   }
 `;

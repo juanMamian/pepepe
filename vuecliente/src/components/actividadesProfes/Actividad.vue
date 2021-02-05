@@ -371,7 +371,7 @@ export default {
       loadingActividad: true,
     };
   },
-  props: {
+  props: {    
     seleccionada: Boolean,
     idActividad: String,
     idGrupo: String,

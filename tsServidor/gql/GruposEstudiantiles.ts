@@ -94,7 +94,7 @@ export const typeDefs = gql`
     }
 
     type GrupoEstudiantil{
-        id:ID,
+        id:ID!,
         nombre:String,        
         estudiantes:[PublicUsuario],
     }
@@ -273,7 +273,7 @@ export const resolvers = {
             console.log(`||||||||||||||||||||||`);
             console.log(`Peticion de un grupo estudiantil con id ${idGrupo}`);
             try {
-                var elGrupoEstudiantil: any = await GrupoEstudiantil.findById(idGrupo).exec();
+                var elGrupoEstudiantil: any = await GrupoEstudiantil.findById(idGrupo, "_id nombre estudiantes").exec();
                 if (!elGrupoEstudiantil) {
                     throw "grupo no encontrado"
                 }
@@ -282,7 +282,8 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            console.log(`enviando el grupo estudiantil`);
+            elGrupoEstudiantil.id=elGrupoEstudiantil._id;
+            console.log(`enviando el grupo estudiantil ${elGrupoEstudiantil.nombre} - ${elGrupoEstudiantil.id}`);
             return elGrupoEstudiantil;
         },
         async misActividadesCreadasGrupoEstudiantil(_: any, { idGrupo, pagina }, contexto: contextoQuery) {
@@ -373,8 +374,7 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error buscando grupo y actividad en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
-            }
-            console.log(`Enviando la actividad`);
+            }            
             return laActividad;
         },
         actividadEstudiantil: async function (_: any, { idActividad }, contexto: contextoQuery) {
@@ -389,10 +389,12 @@ export const resolvers = {
             }
 
             for (var i = 0; i < losGrupos.length; i++) {
-                let idGrupo = losGrupos[i]._id;
-                let ColeccionActividades = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
+                console.log(`Grupo ${i}`);
+                let idGrupo = losGrupos[i]._id;                
                 try {
-                    var laActividad: any = await ColeccionActividades.findById(idActividad).exec()
+                    let ColeccionActividades = await mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
+                    var laActividad: any = await ColeccionActividades.findById(idActividad).exec();
+                    console.log(`Resultado de actividad: ${laActividad}`);
                     if (laActividad) {
                         console.log(`Encontrada en ${losGrupos[i].nombre}`);
                         laActividad.idGrupo = idGrupo
