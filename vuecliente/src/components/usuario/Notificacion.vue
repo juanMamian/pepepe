@@ -33,7 +33,7 @@ export default {
       // if (this.estaNotificacion.elementoTarget.tipo == "actividadEstudiantil") {
       //   enlace += "actividad/" + this.estaNotificacion.elementoTarget.id;
       // }
-      //this.eliminarse();
+      this.eliminarse();
       this.$router.push({name:"actividadEspecifica", params:{idActividad:this.estaNotificacion.elementoTarget.id, idNotificacion:this.estaNotificacion.id}}).catch((error)=>{
         console.log(`Error de navegación: ${error.message.substr(0,28)}`);
         if(error.message.substr(0,28)=="Avoided redundant navigation"){
