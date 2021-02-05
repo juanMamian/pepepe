@@ -14,13 +14,15 @@ const apollo_server_express_1 = require("apollo-server-express");
 const Trabajo_1 = require("../model/Trabajo");
 const Nodo = require("../model/atlas/Nodo");
 const Usuario_1 = require("../model/Usuario");
+const Foro_1 = require("../model/Foros/Foro");
 exports.typeDefs = apollo_server_express_1.gql `
    type Trabajo{
        id: ID,
        nombre: String,
        descripcion:String,
        responsables: [PublicUsuario],
-       nodosConocimiento:[NodoConocimiento]
+       nodosConocimiento:[NodoConocimiento],
+       idForo:ID
    }
 
    extend type Query{
@@ -30,15 +32,55 @@ exports.typeDefs = apollo_server_express_1.gql `
 `;
 exports.resolvers = {
     Query: {
-        trabajo: function (_, args, context) {
+        trabajo: function (_, { idTrabajo }, context) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Enviando un trabajo de id ${args.idTrabajo} `);
+                console.log(`Solicitado un trabajo de id ${idTrabajo} `);
                 try {
-                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(args.idTrabajo).exec();
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
                 }
                 catch (error) {
                     console.log(`error buscando un trabajo. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("");
+                }
+                let tieneForo = true;
+                if (!elTrabajo.idForo) {
+                    tieneForo = false;
+                }
+                else {
+                    try {
+                        let elForo = yield Foro_1.ModeloForo.findById(elTrabajo.idForo).exec();
+                        if (!elForo) {
+                            console.log(`El foro no existía. Se creará uno nuevo`);
+                            tieneForo = false;
+                        }
+                    }
+                    catch (error) {
+                        console.log(`Error buscando foro en la base de datos. E :${error}`);
+                    }
+                }
+                if (!tieneForo) {
+                    console.log(`El trabajo ${elTrabajo.nombre} no tenía foro. Creando con miembros: ${elTrabajo.responsables}.`);
+                    try {
+                        var nuevoForo = yield Foro_1.ModeloForo.create({
+                            miembros: elTrabajo.responsables,
+                            acceso: "privado"
+                        });
+                        var idNuevoForo = nuevoForo._id;
+                        yield nuevoForo.save();
+                    }
+                    catch (error) {
+                        console.log(`Error creando el nuevo foro. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                    console.log(`Nuevo foro creado`);
+                    try {
+                        elTrabajo.idForo = idNuevoForo;
+                        yield elTrabajo.save();
+                    }
+                    catch (error) {
+                        console.log(`Error guardando el trabajo`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
                 }
                 return elTrabajo;
             });

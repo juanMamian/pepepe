@@ -1,9 +1,9 @@
 import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
-import {ModeloProyecto as Proyecto} from "../model/Proyecto";
-import {ModeloTrabajo as Trabajo} from "../model/Trabajo";
+import { ModeloProyecto as Proyecto } from "../model/Proyecto";
+import { ModeloTrabajo as Trabajo } from "../model/Trabajo";
 import { contextoQuery } from "./tsObjetos"
-import {ModeloUsuario as Usuario} from "../model/Usuario";
-import {ModeloForo as Foro} from "../model/Foros/Foro"
+import { ModeloUsuario as Usuario } from "../model/Usuario";
+import { ModeloForo as Foro } from "../model/Foros/Foro"
 
 export const typeDefs = gql`
     type Proyecto{
@@ -15,6 +15,7 @@ export const typeDefs = gql`
         trabajos: [Trabajo],
         objetivos: [Objetivo],
         idForo:ID,
+        idsTrabajos:[ID],
     }
     type Objetivo{
        id: ID,
@@ -34,7 +35,7 @@ export const typeDefs = gql`
         addPosibleResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         removeResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         
-        crearTrabajoEnProyecto(idProyecto: ID!):Trabajo,
+        crearTrabajoEnProyecto(idProyecto: ID!):ID,
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
         editarNombreTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
         editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
@@ -64,39 +65,39 @@ export const resolvers = {
         proyecto: async function (_: any, { idProyecto }: any, context: any) {
             console.log(`Buscando proyecto con id ${idProyecto}`);
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             } catch (error) {
                 console.log(`Error buscando el proyecto. E:${error}`);
                 throw new ApolloError("Error en la conexión con la base de datos");
             }
-            let tieneForo=true;
-            
-            if(!elProyecto.idForo){
-                tieneForo=false;
+            let tieneForo = true;
+
+            if (!elProyecto.idForo) {
+                tieneForo = false;
             }
             else {
                 try {
-                    let elForo:any=await Foro.findById(elProyecto.idForo).exec();
-                    if(!elForo){
+                    let elForo: any = await Foro.findById(elProyecto.idForo).exec();
+                    if (!elForo) {
                         console.log(`El foro no existía. Se creará uno nuevo`);
-                        tieneForo=false;
+                        tieneForo = false;
                     }
                 } catch (error) {
                     console.log(`Error buscando foro en la base de datos. E :${error}`);
                 }
             }
 
-            if(!tieneForo){
+            if (!tieneForo) {
                 console.log(`El proyecto ${elProyecto.nombre} no tenía foro. Creando con responsables: ${elProyecto.responsables}.`);
                 try {
-                    var nuevoForo:any=await Foro.create({                        
-                        miembros:elProyecto.responsables,
-                        acceso:"privado"
+                    var nuevoForo: any = await Foro.create({
+                        miembros: elProyecto.responsables,
+                        acceso: "privado"
                     });
-                    var idNuevoForo=nuevoForo._id;
+                    var idNuevoForo = nuevoForo._id;
                     await nuevoForo.save();
                 } catch (error) {
                     console.log(`Error creando el nuevo foro. E: ${error}`);
@@ -104,7 +105,7 @@ export const resolvers = {
                 }
                 console.log(`Nuevo foro creado`);
                 try {
-                    elProyecto.idForo=idNuevoForo;
+                    elProyecto.idForo = idNuevoForo;
                     await elProyecto.save();
                 } catch (error) {
                     console.log(`Error guardando el proyecto`);
@@ -122,8 +123,8 @@ export const resolvers = {
             console.log(`añadiendo usuario ${idUsuario} a la lista de posibles responsables del proyecto ${idProyecto}`);
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -172,19 +173,19 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
             catch (error) {
                 console.log("Error buscando el proyecto en la base de datos. E: " + error);
                 throw new ApolloError("Error de conexión con la base de datos");
-            }            
+            }
 
             //Authorización
 
-            if (elProyecto.responsables.length>0 && !elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos.includes("superadministrador")) {
+            if (elProyecto.responsables.length > 0 && !elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion. Hay ${elProyecto.responsables.length} responsable: ${elProyecto.responsables}`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -205,7 +206,7 @@ export const resolvers = {
                 console.log(`El usuario ya era responsable de este proyecto`);
                 throw new ApolloError("El usuario ya estaba incluido");
             }
-            
+
 
             elProyecto.responsables.push(idUsuario);
             console.log(`Usuario añadido a la lista de responsables`);
@@ -223,10 +224,10 @@ export const resolvers = {
                 console.log("Error guardando datos en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            
+
             //Mirror responsables del proyecto hacia miembros del foro
             try {
-                await Foro.findByIdAndUpdate(elProyecto.idForo, {miembros:elProyecto.responsables});
+                await Foro.findByIdAndUpdate(elProyecto.idForo, { miembros: elProyecto.responsables });
             } catch (error) {
                 console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
@@ -239,8 +240,8 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -251,7 +252,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (idUsuario!=credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion removiendo responsable o posible responsable de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -292,7 +293,7 @@ export const resolvers = {
 
             //Mirror responsables del proyecto hacia miembros del foro
             try {
-                await Foro.findByIdAndUpdate(elProyecto.idForo, {miembros:elProyecto.responsables});
+                await Foro.findByIdAndUpdate(elProyecto.idForo, { miembros: elProyecto.responsables });
             } catch (error) {
                 console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
@@ -304,8 +305,8 @@ export const resolvers = {
         editarNombreProyecto: async function (_: any, { idProyecto, nuevoNombre }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -314,8 +315,8 @@ export const resolvers = {
             }
 
             //Authorización
-            let permisosEspeciales=["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -332,7 +333,7 @@ export const resolvers = {
 
             try {
                 console.log(`guardando nuevo nombre ${elProyecto.nombre} en la base de datos`);
-                var resProyecto:any=await Proyecto.findByIdAndUpdate(idProyecto, {nombre: nuevoNombre}, {new: true}).exec();
+                var resProyecto: any = await Proyecto.findByIdAndUpdate(idProyecto, { nombre: nuevoNombre }, { new: true }).exec();
             } catch (error) {
                 console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
             }
@@ -344,8 +345,8 @@ export const resolvers = {
             console.log(`Solicitud de set descripcion del proyecto con id ${elProyecto}`);
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -354,8 +355,8 @@ export const resolvers = {
             }
 
             //Authorización
-            let permisosEspeciales=["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando Descripcion de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -371,7 +372,7 @@ export const resolvers = {
 
             try {
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
-                var resProyecto:any=await Proyecto.findByIdAndUpdate(idProyecto, {descripcion: nuevoDescripcion}, {new: true}).exec();
+                var resProyecto: any = await Proyecto.findByIdAndUpdate(idProyecto, { descripcion: nuevoDescripcion }, { new: true }).exec();
             } catch (error) {
                 console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
             }
@@ -390,17 +391,16 @@ export const resolvers = {
                 throw new ApolloError("No ID");
             }
             console.log(`el usuario ${usuario.username} intenta crear un nuevo proyecto`);
-            let elProyecto :any= await new Proyecto({
+            let elProyecto: any = await new Proyecto({
                 responsables: [usuario.id]
             });
 
             try {
-                var nuevoForo:any=await Foro.create({
-                    categorias:[{nombre:"General"}],
-                    acceso:"privado",
-                    miembros:elProyecto.responsables,
+                var nuevoForo: any = await Foro.create({
+                    acceso: "privado",
+                    miembros: elProyecto.responsables,
                 });
-                var idNuevoForo=nuevoForo._id;
+                var idNuevoForo = nuevoForo._id;
                 await nuevoForo.save();
             } catch (error) {
                 console.log(`Error creando el nuevo foro. E: ${error}`);
@@ -409,7 +409,7 @@ export const resolvers = {
             console.log(`Nuevo foro creado`);
 
             try {
-                elProyecto.idForo=idNuevoForo;
+                elProyecto.idForo = idNuevoForo;
                 await elProyecto.save();
             } catch (error) {
                 console.log(`error guardando el nuevo proyecto. E: ${error}`);
@@ -424,8 +424,8 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -435,14 +435,14 @@ export const resolvers = {
             }
             //Authorización
 
-            let permisosEspeciales=["superadministrador"];
-            let esUltimoResponsable=(elProyecto.responsables.length==1 && elProyecto.responsables[0]==credencialesUsuario.id);
-            
-            if (!esUltimoResponsable && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+            let permisosEspeciales = ["superadministrador"];
+            let esUltimoResponsable = (elProyecto.responsables.length == 1 && elProyecto.responsables[0] == credencialesUsuario.id);
+
+            if (!esUltimoResponsable && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
-                                    
+
             try {
                 await Proyecto.findByIdAndDelete(idProyecto).exec();
             }
@@ -459,8 +459,8 @@ export const resolvers = {
             console.log(`Peticion de crear un nuevo trabajo en el proyecto con id ${idProyecto}`);
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -476,28 +476,49 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
+            console.log(`Creando un foro para este trabajo`);
+            try {
+                var nuevoForo: any = await Foro.create({
+                    acceso: "privado",
+                    miembros: [],
+                });
+                var idNuevoForo = nuevoForo._id;
+                await nuevoForo.save();
+            } catch (error) {
+                console.log(`Error creando el nuevo foro. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Nuevo foro creado`);
+
+
             console.log(`creando un nuevo trabajo desde el proyecto ${elProyecto}`);
+            try {
+                var nuevoTrabajo: any = await new Trabajo({ idForo: idNuevoForo });
+                var idNuevoTrabajo = nuevoTrabajo._id;
+                await nuevoTrabajo.save();
+            } catch (error) {
+                console.log(`Error creando el nuevo trabajo. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
 
             try {
-                var nuevoTrabajo = elProyecto.trabajos.create();
-                elProyecto.trabajos.push(nuevoTrabajo);
+                elProyecto.idsTrabajos.push(idNuevoTrabajo);
                 await elProyecto.save();
             }
             catch (error) {
                 console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
                 throw new ApolloError("Error introduciendo el trabajo en el proyecto");
             }
-            return nuevoTrabajo;
-
-
+            return idNuevoTrabajo;
         },
         async eliminarTrabajoDeProyecto(_: any, { idTrabajo, idProyecto }: any, contexto: contextoQuery) {
             console.log(`peticion de eliminar un trabajo con id ${idTrabajo} de un proyecto con id ${idProyecto}`);
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -507,20 +528,21 @@ export const resolvers = {
             }
 
             //Authorización
-            let permisosEspeciales=["superadministrador"];
+            let permisosEspeciales = ["superadministrador"];
 
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            
+
             try {
-                await Proyecto.findByIdAndUpdate(idProyecto, {$pull:{trabajos:{"_id": idTrabajo}}});            
+                await Trabajo.findByIdAndDelete(idTrabajo);
+                await Proyecto.findByIdAndUpdate(idProyecto, { $pull: { idsTrabajos: idTrabajo } });
             }
             catch (error) {
-                console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
+                console.log("Error eliminando trabajo. E: " + error);
                 throw new ApolloError("Error introduciendo el trabajo en el proyecto");
             }
 
@@ -541,8 +563,8 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -557,27 +579,20 @@ export const resolvers = {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
-            
 
             try {
-                var elTrabajo=elProyecto.trabajos.id(idTrabajo);
-                if(!elTrabajo){
-                    console.log(`Trabajo no esxistía en el proyecto`);
-                    throw "No existía el trabajo";                    
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "No existía el trabajo";
                 }
                 elTrabajo.nombre = nuevoNombre;
+                await elTrabajo.save();
             }
             catch (error) {
                 console.log("Error cambiando el nombre en la base de datos. E: " + error);
                 throw new ApolloError("Error guardando el nombre en la base de datos");
             }
-            try {
-                await elProyecto.save();
-            }
-            catch (error) {
-                console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
-                throw new ApolloError("Error introduciendo el trabajo en el proyecto");
-            }
+
             console.log(`Nombre cambiado`);
             return elTrabajo;
         },
@@ -586,8 +601,8 @@ export const resolvers = {
             console.log(`Solicitud de set descripcion de trabajo con id ${idTrabajo} del proyecto con id ${elProyecto}`);
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -596,8 +611,8 @@ export const resolvers = {
             }
 
             //Authorización
-            let permisosEspeciales=["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando Descripcion de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -609,17 +624,18 @@ export const resolvers = {
             }
 
             nuevoDescripcion = nuevoDescripcion.trim();
-            let elTrabajo=elProyecto.trabajos.id(idTrabajo);
-            if(!elTrabajo){
-                console.log(`No existía el trabajo`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-            elTrabajo.descripcion=nuevoDescripcion;
+
+            
             try {
+                var elTrabajo:any =await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {                
+                    throw "Trabajo no existía";
+                }
+                elTrabajo.descripcion = nuevoDescripcion;
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
-                await elProyecto.save();
+                await elTrabajo.save();
             } catch (error) {
-                console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+                console.log(`error guardando el trabajo modificado: ${error}`);
             }
             console.log(`Descripcion guardado`);
             return elTrabajo;
@@ -629,8 +645,8 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -658,11 +674,13 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var elTrabajo = elProyecto.trabajos.id(idTrabajo);
-            if (!elTrabajo) {
-                console.log(`No se encontró el trabajo ${idTrabajo} en el proyecto ${idProyecto}`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
+            try {
+                var elTrabajo:any=await Trabajo.findById(idTrabajo).exec();
+                if(!elTrabajo) throw "Trabajo no existía";
+            } catch (error) {
+                console.log('Error buscando el trabajo . E: '+error);
+                throw new ApolloError('Error conectando con la base de datos');
+            }            
 
             if (elTrabajo.responsables.includes(idUsuario)) {
                 console.log(`El usuario ya era responsable de este trabajo`);
@@ -672,13 +690,20 @@ export const resolvers = {
             try {
                 elTrabajo.responsables.push(idUsuario);
                 console.log(`Usuario añadido a la lista de responsables`);
-                await elProyecto.save();
+                await elTrabajo.save();
             }
             catch (error) {
                 console.log("Error guardando datos en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            console.log(`Proyecto guardado`);
+            console.log(`Trabajo guardado`);
+
+            try {
+                await Foro.findByIdAndUpdate(elTrabajo.idForo, { miembros: elTrabajo.responsables });
+            } catch (error) {
+                console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+            }
+
             return elTrabajo;
 
         },
@@ -687,8 +712,8 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -716,11 +741,13 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var elTrabajo = elProyecto.trabajos.id(idTrabajo);
-            if (!elTrabajo) {
-                console.log(`No se encontró el trabajo ${idTrabajo} en el proyecto ${idProyecto}`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
+            try {
+                var elTrabajo:any=await Trabajo.findById(idTrabajo).exec();
+                if(!elTrabajo) throw "Trabajo no existía";
+            } catch (error) {
+                console.log('Error buscando el trabajo . E: '+error);
+                throw new ApolloError('Error conectando con la base de datos');
+            }    
 
             if (!elTrabajo.responsables.includes(idUsuario)) {
                 console.log(`El usuario no era responsable de este trabajo`);
@@ -736,13 +763,20 @@ export const resolvers = {
             console.log(`Usuario retirado de la lista de responsables`);
 
             try {
-                await elProyecto.save();
+                await elTrabajo.save();
             }
             catch (error) {
                 console.log("Error guardando datos en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            console.log(`Proyecto guardado`);
+            console.log(`Trabajo guardado`);
+
+            try {
+                await Foro.findByIdAndUpdate(elTrabajo.idForo, { miembros: elTrabajo.responsables });
+            } catch (error) {
+                console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+            }
+            
             return elTrabajo;
 
         },
@@ -751,8 +785,8 @@ export const resolvers = {
 
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -788,8 +822,8 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -799,17 +833,17 @@ export const resolvers = {
             }
 
             //Authorización
-            let permisosEspeciales=["superadministrador"];
+            let permisosEspeciales = ["superadministrador"];
 
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            
+
             try {
-                await Proyecto.findByIdAndUpdate(idProyecto, {$pull:{objetivos:{"_id": idObjetivo}}});            
+                await Proyecto.findByIdAndUpdate(idProyecto, { $pull: { objetivos: { "_id": idObjetivo } } });
             }
             catch (error) {
                 console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
@@ -833,8 +867,8 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -851,8 +885,8 @@ export const resolvers = {
             }
 
             try {
-                var elObjetivo=elProyecto.objetivos.id(idObjetivo);
-                if(!elObjetivo){
+                var elObjetivo = elProyecto.objetivos.id(idObjetivo);
+                if (!elObjetivo) {
                     console.log(`Objetivo no encontrado en el proyecto`);
                     throw "No existía el objetivo";
                 }
@@ -877,8 +911,8 @@ export const resolvers = {
             console.log(`Solicitud de set descripcion de objetivo con id ${idObjetivo} del proyecto con id ${elProyecto}`);
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto:any = await Proyecto.findById(idProyecto).exec();
-                if(!elProyecto){
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
             }
@@ -887,8 +921,8 @@ export const resolvers = {
             }
 
             //Authorización
-            let permisosEspeciales=["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))) {
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando Descripcion de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -900,12 +934,12 @@ export const resolvers = {
             }
 
             nuevoDescripcion = nuevoDescripcion.trim();
-            let elObjetivo=elProyecto.objetivos.id(idObjetivo);
-            if(!elObjetivo){
+            let elObjetivo = elProyecto.objetivos.id(idObjetivo);
+            if (!elObjetivo) {
                 console.log(`No existía el objetivo`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            elObjetivo.descripcion=nuevoDescripcion;
+            elObjetivo.descripcion = nuevoDescripcion;
             try {
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
                 await elProyecto.save();
@@ -914,7 +948,7 @@ export const resolvers = {
             }
             console.log(`Descripcion guardado`);
             return elObjetivo;
-        },        
+        },
     },
     Proyecto: {
         responsables: async function (parent: any, _: any, __: any) {
@@ -926,8 +960,8 @@ export const resolvers = {
 
             try {
                 var usuariosResponsables = await Usuario.find({ _id: { $in: idsResponsables } }).exec();
-                if(!usuariosResponsables){
-                    console.log(`No habia usuarios responsables`);                    
+                if (!usuariosResponsables) {
+                    console.log(`No habia usuarios responsables`);
                 }
             } catch (error) {
                 console.log(`error buscando a los responsables del proyecto. E: ${error}`);

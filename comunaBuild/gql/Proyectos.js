@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Proyecto_1 = require("../model/Proyecto");
+const Trabajo_1 = require("../model/Trabajo");
 const Usuario_1 = require("../model/Usuario");
 const Foro_1 = require("../model/Foros/Foro");
 exports.typeDefs = apollo_server_express_1.gql `
@@ -24,6 +25,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         trabajos: [Trabajo],
         objetivos: [Objetivo],
         idForo:ID,
+        idsTrabajos:[ID],
     }
     type Objetivo{
        id: ID,
@@ -43,7 +45,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         addPosibleResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         removeResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         
-        crearTrabajoEnProyecto(idProyecto: ID!):Trabajo,
+        crearTrabajoEnProyecto(idProyecto: ID!):ID,
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
         editarNombreTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
         editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
@@ -382,7 +384,6 @@ exports.resolvers = {
                 });
                 try {
                     var nuevoForo = yield Foro_1.ModeloForo.create({
-                        categorias: [{ nombre: "General" }],
                         acceso: "privado",
                         miembros: elProyecto.responsables,
                     });
@@ -457,17 +458,39 @@ exports.resolvers = {
                     console.log(`Error de autenticacion editando nombre de proyecto`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
+                console.log(`Creando un foro para este trabajo`);
+                try {
+                    var nuevoForo = yield Foro_1.ModeloForo.create({
+                        acceso: "privado",
+                        miembros: [],
+                    });
+                    var idNuevoForo = nuevoForo._id;
+                    yield nuevoForo.save();
+                }
+                catch (error) {
+                    console.log(`Error creando el nuevo foro. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo foro creado`);
                 console.log(`creando un nuevo trabajo desde el proyecto ${elProyecto}`);
                 try {
-                    var nuevoTrabajo = elProyecto.trabajos.create();
-                    elProyecto.trabajos.push(nuevoTrabajo);
+                    var nuevoTrabajo = yield new Trabajo_1.ModeloTrabajo({ idForo: idNuevoForo });
+                    var idNuevoTrabajo = nuevoTrabajo._id;
+                    yield nuevoTrabajo.save();
+                }
+                catch (error) {
+                    console.log(`Error creando el nuevo trabajo. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    elProyecto.idsTrabajos.push(idNuevoTrabajo);
                     yield elProyecto.save();
                 }
                 catch (error) {
                     console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error introduciendo el trabajo en el proyecto");
                 }
-                return nuevoTrabajo;
+                return idNuevoTrabajo;
             });
         },
         eliminarTrabajoDeProyecto(_, { idTrabajo, idProyecto }, contexto) {
@@ -491,10 +514,11 @@ exports.resolvers = {
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
-                    yield Proyecto_1.ModeloProyecto.findByIdAndUpdate(idProyecto, { $pull: { trabajos: { "_id": idTrabajo } } });
+                    yield Trabajo_1.ModeloTrabajo.findByIdAndDelete(idTrabajo);
+                    yield Proyecto_1.ModeloProyecto.findByIdAndUpdate(idProyecto, { $pull: { idsTrabajos: idTrabajo } });
                 }
                 catch (error) {
-                    console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
+                    console.log("Error eliminando trabajo. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error introduciendo el trabajo en el proyecto");
                 }
                 console.log(`eliminado`);
@@ -527,23 +551,16 @@ exports.resolvers = {
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
-                    var elTrabajo = elProyecto.trabajos.id(idTrabajo);
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
                     if (!elTrabajo) {
-                        console.log(`Trabajo no esxistía en el proyecto`);
                         throw "No existía el trabajo";
                     }
                     elTrabajo.nombre = nuevoNombre;
+                    yield elTrabajo.save();
                 }
                 catch (error) {
                     console.log("Error cambiando el nombre en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error guardando el nombre en la base de datos");
-                }
-                try {
-                    yield elProyecto.save();
-                }
-                catch (error) {
-                    console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error introduciendo el trabajo en el proyecto");
                 }
                 console.log(`Nombre cambiado`);
                 return elTrabajo;
@@ -574,18 +591,17 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Descripcion ilegal");
                 }
                 nuevoDescripcion = nuevoDescripcion.trim();
-                let elTrabajo = elProyecto.trabajos.id(idTrabajo);
-                if (!elTrabajo) {
-                    console.log(`No existía el trabajo`);
-                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                }
-                elTrabajo.descripcion = nuevoDescripcion;
                 try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "Trabajo no existía";
+                    }
+                    elTrabajo.descripcion = nuevoDescripcion;
                     console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
-                    yield elProyecto.save();
+                    yield elTrabajo.save();
                 }
                 catch (error) {
-                    console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+                    console.log(`error guardando el trabajo modificado: ${error}`);
                 }
                 console.log(`Descripcion guardado`);
                 return elTrabajo;
@@ -621,10 +637,14 @@ exports.resolvers = {
                     console.log("Error buscando al usuario en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                var elTrabajo = elProyecto.trabajos.id(idTrabajo);
-                if (!elTrabajo) {
-                    console.log(`No se encontró el trabajo ${idTrabajo} en el proyecto ${idProyecto}`);
-                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo)
+                        throw "Trabajo no existía";
+                }
+                catch (error) {
+                    console.log('Error buscando el trabajo . E: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
                 }
                 if (elTrabajo.responsables.includes(idUsuario)) {
                     console.log(`El usuario ya era responsable de este trabajo`);
@@ -633,13 +653,19 @@ exports.resolvers = {
                 try {
                     elTrabajo.responsables.push(idUsuario);
                     console.log(`Usuario añadido a la lista de responsables`);
-                    yield elProyecto.save();
+                    yield elTrabajo.save();
                 }
                 catch (error) {
                     console.log("Error guardando datos en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Proyecto guardado`);
+                console.log(`Trabajo guardado`);
+                try {
+                    yield Foro_1.ModeloForo.findByIdAndUpdate(elTrabajo.idForo, { miembros: elTrabajo.responsables });
+                }
+                catch (error) {
+                    console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+                }
                 return elTrabajo;
             });
         },
@@ -673,10 +699,14 @@ exports.resolvers = {
                     console.log("Error buscando al usuario en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                var elTrabajo = elProyecto.trabajos.id(idTrabajo);
-                if (!elTrabajo) {
-                    console.log(`No se encontró el trabajo ${idTrabajo} en el proyecto ${idProyecto}`);
-                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo)
+                        throw "Trabajo no existía";
+                }
+                catch (error) {
+                    console.log('Error buscando el trabajo . E: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
                 }
                 if (!elTrabajo.responsables.includes(idUsuario)) {
                     console.log(`El usuario no era responsable de este trabajo`);
@@ -689,13 +719,19 @@ exports.resolvers = {
                 }
                 console.log(`Usuario retirado de la lista de responsables`);
                 try {
-                    yield elProyecto.save();
+                    yield elTrabajo.save();
                 }
                 catch (error) {
                     console.log("Error guardando datos en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Proyecto guardado`);
+                console.log(`Trabajo guardado`);
+                try {
+                    yield Foro_1.ModeloForo.findByIdAndUpdate(elTrabajo.idForo, { miembros: elTrabajo.responsables });
+                }
+                catch (error) {
+                    console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+                }
                 return elTrabajo;
             });
         },

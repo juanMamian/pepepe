@@ -151,6 +151,11 @@
       </div>
     </div>
 
+    <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel" v-show="seleccionado">
+      <div class="nombreZona">foro</div>
+      <foro :idForo="esteTrabajo.idForo" />
+    </div>
+
     <div id="controlesTrabajo" v-show="seleccionado">
       <div
         class="controlesTrabajo hoverGris bEliminar"
@@ -169,9 +174,25 @@ import { fragmentoResponsables } from "../utilidades/recursosGql";
 import IconoPersona from "./IconoPersona.vue";
 import BuscadorNodosConocimiento from "../atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
+import Foro from "../Foro.vue";
 
 const charProhibidosNombreTrabajo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionTrabajo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+
+const QUERY_TRABAJO = gql`
+  query($idTrabajo: ID!) {
+    trabajo(idTrabajo: $idTrabajo) {
+      id
+      nombre
+      descripcion
+      idForo
+      responsables {
+        ...fragResponsables
+      }
+    }
+  }
+  ${fragmentoResponsables}
+`;
 
 export default {
   name: "IconoTrabajo",
@@ -179,9 +200,30 @@ export default {
     IconoPersona,
     BuscadorNodosConocimiento,
     Loading,
+    Foro
+  },
+  apollo: {
+    esteTrabajo: {
+      query: QUERY_TRABAJO,
+      variables() {
+        return {
+          idTrabajo: this.idTrabajo,
+        };
+      },
+      update({ trabajo }) {
+        return trabajo;
+      },
+      skip() {
+        return !this.idTrabajo;
+      },
+    },
   },
   data() {
     return {
+      esteTrabajo: {
+        responsables: [],
+      },
+
       idNodoSeleccionado: null,
       deshabilitado: false,
 
@@ -195,10 +237,10 @@ export default {
     };
   },
   props: {
-    esteTrabajo: Object,
     idProyecto: String,
     seleccionado: Boolean,
     usuarioResponsableProyecto: Boolean,
+    idTrabajo: String,
   },
   computed: {
     usuarioResponsableTrabajo: function () {
@@ -445,11 +487,10 @@ export default {
   right: 0px;
   display: flex;
   flex-direction: row-reverse;
-  
 }
 .controlesTrabajo {
   padding: 3px 5px;
-  cursor:pointer;
+  cursor: pointer;
 }
 #descripcion {
   min-width: 100px;
@@ -538,6 +579,11 @@ export default {
   display: flex;
   font-size: 13px;
   flex-direction: row-reverse;
+}
+.botonesControles{
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 3px 5px;
 }
 .bEliminar:hover {
   background-color: red;

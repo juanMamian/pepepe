@@ -26,53 +26,11 @@ exports.esquemaTrabajo.add({
     },
     nodosConocimiento: {
         type: [String],
+        required: true,
         default: []
     },
-    materiales: [
-        {
-            id: {
-                type: String,
-                min: 24,
-                max: 24
-            },
-            nombre: {
-                type: String,
-                min: 2,
-                max: 500
-            },
-            descripcion: {
-                type: String
-            },
-            cantidad: Number,
-            unidadReferencia: Number,
-            valor_unitario: Number,
-        }
-    ],
-    subtrabajos: [
-        exports.esquemaTrabajo
-    ],
-    vinculos: [
-        {
-            tipoTarget: {
-                type: String,
-                required: true
-            },
-            ref: {
-                type: String,
-                required: true
-            },
-            tipoVinculo: {
-                type: String,
-                required: true
-            }
-        }
-    ],
-    enlacesProyectos: [{
-            pathId: [String],
-            tipo: String
-        }],
-    estado: String,
-    fila: Number,
-    columna: Number
+    idForo: {
+        type: String,
+    },
 });
 exports.ModeloTrabajo = mongoose_1.default.model("Trabajo", exports.esquemaTrabajo);

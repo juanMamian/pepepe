@@ -25,6 +25,11 @@ const esquemaProyecto = new mongoose_1.default.Schema({
         required: true,
         default: []
     },
+    idsTrabajos: {
+        type: [String],
+        default: [],
+        required: true,
+    },
     trabajos: {
         type: [Trabajo_1.esquemaTrabajo],
         default: []

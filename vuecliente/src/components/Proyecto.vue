@@ -204,14 +204,14 @@
         </div>
         <div id="listaTrabajos" @click.self="idTrabajoSeleccionado = null">
           <iconoTrabajo
-            v-for="trabajo of esteProyecto.trabajos"
-            :key="trabajo.id"
-            :esteTrabajo="trabajo"
+            v-for="idTrabajo of esteProyecto.idsTrabajos"
+            :key="idTrabajo"
+            :idTrabajo="idTrabajo"
             :idProyecto="esteProyecto.id"
-            :seleccionado="idTrabajoSeleccionado == trabajo.id"
+            :seleccionado="idTrabajoSeleccionado == idTrabajo"
             :usuarioResponsableProyecto="usuarioResponsableProyecto"
-            @click.native="idTrabajoSeleccionado = trabajo.id"
-            @meElimine="eliminarTrabajoDeCache(trabajo.id)"
+            @click.native="idTrabajoSeleccionado = idTrabajo"
+            @meElimine="eliminarTrabajoDeCache(idTrabajo)"
           />
         </div>
       </div>
@@ -576,29 +576,21 @@ export default {
         .mutate({
           mutation: gql`
             mutation($idProyecto: ID!) {
-              crearTrabajoEnProyecto(idProyecto: $idProyecto) {
-                id
-                nombre
-                descripcion
-                responsables {
-                  ...fragResponsables
-                }
-              }
-            }
-            ${fragmentoResponsables}
+              crearTrabajoEnProyecto(idProyecto: $idProyecto)                               
+            }            
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
           },
           update: (store, { data: { crearTrabajoEnProyecto } }) => {
             console.log(`respuesta: ${JSON.stringify(crearTrabajoEnProyecto)}`);
-            const nuevoTrabajo = crearTrabajoEnProyecto;
+            const idNuevoTrabajo = crearTrabajoEnProyecto;
             try {
               let cache = store.readQuery({
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
               });
-              cache.proyecto.trabajos.push(nuevoTrabajo);
+              cache.proyecto.idsTrabajos.push(idNuevoTrabajo);
 
               store.writeQuery({
                 query: QUERY_PROYECTO,
@@ -676,9 +668,9 @@ export default {
           idProyecto: this.esteProyecto.id,
         },
       });
-      let indexT = cache.proyecto.trabajos.findIndex((t) => t.id == idTrabajo);
+      let indexT = cache.proyecto.idsTrabajos.indexOf(idTrabajo);
       if (indexT > -1) {
-        cache.proyecto.trabajos.splice(indexT, 1);
+        cache.proyecto.idsTrabajos.splice(indexT, 1);
       } else {
         console.log(`El trabajo no existía en el proyecto`);
       }
