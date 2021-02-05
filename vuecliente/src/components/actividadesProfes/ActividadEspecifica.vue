@@ -122,11 +122,7 @@ export default {
     refresh(){
       return this.$store.state.refreshActividadEspecifica
     }
-  },
-  beforeRouteUpdate() {
-    console.log(`Bye`);
-    this.seleccionarActividad = false;    
-  },
+  },  
   watch:{
     refresh(){
       this.$refs.laActividad.refresh();
