@@ -1,10 +1,13 @@
 <template>
-  <div class="iconoPersona" :class="{ yo: soyYo, seleccionado: seleccionado }">
+  <div
+    class="iconoPersonaAutonomo"
+    :class="{ yo: soyYo, seleccionado: seleccionado }"
+  >
     <img
       class="fotografia"
-      :src="this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id"
+      :src="this.serverUrl + '/api/usuarios/fotografias/' + idPersona"
       v-show="fotografiaEnabled"
-      @load="fotografiaEnabled=true"
+      @load="fotografiaEnabled = true"
       alt=""
     />
     <div id="contenedorAlertas">
@@ -14,8 +17,10 @@
       {{ estaPersona.nombres }}
     </div>
     <div id="menuCxPersona" v-show="menuContextual">
-      <div class="botonMenuCx" @click.stop="copiarId">{{ estaPersona.id }}</div>
-      <div class="botonMenuCx" v-if="usuarioSuperadministrador">{{ estaPersona.username }}</div>      
+      <div class="botonMenuCx" @click.stop="copiarId">{{ idPersona }}</div>
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador">
+        {{ estaPersona.username }}
+      </div>
       <input type="text" v-model="nuevoPermiso" placeholder="Nuevo permiso" />
       <div class="botonMenuCx" @click.stop="addPermisos">Dar permiso</div>
       <div
@@ -32,11 +37,11 @@
 
 <script>
 import gql from "graphql-tag";
-import { fragmentoMinimoPersona } from '../utilidades/recursosGql';
+import { fragmentoMinimoPersona } from "../utilidades/recursosGql";
 
-const QUERY_PERSONA=gql`
-  query($idUsuario:ID!){
-    minimoUsuario(idUsuario:$idUsuario){
+const QUERY_PERSONA = gql`
+  query($idUsuario: ID!) {
+    publicUsuario(idUsuario: $idUsuario) {
       ...fragMinimoPersona
     }
   }
@@ -45,29 +50,44 @@ const QUERY_PERSONA=gql`
 
 export default {
   name: "IconoPersonaAutonomo",
-  apollo:{
-    estaPersona:{
-      query:QUERY_PERSONA
-    }
+  apollo: {
+    estaPersona: {
+      query: QUERY_PERSONA,
+      variables() {
+        return {
+          idUsuario: this.idPersona,
+        };
+      },
+      update({publicUsuario}){
+        return publicUsuario
+      },
+      skip(){
+        return !this.idPersona
+      }
+    },
   },
   data() {
-    return { nuevoPermiso: null, mounted: false, fotografiaEnabled:false };
+    return {
+      estaPersona: {
+        permisos:[]
+      },
+      nuevoPermiso: null,
+      mounted: false,
+      fotografiaEnabled: false,
+    };
   },
   props: {
-    idPersona:String,
+    idPersona: String,
     seleccionado: Boolean,
     menuContextual: Boolean,
     opcionesMenuCx: {
       type: Array,
     },
-    
   },
   computed: {
     soyYo() {
-      if (this.mounted && this.estaPersona && this.$store.state.usuario) {
-        return this.$store.state.usuario.id == this.estaPersona.id
-          ? true
-          : false;
+      if (this.mounted && this.idPersona && this.$store.state.usuario) {
+        return this.$store.state.usuario.id == this.idPersona ? true : false;
       }
       return false;
     },
@@ -75,7 +95,7 @@ export default {
   methods: {
     addPermisos() {
       console.log(
-        `enviando ${this.nuevoPermiso} para el usuario con id ${this.estaPersona.id}`
+        `enviando ${this.nuevoPermiso} para el usuario con id ${this.idPersona}`
       );
       this.$apollo
         .mutate({
@@ -92,7 +112,7 @@ export default {
           `,
           variables: {
             nuevoPermiso: this.nuevoPermiso,
-            idUsuario: this.estaPersona.id,
+            idUsuario: this.idPersona,
           },
         })
         .then(() => {})
@@ -109,21 +129,21 @@ export default {
       document.execCommand("copy");
       document.body.removeChild(el);
     },
-    fotografiaCargada(){
+    fotografiaCargada() {
       console.log(`Fotografía cargada`);
-    }
+    },
   },
   mounted() {
     this.mounted = true;
   },
   beforeRouteUpdate() {
     console.log(`Before update`);
-  }
+  },
 };
 </script>
 
 <style scoped>
-.iconoPersona {
+.iconoPersonaAutonomo {
   cursor: pointer;
   position: relative;
   border-radius: 50%;
@@ -131,10 +151,9 @@ export default {
   width: 70px;
   height: 70px;
   border: 1px solid transparent;
-
 }
-.iconoPersona:hover {
-  border-color:purple;
+.iconoPersonaAutonomo:hover {
+  border-color: purple;
 }
 
 .fotografia {

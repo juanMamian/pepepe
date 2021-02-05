@@ -62,16 +62,17 @@ export default {
               query: QUERY_YO,
               variables: { idNotificacion },
             });
-            let indexN = cache.yo.notificaciones.findIndex(
+            let nuevoCache=JSON.parse(JSON.stringify(cache));
+            let indexN = nuevoCache.yo.notificaciones.findIndex(
               (n) => n.id == idNotificacion
             );
             if (indexN > -1) {
-              cache.yo.notificaciones.splice(indexN, 1);
+              nuevoCache.yo.notificaciones.splice(indexN, 1);
             }
             store.writeQuery({
               query: QUERY_YO,
               variables: { idNotificacion },
-              data: cache,
+              data: nuevoCache,
             });
           }
         },

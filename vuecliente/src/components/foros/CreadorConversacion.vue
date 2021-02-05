@@ -5,7 +5,7 @@
       <input
         type="text"
         v-model="titulo"
-        id="inputTitulo"
+        class="inputTitulo"
         placeholder="Titulo de la conversación"
       />
     </div>
@@ -131,7 +131,7 @@ export default {
   padding: 5px 10px;
 }
 
-#inputTitulo {
+.inputTitulo {
   font-size: 18px;
   width: 500px;
   margin-bottom: 15px;

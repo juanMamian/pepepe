@@ -27,14 +27,11 @@ export default {
       nombreEditandose: false,
     };
   },
-  computed: {
-    usuario: function () {
-      return this.$store.state.usuario;
-    },
+  computed: {    
     usuarioResponsableProyecto: function () {
       if (!this.esteProyecto.responsables) return false;
 
-      if (this.esteProyecto.responsables.some((r) => r.id == this.usuario.id)) {
+      if (this.esteProyecto.responsables.includes(this.usuario.id)) {
         return true;
       }
       return false;

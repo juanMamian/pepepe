@@ -31,7 +31,7 @@
       </div>
       <input
         type="text"
-        id="inputNuevoNombre"
+        class="inputNuevoNombre"
         :class="{ letrasRojas: nuevoNombreIlegal }"
         v-model="nuevoNombre"
         v-show="editandoNombre"
@@ -105,11 +105,11 @@
         </div>
       </div>
       <div id="listaResponsables">
-        <icono-persona
-          :estaPersona="persona"
+        <icono-persona-autonomo
+          :idPersona="idPersona"
           :aceptado="true"
-          :key="persona.id"
-          v-for="persona of esteTrabajo.responsables"
+          :key="idPersona"
+          v-for="idPersona of esteTrabajo.responsables"
         />
       </div>
     </div>
@@ -170,11 +170,10 @@
 
 <script>
 import gql from "graphql-tag";
-import { fragmentoResponsables } from "../utilidades/recursosGql";
-import IconoPersona from "./IconoPersona.vue";
 import BuscadorNodosConocimiento from "../atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
 import Foro from "../Foro.vue";
+import IconoPersonaAutonomo from './IconoPersonaAutonomo.vue';
 
 const charProhibidosNombreTrabajo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionTrabajo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
@@ -186,25 +185,22 @@ const QUERY_TRABAJO = gql`
       nombre
       descripcion
       idForo
-      responsables {
-        ...fragResponsables
-      }
+      responsables
     }
   }
-  ${fragmentoResponsables}
 `;
 
 export default {
   name: "IconoTrabajo",
   components: {
-    IconoPersona,
     BuscadorNodosConocimiento,
     Loading,
-    Foro
+    Foro,
+    IconoPersonaAutonomo
   },
   apollo: {
     esteTrabajo: {
-      query: QUERY_TRABAJO,
+     query: QUERY_TRABAJO,
       variables() {
         return {
           idTrabajo: this.idTrabajo,
@@ -244,11 +240,7 @@ export default {
   },
   computed: {
     usuarioResponsableTrabajo: function () {
-      return this.esteTrabajo.responsables.some(
-        (r) => r.id == this.$store.state.usuario.id
-      )
-        ? true
-        : false;
+      return this.esteTrabajo.responsables.includes(this.usuario.id);        
     },
     nuevoNombreIlegal() {
       if (this.nuevoNombre.length < 1) {
@@ -366,7 +358,7 @@ export default {
     },
     asumirComoResponsable() {
       console.log(
-        `enviando id ${this.$store.state.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.idEsteProyecto}`
+        `enviando id ${this.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.idEsteProyecto}`
       );
       this.$apollo
         .mutate({
@@ -378,12 +370,9 @@ export default {
                 idUsuario: $idUsuario
               ) {
                 id
-                responsables {
-                  ...fragResponsables
-                }
+                responsables
               }
             }
-            ${fragmentoResponsables}
           `,
           variables: {
             idProyecto: this.idProyecto,
@@ -408,12 +397,9 @@ export default {
                 idUsuario: $idUsuario
               ) {
                 id
-                responsables {
-                  ...fragResponsables
-                }
+                responsables
               }
             }
-            ${fragmentoResponsables}
           `,
           variables: {
             idProyecto: this.idProyecto,
@@ -529,7 +515,7 @@ export default {
   margin-bottom: 15px;
 }
 
-#inputNuevoNombre {
+.inputNuevoNombre {
   font-size: 23px;
   display: block;
   margin: 10px auto;

@@ -13,7 +13,7 @@ fragment fragResponsables on PublicUsuario {
 `;
 
 export const fragmentoMinimoPersona = gql`
-fragment fragMinimoPersona on MinimoUsuario {
+fragment fragMinimoPersona on PublicUsuario {
   id
   nombres
   apellidos
@@ -76,12 +76,8 @@ export const fragmentoProyecto = gql`
     nombre
     descripcion
     idForo
-    responsables {
-      ...fragResponsables
-    }
-    posiblesResponsables {
-      ...fragResponsables
-    }
+    responsables
+    posiblesResponsables
     idsTrabajos
     objetivos {
       id
@@ -89,7 +85,6 @@ export const fragmentoProyecto = gql`
       descripcion
     }
   }
-  ${fragmentoResponsables}
   
 `;
 

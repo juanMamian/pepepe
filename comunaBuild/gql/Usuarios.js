@@ -83,18 +83,12 @@ exports.typeDefs = apollo_server_express_1.gql `
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
     }
-    type MinimoUsuario{
-        id:ID,
-        nombres:String,
-        apellidos:String,
-        username:String,
-    }
 
     extend type Query {
         todosUsuarios:[PublicUsuario],
-        publicUsuario(idUsuario:ID!):PublicUsuario,
         usuariosProfe:[PublicUsuario],
-        yo:Usuario
+        yo:Usuario,
+        publicUsuario(idUsuario:ID!): PublicUsuario,
     }
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
@@ -153,10 +147,10 @@ exports.resolvers = {
                 return todosUsuarios;
             });
         },
-        publicUsuario: function (_, args, context) {
+        publicUsuario: function (_, { idUsuario }, context) {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
-                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(args.idUsuario).exec();
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
                 }
                 catch (error) {
                     console.log(`error buscando usuario en la base de datos`);
@@ -178,7 +172,7 @@ exports.resolvers = {
                 }
                 return elUsuario;
             });
-        }
+        },
     },
     Mutation: {
         editarDatosUsuario: function (_, { nuevosDatos }, context) {
@@ -390,42 +384,6 @@ exports.resolvers = {
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
         },
-        nombreGrupoEstudiantil: function (parent) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent._id) {
-                    return "";
-                }
-                try {
-                    let elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ estudiantes: parent._id }).exec();
-                    if (!elGrupo)
-                        return "";
-                    var nombreGrupo = elGrupo.nombre;
-                }
-                catch (error) {
-                    console.log(`Error buscando grupo en la base de datos. E: ${error}`);
-                    return "";
-                }
-                return nombreGrupo;
-            });
-        },
-        idGrupoEstudiantil: function (parent) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent._id) {
-                    return "";
-                }
-                try {
-                    let elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ estudiantes: parent._id }).exec();
-                    if (!elGrupo)
-                        return "";
-                    var idGrupo = elGrupo._id;
-                }
-                catch (error) {
-                    console.log(`Error buscando grupo en la base de datos. E: ${error}`);
-                    return "";
-                }
-                return idGrupo;
-            });
-        }
     },
     Date: {
         GraphQLDateTime: graphql_iso_date_1.GraphQLDateTime

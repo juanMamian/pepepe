@@ -45,10 +45,7 @@ query {
     proyectos {
       id
       nombre
-      responsables {
-        id
-        username
-      }
+      responsables
     }
   }
 `;
@@ -119,10 +116,11 @@ export default {
           console.log(`Actualizando cache`);
           if(eliminarProyecto){
             let cache=store.readQuery({query: QUERY_PROYECTOS});
-            let indexP=cache.proyectos.findIndex(p=>p.id==idProyecto);
+            let nuevoCache=JSON.parse(JSON.stringify(cache));
+            let indexP=nuevoCache.proyectos.findIndex(p=>p.id==idProyecto);
             if(indexP>-1){
-              cache.proyectos.splice(indexP, 1);
-              store.writeQuery({query: QUERY_PROYECTOS, data: cache});
+              nuevoCache.proyectos.splice(indexP, 1);
+              store.writeQuery({query: QUERY_PROYECTOS, data: nuevoCache});
               console.log(`Caché actualizado`);
             }
             else{

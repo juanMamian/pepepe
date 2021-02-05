@@ -20,8 +20,10 @@ exports.typeDefs = apollo_server_express_1.gql `
         id: ID,
         nombre: String,
         descripcion:String,
-        responsables: [PublicUsuario],
-        posiblesResponsables:[PublicUsuario],
+        responsables: [String],
+        posiblesResponsables:[String],
+        personasResponsables:[PublicUsuario]
+        personasPosiblesResponsables:[PublicUsuario],
         trabajos: [Trabajo],
         objetivos: [Objetivo],
         idForo:ID,
@@ -151,7 +153,7 @@ exports.resolvers = {
                     console.log(`Error de autenticacion añadiendo posible responsable del proyecto`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
-                if (elProyecto.posiblesResponsables.includes(idUsuario)) {
+                if (elProyecto.posiblesResponsables.includes(idUsuario) || elProyecto.responsables.includes(idUsuario)) {
                     console.log(`el usuario ya estaba en la lista`);
                     throw new apollo_server_express_1.ApolloError("El usuario ya estaba en la lista");
                 }
@@ -890,7 +892,7 @@ exports.resolvers = {
         },
     },
     Proyecto: {
-        responsables: function (parent, _, __) {
+        personasResponsables: function (parent, _, __) {
             return __awaiter(this, void 0, void 0, function* () {
                 if (!parent.responsables) {
                     return [];
@@ -909,7 +911,7 @@ exports.resolvers = {
                 return usuariosResponsables;
             });
         },
-        posiblesResponsables: function (parent, _, __) {
+        personasPosiblesResponsables: function (parent, _, __) {
             return __awaiter(this, void 0, void 0, function* () {
                 if (!parent.posiblesResponsables) {
                     return [];

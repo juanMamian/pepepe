@@ -10,8 +10,10 @@ export const typeDefs = gql`
         id: ID,
         nombre: String,
         descripcion:String,
-        responsables: [PublicUsuario],
-        posiblesResponsables:[PublicUsuario],
+        responsables: [String],
+        posiblesResponsables:[String],
+        personasResponsables:[PublicUsuario]
+        personasPosiblesResponsables:[PublicUsuario],
         trabajos: [Trabajo],
         objetivos: [Objetivo],
         idForo:ID,
@@ -140,7 +142,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            if (elProyecto.posiblesResponsables.includes(idUsuario)) {
+            if (elProyecto.posiblesResponsables.includes(idUsuario) || elProyecto.responsables.includes(idUsuario)) {
                 console.log(`el usuario ya estaba en la lista`);
                 throw new ApolloError("El usuario ya estaba en la lista");
             }
@@ -951,7 +953,7 @@ export const resolvers = {
         },
     },
     Proyecto: {
-        responsables: async function (parent: any, _: any, __: any) {
+        personasResponsables: async function (parent: any, _: any, __: any) {
 
             if (!parent.responsables) {
                 return [];
@@ -971,7 +973,7 @@ export const resolvers = {
 
             return usuariosResponsables;
         },
-        posiblesResponsables: async function (parent: any, _: any, __: any) {
+        personasPosiblesResponsables: async function (parent: any, _: any, __: any) {
             if (!parent.posiblesResponsables) {
                 return [];
             }
@@ -985,24 +987,7 @@ export const resolvers = {
             }
 
             return usuariosPosiblesResponsables;
-        },
-        // trabajos: async function (parent: any, _: any, __: any) {
-        //     console.log(`parent (trabajos): ${JSON.stringify(parent.trabajos)}`);
-        //     if (!parent.trabajos) {
-        //         return [];
-        //     }
-        //     let idsTrabajos = parent.trabajos;
-
-        //     try {
-        //         var trabajos = Trabajo.find({ _id: { $in: idsTrabajos } }).exec();
-        //     } catch (error) {
-        //         console.log(`error buscando a los trabajos del proyecto. E: ${error}`);
-        //         return [];
-        //     }
-
-
-        //     return trabajos;
-        // },
+        }, 
     }
 
 

@@ -140,28 +140,28 @@
           </div>
         </div>
         <div id="listaResponsables">
-          <icono-persona
-            :estaPersona="persona"
-            :key="persona.id"
-            v-for="persona of esteProyecto.responsables"
-            :seleccionado="idResponsableSeleccionado == persona.id"
+          <icono-persona-autonomo
+            :idPersona="idPersona"
+            :key="idPersona"
+            v-for="idPersona of esteProyecto.responsables"
+            :seleccionado="idResponsableSeleccionado == idPersona"
             @click.native.stop="
-              idResponsableSeleccionado = persona.id;
+              idResponsableSeleccionado = idPersona;
               responsableSeleccionadoEstaAceptado = true;
             "
           />
 
-          <icono-persona
+          <icono-persona-autonomo
             class="personaPosibleResponsable"
-            :estaPersona="persona"
-            :key="persona.id"
-            v-for="persona of esteProyecto.posiblesResponsables"
-            :seleccionado="idResponsableSeleccionado == persona.id"
+            :idPersona="idPersona"
+            :key="idPersona"
+            v-for="idPersona of esteProyecto.posiblesResponsables"
+            :seleccionado="idResponsableSeleccionado == idPersona"
             @click.native.stop="
-              idResponsableSeleccionado = persona.id;
+              idResponsableSeleccionado = idPersona;
               responsableSeleccionadoEstaAceptado = false;
             "
-            @dblclick.native.shift="aceptarResponsable(persona.id)"
+            @dblclick.native.shift="aceptarResponsable(idPersona)"
           />
         </div>
       </div>
@@ -198,9 +198,11 @@
             class="controlesTrabajos hoverGris botonesControles"
             @click="crearNuevoTrabajo"
             v-if="usuarioResponsableProyecto"
+            v-show="!creandoTrabajo"
           >
             Crear trabajo
           </div>
+          <loading texto="Enviando..." v-show="creandoTrabajo" />
         </div>
         <div id="listaTrabajos" @click.self="idTrabajoSeleccionado = null">
           <iconoTrabajo
@@ -227,14 +229,11 @@
 <script>
 import gql from "graphql-tag";
 import IconoTrabajo from "./proyecto/IconoTrabajo.vue";
-import IconoPersona from "./proyecto/IconoPersona.vue";
 import IconoObjetivo from "./proyecto/IconoObjetivo.vue";
-import {
-  fragmentoProyecto,
-  fragmentoResponsables,
-} from "./utilidades/recursosGql";
+import { fragmentoProyecto } from "./utilidades/recursosGql";
 import Loading from "./utilidades/Loading.vue";
-import Foro from './Foro.vue';
+import Foro from "./Foro.vue";
+import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
 
 const QUERY_PROYECTO = gql`
   query($idProyecto: ID!) {
@@ -248,7 +247,13 @@ const charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionProyecto = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
-  components: { IconoTrabajo, IconoPersona, IconoObjetivo, Loading, Foro },
+  components: {
+    IconoTrabajo,
+    IconoObjetivo,
+    Loading,
+    Foro,
+    IconoPersonaAutonomo,
+  },
   name: "proyecto",
   apollo: {
     esteProyecto: {
@@ -259,14 +264,14 @@ export default {
         };
       },
       update(respuesta) {
-        this.loading=false;
+        this.loading = false;
         return respuesta.proyecto;
       },
     },
   },
   data() {
     return {
-      loading:true,
+      loading: true,
 
       esteProyecto: {
         responsables: [],
@@ -274,6 +279,8 @@ export default {
       idResponsableSeleccionado: null,
       responsableSeleccionadoEstaAceptado: false,
       enviandoQueryResponsables: false,
+
+      creandoTrabajo: false,
 
       idTrabajoSeleccionado: null,
       idObjetivoSeleccionado: null,
@@ -291,9 +298,7 @@ export default {
       if (!this.esteProyecto.responsables) return false;
 
       if (
-        this.esteProyecto.responsables.some(
-          (r) => r.id == this.$store.state.usuario.id
-        )
+        this.esteProyecto.responsables.includes(this.$store.state.usuario.id)
       ) {
         return true;
       }
@@ -438,19 +443,14 @@ export default {
                 idUsuario: $idUsuario
               ) {
                 id
-                responsables {
-                  ...fragResponsables
-                }
-                posiblesResponsables {
-                  ...fragResponsables
-                }
+                responsables
+                posiblesResponsables
               }
             }
-            ${fragmentoResponsables}
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
-            idUsuario: this.$store.state.usuario.id,
+            idUsuario: this.usuario.id,
           },
         })
         .then(() => {
@@ -475,15 +475,10 @@ export default {
                 idUsuario: $idUsuario
               ) {
                 id
-                responsables {
-                  ...fragResponsables
-                }
-                posiblesResponsables {
-                  ...fragResponsables
-                }
+                responsables
+                posiblesResponsables
               }
             }
-            ${fragmentoResponsables}
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
@@ -513,12 +508,9 @@ export default {
                 idUsuario: $idUsuario
               ) {
                 id
-                posiblesResponsables {
-                  ...fragResponsables
-                }
+                posiblesResponsables
               }
             }
-            ${fragmentoResponsables}
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
@@ -547,15 +539,10 @@ export default {
                 idUsuario: $idUsuario
               ) {
                 id
-                responsables {
-                  ...fragResponsables
-                }
-                posiblesResponsables {
-                  ...fragResponsables
-                }
+                responsables
+                posiblesResponsables
               }
             }
-            ${fragmentoResponsables}
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
@@ -572,17 +559,19 @@ export default {
     },
     crearNuevoTrabajo() {
       console.log(`enviando mutacion de crear nuevo trabajo`);
+      this.creandoTrabajo = true;
       this.$apollo
         .mutate({
           mutation: gql`
             mutation($idProyecto: ID!) {
-              crearTrabajoEnProyecto(idProyecto: $idProyecto)                               
-            }            
+              crearTrabajoEnProyecto(idProyecto: $idProyecto)
+            }
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
           },
           update: (store, { data: { crearTrabajoEnProyecto } }) => {
+            
             console.log(`respuesta: ${JSON.stringify(crearTrabajoEnProyecto)}`);
             const idNuevoTrabajo = crearTrabajoEnProyecto;
             try {
@@ -590,24 +579,33 @@ export default {
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
               });
-              cache.proyecto.idsTrabajos.push(idNuevoTrabajo);
+              console.log(
+                `Trabajos en cache: ${cache.proyecto.idsTrabajos.length}`
+              );              
+              const nuevoCache=JSON.parse(JSON.stringify(cache));
+              nuevoCache.proyecto.idsTrabajos.push(idNuevoTrabajo);
+              
 
               store.writeQuery({
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
-                data: cache,
+                data:nuevoCache,
               });
               console.log(`cache actualizado`);
+              console.log(
+                `Trabajos en cache: ${nuevoCache.proyecto.idsTrabajos.length}`
+              );
             } catch (error) {
               console.log(`Error actualizando cache: ${error}`);
               return;
             }
           },
         })
-        .then((respuesta) => {
-          console.log(`respuesta. ${respuesta}`);
+        .then(() => {
+          this.creandoTrabajo = false;
         })
         .catch((error) => {
+          this.creandoTrabajo = false;
           console.log(`error: ${error}`);
         });
     },
@@ -637,14 +635,14 @@ export default {
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
               });
-              console.log(`cache: ${JSON.stringify(cache)}`);
-              cache.proyecto.objetivos.push(nuevoObjetivo);
-              console.log(`cache: ${JSON.stringify(cache)}`);
+
+              let nuevoCache=JSON.parse(JSON.stringify(cache));
+              nuevoCache.proyecto.objetivos.push(nuevoObjetivo);
 
               store.writeQuery({
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
-                data: cache,
+                data: nuevoCache,
               });
               console.log(`cache actualizado`);
             } catch (error) {
@@ -668,9 +666,10 @@ export default {
           idProyecto: this.esteProyecto.id,
         },
       });
-      let indexT = cache.proyecto.idsTrabajos.indexOf(idTrabajo);
+      let nuevoCache=JSON.parse(JSON.stringify(cache));
+      let indexT = nuevoCache.proyecto.idsTrabajos.indexOf(idTrabajo);
       if (indexT > -1) {
-        cache.proyecto.idsTrabajos.splice(indexT, 1);
+        nuevoCache.proyecto.idsTrabajos.splice(indexT, 1);
       } else {
         console.log(`El trabajo no existía en el proyecto`);
       }
@@ -679,7 +678,7 @@ export default {
         variables: {
           idProyecto: this.esteProyecto.id,
         },
-        data: cache,
+        data: nuevoCache,
       });
     },
     eliminarObjetivoDeCache(idObjetivo) {
@@ -690,11 +689,12 @@ export default {
           idProyecto: this.esteProyecto.id,
         },
       });
-      let indexT = cache.proyecto.objetivos.findIndex(
+      let nuevoCache=JSON.parse(JSON.stringify(cache));
+      let indexT = nuevoCache.proyecto.objetivos.findIndex(
         (t) => t.id == idObjetivo
       );
       if (indexT > -1) {
-        cache.proyecto.objetivos.splice(indexT, 1);
+        nuevoCache.proyecto.objetivos.splice(indexT, 1);
       } else {
         console.log(`El objetivo no existía en el proyecto`);
       }
@@ -703,9 +703,9 @@ export default {
         variables: {
           idProyecto: this.esteProyecto.id,
         },
-        data: cache,
+        data: nuevoCache,
       });
-    },    
+    },
     navegarAlForo() {
       console.log(`Navegando al foro de este proyecto`);
       this.$refs.zonaForo.scrollIntoView();
@@ -831,7 +831,7 @@ export default {
   padding: 10px 20px;
   padding-bottom: 65px;
 }
-.iconoPersona {
+.iconoPersonaAutonomo {
   margin-right: 20px;
   margin-left: 15px;
   vertical-align: middle;

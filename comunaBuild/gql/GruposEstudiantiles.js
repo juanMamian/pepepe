@@ -54,7 +54,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         fechaUpload:Date,
         comentario:String,
         archivo:InfoArchivo,        
-        infoAutor:MinimoUsuario,
+        infoAutor:PublicUsuario,
     }
 
     type ResultadoPublicar{
@@ -67,7 +67,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         estado:String,
         participaciones: [ParticipacionActividadGrupoEstudiantil],
         leidoPorProfe:Boolean,
-        infoEstudiante:MinimoUsuario
+        infoEstudiante:PublicUsuario
     }
 
     type ActividadGrupoEstudiantil{        
@@ -75,7 +75,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         nombre: String,
         fechaUpload:Date,
         desarrollos:[DesarrolloActividadGrupoEstudiantil],
-        infoCreador:MinimoUsuario
+        infoCreador:PublicUsuario
         hayGuia: String,
         idGrupo:ID,
     }

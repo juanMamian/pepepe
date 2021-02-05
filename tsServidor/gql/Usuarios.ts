@@ -86,18 +86,12 @@ export const typeDefs = gql`
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
     }
-    type MinimoUsuario{
-        id:ID,
-        nombres:String,
-        apellidos:String,
-        username:String,
-    }
 
     extend type Query {
         todosUsuarios:[PublicUsuario],
-        publicUsuario(idUsuario:ID!):PublicUsuario,
         usuariosProfe:[PublicUsuario],
-        yo:Usuario
+        yo:Usuario,
+        publicUsuario(idUsuario:ID!): PublicUsuario,
     }
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
@@ -158,15 +152,13 @@ export const resolvers = {
             console.log(`Enviando lista de todos los usuarios`);
             return todosUsuarios;
         },
-        publicUsuario: async function (_: any, args: any, context: contextoQuery) {
-
+        publicUsuario: async function (_: any, {idUsuario}: any, context: contextoQuery) {
             try {
-                var elUsuario = await Usuario.findById(args.idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
             } catch (error) {
                 console.log(`error buscando usuario en la base de datos`);
                 throw new ApolloError("");
             }
-
             return elUsuario;
         },
         yo: async function (_: any, __: any, context: contextoQuery) {
@@ -181,7 +173,8 @@ export const resolvers = {
                 throw new ApolloError("Error accediendo a los datos de usuario");
             }
             return elUsuario;
-        }
+        },
+        
     },
     Mutation: {
         editarDatosUsuario: async function (_: any, { nuevosDatos }: any, context: contextoQuery) {
@@ -392,37 +385,7 @@ export const resolvers = {
             let edadAños = edad / (60 * 60 * 24 * 365 * 1000);
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
-        },
-        nombreGrupoEstudiantil: async function (parent: any) {
-            if (!parent._id) {
-
-                return ""
-            }
-            try {
-                let elGrupo: any = await GrupoEstudiantil.findOne({ estudiantes: parent._id }).exec();
-                if (!elGrupo) return ""
-                var nombreGrupo = elGrupo.nombre;
-            } catch (error) {
-                console.log(`Error buscando grupo en la base de datos. E: ${error}`);
-                return ""
-            }
-            return nombreGrupo;
-        },
-        idGrupoEstudiantil: async function (parent: any) {
-            if (!parent._id) {
-
-                return ""
-            }
-            try {
-                let elGrupo: any = await GrupoEstudiantil.findOne({ estudiantes: parent._id }).exec();
-                if (!elGrupo) return ""
-                var idGrupo = elGrupo._id;
-            } catch (error) {
-                console.log(`Error buscando grupo en la base de datos. E: ${error}`);
-                return ""
-            }
-            return idGrupo;
-        }
+        },        
     },
     Date: {
         GraphQLDateTime

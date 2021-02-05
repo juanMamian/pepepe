@@ -41,7 +41,7 @@ export const typeDefs = gql`
     }
 
     type InfoUltimaRespuesta{
-        autor:MinimoUsuario,
+        autor:PublicUsuario,
         fecha:Date
     }
 

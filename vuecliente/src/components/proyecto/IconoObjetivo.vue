@@ -29,7 +29,7 @@
       </div>
       <input
         type="text"
-        id="inputNuevoNombre"
+        class="inputNuevoNombre"
         :class="{ letrasRojas: nuevoNombreIlegal }"
         v-model="nuevoNombre"
         v-show="editandoNombre"
@@ -323,7 +323,7 @@ cursor: pointer;
   margin-bottom: 15px;
 }
 
-#inputNuevoNombre {
+.inputNuevoNombre {
   font-size: 23px;
   display: block;
   margin: 10px auto;

@@ -50,7 +50,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     }
 
     type InfoUltimaRespuesta{
-        autor:MinimoUsuario,
+        autor:PublicUsuario,
         fecha:Date
     }
 

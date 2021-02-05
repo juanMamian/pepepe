@@ -13,15 +13,14 @@ exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Trabajo_1 = require("../model/Trabajo");
 const Nodo = require("../model/atlas/Nodo");
-const Usuario_1 = require("../model/Usuario");
 const Foro_1 = require("../model/Foros/Foro");
 exports.typeDefs = apollo_server_express_1.gql `
    type Trabajo{
        id: ID,
        nombre: String,
        descripcion:String,
-       responsables: [PublicUsuario],
-       nodosConocimiento:[NodoConocimiento],
+       responsables: [String],
+       nodosConocimiento:[String],
        idForo:ID
    }
 
@@ -83,41 +82,6 @@ exports.resolvers = {
                     }
                 }
                 return elTrabajo;
-            });
-        }
-    },
-    Trabajo: {
-        responsables: function (parent, _, __) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent.responsables) {
-                    return [];
-                }
-                let idsResponsables = parent.responsables;
-                try {
-                    var usuariosResponsables = yield Usuario_1.ModeloUsuario.find({ _id: { $in: idsResponsables } }).exec();
-                }
-                catch (error) {
-                    console.log(`error buscando a los responsables del trabajo. E: ${error}`);
-                    return [];
-                }
-                return usuariosResponsables;
-            });
-        },
-        nodosConocimiento: function (parent, _, __) {
-            return __awaiter(this, void 0, void 0, function* () {
-                console.log(`parent (nodos): ${JSON.stringify(parent.nodosConocimiento)}`);
-                if (!parent.nodosConocimiento) {
-                    return [];
-                }
-                let idsNodos = parent.nodosConocimiento;
-                try {
-                    var nodos = Nodo.find({ _id: { $in: idsNodos } }).exec();
-                }
-                catch (error) {
-                    console.log(`error buscando a los nodosConocimiento del trabajo. E: ${error}`);
-                    return [];
-                }
-                return nodos;
             });
         }
     },

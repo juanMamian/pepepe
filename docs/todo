@@ -13,7 +13,7 @@ Reestructuracion no-urgente
 *Cuando un usuario es eliminado, se daña el funcionamiento de una lista de cosas. Solucionar.
  -Responsables de proyecto y trabajos.
  *Refactor las conversaciones en el foro porque están embedidas en el foro, con lo cual no hay buena paginacion.
-
+*Revisar todos los sitios del cliente en donde se usó WriteQuery sin crear un nuevo cache.
 
 Funcionalidad urgente
 

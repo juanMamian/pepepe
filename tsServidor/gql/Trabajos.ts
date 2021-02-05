@@ -9,8 +9,8 @@ export const typeDefs = gql`
        id: ID,
        nombre: String,
        descripcion:String,
-       responsables: [PublicUsuario],
-       nodosConocimiento:[NodoConocimiento],
+       responsables: [String],
+       nodosConocimiento:[String],
        idForo:ID
    }
 
@@ -76,40 +76,7 @@ export const resolvers ={
             return elTrabajo;
         }
     },
-    Trabajo:{
-        responsables:async function(parent:any, _:any, __:any){
-            if(!parent.responsables){
-                return [];
-            }
-            let idsResponsables=parent.responsables;
-            
-            try {
-                var usuariosResponsables=await Usuario.find({_id: {$in : idsResponsables}}).exec();
-            } catch (error) {
-                console.log(`error buscando a los responsables del trabajo. E: ${error}`);
-                return [];
-            }
-
-            return usuariosResponsables;
-        },
-        nodosConocimiento:async function(parent:any, _:any, __:any){
-            console.log(`parent (nodos): ${JSON.stringify(parent.nodosConocimiento)}`);
-            if(!parent.nodosConocimiento){
-                return [];
-            }
-            let idsNodos=parent.nodosConocimiento;
-            
-            try {
-                var nodos=Nodo.find({_id: {$in : idsNodos}}).exec();
-            } catch (error) {
-                console.log(`error buscando a los nodosConocimiento del trabajo. E: ${error}`);
-                return [];
-            }
-
-
-            return nodos;
-        }
-    },
+  
 
 
 

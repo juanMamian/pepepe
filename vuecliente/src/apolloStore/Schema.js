@@ -1,14 +1,5 @@
 import gql from "graphql-tag"
 
-const UsuarioQuery=gql`
-    {
-        usuario @client{
-            username
-            permisos
-        }
-    }
-`;
-
 
 /*
 export const typeDefs=gql`
@@ -39,21 +30,6 @@ export const typeDefs = gql`
 
 
 
-export const resolvers={
-    Mutation:{
-        setUsuario: (_, {username, permisos}, {cache})=>{
-            cache.writeQuery({
-                query: UsuarioQuery,
-                data:{
-                    username,
-                    permisos,
-                }
-            });
-            
-            return cache.readQuery({query: UsuarioQuery});
-        }
-    },
-
-}
+export const resolvers={}
 
 

@@ -27,6 +27,9 @@ Vue.mixin({
         Authorization: "Bearer " + infoSesion.token
       }
     },
+    usuario: function () {
+      return this.$store.state.usuario;
+    },
     usuarioLogeado: function () {
       if(!this.$store.state.token){
         return false;
