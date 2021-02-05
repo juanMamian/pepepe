@@ -24,15 +24,18 @@ export const resolvers ={
     Query:{
         trabajo: async function(_:any, {idTrabajo}:any, context: contextoQuery){
             console.log(`Solicitado un trabajo de id ${idTrabajo} `);
+            let tieneForo = true;
 
             try {
                 var elTrabajo:any=await Trabajo.findById(idTrabajo).exec();
+                if(!elTrabajo){
+                    throw "Trabajo no existía"
+                }
             } catch (error) {
                 console.log(`error buscando un trabajo. E: ${error}`);
                 throw new ApolloError("");
             }
 
-            let tieneForo = true;
 
             if (!elTrabajo.idForo) {
                 tieneForo = false;
@@ -72,7 +75,7 @@ export const resolvers ={
                 }
 
             }
-
+console.log(`Enviando trabajo`);
             return elTrabajo;
         }
     },

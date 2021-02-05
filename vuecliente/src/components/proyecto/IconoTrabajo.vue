@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel" v-show="seleccionado">
+    <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel" v-show="seleccionado" v-if="esteTrabajo.idForo">
       <div class="nombreZona">foro</div>
       <foro :idForo="esteTrabajo.idForo" />
     </div>
