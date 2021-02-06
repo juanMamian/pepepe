@@ -13,6 +13,7 @@ export const typeDefs = gql`
 
     input InputNuevaRespuesta{
         mensaje:String
+        infoArchivo:InfoArchivoSubido
     }
 
     input InputIniciarConversacion{
@@ -80,7 +81,7 @@ export const typeDefs = gql`
 `;
 
 const sizePaginaConversacion = 5;
-const sizePaginaForo=6
+const sizePaginaForo = 6
 
 export const resolvers = {
     Query: {
@@ -117,10 +118,10 @@ export const resolvers = {
         },
         async numPagsConversacionesForo(_: any, { idForo }, __: any) {
             console.log(`||||||||||||`);
-            
+
             try {
-                let elForo:any=await Foro.findById(idForo).exec();
-                let num=elForo.conversaciones.length;
+                let elForo: any = await Foro.findById(idForo).exec();
+                let num = elForo.conversaciones.length;
                 var pags = Math.ceil(num / sizePaginaForo);
             } catch (error) {
                 console.log(`Error contando las conversaciones. E: ${error}`);
@@ -132,16 +133,16 @@ export const resolvers = {
         async respuestasPaginaDeConversacion(_: any, { idConversacion, pagina }, __: any) {
             console.log(`Peticion de respuestas de la pagina ${pagina} en la conversacion ${idConversacion}`);
             let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
-            let numRespuestas:any=await Respuesta.countDocuments().exec();
-            
-            var numPaginas=0;
-            if(numRespuestas>0){
-                 numPaginas=Math.ceil(numRespuestas / sizePaginaConversacion);
-            }
-            
+            let numRespuestas: any = await Respuesta.countDocuments().exec();
 
-            if(pagina<1 || pagina>numPaginas){
-                pagina=numPaginas;
+            var numPaginas = 0;
+            if (numRespuestas > 0) {
+                numPaginas = Math.ceil(numRespuestas / sizePaginaConversacion);
+            }
+
+
+            if (pagina < 1 || pagina > numPaginas) {
+                pagina = numPaginas;
             }
 
             try {
@@ -151,14 +152,14 @@ export const resolvers = {
                 new ApolloError("Error conectando con la base de datos");
             }
             console.log(`Enviando ${lasRespuestas.length} respuestas en la pagina ${pagina} de ${numPaginas}`);
-            return {numPaginas, pagina, respuestas: lasRespuestas};
+            return { numPaginas, pagina, respuestas: lasRespuestas };
         },
         async conversacionesPaginaForo(_: any, { idForo, pagina }, __: any) {
             console.log(`Peticion de respuestas de la pagina ${pagina} en el foro ${idForo}`);
-         
+
             try {
                 var elForo: any = await Foro.findById(idForo).exec();
-                if(!elForo){
+                if (!elForo) {
                     throw "Foro no encontrado"
                 }
             } catch (error) {
@@ -166,26 +167,26 @@ export const resolvers = {
                 new ApolloError("Error conectando con la base de datos");
             }
 
-            let todasConversaciones=elForo.conversaciones;
-            let numConversaciones=todasConversaciones.length;
-            
-            var numPaginas=0;
-            if(numConversaciones>0){
-                 numPaginas=Math.ceil(numConversaciones / sizePaginaConversacion);
+            let todasConversaciones = elForo.conversaciones;
+            let numConversaciones = todasConversaciones.length;
+
+            var numPaginas = 0;
+            if (numConversaciones > 0) {
+                numPaginas = Math.ceil(numConversaciones / sizePaginaConversacion);
             }
-            if(pagina<1 || pagina>numPaginas){
-                pagina=numPaginas;
+            if (pagina < 1 || pagina > numPaginas) {
+                pagina = numPaginas;
             }
-                
-            let conversacionesPagina=todasConversaciones.splice((pagina-1)*sizePaginaForo, sizePaginaForo);
+
+            let conversacionesPagina = todasConversaciones.splice((pagina - 1) * sizePaginaForo, sizePaginaForo);
             console.log(`Enviando ${conversacionesPagina.length} conversaciones para la pagina ${pagina} de ${numPaginas}`);
-            return {pagina, numPaginas, conversaciones: conversacionesPagina};
+            return { pagina, numPaginas, conversaciones: conversacionesPagina };
         }
 
 
     },
     Mutation: {
-       
+
         async iniciarConversacionConPrimerMensajeForo(_: any, { idForo, input }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||`);
             console.log(`Recibida solicitud de iniciar una conversacion con primera respuesta en foro con id ${idForo} con input: ${JSON.stringify(input)}`);
@@ -236,11 +237,11 @@ export const resolvers = {
             }
 
 
-            let infoAutor={
-                id:elUsuario._id,
-                nombres:elUsuario.nombres,
+            let infoAutor = {
+                id: elUsuario._id,
+                nombres: elUsuario.nombres,
                 apellidos: elUsuario.apellidos,
-                username:elUsuario.username,
+                username: elUsuario.username,
             }
 
             let respuesta = {
@@ -254,16 +255,16 @@ export const resolvers = {
                 titulo,
                 idCreador: credencialesUsuario.id,
                 respuestas: [respuesta],
-                acceso:"publico"
+                acceso: "publico"
             });
 
-            let idConversacion=nuevaConversacion._id;
+            let idConversacion = nuevaConversacion._id;
 
             try {
                 await elForo.conversaciones.push(nuevaConversacion);
                 await elForo.save();
                 let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
-                let laRespuesta=new Respuesta(respuesta);
+                let laRespuesta = new Respuesta(respuesta);
                 await laRespuesta.save();
             } catch (error) {
                 console.log(`Error guardando el foro con la nueva conversacion. E: ${error}`);
@@ -319,12 +320,12 @@ export const resolvers = {
                     console.log(`Error buscando y guardando el foro para eliminar la conversación`);
                 }
                 console.log(`Conversación eliminada del foro`);
-                
-                mongoose.connection.db.dropCollection("respuestasDeConversacion"+idConversacion, function(
+
+                mongoose.connection.db.dropCollection("respuestasDeConversacion" + idConversacion, function (
                     err,
                     result
                 ) {
-                    if(err){
+                    if (err) {
                         console.log(`Error eliminando la coleccion. E: ${err}`);
                     }
                     console.log("Collection droped");
@@ -362,8 +363,8 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            let laConversacion=elForo.conversaciones.id(idConversacion);
-            if(!laConversacion){
+            let laConversacion = elForo.conversaciones.id(idConversacion);
+            if (!laConversacion) {
                 console.log(`La conversación no existía`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
@@ -383,16 +384,17 @@ export const resolvers = {
             }
 
             nuevaRespuesta.mensaje = mensaje;
-            if (!nuevaRespuesta.idAutor) {
-                nuevaRespuesta.idAutor = credencialesUsuario.id;
-                let infoAutor={
-                    id:elUsuario._id,
-                    nombres:elUsuario.nombres,
-                    apellidos: elUsuario.apellidos,
-                    username:elUsuario.username,
-                }
-                nuevaRespuesta.infoAutor=infoAutor;
+            nuevaRespuesta.archivo=nuevaRespuesta.infoArchivo;
+
+            nuevaRespuesta.idAutor = credencialesUsuario.id;
+            let infoAutor = {
+                id: elUsuario._id,
+                nombres: elUsuario.nombres,
+                apellidos: elUsuario.apellidos,
+                username: elUsuario.username,
             }
+            nuevaRespuesta.infoAutor = infoAutor;
+
 
             console.log(`En la conversación ${laConversacion.titulo}`);
 
@@ -405,12 +407,12 @@ export const resolvers = {
                 console.log(`Error guardando el foro. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            let cantRespuestas:number=await Respuesta.countDocuments().exec();
+            let cantRespuestas: number = await Respuesta.countDocuments().exec();
 
             try {
-                laConversacion.cantidadRespuestas=cantRespuestas;
-                laConversacion.infoUltimaRespuesta={
-                    idAutor:credencialesUsuario.id,                    
+                laConversacion.cantidadRespuestas = cantRespuestas;
+                laConversacion.infoUltimaRespuesta = {
+                    idAutor: credencialesUsuario.id,
                 }
                 await elForo.save();
             } catch (error) {
@@ -425,7 +427,7 @@ export const resolvers = {
     },
     Foro: {
         miembros: async function (parent: any, _: any, __: any) {
-            
+
 
             if (!parent.miembros) {
                 return [];
@@ -508,7 +510,7 @@ export const resolvers = {
             return usuarioAutor;
         },
     },
-    InfoUltimaRespuesta:{
+    InfoUltimaRespuesta: {
         autor: async function (parent: any, _: any, __: any) {
             if (!parent.idAutor) {
                 return [];

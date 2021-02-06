@@ -99,6 +99,9 @@ export const fragmentoRespuesta = gql`
       apellidos
       username
     }
+    archivo{
+      googleDriveDirectLink
+    }
   }
 `;
 

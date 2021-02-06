@@ -11,6 +11,7 @@ dotenv.config();
 const usuariosRoutes = require("./routes/usuarios");
 const routesNodos = require("./routes/atlas/nodos");
 const routesActividadesProfes = require("./routes/actividadesProfes");
+const routesForos = require("./routes/foros");
 const mongoose_1 = require("./mongoose");
 const ejwt = require("express-jwt");
 const cors_1 = __importDefault(require("cors"));
@@ -27,11 +28,13 @@ app.use("/assetsAtlas", express_1.default.static(__dirname + '/assetsAtlas'));
 const rutaFotografias = /api\/usuarios\/fotografias\/\S+/;
 const rutaGuias = /api\/actividadesProfes\/guia\/\S+/;
 const rutaEvidencias = /api\/actividadesProfes\/evidencia\/\S+/;
+const rutaAdjuntos = /api\/foros\/adjuntos\/\S+/;
 //Routes
 app.use(express_1.default.json());
 app.use("/api/usuarios", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: ['/api/usuarios/login', '/api/usuarios/registro', rutaFotografias] }), usuariosRoutes);
 app.use("/api/atlas", routesNodos);
 app.use("/api/actividadesProfes", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaGuias, rutaEvidencias] }), routesActividadesProfes);
+app.use("/api/foros", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaAdjuntos] }), routesForos);
 app.get("/", function (req, res) {
     return res.redirect("/pepepe");
 });

@@ -22,6 +22,7 @@ exports.typeDefs = apollo_server_express_1.gql `
 
     input InputNuevaRespuesta{
         mensaje:String
+        infoArchivo:InfoArchivoSubido
     }
 
     input InputIniciarConversacion{
@@ -367,16 +368,15 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Mensaje ilegal");
                 }
                 nuevaRespuesta.mensaje = mensaje;
-                if (!nuevaRespuesta.idAutor) {
-                    nuevaRespuesta.idAutor = credencialesUsuario.id;
-                    let infoAutor = {
-                        id: elUsuario._id,
-                        nombres: elUsuario.nombres,
-                        apellidos: elUsuario.apellidos,
-                        username: elUsuario.username,
-                    };
-                    nuevaRespuesta.infoAutor = infoAutor;
-                }
+                nuevaRespuesta.archivo = nuevaRespuesta.infoArchivo;
+                nuevaRespuesta.idAutor = credencialesUsuario.id;
+                let infoAutor = {
+                    id: elUsuario._id,
+                    nombres: elUsuario.nombres,
+                    apellidos: elUsuario.apellidos,
+                    username: elUsuario.username,
+                };
+                nuevaRespuesta.infoAutor = infoAutor;
                 console.log(`En la conversación ${laConversacion.titulo}`);
                 let Respuesta = mongoose_1.default.model("respuestasDeConversacion" + idConversacion, Conversacion_1.esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
                 const laRespuesta = new Respuesta(nuevaRespuesta);

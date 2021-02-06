@@ -11,6 +11,15 @@
     <div class="mensajeRespuesta">
       {{ estaRespuesta.mensaje }}
     </div>
+    <div id="archivo" v-if="estaRespuesta.archivo && estaRespuesta.archivo.googleDriveDirectLink">
+      <a :href="estaRespuesta.archivo.googleDriveDirectLink">
+        <img
+          src="@/assets/iconos/downloadFile.png"
+          alt="Descargar archivo"
+          id="imgDownloadArchivo"
+        />
+      </a>
+    </div>
 
     <div class="controles">
       <div
@@ -88,11 +97,11 @@ export default {
   border-radius: 5px;
   display: grid;
   grid-template-areas:
-    "info info"
-    "autor mensaje"
-    "controles controles";
-  grid-template-columns: 100px 1fr;
-  grid-template-rows: 10px 1fr 15px;
+    "info info info"
+    "autor mensaje adjunto"
+    "controles controles controles";
+  grid-template-columns: 100px 1fr 60px;
+  grid-template-rows: 50px 1fr 15px;
   row-gap: 10px;
   align-items: center;
   justify-items: center;
@@ -117,6 +126,7 @@ export default {
   width: 70px;
   height: 70px;
   border-radius: 50%;
+  grid-area: autor;
 }
 .controles {
   grid-area: controles;
@@ -131,5 +141,16 @@ export default {
 }
 .controlRespuesta:hover {
   background-color: red;
+}
+#archivo{
+  padding: 5px;
+}
+
+#imgDownloadArchivo {
+  grid-area: adjunto;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background-color: #4bb36b;
 }
 </style>

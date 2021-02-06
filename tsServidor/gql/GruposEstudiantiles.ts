@@ -48,7 +48,7 @@ export const typeDefs = gql`
     type InfoArchivo{
         nombre: String,
         extension: String,
-        googleDriveDirectLink:String
+        googleDriveDirectLink:String,        
     }
 
     type ParticipacionActividadGrupoEstudiantil{

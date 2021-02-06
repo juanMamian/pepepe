@@ -60,7 +60,6 @@ const context = ({ req, res, connection }) => {
             usuario = jwt.verify(token, process.env.JWT_SECRET);
         }
         catch (error) {
-            console.log(`HTTP: Error verificando el token ${token}.E: ${error}`);
             usuario = {
                 id: "",
                 permisos: []
@@ -80,7 +79,6 @@ const onConnect = function (connectionParams, webSocket) {
             usuario = jwt.verify(token, process.env.JWT_SECRET);
         }
         catch (error) {
-            console.log(`WS Error verificando el token ${token}.E: ${error}`);
             usuario = {
                 id: "",
                 permisos: []

@@ -10,6 +10,23 @@
       />
       <span id="tituloCuadro">Envía una respuesta</span>
     </div>
+    <div id="adjuntarArchivo" v-show="cuadroAbierto">
+      <input
+        type="file"
+        id="inputArchivoAdjunto"
+        ref="inputArchivoAdjunto"
+        @change="actualizarNombreDeArchivo"
+      />
+      <img
+        src="@/assets/iconos/adjuntar.png"
+        alt="Ajuntar archivo"
+        id="imgAdjuntar"
+        title="adjuntar un archivo"
+        @click="abrirSelectorDeArchivos"
+      />
+      <br>
+      <div id="nombreArchivoSeleccionado" v-show="nombreArchivoSeleccionado">{{ nombreArchivoSeleccionado }}</div>
+    </div>
     <textarea
       v-show="cuadroAbierto"
       name="inputMensaje"
@@ -20,21 +37,23 @@
     ></textarea>
 
     <img
-      v-show="cuadroAbierto && !enviandoRespuesta"
+      v-show="cuadroAbierto && !enviandoRespuesta && !mensajeIlegal"
       src="@/assets/iconos/enviar.png"
       alt="Enviar"
       title="Enviar respuesta"
       id="bEnviar"
-      @click="enviarRespuesta"
+      @click="evaluarAdjunto"
     />
     <loading texto="Enviando respuesta..." v-show="enviandoRespuesta" />
   </div>
 </template>
 
 <script>
-import gql from 'graphql-tag';
+import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
-import { fragmentoRespuesta } from '../utilidades/recursosGql';
+import { fragmentoRespuesta } from "../utilidades/recursosGql";
+import axios from 'axios';
+
 var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
@@ -47,44 +66,108 @@ export default {
     return {
       mensaje: null,
       cuadroAbierto: false,
-      enviandoRespuesta:false,
+      enviandoRespuesta: false,
+      nombreArchivoSeleccionado: null,
     };
   },
   methods: {
-    enviarRespuesta() {      
+    evaluarAdjunto() {
       if (this.mensajeIlegal) {
         return;
       }
-      var nuevaRespuesta={
-        mensaje:this.mensaje
-      }
-      var dis=this;
-      this.enviandoRespuesta=true;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idConversacion: ID!, $nuevaRespuesta: InputNuevaRespuesta) {
-            postRespuestaConversacion(
-              idConversacion: $idConversacion
-              nuevaRespuesta: $nuevaRespuesta
-            ) {
-              ...fragRespuesta
-            }
-          }
-          ${fragmentoRespuesta}
-        `,
-        variables: {
-          idConversacion: dis.idConversacion,
-          nuevaRespuesta,
-        }        
-      }).then(({data:{postRespuestaConversacion}})=>{
-        dis.enviandoRespuesta=false;        
-        this.$emit("hiceRespuesta", postRespuestaConversacion);
-      }).catch((error)=>{
-        dis.enviandoRespuesta=false;
-        console.log(`Error. E: ${error}`);
-      })
+      this.enviandoRespuesta = true;
+      let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
+      var datos = new FormData();
 
-      ;
+      if (!inputArchivoAdjunto.value) {
+        console.log(`El input de archivo adjunto estaba vacio`);
+        let nuevaRespuesta = {
+              infoArchivo: null,
+              mensaje: this.mensaje,
+            };
+        this.enviarNuevaRespuesta(nuevaRespuesta);
+      } else {
+        const archivoAdjunto = inputArchivoAdjunto.files[0];
+        const fileType = archivoAdjunto["type"];
+        console.log(`subiendo un ${fileType}`);
+        datos.append("archivoAdjunto", archivoAdjunto);
+        var dis=this;
+        axios({
+          method: "post",
+          url:
+            this.serverUrl +
+            "/api/foros/adjuntarArchivoParaRespuesta",
+          data: datos,
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: "Bearer " + this.$store.state.token,
+          },
+        })
+          .then(({ data: { infoArchivo } }) => {
+            //Se ha subido el archivo. Ahora publicar la respuesta
+
+            //Creando la nueva participacion
+
+            let nuevaRespuesta = {
+              infoArchivo: {
+                idGoogleDrive: infoArchivo.idGoogleDrive,
+                googleDriveDirectLink: infoArchivo.googleDriveDirectLink,
+                extension: infoArchivo.extensionDeArchivo,
+                nombre: infoArchivo.extensionDeArchivo,
+              },
+              mensaje: dis.mensaje,
+            };
+
+            this.enviarNuevaRespuesta(nuevaRespuesta);
+          })
+          .catch((error) => {
+            this.enviandoRespuesta = false;
+            console.log(`Errores: ${error}`);
+            if (error.response) {
+              if (error.response.data.msjUsuario) {
+                alert(error.response.data.msjUsuario);
+              }
+            }
+          });
+      }
+    },
+    enviarNuevaRespuesta(nuevaRespuesta) {
+      if (this.mensajeIlegal) {
+        return;
+      }
+      console.log(`Enviando respuesta`);
+      
+      var dis = this;
+      this.enviandoRespuesta = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idConversacion: ID!
+              $nuevaRespuesta: InputNuevaRespuesta
+            ) {
+              postRespuestaConversacion(
+                idConversacion: $idConversacion
+                nuevaRespuesta: $nuevaRespuesta
+              ) {
+                ...fragRespuesta
+              }
+            }
+            ${fragmentoRespuesta}
+          `,
+          variables: {
+            idConversacion: dis.idConversacion,
+            nuevaRespuesta,
+          },
+        })
+        .then(({ data: { postRespuestaConversacion } }) => {
+          dis.enviandoRespuesta = false;
+          this.$emit("hiceRespuesta", postRespuestaConversacion);
+        })
+        .catch((error) => {
+          dis.enviandoRespuesta = false;
+          console.log(`Error. E: ${error}`);
+        });
     },
     toggleCuadroAbierto() {
       this.cuadroAbierto = !this.cuadroAbierto;
@@ -92,6 +175,17 @@ export default {
     cerrarse() {
       this.mensaje = null;
       this.cuadroAbierto = false;
+    },
+    actualizarNombreDeArchivo() {
+      if (!this.$refs.inputArchivoAdjunto.value) {
+        console.log(`Nullificando el nombre de archivo seleccionado`);
+        this.nombreArchivoSeleccionado = null;
+        return;
+      }
+      this.nombreArchivoSeleccionado = this.$refs.inputArchivoAdjunto.files[0].name;
+    },
+    abrirSelectorDeArchivos() {
+      this.$refs.inputArchivoAdjunto.click();
     },
   },
   computed: {
@@ -136,11 +230,33 @@ export default {
   height: 40px;
   background-color: green;
 }
+#bEnviar:hover {
+    background-color: rgb(84, 224, 103);  
+}
 #inputMensaje {
   width: 80%;
   display: block;
   margin: 5px auto;
   min-height: 200px;
   font-size: 20px;
+}
+#inputArchivoAdjunto{
+  display: none;
+}
+#imgAdjuntar{
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  background-color: #ecd1d1;
+}
+#imgAdjuntar:hover{
+  background-color: #55b95c;  
+}
+#nombreArchivoSeleccionado{
+    background-color: #55b95c;  
+    padding: 3px;
+    border-radius: 10px;
+    display: inline-block;
 }
 </style>
