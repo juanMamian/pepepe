@@ -97,6 +97,12 @@ router.post("/adjuntarArchivoParaRespuesta", upload.single("archivoAdjunto"), fu
             else if (req.file.mimetype == "audio/x-m4a") {
                 extensionDeArchivo = "m4a";
             }
+            else if (req.file.mimetype == "application/vnd.oasis.opendocument.text") {
+                extensionDeArchivo = "odt";
+            }
+            else if (req.file.mimetype == "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+                extensionDeArchivo = "docx";
+            }
             else {
                 console.log(`No habia extensión para el tipo de archivo ${req.file.mimetype}`);
                 return res.status(400).send({ msjUsuario: "El mimetype " + req.file.mimetype + " no está soportado" });
@@ -114,6 +120,9 @@ router.post("/adjuntarArchivoParaRespuesta", upload.single("archivoAdjunto"), fu
                     if (anchoOriginal > 800) {
                         console.log(`Empequeñeciendo a 800 width. Tenía ${anchoOriginal}`);
                         imgFinal = yield imgOriginal.resize({ width: 800 }).toBuffer();
+                    }
+                    else {
+                        imgFinal = yield imgOriginal.toBuffer();
                     }
                     archivoFinal = imgFinal;
                 }

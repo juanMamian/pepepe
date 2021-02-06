@@ -24,8 +24,10 @@
         title="adjuntar un archivo"
         @click="abrirSelectorDeArchivos"
       />
-      <br>
-      <div id="nombreArchivoSeleccionado" v-show="nombreArchivoSeleccionado">{{ nombreArchivoSeleccionado }}</div>
+      <br />
+      <div id="nombreArchivoSeleccionado" v-show="nombreArchivoSeleccionado">
+        {{ nombreArchivoSeleccionado }}
+      </div>
     </div>
     <textarea
       v-show="cuadroAbierto"
@@ -37,7 +39,8 @@
     ></textarea>
 
     <img
-      v-show="cuadroAbierto && !enviandoRespuesta && !mensajeIlegal"
+      v-show="cuadroAbierto && !enviandoRespuesta"
+      :class="{ deshabilitado: mensajeIlegal }"
       src="@/assets/iconos/enviar.png"
       alt="Enviar"
       title="Enviar respuesta"
@@ -52,7 +55,7 @@
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 import { fragmentoRespuesta } from "../utilidades/recursosGql";
-import axios from 'axios';
+import axios from "axios";
 
 var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
@@ -82,21 +85,19 @@ export default {
       if (!inputArchivoAdjunto.value) {
         console.log(`El input de archivo adjunto estaba vacio`);
         let nuevaRespuesta = {
-              infoArchivo: null,
-              mensaje: this.mensaje,
-            };
+          infoArchivo: null,
+          mensaje: this.mensaje,
+        };
         this.enviarNuevaRespuesta(nuevaRespuesta);
       } else {
         const archivoAdjunto = inputArchivoAdjunto.files[0];
         const fileType = archivoAdjunto["type"];
         console.log(`subiendo un ${fileType}`);
         datos.append("archivoAdjunto", archivoAdjunto);
-        var dis=this;
+        var dis = this;
         axios({
           method: "post",
-          url:
-            this.serverUrl +
-            "/api/foros/adjuntarArchivoParaRespuesta",
+          url: this.serverUrl + "/api/foros/adjuntarArchivoParaRespuesta",
           data: datos,
           headers: {
             "Content-Type": "multipart/form-data",
@@ -136,7 +137,7 @@ export default {
         return;
       }
       console.log(`Enviando respuesta`);
-      
+
       var dis = this;
       this.enviandoRespuesta = true;
       this.$apollo
@@ -163,6 +164,7 @@ export default {
         .then(({ data: { postRespuestaConversacion } }) => {
           dis.enviandoRespuesta = false;
           this.$emit("hiceRespuesta", postRespuestaConversacion);
+          this.cerrarse();
         })
         .catch((error) => {
           dis.enviandoRespuesta = false;
@@ -174,6 +176,8 @@ export default {
     },
     cerrarse() {
       this.mensaje = null;
+      this.$refs.inputArchivoAdjunto.value = null;
+      this.nombreArchivoSeleccionado = null;
       this.cuadroAbierto = false;
     },
     actualizarNombreDeArchivo() {
@@ -231,7 +235,7 @@ export default {
   background-color: green;
 }
 #bEnviar:hover {
-    background-color: rgb(84, 224, 103);  
+  background-color: rgb(84, 224, 103);
 }
 #inputMensaje {
   width: 80%;
@@ -240,23 +244,23 @@ export default {
   min-height: 200px;
   font-size: 20px;
 }
-#inputArchivoAdjunto{
+#inputArchivoAdjunto {
   display: none;
 }
-#imgAdjuntar{
+#imgAdjuntar {
   width: 50px;
   height: 50px;
   border-radius: 50%;
   cursor: pointer;
   background-color: #ecd1d1;
 }
-#imgAdjuntar:hover{
-  background-color: #55b95c;  
+#imgAdjuntar:hover {
+  background-color: #55b95c;
 }
-#nombreArchivoSeleccionado{
-    background-color: #55b95c;  
-    padding: 3px;
-    border-radius: 10px;
-    display: inline-block;
+#nombreArchivoSeleccionado {
+  background-color: #55b95c;
+  padding: 3px;
+  border-radius: 10px;
+  display: inline-block;
 }
 </style>
