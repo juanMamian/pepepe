@@ -12,15 +12,18 @@
         </div>
       </router-link>
 
-      <router-link to="/proyectos" class="hoverNegro">
+      <router-link to="/proyectos" class="hoverNegro" v-if="usuarioLogeado == true"
+>
         <div class="botonNav" id="navProyectos">Proyectos</div>
       </router-link>
 
-      <router-link to="/atlas" class="hoverNegro">
+      <router-link to="/atlas" class="hoverNegro" v-if="usuarioLogeado == true"
+>
         <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
       </router-link>
 
-      <router-link to="/trabajos" class="hoverNegro disabled">
+      <router-link to="/trabajos" class="hoverNegro disabled" v-if="usuarioLogeado == true"
+>
         <div class="botonNav" id="navTrabajos">Trabajos</div>
       </router-link>
 

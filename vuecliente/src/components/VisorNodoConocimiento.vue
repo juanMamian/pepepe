@@ -120,7 +120,7 @@
             id="botonAddExperto"
             @click="entrarListaPosiblesExpertos"
           >
-            Quiero hacerme experto
+            Quiero aportar como experto
           </div>
           <div
             class="controlesExpertos hoverGris botonesControles"

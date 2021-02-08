@@ -10,7 +10,7 @@
     @dblclick="abrirPaginaNodo"
   >
     <img
-      :src="'http://localhost:3000/api/atlas/iconos/' + esteNodo.id"
+      :src="this.serverUrl+'/api/atlas/iconos/' + esteNodo.id"
       alt=""
       class="iconoNodo"
       ref="iconoNodo"
