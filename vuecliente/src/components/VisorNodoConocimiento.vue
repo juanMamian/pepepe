@@ -2,7 +2,10 @@
   <div class="visorNodoConocimiento">
     <div id="layout">
       <div id="zonaNombre">
-        <div class="controlesZona" v-show="usuarioExperto || usuarioSuperadministrador">
+        <div
+          class="controlesZona"
+          v-show="usuarioExperto || usuarioSuperadministrador"
+        >
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -112,11 +115,7 @@
           <div
             class="controlesExpertos hoverGris botonesControles"
             :class="{ deshabilitado: enviandoQueryExpertos }"
-            v-if="
-              usuarioLogeado &&
-              !usuarioExperto &&
-              !usuarioPosibleExperto              
-            "
+            v-if="usuarioLogeado && !usuarioExperto && !usuarioPosibleExperto"
             id="botonAddExperto"
             @click="entrarListaPosiblesExpertos"
           >
@@ -136,7 +135,10 @@
           <div
             class="controlesExpertos hoverGris botonesControles"
             :class="{ deshabilitado: enviandoQueryExpertos }"
-            v-if="(usuarioLogeado == true && usuarioExperto == true) || usuarioSuperadministrador==true"
+            v-if="
+              (usuarioLogeado == true && usuarioExperto == true) ||
+              usuarioSuperadministrador == true
+            "
             v-show="
               idExpertoSeleccionado != null &&
               expertoSeleccionadoEstaAceptado == false
@@ -179,8 +181,13 @@
         class="seccionPrimerNivel"
         v-show="seccionSeleccionada == 3"
       >
-        <div class="nombreForo">Foro expertos</div>
-        <foro :parent="infoAsParent" :idForo="esteNodo.idForoExpertos" />
+        <div class="nombreForo" v-if="usuarioExperto">Foro expertos</div>
+        <foro
+          :parent="infoAsParent"
+          v-if="usuarioExperto"
+          :idForo="esteNodo.idForoExpertos"
+        />
+        <br v-if="usuarioExperto" />
         <div class="nombreForo">Foro público</div>
         <foro :parent="infoAsParent" :idForo="esteNodo.idForoPublico" />
       </div>
@@ -296,13 +303,13 @@ export default {
       }
       return false;
     },
-    infoAsParent(){
+    infoAsParent() {
       return {
         id: this.esteNodo.id,
         tipo: "nodoConocimiento",
         nombre: this.esteNodo.nombre,
-      }
-    }
+      };
+    },
   },
   methods: {
     toggleEditandoDescripcion() {
@@ -489,8 +496,8 @@ export default {
             }
           `,
           variables: {
-            idNodo:this.esteNodo.id,
-            nuevoNombre:this.nuevoNombre,
+            idNodo: this.esteNodo.id,
+            nuevoNombre: this.nuevoNombre,
           },
         })
         .then((data) => {
@@ -501,7 +508,7 @@ export default {
         .catch((error) => {
           this.enviandoNuevoNombre = false;
           console.log(`Error. E :${error}`);
-        });      
+        });
     },
   },
   mounted() {
@@ -514,20 +521,22 @@ export default {
 .visorNodoConocimiento {
   width: 100%;
   height: 100%;
+  background-color: #ffdbaf;
 }
 #layout {
   width: 100%;
   height: 100%;
   display: grid;
   grid-template-columns: 250px 1fr 250px;
-  grid-template-rows: 100px 1fr;
+  grid-template-rows: 70px 1fr;
   grid-template-areas:
-    "............ nombre ...."
+    "nombre nombre nombre"
     "barraLateral contenido contenido";
 }
 #zonaNombre {
   grid-area: nombre;
   display: flex;
+  background-color: burlywood;
 }
 #nombre {
   font-size: 23px;
@@ -572,7 +581,7 @@ export default {
 
 #descripcion {
   border: 1px solid rgb(0, 0, 44);
-  background-color: #ffdbaf;
+  background-color: #fdeedb;
   border-radius: 10px;
   margin: 65px auto;
   width: min(600px, 90%);
@@ -616,7 +625,7 @@ export default {
 .personaPosibleExperto {
   opacity: 0.5;
 }
-.nombreForo{
+.nombreForo {
   padding: 5px 10px;
   background-color: #5fbf78;
 }
