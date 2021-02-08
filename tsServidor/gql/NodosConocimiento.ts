@@ -508,8 +508,8 @@ export const resolvers = {
 
             //Authorización
 
-            if (elNodo.expertos.length > 0 && !elNodo.expertos.includes(credencialesUsuario.id) && credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion. Hay ${elNodo.expertos.length} experto: ${elNodo.expertos}`);
+            if (!credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador`);
                 throw new AuthenticationError("No autorizado");
             }
 

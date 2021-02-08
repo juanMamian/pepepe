@@ -64,6 +64,7 @@ export default {
   name: "CuadroResponder",
   props: {
     idConversacion: String,
+    parent:Object,
   },
   data() {
     return {
@@ -145,11 +146,13 @@ export default {
           mutation: gql`
             mutation(
               $idConversacion: ID!
-              $nuevaRespuesta: InputNuevaRespuesta
+              $nuevaRespuesta: InputNuevaRespuesta,
+              $parent:InputParent
             ) {
               postRespuestaConversacion(
                 idConversacion: $idConversacion
-                nuevaRespuesta: $nuevaRespuesta
+                nuevaRespuesta: $nuevaRespuesta,
+                parent:$parent
               ) {
                 ...fragRespuesta
               }
@@ -159,6 +162,7 @@ export default {
           variables: {
             idConversacion: dis.idConversacion,
             nuevaRespuesta,
+            parent: dis.parent,
           },
         })
         .then(({ data: { postRespuestaConversacion } }) => {

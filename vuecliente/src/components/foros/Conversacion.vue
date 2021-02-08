@@ -45,6 +45,7 @@
       </div>
       <cuadro-responder
         ref="cuadroResponder"
+        :parent="parent"
         v-if="
           usuarioLogeado &&
           (estaConversacion.acceso == 'publico' || usuarioMiembro == true) &&
@@ -132,6 +133,7 @@ export default {
         };
       },
     },
+    parent:Object,
     seleccionado: Boolean,
     usuarioMiembro: {
       type: Boolean,

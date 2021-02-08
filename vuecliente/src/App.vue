@@ -12,18 +12,23 @@
         </div>
       </router-link>
 
-      <router-link to="/proyectos" class="hoverNegro" v-if="usuarioLogeado == true"
->
+      <router-link
+        to="/proyectos"
+        class="hoverNegro"
+        v-if="usuarioLogeado == true"
+      >
         <div class="botonNav" id="navProyectos">Proyectos</div>
       </router-link>
 
-      <router-link to="/atlas" class="hoverNegro" v-if="usuarioLogeado == true"
->
+      <router-link to="/atlas" class="hoverNegro" v-if="usuarioLogeado == true">
         <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
       </router-link>
 
-      <router-link to="/trabajos" class="hoverNegro disabled" v-if="usuarioLogeado == true"
->
+      <router-link
+        to="/trabajos"
+        class="hoverNegro disabled"
+        v-if="usuarioLogeado == true"
+      >
         <div class="botonNav" id="navTrabajos">Trabajos</div>
       </router-link>
 
@@ -46,9 +51,9 @@
         <div
           id="bloqueNotificaciones"
           v-if="usuarioLogeado"
-          v-show="yo.notificaciones.length > 0"
+          v-show="(yo.notificaciones.length > 0 || yo.notificacionesActividadForos.length>0)"
         >
-          <span id="numeroNotificaciones">{{ yo.notificaciones.length }}</span>
+          <span id="numeroNotificaciones">{{ yo.notificaciones.length + yo.notificacionesActividadForos.length }}</span>
           <img
             src="@/assets/iconos/campanita.png"
             alt="Notificaciones"
@@ -57,6 +62,11 @@
             @click="mostrandoNotificaciones = !mostrandoNotificaciones"
           />
           <div id="contenedorNotificaciones" v-show="mostrandoNotificaciones">
+            <notificacion-actividad-foros
+              :estaNotificacion="notificacionActividadForos"
+              :key="notificacionActividadForos.id"
+              v-for="notificacionActividadForos of yo.notificacionesActividadForos"              
+            />
             <notificacion
               :key="notificacion.id"
               v-for="notificacion of notificacionesOrdenadas"
@@ -104,6 +114,7 @@
 <script>
 import gql from "graphql-tag";
 import Notificacion from "./components/usuario/Notificacion.vue";
+import NotificacionActividadForos from "./components/usuario/NotificacionActividadForos.vue";
 
 export const QUERY_YO = gql`
   query {
@@ -124,6 +135,12 @@ export const QUERY_YO = gql`
           id
           tipo
         }
+      }
+      notificacionesActividadForos {
+        idParent
+        tipoParent
+        numeroRespuestasNuevas
+        nombreParent
       }
       permisos
     }
@@ -189,13 +206,14 @@ export default {
       },
     },
   },
-  components: { Notificacion },
+  components: { Notificacion, NotificacionActividadForos },
   data() {
     return {
       accionesLogeado: false,
       mostrandoNotificaciones: false,
       yo: {
         notificaciones: [],
+        notificacionesActividadForos:[],
       },
     };
   },
@@ -321,10 +339,10 @@ a {
 input {
   border: 1px solid black;
 }
-.letrasRojas{
-  color:red;
+.letrasRojas {
+  color: red;
 }
-.bordeAbajo{
+.bordeAbajo {
   border-bottom: 2px solid black;
 }
 .deshabilitado {

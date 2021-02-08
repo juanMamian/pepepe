@@ -180,9 +180,9 @@
         v-show="seccionSeleccionada == 3"
       >
         <div class="nombreForo">Foro expertos</div>
-        <foro :idForo="esteNodo.idForoExpertos" />
+        <foro :parent="infoAsParent" :idForo="esteNodo.idForoExpertos" />
         <div class="nombreForo">Foro público</div>
-        <foro :idForo="esteNodo.idForoPublico" />
+        <foro :parent="infoAsParent" :idForo="esteNodo.idForoPublico" />
       </div>
     </div>
   </div>
@@ -296,6 +296,13 @@ export default {
       }
       return false;
     },
+    infoAsParent(){
+      return {
+        id: this.esteNodo.id,
+        tipo: "nodoConocimiento",
+        nombre: this.esteNodo.nombre,
+      }
+    }
   },
   methods: {
     toggleEditandoDescripcion() {

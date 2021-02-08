@@ -169,8 +169,7 @@ export default {
           });
       }
     },
-    enviarNuevaRespuesta(nuevaRespuesta) {
-      console.log(`Enviando nueva respuesta: ${JSON.stringify(nuevaRespuesta)}`);
+    enviarNuevaRespuesta(nuevaRespuesta) {      
       this.$apollo
         .mutate({
           mutation: gql`

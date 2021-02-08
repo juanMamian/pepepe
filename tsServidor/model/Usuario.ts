@@ -10,26 +10,47 @@ export const permisosDeUsuario = [
     "actividadesEstudiantiles-guia"
 ];
 
-const esquemaNotificacion=new mongoose.Schema({
-    texto:{
-        type:String,
+const esquemaNotificacion = new mongoose.Schema({
+    texto: {
+        type: String,
         default: "Nueva notificacion",
     },
-    causante:{
-        tipo:String,
-        id:String
+    causante: {
+        tipo: String,
+        id: String
     },
-    elementoTarget:{
-        tipo:{
-            type:String,
-            enum:["actividadEstudiantil"]
+    elementoTarget: {
+        tipo: {
+            type: String,
+            enum: ["actividadEstudiantil"]
         },
-        id:String
+        id: String
     },
-    fecha:{
-        type:Date,
+    fecha: {
+        type: Date,
+        required: true,
+        default: Date.now
+    }
+
+})
+const esquemaNotificacionActividadForo = new mongoose.Schema({    
+    idParent:{
+        type:String,
+        required:true
+    },
+    tipoParent:{
+        type:String,
         required:true,
-        default:Date.now
+        enum: ["proyecto", "trabajo", "nodoConocimiento"],
+    },
+    nombreParent:{
+        type:String,
+        required:true,
+    },
+    numeroRespuestasNuevas:{
+        type:Number,
+        required:true,
+        default: 1
     }
 
 })
@@ -104,21 +125,27 @@ const esquemaUsuario = new mongoose.Schema({
         centroVista: {
             x: {
                 type: Number,
-                required:true,
+                required: true,
                 default: 0
             },
             y: {
                 type: Number,
-                required:true,
+                required: true,
                 default: 0
             }
         }
     },
-    notificaciones:{
-        type:[esquemaNotificacion],
-        required:true,
-        default:[]
-    }
+    notificaciones: {
+        type: [esquemaNotificacion],
+        required: true,
+        default: []
+    },
+    notificacionesActividadForos: {
+        type: [esquemaNotificacionActividadForo],
+        default: [],
+        required: true,
+    }    
+
 });
 
 esquemaUsuario.methods.getEdad = function (this: any) {

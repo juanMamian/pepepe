@@ -23,7 +23,6 @@ export const typeDefs = gql`
 export const resolvers ={
     Query:{
         trabajo: async function(_:any, {idTrabajo}:any, context: contextoQuery){
-            console.log(`Solicitado un trabajo de id ${idTrabajo} `);
             let tieneForo = true;
 
             try {
@@ -75,7 +74,6 @@ export const resolvers ={
                 }
 
             }
-console.log(`Enviando trabajo`);
             return elTrabajo;
         }
     },

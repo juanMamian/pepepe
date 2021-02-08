@@ -36,6 +36,26 @@ const esquemaNotificacion = new mongoose_1.default.Schema({
         default: Date.now
     }
 });
+const esquemaNotificacionActividadForo = new mongoose_1.default.Schema({
+    idParent: {
+        type: String,
+        required: true
+    },
+    tipoParent: {
+        type: String,
+        required: true,
+        enum: ["proyecto", "trabajo", "nodoConocimiento"],
+    },
+    nombreParent: {
+        type: String,
+        required: true,
+    },
+    numeroRespuestasNuevas: {
+        type: Number,
+        required: true,
+        default: 1
+    }
+});
 exports.ModeloNotificacion = mongoose_1.default.model("Notificacion", esquemaNotificacion);
 const esquemaUsuario = new mongoose_1.default.Schema({
     username: {
@@ -118,6 +138,11 @@ const esquemaUsuario = new mongoose_1.default.Schema({
         type: [esquemaNotificacion],
         required: true,
         default: []
+    },
+    notificacionesActividadForos: {
+        type: [esquemaNotificacionActividadForo],
+        default: [],
+        required: true,
     }
 });
 esquemaUsuario.methods.getEdad = function () {

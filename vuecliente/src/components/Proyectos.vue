@@ -81,24 +81,21 @@ export default {
   },
   methods:{
     crearNuevoProyecto(){
+      console.log(`Creando nuevo proyecto`);
       this.$apollo.mutate({
         mutation: gql`
           mutation{
             crearProyecto{
               id
               nombre
-              responsables{
-                id
-                username
-                nombres
-              }
+              responsables              
             }
           }
         `,
       }).then(({data:{crearProyecto}})=>{
         this.$router.push('/proyecto/'+crearProyecto.id);
-      }).catch(()=>{
-
+      }).catch((error)=>{
+        console.log(`Error: ${error.errors}`);
       });
     },
     eliminarProyecto(idProyecto){

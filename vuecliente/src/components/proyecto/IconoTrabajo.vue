@@ -1,5 +1,6 @@
 <template>
-  <div class="iconoTrabajo" :class="{ seleccionado: seleccionado }">
+  <div class="iconoTrabajo">
+    <img src="@/assets/iconos/ir.png" class="botonIr" @click="navegarAlTrabajo" title="Abrir la página de este trabajo"/>
     <div id="zonaNombre" :class="{ bordeAbajo: seleccionado }">
       <div class="barraSuperiorZona">
         <div
@@ -151,10 +152,7 @@
       </div>
     </div>
 
-    <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel" v-show="seleccionado" v-if="esteTrabajo.idForo">
-      <div class="nombreZona">foro</div>
-      <foro :idForo="esteTrabajo.idForo" />
-    </div>
+    
 
     <div id="controlesTrabajo" v-show="seleccionado">
       <div
@@ -172,7 +170,6 @@
 import gql from "graphql-tag";
 import BuscadorNodosConocimiento from "../atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
-import Foro from "../Foro.vue";
 import IconoPersonaAutonomo from './IconoPersonaAutonomo.vue';
 
 const charProhibidosNombreTrabajo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
@@ -183,8 +180,7 @@ const QUERY_TRABAJO = gql`
     trabajo(idTrabajo: $idTrabajo) {
       id
       nombre
-      descripcion
-      idForo
+      descripcion      
       responsables
     }
   }
@@ -195,7 +191,6 @@ export default {
   components: {
     BuscadorNodosConocimiento,
     Loading,
-    Foro,
     IconoPersonaAutonomo
   },
   apollo: {
@@ -260,6 +255,13 @@ export default {
       }
       return false;
     },
+    infoAsParent(){
+      return {
+        id: this.esteTrabajo.id,
+        tipo: "trabajo",
+        nombre: this.esteTrabajo.nombre,
+      }
+    }
   },
   methods: {
     guardarNuevoNombre() {
@@ -443,6 +445,9 @@ export default {
           console.log(`Error. E: ${error}`);
         });
     },
+    navegarAlTrabajo(){
+      this.$router.push("/trabajo/"+this.idTrabajo);
+    }
   },
 };
 </script>
@@ -579,11 +584,27 @@ export default {
   padding: 10px 20px;
   padding-bottom: 65px;
 }
-.iconoPersona {
-  margin-right: 10px;
+.iconoPersonaAutonomo {
+  margin-right: 25px;
   margin-left: 5px;
   vertical-align: middle;
   margin-top: 5px;
   margin-bottom: 5px;
+}
+.botonIr{
+  position:absolute;
+  top: 0%;
+  left: 0%;
+  cursor: pointer; 
+  z-index: 10; 
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+}
+
+.botonIr:hover{
+  background-color: bisque;
+
 }
 </style>

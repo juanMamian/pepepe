@@ -56,6 +56,7 @@
           :estaConversacion="conversacion"
           :seleccionado="idConversacionSeleccionada == conversacion.id"
           :usuarioMiembro="usuarioMiembro"
+          :parent="parent"
           v-show="
             idConversacionSeleccionada == conversacion.id ||
             !conversacionAbierta
@@ -147,6 +148,7 @@ export default {
   },
   props: {
     idForo: String,
+    parent: Object,
   },
   data() {
     return {

@@ -41,8 +41,8 @@ export const typeDefs = gql`
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
         editarNombreTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
         editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
-        addResponsableTrabajo(idProyecto:ID!, idTrabajo:ID!,idUsuario:ID!):Trabajo,
-        removeResponsableTrabajo(idProyecto:ID!, idTrabajo:ID!, idUsuario:ID!):Trabajo,
+        addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
+        removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
 
         crearObjetivoEnProyecto(idProyecto: ID!):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
@@ -642,21 +642,10 @@ export const resolvers = {
             console.log(`Descripcion guardado`);
             return elTrabajo;
         },
-        addResponsableTrabajo: async function (_: any, { idProyecto, idTrabajo, idUsuario }: any, contexto: contextoQuery) {
-            console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo} en un proyecto con id ${idProyecto}`);
+        addResponsableTrabajo: async function (_: any, { idTrabajo, idUsuario }: any, contexto: contextoQuery) {
+            console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo}`);
             let credencialesUsuario = contexto.usuario;
-
-            try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
-                }
-            }
-            catch (error) {
-                console.log("Error buscando el proyecto en la base de datos. E: " + error);
-                throw new ApolloError("Error de conexión con la base de datos");
-            }
-
+            
             //Authorización
 
             if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
@@ -709,20 +698,11 @@ export const resolvers = {
             return elTrabajo;
 
         },
-        removeResponsableTrabajo: async function (_: any, { idProyecto, idTrabajo, idUsuario }: any, contexto: contextoQuery) {
-            console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo} en un proyecto con id ${idProyecto}`);
+        removeResponsableTrabajo: async function (_: any, { idTrabajo, idUsuario }: any, contexto: contextoQuery) {
+            console.log(`Solicitud de remove un usuario con id ${idUsuario} de un trabajo de id ${idTrabajo}`);
             let credencialesUsuario = contexto.usuario;
 
-            try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
-                }
-            }
-            catch (error) {
-                console.log("Error buscando el proyecto en la base de datos. E: " + error);
-                throw new ApolloError("Error de conexión con la base de datos");
-            }
+           
 
             //Authorización
 

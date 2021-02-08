@@ -51,8 +51,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
         editarNombreTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
         editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
-        addResponsableTrabajo(idProyecto:ID!, idTrabajo:ID!,idUsuario:ID!):Trabajo,
-        removeResponsableTrabajo(idProyecto:ID!, idTrabajo:ID!, idUsuario:ID!):Trabajo,
+        addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
+        removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
 
         crearObjetivoEnProyecto(idProyecto: ID!):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
@@ -609,20 +609,10 @@ exports.resolvers = {
                 return elTrabajo;
             });
         },
-        addResponsableTrabajo: function (_, { idProyecto, idTrabajo, idUsuario }, contexto) {
+        addResponsableTrabajo: function (_, { idTrabajo, idUsuario }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo} en un proyecto con id ${idProyecto}`);
+                console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo}`);
                 let credencialesUsuario = contexto.usuario;
-                try {
-                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
-                    if (!elProyecto) {
-                        throw "proyecto no encontrado";
-                    }
-                }
-                catch (error) {
-                    console.log("Error buscando el proyecto en la base de datos. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
-                }
                 //Authorización
                 if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
                     console.log(`Error de autenticacion editando nombre de proyecto`);
@@ -671,20 +661,10 @@ exports.resolvers = {
                 return elTrabajo;
             });
         },
-        removeResponsableTrabajo: function (_, { idProyecto, idTrabajo, idUsuario }, contexto) {
+        removeResponsableTrabajo: function (_, { idTrabajo, idUsuario }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo} en un proyecto con id ${idProyecto}`);
+                console.log(`Solicitud de remove un usuario con id ${idUsuario} de un trabajo de id ${idTrabajo}`);
                 let credencialesUsuario = contexto.usuario;
-                try {
-                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
-                    if (!elProyecto) {
-                        throw "proyecto no encontrado";
-                    }
-                }
-                catch (error) {
-                    console.log("Error buscando el proyecto en la base de datos. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
-                }
                 //Authorización
                 if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
                     console.log(`Error de autenticacion editando nombre de proyecto`);

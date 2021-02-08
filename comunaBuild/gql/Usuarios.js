@@ -22,6 +22,13 @@ exports.typeDefs = apollo_server_express_1.gql `
         tipo:String,
     }
 
+    type NotificacionActividadForos{
+        idParent:ID,
+        tipoParent:String,
+        nombreParent:String,
+        numeroRespuestasNuevas:Int,        
+    }
+
     type Notificacion{
         id:ID,
         texto:String,
@@ -60,7 +67,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         permisos:[String]
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
-        notificaciones:[Notificacion]
+        notificaciones:[Notificacion],
+        notificacionesActividadForos:[NotificacionActividadForos],
     }
     input DatosEditablesUsuario{
         nombres:String,
@@ -96,6 +104,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
         eliminarUsuario(idUsuario:ID!):Boolean,
         eliminarNotificacion(idNotificacion:ID!):Boolean,
+        eliminarNotificacionActividadForos(idParent:ID!):Boolean
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -162,7 +171,6 @@ exports.resolvers = {
         yo: function (_, __, context) {
             return __awaiter(this, void 0, void 0, function* () {
                 let credencialesUsuario = context.usuario;
-                console.log(`el usuario con credenciales ${credencialesUsuario.username} accede a su propia información personal`);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id);
                 }
@@ -318,6 +326,27 @@ exports.resolvers = {
                 }
                 try {
                     yield Usuario_1.ModeloUsuario.findByIdAndUpdate(credencialesUsuario.id, { $pull: { notificaciones: { _id: idNotificacion } } }).exec();
+                }
+                catch (error) {
+                    console.log(`Error eliminando la notificacion de la base de datos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Notificacion eliminada`);
+                return true;
+            });
+        },
+        eliminarNotificacionActividadForos: function (_, { idParent }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||||1`);
+                console.log(`Peticion de eliminar una notificacion de actividad en foros con id ${idParent}`);
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                if (credencialesUsuario.permisos.length < 1) {
+                    console.log(`El usuario no estaba logeado`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    yield Usuario_1.ModeloUsuario.findByIdAndUpdate(credencialesUsuario.id, { $pull: { notificacionesActividadForos: { idParent: idParent } } }).exec();
                 }
                 catch (error) {
                     console.log(`Error eliminando la notificacion de la base de datos. E: ${error}`);

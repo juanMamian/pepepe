@@ -33,7 +33,6 @@ exports.resolvers = {
     Query: {
         trabajo: function (_, { idTrabajo }, context) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Solicitado un trabajo de id ${idTrabajo} `);
                 let tieneForo = true;
                 try {
                     var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
@@ -84,7 +83,6 @@ exports.resolvers = {
                         throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                     }
                 }
-                console.log(`Enviando trabajo`);
                 return elTrabajo;
             });
         }

@@ -220,7 +220,7 @@
 
       <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
         <div class="nombreZona">foro</div>
-        <foro :idForo="esteProyecto.idForo" />
+        <foro :parent="infoAsParent" :idForo="esteProyecto.idForo" />
       </div>
     </template>
   </div>
@@ -342,6 +342,13 @@ export default {
       }
       return false;
     },
+    infoAsParent(){
+      return {
+        id: this.esteProyecto.id,
+        tipo: "proyecto",
+        nombre: this.esteProyecto.nombre,
+      }
+    }
   },
   methods: {
     guardarNuevoNombre() {

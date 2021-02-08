@@ -16,13 +16,23 @@ exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const mongoose_1 = __importDefault(require("mongoose"));
 const Foro_1 = require("../model/Foros/Foro");
+const Proyecto_1 = require("../model/Proyecto");
 const Conversacion_1 = require("../model/Foros/Conversacion");
 const Usuario_1 = require("../model/Usuario");
+const Nodo_1 = require("../model/atlas/Nodo");
+const Trabajo_1 = require("../model/Trabajo");
+const Nodo = require("../model/atlas/Nodo");
 exports.typeDefs = apollo_server_express_1.gql `
 
     input InputNuevaRespuesta{
         mensaje:String
         infoArchivo:InfoArchivoSubido
+    }
+
+    input InputParent{
+        id:ID,
+        nombre:String,
+        tipo: String,
     }
 
     input InputIniciarConversacion{
@@ -84,7 +94,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     extend type Mutation{
         iniciarConversacionConPrimerMensajeForo(idForo: ID!, input: InputIniciarConversacion):Conversacion,
         eliminarRespuesta(idRespuesta:ID!, idConversacion:ID!):Boolean,
-        postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta):RespuestaConversacionForo
+        postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta, parent: InputParent):RespuestaConversacionForo
     }
 
 `;
@@ -314,7 +324,7 @@ exports.resolvers = {
                 return true;
             });
         },
-        postRespuestaConversacion(_, { idConversacion, nuevaRespuesta }, contexto) {
+        postRespuestaConversacion(_, { idConversacion, nuevaRespuesta, parent }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`||||||||||||||||||||||||||||||||`);
                 console.log(`Peticion de post respuesta en la conversación con id ${idConversacion}`);
@@ -373,7 +383,7 @@ exports.resolvers = {
                     yield laRespuesta.save();
                 }
                 catch (error) {
-                    console.log(`Error guardando el foro. E: ${error}`);
+                    console.log(`Error guardando la respuesta. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 let cantRespuestas = yield Respuesta.countDocuments().exec();
@@ -386,6 +396,57 @@ exports.resolvers = {
                 }
                 catch (error) {
                     console.log(`Error guardando cant respuestas y info ultima respuesta. E: ${error}`);
+                }
+                //Crear notificacion para los miembros del parent.
+                console.log(`Creando notificacion para los miembros del ${parent.tipo} ${parent.nombre}`);
+                try {
+                    if (parent.tipo == "proyecto") {
+                        var elParent = yield Proyecto_1.ModeloProyecto.findById(parent.id, "_id responsables").exec();
+                        var idsMiembros = elParent.responsables;
+                    }
+                    else if (parent.tipo == "trabajo") {
+                        var elParent = yield Trabajo_1.ModeloTrabajo.findById(parent.id, "_id responsables").exec();
+                        var idsMiembros = elParent.responsables;
+                    }
+                    else if (parent.tipo == "nodoConocimiento") {
+                        var elParent = yield Nodo_1.ModeloNodo.findById(parent.id, "_id expertos").exec();
+                        var idsMiembros = elParent.expertos;
+                    }
+                    else {
+                        console.log(`Error: tipo de parent no reconocido`);
+                    }
+                }
+                catch (error) {
+                    console.log(`Error recopilando la lista de miembros. E: ${error}`);
+                }
+                console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
+                let indexU = idsMiembros.indexOf(credencialesUsuario.id);
+                if (indexU > -1) {
+                    idsMiembros.splice(indexU, 1);
+                }
+                for (let idMiembro of idsMiembros) {
+                    try {
+                        let elNotificado = yield Usuario_1.ModeloUsuario.findById(idMiembro).exec();
+                        if (!elNotificado)
+                            throw "Notificado " + idMiembro + " no encontrado";
+                        var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
+                        if (indexNotificacion > -1) {
+                            console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
+                            elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
+                        }
+                        else {
+                            elNotificado.notificacionesActividadForos.push({
+                                idParent: parent.id,
+                                tipoParent: parent.tipo,
+                                nombreParent: parent.nombre,
+                                numeroRespuestasNuevas: 1,
+                            });
+                        }
+                        yield elNotificado.save();
+                    }
+                    catch (error) {
+                        console.log(`Error buscando el notificado: E: ${error}`);
+                    }
                 }
                 console.log(`Respuesta posted`);
                 return laRespuesta;
