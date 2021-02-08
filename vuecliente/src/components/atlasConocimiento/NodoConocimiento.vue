@@ -1,34 +1,33 @@
 <template>
   <div
-    class="nodoConocimiento"
-    :style="[estiloPosicion, estiloSize, estiloArrastrando]"
+    class="nodoConocimiento"    
+    :style="[estiloPosicion, estiloSize, estiloZeta]"
     @mousedown.ctrl="arrastrandoNodo = true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
-    @mouseleave="arrastrandoNodo = false"
+    @mouseenter="mostrandoCuadritoDescripcion=true"
+    @mouseleave="arrastrandoNodo = false; mostrandoCuadritoDescripcion=false"
     @dblclick="abrirPaginaNodo"
   >
-    <div id="sombra"></div>
     <img
       :src="'http://localhost:3000/api/atlas/iconos/' + esteNodo.id"
       alt=""
       class="iconoNodo"
       ref="iconoNodo"
-      @error.once="iconoFallback"
     />
 
     <div id="menuContextual" v-show="menuCx">
-      <div class="seccionMenuCx">{{ esteNodo.nombre }}</div>
-      <div class="botonMenuCx" @click.stop="eliminarEsteNodo">Eliminar</div>
+      <div class="seccionMenuCx" @click="abrirPaginaNodo">{{ esteNodo.nombre }}</div>
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador" @click.stop="eliminarEsteNodo">Eliminar</div>
       <div
         class="botonMenuCx"
-        v-if="permisosUsuario == 'superadministrador'"
+        v-if="usuarioSuperadministrador"
         @click.stop="copiarId"
       >
         {{ esteNodo.id }}
       </div>
       <template
-        v-if="nodoSeleccionado.id != -1 && nodoSeleccionado.id != esteNodo.id"
+        v-if="nodoSeleccionado.id != -1 && nodoSeleccionado.id != esteNodo.id && usuarioSuperadministrador"
       >
         <div class="seccionMenuCx">{{ nodoSeleccionado.nombre }}</div>
         <div
@@ -54,23 +53,18 @@
     </div>
     <div
       id="nombre"
-      ref="nombre"
-      :contenteditable="true"
-      :style="fondoNombre"
-      @blur="guardarNombre"
-      @input="setNombreEditandose"
-      @keypress.enter="blurNombre"
-      @dblclick.stop
+      ref="nombre"            
     >
       {{ esteNodo.nombre }}
+    </div>
+
+    <div class="cuadritoDescripcionNodo" v-if="esteNodo && esteNodo.descripcion" v-show="mostrandoCuadritoDescripcion">
+      <div class="descripcionNodo">{{esteNodo.descripcion}}</div>
     </div>
   </div>
 </template>
 
 <script>
-import gql from "graphql-tag";
-
-var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 
 export default {
   name: "NodoConocimiento",
@@ -79,6 +73,9 @@ export default {
       arrastrandoNodo: false,
       nombreEditable: false,
       nombreEditandose: false,
+
+      mostrandoCuadritoDescripcion:false,
+
       baseSize: {
         x: 50,
         y: 50,
@@ -140,10 +137,10 @@ export default {
         left: posX + "px",
       };
     },
-    estiloArrastrando() {
+    estiloZeta() {
       let valorZ = 0;
-      if (this.arrastrandoNodo) {
-        valorZ = 1;
+      if (this.arrastrandoNodo || this.seleccionado) {
+        valorZ = 10;
       }
       return {
         zIndex: valorZ,
@@ -155,96 +152,16 @@ export default {
         height: this.size.y + "px",
       };
     },
-    fondoNombre() {
-      if (this.nombreEditandose) {
-        return {
-          backgroundColor: "orange",
-        };
-      }
-      return {
-        backgroundColor: "lightblue",
-      };
-    },
     permisosUsuario: function () {
       return this.$store.state.usuario.permisos;
     },
   },
   methods: {
-    // dibujarVinculos: function (rol, color) {
-    //   let nodosVinculados = this.todosNodos.filter((n) =>
-    //     this.esteNodo.vinculos.some((v) => v.idRef == n.id && v.rol == rol)
-    //   );
-
-    //   this.lapiz.beginPath();
-    //   console.log(`trazando lineas de color ${color} `);
-    //   this.lapiz.strokeStyle = color;
-
-    //   for (let nodo of nodosVinculados) {
-    //     console.log(`${nodo.nombre}`);
-    //   }
-
-    //   this.bordesDibujoActivo.bot = nodosVinculados.reduce((acc, n) => {
-    //     return n.coordsManuales.y < acc ? n.coordsManuales.y : acc;
-    //   }, this.esteNodo.coordsManuales.y);
-    //   this.bordesDibujoActivo.top = nodosVinculados.reduce((acc, n) => {
-    //     return n.coordsManuales.y > acc ? n.coordsManuales.y : acc;
-    //   }, this.esteNodo.coordsManuales.y);
-    //   this.bordesDibujoActivo.left = nodosVinculados.reduce((acc, n) => {
-    //     return n.coordsManuales.x < acc ? n.coordsManuales.x : acc;
-    //   }, this.esteNodo.coordsManuales.x);
-    //   this.bordesDibujoActivo.right = nodosVinculados.reduce((acc, n) => {
-    //     return n.coordsManuales.x > acc ? n.coordsManuales.x : acc;
-    //   }, this.esteNodo.coordsManuales.x);
-
-    //   let ancho =
-    //     this.bordesDibujoActivo.right -
-    //     this.bordesDibujoActivo.left +
-    //     this.paddingGuarda;
-    //   let alto =
-    //     this.bordesDibujoActivo.top -
-    //     this.bordesDibujoActivo.bot +
-    //     this.paddingGuarda;
-
-    //   this.$set(
-    //     this.posicionDibujoVinculos,
-    //     "left",
-    //     this.size.x / 2 -
-    //       this.paddingGuarda / 2 -
-    //       (this.esteNodo.coordsManuales.x - this.bordesDibujoActivo.left) +
-    //       "px"
-    //   );
-    //   this.$set(
-    //     this.posicionDibujoActivo,
-    //     "top",
-    //     this.size.y / 2 -
-    //       this.paddingGuarda / 2 -
-    //       (this.esteNodo.coordsManuales.y - this.bordesDibujoActivo.bot) +
-    //       "px"
-    //   );
-
-    //   this.lapiz.canvas.width = ancho;
-    //   this.lapiz.canvas.height = alto;
-
-    //   for (let vinculo of this.esteNodo.vinculos) {
-    //     if (vinculo.rol == rol || vinculo.rol == "any") {
-    //       let otroNodo = this.todosNodos.find((n) => n.id == vinculo.idRef);
-    //       if (!otroNodo) {
-    //         console.log(`ALERTA. Vinculo a ${vinculo.idRef} huerfano`);
-    //         continue;
-    //       }
-    //       this.dibujarLineaEntreNodos(this.esteNodo, otroNodo);
-    //       console.log(
-    //         `dibujando linea entre ${this.esteNodo.nombre} y ${otroNodo.nombre} `
-    //       );
-    //     }
-    //   }
-    //   this.lapiz.stroke();
-    // },
-    abrirPaginaNodo(){
-      this.$router.push("/nodoConocimiento/"+this.esteNodo.id);
+    abrirPaginaNodo() {
+      this.$router.push("/nodoConocimiento/" + this.esteNodo.id);
     },
     copiarId(e) {
-      let str=e.target.innerText.trim();
+      let str = e.target.innerText.trim();
       const el = document.createElement("textarea");
       el.value = str;
       document.body.appendChild(el);
@@ -254,50 +171,7 @@ export default {
     },
     eliminarEsteNodo() {
       this.$emit("eliminar", this.esteNodo.id);
-    },
-    guardarNombre() {
-      let nuevoNombre = this.$refs.nombre.innerText.trim();
-      let idNodo = this.esteNodo.id;
-
-      if (!this.nombreEditandose || nuevoNombre == this.esteNodo.nombre) {
-        return;
-      }
-
-      nuevoNombre = nuevoNombre.replace(charProhibidosNombre, "");
-      nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idNodo: ID!, $nuevoNombre: String!) {
-              editarNombreNodo(idNodo: $idNodo, nuevoNombre: $nuevoNombre) {
-                modificados {
-                  id
-                  nombre
-                }
-              }
-            }
-          `,
-          variables: {
-            idNodo,
-            nuevoNombre,
-          },
-        })
-        .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
-          this.nombreEditandose = false;
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-        });
-    },
-    setNombreEditandose() {
-      if (this.esteNodo.nombre != this.$refs.nombre.innerText.trim()) {
-        this.nombreEditandose = true;
-      } else {
-        this.nombreEditandose = false;
-      }
-    },
+    },    
     arrastrarNodo(e) {
       if (!this.arrastrandoNodo) {
         return;
@@ -339,13 +213,6 @@ export default {
         idNodoFrom: nodoFrom.id,
         idNodoTo: nodoTo.id,
       });
-    },
-    blurNombre() {
-      this.$refs.nombre.blur();
-    },
-    iconoFallback() {
-      this.$refs.iconoNodo.src = "nodoConocimientoDefault.png";
-      //this.$refs.iconoNodo.src="@/assets/iconos/atlas/nodoConocimientoDefault.png";
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo) {
       let inicio = {
@@ -444,16 +311,6 @@ export default {
 </script>
 
 <style scoped>
-#sombra {
-  position: absolute;
-  top: 2%;
-  left: 0%;
-  border-radius: inherit;
-  width: 106%;
-  height: 106%;
-  background-color: rgba(128, 128, 128, 0.452);
-  z-index: 0;
-}
 .iconoNodo {
   position: absolute;
   top: 0px;
@@ -463,6 +320,8 @@ export default {
   height: 100%;
   z-index: 1;
   pointer-events: none;
+  box-shadow: 2px 2px 2px 2px grey;
+  border-radius: 50%;
 }
 .nodoConocimiento {
   width: 60px;
@@ -473,6 +332,9 @@ export default {
   position: absolute;
   pointer-events: all;
   background-color: rgba(128, 128, 128, 0.349);
+}
+.seleccionado{
+  z-index: 10;
 }
 #nombre {
   font-size: 12px;
@@ -508,5 +370,23 @@ export default {
 }
 .botonMenuCx:hover {
   background-color: gray;
+}
+.cuadritoDescripcionNodo{
+  position: absolute;
+  top: 50%;
+  left: 104%;
+  transform: translateY(-50%);
+}
+.descripcionNodo {
+  border: 1px solid rgb(0, 0, 44);
+  background-color: #ffdbaf;
+  border-radius: 10px;
+  margin: 65px auto;
+  width: min(600px, 90%);
+  font-size: 15px;
+  padding: 10px;
+  min-height: 100px;
+  resize: vertical;  
+  white-space: pre-wrap;
 }
 </style>

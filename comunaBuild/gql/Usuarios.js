@@ -214,6 +214,7 @@ exports.resolvers = {
         },
         setCentroVista: function (_, { idUsuario, centroVista }, context) {
             return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Seting centro vista en ${JSON.stringify(centroVista)} para el usuario ${idUsuario}`);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario, "atlas").exec();
                     if (!elUsuario) {
@@ -232,6 +233,7 @@ exports.resolvers = {
                     console.log(`error buscando usuario en la base de datos: ${error}`);
                     throw new apollo_server_express_1.ApolloError("");
                 }
+                console.log(`Set`);
                 return true;
             });
         },

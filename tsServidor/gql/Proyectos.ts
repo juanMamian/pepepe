@@ -344,7 +344,7 @@ export const resolvers = {
         },
         editarDescripcionProyecto: async function (_: any, { idProyecto, nuevoDescripcion }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||`);
-            console.log(`Solicitud de set descripcion del proyecto con id ${elProyecto}`);
+            console.log(`Solicitud de set descripcion del proyecto con id ${idProyecto}`);
             let credencialesUsuario = contexto.usuario;
             try {
                 var elProyecto: any = await Proyecto.findById(idProyecto).exec();
@@ -376,7 +376,7 @@ export const resolvers = {
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
                 var resProyecto: any = await Proyecto.findByIdAndUpdate(idProyecto, { descripcion: nuevoDescripcion }, { new: true }).exec();
             } catch (error) {
-                console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+                console.log(`error guardando el proyecto: ${error}`);
             }
             console.log(`Descripcion guardado`);
             return resProyecto;

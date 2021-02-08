@@ -110,7 +110,6 @@ export default {
       this.lapiz.clearRect(0, 0, anchoDiagrama, altoDiagrama);
       this.lapiz.beginPath();
       this.lapiz.strokeStyle = "#b3b3b3";
-
       for (let nodo of this.todosNodos) {
         for (let vinculo of nodo.vinculos) {
           if (vinculo.rol == "source") {
@@ -261,16 +260,11 @@ export default {
         top: top + "px",
         left: left + "px",
       };
-    },
-    tamaño: function () {
-      return {
-        width: this.sizeDiagrama.right - this.sizeDiagrama.left + "px",
-        height: this.sizeDiagrama.top - this.sizeDiagrama.bot + "px",
-      };
-    },
+    },    
   },
   watch: {
     todosNodos: function () {
+      if(this.todosNodos.length<1)return
       console.log(`Redibujando lineas`);
       this.crearImagenTodosVinculos();
       this.crearImagenVinculosSeleccionado();
@@ -292,7 +286,7 @@ export default {
   position: absolute;
 }
 #canvasVinculosSeleccionado {
-  border: 2px solid pink;
+  border: 0px solid pink;
 }
 #canvasTodosVinculos {
   z-index: 0;

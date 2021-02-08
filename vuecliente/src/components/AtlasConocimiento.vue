@@ -1,7 +1,7 @@
 <template>
   <div
     id="atlasConocimiento"
-    @mousedown.left.shift.stop="panningVista = true"
+    @mousedown.left.exact.stop="panningVista = true"
     @click="idNodoMenuCx = '-1'"
     @click.exact="idNodoSeleccionado = '-1'"
     @mousemove="panVista($event)"
@@ -47,6 +47,7 @@ export default {
         query {
           todosNodos {
             nombre
+            descripcion
             id
             coordsManuales {
               x
@@ -63,6 +64,7 @@ export default {
       result: function () {
         this.dibujarVinculosGrises();
       },
+      fetchPolicy:"cache-and-network"
     },
   },
   data() {
@@ -157,7 +159,12 @@ export default {
         });
     },
     crearNodo(e) {
+      if(!this.usuarioSuperadministrador){
+        console.log(`Error usuario no autorizado`);
+        return
+      }
       console.log(`enviando una mutación de crear nodo`);
+      
       let posContenedor = document
         .getElementById("contenedorNodos")
         .getBoundingClientRect();
@@ -179,25 +186,18 @@ export default {
         mutation: gql`
           mutation($infoNodo: NodoConocimientoInput) {
             crearNodo(infoNodo: $infoNodo) {
-              modificados {
-                nombre
-                id
-                coordsManuales {
-                  x
-                  y
-                }
-                vinculos {
-                  idRef
-                  rol
-                  tipo
-                }
-              }
+              id
             }
           }
         `,
         variables: {
           infoNodo,
         },
+      }).then(({data:{crearNodo}})=>{ 
+        console.log(`Creado ${crearNodo.id}`);
+        this.$router.push("/nodoConocimiento/"+crearNodo.id);
+      }).catch((error)=>{
+        console.log(`Error. E: ${error}`);
       });
     },
     descargarCentroVista() {
@@ -205,8 +205,8 @@ export default {
       this.$apollo
         .query({
           query: gql`
-            query($idUsuario: ID!) {
-              publicUsuario(idUsuario: $idUsuario) {
+            query{
+              yo{
                 id
                 atlas {
                   centroVista {
@@ -222,11 +222,11 @@ export default {
           },
           fetchPolicy: "network-only",
         })
-        .then(function ({ data }) {
-          console.log(`respuesta: ${JSON.stringify(data)} `);
-          let coords = data.usuario.atlas.centroVista;
+        .then(function ({ data:{yo} }) {          
+          let coords = yo.atlas.centroVista;
           dis.$set(dis.centroVista, "x", coords.x);
           dis.$set(dis.centroVista, "y", coords.y);
+          dis.$store.commit("setCentroVistaAtlas", coords);
         })
         .catch(function (error) {
           console.log(`error fetching centro vista: ${error}`);
@@ -397,16 +397,22 @@ export default {
     },
   },
   mounted() {
-    if (this.$store.state.usuario.centroVista) {
+    if (!this.usuario.atlas || !this.usuario.atlas.centroVista) { 
+      console.log(`No había info de centro vista en la store. Descargando`);
       this.descargarCentroVista();
+      return
     }
+    this.$set(this.centroVista, "x", this.usuario.atlas.centroVista.x);
+    this.$set(this.centroVista, "y", this.usuario.atlas.centroVista.y);
   },
   beforeRouteLeave(_, __, next) {
     console.log(
       `enviando nuevo centroVista para el usuario ${
-        this.$store.state.usuario.id
+        this.usuario.id
       }. Centro vista: ${JSON.stringify(this.centroVista)}`
     );
+    this.$store.commit("setCentroVistaAtlas", this.centroVista);
+
     this.$apollo
       .mutate({
         mutation: gql`

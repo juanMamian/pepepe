@@ -335,7 +335,7 @@ exports.resolvers = {
         editarDescripcionProyecto: function (_, { idProyecto, nuevoDescripcion }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`|||||||||||||||||||`);
-                console.log(`Solicitud de set descripcion del proyecto con id ${elProyecto}`);
+                console.log(`Solicitud de set descripcion del proyecto con id ${idProyecto}`);
                 let credencialesUsuario = contexto.usuario;
                 try {
                     var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
@@ -362,7 +362,7 @@ exports.resolvers = {
                     var resProyecto = yield Proyecto_1.ModeloProyecto.findByIdAndUpdate(idProyecto, { descripcion: nuevoDescripcion }, { new: true }).exec();
                 }
                 catch (error) {
-                    console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+                    console.log(`error guardando el proyecto: ${error}`);
                 }
                 console.log(`Descripcion guardado`);
                 return resProyecto;

@@ -8,11 +8,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const multer = require("multer");
 const upload = multer();
 const router = require("express").Router();
 const Nodo_1 = require("../../model/atlas/Nodo");
+const path_1 = __importDefault(require("path"));
 router.post("/updateIcono", upload.single("nuevoIcono"), function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -38,15 +42,21 @@ router.post("/updateIcono", upload.single("nuevoIcono"), function (req, res) {
 router.get("/iconos/:id", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const idNodo = req.params.id;
+        if (idNodo == "null" || idNodo == "undefined" || idNodo == "-1" || !idNodo) {
+            return res.sendFile(path_1.default.join(__dirname, '../../public/media/iconos/nodoConocimientoDefault.png'));
+        }
         try {
             var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "icono");
         }
         catch (error) {
             console.log(`error buscando el nodo con icono. e: ` + error);
-            return res.status(400).send('');
+            return res.status(400).send('Nodo no encontrado');
+        }
+        if (!elNodo.icono) {
+            return res.sendFile(path_1.default.join(__dirname, '../../public/media/iconos/nodoConocimientoDefault.png'));
         }
         res.set('Content-Type', 'image/png');
-        res.send(elNodo.icono);
+        return res.send(elNodo.icono);
     });
 });
 module.exports = router;

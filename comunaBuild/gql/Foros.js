@@ -94,8 +94,6 @@ exports.resolvers = {
     Query: {
         foro(_, { idForo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||||||||||||`);
-                console.log(`Peticion de un foro id ${idForo}`);
                 try {
                     var elForo = yield Foro_1.ModeloForo.findById(idForo).exec();
                     if (!elForo) {
@@ -106,13 +104,11 @@ exports.resolvers = {
                     console.log(`Error buscando el foro con id ${idForo} en la base de datos. E:${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`enviando el foro`);
                 return elForo;
             });
         },
         numPaginasConversacion(_, { idConversacion }, __) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||`);
                 let Respuesta = mongoose_1.default.model("respuestasDeConversacion" + idConversacion, Conversacion_1.esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
                 try {
                     var num = yield Respuesta.countDocuments().exec();
@@ -122,13 +118,11 @@ exports.resolvers = {
                     console.log(`Error contando las respuestas. E: ${error}`);
                     return 0;
                 }
-                console.log(`Enviando numpags: ${pags}`);
                 return pags;
             });
         },
         numPagsConversacionesForo(_, { idForo }, __) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`||||||||||||`);
                 try {
                     let elForo = yield Foro_1.ModeloForo.findById(idForo).exec();
                     let num = elForo.conversaciones.length;
@@ -138,13 +132,11 @@ exports.resolvers = {
                     console.log(`Error contando las conversaciones. E: ${error}`);
                     return 0;
                 }
-                console.log(`Enviando numpags: ${pags}`);
                 return pags;
             });
         },
         respuestasPaginaDeConversacion(_, { idConversacion, pagina }, __) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Peticion de respuestas de la pagina ${pagina} en la conversacion ${idConversacion}`);
                 let Respuesta = mongoose_1.default.model("respuestasDeConversacion" + idConversacion, Conversacion_1.esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
                 let numRespuestas = yield Respuesta.countDocuments().exec();
                 var numPaginas = 0;
@@ -161,13 +153,11 @@ exports.resolvers = {
                     console.log(`Error descargando respuestas`);
                     new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Enviando ${lasRespuestas.length} respuestas en la pagina ${pagina} de ${numPaginas}`);
                 return { numPaginas, pagina, respuestas: lasRespuestas };
             });
         },
         conversacionesPaginaForo(_, { idForo, pagina }, __) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Peticion de respuestas de la pagina ${pagina} en el foro ${idForo}`);
                 try {
                     var elForo = yield Foro_1.ModeloForo.findById(idForo).exec();
                     if (!elForo) {
@@ -188,7 +178,6 @@ exports.resolvers = {
                     pagina = numPaginas;
                 }
                 let conversacionesPagina = todasConversaciones.splice((pagina - 1) * sizePaginaForo, sizePaginaForo);
-                console.log(`Enviando ${conversacionesPagina.length} conversaciones para la pagina ${pagina} de ${numPaginas}`);
                 return { pagina, numPaginas, conversaciones: conversacionesPagina };
             });
         }

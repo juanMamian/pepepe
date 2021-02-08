@@ -275,6 +275,7 @@ export default {
 
       esteProyecto: {
         responsables: [],
+        posiblesResponsables:[],
       },
       idResponsableSeleccionado: null,
       responsableSeleccionadoEstaAceptado: false,
@@ -284,6 +285,7 @@ export default {
 
       idTrabajoSeleccionado: null,
       idObjetivoSeleccionado: null,
+      
       nuevoNombre: "Nuevo nombre",
       editandoNombre: false,
       enviandoNuevoNombre: false,
@@ -307,10 +309,7 @@ export default {
     usuarioPosibleResponsableProyecto: function () {
       if (!this.esteProyecto.posiblesResponsables) return false;
 
-      if (
-        this.esteProyecto.posiblesResponsables.some(
-          (pr) => pr.id == this.$store.state.usuario.id
-        )
+      if (this.esteProyecto.posiblesResponsables.includes(this.usuario.id)
       ) {
         return true;
       }
@@ -335,7 +334,7 @@ export default {
       return false;
     },
     nuevoDescripcionIlegal() {
-      if (this.nuevoDescripcion.length < 1) {
+      if (!this.nuevoDescripcion  || this.nuevoDescripcion.length < 1) {
         return true;
       }
       if (charProhibidosDescripcionProyecto.test(this.nuevoDescripcion)) {

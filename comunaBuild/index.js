@@ -12,6 +12,7 @@ const usuariosRoutes = require("./routes/usuarios");
 const routesNodos = require("./routes/atlas/nodos");
 const routesActividadesProfes = require("./routes/actividadesProfes");
 const routesForos = require("./routes/foros");
+const routesContenidosNodos = require("./routes/atlas/contenidosNodos");
 const mongoose_1 = require("./mongoose");
 const ejwt = require("express-jwt");
 const cors_1 = __importDefault(require("cors"));
@@ -24,6 +25,7 @@ app.get("/pepepe", function (req, res) {
 });
 Schema_1.aServer.applyMiddleware({ app });
 //Carpetas publicas
+app.use("/assetsAtlas/contenidosNodos", routesContenidosNodos);
 app.use("/assetsAtlas", express_1.default.static(__dirname + '/assetsAtlas'));
 const rutaFotografias = /api\/usuarios\/fotografias\/\S+/;
 const rutaGuias = /api\/actividadesProfes\/guia\/\S+/;

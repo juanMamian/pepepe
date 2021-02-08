@@ -218,6 +218,7 @@ export const resolvers = {
 
         },
         setCentroVista: async function (_: any, { idUsuario, centroVista }: any, context: contextoQuery) {
+            console.log(`Seting centro vista en ${JSON.stringify(centroVista)} para el usuario ${idUsuario}`);
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario, "atlas").exec();
                 if (!elUsuario) {
@@ -236,6 +237,7 @@ export const resolvers = {
                 throw new ApolloError("");
 
             }
+            console.log(`Set`);
             return true;
         },
         addPermisoUsuario: async function (_: any, { idUsuario, nuevoPermiso }, contexto: contextoQuery) {

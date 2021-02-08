@@ -14,6 +14,9 @@ esquemaNodo.add({
         required: true,
         default: "nodo de conocimiento"
     },
+    descripcion: {
+        type: String
+    },
     icono: {
         type: Buffer
     },
@@ -41,6 +44,24 @@ esquemaNodo.add({
     resumen: {
         type: String,
         max: 2000,
+    },
+    expertos: {
+        type: [String],
+        required: true,
+        default: []
+    },
+    posiblesExpertos: {
+        type: [String],
+        required: true,
+        default: []
+    },
+    idForoPublico: {
+        type: String,
+        required: true,
+    },
+    idForoExpertos: {
+        type: String,
+        required: true,
     },
     coordx: Number,
     coordy: Number,

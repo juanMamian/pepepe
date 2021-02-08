@@ -20,6 +20,9 @@ export default new Vuex.Store({
             username: null,
             permisos: [],
             id: null,
+            atlas:{
+                centroVista:null,
+            }
         },
         token: null,
 
@@ -55,6 +58,10 @@ export default new Vuex.Store({
 
         refreshActividadEspecifica(state){
             state.refreshActividadEspecifica++;
+        },
+
+        setCentroVistaAtlas(state, nuevoCentro){
+            state.usuario.atlas.centroVista=nuevoCentro;
         }
     }
 });

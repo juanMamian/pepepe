@@ -7,6 +7,7 @@ const usuariosRoutes = require("./routes/usuarios");
 const routesNodos = require("./routes/atlas/nodos");
 const routesActividadesProfes = require("./routes/actividadesProfes");
 const routesForos = require("./routes/foros");
+const routesContenidosNodos=require("./routes/atlas/contenidosNodos");
 import { iniciarMongoose } from "./mongoose";
 
 
@@ -25,6 +26,7 @@ aServer.applyMiddleware({ app });
 
 //Carpetas publicas
 
+app.use("/assetsAtlas/contenidosNodos", routesContenidosNodos);
 app.use("/assetsAtlas", express.static(__dirname + '/assetsAtlas'));
 
 

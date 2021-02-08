@@ -7,7 +7,7 @@
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
-            id="bEditarrNombre"
+            id="bEditarNombre"
             class="bEditar"
             title="Editar nombre del objetivo"
             v-show="usuarioResponsableProyecto"

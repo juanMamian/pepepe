@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Nodo_1 = require("../model/atlas/Nodo");
+const Usuario_1 = require("../model/Usuario");
+const Foro_1 = require("../model/Foros/Foro");
 exports.typeDefs = apollo_server_express_1.gql `
 type Vinculo{
     id:ID!,
@@ -36,7 +38,12 @@ type NodoConocimiento{
     coordY: Int,
     vinculos: [Vinculo],
     coordsManuales: Coords,
-    resumen:String    
+    resumen:String,
+    descripcion:String,
+    idForoPublico:ID,
+    idForoExpertos:ID,
+    expertos: [String],
+    posiblesExpertos:[String]
 }
 
 input NodoConocimientoInput{
@@ -60,7 +67,7 @@ type infoNodosModificados{
 extend type Query{
     todosNodos: [NodoConocimiento],
     ping: String,
-    nodo(idNodo: String): NodoConocimiento,
+    nodo(idNodo: ID!): NodoConocimiento,
     busquedaAmplia(palabrasBuscadas:[String]!):[NodoConocimiento]
 },
 
@@ -69,8 +76,15 @@ extend type Mutation{
     crearVinculo(tipo:String!, idSource:ID!, idTarget:ID!):infoNodosModificados,
     eliminarVinculoFromTo(idSource:ID!, idTarget:ID!):infoNodosModificados,
     editarNombreNodo(idNodo: ID!, nuevoNombre: String!):infoNodosModificados,
-    crearNodo(infoNodo:NodoConocimientoInput):infoNodosModificados
-    eliminarNodo(idNodo:ID!):ID
+    crearNodo(infoNodo:NodoConocimientoInput):NodoConocimiento
+    eliminarNodo(idNodo:ID!):ID,
+    editarDescripcionNodoConocimiento(idNodo:ID!, nuevoDescripcion:String!):NodoConocimiento,
+
+    addExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
+    addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
+    removeExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
+
+
 }
 `;
 exports.resolvers = {
@@ -101,7 +115,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`enviando todos los nombres, vinculos y coordenadas`);
                 try {
-                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre vinculos coordsManuales coordx coordy ubicado").exec();
+                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre descripcion vinculos coordsManuales coordx coordy ubicado").exec();
                     console.log(`encontrados ${todosNodos.length} nodos`);
                 }
                 catch (error) {
@@ -115,10 +129,88 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Buscando el nodo con id ${idNodo}`);
                 try {
-                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre coordsManuales");
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre vinculos coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos").exec();
+                    if (!elNodo)
+                        throw "Nodo no encontrado";
                 }
                 catch (error) {
                     console.log(`error buscando el nodo. e: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let tieneForoPublico = true;
+                if (!elNodo.idForoPublico) {
+                    tieneForoPublico = false;
+                }
+                else {
+                    try {
+                        let elForoPublico = yield Foro_1.ModeloForo.findById(elNodo.idForoPublico).exec();
+                        if (!elForoPublico) {
+                            console.log(`El foro no existía. Se creará uno nuevo`);
+                            tieneForoPublico = false;
+                        }
+                    }
+                    catch (error) {
+                        console.log(`Error buscando foro público en la base de datos. E :${error}`);
+                    }
+                }
+                if (!tieneForoPublico) {
+                    console.log(`El nodo ${elNodo.nombre} no tenía foro publico. Creando.`);
+                    try {
+                        var nuevoForoPublico = yield Foro_1.ModeloForo.create({
+                            miembros: elNodo.expertos,
+                            acceso: "publico"
+                        });
+                        var idNuevoForoPublico = nuevoForoPublico._id;
+                        yield nuevoForoPublico.save();
+                        elNodo.idForoPublico = idNuevoForoPublico;
+                    }
+                    catch (error) {
+                        console.log(`Error creando el nuevo foro. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                    console.log(`Nuevo foro creado`);
+                }
+                let tieneForoExpertos = true;
+                if (!elNodo.idForoExpertos) {
+                    tieneForoExpertos = false;
+                }
+                else {
+                    try {
+                        let elForoExpertos = yield Foro_1.ModeloForo.findById(elNodo.idForoExpertos).exec();
+                        if (!elForoExpertos) {
+                            console.log(`El foro no existía. Se creará uno nuevo`);
+                            tieneForoExpertos = false;
+                        }
+                    }
+                    catch (error) {
+                        console.log(`Error buscando foro público en la base de datos. E :${error}`);
+                    }
+                }
+                if (!tieneForoExpertos) {
+                    console.log(`El nodo ${elNodo.nombre} no tenía foro expertos. Creando.`);
+                    try {
+                        var nuevoForoExpertos = yield Foro_1.ModeloForo.create({
+                            miembros: elNodo.expertos,
+                            acceso: "privado"
+                        });
+                        var idNuevoForoExpertos = nuevoForoExpertos._id;
+                        yield nuevoForoExpertos.save();
+                        elNodo.idForoExpertos = idNuevoForoExpertos;
+                    }
+                    catch (error) {
+                        console.log(`Error creando el nuevo foro. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                    console.log(`Nuevo foro creado`);
+                }
+                if (!tieneForoExpertos || !tieneForoPublico) {
+                    try {
+                        yield elNodo.save();
+                    }
+                    catch (error) {
+                        console.log(`Error guardando el nodo`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
                 }
                 return elNodo;
             });
@@ -144,24 +236,52 @@ exports.resolvers = {
                 return idNodo;
             });
         },
-        crearNodo(_, { infoNodo }) {
+        crearNodo(_, { infoNodo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                let permisosEspeciales = ["superadministrador"];
+                if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
                 console.log(`Creando nuevo nodo de conocimiento`);
-                let modificados = new Array();
-                let nuevoNodo = new Nodo_1.ModeloNodo(Object.assign({}, infoNodo));
-                console.log(`nodo: ${JSON.stringify(nuevoNodo)}`);
                 try {
+                    var nuevoForoPublico = yield Foro_1.ModeloForo.create({
+                        acceso: "publico",
+                        miembros: [],
+                    });
+                    var idForoPublico = nuevoForoPublico._id;
+                    yield nuevoForoPublico.save();
+                }
+                catch (error) {
+                    console.log(`Error creando el nuevo foro publico. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo foro publico creado`);
+                try {
+                    var nuevoForoExpertos = yield Foro_1.ModeloForo.create({
+                        acceso: "privado",
+                        miembros: [],
+                    });
+                    var idForoExpertos = nuevoForoExpertos._id;
+                    yield nuevoForoExpertos.save();
+                }
+                catch (error) {
+                    console.log(`Error creando el nuevo foro expertos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo foro expertos creado`);
+                try {
+                    var nuevoNodo = new Nodo_1.ModeloNodo(Object.assign(Object.assign({}, infoNodo), { idForoPublico,
+                        idForoExpertos }));
                     yield nuevoNodo.save();
                 }
                 catch (error) {
-                    console.log(`error guardando el nuevo nodo en la base de datos`);
+                    console.log(`error guardando el nuevo nodo en la base de datos. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error guardando en base de datos");
                 }
-                modificados.push(nuevoNodo);
                 console.log(`nuevo nodo de conocimiento creado. ID: ${nuevoNodo._id} `);
-                return {
-                    modificados
-                };
+                return nuevoNodo;
             });
         },
         setCoordsManuales: function (_, { idNodo, coordsManuales }, contexto) {
@@ -279,12 +399,12 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`error buscando el nodo. E: ` + error);
                 }
-                nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-                var charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+                nuevoNombre = nuevoNombre.trim();
+                const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
                 if (charProhibidosNombreNodo.test(nuevoNombre)) {
                     throw new apollo_server_express_1.ApolloError("Nombre ilegal");
                 }
-                elNodo.nombre = nuevoNombre.trim();
+                elNodo.nombre = nuevoNombre;
                 try {
                     console.log(`guardando nuevo nombre ${elNodo.nombre} en la base de datos`);
                     yield elNodo.save();
@@ -295,6 +415,208 @@ exports.resolvers = {
                 modificados.push(elNodo);
                 return { modificados };
             });
-        }
+        },
+        editarDescripcionNodoConocimiento: function (_, { idNodo, nuevoDescripcion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||`);
+                console.log(`Solicitud de set descripcion del nodo con id ${idNodo}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el nodo. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Descripcion de nodo`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
+                if (charProhibidosDescripcionNodo.test(nuevoDescripcion)) {
+                    throw new apollo_server_express_1.ApolloError("Descripcion ilegal");
+                }
+                nuevoDescripcion = nuevoDescripcion.trim();
+                try {
+                    console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
+                    var resNodo = yield Nodo_1.ModeloNodo.findByIdAndUpdate(idNodo, { descripcion: nuevoDescripcion }, { new: true }).exec();
+                }
+                catch (error) {
+                    console.log(`error guardando el nodo: ${error}`);
+                }
+                console.log(`Descripcion guardado`);
+                return resNodo;
+            });
+        },
+        addExpertoNodo: function (_, { idNodo, idUsuario }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de add un usuario con id ${idUsuario} a un nodo con id ${idNodo}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
+                }
+                //Authorización
+                if (elNodo.expertos.length > 0 && !elNodo.expertos.includes(credencialesUsuario.id) && credencialesUsuario.permisos.includes("superadministrador")) {
+                    console.log(`Error de autenticacion. Hay ${elNodo.expertos.length} experto: ${elNodo.expertos}`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario) {
+                        console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
+                        throw new apollo_server_express_1.ApolloError("Error buscando al usuario en la base de datos");
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando al usuario en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                if (elNodo.expertos.includes(idUsuario)) {
+                    console.log(`El usuario ya era experto de este nodo`);
+                    throw new apollo_server_express_1.ApolloError("El usuario ya estaba incluido");
+                }
+                elNodo.expertos.push(idUsuario);
+                console.log(`Usuario añadido a la lista de expertos`);
+                let indexPosibleExperto = elNodo.posiblesExpertos.indexOf(idUsuario);
+                if (indexPosibleExperto > -1) {
+                    console.log(`sacando al usuario ${idUsuario} de la lista de posibles expertos`);
+                    elNodo.posiblesExpertos.splice(indexPosibleExperto, 1);
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando datos en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Mirror expertos del nodo hacia miembros del foro
+                try {
+                    yield Foro_1.ModeloForo.findByIdAndUpdate(elNodo.idForoExpertos, { miembros: elNodo.expertos });
+                    yield Foro_1.ModeloForo.findByIdAndUpdate(elNodo.idForoPublico, { miembros: elNodo.expertos });
+                }
+                catch (error) {
+                    console.log(`Error mirroring expertos del nodo hacia miembros del foro. E: ${error}`);
+                }
+                console.log(`Nodo guardado`);
+                return elNodo;
+            });
+        },
+        addPosibleExpertoNodo: function (_, { idNodo, idUsuario }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`añadiendo usuario ${idUsuario} a la lista de posibles expertos del nodo ${idNodo}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
+                }
+                //Authorización
+                if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+                    console.log(`Error de autenticacion añadiendo posible experto del nodo`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                if (elNodo.posiblesExpertos.includes(idUsuario) || elNodo.expertos.includes(idUsuario)) {
+                    console.log(`el usuario ya estaba en la lista`);
+                    throw new apollo_server_express_1.ApolloError("El usuario ya estaba en la lista");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario) {
+                        console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
+                        throw new apollo_server_express_1.ApolloError("Error buscando al usuario en la base de datos");
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando al usuario en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    elNodo.posiblesExpertos.push(idUsuario);
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando datos en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nodo guardado`);
+                return elNodo;
+            });
+        },
+        removeExpertoNodo: function (_, { idNodo, idUsuario }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de remover un usuario con id ${idUsuario} a un nodo con id ${idNodo}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
+                }
+                //Authorización
+                if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+                    console.log(`Error de autenticacion removiendo experto o posible experto de nodo`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario) {
+                        console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
+                        throw new apollo_server_express_1.ApolloError("Error buscando al usuario en la base de datos");
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando al usuario en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let indexPosibleExperto = elNodo.posiblesExpertos.indexOf(idUsuario);
+                if (indexPosibleExperto > -1) {
+                    console.log(`sacando al usuario ${idUsuario} de la lista de posibles expertos`);
+                    elNodo.posiblesExpertos.splice(indexPosibleExperto, 1);
+                }
+                let indexExperto = elNodo.expertos.indexOf(idUsuario);
+                if (indexExperto > -1) {
+                    console.log(`sacando al usuario ${idUsuario} de la lista de expertos`);
+                    elNodo.expertos.splice(indexExperto, 1);
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando datos en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Mirror expertos del nodo hacia miembros del foro
+                try {
+                    yield Foro_1.ModeloForo.findByIdAndUpdate(elNodo.idForoPublico, { miembros: elNodo.expertos });
+                    yield Foro_1.ModeloForo.findByIdAndUpdate(elNodo.idForoExpertos, { miembros: elNodo.expertos });
+                }
+                catch (error) {
+                    console.log(`Error mirroring expertos del nodo hacia miembros del foro. E: ${error}`);
+                }
+                console.log(`Nodo guardado`);
+                return elNodo;
+            });
+        },
     }
 };

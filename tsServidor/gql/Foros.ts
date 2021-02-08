@@ -86,8 +86,6 @@ const sizePaginaForo = 6
 export const resolvers = {
     Query: {
         async foro(_: any, { idForo }, contexto: contextoQuery) {
-            console.log(`||||||||||||||||||||||`);
-            console.log(`Peticion de un foro id ${idForo}`);
             try {
                 var elForo: any = await Foro.findById(idForo).exec();
                 if (!elForo) {
@@ -97,13 +95,10 @@ export const resolvers = {
                 console.log(`Error buscando el foro con id ${idForo} en la base de datos. E:${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-
-            console.log(`enviando el foro`);
+            
             return elForo;
         },
         async numPaginasConversacion(_: any, { idConversacion }, __: any) {
-            console.log(`||||||||||||`);
-
 
             let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
             try {
@@ -113,11 +108,9 @@ export const resolvers = {
                 console.log(`Error contando las respuestas. E: ${error}`);
                 return 0
             }
-            console.log(`Enviando numpags: ${pags}`);
             return pags;
         },
         async numPagsConversacionesForo(_: any, { idForo }, __: any) {
-            console.log(`||||||||||||`);
 
             try {
                 let elForo: any = await Foro.findById(idForo).exec();
@@ -127,11 +120,9 @@ export const resolvers = {
                 console.log(`Error contando las conversaciones. E: ${error}`);
                 return 0
             }
-            console.log(`Enviando numpags: ${pags}`);
             return pags;
         },
         async respuestasPaginaDeConversacion(_: any, { idConversacion, pagina }, __: any) {
-            console.log(`Peticion de respuestas de la pagina ${pagina} en la conversacion ${idConversacion}`);
             let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
             let numRespuestas: any = await Respuesta.countDocuments().exec();
 
@@ -151,11 +142,9 @@ export const resolvers = {
                 console.log(`Error descargando respuestas`);
                 new ApolloError("Error conectando con la base de datos");
             }
-            console.log(`Enviando ${lasRespuestas.length} respuestas en la pagina ${pagina} de ${numPaginas}`);
             return { numPaginas, pagina, respuestas: lasRespuestas };
         },
         async conversacionesPaginaForo(_: any, { idForo, pagina }, __: any) {
-            console.log(`Peticion de respuestas de la pagina ${pagina} en el foro ${idForo}`);
 
             try {
                 var elForo: any = await Foro.findById(idForo).exec();
@@ -179,7 +168,6 @@ export const resolvers = {
             }
 
             let conversacionesPagina = todasConversaciones.splice((pagina - 1) * sizePaginaForo, sizePaginaForo);
-            console.log(`Enviando ${conversacionesPagina.length} conversaciones para la pagina ${pagina} de ${numPaginas}`);
             return { pagina, numPaginas, conversaciones: conversacionesPagina };
         }
 
@@ -417,7 +405,7 @@ export const resolvers = {
                 await elForo.save();
             } catch (error) {
                 console.log(`Error guardando cant respuestas y info ultima respuesta. E: ${error}`);
-            }
+            }            
 
             console.log(`Respuesta posted`);
 

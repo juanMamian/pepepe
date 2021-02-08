@@ -104,10 +104,12 @@ const esquemaUsuario = new mongoose_1.default.Schema({
         centroVista: {
             x: {
                 type: Number,
+                required: true,
                 default: 0
             },
             y: {
                 type: Number,
+                required: true,
                 default: 0
             }
         }
