@@ -22,6 +22,7 @@
       :class="{
         mensajePropio: participacionEstudiante,
         mensajeOtro: !participacionEstudiante,
+        letrasRojas:mensajeIlegal
       }"
       name="mensaje"
       id="mensaje"
@@ -74,7 +75,7 @@ import Loading from "../utilidades/Loading.vue";
 import gql from "graphql-tag";
 import { fragmentoDesarrollo } from '../utilidades/recursosGql';
 
-var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@*=-]/;
+var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@*="-]/;
 
 export default {
   name: "MiParticipacion",

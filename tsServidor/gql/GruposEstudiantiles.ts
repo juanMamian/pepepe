@@ -830,7 +830,7 @@ export const resolvers = {
                 throw new Error("El desarrollo ya esta completado");
             }
 
-            var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@*=-]/;
+            var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@*="&#-]/;
             var mensaje = nuevaRespuesta.mensaje;
             if (charProhibidosMensaje.test(mensaje)) {
                 console.log(`Rechazando mensaje ${mensaje} por tener caracteres no válidos: ${mensaje.replace(charProhibidosMensaje, "*")}`);

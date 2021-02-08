@@ -4,6 +4,7 @@
     :class="{
       seleccionada: seleccionada,
       completada: usuarioCompletoActividad,
+      deshabilitado: actividadDeshabilitada,
     }"
   >
     <div
@@ -349,12 +350,14 @@ export default {
       skip() {
         return !this.idGrupo || !this.idActividad;
       },
-      fetchPolicy:"cache-and-network",
+      fetchPolicy: "cache-and-network",
     },
   },
   name: "Actividad",
   data() {
     return {
+      actividadDeshabilitada: false,
+
       estaActividad: {
         hayGuia: "",
         infoCreador: {},
@@ -371,7 +374,7 @@ export default {
       loadingActividad: true,
     };
   },
-  props: {    
+  props: {
     seleccionada: Boolean,
     idActividad: String,
     idGrupo: String,
@@ -379,7 +382,33 @@ export default {
   methods: {
     eliminarse() {
       if (confirm("Eliminando actividad completa. ¿Continuar?")) {
-        this.$emit("eliminandose", this.estaActividad.id);
+        let dis = this;
+        this.actividadDeshabilitada = true;
+        this.$apollo
+          .mutate({
+            mutation: gql`
+              mutation($idActividad: ID!, $idGrupo: ID!) {
+                eliminarActividadDeGrupoEstudiantil(
+                  idGrupo: $idGrupo
+                  idActividad: $idActividad
+                )
+              }
+            `,
+            variables: {
+              idActividad: this.idActividad,
+              idGrupo: this.idGrupo,
+            },
+          })
+          .then(({ data: { eliminarActividadDeGrupoEstudiantil } }) => {
+            console.log(
+              `Actividad eliminada: ${eliminarActividadDeGrupoEstudiantil}`
+            );
+            dis.$router.go();
+          })
+          .catch((error) => {
+            this.actividadDeshabilitada = false;
+            console.log("error: " + error);
+          });
       }
     },
     async guardarNombre() {

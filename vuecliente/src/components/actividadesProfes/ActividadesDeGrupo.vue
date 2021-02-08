@@ -81,6 +81,7 @@
         </div>
         <div
           class="controlesActividades botonesControles hoverGris"
+          :class="{ deshabilitado: creandoActividad }"
           v-if="usuarioProfe"
           v-show="!loadingMisActividadesCreadas"
           @click="crearNuevaActividad"
@@ -115,7 +116,7 @@
               ? (idActividadSeleccionada = null)
               : (idActividadSeleccionada = actividad.id)
           "
-          @eliminandose="eliminarActividad"
+          @meElimine="eliminarActividadCache"
         >
         </actividad>
         <loading
@@ -164,7 +165,7 @@
               ? (idActividadSeleccionada = null)
               : (idActividadSeleccionada = actividad.id)
           "
-          @eliminandose="eliminarActividad"
+          @meElimine="eliminarActividadCache"
         >
         </actividad>
         <div
@@ -310,6 +311,8 @@ export default {
 
       loadingMasMisActividades: true,
       loadingMasTodasActividades: true,
+
+      creandoActividad: false,
     };
   },
   computed: {
@@ -388,6 +391,7 @@ export default {
     },
     crearNuevaActividad() {
       console.log(`enviando mutacion de crear nueva actividad`);
+      this.creandoActividad = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -429,79 +433,16 @@ export default {
           },
         })
         .then((respuesta) => {
+          this.creandoActividad = false;
           console.log(`resp. ${respuesta}`);
         })
         .catch((error) => {
+          this.creandoActividad = false;
           console.log(`error: ${error}`);
         });
     },
-    eliminarActividad(idActividad) {
+    eliminarActividadCache(idActividad) {
       console.log(`Evento de eliminar actividad ${idActividad}`);
-
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idActividad: ID!, $idGrupo: ID!) {
-              eliminarActividadDeGrupoEstudiantil(
-                idGrupo: $idGrupo
-                idActividad: $idActividad
-              )
-            }
-          `,
-          variables: {
-            idActividad,
-            idGrupo: this.esteGrupo.id,
-          },
-        })
-        .then(({data:{eliminarActividad}}) => {
-          console.log(`resultado: ${eliminarActividad}`);
-        })
-        .catch((error) => {
-          console.log("error: " + error);
-        });
-    },
-    eliminarParticipacionDeCache({
-      idParticipacion,
-      idDesarrollo,
-      idActividad,
-    }) {
-      console.log(
-        `Eliminando participacion ${idParticipacion} del desarrollo ${idDesarrollo} de la actividad ${idActividad} de cache`
-      );
-      let apolloProv = this.$apollo.provider.defaultClient;
-      let data = apolloProv.readQuery({
-        query: QUERY_GRUPO,
-        variables: {
-          idGrupo: this.$route.params.idGrupo,
-        },
-      });
-      console.log(`data: ${JSON.stringify(data.grupoEstudiantil).length}`);
-
-      let elDesarrollo = data.grupoEstudiantil.actividades
-        .find((a) => a.id == idActividad)
-        .desarrollos.find((d) => d.id == idDesarrollo);
-      let index = elDesarrollo.participaciones.findIndex(
-        (p) => p.id == idParticipacion
-      );
-      elDesarrollo.participaciones.splice(index, 1);
-      console.log(`data: ${JSON.stringify(data.grupoEstudiantil).length}`);
-      if (elDesarrollo.participaciones.length < 1) {
-        console.log(`Este desarrollo se quedó sin participaciones`);
-        let laActividad = data.grupoEstudiantil.actividades.find(
-          (a) => a.id == idActividad
-        );
-        let indexA = laActividad.desarrollos.findIndex(
-          (d) => d.id == idDesarrollo
-        );
-        laActividad.desarrollos.splice(indexA, 1);
-      }
-      apolloProv.writeQuery({
-        query: QUERY_GRUPO,
-        variables: {
-          idGrupo: this.$route.params.idGrupo,
-        },
-        data,
-      });
     },
     getMoreMisActividades() {
       this.paginaMisActividades++;

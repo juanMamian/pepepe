@@ -224,7 +224,7 @@ exports.resolvers = {
                         throw new apollo_server_express_1.AuthenticationError("No autorizado");
                     }
                 }
-                const charProhibidosTitulo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+                const charProhibidosTitulo = /[^ a-zA-ZÀ-ž0-9_():.,-¡!¿?]/;
                 let titulo = input.titulo;
                 titulo = titulo.trim();
                 titulo = titulo.replace(/\s\s+/g, " ");

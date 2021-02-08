@@ -4,6 +4,7 @@
     <div id="zonaTitulo">
       <input
         type="text"
+        :class="{letrasRojas:tituloIlegal}"
         v-model="titulo"
         class="inputTitulo"
         placeholder="Titulo de la conversación"
@@ -12,6 +13,7 @@
     <div id="zonaContenido">
       <textarea
         v-model="mensaje"
+        :class="{letrasRojas:mensajeIlegal}"
         placeholder="Escribe un mensaje"
         id="inputMensaje"
       />
@@ -21,6 +23,7 @@
         src="@/assets/iconos/enviar.png"
         alt="Enviar"
         title="Crear conversación"
+        :class="{deshabilitado:(mensajeIlegal==true || tituloIlegal==true)}"
         id="bFinalizar"
         @click="finalizar"
         v-show="!enviandoConversacion"
@@ -35,7 +38,7 @@ import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 import { fragmentoConversacion } from "../utilidades/recursosGql";
 var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
-const charProhibidosTitulo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+const charProhibidosTitulo = /[^ a-zA-ZÀ-ž0-9_():.,-¡!¿?]/;
 
 export default {
   components: { Loading },
