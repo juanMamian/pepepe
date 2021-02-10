@@ -239,7 +239,8 @@ exports.resolvers = {
         crearNodo(_, { infoNodo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 let credencialesUsuario = contexto.usuario;
-                let permisosEspeciales = ["superadministrador"];
+                let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
+                ;
                 if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                     console.log(`Error de autenticacion`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
@@ -280,7 +281,7 @@ exports.resolvers = {
                     console.log(`error guardando el nuevo nodo en la base de datos. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error guardando en base de datos");
                 }
-                console.log(`nuevo nodo de conocimiento creado. ID: ${nuevoNodo._id} `);
+                console.log(`nuevo nodo de conocimiento creado: ${nuevoNodo} `);
                 return nuevoNodo;
             });
         },
@@ -312,10 +313,16 @@ exports.resolvers = {
                 return { modificados };
             });
         },
-        crearVinculo: function (_, args) {
+        crearVinculo: function (_, args, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 let modificados = [];
                 console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
+                let credencialesUsuario = contexto.usuario;
+                let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+                if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                    console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
                 try {
                     var nodoSource = yield Nodo_1.ModeloNodo.findById(args.idSource, "vinculos").exec();
                     var nodoTarget = yield Nodo_1.ModeloNodo.findById(args.idTarget, "vinculos").exec();
@@ -359,10 +366,16 @@ exports.resolvers = {
                 return { modificados };
             });
         },
-        eliminarVinculoFromTo: function (_, args) {
+        eliminarVinculoFromTo: function (_, args, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 let modificados = [];
                 console.log(`desvinculando ${args.idSource} de ${args.idTarget}`);
+                let credencialesUsuario = contexto.usuario;
+                let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+                if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                    console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
                 try {
                     var elUno = yield Nodo_1.ModeloNodo.findById(args.idSource, "nombre vinculos").exec();
                     var elOtro = yield Nodo_1.ModeloNodo.findById(args.idTarget, "nombre vinculos").exec();
@@ -390,14 +403,20 @@ exports.resolvers = {
                 return { modificados };
             });
         },
-        editarNombreNodo: function (_, { idNodo, nuevoNombre }) {
+        editarNombreNodo: function (_, { idNodo, nuevoNombre }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 let modificados = [];
                 try {
-                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre coordsManuales").exec();
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre expertos coordsManuales").exec();
                 }
                 catch (error) {
                     console.log(`error buscando el nodo. E: ` + error);
+                }
+                let credencialesUsuario = contexto.usuario;
+                let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
+                if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 nuevoNombre = nuevoNombre.trim();
                 const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
@@ -420,7 +439,6 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`|||||||||||||||||||`);
                 console.log(`Solicitud de set descripcion del nodo con id ${idNodo}`);
-                let credencialesUsuario = contexto.usuario;
                 try {
                     var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
                     if (!elNodo) {
@@ -431,10 +449,10 @@ exports.resolvers = {
                     console.log(`error buscando el nodo. E: ` + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                //Authorización
-                let permisosEspeciales = ["superadministrador"];
+                let credencialesUsuario = contexto.usuario;
+                let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
                 if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                    console.log(`Error de autenticacion editando Descripcion de nodo`);
+                    console.log(`El usuario no tenia permisos para efectuar esta operación`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
@@ -468,8 +486,8 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
                 }
                 //Authorización
-                if (!credencialesUsuario.permisos.includes("superadministrador")) {
-                    console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador`);
+                if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
+                    console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
@@ -528,7 +546,7 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
                 }
                 //Authorización
-                if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+                if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
                     console.log(`Error de autenticacion añadiendo posible experto del nodo`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
@@ -574,7 +592,7 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
                 }
                 //Authorización
-                if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+                if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
                     console.log(`Error de autenticacion removiendo experto o posible experto de nodo`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }

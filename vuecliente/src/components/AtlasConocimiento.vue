@@ -22,6 +22,7 @@
         :nodoSeleccionado="nodoSeleccionado"
         :todosNodos="todosNodos"
         :idNodoMenuCx="idNodoMenuCx"
+        :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
         :key="nodo.id"
         v-for="nodo of todosNodos"
         :esteNodo="nodo"
@@ -43,12 +44,8 @@
 import gql from "graphql-tag";
 import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
 import Canvases from "./atlasConocimiento/Canvases.vue";
-export default {
-  components: { NodoConocimiento, Canvases },
-  name: "AtlasConocimiento",
-  apollo: {
-    todosNodos: {
-      query: gql`
+
+const QUERY_NODOS=gql`
         query {
           todosNodos {
             nombre
@@ -65,7 +62,14 @@ export default {
             }
           }
         }
-      `,
+      `
+
+export default {
+  components: { NodoConocimiento, Canvases },
+  name: "AtlasConocimiento",
+  apollo: {
+    todosNodos: {
+      query: QUERY_NODOS,
       result: function () {
         this.dibujarVinculosGrises();
       },
@@ -114,6 +118,10 @@ export default {
     idUsuario: function () {
       return this.$store.state.usuario.id;
     },
+    usuarioAdministradorAtlas: function () {
+      if (!this.$store.state.usuario.permisos) return false;
+      return (this.$store.state.usuario.permisos.includes("atlasAdministrador")) ? true : false
+    },
   },
   methods: {
     iniciaMovimientoTouch(e){
@@ -130,7 +138,10 @@ export default {
       this.desplazarVista(deltaX, deltaY);
     },
     cambiarCoordsManualesNodo(idNodo, coordsManuales) {
-      //Update optimista:
+      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+        console.log(`No autorizado`);
+        return
+      }
       this.todosNodos[
         this.todosNodos.findIndex((n) => n.id == idNodo)
       ].coordsManuales = coordsManuales;
@@ -163,6 +174,10 @@ export default {
         });
     },
     eliminarNodo(idNodo) {
+      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+        console.log(`No autorizado`);
+        return
+      }
       if(!confirm("¿Seguro de que quieres eliminar este nodo?"))return
       console.log(`enviando mutacion de eliminar nodo`);
       this.$apollo
@@ -175,13 +190,34 @@ export default {
           variables: {
             idNodo,
           },
+          update(store, {data:{eliminarNodo}}){
+            if(!eliminarNodo){
+              console.log(`Nodo no fue eliminado`);
+              return
+            }
+            const cache=store.readQuery({
+              query: QUERY_NODOS,            
+            });
+            var nuevoCache=JSON.parse(JSON.stringify(cache));
+            const indexN=nuevoCache.todosNodos.findIndex(n=>n.id==idNodo);
+            if(indexN>-1){
+              nuevoCache.todosNodos.splice(indexN, 1);
+              store.writeQuery({
+                query:QUERY_NODOS,
+                data:nuevoCache              
+              });
+            }
+            else{
+              console.log(`El nodo no estaba presente`);              
+            }
+          }
         })
         .then((data) => {
           console.log(`quitando el objeto del array. ${data}`);
         });
     },
     crearNodo(e) {
-      if(!this.usuarioSuperadministrador){
+      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
         console.log(`Error usuario no autorizado`);
         return
       }
@@ -208,16 +244,40 @@ export default {
         mutation: gql`
           mutation($infoNodo: NodoConocimientoInput) {
             crearNodo(infoNodo: $infoNodo) {
+              nombre
+              descripcion
               id
+              coordsManuales {
+                x
+                y
+              }
+              vinculos {
+                idRef
+                rol
+                tipo
+              }
             }
           }
         `,
         variables: {
           infoNodo,
         },
+        update(store, {data:{crearNodo}}){
+          const cache=store.readQuery({
+            query:QUERY_NODOS,            
+          });
+          //console.log(`Cache: ${JSON.stringify(cache)}`);
+          var nuevoCache=JSON.parse(JSON.stringify(cache));
+          let losNodos=nuevoCache.todosNodos;
+          losNodos.push(crearNodo);
+          store.writeQuery({
+            query: QUERY_NODOS,
+            data: nuevoCache,
+          });
+        }
       }).then(({data:{crearNodo}})=>{ 
         console.log(`Creado ${crearNodo.id}`);
-        this.$router.push("/nodoConocimiento/"+crearNodo.id);
+        //this.$router.push("/nodoConocimiento/"+crearNodo.id);
       }).catch((error)=>{
         console.log(`Error. E: ${error}`);
       });
@@ -303,6 +363,10 @@ export default {
       };
     },
     async eliminarVinculo(args) {
+      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+        console.log(`No autorizado`);
+        return;
+      }
       console.log(
         `eliminando un vinculo entre ${args.idNodoFrom} y ${args.idNodoTo} `
       );
@@ -339,6 +403,10 @@ export default {
       this.actualizarVinculosGrises++;
     },
     async crearVinculo(args) {
+      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+        console.log(`No autorizado`);
+        return;
+      }
       console.log(`creando un vinculo ${JSON.stringify(args)} `);
       await this.$apollo
         .mutate({

@@ -4,7 +4,7 @@
       <div id="zonaNombre">
         <div
           class="controlesZona"
-          v-show="usuarioExperto || usuarioSuperadministrador"
+          v-show="usuarioExperto || usuarioSuperadministrador || usuarioAdministradorAtlas"
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -53,7 +53,7 @@
       >
         <div
           class="controlesZona"
-          v-show="usuarioExperto || usuarioSuperadministrador"
+          v-show="usuarioExperto || usuarioSuperadministrador || usuarioAdministradorAtlas"
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -309,6 +309,10 @@ export default {
         tipo: "nodoConocimiento",
         nombre: this.esteNodo.nombre,
       };
+    },
+    usuarioAdministradorAtlas: function () {
+      if (!this.$store.state.usuario.permisos) return false;
+      return (this.$store.state.usuario.permisos.includes("atlasAdministrador")) ? true : false
     },
   },
   methods: {

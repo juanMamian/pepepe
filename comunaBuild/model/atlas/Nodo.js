@@ -20,23 +20,27 @@ esquemaNodo.add({
     icono: {
         type: Buffer
     },
-    vinculos: [
-        {
-            idRef: {
-                type: mongoose_1.default.Types.ObjectId,
-                required: true
-            },
-            rol: {
-                type: String,
-                required: true
-            },
-            tipo: {
-                type: String,
-                required: true,
-                default: "continuacion"
+    vinculos: {
+        type: [
+            {
+                idRef: {
+                    type: mongoose_1.default.Types.ObjectId,
+                    required: true
+                },
+                rol: {
+                    type: String,
+                    required: true
+                },
+                tipo: {
+                    type: String,
+                    required: true,
+                    default: "continuacion"
+                }
             }
-        }
-    ],
+        ],
+        required: true,
+        default: []
+    },
     coordsManuales: {
         x: Number,
         y: Number

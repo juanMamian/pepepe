@@ -18,7 +18,7 @@
 
     <div id="menuContextual" v-show="menuCx">
       <div class="seccionMenuCx" @click="abrirPaginaNodo">{{ esteNodo.nombre }}</div>
-      <div class="botonMenuCx" v-if="usuarioSuperadministrador" @click.stop="eliminarEsteNodo">Eliminar</div>
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador==true|| usuarioAdministradorAtlas==true" @click.stop="eliminarEsteNodo">Eliminar</div>
       <div
         class="botonMenuCx"
         v-if="usuarioSuperadministrador"
@@ -27,7 +27,7 @@
         {{ esteNodo.id }}
       </div>
       <template
-        v-if="nodoSeleccionado.id != -1 && nodoSeleccionado.id != esteNodo.id && usuarioSuperadministrador"
+        v-if="nodoSeleccionado.id != -1 && nodoSeleccionado.id != esteNodo.id && (usuarioSuperadministrador==true || usuarioAdministradorAtlas==true)"
       >
         <div class="seccionMenuCx">{{ nodoSeleccionado.nombre }}</div>
         <div
@@ -58,7 +58,7 @@
       {{ esteNodo.nombre }}
     </div>
 
-    <div class="cuadritoDescripcionNodo" v-if="esteNodo && esteNodo.descripcion" v-show="mostrandoCuadritoDescripcion || seleccionado">
+    <div class="cuadritoDescripcionNodo" v-if="esteNodo && esteNodo.descripcion" v-show="seleccionado">
       <div class="descripcionNodo">{{esteNodo.descripcion}}</div>
       <img @click.stop="abrirPaginaNodo" src="@/assets/iconos/ir.png" alt="Ir" title="Abrir este nodo" class="botonAbrirNodo"/>
     </div>
@@ -103,6 +103,10 @@ export default {
         };
       },
     },
+    usuarioAdministradorAtlas:{
+      type:Boolean,
+      default:false
+    }
   },
   computed: {
     menuCx() {
@@ -171,6 +175,10 @@ export default {
       document.body.removeChild(el);
     },
     eliminarEsteNodo() {
+      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+        console.log(`No autorizado`);
+        return;
+      }
       this.$emit("eliminar", this.esteNodo.id);
     },    
     arrastrarNodo(e) {
@@ -200,6 +208,10 @@ export default {
       this.arrastrandoNodo = false;
     },
     crearVinculo(tipo, nodoFrom, nodoTo) {
+      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+        console.log(`No autorizado`);
+        return;
+      }
       console.log(
         `creando un vinculo tipo ${tipo} entre ${nodoFrom.nombre} y ${nodoTo.nombre} `
       );
@@ -210,94 +222,15 @@ export default {
       });
     },
     eliminarVinculo(nodoFrom, nodoTo) {
+      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+        console.log(`No autorizado`);
+        return;
+      }
       this.$emit("eliminacionVinculo", {
         idNodoFrom: nodoFrom.id,
         idNodoTo: nodoTo.id,
       });
-    },
-    dibujarLineaEntreNodos(nodoFrom, nodoTo) {
-      let inicio = {
-        x:
-          nodoFrom.coordsManuales.x +
-          this.paddingGuarda / 2 -
-          parseInt(this.bordesDibujoActivo.left),
-        y:
-          nodoFrom.coordsManuales.y +
-          this.paddingGuarda / 2 -
-          parseInt(this.bordesDibujoActivo.bot),
-      };
-      let final = {
-        x:
-          nodoTo.coordsManuales.x +
-          this.paddingGuarda / 2 -
-          parseInt(this.bordesDibujoActivo.left),
-        y:
-          nodoTo.coordsManuales.y +
-          this.paddingGuarda / 2 -
-          parseInt(this.bordesDibujoActivo.bot),
-      };
-      console.log(`${inicio.x}, ${inicio.y} -> ${final.x}, ${final.y} `);
-
-      let anguloVinculo = Math.atan(
-        (final.y - inicio.y) / (final.x - inicio.x)
-      );
-      if (final.y - inicio.y < 0 && final.x - inicio.x < 0)
-        anguloVinculo += Math.PI;
-      if (final.y - inicio.y > 0 && final.x - inicio.x < 0)
-        anguloVinculo += Math.PI;
-
-      let radioAmpliado = parseInt(this.baseSize.x * 0.6);
-      console.log(`radio ampliado: ${radioAmpliado}`);
-      let correccionHorizontal = parseInt(
-        radioAmpliado * Math.cos(anguloVinculo)
-      );
-      let correccionVertical = parseInt(
-        radioAmpliado * Math.sin(anguloVinculo)
-      );
-      console.log(
-        `Correcciones: ${correccionHorizontal}, ${correccionVertical} `
-      );
-
-      let finalCorregido = {
-        x: final.x - correccionHorizontal,
-        y: final.y - correccionVertical,
-      };
-
-      this.lapiz.moveTo(inicio.x, inicio.y);
-      this.lapiz.lineTo(finalCorregido.x, finalCorregido.y);
-
-      //ahora la flechita
-
-      // let centro = {
-      //   x: (final.x + inicio.x) / 2,
-      //   y: (final.y + inicio.y) / 2,
-      // };
-
-      let longitudAla = 7;
-
-      //anguloVinculo=anguloVinculo*180/Math.PI;
-
-      let puntaAlaIzquierda = {
-        x:
-          finalCorregido.x +
-          longitudAla * Math.cos(anguloVinculo - (3 * Math.PI) / 4),
-        y:
-          finalCorregido.y +
-          longitudAla * Math.sin(anguloVinculo - (3 * Math.PI) / 4),
-      };
-      let puntaAlaDerecha = {
-        x:
-          finalCorregido.x +
-          longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4),
-        y:
-          finalCorregido.y +
-          longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4),
-      };
-      this.lapiz.moveTo(finalCorregido.x, finalCorregido.y);
-      this.lapiz.lineTo(puntaAlaIzquierda.x, puntaAlaIzquierda.y);
-      this.lapiz.moveTo(finalCorregido.x, finalCorregido.y);
-      this.lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
-    },
+    },  
   },
 
   mounted() {

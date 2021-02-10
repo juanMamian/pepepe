@@ -271,7 +271,7 @@ export const resolvers = {
         },
         async crearNodo(_: any, { infoNodo }: any, contexto: contextoQuery) {
             let credencialesUsuario=contexto.usuario;
-            let permisosEspeciales = ["superadministrador"];
+            let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];;
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
                 throw new AuthenticationError("No autorizado");
@@ -315,7 +315,7 @@ export const resolvers = {
                 console.log(`error guardando el nuevo nodo en la base de datos. E: ${error}`);
                 throw new ApolloError("Error guardando en base de datos");
             }
-            console.log(`nuevo nodo de conocimiento creado. ID: ${nuevoNodo._id} `);
+            console.log(`nuevo nodo de conocimiento creado: ${nuevoNodo} `);
             return nuevoNodo
         },
         setCoordsManuales: async function (_: any, { idNodo, coordsManuales }: any, contexto: contextoQuery) {
@@ -348,16 +348,23 @@ export const resolvers = {
             return { modificados };
 
         },
-        crearVinculo: async function (_: any, args: any) {
+        crearVinculo: async function (_: any, args: any, contexto:contextoQuery) {
             let modificados: Array<NodoConocimiento> = [];
             console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                throw new AuthenticationError("No autorizado");
+            }
             try {
                 var nodoSource: any = await Nodo.findById(args.idSource, "vinculos").exec();
                 var nodoTarget: any = await Nodo.findById(args.idTarget, "vinculos").exec();
             }
             catch (error) {
                 console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
-
             }
 
             //Buscar y eliminar vinculos previos entre estos dos nodos.
@@ -395,9 +402,17 @@ export const resolvers = {
             console.log(`vinculo entre ${args.idSource} y ${args.idTarget} creado`);
             return { modificados };
         },
-        eliminarVinculoFromTo: async function (_: any, args: any) {
+        eliminarVinculoFromTo: async function (_: any, args: any, contexto:contextoQuery) {
             let modificados: Array<NodoConocimiento> = [];
             console.log(`desvinculando ${args.idSource} de ${args.idTarget}`);
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+
+            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                throw new AuthenticationError("No autorizado");
+            }
             try {
                 var elUno: any = await Nodo.findById(args.idSource, "nombre vinculos").exec();
                 var elOtro: any = await Nodo.findById(args.idTarget, "nombre vinculos").exec();
@@ -427,14 +442,25 @@ export const resolvers = {
             return { modificados };
 
         },
-        editarNombreNodo: async function (_: any, { idNodo, nuevoNombre }: any) {
+        editarNombreNodo: async function (_: any, { idNodo, nuevoNombre }: any, contexto: contextoQuery) {
             let modificados: Array<NodoConocimiento> = [];
+           
             try {
-                var elNodo: any = await Nodo.findById(idNodo, "nombre coordsManuales").exec();
+                var elNodo: any = await Nodo.findById(idNodo, "nombre expertos coordsManuales").exec();
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
             }
+
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
+
+            if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
             nuevoNombre=nuevoNombre.trim();
             const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
             if (charProhibidosNombreNodo.test(nuevoNombre)) {
@@ -455,7 +481,6 @@ export const resolvers = {
         editarDescripcionNodoConocimiento: async function (_: any, { idNodo, nuevoDescripcion }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||`);
             console.log(`Solicitud de set descripcion del nodo con id ${idNodo}`);
-            let credencialesUsuario = contexto.usuario;
             try {
                 var elNodo: any = await Nodo.findById(idNodo).exec();
                 if (!elNodo) {
@@ -467,12 +492,15 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            //Authorización
-            let permisosEspeciales = ["superadministrador"];
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
+
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Descripcion de nodo`);
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
                 throw new AuthenticationError("No autorizado");
             }
+
 
             const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 
@@ -508,8 +536,8 @@ export const resolvers = {
 
             //Authorización
 
-            if (!credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador`);
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
+                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -575,7 +603,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
                 console.log(`Error de autenticacion añadiendo posible experto del nodo`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -625,7 +653,7 @@ export const resolvers = {
 
             //Authorización
 
-            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
                 console.log(`Error de autenticacion removiendo experto o posible experto de nodo`);
                 throw new AuthenticationError("No autorizado");
             }
