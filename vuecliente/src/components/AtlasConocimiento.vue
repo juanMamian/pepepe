@@ -163,6 +163,7 @@ export default {
         });
     },
     eliminarNodo(idNodo) {
+      if(!confirm("¿Seguro de que quieres eliminar este nodo?"))return
       console.log(`enviando mutacion de eliminar nodo`);
       this.$apollo
         .mutate({
