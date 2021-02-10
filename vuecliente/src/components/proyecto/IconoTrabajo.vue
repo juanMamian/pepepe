@@ -365,9 +365,8 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $idTrabajo: ID!, $idUsuario: ID!) {
+            mutation($idTrabajo: ID!, $idUsuario: ID!) {
               addResponsableTrabajo(
-                idProyecto: $idProyecto
                 idTrabajo: $idTrabajo
                 idUsuario: $idUsuario
               ) {
@@ -377,7 +376,6 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.idProyecto,
             idTrabajo: this.esteTrabajo.id,
             idUsuario: this.$store.state.usuario.id,
           },
