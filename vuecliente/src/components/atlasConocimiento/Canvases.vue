@@ -112,6 +112,7 @@ export default {
       this.lapiz.strokeStyle = "#b3b3b3";
       for (let nodo of this.todosNodos) {
         for (let vinculo of nodo.vinculos) {
+          if(!this.todosNodos.some(n=>n.id==vinculo.idRef))continue
           if (vinculo.rol == "source") {
             this.dibujarLineaEntreNodos(
               nodo,
@@ -276,7 +277,7 @@ export default {
   mounted() {
     this.montado = true;
     this.crearImagenTodosVinculos();
-      this.crearImagenVinculosSeleccionado();
+    this.crearImagenVinculosSeleccionado();
   },
 };
 </script>

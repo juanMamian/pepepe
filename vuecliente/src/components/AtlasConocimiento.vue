@@ -1,18 +1,21 @@
 <template>
   <div
-    id="atlasConocimiento"
+    class="atlasConocimiento"
     @mousedown.left.exact.stop="panningVista = true"
     @click="idNodoMenuCx = '-1'"
     @click.exact="idNodoSeleccionado = '-1'"
     @mousemove="panVista($event)"
     @mouseup="panningVista = false"
     @dblclick.ctrl.shift.self.stop="crearNodo"
+    @touchmove.prevent.stop="movimientoMobile"
+    @touchstart="iniciaMovimientoTouch"
   >
     <div id="contenedorNodos">
       <canvases
         :todosNodos="todosNodos"
         :nodoSeleccionado="nodoSeleccionado"
         :centroVista="centroVista"
+        v-if="todosNodos.length>1"
       />
 
       <nodo-conocimiento
@@ -28,13 +31,15 @@
         @creacionVinculo="crearVinculo"
         @eliminacionVinculo="eliminarVinculo"
         @cambioDePosicionManual="cambiarCoordsManualesNodo"
-        @eliminar="eliminarNodo"
+        @eliminar="eliminarNodo"        
       />
     </div>
   </div>
 </template>
 
 <script>
+
+
 import gql from "graphql-tag";
 import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
 import Canvases from "./atlasConocimiento/Canvases.vue";
@@ -84,6 +89,9 @@ export default {
       },
       profundidadNodosConectadosAlSeleccionado: 1,
       actualizarVinculosGrises: 0,
+
+      ultimoTouchX:0,
+      ultimoTouchY:0
     };
   },
   computed: {
@@ -108,6 +116,19 @@ export default {
     },
   },
   methods: {
+    iniciaMovimientoTouch(e){
+      this.ultimoTouchX=e.changedTouches[0].clientX;
+      this.ultimoTouchY=e.changedTouches[0].clientY;
+
+    },
+    movimientoMobile(e){
+      const deltaX=e.changedTouches[0].clientX - this.ultimoTouchX;
+      const deltaY=e.changedTouches[0].clientY - this.ultimoTouchY;
+      this.ultimoTouchX=e.changedTouches[0].clientX;
+      this.ultimoTouchY=e.changedTouches[0].clientY;
+
+      this.desplazarVista(deltaX, deltaY);
+    },
     cambiarCoordsManualesNodo(idNodo, coordsManuales) {
       //Update optimista:
       this.todosNodos[
@@ -232,14 +253,18 @@ export default {
           console.log(`error fetching centro vista: ${error}`);
         });
     },
+    desplazarVista(deltaX, deltaY){
+      this.$set(this.centroVista, "x", this.centroVista.x - deltaX);
+      this.$set(this.centroVista, "y", this.centroVista.y - deltaY);
+      this.actualizarTrazos++;
+    },
     panVista(e) {
       if (!this.panningVista) {
         return;
       }
+      this.desplazarVista(e.movementX, e.movementY)
       e.preventDefault();
-      this.$set(this.centroVista, "x", this.centroVista.x - e.movementX);
-      this.$set(this.centroVista, "y", this.centroVista.y - e.movementY);
-      this.actualizarTrazos++;
+      
       /*this.centroVista.x -= e.movementX;
       this.centroVista.y -= e.movementY;
       */
@@ -437,9 +462,9 @@ export default {
 </script>
 
 <style scoped>
-#atlasConocimiento {
+.atlasConocimiento {
   position: relative;
-  overflow: hidden;
+  overflow: scroll;
 }
 #canvases {
   width: 100%;

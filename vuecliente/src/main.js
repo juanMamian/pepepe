@@ -1,9 +1,11 @@
 import Vue from 'vue'
+import Vue2TouchEvents from 'vue2-touch-events'
 import App from './App.vue'
 import store from "./store/index"
 import { apolloProvider, serverUrl } from "./apollo"
 import { router } from "./Router"
 
+Vue.use(Vue2TouchEvents, {disableClick:true});
 const clienteUrl = process.env.NODE_ENV === 'production'? serverUrl+'/pepepe' : 'http://localhost:8080'
 
 Vue.mixin({
