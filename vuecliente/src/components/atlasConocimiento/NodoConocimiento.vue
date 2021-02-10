@@ -58,8 +58,9 @@
       {{ esteNodo.nombre }}
     </div>
 
-    <div class="cuadritoDescripcionNodo" v-if="esteNodo && esteNodo.descripcion" v-show="mostrandoCuadritoDescripcion">
+    <div class="cuadritoDescripcionNodo" v-if="esteNodo && esteNodo.descripcion" v-show="mostrandoCuadritoDescripcion || seleccionado">
       <div class="descripcionNodo">{{esteNodo.descripcion}}</div>
+      <img @click.stop="abrirPaginaNodo" src="@/assets/iconos/ir.png" alt="Ir" title="Abrir este nodo" class="botonAbrirNodo"/>
     </div>
   </div>
 </template>
@@ -375,18 +376,30 @@ export default {
   position: absolute;
   top: 50%;
   left: 104%;
+  width:170px;
   transform: translateY(-50%);
+  background-color: #ffdbaf;
+  border: 1px solid rgb(0, 0, 44);
+  border-radius: 10px;
 }
 .descripcionNodo {
-  border: 1px solid rgb(0, 0, 44);
-  background-color: #ffdbaf;
-  border-radius: 10px;
-  margin: 65px auto;
-  width: min(600px, 90%);
   font-size: 15px;
   padding: 10px;
-  min-height: 100px;
-  resize: vertical;  
+  min-height: 30px;  
   white-space: pre-wrap;
+}
+.botonAbrirNodo{
+  display: block;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  margin: 10px auto;
+  border-radius: 50%;
+  padding: 10px;
+  background-color: rgb(219, 193, 243);
+
+}
+.botonAbrirNodo:hover{
+  background-color: rgb(194, 148, 236);
 }
 </style>
