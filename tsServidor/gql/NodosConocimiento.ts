@@ -3,6 +3,7 @@ import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloForo as Foro } from "../model/Foros/Foro"
+import {ModeloCarpetaArchivos as CarpetasArchivos} from "../model/CarpetaArchivos";
 
 /*
 interface NodoConocimiento{
@@ -33,7 +34,7 @@ interface NodoConocimiento {
     coordY: number,
     vinculos: Array<Vinculo>,
     coordsManuales: Array<Coords>,
-
+    
 }
 
 interface Vinculo {
@@ -62,7 +63,17 @@ input vinculoInput{
     rol: String
 }
 
+type InfoArchivoContenidoNodo{
+    nombre:String,
+    primario:Boolean,
+    mimetype:String,
+}
 
+type SeccionContenidoNodo{
+    nombre:String,
+    archivos:[InfoArchivoContenidoNodo],
+    tipoPrimario:String,
+}
 
 type NodoConocimiento{
     id: ID!
@@ -76,7 +87,8 @@ type NodoConocimiento{
     idForoPublico:ID,
     idForoExpertos:ID,
     expertos: [String],
-    posiblesExpertos:[String]
+    posiblesExpertos:[String],
+    secciones:[SeccionContenidoNodo],
 }
 
 input NodoConocimientoInput{
@@ -117,7 +129,8 @@ extend type Mutation{
     addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
     removeExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
 
-
+    eliminarArchivoSeccionNodo(idNodo:ID!, nombreSeccion:String!, nombreArchivo:String!):Boolean
+    marcarPrimarioArchivoSeccionNodo(idNodo:ID!, nombreSeccion:String!, nombreArchivo:String!):Boolean
 }
 `;
 
@@ -159,7 +172,7 @@ export const resolvers = {
         nodo: async function (_: any, { idNodo }: any) {
             console.log(`Buscando el nodo con id ${idNodo}`);
             try {
-                var elNodo: any = await Nodo.findById(idNodo, "nombre vinculos coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos").exec();
+                var elNodo: any = await Nodo.findById(idNodo, "nombre vinculos coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos secciones").exec();
                 if (!elNodo) throw "Nodo no encontrado";
             } catch (error) {
                 console.log(`error buscando el nodo. e: ` + error);
@@ -704,6 +717,177 @@ export const resolvers = {
             return elNodo
 
         },
+        eliminarArchivoSeccionNodo: async function (_: any, { idNodo, nombreSeccion, nombreArchivo }: any, contexto: contextoQuery) {
+            console.log(`Solicitud de eliminar archivo ${nombreArchivo}`);
+            try {
+                var elNodo: any = await Nodo.findById(idNodo).exec();
+                if (!elNodo) {
+                    throw "nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el nodo. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosEspeciales = ["atlasAdministrador", "superadministrador"];
+
+            if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var laSeccion=elNodo.secciones.find(s=>s.nombre==nombreSeccion);
+            if(!laSeccion){
+                console.log(`Sección no encontrada`);
+                throw new ApolloError("Error conectando con la base de datos")
+            }
+
+            if(!laSeccion.idCarpeta){
+                console.log(`Carpeta no especificada`);
+                throw new ApolloError("Informacion de la seccion inesperada");
+            }
+
+            try {
+                var laCarpeta:any=await CarpetasArchivos.findById(laSeccion.idCarpeta).exec();
+                if(!laCarpeta)throw "Carpeta no encontrada"
+            } catch (error) {
+                console.log(`Error buscando la carpeta de la seccion`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            laCarpeta.archivos.forEach(archivo=>{
+                console.log(`Nombre: ${archivo.nombre}`);
+            })
+            
+            const indexA=laCarpeta.archivos.findIndex(a=>a.nombre==nombreArchivo);
+            if(indexA>-1){
+                laCarpeta.archivos.pull(laCarpeta.archivos[indexA]);
+            }
+            else{
+                console.log(`Archivo no encontrado`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            try {
+                console.log(`guardando la carpeta: ${laCarpeta}`);
+                await laCarpeta.save();
+            } catch (error) {
+                console.log(`Error guardando carpeta. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Archivo eliminado`);
+            return true;
+        },
+        marcarPrimarioArchivoSeccionNodo: async function (_: any, { idNodo, nombreSeccion, nombreArchivo }: any, contexto: contextoQuery) {
+            try {
+                var elNodo: any = await Nodo.findById(idNodo).exec();
+                if (!elNodo) {
+                    throw "nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el nodo. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosEspeciales = ["atlasAdministrador", "superadministrador"];
+
+            if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var laSeccion=elNodo.secciones.find(s=>s.nombre==nombreSeccion);
+            if(!laSeccion){
+                console.log(`Sección no encontrada`);
+                throw new ApolloError("Error conectando con la base de datos")
+            }
+
+            if(!laSeccion.idCarpeta){
+                console.log(`Carpeta no especificada`);
+                throw new ApolloError("Informacion de la seccion inesperada");
+            }
+
+            try {
+                var laCarpeta:any=await CarpetasArchivos.findById(laSeccion.idCarpeta).exec();
+                if(!laCarpeta)throw "Carpeta no encontrada"
+            } catch (error) {
+                console.log(`Error buscando la carpeta de la seccion`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var encontrado=false;
+            
+            laCarpeta.archivos.forEach(archivo=>{
+                if(archivo.nombre==nombreArchivo){
+                    archivo.primario=true;
+                    encontrado=true;
+                }
+                else{
+                    archivo.primario=false;
+                }
+            });
+
+            try {
+                await laCarpeta.save();
+            } catch (error) {
+                console.log(`Error guardando carpeta. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Archivo seteado`);
+            return encontrado;
+        },
+    },
+
+    SeccionContenidoNodo:{
+        async archivos(parent:any, _:any, __:any){
+            if(!parent.idCarpeta){
+                console.log(`No habia carpeta`);
+                return []
+            }
+
+            try {
+                var laCarpeta:any=await CarpetasArchivos.findById(parent.idCarpeta, "archivos").exec();
+                if(!laCarpeta)throw "Carpeta no existía"
+            } catch (error) {
+                console.log(`Error buscando carpeta en base de datos. E: ${error}`);
+                return []
+            }
+
+            const infoArchivos=laCarpeta.archivos.map(a=>{ return {nombre: a.nombre, primario: a.primario}});
+            return infoArchivos
+        },
+        async tipoPrimario(parent:any, _:any, __:any){
+            if(!parent.idCarpeta){
+                console.log(`No habia carpeta`);
+                return null
+            }
+
+            try {
+                var laCarpeta:any=await CarpetasArchivos.findById(parent.idCarpeta, "archivos").exec();        
+                if(!laCarpeta)throw "Carpeta no existía";
+                var elPrimario=laCarpeta.archivos.find(a=>a.primario==true);
+                if(!elPrimario)throw "No habia primario"
+
+            } catch (error) {
+                console.log(`Error buscando carpeta y primario en base de datos. E: ${error}`);
+                return null
+            }
+
+            if(!elPrimario.mimetype){
+                console.log(`No habia mimetype`);
+                return null
+            }
+
+            return elPrimario.mimetype;
+        }
     }
 };
 

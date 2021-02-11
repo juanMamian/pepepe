@@ -20,7 +20,7 @@
         <div class="botonNav" id="navProyectos">Proyectos</div>
       </router-link>
 
-      <router-link to="/atlas" class="hoverNegro" v-if="usuarioLogeado == true">
+      <router-link to="/atlas" class="hoverNegro">
         <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
       </router-link>
 

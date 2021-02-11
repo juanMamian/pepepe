@@ -10,7 +10,7 @@
             src="@/assets/iconos/editar.png"
             alt="Editar"
             id="bEditarrNombre"
-            class="bEditar botonesEditarDescripcion"
+            class="bEditar botonesControlesZona"
             title="Editar nombre del nodo"
             @click="toggleEditandoNombre"
           />
@@ -18,7 +18,7 @@
             src="@/assets/iconos/guardar.png"
             alt="Guardar"
             title="guardar"
-            class="bGuardar botonesEditarDescripcion"
+            class="bGuardar botonesControlesZona"
             id="bGuardarNuevoNombre"
             v-show="editandoNombre == true && nuevoNombreIlegal == false"
             @click="guardarNuevoNombre"
@@ -38,18 +38,20 @@
       <div id="barraLateral">
         <div
           class="selectorSeccion"
-          v-for="(seccion, index) of secciones"
-          :key="index"
-          @click="seccionSeleccionada = index"
+          v-for="(seccion) of seccionesOrganizadas"
+          :class="{selectorSeleccionado: seccionSeleccionada==seccion.nombre}"
+          :key="seccion.nombre"
+          @click="seccionSeleccionada = seccion.nombre"
         >
-          {{ seccion }}
+          {{ seccion.texto }}
+         
         </div>
       </div>
 
       <div
         id="seccionDescripcion"
         class="seccionPrimerNivel"
-        v-show="seccionSeleccionada == 0"
+        v-show="seccionSeleccionada == 'descripcion'"
       >
         <div
           class="controlesZona"
@@ -59,7 +61,7 @@
             src="@/assets/iconos/editar.png"
             alt="Editar"
             id="bEditarDescripcion"
-            class="bEditar botonesEditarDescripcion"
+            class="bEditar botonesControlesZona"
             title="Editar Descripción del nodo"
             @click.stop="toggleEditandoDescripcion"
           />
@@ -67,7 +69,7 @@
             src="@/assets/iconos/guardar.png"
             alt="Guardar"
             title="guardar"
-            class="bGuardar botonesEditarDescripcion"
+            class="bGuardar botonesControlesZona"
             id="bGuardarNuevoDescripcion"
             v-show="
               editandoDescripcion == true && nuevoDescripcionIlegal == false
@@ -89,24 +91,42 @@
         />
         <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
       </div>
-      <iframe
-        class="seccionPrimerNivel"
-        v-show="seccionSeleccionada == 1"
-        id="visor"
-        :src="direccionNodo"
-      ></iframe>
+      
+      <div :key="seccion.nombre" v-for="seccion of esteNodo.secciones" class="seccionPrimerNivel seccionContenidoExterno" :class="'seccion'+seccion.nombre" v-show="seccionSeleccionada == seccion.nombre">        
+        <div class="barraControlesContenidosExternos" v-if="usuarioExperto==true || usuarioAdministradorAtlas==true || usuarioSuperadministrador==true">
+          <img
+              src="@/assets/iconos/editar.png"
+              alt="Editar"
+              :id="'bEditarSeccion'+seccion.nombre"
+              class="bEditar botonesEditarContenidosExternos"
+              title="Seleccionar archivos de contenido"
+              @click.stop="editandoArchivosContenidos=!editandoArchivosContenidos"
+            />
+        </div>
+        <iframe
+          id="visorContenido"
+          :src="direccionNodo+'/'+seccion.nombre"
+          v-show="!editandoArchivosContenidos"
+          
+        ></iframe>
+        <div class="cuadroCargaArchivos" v-if="usuarioExperto==true || usuarioAdministradorAtlas==true || usuarioSuperadministrador==true" v-show="editandoArchivosContenidos">
+          <div class="archivoExistente" :class="{deshabilitado:archivo.enviandoInfo}" :key="index" v-for="(archivo, index) of seccion.archivos"><div class="botonMarcarPrimario" :class="{rojo:archivo.primario}" @click="marcarPrimario(archivo, seccion.nombre)"></div>{{archivo.nombre}} <span class="botonBorrarArchivoExistente" @click="borrarArchivoExistenteSeccionNodo(archivo, seccion.nombre)">Borrar</span></div>
+          <input type="file" class="inputArchivoContenido" @change="subirArchivoContenido($event,seccion)"/>
+        </div>
+      </div>
+      
 
       <div
         id="seccionExpertos"
         class="seccionPrimerNivel"
-        v-show="seccionSeleccionada == 2"
+        v-show="seccionSeleccionada == 'expertos'"
       >
         <div id="controlesExpertos" class="controlesZona">
           <loading v-show="enviandoQueryExpertos" texto="Esperando..." />
           <div
             class="controlesExpertos hoverGris botonesControles"
             :class="{ deshabilitado: enviandoQueryExpertos }"
-            v-if="usuarioLogeado == true && usuarioSuperadministrador"
+            v-if="usuarioLogeado == true && (usuarioSuperadministrador==true || usuarioAdministradorAtlas==true) && !usuarioExperto" 
             id="asumirExperto"
             @click="asumirComoExperto"
           >
@@ -179,7 +199,7 @@
         id="seccionForos"
         ref="zonaForos"
         class="seccionPrimerNivel"
-        v-show="seccionSeleccionada == 3"
+        v-show="seccionSeleccionada == 'foros'"
       >
         <div class="nombreForo" v-if="usuarioExperto">Foro expertos</div>
         <foro
@@ -200,6 +220,7 @@ import gql from "graphql-tag";
 import Loading from "./utilidades/Loading.vue";
 import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
 import Foro from "./Foro.vue";
+import axios from 'axios';
 
 const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
@@ -214,6 +235,14 @@ const QUERY_NODO = gql`
       posiblesExpertos
       idForoPublico
       idForoExpertos
+      secciones{
+        nombre
+        archivos{
+          nombre
+          primario
+        }
+        tipoPrimario
+      }
       vinculos {
         idRef
         rol
@@ -235,6 +264,12 @@ export default {
         };
       },
       update({ nodo }) {
+        nodo.secciones.forEach(seccion=>{          
+          seccion.subiendoArchivo=false;
+          seccion.archivos.forEach(archivo=>{
+            archivo.enviandoInfo=false;
+          })         
+        })
         return nodo;
       },
     },
@@ -244,9 +279,12 @@ export default {
       esteNodo: {
         expertos: [],
         posiblesExpertos: [],
+        secciones:[]
       },
-      secciones: ["Descripción", "Explicación", "Expertos", "Foros"],
-      seccionSeleccionada: 0,
+      secciones: [{nombre: "descripcion", texto:"Descripción"}, {nombre:"expertos", texto: "Expertos"}, {nombre: "foros", texto:"Foros"}],
+      indexInicioContenidos:1,
+      seccionesContenidos:[{nombre:"explicacion", texto:"Explicación", editandose:false, subiendoArchivo:false}],
+      seccionSeleccionada: "descripcion",
 
       nuevoNombre: "Nuevo nombre",
       editandoNombre: false,
@@ -259,9 +297,16 @@ export default {
       idExpertoSeleccionado: null,
       expertoSeleccionadoEstaAceptado: false,
       enviandoQueryExpertos: false,
+
+      editandoArchivosContenidos:false,
     };
   },
   computed: {
+    seccionesOrganizadas(){
+      let lasSecciones=this.secciones;
+      lasSecciones.splice(this.indexInicioContenidos, 0, ...this.seccionesContenidos);
+      return lasSecciones
+    },
     direccionNodo: function () {
       return (
         this.serverUrl +
@@ -514,10 +559,173 @@ export default {
           console.log(`Error. E :${error}`);
         });
     },
+    subirArchivoContenido(e, seccion){
+      let inputArchivo =e.target;
+      var datos = new FormData();
+      const nuevoArchivo = inputArchivo.files[0];
+      
+      datos.append("nuevoArchivo", nuevoArchivo);
+      datos.append("idNodo", this.esteNodo.id);
+      datos.append("nombreSeccion", seccion.nombre);
+      seccion.subiendoArchivo = true;
+      axios({
+        method: "post",
+        url: this.serverUrl + "/api/atlas/subirArchivoContenidoSeccionNodo",
+        data: datos,
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: "Bearer " + this.$store.state.token,
+        },
+      })
+        .then(({ data :{infoArchivo}}) => {
+          seccion.subiendoArchivo = false;
+
+          const store=this.$apollo.provider.defaultClient;
+          const cache=store.readQuery({
+            query: QUERY_NODO,
+            variables:{
+              idNodo:this.$route.params.idNodo
+            }
+          });
+
+          var nuevoCache=JSON.parse(JSON.stringify(cache));
+          var laSeccion=nuevoCache.nodo.secciones.find(s=>s.nombre==seccion.nombre);
+          laSeccion.archivos.push(infoArchivo);
+          store.writeQuery({
+            query:QUERY_NODO,
+            variables:{
+              idNodo:this.$route.params.idNodo
+            },
+            data:nuevoCache
+          });
+        })
+        .catch((error) => {
+          seccion.subiendoArchivo = false;
+          console.log(`Error subiendo archivo. E: ${error}`);
+        });
+        
+    },
+    borrarArchivoExistenteSeccionNodo(archivo, nombreSeccion){
+      const nombreArchivo=archivo.nombre;
+      if(!confirm("Borrando archivo ¿Continuar?")){
+        console.log(`Cancelado`);
+        return
+      }
+      const dis=this;
+      archivo.enviandoInfo=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodo:ID!, $nombreSeccion:String!, $nombreArchivo:String!){
+            eliminarArchivoSeccionNodo(idNodo:$idNodo, nombreSeccion:$nombreSeccion, nombreArchivo:$nombreArchivo)
+          }
+        `,
+        variables:{
+          idNodo:this.$route.params.idNodo,
+          nombreSeccion,
+          nombreArchivo
+        },
+        update(store, {data:{eliminarArchivoSeccionNodo}}){
+          archivo.enviandoInfo=false;
+          
+          if(!eliminarArchivoSeccionNodo){
+            console.log(`Archivo no eliminado`);
+            return
+          }
+          const cache=store.readQuery({
+            query: QUERY_NODO,
+            variables:{
+              idNodo:dis.$route.params.idNodo
+            }
+          });
+          var nuevoCache=JSON.parse(JSON.stringify(cache));
+
+          var laSeccion=nuevoCache.nodo.secciones.find(s=>s.nombre==nombreSeccion);
+          if(!laSeccion){
+            console.log(`Seccion no encontrada`);
+            return;
+          }
+
+          var indexA=laSeccion.archivos.findIndex(a=>a.nombre==nombreArchivo);
+          if(indexA>-1){
+            laSeccion.archivos.splice(indexA, 1);
+            store.writeQuery({
+              query: QUERY_NODO,
+              variables:{
+                idNodo:dis.$route.params.idNodo
+              },
+              data:nuevoCache
+            })
+          }
+          else{
+            console.log(`Archivo no encontrado`);
+          }
+        }
+      }).then(()=>{
+
+      }).catch((error)=>{
+        archivo.enviandoInfo=false;
+        console.log(`Error. E: ${error}`);
+      })
+    },
+    marcarPrimario(archivo, nombreSeccion){
+      const nombreArchivo=archivo.nombre;
+      
+      const dis=this;
+      archivo.enviandoInfo=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodo:ID!, $nombreSeccion:String!, $nombreArchivo:String!){
+            marcarPrimarioArchivoSeccionNodo(idNodo:$idNodo, nombreSeccion:$nombreSeccion, nombreArchivo:$nombreArchivo)
+          }
+        `,
+        variables:{
+          idNodo:this.$route.params.idNodo,
+          nombreSeccion,
+          nombreArchivo
+        },
+        update(store, {data:{marcarPrimarioArchivoSeccionNodo}}){
+          archivo.enviandoInfo=false;
+          
+          if(!marcarPrimarioArchivoSeccionNodo){
+            console.log(`Archivo no marcado`);
+            return
+          }
+          const cache=store.readQuery({
+            query: QUERY_NODO,
+            variables:{
+              idNodo:dis.$route.params.idNodo
+            }
+          });
+          var nuevoCache=JSON.parse(JSON.stringify(cache));
+
+          var laSeccion=nuevoCache.nodo.secciones.find(s=>s.nombre==nombreSeccion);
+          if(!laSeccion){
+            console.log(`Seccion no encontrada`);
+            return;
+          }
+
+          laSeccion.archivos.forEach(archivo=>{
+            archivo.primario=archivo.nombre==nombreArchivo?true:false;
+          })
+          
+          store.writeQuery({
+            query: QUERY_NODO,
+            variables:{
+              idNodo:dis.$route.params.idNodo
+            },
+            data:nuevoCache
+          })
+          
+        }
+      }).then(()=>{
+
+      }).catch((error)=>{
+        archivo.enviandoInfo=false;
+        console.log(`Error. E: ${error}`);
+      })
+    }
   },
-  mounted() {
-    console.log(`data server addres:: ${this.serverUrl}`);
-  },
+  
 };
 </script>
 
@@ -561,7 +769,7 @@ export default {
   background-color: burlywood;
 }
 
-#visor {
+#visorContenido {
   grid-area: contenido;
   width: 100%;
   height: 100%;
@@ -574,7 +782,9 @@ export default {
 .selectorSeccion:hover {
   background-color: bisque;
 }
-
+.selectorSeleccionado{
+    background-color: bisque;
+}
 .seccionPrimerNivel {
   grid-area: contenido;
 }
@@ -603,7 +813,7 @@ export default {
   margin: 65px auto;
   resize: vertical;
 }
-.botonesEditarDescripcion {
+.botonesControlesZona {
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -632,5 +842,66 @@ export default {
 .nombreForo {
   padding: 5px 10px;
   background-color: #5fbf78;
+}
+.seccionContenidoExterno{
+  position: relative;
+}
+.barraControlesContenidosExternos{
+  position: absolute;
+  transform: translateY(-100%);
+  top:0%;
+  left:0%;
+  width: 100%;
+  display: flex;
+  flex-direction: row-reverse;
+  opacity: 0.5;
+  padding: 5px;
+}
+.barraControlesContenidosExternos:hover{
+  opacity: 1;
+}
+.botonesEditarContenidosExternos{
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-right: 10px;
+}
+.botonesEditarContenidosExternos:hover{
+  background-color: grey;
+}
+.cuadroCargaArchivos{
+  margin: 50px auto;
+}
+.archivoExistente{
+  padding: 5px 10px;
+  border-radius: 5px;
+  background-color: rgb(107, 235, 107);
+  border: 1px solid rgb(0, 48, 0);
+  margin: 2px 10px;
+  display: flex;
+  font-size: 17px;
+}
+.botonBorrarArchivoExistente{
+  margin-left:auto;
+  cursor:pointer;
+  padding: 3px 5px;
+  border-radius: 3px;
+  font-size: 13px
+  ;
+}
+.botonBorrarArchivoExistente:hover{
+  background-color: grey;
+}
+.botonMarcarPrimario{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid black;  
+  cursor: pointer;
+  margin-right: 10px;
+}
+.rojo{
+  background-color: red;
 }
 </style>

@@ -1,7 +1,9 @@
 const multer = require("multer");
-const upload = multer();
+const upload = multer({ limits: { fileSize: 10000000 } });
 const router = require("express").Router();
+import {ModeloUsuario as Usuario} from "../../model/Usuario";
 import { ModeloNodo as Nodo } from "../../model/atlas/Nodo";
+import {ModeloCarpetaArchivos as CarpetasArchivos} from "../../model/CarpetaArchivos";
 import path from "path";
 
 router.post("/updateIcono", upload.single("nuevoIcono"), async function (req, res) {
@@ -46,5 +48,108 @@ router.get("/iconos/:id", async function (req, res) {
     }
     res.set('Content-Type', 'image/png');
     return res.send(elNodo.icono);
+});
+
+
+
+router.post("/subirArchivoContenidoSeccionNodo", upload.single("nuevoArchivo"), function (err, req, res, next) {
+    console.log(`Errores: <<${err.message}>>`)
+    let mensaje = "Archivo no permitido";
+    if (err.message == "File too large") mensaje = "Archivo demasiado grande"
+    return res.status(400).send({ msjUsuario: mensaje });
+}, async function (req, res) {
+    console.log(`Recibiendo un archivo [${req.file.mimetype}] para una carpeta de contenidos de seccion de nodo de conocimiento`);
+    try {
+        var elNodo: any = await Nodo.findById(req.body.idNodo, "nombre expertos secciones");
+    }
+    catch (error) {
+        console.log(`error buscando el nodo para cambio de icono. e: ` + error);
+        return res.status(400).send('');
+    }
+
+    if (!("user" in req)) {
+        console.log(`No habia info del bearer`);
+        return res.status(401).send('');
+    }
+    if (!("id" in req.user)) {
+        console.log(`no había id del usuario`);
+        return res.status(401).send('');
+    }
+    let idUsuario = req.user.id;
+    console.log(`Recibida peticion de subir archivo por el usuario ${req.user.username}`);
+
+    try {
+        var elUsuario:any=await Usuario.findById(idUsuario, "permisos").exec();
+        if(!elUsuario)throw "Usuario no encontrado";
+    } catch (error) {
+        console.log('Error buscando el usuario . E: '+error);
+        return res.status(400).send("Error identificando usuario");
+    }
+
+    const permisosEspeciales=["superadministrador", "atlasAdministrador"];
+
+    if(!elNodo.expertos.includes(idUsuario) && !elUsuario.permisos.some(p=>permisosEspeciales.includes(p))){
+        console.log(`Usuario no autorizado. Tenía ${elUsuario.permisos}`);
+        return res.status(401).send("No autorizado");
+    }
+
+    const nombreSeccion = req.body.nombreSeccion;
+
+    console.log(`Subiendo archivo para la sección ${nombreSeccion} del nodo ${elNodo.nombre}`);
+
+    var laSeccion = elNodo.secciones.find(s => s.nombre = nombreSeccion);
+    if (!laSeccion) {
+        console.log(`La sección no existía en este nodo`);
+        return res.status(400).send("Seccion no existía");
+    }
+    var carpetaExiste = false;
+    var idCarpeta = laSeccion.idCarpeta;
+    if (idCarpeta) {
+        try {
+            var laCarpeta: any = await CarpetasArchivos.findById(idCarpeta).exec();
+            if (laCarpeta) carpetaExiste = true;
+        } catch (error) {
+            console.log(`Error buscando carpeta. E: ${error}`);
+        }
+    }
+
+    if (!carpetaExiste) {
+        console.log(`Carpeta no existía. Creando`);
+
+        try {
+            laCarpeta = await new CarpetasArchivos({});
+            idCarpeta = laCarpeta._id;
+
+            laSeccion.idCarpeta = idCarpeta;
+            await elNodo.save();
+
+            console.log(`Carpeta creada y referenciada en la seccion del nodo`);
+        } catch (error) {
+            console.log(`Error creando carpeta. E: ${error}`);
+        }
+    }
+
+    //Purgar
+
+    
+
+    //Subir arhivo a la carpeta.
+
+    const nuevoArchivo=laCarpeta.archivos.create({
+        nombre:req.file.originalname,
+        payload:req.file.buffer,
+        mimetype: req.file.mimetype,
+    })
+
+    try {
+        laCarpeta.archivos.push(nuevoArchivo);
+       // console.log(`Guardando archivos de la carpeta así: ${laCarpeta.archivos}`);
+        await laCarpeta.save();        
+    } catch (error) {
+        console.log(`Error guardando el archivo en la carpet mongo. E: ${error}`);
+        return res.status(400).send("Error guardando archivo");
+    }
+    
+    res.send({ resultado: "ok", infoArchivo:{nombre: req.file.originalname, primario: nuevoArchivo.primario, __typename:"InfoArchivoContenidoNodo"} });
 });
 module.exports = router;

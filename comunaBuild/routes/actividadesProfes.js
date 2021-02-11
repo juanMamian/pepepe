@@ -33,11 +33,11 @@ router.post("/adjuntarArchivoParaRespuestaActividadEstudiantil", upload.single("
     return __awaiter(this, void 0, void 0, function* () {
         if (!("user" in req)) {
             console.log(`No habia info del bearer`);
-            return;
+            return res.status(401).send('');
         }
         if (!("id" in req.user)) {
             console.log(`no había id del usuario`);
-            return;
+            return res.status(401).send('');
         }
         let idUsuario = req.user.id;
         console.log(`Recibida peticion de subir archivo por el usuario ${req.user.username}`);

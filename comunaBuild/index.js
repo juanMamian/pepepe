@@ -19,6 +19,7 @@ const cors_1 = __importDefault(require("cors"));
 const Schema_1 = require("./gql/Schema");
 //Rutas pepepe
 console.log(`Carpeta estatica en ${__dirname + '/pepepe'}`);
+app.use("/assetsAtlas/contenidosNodos/:idNodo/default", express_1.default.static(__dirname + '/assetsAtlas/contenidosNodos/default/'));
 app.use("/pepepe", express_1.default.static(__dirname + '/clientes/pepepe'));
 app.get("/pepepe", function (req, res) {
     res.sendFile(__dirname + "/clientes/pepepe/index.html");
@@ -31,10 +32,12 @@ const rutaFotografias = /api\/usuarios\/fotografias\/\S+/;
 const rutaGuias = /api\/actividadesProfes\/guia\/\S+/;
 const rutaEvidencias = /api\/actividadesProfes\/evidencia\/\S+/;
 const rutaAdjuntos = /api\/foros\/adjuntos\/\S+/;
+const rutaIconos = /api\/atlas\/iconos\/\S+/;
+const rutaContenidosSeccion = /api\/atlas\/seccion\/\S+/;
 //Routes
 app.use(express_1.default.json());
 app.use("/api/usuarios", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: ['/api/usuarios/login', '/api/usuarios/registro', rutaFotografias] }), usuariosRoutes);
-app.use("/api/atlas", routesNodos);
+app.use("/api/atlas", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaIconos, rutaContenidosSeccion] }), routesNodos);
 app.use("/api/actividadesProfes", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaGuias, rutaEvidencias] }), routesActividadesProfes);
 app.use("/api/foros", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaAdjuntos] }), routesForos);
 app.get("/", function (req, res) {

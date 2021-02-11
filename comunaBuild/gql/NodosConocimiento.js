@@ -14,6 +14,7 @@ const apollo_server_express_1 = require("apollo-server-express");
 const Nodo_1 = require("../model/atlas/Nodo");
 const Usuario_1 = require("../model/Usuario");
 const Foro_1 = require("../model/Foros/Foro");
+const CarpetaArchivos_1 = require("../model/CarpetaArchivos");
 exports.typeDefs = apollo_server_express_1.gql `
 type Vinculo{
     id:ID!,
@@ -29,7 +30,17 @@ input vinculoInput{
     rol: String
 }
 
+type InfoArchivoContenidoNodo{
+    nombre:String,
+    primario:Boolean,
+    mimetype:String,
+}
 
+type SeccionContenidoNodo{
+    nombre:String,
+    archivos:[InfoArchivoContenidoNodo],
+    tipoPrimario:String,
+}
 
 type NodoConocimiento{
     id: ID!
@@ -43,7 +54,8 @@ type NodoConocimiento{
     idForoPublico:ID,
     idForoExpertos:ID,
     expertos: [String],
-    posiblesExpertos:[String]
+    posiblesExpertos:[String],
+    secciones:[SeccionContenidoNodo],
 }
 
 input NodoConocimientoInput{
@@ -84,7 +96,8 @@ extend type Mutation{
     addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
     removeExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
 
-
+    eliminarArchivoSeccionNodo(idNodo:ID!, nombreSeccion:String!, nombreArchivo:String!):Boolean
+    marcarPrimarioArchivoSeccionNodo(idNodo:ID!, nombreSeccion:String!, nombreArchivo:String!):Boolean
 }
 `;
 exports.resolvers = {
@@ -129,7 +142,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Buscando el nodo con id ${idNodo}`);
                 try {
-                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre vinculos coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos").exec();
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre vinculos coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos secciones").exec();
                     if (!elNodo)
                         throw "Nodo no encontrado";
                 }
@@ -636,5 +649,168 @@ exports.resolvers = {
                 return elNodo;
             });
         },
+        eliminarArchivoSeccionNodo: function (_, { idNodo, nombreSeccion, nombreArchivo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de eliminar archivo ${nombreArchivo}`);
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el nodo. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let credencialesUsuario = contexto.usuario;
+                let permisosEspeciales = ["atlasAdministrador", "superadministrador"];
+                if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laSeccion = elNodo.secciones.find(s => s.nombre == nombreSeccion);
+                if (!laSeccion) {
+                    console.log(`Sección no encontrada`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                if (!laSeccion.idCarpeta) {
+                    console.log(`Carpeta no especificada`);
+                    throw new apollo_server_express_1.ApolloError("Informacion de la seccion inesperada");
+                }
+                try {
+                    var laCarpeta = yield CarpetaArchivos_1.ModeloCarpetaArchivos.findById(laSeccion.idCarpeta).exec();
+                    if (!laCarpeta)
+                        throw "Carpeta no encontrada";
+                }
+                catch (error) {
+                    console.log(`Error buscando la carpeta de la seccion`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                laCarpeta.archivos.forEach(archivo => {
+                    console.log(`Nombre: ${archivo.nombre}`);
+                });
+                const indexA = laCarpeta.archivos.findIndex(a => a.nombre == nombreArchivo);
+                if (indexA > -1) {
+                    laCarpeta.archivos.pull(laCarpeta.archivos[indexA]);
+                }
+                else {
+                    console.log(`Archivo no encontrado`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    console.log(`guardando la carpeta: ${laCarpeta}`);
+                    yield laCarpeta.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando carpeta. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Archivo eliminado`);
+                return true;
+            });
+        },
+        marcarPrimarioArchivoSeccionNodo: function (_, { idNodo, nombreSeccion, nombreArchivo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el nodo. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let credencialesUsuario = contexto.usuario;
+                let permisosEspeciales = ["atlasAdministrador", "superadministrador"];
+                if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laSeccion = elNodo.secciones.find(s => s.nombre == nombreSeccion);
+                if (!laSeccion) {
+                    console.log(`Sección no encontrada`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                if (!laSeccion.idCarpeta) {
+                    console.log(`Carpeta no especificada`);
+                    throw new apollo_server_express_1.ApolloError("Informacion de la seccion inesperada");
+                }
+                try {
+                    var laCarpeta = yield CarpetaArchivos_1.ModeloCarpetaArchivos.findById(laSeccion.idCarpeta).exec();
+                    if (!laCarpeta)
+                        throw "Carpeta no encontrada";
+                }
+                catch (error) {
+                    console.log(`Error buscando la carpeta de la seccion`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var encontrado = false;
+                laCarpeta.archivos.forEach(archivo => {
+                    if (archivo.nombre == nombreArchivo) {
+                        archivo.primario = true;
+                        encontrado = true;
+                    }
+                    else {
+                        archivo.primario = false;
+                    }
+                });
+                try {
+                    yield laCarpeta.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando carpeta. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Archivo seteado`);
+                return encontrado;
+            });
+        },
+    },
+    SeccionContenidoNodo: {
+        archivos(parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!parent.idCarpeta) {
+                    console.log(`No habia carpeta`);
+                    return [];
+                }
+                try {
+                    var laCarpeta = yield CarpetaArchivos_1.ModeloCarpetaArchivos.findById(parent.idCarpeta, "archivos").exec();
+                    if (!laCarpeta)
+                        throw "Carpeta no existía";
+                }
+                catch (error) {
+                    console.log(`Error buscando carpeta en base de datos. E: ${error}`);
+                    return [];
+                }
+                const infoArchivos = laCarpeta.archivos.map(a => { return { nombre: a.nombre, primario: a.primario }; });
+                return infoArchivos;
+            });
+        },
+        tipoPrimario(parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!parent.idCarpeta) {
+                    console.log(`No habia carpeta`);
+                    return null;
+                }
+                try {
+                    var laCarpeta = yield CarpetaArchivos_1.ModeloCarpetaArchivos.findById(parent.idCarpeta, "archivos").exec();
+                    if (!laCarpeta)
+                        throw "Carpeta no existía";
+                    var elPrimario = laCarpeta.archivos.find(a => a.primario == true);
+                    if (!elPrimario)
+                        throw "No habia primario";
+                }
+                catch (error) {
+                    console.log(`Error buscando carpeta y primario en base de datos. E: ${error}`);
+                    return null;
+                }
+                if (!elPrimario.mimetype) {
+                    console.log(`No habia mimetype`);
+                    return null;
+                }
+                return elPrimario.mimetype;
+            });
+        }
     }
 };

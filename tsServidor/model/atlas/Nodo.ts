@@ -64,6 +64,24 @@ esquemaNodo.add({
         type:String,
         required:true,
     },
+    secciones:{
+        type:[{
+            nombre: {
+                type:String,
+                required:true,
+                max:40,
+                min:3,
+                unique:true
+            },
+            idCarpeta:{
+                type:String,
+            }
+        }],
+        required:true,
+        default:[{
+            nombre: "explicacion",            
+        }]
+    },
     coordx:Number,
     coordy:Number,
     radio: Number,
