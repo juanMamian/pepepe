@@ -8,11 +8,10 @@ import { ModeloNodo as Nodo } from "../../model/atlas/Nodo";
 const access = promisify(fs.access);
 
 router.get("/:idNodo/:nombreSeccion/:nombreArchivo", async function (req, res) {
-    console.log(`Acceso a un archivo de contenido de sección de nodo`);
+    console.log(`(1)Acceso al archivo ${req.params.nombreArchivo} de contenido de sección de nodo`);
     const idNodo = req.params.idNodo;
     const nombreSeccion=req.params.nombreSeccion;
     const nombreArchivo=req.params.nombreArchivo;
-    console.log(`Acceso al contenido de un nodo con id ${req.params.idNodo} para la seccion ${req.params.nombreSeccion}`);
     let pathDefault = path.join(__dirname, '../../assetsAtlas/contenidosNodos/', "default", "index.html");
 
     try {
@@ -50,17 +49,18 @@ router.get("/:idNodo/:nombreSeccion/:nombreArchivo", async function (req, res) {
         console.log(`Error buscando el archivo. E: ${error}`);
         return res.sendFile(pathDefault);
     }
-
-    return elArchivo        
+    console.log(`Archivo encontrado. Enviando`);
+    res.set('Content-Type', elArchivo.mimetype);
+    return res.send(elArchivo.payload);        
 
 });
 
 router.get("/:idNodo/:nombreSeccion", async function (req, res) {
-    console.log(`Acceso a un archivo de contenido de sección de nodo`);
+    console.log(`(2)Acceso a un archivo primario de contenido de sección ${req.params.nombreSeccion} de nodo`);
     const idNodo = req.params.idNodo;
     const nombreSeccion=req.params.nombreSeccion;
     const nombreArchivo=req.params.nombreArchivo;
-    console.log(`Acceso al contenido de un nodo con id ${req.params.idNodo} para la seccion ${req.params.nombreSeccion}`);
+    
     let pathDefault = path.join(__dirname, '../../assetsAtlas/contenidosNodos/', "default", "index.html");
 
     try {

@@ -105,7 +105,7 @@
         </div>
         <iframe
           id="visorContenido"
-          :src="direccionNodo+'/'+seccion.nombre"
+          :src="direccionNodo+'/'+seccion.nombre+'/'"
           v-show="!editandoArchivosContenidos"
           
         ></iframe>
