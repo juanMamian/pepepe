@@ -19,7 +19,7 @@ const cors_1 = __importDefault(require("cors"));
 const Schema_1 = require("./gql/Schema");
 //Rutas pepepe
 console.log(`Carpeta estatica en ${__dirname + '/pepepe'}`);
-app.use("/assetsAtlas/contenidosNodos/:idNodo/default", express_1.default.static(__dirname + '/assetsAtlas/contenidosNodos/default/'));
+app.use("/assetsAtlas/contenidosNodos/:idNodo/:nombreCategoria/default", express_1.default.static(__dirname + '/assetsAtlas/contenidosNodos/default/'));
 app.use("/pepepe", express_1.default.static(__dirname + '/clientes/pepepe'));
 app.get("/pepepe", function (req, res) {
     res.sendFile(__dirname + "/clientes/pepepe/index.html");
