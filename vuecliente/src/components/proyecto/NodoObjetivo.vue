@@ -67,7 +67,7 @@ export default {
   },
   methods: {
     arrastrarNodo(e) {
-      if (!this.agarrado) {
+      if (!this.agarrado || (this.usuarioResponsableProyecto===false && this.usuarioSuperadministrador===false)) {
         return;
       }
       this.arrastrandoNodo=this.arrastrandoNodo+Math.abs(e.movementX)+Math.abs(e.movementY);
