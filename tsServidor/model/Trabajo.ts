@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import {EsquemaVinculosNodosProyecto} from "./VinculosNodosProyecto";
 
 
 export var esquemaTrabajo = new mongoose.Schema();
@@ -30,6 +31,26 @@ esquemaTrabajo.add({
     idForo:{
         type:String,        
     },
+    vinculos:{
+        type:[EsquemaVinculosNodosProyecto],
+        required:true,
+        default:[]
+    },
+    diagramaProyecto:{
+        posicion:{
+            x:{
+                type: Number,
+                required:true,
+                default:0
+            },
+            y:{
+                type: Number,
+                required:true,
+                default:0
+            }
+        }
+
+    }
    
 });
 

@@ -5,7 +5,7 @@
       <div class="barraSuperiorZona">
         <div
           class="controlesZona"
-          v-show="seleccionado && usuarioResponsableProyecto"
+          v-show="usuarioResponsableProyecto"
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -41,12 +41,12 @@
       <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
       <img src="@/assets/iconos/iconoTrabajo.png" alt="" id="imagenIcono" />
     </div>
-    <div id="zonaDescripcion" class="zonaPrimerNivel" v-show="seleccionado">
+    <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
         <span class="nombreZona">Descripcion</span>
         <div
           class="controlesZona"
-          v-show="seleccionado && usuarioResponsableProyecto"
+          v-show="usuarioResponsableProyecto"
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -85,7 +85,7 @@
       <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
 
-    <div id="zonaResponsables" class="zonaPrimerNivel" v-show="seleccionado">
+    <div id="zonaResponsables" class="zonaPrimerNivel">
       <div class="nombreZona">Responsables</div>
       <div id="controlesResponsables" class="controlesZona">
         <div
@@ -118,7 +118,7 @@
     <div
       id="zonaNodosConocimiento"
       class="zonaPrimerNivel"
-      v-show="seleccionado && false"
+      v-show="false"
     >
       <div class="nombreZona">Nodos de conocimiento involucrados</div>
       <div id="controlesNodosConocimiento" class="controlesZona">
@@ -154,7 +154,7 @@
 
     
 
-    <div id="controlesTrabajo" v-show="seleccionado">
+    <div id="controlesTrabajo">
       <div
         class="controlesTrabajo hoverGris bEliminar"
         @click="eliminarse"

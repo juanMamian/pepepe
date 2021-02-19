@@ -1,4 +1,4 @@
-import { ApolloError, AuthenticationError, gql } from "apollo-server-express";
+import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
 import { ModeloProyecto as Proyecto } from "../model/Proyecto";
 import { ModeloTrabajo as Trabajo } from "../model/Trabajo";
 import { contextoQuery } from "./tsObjetos"
@@ -6,6 +6,17 @@ import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloForo as Foro } from "../model/Foros/Foro"
 
 export const typeDefs = gql`
+
+    type InfoDiagramaProyecto{
+        posicion:Coords
+    }
+
+    type VinculoNodoProyecto{
+        idRef:ID,
+        tipo:String,
+        tipoRef:String,
+    }
+
     type Proyecto{
         id: ID,
         nombre: String,
@@ -23,7 +34,16 @@ export const typeDefs = gql`
        id: ID,
        nombre: String,
        descripcion:String,
+       diagramaProyecto:InfoDiagramaProyecto,
+       vinculos:[VinculoNodoProyecto]
    }
+
+   union NodoProyecto=Objetivo | Trabajo
+
+   type RespuestaNodoProyecto{
+       nodo: NodoProyecto,
+   }
+
     extend type Query{
         proyectos: [Proyecto!],
         proyecto(idProyecto:ID!): Proyecto
@@ -37,18 +57,24 @@ export const typeDefs = gql`
         addPosibleResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         removeResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         
-        crearTrabajoEnProyecto(idProyecto: ID!):ID,
+        crearTrabajoEnProyecto(idProyecto: ID!, posicion:CoordsInput):ID,
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
         editarNombreTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
         editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
         addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
         removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
+        setPosicionTrabajoDiagramaProyecto(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
 
-        crearObjetivoEnProyecto(idProyecto: ID!):Objetivo,
+        crearObjetivoEnProyecto(idProyecto: ID!, posicion:CoordsInput):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
         editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
         editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
+        setPosicionObjetivoDiagramaProyecto(idProyecto:ID!, idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
+
+        crearRequerimentoEntreNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
+        desvincularNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
     }
+    
     
 `;
 
@@ -65,12 +91,14 @@ export const resolvers = {
             return listaP;
         },
         proyecto: async function (_: any, { idProyecto }: any, context: any) {
+            //   organizarDiagrama(idProyecto);
             console.log(`Buscando proyecto con id ${idProyecto}`);
             try {
                 var elProyecto: any = await Proyecto.findById(idProyecto).exec();
                 if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
+
             } catch (error) {
                 console.log(`Error buscando el proyecto. E:${error}`);
                 throw new ApolloError("Error en la conexión con la base de datos");
@@ -457,7 +485,8 @@ export const resolvers = {
 
             return true;
         },
-        async crearTrabajoEnProyecto(_: any, { idProyecto }: any, contexto: contextoQuery) {
+
+        async crearTrabajoEnProyecto(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
             console.log(`Peticion de crear un nuevo trabajo en el proyecto con id ${idProyecto}`);
 
             try {
@@ -492,10 +521,13 @@ export const resolvers = {
             }
             console.log(`Nuevo foro creado`);
 
-
-            console.log(`creando un nuevo trabajo desde el proyecto ${elProyecto}`);
+            if (posicion.x < 0 || posicion.y < 0) {
+                console.log(`Coordenadas del nuevo trabajo ilícitas`);
+                throw new ApolloError("Coordenadas ilícitas");
+            }
+            
             try {
-                var nuevoTrabajo: any = await new Trabajo({ idForo: idNuevoForo });
+                var nuevoTrabajo: any = await new Trabajo({ idForo: idNuevoForo, diagramaProyecto: { posicion } });
                 var idNuevoTrabajo = nuevoTrabajo._id;
                 await nuevoTrabajo.save();
             } catch (error) {
@@ -599,8 +631,6 @@ export const resolvers = {
             return elTrabajo;
         },
         async editarDescripcionTrabajoProyecto(_: any, { idProyecto, idTrabajo, nuevoDescripcion }, contexto: contextoQuery) {
-            console.log(`|||||||||||||||||||`);
-            console.log(`Solicitud de set descripcion de trabajo con id ${idTrabajo} del proyecto con id ${elProyecto}`);
             let credencialesUsuario = contexto.usuario;
             try {
                 var elProyecto: any = await Proyecto.findById(idProyecto).exec();
@@ -627,10 +657,10 @@ export const resolvers = {
 
             nuevoDescripcion = nuevoDescripcion.trim();
 
-            
+
             try {
-                var elTrabajo:any =await Trabajo.findById(idTrabajo).exec();
-                if (!elTrabajo) {                
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
                     throw "Trabajo no existía";
                 }
                 elTrabajo.descripcion = nuevoDescripcion;
@@ -645,7 +675,7 @@ export const resolvers = {
         addResponsableTrabajo: async function (_: any, { idTrabajo, idUsuario }: any, contexto: contextoQuery) {
             console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo}`);
             let credencialesUsuario = contexto.usuario;
-            
+
             //Authorización
 
             if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
@@ -666,12 +696,12 @@ export const resolvers = {
             }
 
             try {
-                var elTrabajo:any=await Trabajo.findById(idTrabajo).exec();
-                if(!elTrabajo) throw "Trabajo no existía";
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) throw "Trabajo no existía";
             } catch (error) {
-                console.log('Error buscando el trabajo . E: '+error);
+                console.log('Error buscando el trabajo . E: ' + error);
                 throw new ApolloError('Error conectando con la base de datos');
-            }            
+            }
 
             if (elTrabajo.responsables.includes(idUsuario)) {
                 console.log(`El usuario ya era responsable de este trabajo`);
@@ -702,7 +732,7 @@ export const resolvers = {
             console.log(`Solicitud de remove un usuario con id ${idUsuario} de un trabajo de id ${idTrabajo}`);
             let credencialesUsuario = contexto.usuario;
 
-           
+
 
             //Authorización
 
@@ -724,12 +754,12 @@ export const resolvers = {
             }
 
             try {
-                var elTrabajo:any=await Trabajo.findById(idTrabajo).exec();
-                if(!elTrabajo) throw "Trabajo no existía";
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) throw "Trabajo no existía";
             } catch (error) {
-                console.log('Error buscando el trabajo . E: '+error);
+                console.log('Error buscando el trabajo . E: ' + error);
                 throw new ApolloError('Error conectando con la base de datos');
-            }    
+            }
 
             if (!elTrabajo.responsables.includes(idUsuario)) {
                 console.log(`El usuario no era responsable de este trabajo`);
@@ -758,11 +788,52 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
-            
+
             return elTrabajo;
 
         },
-        async crearObjetivoEnProyecto(_: any, { idProyecto }: any, contexto: contextoQuery) {
+        setPosicionTrabajoDiagramaProyecto: async function (_: any, { idProyecto, idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
+            console.log(`Guardando posicion de trabajo en el diagrama del proyecto`);
+
+            if(nuevaPosicion.x<0 || nuevaPosicion.y<0){
+                throw new UserInputError("Nueva posición ilegal");
+            }
+
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Descripcion de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "Trabajo no existía";
+                }
+                elTrabajo.diagramaProyecto.posicion = nuevaPosicion;
+                await elTrabajo.save();
+            } catch (error) {
+                console.log(`error guardando el trabajo modificado: ${error}`);
+            }
+
+            return elTrabajo;
+
+        },
+
+
+        async crearObjetivoEnProyecto(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
             console.log(`Peticion de crear un nuevo objetivo en el proyecto con id ${idProyecto}`);
 
 
@@ -784,10 +855,8 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            console.log(`creando un nuevo objetivo en el proyecto ${elProyecto}`);
-
             try {
-                var nuevoObjetivo = elProyecto.objetivos.create();
+                var nuevoObjetivo = elProyecto.objetivos.create({ diagramaProyecto: { posicion } });
                 elProyecto.objetivos.push(nuevoObjetivo);
                 await elProyecto.save();
             }
@@ -795,6 +864,8 @@ export const resolvers = {
                 console.log("Error guardando el objetivo creado en el proyecto. E: " + error);
                 throw new ApolloError("Error introduciendo el objetivo en el proyecto");
             }
+            
+            console.log(`Enviando nuevo objetivo: ${nuevoObjetivo}`);
             return nuevoObjetivo;
 
 
@@ -931,6 +1002,180 @@ export const resolvers = {
             console.log(`Descripcion guardado`);
             return elObjetivo;
         },
+        setPosicionObjetivoDiagramaProyecto: async function (_: any, { idProyecto, idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
+            console.log(`Guardando posicion de objetivo en el diagrama del proyecto`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Descripcion de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elObjetivo: any = elProyecto.objetivos.id(idObjetivo);
+                if (!elObjetivo) {
+                    throw "Objetivo no existía";
+                }
+                elObjetivo.diagramaProyecto.posicion = nuevaPosicion;
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`error guardando el objetivo modificado: ${error}`);
+            }
+
+            return elObjetivo;
+        },
+
+        crearRequerimentoEntreNodosProyecto: async function (_: any, { idProyecto, idNodoRequiere, idNodoRequerido, tipoNodoRequiere, tipoNodoRequerido }, contexto: contextoQuery) {
+            console.log(`Solicitud de crear un requerimento entre un ${tipoNodoRequiere} con id ${idNodoRequiere} que requiere a un ${tipoNodoRequerido} con id ${idNodoRequerido}`);
+
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el proyecto. E: " + error);
+                throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador"];
+            let credencialesUsuario = contexto.usuario;
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion creando vinculos en proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            const vinculo = {
+                idRef: idNodoRequerido,
+                tipoRef: tipoNodoRequerido,
+                tipo: "requiere"
+            }
+
+            if (tipoNodoRequiere === "objetivo") {
+                try {
+                    var elqueRequiere = elProyecto.objetivos.id(idNodoRequiere);
+                    if (!elqueRequiere) throw "El objetivo que requiere no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando al que requiere. E: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+            } else if (tipoNodoRequiere === "trabajo") {
+                try {
+                    var elqueRequiere: any = await Trabajo.findById(idNodoRequiere).exec();
+                    if (!elqueRequiere) throw "El trabajo que requiere no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando al que requiere. E: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+            } else {
+                console.log(`Tipo de nodo que requiere no reconocido`);
+                throw new ApolloError("Error. Tipo " + tipoNodoRequiere + " no soportado");
+            }
+
+
+            const indexV = elqueRequiere.vinculos.findIndex(v => v.idRef === idNodoRequerido);
+
+            if (indexV > -1) {
+                console.log(`Reemplazando un vinculo ya existente`);
+                elqueRequiere.vinculos.splice(indexV, 1);
+            }
+            try {
+                elqueRequiere.vinculos.push(vinculo);
+                if (tipoNodoRequiere === "trabajo") {
+                    await elqueRequiere.save();
+                }
+                else if (tipoNodoRequiere === "objetivo") {
+                    await elProyecto.save()
+                }
+            } catch (error) {
+                console.log(`Error guardando el nodo modificado en la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            
+            return {nodo:elqueRequiere};
+
+        },
+        desvincularNodosProyecto: async function (_: any, { idProyecto, idNodoRequiere, idNodoRequerido, tipoNodoRequiere, tipoNodoRequerido }, contexto: contextoQuery) {
+            console.log(`Solicitud de eliminar vínculo entre un ${tipoNodoRequiere} con id ${idNodoRequiere} que requiere a un ${tipoNodoRequerido} con id ${idNodoRequerido}`);
+
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el proyecto. E: " + error);
+                throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador"];
+            let credencialesUsuario = contexto.usuario;
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion eliminando vinculos en proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+
+            if (tipoNodoRequiere === "objetivo") {
+                try {
+                    var elqueRequiere = elProyecto.objetivos.id(idNodoRequiere);
+                    if (!elqueRequiere) throw "El objetivo que requiere no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando al que requiere. E: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+            } else if (tipoNodoRequiere === "trabajo") {
+                try {
+                    var elqueRequiere: any = await Trabajo.findById(idNodoRequiere).exec();
+                    if (!elqueRequiere) throw "El trabajo que requiere no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando al que requiere. E: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+            } else {
+                console.log(`Tipo de nodo que requiere no reconocido`);
+                throw new ApolloError("Error. Tipo " + tipoNodoRequiere + " no soportado");
+            }
+
+            try {
+                const indexV = elqueRequiere.vinculos.findIndex(v => v.idRef === idNodoRequerido);
+
+                if (indexV > -1) {
+                    console.log(`Eliminando vinculo`);
+                    elqueRequiere.vinculos.splice(indexV, 1);
+                }
+                else {
+                    console.log(`El vinculo no existía`);
+                    throw new ApolloError("El vinculo no existia");
+                }
+                if (tipoNodoRequiere === "trabajo") {
+                    await elqueRequiere.save();
+                }
+                else if (tipoNodoRequiere === "objetivo") {
+                    await elProyecto.save()
+                }
+            } catch (error) {
+                console.log(`Error guardando el nodo modificado en la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return {nodo:elqueRequiere};
+
+        },
     },
     Proyecto: {
         personasResponsables: async function (parent: any, _: any, __: any) {
@@ -967,8 +1212,17 @@ export const resolvers = {
             }
 
             return usuariosPosiblesResponsables;
-        }, 
+        },
+    },
+
+    NodoProyecto:{
+        __resolveType:function(nodo){
+            if(nodo.responsables){
+                return "Trabajo"
+            }
+            else if(nodo.estado){
+                return "Objetivo"
+            }
+        }
     }
-
-
 }

@@ -3,6 +3,8 @@ import {esquemaObjetivo} from "./Objetivo"
 import {esquemaTrabajo} from "./Trabajo"
 
 
+
+
 const esquemaProyecto = new mongoose.Schema({
     nombre: {
         type: String,

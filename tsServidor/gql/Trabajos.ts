@@ -11,7 +11,9 @@ export const typeDefs = gql`
        descripcion:String,
        responsables: [String],
        nodosConocimiento:[String],
-       idForo:ID
+       idForo:ID,
+       diagramaProyecto:InfoDiagramaProyecto,
+       vinculos:[VinculoNodoProyecto]
    }
 
    extend type Query{

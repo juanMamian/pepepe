@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloTrabajo = exports.esquemaTrabajo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
+const VinculosNodosProyecto_1 = require("./VinculosNodosProyecto");
 exports.esquemaTrabajo = new mongoose_1.default.Schema();
 exports.esquemaTrabajo.add({
     nombre: {
@@ -32,5 +33,24 @@ exports.esquemaTrabajo.add({
     idForo: {
         type: String,
     },
+    vinculos: {
+        type: [VinculosNodosProyecto_1.EsquemaVinculosNodosProyecto],
+        required: true,
+        default: []
+    },
+    diagramaProyecto: {
+        posicion: {
+            x: {
+                type: Number,
+                required: true,
+                default: 0
+            },
+            y: {
+                type: Number,
+                required: true,
+                default: 0
+            }
+        }
+    }
 });
 exports.ModeloTrabajo = mongoose_1.default.model("Trabajo", exports.esquemaTrabajo);

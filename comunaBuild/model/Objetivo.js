@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.esquemaObjetivo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
+const VinculosNodosProyecto_1 = require("./VinculosNodosProyecto");
 exports.esquemaObjetivo = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -19,26 +20,29 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
         required: true,
         max: 2000
     },
-    vinculos: [
-        {
-            tipoTarget: {
-                type: String,
-                required: true
-            },
-            ref: {
-                type: String,
-                required: true
-            },
-            tipoVinculo: {
-                type: String,
-                required: true
-            }
-        }
-    ],
     estado: {
         type: String,
         required: true,
         default: "noCumplido",
         enum: ["noCumplido", "cumplido"],
+    },
+    vinculos: {
+        type: [VinculosNodosProyecto_1.EsquemaVinculosNodosProyecto],
+        required: true,
+        default: []
+    },
+    diagramaProyecto: {
+        posicion: {
+            x: {
+                type: Number,
+                required: true,
+                default: 0
+            },
+            y: {
+                type: Number,
+                required: true,
+                default: 0
+            }
+        }
     }
 });

@@ -3,7 +3,7 @@
 
     <div id="zonaNombre" :class="{bordeAbajo: seleccionado}" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
-        <div class="controlesZona" v-show="seleccionado && usuarioResponsableProyecto">
+        <div class="controlesZona" v-show="usuarioResponsableProyecto">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -39,10 +39,10 @@
           <img src="@/assets/iconos/iconoObjetivo.png" alt="" id="imagenIcono" />
 
     </div>
-    <div id="zonaDescripcion" class="zonaPrimerNivel" v-show="seleccionado">
+    <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
         <span class="nombreZona">Descripcion</span>
-        <div class="controlesZona" v-show="seleccionado && usuarioResponsableProyecto">
+        <div class="controlesZona" v-show="usuarioResponsableProyecto">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -79,7 +79,7 @@
       />
       <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
-    <div id="controlesObjetivo" v-show="seleccionado">
+    <div id="controlesObjetivo">
       <div class="controlesObjetivo hoverGris bEliminar" @click="eliminarse" v-show="usuarioResponsableProyecto || usuarioSuperadministrador">
         Eliminar
       </div>
@@ -114,7 +114,7 @@ export default {
     idProyecto: String,
     esteObjetivo: Object,
     seleccionado: Boolean,
-    usuarioResponsableProyecto: Boolean,
+    usuarioResponsableProyecto: Boolean,    
   },
   computed: {
     nuevoNombreIlegal() {

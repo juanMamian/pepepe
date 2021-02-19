@@ -16,6 +16,17 @@ const Trabajo_1 = require("../model/Trabajo");
 const Usuario_1 = require("../model/Usuario");
 const Foro_1 = require("../model/Foros/Foro");
 exports.typeDefs = apollo_server_express_1.gql `
+
+    type InfoDiagramaProyecto{
+        posicion:Coords
+    }
+
+    type VinculoNodoProyecto{
+        idRef:ID,
+        tipo:String,
+        tipoRef:String,
+    }
+
     type Proyecto{
         id: ID,
         nombre: String,
@@ -33,7 +44,16 @@ exports.typeDefs = apollo_server_express_1.gql `
        id: ID,
        nombre: String,
        descripcion:String,
+       diagramaProyecto:InfoDiagramaProyecto,
+       vinculos:[VinculoNodoProyecto]
    }
+
+   union NodoProyecto=Objetivo | Trabajo
+
+   type RespuestaNodoProyecto{
+       nodo: NodoProyecto,
+   }
+
     extend type Query{
         proyectos: [Proyecto!],
         proyecto(idProyecto:ID!): Proyecto
@@ -47,18 +67,24 @@ exports.typeDefs = apollo_server_express_1.gql `
         addPosibleResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         removeResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         
-        crearTrabajoEnProyecto(idProyecto: ID!):ID,
+        crearTrabajoEnProyecto(idProyecto: ID!, posicion:CoordsInput):ID,
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
         editarNombreTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
         editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
         addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
         removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
+        setPosicionTrabajoDiagramaProyecto(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
 
-        crearObjetivoEnProyecto(idProyecto: ID!):Objetivo,
+        crearObjetivoEnProyecto(idProyecto: ID!, posicion:CoordsInput):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
         editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
         editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
+        setPosicionObjetivoDiagramaProyecto(idProyecto:ID!, idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
+
+        crearRequerimentoEntreNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
+        desvincularNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
     }
+    
     
 `;
 exports.resolvers = {
@@ -78,6 +104,7 @@ exports.resolvers = {
         },
         proyecto: function (_, { idProyecto }, context) {
             return __awaiter(this, void 0, void 0, function* () {
+                //   organizarDiagrama(idProyecto);
                 console.log(`Buscando proyecto con id ${idProyecto}`);
                 try {
                     var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
@@ -441,7 +468,7 @@ exports.resolvers = {
                 return true;
             });
         },
-        crearTrabajoEnProyecto(_, { idProyecto }, contexto) {
+        crearTrabajoEnProyecto(_, { idProyecto, posicion }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Peticion de crear un nuevo trabajo en el proyecto con id ${idProyecto}`);
                 try {
@@ -474,9 +501,12 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`Nuevo foro creado`);
-                console.log(`creando un nuevo trabajo desde el proyecto ${elProyecto}`);
+                if (posicion.x < 0 || posicion.y < 0) {
+                    console.log(`Coordenadas del nuevo trabajo ilícitas`);
+                    throw new apollo_server_express_1.ApolloError("Coordenadas ilícitas");
+                }
                 try {
-                    var nuevoTrabajo = yield new Trabajo_1.ModeloTrabajo({ idForo: idNuevoForo });
+                    var nuevoTrabajo = yield new Trabajo_1.ModeloTrabajo({ idForo: idNuevoForo, diagramaProyecto: { posicion } });
                     var idNuevoTrabajo = nuevoTrabajo._id;
                     yield nuevoTrabajo.save();
                 }
@@ -570,8 +600,6 @@ exports.resolvers = {
         },
         editarDescripcionTrabajoProyecto(_, { idProyecto, idTrabajo, nuevoDescripcion }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||`);
-                console.log(`Solicitud de set descripcion de trabajo con id ${idTrabajo} del proyecto con id ${elProyecto}`);
                 let credencialesUsuario = contexto.usuario;
                 try {
                     var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
@@ -717,7 +745,43 @@ exports.resolvers = {
                 return elTrabajo;
             });
         },
-        crearObjetivoEnProyecto(_, { idProyecto }, contexto) {
+        setPosicionTrabajoDiagramaProyecto: function (_, { idProyecto, idTrabajo, nuevaPosicion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Guardando posicion de trabajo en el diagrama del proyecto`);
+                if (nuevaPosicion.x < 0 || nuevaPosicion.y < 0) {
+                    throw new apollo_server_express_1.UserInputError("Nueva posición ilegal");
+                }
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Descripcion de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "Trabajo no existía";
+                    }
+                    elTrabajo.diagramaProyecto.posicion = nuevaPosicion;
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log(`error guardando el trabajo modificado: ${error}`);
+                }
+                return elTrabajo;
+            });
+        },
+        crearObjetivoEnProyecto(_, { idProyecto, posicion }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Peticion de crear un nuevo objetivo en el proyecto con id ${idProyecto}`);
                 try {
@@ -736,9 +800,8 @@ exports.resolvers = {
                     console.log(`Error de autenticacion editando nombre de proyecto`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
-                console.log(`creando un nuevo objetivo en el proyecto ${elProyecto}`);
                 try {
-                    var nuevoObjetivo = elProyecto.objetivos.create();
+                    var nuevoObjetivo = elProyecto.objetivos.create({ diagramaProyecto: { posicion } });
                     elProyecto.objetivos.push(nuevoObjetivo);
                     yield elProyecto.save();
                 }
@@ -746,6 +809,7 @@ exports.resolvers = {
                     console.log("Error guardando el objetivo creado en el proyecto. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error introduciendo el objetivo en el proyecto");
                 }
+                console.log(`Enviando nuevo objetivo: ${nuevoObjetivo}`);
                 return nuevoObjetivo;
             });
         },
@@ -870,6 +934,181 @@ exports.resolvers = {
                 return elObjetivo;
             });
         },
+        setPosicionObjetivoDiagramaProyecto: function (_, { idProyecto, idObjetivo, nuevaPosicion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Guardando posicion de objetivo en el diagrama del proyecto`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Descripcion de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elObjetivo = elProyecto.objetivos.id(idObjetivo);
+                    if (!elObjetivo) {
+                        throw "Objetivo no existía";
+                    }
+                    elObjetivo.diagramaProyecto.posicion = nuevaPosicion;
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`error guardando el objetivo modificado: ${error}`);
+                }
+                return elObjetivo;
+            });
+        },
+        crearRequerimentoEntreNodosProyecto: function (_, { idProyecto, idNodoRequiere, idNodoRequerido, tipoNodoRequiere, tipoNodoRequerido }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de crear un requerimento entre un ${tipoNodoRequiere} con id ${idNodoRequiere} que requiere a un ${tipoNodoRequerido} con id ${idNodoRequerido}`);
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el proyecto. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Erro en la conexión con la base de datos");
+                }
+                //Authorización
+                const permisosEspeciales = ["superadministrador"];
+                let credencialesUsuario = contexto.usuario;
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion creando vinculos en proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                const vinculo = {
+                    idRef: idNodoRequerido,
+                    tipoRef: tipoNodoRequerido,
+                    tipo: "requiere"
+                };
+                if (tipoNodoRequiere === "objetivo") {
+                    try {
+                        var elqueRequiere = elProyecto.objetivos.id(idNodoRequiere);
+                        if (!elqueRequiere)
+                            throw "El objetivo que requiere no encontrado";
+                    }
+                    catch (error) {
+                        console.log(`Error buscando al que requiere. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                }
+                else if (tipoNodoRequiere === "trabajo") {
+                    try {
+                        var elqueRequiere = yield Trabajo_1.ModeloTrabajo.findById(idNodoRequiere).exec();
+                        if (!elqueRequiere)
+                            throw "El trabajo que requiere no encontrado";
+                    }
+                    catch (error) {
+                        console.log(`Error buscando al que requiere. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                }
+                else {
+                    console.log(`Tipo de nodo que requiere no reconocido`);
+                    throw new apollo_server_express_1.ApolloError("Error. Tipo " + tipoNodoRequiere + " no soportado");
+                }
+                const indexV = elqueRequiere.vinculos.findIndex(v => v.idRef === idNodoRequerido);
+                if (indexV > -1) {
+                    console.log(`Reemplazando un vinculo ya existente`);
+                    elqueRequiere.vinculos.splice(indexV, 1);
+                }
+                try {
+                    elqueRequiere.vinculos.push(vinculo);
+                    if (tipoNodoRequiere === "trabajo") {
+                        yield elqueRequiere.save();
+                    }
+                    else if (tipoNodoRequiere === "objetivo") {
+                        yield elProyecto.save();
+                    }
+                }
+                catch (error) {
+                    console.log(`Error guardando el nodo modificado en la base de datos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return { nodo: elqueRequiere };
+            });
+        },
+        desvincularNodosProyecto: function (_, { idProyecto, idNodoRequiere, idNodoRequerido, tipoNodoRequiere, tipoNodoRequerido }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de eliminar vínculo entre un ${tipoNodoRequiere} con id ${idNodoRequiere} que requiere a un ${tipoNodoRequerido} con id ${idNodoRequerido}`);
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el proyecto. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Erro en la conexión con la base de datos");
+                }
+                //Authorización
+                const permisosEspeciales = ["superadministrador"];
+                let credencialesUsuario = contexto.usuario;
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion eliminando vinculos en proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                if (tipoNodoRequiere === "objetivo") {
+                    try {
+                        var elqueRequiere = elProyecto.objetivos.id(idNodoRequiere);
+                        if (!elqueRequiere)
+                            throw "El objetivo que requiere no encontrado";
+                    }
+                    catch (error) {
+                        console.log(`Error buscando al que requiere. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                }
+                else if (tipoNodoRequiere === "trabajo") {
+                    try {
+                        var elqueRequiere = yield Trabajo_1.ModeloTrabajo.findById(idNodoRequiere).exec();
+                        if (!elqueRequiere)
+                            throw "El trabajo que requiere no encontrado";
+                    }
+                    catch (error) {
+                        console.log(`Error buscando al que requiere. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                }
+                else {
+                    console.log(`Tipo de nodo que requiere no reconocido`);
+                    throw new apollo_server_express_1.ApolloError("Error. Tipo " + tipoNodoRequiere + " no soportado");
+                }
+                try {
+                    const indexV = elqueRequiere.vinculos.findIndex(v => v.idRef === idNodoRequerido);
+                    if (indexV > -1) {
+                        console.log(`Eliminando vinculo`);
+                        elqueRequiere.vinculos.splice(indexV, 1);
+                    }
+                    else {
+                        console.log(`El vinculo no existía`);
+                        throw new apollo_server_express_1.ApolloError("El vinculo no existia");
+                    }
+                    if (tipoNodoRequiere === "trabajo") {
+                        yield elqueRequiere.save();
+                    }
+                    else if (tipoNodoRequiere === "objetivo") {
+                        yield elProyecto.save();
+                    }
+                }
+                catch (error) {
+                    console.log(`Error guardando el nodo modificado en la base de datos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return { nodo: elqueRequiere };
+            });
+        },
     },
     Proyecto: {
         personasResponsables: function (parent, _, __) {
@@ -907,5 +1146,15 @@ exports.resolvers = {
                 return usuariosPosiblesResponsables;
             });
         },
+    },
+    NodoProyecto: {
+        __resolveType: function (nodo) {
+            if (nodo.responsables) {
+                return "Trabajo";
+            }
+            else if (nodo.estado) {
+                return "Objetivo";
+            }
+        }
     }
 };

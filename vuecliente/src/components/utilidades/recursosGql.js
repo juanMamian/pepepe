@@ -83,6 +83,17 @@ export const fragmentoProyecto = gql`
       id
       nombre
       descripcion
+      vinculos{
+        idRef
+        tipo
+        tipoRef
+      }
+      diagramaProyecto{
+        posicion{
+          x
+          y
+        }        
+      }
     }
   }
   

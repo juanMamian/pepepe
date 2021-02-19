@@ -21,7 +21,9 @@ exports.typeDefs = apollo_server_express_1.gql `
        descripcion:String,
        responsables: [String],
        nodosConocimiento:[String],
-       idForo:ID
+       idForo:ID,
+       diagramaProyecto:InfoDiagramaProyecto,
+       vinculos:[VinculoNodoProyecto]
    }
 
    extend type Query{

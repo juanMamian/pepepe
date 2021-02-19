@@ -166,7 +166,45 @@
         </div>
       </div>
 
-      <div id="zonaObjetivos" class="zonaPrimerNivel">
+      <div id="zonaDiagramaFlujo" class="zonaPrimerNivel" ref="zonaDiagramaFlujo">
+        <div class="nombreZona">Diagrama de flujo</div>
+        <div id="controlesObjetivos" class="controlesZona">          
+        </div>
+        <diagrama-flujo
+          :idProyecto="esteProyecto.id"
+          :objetivos="esteProyecto.objetivos"
+          :idsTrabajos="esteProyecto.idsTrabajos"
+          :usuarioResponsableProyecto="usuarioResponsableProyecto"
+          :activo="idNodoAbierto==null"
+          @crearTrabajoEnPosicion="crearNuevoTrabajo"
+          @crearObjetivoEnPosicion="crearNuevoObjetivo"
+          @nodoAbierto="abrirNodo"
+          @click.native="idNodoAbierto=null"
+        />
+        <iconoObjetivo
+          class="ventanaNodo"
+          v-for="objetivo of esteProyecto.objetivos"
+          :key="objetivo.id"
+          :idProyecto="esteProyecto.id"
+          :esteObjetivo="objetivo"
+          v-show="idNodoAbierto == objetivo.id"
+          :usuarioResponsableProyecto="usuarioResponsableProyecto"
+          @meElimine="eliminarObjetivoDeCache(objetivo.id)"
+        />
+
+        <iconoTrabajo
+          class="ventanaNodo"
+          v-for="idTrabajo of esteProyecto.idsTrabajos"
+          v-show="idNodoAbierto == idTrabajo"
+          :key="idTrabajo"
+          :idTrabajo="idTrabajo"
+          :idProyecto="esteProyecto.id"
+          :usuarioResponsableProyecto="usuarioResponsableProyecto"
+          @meElimine="eliminarTrabajoDeCache(idTrabajo)"
+        />
+      </div>
+
+      <!-- <div id="zonaObjetivos" class="zonaPrimerNivel">
         <div class="nombreZona">Objetivos</div>
         <div id="controlesObjetivos" class="controlesZona">
           <div
@@ -216,7 +254,7 @@
             @meElimine="eliminarTrabajoDeCache(idTrabajo)"
           />
         </div>
-      </div>
+      </div> -->
 
       <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
         <div class="nombreZona">foro</div>
@@ -234,6 +272,7 @@ import { fragmentoProyecto } from "./utilidades/recursosGql";
 import Loading from "./utilidades/Loading.vue";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
+import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
 
 const QUERY_PROYECTO = gql`
   query($idProyecto: ID!) {
@@ -253,6 +292,7 @@ export default {
     Loading,
     Foro,
     IconoPersonaAutonomo,
+    DiagramaFlujo,
   },
   name: "proyecto",
   apollo: {
@@ -267,6 +307,7 @@ export default {
         this.loading = false;
         return respuesta.proyecto;
       },
+      fetchPolicy:"cache-and-network"
     },
   },
   data() {
@@ -275,7 +316,7 @@ export default {
 
       esteProyecto: {
         responsables: [],
-        posiblesResponsables:[],
+        posiblesResponsables: [],
       },
       idResponsableSeleccionado: null,
       responsableSeleccionadoEstaAceptado: false,
@@ -285,7 +326,7 @@ export default {
 
       idTrabajoSeleccionado: null,
       idObjetivoSeleccionado: null,
-      
+
       nuevoNombre: "Nuevo nombre",
       editandoNombre: false,
       enviandoNuevoNombre: false,
@@ -293,6 +334,8 @@ export default {
       nuevoDescripcion: "Nueva descripcion",
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
+
+      idNodoAbierto: null,
     };
   },
   computed: {
@@ -309,8 +352,7 @@ export default {
     usuarioPosibleResponsableProyecto: function () {
       if (!this.esteProyecto.posiblesResponsables) return false;
 
-      if (this.esteProyecto.posiblesResponsables.includes(this.usuario.id)
-      ) {
+      if (this.esteProyecto.posiblesResponsables.includes(this.usuario.id)) {
         return true;
       }
       return false;
@@ -334,7 +376,7 @@ export default {
       return false;
     },
     nuevoDescripcionIlegal() {
-      if (!this.nuevoDescripcion  || this.nuevoDescripcion.length < 1) {
+      if (!this.nuevoDescripcion || this.nuevoDescripcion.length < 1) {
         return true;
       }
       if (charProhibidosDescripcionProyecto.test(this.nuevoDescripcion)) {
@@ -342,13 +384,13 @@ export default {
       }
       return false;
     },
-    infoAsParent(){
+    infoAsParent() {
       return {
         id: this.esteProyecto.id,
         tipo: "proyecto",
         nombre: this.esteProyecto.nombre,
-      }
-    }
+      };
+    },
   },
   methods: {
     guardarNuevoNombre() {
@@ -563,21 +605,24 @@ export default {
           console.log("error: " + error);
         });
     },
-    crearNuevoTrabajo() {
+    crearNuevoTrabajo(posicion) {
       console.log(`enviando mutacion de crear nuevo trabajo`);
       this.creandoTrabajo = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!) {
-              crearTrabajoEnProyecto(idProyecto: $idProyecto)
+            mutation($idProyecto: ID!, $posicion: CoordsInput) {
+              crearTrabajoEnProyecto(
+                idProyecto: $idProyecto
+                posicion: $posicion
+              )
             }
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
+            posicion,
           },
           update: (store, { data: { crearTrabajoEnProyecto } }) => {
-            
             console.log(`respuesta: ${JSON.stringify(crearTrabajoEnProyecto)}`);
             const idNuevoTrabajo = crearTrabajoEnProyecto;
             try {
@@ -587,15 +632,14 @@ export default {
               });
               console.log(
                 `Trabajos en cache: ${cache.proyecto.idsTrabajos.length}`
-              );              
-              const nuevoCache=JSON.parse(JSON.stringify(cache));
+              );
+              const nuevoCache = JSON.parse(JSON.stringify(cache));
               nuevoCache.proyecto.idsTrabajos.push(idNuevoTrabajo);
-              
 
               store.writeQuery({
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
-                data:nuevoCache,
+                data: nuevoCache,
               });
               console.log(`cache actualizado`);
               console.log(
@@ -615,25 +659,40 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    crearNuevoObjetivo() {
+    crearNuevoObjetivo(posicion) {
       console.log(`enviando mutacion de crear nuevo objetivo`);
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!) {
-              crearObjetivoEnProyecto(idProyecto: $idProyecto) {
+            mutation($idProyecto: ID!, $posicion: CoordsInput) {
+              crearObjetivoEnProyecto(
+                idProyecto: $idProyecto
+                posicion: $posicion
+              ) {
                 id
                 nombre
                 descripcion
+                vinculos{
+                  idRef
+                  tipoRef
+                  tipo
+                }
+                diagramaProyecto {
+                  posicion {
+                    x
+                    y
+                  }
+                }
               }
             }
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
+            posicion,
           },
           update: (store, { data: { crearObjetivoEnProyecto } }) => {
             console.log(
-              `respuesta: ${JSON.stringify(crearObjetivoEnProyecto)}`
+              `respuesta: ${JSON.stringify(JSON.stringify(crearObjetivoEnProyecto))}`
             );
             const nuevoObjetivo = crearObjetivoEnProyecto;
             try {
@@ -642,7 +701,7 @@ export default {
                 variables: { idProyecto: this.esteProyecto.id },
               });
 
-              let nuevoCache=JSON.parse(JSON.stringify(cache));
+              let nuevoCache = JSON.parse(JSON.stringify(cache));
               nuevoCache.proyecto.objetivos.push(nuevoObjetivo);
 
               store.writeQuery({
@@ -672,7 +731,7 @@ export default {
           idProyecto: this.esteProyecto.id,
         },
       });
-      let nuevoCache=JSON.parse(JSON.stringify(cache));
+      let nuevoCache = JSON.parse(JSON.stringify(cache));
       let indexT = nuevoCache.proyecto.idsTrabajos.indexOf(idTrabajo);
       if (indexT > -1) {
         nuevoCache.proyecto.idsTrabajos.splice(indexT, 1);
@@ -695,7 +754,7 @@ export default {
           idProyecto: this.esteProyecto.id,
         },
       });
-      let nuevoCache=JSON.parse(JSON.stringify(cache));
+      let nuevoCache = JSON.parse(JSON.stringify(cache));
       let indexT = nuevoCache.proyecto.objetivos.findIndex(
         (t) => t.id == idObjetivo
       );
@@ -716,6 +775,10 @@ export default {
       console.log(`Navegando al foro de este proyecto`);
       this.$refs.zonaForo.scrollIntoView();
     },
+    abrirNodo(idNodo) {
+      console.log(`Abriendo nodo ${idNodo}`);
+      this.idNodoAbierto = idNodo;
+    },
   },
 };
 </script>
@@ -723,7 +786,7 @@ export default {
 <style scoped>
 .proyecto {
   margin: 5px auto;
-  width: min(90%, 1000px);
+  width: min(93%, 1300px);
   padding: 5px 20px;
   padding-bottom: 300px;
 }
@@ -846,5 +909,19 @@ export default {
 }
 .personaPosibleResponsable {
   opacity: 0.5;
+}
+#zonaDiagramaFlujo {
+  position: relative;
+  min-height: 700px;
+  overflow: scroll;
+  max-height: 1100px;
+  user-select: none;
+}
+.ventanaNodo {
+  width: 92%;
+  left: 4%;
+  top: 10%;
+  max-height: 80%;
+  position: absolute;
 }
 </style>

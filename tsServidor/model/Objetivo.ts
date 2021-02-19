@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import {EsquemaVinculosNodosProyecto} from "./VinculosNodosProyecto";
 
 export const esquemaObjetivo = new mongoose.Schema({
     nombre: {
@@ -13,28 +14,33 @@ export const esquemaObjetivo = new mongoose.Schema({
         default:"Sin descripcion",
         required:true,
         max:2000
-    },
-    vinculos: [
-        {
-            tipoTarget: {
-                type: String,
-                required: true
-            },
-            ref: {
-                type: String,
-                required: true
-            },
-            tipoVinculo: {
-                type: String,
-                required: true
-            }
-        }
-    ],
+    },   
     estado:{
         type:String,
         required:true,
         default:"noCumplido",
         enum:["noCumplido", "cumplido"],
+    },
+    vinculos:{
+        type:[EsquemaVinculosNodosProyecto],
+        required:true,
+        default:[]
+    },
+    diagramaProyecto:{
+        posicion:{
+            x:{
+                type: Number,
+                required:true,
+                default:0
+            },
+            y:{
+                type: Number,
+                required:true,
+                default:0
+            }
+        }
+
     }
+    
 });
 
