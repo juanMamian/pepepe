@@ -22,6 +22,9 @@
           src="@/assets/iconos/iconoTrabajo.png"
           alt=""
           class="iconoTrabajo"
+          :class="{
+            iconoCompletado: esteTrabajo.estadoDesarrollo === 'completado',
+          }"
         />
         {{ esteTrabajo.nombre }}
       </div>
@@ -60,6 +63,7 @@ const QUERY_TRABAJO = gql`
     trabajo(idTrabajo: $idTrabajo) {
       id
       nombre
+      estadoDesarrollo
       diagramaProyecto {
         posicion {
           x
@@ -333,8 +337,13 @@ export default {
   user-select: none;
 }
 .iconoTrabajo {
-  width: 20px;
-  height: 20px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  padding: 3px;
+}
+.iconoCompletado {
+  background-color: rgb(44, 136, 44);
 }
 #menuContextual {
   position: absolute;

@@ -45,7 +45,8 @@ exports.typeDefs = apollo_server_express_1.gql `
        nombre: String,
        descripcion:String,
        diagramaProyecto:InfoDiagramaProyecto,
-       vinculos:[VinculoNodoProyecto]
+       vinculos:[VinculoNodoProyecto],
+       estado:String,
    }
 
    union NodoProyecto=Objetivo | Trabajo
@@ -82,12 +83,14 @@ exports.typeDefs = apollo_server_express_1.gql `
         removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
         setPosicionTrabajoDiagramaProyecto(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
         editarKeywordsTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
+        setEstadoTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoEstado:String!):Trabajo,
 
         crearObjetivoEnProyecto(idProyecto: ID!, posicion:CoordsInput):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
         editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
         editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
         setPosicionObjetivoDiagramaProyecto(idProyecto:ID!, idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
+        setEstadoObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoEstado:String!):Objetivo,
 
         crearRequerimentoEntreNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
         desvincularNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
@@ -640,6 +643,7 @@ exports.resolvers = {
                 }
                 catch (error) {
                     console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 //Authorización
                 let permisosEspeciales = ["superadministrador"];
@@ -663,6 +667,7 @@ exports.resolvers = {
                 }
                 catch (error) {
                     console.log(`error guardando el trabajo modificado: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error guardando información en la base de datos");
                 }
                 console.log(`Descripcion guardado`);
                 return elTrabajo;
@@ -859,6 +864,42 @@ exports.resolvers = {
                 return elTrabajo;
             });
         },
+        setEstadoTrabajoProyecto(_, { idProyecto, idTrabajo, nuevoEstado }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Estado de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "Trabajo no existía";
+                    }
+                    elTrabajo.estadoDesarrollo = nuevoEstado;
+                    console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log(`error guardando el trabajo modificado: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error guardando información en la base de datos");
+                }
+                console.log(`Estado guardado`);
+                return elTrabajo;
+            });
+        },
         crearObjetivoEnProyecto(_, { idProyecto, posicion }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Peticion de crear un nuevo objetivo en el proyecto con id ${idProyecto}`);
@@ -973,7 +1014,7 @@ exports.resolvers = {
         editarDescripcionObjetivoProyecto(_, { idProyecto, idObjetivo, nuevoDescripcion }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`|||||||||||||||||||`);
-                console.log(`Solicitud de set descripcion de objetivo con id ${idObjetivo} del proyecto con id ${elProyecto}`);
+                console.log(`Solicitud de set descripcion de objetivo con id ${idObjetivo} del proyecto con id ${idProyecto}`);
                 let credencialesUsuario = contexto.usuario;
                 try {
                     var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
@@ -1007,6 +1048,7 @@ exports.resolvers = {
                 }
                 catch (error) {
                     console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error guardando información en la base de datos");
                 }
                 console.log(`Descripcion guardado`);
                 return elObjetivo;
@@ -1042,6 +1084,44 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`error guardando el objetivo modificado: ${error}`);
                 }
+                return elObjetivo;
+            });
+        },
+        setEstadoObjetivoProyecto: function (_, { idProyecto, idObjetivo, nuevoEstado }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de set estado de objetivo con id ${idObjetivo} del proyecto con id ${idProyecto} a ${nuevoEstado}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Estado de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                let elObjetivo = elProyecto.objetivos.id(idObjetivo);
+                if (!elObjetivo) {
+                    console.log(`No existía el objetivo`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                elObjetivo.estado = nuevoEstado;
+                try {
+                    console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error guardando información en la base de datos");
+                }
+                console.log(`Estado guardado`);
                 return elObjetivo;
             });
         },

@@ -17,6 +17,7 @@ export const typeDefs = gql`
        vinculos:[VinculoNodoProyecto],
        keywords:String,
        idProyectoParent:ID,
+       estadoDesarrollo:String,
    }
 
    type InfoBasicaTrabajo{

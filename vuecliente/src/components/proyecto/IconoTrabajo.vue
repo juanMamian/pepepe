@@ -7,15 +7,25 @@
       title="Abrir la página de este trabajo"
     />
     <div id="zonaNombre" :class="{ bordeAbajo: seleccionado }">
-      <div class="barraSuperiorZona">
-        <div class="controlesZona" v-show="usuarioResponsableProyecto">
+      <div id="nombre">
+        <div id="elPropioNombre" v-show="!editandoNombre">
+          {{ esteTrabajo.nombre }}
+        </div>
+        <input
+          type="text"
+          class="inputNuevoNombre"
+          :class="{ letrasRojas: nuevoNombreIlegal }"
+          v-model="nuevoNombre"
+          v-show="editandoNombre"
+          @keypress.enter="guardarNuevoNombre"
+        />
+        <div class="controlesLateralesZona" v-if="usuarioResponsableProyecto">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
             id="bEditarrNombre"
             class="bEditar"
             title="Editar nombre del trabajo"
-            v-show="usuarioResponsableProyecto"
             @click.stop="toggleEditandoNombre"
           />
           <img
@@ -29,19 +39,18 @@
           />
         </div>
       </div>
-      <div id="nombre" v-show="!editandoNombre">
-        {{ esteTrabajo.nombre }}
-      </div>
-      <input
-        type="text"
-        class="inputNuevoNombre"
-        :class="{ letrasRojas: nuevoNombreIlegal }"
-        v-model="nuevoNombre"
-        v-show="editandoNombre"
-        @keypress.enter="guardarNuevoNombre"
+
+      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />     
+      <img
+        src="@/assets/iconos/iconoTrabajo.png"
+        alt=""
+        id="imagenIcono"
+        :class="{
+          iconoCompletado: esteTrabajo.estadoDesarrollo === 'completado',
+          deshabilitado: togglingEstado,
+        }"
+        @click="usuarioResponsableProyecto ? toggleEstadoTrabajo() : null"
       />
-      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
-      <img src="@/assets/iconos/iconoTrabajo.png" alt="" id="imagenIcono" />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
@@ -147,7 +156,11 @@
       </div>
     </div>
 
-    <div id="zonaKeywords" class="zonaPrimerNivel" v-show="usuarioResponsableProyecto">
+    <div
+      id="zonaKeywords"
+      class="zonaPrimerNivel"
+      v-show="usuarioResponsableProyecto"
+    >
       <div class="barraSuperiorZona">
         <span class="nombreZona">Palabras clave</span>
         <div class="controlesZona">
@@ -165,9 +178,7 @@
             title="guardar"
             class="bGuardar"
             id="bGuardarNuevoKeywords"
-            v-show="
-              editandoKeywords == true && nuevoKeywordsIlegal == false
-            "
+            v-show="editandoKeywords == true && nuevoKeywordsIlegal == false"
             @click.stop="guardarNuevoKeywords"
           />
         </div>
@@ -218,7 +229,8 @@ const QUERY_TRABAJO = gql`
       descripcion
       responsables
       keywords
-      idProyectoParent
+      idProyectoParent,
+      estadoDesarrollo
     }
   }
 `;
@@ -239,7 +251,7 @@ export default {
         };
       },
       update({ trabajo }) {
-        if(!trabajo.keywords)trabajo.keywords="";
+        if (!trabajo.keywords) trabajo.keywords = "";
         return trabajo;
       },
       skip() {
@@ -267,6 +279,8 @@ export default {
       nuevoKeywords: "palabras clave",
       editandoKeywords: false,
       enviandoNuevoKeywords: false,
+
+      togglingEstado: false,
     };
   },
   props: {
@@ -548,6 +562,47 @@ export default {
     navegarAlTrabajo() {
       this.$router.push("/trabajo/" + this.idTrabajo);
     },
+    toggleEstadoTrabajo() {
+      var nuevoEstado = "noCompletado";
+      if (this.esteTrabajo.estadoDesarrollo === "noCompletado") {
+        nuevoEstado = "completado";
+      }
+
+      this.togglingEstado = true;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idProyecto: ID!
+              $idTrabajo: ID!
+              $nuevoEstado: String!
+            ) {
+              setEstadoTrabajoProyecto(
+                idProyecto: $idProyecto
+                idTrabajo: $idTrabajo
+                nuevoEstado: $nuevoEstado
+              ) {
+                id
+                estadoDesarrollo
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.esteTrabajo.idProyectoParent,
+            idTrabajo: this.esteTrabajo.id,
+            nuevoEstado,
+          },
+        })
+        .then(() => {
+          this.togglingEstado = false;
+          console.log(`toggled`);
+        })
+        .catch((error) => {
+          this.togglingEstado = false;
+          console.log(`Error: E:${error}`);
+        });
+    },
   },
 };
 </script>
@@ -593,6 +648,15 @@ export default {
 #imagenIcono {
   width: 30px;
   height: 30px;
+  border-radius: 50%;
+  padding: 3px;
+}
+
+#imagenIcono:hover {
+  background-color: cadetblue;
+}
+.iconoCompletado {
+  background-color: rgb(44, 136, 44);
 }
 
 .zonaPrimerNivel {
@@ -615,16 +679,25 @@ export default {
   margin-top: 15px;
   font-size: 19px;
   padding: 5px 20px;
+  display: grid;
+  grid-template-columns: 1fr 5fr 1fr;
+  margin-bottom: 15px;
+}
+
+#elPropioNombre {
+  font-size: 19px;
+  padding: 5px;
   font-weight: bolder;
   text-align: center;
-  margin-bottom: 15px;
+  grid-column: 2/3;
 }
 
 .inputNuevoNombre {
   font-size: 23px;
   display: block;
   margin: 10px auto;
-  width: 80%;
+  grid-column: 2/3;
+  width: 100%;
 }
 #descripcion {
   font-size: 19px;
@@ -645,7 +718,7 @@ export default {
   margin: 10px auto;
   resize: vertical;
 }
-#zonaKeywords{
+#zonaKeywords {
   min-height: 100px;
 }
 #keywords {
@@ -686,6 +759,11 @@ export default {
 }
 .bGuardar:hover {
   background-color: rgb(209, 209, 209);
+}
+.controlesLateralesZona {
+  grid-column: 3/4;
+  display: flex;
+  flex-direction: row-reverse;
 }
 .controlesZona {
   margin-left: auto;

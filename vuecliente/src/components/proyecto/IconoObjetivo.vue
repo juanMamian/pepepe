@@ -1,16 +1,29 @@
 <template>
   <div class="iconoObjetivo" :class="{ seleccionado }">
-
-    <div id="zonaNombre" :class="{bordeAbajo: seleccionado}" class="zonaPrimerNivel">
-      <div class="barraSuperiorZona">
-        <div class="controlesZona" v-show="usuarioResponsableProyecto">
+    <div
+      id="zonaNombre"
+      :class="{ bordeAbajo: seleccionado }"
+      class="zonaPrimerNivel"
+    >
+      <div id="nombre">
+        <div id="elPropioNombre" v-show="!editandoNombre">
+          {{ esteObjetivo.nombre }}
+        </div>
+        <input
+          type="text"
+          class="inputNuevoNombre"
+          :class="{ letrasRojas: nuevoNombreIlegal }"
+          v-model="nuevoNombre"
+          v-show="editandoNombre"
+          @keypress.enter="guardarNuevoNombre"
+        />
+        <div class="controlesLateralesZona" v-if="usuarioResponsableProyecto">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
-            id="bEditarNombre"
+            id="bEditarrNombre"
             class="bEditar"
             title="Editar nombre del objetivo"
-            v-show="usuarioResponsableProyecto"
             @click.stop="toggleEditandoNombre"
           />
           <img
@@ -24,20 +37,14 @@
           />
         </div>
       </div>
-      <div id="nombre" v-show="!editandoNombre">
-        {{ esteObjetivo.nombre }}
-      </div>
-      <input
-        type="text"
-        class="inputNuevoNombre"
-        :class="{ letrasRojas: nuevoNombreIlegal }"
-        v-model="nuevoNombre"
-        v-show="editandoNombre"
-        @keypress.enter="guardarNuevoNombre"
-      />
       <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
-          <img src="@/assets/iconos/iconoObjetivo.png" alt="" id="imagenIcono" />
-
+      <img
+        src="@/assets/iconos/estrella.png"
+        alt=""
+        id="imagenIcono"
+        :class="{ iconoCompletado: esteObjetivo.estado === 'cumplido', deshabilitado:togglingEstado }"
+        @click="usuarioResponsableProyecto? toggleEstadoObjetivo():null"
+      />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
@@ -65,7 +72,7 @@
           />
         </div>
       </div>
-     
+
       <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
         {{ esteObjetivo.descripcion }}
       </div>
@@ -80,7 +87,11 @@
       <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
     <div id="controlesObjetivo">
-      <div class="controlesObjetivo hoverGris bEliminar" @click="eliminarse" v-show="usuarioResponsableProyecto || usuarioSuperadministrador">
+      <div
+        class="controlesObjetivo hoverGris bEliminar"
+        @click="eliminarse"
+        v-show="usuarioResponsableProyecto || usuarioSuperadministrador"
+      >
         Eliminar
       </div>
     </div>
@@ -99,7 +110,7 @@ export default {
   components: { Loading },
   data() {
     return {
-      deshabilitado:false,
+      deshabilitado: false,
 
       nuevoNombre: "Nuevo nombre",
       editandoNombre: false,
@@ -108,13 +119,15 @@ export default {
       nuevoDescripcion: "Nueva descripcion",
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
+
+      togglingEstado:false,
     };
   },
   props: {
     idProyecto: String,
     esteObjetivo: Object,
     seleccionado: Boolean,
-    usuarioResponsableProyecto: Boolean,    
+    usuarioResponsableProyecto: Boolean,
   },
   computed: {
     nuevoNombreIlegal() {
@@ -151,10 +164,14 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $idObjetivo:ID!, $nuevoNombre: String!) {
+            mutation(
+              $idProyecto: ID!
+              $idObjetivo: ID!
+              $nuevoNombre: String!
+            ) {
               editarNombreObjetivoProyecto(
-                idProyecto: $idProyecto,
-                idObjetivo:$idObjetivo,
+                idProyecto: $idProyecto
+                idObjetivo: $idObjetivo
                 nuevoNombre: $nuevoNombre
               ) {
                 id
@@ -233,29 +250,65 @@ export default {
     },
     eliminarse() {
       console.log(`Objetivo eliminandose`);
-      if(!confirm("¿Seguro de eliminar este trabajo?")){
-        return
+      if (!confirm("¿Seguro de eliminar este objetivo?")) {
+        return;
       }
-      this.deshabilitado=true;
+      this.deshabilitado = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idProyecto: ID!, $idObjetivo: ID!) {
+              eliminarObjetivoDeProyecto(
+                idProyecto: $idProyecto
+                idObjetivo: $idObjetivo
+              )
+            }
+          `,
+          variables: {
+            idProyecto: this.idProyecto,
+            idObjetivo: this.esteObjetivo.id,
+          },
+        })
+        .then(({ data: { eliminarObjetivoDeProyecto } }) => {
+          this.deshabilitado = false;
+          console.log(`Resultado: ${eliminarObjetivoDeProyecto}`);
+          this.$emit("meElimine");
+        })
+        .catch((error) => {
+          this.deshabilitado = false;
+          console.log(`Error. E: ${error}`);
+        });
+    },
+    toggleEstadoObjetivo(){
+      var nuevoEstado="noCumplido";
+      if(this.esteObjetivo.estado==="noCumplido"){
+        nuevoEstado="cumplido";
+      }
+
+      this.togglingEstado=true;
+
       this.$apollo.mutate({
-        mutation: gql`
-          mutation($idProyecto: ID!, $idObjetivo:ID!){
-            eliminarObjetivoDeProyecto(idProyecto:$idProyecto, idObjetivo: $idObjetivo)
+        mutation:gql`
+          mutation($idProyecto:ID!, $idObjetivo:ID!, $nuevoEstado:String!){
+            setEstadoObjetivoProyecto(idProyecto:$idProyecto, idObjetivo:$idObjetivo, nuevoEstado:$nuevoEstado){
+              id
+              estado
+            }
           }
         `,
         variables:{
           idProyecto:this.idProyecto,
-          idObjetivo:this.esteObjetivo.id
+          idObjetivo:this.esteObjetivo.id,
+          nuevoEstado,
         }
-      }).then(({data:{eliminarObjetivoDeProyecto}})=>{
-        this.deshabilitado=false;
-        console.log(`Resultado: ${eliminarObjetivoDeProyecto}`);
-        this.$emit("meElimine");
+      }).then(()=>{
+      this.togglingEstado=false;
+        console.log(`toggled`);
       }).catch((error)=>{
-        this.deshabilitado=false;
-        console.log(`Error. E: ${error}`);
-      });
-    },
+        this.togglingEstado=false;
+        console.log(`Error: E:${error}`);
+      })
+    }
   },
 };
 </script>
@@ -265,14 +318,14 @@ export default {
   border: 2px solid #b4b4bd;
   border-radius: 5px;
   min-height: 10px;
-  
+
   position: relative;
   padding: 5px 10px;
   padding-bottom: 10px;
   background-color: rgb(219 240 255);
 }
-.iconoObjetivo:not(.seleccionado){
-cursor: pointer;
+.iconoObjetivo:not(.seleccionado) {
+  cursor: pointer;
 }
 
 .seleccionado {
@@ -289,7 +342,7 @@ cursor: pointer;
 }
 .controlesObjetivo {
   padding: 3px 5px;
-  cursor:pointer;
+  cursor: pointer;
 }
 #descripcion {
   min-width: 100px;
@@ -300,34 +353,50 @@ cursor: pointer;
 #imagenIcono {
   width: 30px;
   height: 30px;
+  border-radius: 50%;
+}
+
+#imagenIcono:hover {
+  background-color: cadetblue;
+}
+.iconoCompletado {
+  background-color: rgb(44, 136, 44);
 }
 
 .zonaPrimerNivel {
   position: relative;
   min-height: 50px;
 }
-.barraSuperiorZona{
-  display:flex
+.barraSuperiorZona {
+  display: flex;
 }
 .nombreZona {
   font-size: 18px;
   padding: 5px 20px;
-  
 }
 #nombre {
   margin-top: 15px;
   font-size: 19px;
   padding: 5px 20px;
+  display: grid;
+  grid-template-columns: 1fr 5fr 1fr;
+  margin-bottom: 15px;
+}
+
+#elPropioNombre {
+  font-size: 19px;
+  padding: 5px;
   font-weight: bolder;
   text-align: center;
-  margin-bottom: 15px;
+  grid-column: 2/3;
 }
 
 .inputNuevoNombre {
   font-size: 23px;
   display: block;
   margin: 10px auto;
-  width:80%;
+  grid-column: 2/3;
+  width: 100%;
 }
 #descripcion {
   font-size: 19px;
@@ -339,7 +408,6 @@ cursor: pointer;
   border: none;
   background-color: transparent;
   white-space: pre-wrap;
-
 }
 
 #inputNuevoDescripcion {
@@ -370,8 +438,13 @@ cursor: pointer;
 .bGuardar:hover {
   background-color: rgb(209, 209, 209);
 }
-.bEliminar:hover{
+.bEliminar:hover {
   background-color: red;
+}
+.controlesLateralesZona {
+  grid-column: 3/4;
+  display: flex;
+  flex-direction: row-reverse;
 }
 .controlesZona {
   margin-left: auto;

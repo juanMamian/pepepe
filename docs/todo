@@ -17,6 +17,7 @@ Reestructuracion no-urgente
 *update adecuado después de eliminar una actividad. Actualmente simplemente hay un refresh de la página. Me parece que habrá que reconstruir el mecanismo de paginación de actividades para esto.
 *Que el último responsable de un proyecto pueda eliminarlo.
 *Loading para cuando uno elimina una respuesta
+*Revisar el resolveType de nodoProyecto en los resolvers de proyectos.
 
 
 Funcionalidad urgente

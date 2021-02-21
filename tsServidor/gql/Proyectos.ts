@@ -35,7 +35,8 @@ export const typeDefs = gql`
        nombre: String,
        descripcion:String,
        diagramaProyecto:InfoDiagramaProyecto,
-       vinculos:[VinculoNodoProyecto]
+       vinculos:[VinculoNodoProyecto],
+       estado:String,
    }
 
    union NodoProyecto=Objetivo | Trabajo
@@ -72,12 +73,14 @@ export const typeDefs = gql`
         removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
         setPosicionTrabajoDiagramaProyecto(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
         editarKeywordsTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
+        setEstadoTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoEstado:String!):Trabajo,
 
         crearObjetivoEnProyecto(idProyecto: ID!, posicion:CoordsInput):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
         editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
         editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
         setPosicionObjetivoDiagramaProyecto(idProyecto:ID!, idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
+        setEstadoObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoEstado:String!):Objetivo,
 
         crearRequerimentoEntreNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
         desvincularNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
@@ -670,6 +673,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
             }
 
             //Authorización
@@ -698,6 +702,8 @@ export const resolvers = {
                 await elTrabajo.save();
             } catch (error) {
                 console.log(`error guardando el trabajo modificado: ${error}`);
+                throw new ApolloError("Error guardando información en la base de datos");
+
             }
             console.log(`Descripcion guardado`);
             return elTrabajo;
@@ -910,6 +916,42 @@ export const resolvers = {
             return elTrabajo;
 
         },
+        async setEstadoTrabajoProyecto(_: any, { idProyecto, idTrabajo, nuevoEstado }, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "Trabajo no existía";
+                }
+                elTrabajo.estadoDesarrollo = nuevoEstado;
+                console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
+                await elTrabajo.save();
+            } catch (error) {
+                console.log(`error guardando el trabajo modificado: ${error}`);
+                throw new ApolloError("Error guardando información en la base de datos");
+
+            }
+            console.log(`Estado guardado`);
+            return elTrabajo;
+        },
 
         async crearObjetivoEnProyecto(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
             console.log(`Peticion de crear un nuevo objetivo en el proyecto con id ${idProyecto}`);
@@ -1039,7 +1081,7 @@ export const resolvers = {
         },
         async editarDescripcionObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoDescripcion }, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||`);
-            console.log(`Solicitud de set descripcion de objetivo con id ${idObjetivo} del proyecto con id ${elProyecto}`);
+            console.log(`Solicitud de set descripcion de objetivo con id ${idObjetivo} del proyecto con id ${idProyecto}`);
             let credencialesUsuario = contexto.usuario;
             try {
                 var elProyecto: any = await Proyecto.findById(idProyecto).exec();
@@ -1076,6 +1118,7 @@ export const resolvers = {
                 await elProyecto.save();
             } catch (error) {
                 console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+                throw new ApolloError("Error guardando información en la base de datos");
             }
             console.log(`Descripcion guardado`);
             return elObjetivo;
@@ -1111,6 +1154,44 @@ export const resolvers = {
                 console.log(`error guardando el objetivo modificado: ${error}`);
             }
 
+            return elObjetivo;
+        },
+        setEstadoObjetivoProyecto: async function (_: any, { idProyecto, idObjetivo, nuevoEstado }, contexto: contextoQuery) {
+            console.log(`Solicitud de set estado de objetivo con id ${idObjetivo} del proyecto con id ${idProyecto} a ${nuevoEstado}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            let elObjetivo = elProyecto.objetivos.id(idObjetivo);
+            if (!elObjetivo) {
+                console.log(`No existía el objetivo`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            elObjetivo.estado = nuevoEstado;
+            try {
+                console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
+
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
+                throw new ApolloError("Error guardando información en la base de datos");
+            }
+            console.log(`Estado guardado`);
             return elObjetivo;
         },
 

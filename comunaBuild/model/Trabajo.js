@@ -21,6 +21,12 @@ exports.esquemaTrabajo.add({
         default: "Sin descripcion",
         required: true
     },
+    estadoDesarrollo: {
+        type: String,
+        required: true,
+        default: "noCompletado",
+        enum: ["noCompletado", "completado"]
+    },
     responsables: {
         type: [String],
         default: []

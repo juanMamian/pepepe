@@ -18,9 +18,12 @@
     <div class="zonaNombre">
       <div id="nombre">
         <img
-          src="@/assets/iconos/iconoObjetivo.png"
+          src="@/assets/iconos/estrella.png"
           alt=""
           class="iconoObjetivo"
+          :class="{
+            iconoCompletado: esteObjetivo.estado === 'cumplido',
+          }"
         />{{ esteObjetivo.nombre }}
       </div>
     </div>
@@ -286,8 +289,13 @@ export default {
   user-select: none;
 }
 .iconoObjetivo {
-  width: 20px;
-  height: 20px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  padding: 3px;
+}
+.iconoCompletado {
+  background-color: rgb(44, 136, 44);
 }
 #menuContextual {
   position: absolute;

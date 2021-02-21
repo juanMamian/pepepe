@@ -27,6 +27,7 @@ exports.typeDefs = apollo_server_express_1.gql `
        vinculos:[VinculoNodoProyecto],
        keywords:String,
        idProyectoParent:ID,
+       estadoDesarrollo:String,
    }
 
    type InfoBasicaTrabajo{
