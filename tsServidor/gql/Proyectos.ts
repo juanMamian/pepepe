@@ -156,21 +156,22 @@ export const resolvers = {
         },
         async listaTodosTrabajosProyectos(_: any, {pagina }, contexto: contextoQuery) {
             console.log(`Petición de info basica de todos trabajos de proyectos`);
-            const sizePaginaTrabajos=50;
+            const sizePaginaTrabajos=35;
             if(contexto.usuario.id===""){
                 console.log(`Usuario no logeado`);
                 throw new AuthenticationError("No autorizado");
             }
             
             try {
-                var numActividades = await Trabajo.countDocuments({}).exec();
+                var numTrabajos = await Trabajo.countDocuments({}).exec();
+                console.log(`Hay ${numTrabajos} trabajos en la base de datos`);    
                 var losTrabajos: any = await Trabajo.find({}, "nombre").limit(sizePaginaTrabajos).skip(pagina * sizePaginaTrabajos).exec();
             } catch (error) {
                 console.log(`Error buscando trabajos. E: ${error}`);
                 return new ApolloError("Error conectando con la base de datos");
             }            
 
-            let hayMas = pagina * sizePaginaTrabajos < numActividades;
+            let hayMas = (pagina+1) * sizePaginaTrabajos < numTrabajos;
             console.log(`Enviando pagina ${pagina} de trabajos`);
             return { hayMas, infoTrabajos: losTrabajos }
         },
@@ -204,7 +205,7 @@ export const resolvers = {
                 throw new ApolloError("El usuario ya estaba en la lista");
             }
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -250,7 +251,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -317,7 +318,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -755,7 +756,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -780,7 +781,11 @@ export const resolvers = {
             }
 
             try {
+                const indexT=elUsuario.misTrabajos.indexOf(elTrabajo._id);
+                if(indexT>-1)elUsuario.misTrabajos.splice(indexT, 1);
+                
                 elTrabajo.responsables.push(idUsuario);
+                elUsuario.misTrabajos.push(elTrabajo._id);
                 console.log(`Usuario añadido a la lista de responsables`);
                 await elTrabajo.save();
             }
@@ -804,7 +809,6 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
 
-
             //Authorización
 
             if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
@@ -813,7 +817,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -846,7 +850,11 @@ export const resolvers = {
             console.log(`Usuario retirado de la lista de responsables`);
 
             try {
+                const indexT=elUsuario.misTrabajos.indexOf(elTrabajo._id);
+                if(indexT>-1)elUsuario.misTrabajos.splice(indexT, 1);
+
                 await elTrabajo.save();
+                await elUsuario.save();
             }
             catch (error) {
                 console.log("Error guardando datos en la base de datos. E: " + error);

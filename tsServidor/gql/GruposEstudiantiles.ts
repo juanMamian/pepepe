@@ -312,7 +312,7 @@ export const resolvers = {
             return { hayMas, actividades: actividadesCreadasUsuario }
         },
         async todasActividadesGrupoEstudiantil(_: any, { idGrupo, pagina }, contexto: contextoQuery) {
-            console.log(`Petición de todas actividades de grupo`);
+            console.log(`Petición de todas actividades de grupo. Pagina ${pagina}`);
 
             try {
                 var elGrupo: any = await GrupoEstudiantil.findById(idGrupo).exec();
@@ -519,7 +519,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(idEstudiante).exec();
+                var elUsuario:any = await Usuario.findById(idEstudiante).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idEstudiante} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -579,7 +579,7 @@ export const resolvers = {
 
 
             try {
-                var elUsuario = await Usuario.findById(idEstudiante).exec();
+                var elUsuario:any = await Usuario.findById(idEstudiante).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idEstudiante} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");

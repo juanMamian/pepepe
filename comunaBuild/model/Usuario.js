@@ -143,6 +143,11 @@ const esquemaUsuario = new mongoose_1.default.Schema({
         type: [esquemaNotificacionActividadForo],
         default: [],
         required: true,
+    },
+    misTrabajos: {
+        type: [String],
+        required: true,
+        default: []
     }
 });
 esquemaUsuario.methods.getEdad = function () {

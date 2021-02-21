@@ -28,6 +28,7 @@ export const typeDefs = gql`
    extend type Query{
        trabajo(idTrabajo: ID!):Trabajo,
        busquedaTrabajosProyectos(textoBusqueda:String!):[InfoBasicaTrabajo],
+       trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo]
    }
 
 `;
@@ -121,6 +122,20 @@ export const resolvers = {
 
 
             console.log(`Enviando ${losTrabajos.length} trabajos encontrados`);
+            return losTrabajos;
+        },
+        trabajosDeProyectoDeUsuario: async function (_: any, { idUsuario }: any, contexto: contextoQuery) {
+            console.log('Peticion de trabajos de usuario con id '+idUsuario);
+
+            try {
+                var losTrabajos:any=await Trabajo.find({"responsables":idUsuario}).exec();
+
+            } catch (error) {
+                console.log(`Error buscando trabajos de usuario. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Enviando ${losTrabajos.length} trabajos`);
             return losTrabajos;
         }
     },

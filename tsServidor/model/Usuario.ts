@@ -144,7 +144,12 @@ const esquemaUsuario = new mongoose.Schema({
         type: [esquemaNotificacionActividadForo],
         default: [],
         required: true,
-    }    
+    },
+    misTrabajos:{
+        type:[String],
+        required:true,
+        default:[]
+    }
 
 });
 

@@ -174,7 +174,7 @@ export const resolvers = {
             let credencialesUsuario = context.usuario;
 
             try {
-                var elUsuario = await Usuario.findById(credencialesUsuario.id);
+                var elUsuario:any = await Usuario.findById(credencialesUsuario.id);
             }
             catch (error) {
                 console.log("Error buscando el usuario en la base de datos. E: " + error);

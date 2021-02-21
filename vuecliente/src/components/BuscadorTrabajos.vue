@@ -9,16 +9,23 @@
         @keypress.enter="buscarTrabajosDB"
       />
       <img
-            src="@/assets/iconos/search.png"
-            alt="Buscar"
-            id="bBuscar"
-            class="boton"
-            title="Buscar trabajo"
-            @click.stop="buscarTrabajosDB"
-          />
+        src="@/assets/iconos/search.png"
+        alt="Buscar"
+        id="bBuscar"
+        class="boton"
+        title="Buscar trabajo"
+        :class="{deshabilitado:!textoBusqueda}"
+        @click.stop="buscarTrabajosDB"
+      />
       <div id="textoBuscado" v-show="viendoBusqueda">
         {{ textoBuscado }}
-        <div class="bCancelar" @click.stop="viendoBusqueda = false; anuncioTrabajosBuscados=null;">
+        <div
+          class="bCancelar"
+          @click.stop="
+            viendoBusqueda = false;
+            anuncioTrabajosBuscados = null;
+          "
+        >
           <div class="linea1"><div class="linea2"></div></div>
         </div>
       </div>
@@ -31,8 +38,44 @@
       id="zonaListaTrabajos"
       ref="zonaListaTrabajos"
       @scroll="setPosicionIconoTrabajo()"
-      @click.left.self="idTrabajoSeleccionado=null"
+      @click.left.self="idTrabajoSeleccionado = null"
     >
+      <div
+        id="listaMisTrabajos"
+        class="listaTrabajos"
+        :class="{ opaco: idTrabajoSeleccionado != null }"
+        v-if="usuarioLogeado"
+        v-show="viendoBusqueda === false"
+        @click="idTrabajoSeleccionado = null"
+      >
+        <div
+          class="nombreTrabajo"
+          :key="'nombreMT-' + trabajo.id"
+          v-for="trabajo of misTrabajos"
+          @dblclick.stop="
+            idTrabajoSeleccionado = trabajo.id;
+            setPosicionIconoTrabajo();
+          "
+        >
+          <img
+            src="@/assets/iconos/iconoTrabajo.png"
+            alt=""
+            class="simboloTrabajo simboloMiTrabajo"
+            title="Haces parte de este trabajo"
+          />
+          {{ trabajo.nombre }}
+          <img
+            src="@/assets/iconos/ir.png"
+            alt=""
+            class="iconoAbrirTrabajo"
+            @click.left.stop="
+              idTrabajoSeleccionado = trabajo.id;
+              setPosicionIconoTrabajo();
+            "
+          />
+        </div>
+      </div>
+
       <div
         id="listaTodosTrabajos"
         class="listaTrabajos"
@@ -44,8 +87,13 @@
           class="nombreTrabajo"
           :key="'nombreT-' + infoTrabajo.id"
           v-for="infoTrabajo of todosTrabajos.infoTrabajos"
-          @dblclick.stop="idTrabajoSeleccionado = infoTrabajo.id;
-              setPosicionIconoTrabajo()"
+          v-show="
+            !usuarioLogeado || !misTrabajos.some((t) => t.id === infoTrabajo.id)
+          "
+          @dblclick.stop="
+            idTrabajoSeleccionado = infoTrabajo.id;
+            setPosicionIconoTrabajo();
+          "
         >
           <img
             src="@/assets/iconos/iconoTrabajo.png"
@@ -63,7 +111,10 @@
             "
           />
         </div>
+
+        <div id="bCargarMasTodosTrabajos" v-show="todosTrabajos.hayMas">Más</div>
       </div>
+
       <div
         id="listaTrabajosBuscados"
         class="listaTrabajos"
@@ -98,7 +149,7 @@
         :key="infoTrabajo.id"
         :idTrabajo="infoTrabajo.id"
         :style="posicionIconoTrabajo"
-        v-for="infoTrabajo of todosTrabajos.infoTrabajos"
+        v-for="infoTrabajo of trabajosSeleccionables"
         v-show="idTrabajoSeleccionado === infoTrabajo.id"
       />
     </div>
@@ -130,6 +181,15 @@ const QUERY_BUSQUEDA_TRABAJOS = gql`
   }
 `;
 
+const QUERY_MIS_TRABAJOS = gql`
+  query($idUsuario: ID!) {
+    trabajosDeProyectoDeUsuario(idUsuario: $idUsuario) {
+      id
+      nombre
+    }
+  }
+`;
+
 export default {
   components: { IconoTrabajo },
   name: "BuscadorTrabajos",
@@ -143,6 +203,20 @@ export default {
         return listaTodosTrabajosProyectos;
       },
     },
+    misTrabajos: {
+      query: QUERY_MIS_TRABAJOS,
+      variables() {
+        return {
+          idUsuario: this.usuario.id,
+        };
+      },
+      update({ trabajosDeProyectoDeUsuario }) {
+        return trabajosDeProyectoDeUsuario;
+      },
+      skip() {
+        return !this.usuarioLogeado;
+      },
+    },
   },
   data() {
     return {
@@ -150,6 +224,7 @@ export default {
         hayMas: true,
         infoTrabajos: [],
       },
+      misTrabajos: [],
       trabajosBuscados: [],
 
       textoBusqueda: null,
@@ -211,7 +286,7 @@ export default {
       this.$set(this.posicionIconoTrabajo, "top", scrollLista + "px");
     },
     buscarTrabajosDB() {
-      if(this.textoBusqueda.length<1){
+      if (!this.textoBusqueda || this.textoBusqueda.length < 1) {
         return;
       }
       this.anuncioTrabajosBuscados = "Buscando...";
@@ -241,6 +316,18 @@ export default {
           this.anuncioTrabajosBuscados = "¡Ocurrió un error con tu búsqueda!";
           console.log(`Error. E: ${error}`);
         });
+    },
+  },
+  computed: {
+    trabajosSeleccionables() {
+      const idsTodos = this.todosTrabajos.infoTrabajos.map((t) => t.id);
+      const idsMisTrabajos = this.misTrabajos.map((t) => t.id);
+      return [
+        ...this.todosTrabajos.infoTrabajos,
+        ...this.misTrabajos.filter((t) => !idsTodos.includes(t.id)),
+        ...this.trabajosBuscados.filter((t) => !idsTodos.includes(t.id) && !idsMisTrabajos.includes(t.id))
+      ];
+      
     },
   },
 };
@@ -285,8 +372,6 @@ export default {
   height: 100%;
 }
 
-
-
 #anuncioTrabajosBuscados {
   font-style: italic;
   color: rgb(43, 43, 43);
@@ -305,6 +390,11 @@ export default {
   width: 20px;
   height: 20px;
   margin-right: 10px;
+  border-radius: 50%;
+  padding: 3px;
+}
+.simboloMiTrabajo {
+  background-color: rgb(184, 98, 184);
 }
 .nombreTrabajo {
   padding: 5px 10px;
@@ -358,17 +448,27 @@ export default {
   z-index: 2;
 }
 
-#bBuscar{
-  width:30px;
-  height:30px;
+#bBuscar {
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   cursor: pointer;
   margin: 0px auto;
   display: block;
 }
 
-#bBuscar:hover{
+#bBuscar:hover {
   background-color: cadetblue;
+}
+#bCargarMasTodosTrabajos{
+  cursor: pointer;
+  text-align: center;
+  max-width: 200px;
+  margin: 5px auto;
+  grid-column: 1/3;
+}
+#bCargarMasTodosTrabajos:hover{
+  background-color: royalblue;
 }
 </style>
 

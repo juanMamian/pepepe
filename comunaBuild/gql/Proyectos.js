@@ -171,20 +171,21 @@ exports.resolvers = {
         listaTodosTrabajosProyectos(_, { pagina }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Petición de info basica de todos trabajos de proyectos`);
-                const sizePaginaTrabajos = 50;
+                const sizePaginaTrabajos = 35;
                 if (contexto.usuario.id === "") {
                     console.log(`Usuario no logeado`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
-                    var numActividades = yield Trabajo_1.ModeloTrabajo.countDocuments({}).exec();
+                    var numTrabajos = yield Trabajo_1.ModeloTrabajo.countDocuments({}).exec();
+                    console.log(`Hay ${numTrabajos} trabajos en la base de datos`);
                     var losTrabajos = yield Trabajo_1.ModeloTrabajo.find({}, "nombre").limit(sizePaginaTrabajos).skip(pagina * sizePaginaTrabajos).exec();
                 }
                 catch (error) {
                     console.log(`Error buscando trabajos. E: ${error}`);
                     return new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                let hayMas = pagina * sizePaginaTrabajos < numActividades;
+                let hayMas = (pagina + 1) * sizePaginaTrabajos < numTrabajos;
                 console.log(`Enviando pagina ${pagina} de trabajos`);
                 return { hayMas, infoTrabajos: losTrabajos };
             });
@@ -740,7 +741,11 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("El usuario ya estaba incluido");
                 }
                 try {
+                    const indexT = elUsuario.misTrabajos.indexOf(elTrabajo._id);
+                    if (indexT > -1)
+                        elUsuario.misTrabajos.splice(indexT, 1);
                     elTrabajo.responsables.push(idUsuario);
+                    elUsuario.misTrabajos.push(elTrabajo._id);
                     console.log(`Usuario añadido a la lista de responsables`);
                     yield elTrabajo.save();
                 }
@@ -798,7 +803,11 @@ exports.resolvers = {
                 }
                 console.log(`Usuario retirado de la lista de responsables`);
                 try {
+                    const indexT = elUsuario.misTrabajos.indexOf(elTrabajo._id);
+                    if (indexT > -1)
+                        elUsuario.misTrabajos.splice(indexT, 1);
                     yield elTrabajo.save();
+                    yield elUsuario.save();
                 }
                 catch (error) {
                     console.log("Error guardando datos en la base de datos. E: " + error);

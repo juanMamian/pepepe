@@ -38,6 +38,7 @@ exports.typeDefs = apollo_server_express_1.gql `
    extend type Query{
        trabajo(idTrabajo: ID!):Trabajo,
        busquedaTrabajosProyectos(textoBusqueda:String!):[InfoBasicaTrabajo],
+       trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo]
    }
 
 `;
@@ -129,6 +130,20 @@ exports.resolvers = {
                     return new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`Enviando ${losTrabajos.length} trabajos encontrados`);
+                return losTrabajos;
+            });
+        },
+        trabajosDeProyectoDeUsuario: function (_, { idUsuario }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('Peticion de trabajos de usuario con id ' + idUsuario);
+                try {
+                    var losTrabajos = yield Trabajo_1.ModeloTrabajo.find({ "responsables": idUsuario }).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando trabajos de usuario. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Enviando ${losTrabajos.length} trabajos`);
                 return losTrabajos;
             });
         }

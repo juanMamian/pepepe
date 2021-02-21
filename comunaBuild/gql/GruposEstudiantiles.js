@@ -293,7 +293,7 @@ exports.resolvers = {
         },
         todasActividadesGrupoEstudiantil(_, { idGrupo, pagina }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Petición de todas actividades de grupo`);
+                console.log(`Petición de todas actividades de grupo. Pagina ${pagina}`);
                 try {
                     var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
                     if (!elGrupo)

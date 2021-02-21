@@ -6,7 +6,7 @@
         to="/actividadesVirtuales2021"
         v-if="usuarioLogeado == true"        
       >
-        <div class="botonNav hoverNegro" id="navActividadesVirtuales">
+        <div class="botonNavBarra botonNav hoverNegro" id="navActividadesVirtuales">
           Actividades virtuales
         </div>
       </router-link>
@@ -16,34 +16,34 @@
           to="/proyectos"          
           v-if="usuarioLogeado == true"
         >
-          <div class="botonNav hoverNegro" id="navProyectos">Proyectos</div>
+          <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">Proyectos</div>
         </router-link>
         <div id="enlacesHijosProyectos" class="contenedorHijos">
           <router-link
           to="/trabajos"
           v-if="usuarioLogeado == true"
         >
-          <div class="botonNav hoverNegro" id="navProyectos">Buscar trabajos</div>
+          <div class="botonNavHijo botonNav hoverNegro" id="navProyectos">Trabajos</div>
         </router-link>
         </div>
       </div>
 
       <router-link to="/atlas">
-        <div class="botonNav hoverNegro" id="navAtlas">Atlas de conocimientos</div>
+        <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">Atlas de conocimientos</div>
       </router-link>
 
       <router-link
         to="/personas"
         v-if="usuarioAdministrador || usuarioSuperadministrador"
       >
-        <div class="botonNav hoverNegro" id="navActividadesVirtuales">Personas</div>
+        <div class="botonNavBarra botonNav hoverNegro" id="navActividadesVirtuales">Personas</div>
       </router-link>
       <router-link
         to="/registro"
         id="navRegistro"
         v-if="usuarioSuperadministrador"
       >
-        <div class="botonNav hoverNegro">Registrar usuario</div></router-link
+        <div class="botonNavBarra botonNav hoverNegro">Registrar usuario</div></router-link
       >
       <div id="botonesNavDerecha">
         <div
@@ -79,7 +79,7 @@
         </div>
         <template v-if="logeado">
           <div
-            class="botonNav navLogin hoverNegro"
+            class="botonNavBarra botonNav navLogin hoverNegro"
             id="navLogged"
             @click="accionesLogeado = !accionesLogeado"
             @mouseleave="accionesLogeado = false"
@@ -102,7 +102,7 @@
         <template v-else>
           <router-link
             to="/login"
-            class="botonNav navLogin hoverNegro"
+            class="botonNavBarra botonNav navLogin hoverNegro"
             id="navLogin"
           >
             <div>Login</div></router-link
@@ -415,8 +415,13 @@ input {
   font-size: 18px;
   font-family: "Poppins", sans-serif;
   color: white;
-  height: 100%;
   box-sizing: border-box;
+}
+.botonNavBarra{
+  height: 100%;
+}
+.botonNavHijo{
+  padding-bottom: 30px;
 }
 #botonesNavDerecha {
   margin-left: auto;
@@ -479,5 +484,6 @@ input {
   top: 100%;
   left: 0%;
   display: none;
+  width: 150px;
 }
 </style>

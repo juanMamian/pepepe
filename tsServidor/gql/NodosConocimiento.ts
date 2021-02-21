@@ -555,7 +555,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -626,7 +626,7 @@ export const resolvers = {
                 throw new ApolloError("El usuario ya estaba en la lista");
             }
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -672,7 +672,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario = await Usuario.findById(idUsuario).exec();
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
