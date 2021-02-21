@@ -7,6 +7,15 @@
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
   >
+    <img
+      src="@/assets/iconos/ir.png"
+      alt="abrir"
+      class="bAbrirNodo"
+      title="Abrir este elemento"
+      v-show="seleccionado"
+      @click.left.stop="$emit('meAbrieron')"
+    />
+
     <div class="zonaNombre">
       <div id="nombre">
         <img
@@ -117,10 +126,15 @@ export default {
   },
   methods: {
     arrastrarNodo(e) {
-      if (!this.agarrado || (this.usuarioResponsableProyecto===false && this.usuarioSuperadministrador===false)) {
+      if (
+        !this.agarrado ||
+        (this.usuarioResponsableProyecto === false &&
+          this.usuarioSuperadministrador === false)
+      ) {
         return;
       }
-      this.arrastrandoNodo=this.arrastrandoNodo+Math.abs(e.movementX)+Math.abs(e.movementY);
+      this.arrastrandoNodo =
+        this.arrastrandoNodo + Math.abs(e.movementX) + Math.abs(e.movementY);
       if (this.arrastrandoNodo < this.umbralArrastreNodo) {
         return;
       }
@@ -157,36 +171,35 @@ export default {
       const umbralMovimientoBorde = 100;
 
       var distanciasBordes = {
-        der: (posContenedor.left + contenedor.offsetWidth) - e.clientX,
+        der: posContenedor.left + contenedor.offsetWidth - e.clientX,
         izq: e.clientX - posContenedor.left,
-        top: (posContenedor.top + contenedor.offsetHeight) - e.clientY,
+        top: posContenedor.top + contenedor.offsetHeight - e.clientY,
         bot: e.clientY - posContenedor.top,
       };
 
-      var saliendose={
-        x:0, 
-        y:0,
-      }
+      var saliendose = {
+        x: 0,
+        y: 0,
+      };
 
       if (distanciasBordes.der < umbralMovimientoBorde) {
-         console.log(`der`);
-         saliendose.x=(umbralMovimientoBorde-distanciasBordes.der);
+        console.log(`der`);
+        saliendose.x = umbralMovimientoBorde - distanciasBordes.der;
       }
       if (distanciasBordes.izq < umbralMovimientoBorde) {
-         console.log(`izq`);
-         saliendose.x=(distanciasBordes.izq-umbralMovimientoBorde);
+        console.log(`izq`);
+        saliendose.x = distanciasBordes.izq - umbralMovimientoBorde;
       }
       if (distanciasBordes.top < umbralMovimientoBorde) {
-         console.log(`top`);
-         saliendose.y=(umbralMovimientoBorde-distanciasBordes.top);
+        console.log(`top`);
+        saliendose.y = umbralMovimientoBorde - distanciasBordes.top;
       }
       if (distanciasBordes.bot < umbralMovimientoBorde) {
-         console.log(`bot`);
-         saliendose.y=(distanciasBordes.bot-umbralMovimientoBorde);
+        console.log(`bot`);
+        saliendose.y = distanciasBordes.bot - umbralMovimientoBorde;
       }
 
       this.$emit("saliendose", saliendose);
-      
     },
     guardarPosicion() {
       if (this.arrastrandoNodo < this.umbralArrastreNodo) {
@@ -345,5 +358,20 @@ export default {
 }
 .botonMenuCx:hover {
   background-color: gray;
+}
+.bAbrirNodo {
+  padding: 3px;
+  background-color: rgb(168, 221, 223);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 105%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+}
+.bAbrirNodo:hover {
+  background-color: cadetblue;
 }
 </style>

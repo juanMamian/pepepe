@@ -1,6 +1,7 @@
 <template>
   <div
     class="diagramaFlujo"
+    :class="{ deshabilitado: deshabilitar }"
     id="diagramaFlujo"
     :style="[opacidad]"
     @click.right.self.prevent="abrirMenuCx"
@@ -26,6 +27,7 @@
         tipoNodoSeleccionado = 'trabajo';
       "
       @dblclick.native="$emit('nodoAbierto', idTrabajo)"
+      @meAbrieron="$emit('nodoAbierto', idTrabajo)"
       @empujandoDummyPorAbajo="reposDummy(0, 5)"
       @empujandoDummyPorDerecha="reposDummy(5, 0)"
       @saliendose="scrollDiagrama"
@@ -50,6 +52,7 @@
       "
       @saliendose="scrollDiagrama"
       @dblclick.native="$emit('nodoAbierto', objetivo.id)"
+      @meAbrieron="$emit('nodoAbierto', idTrabajo)"
       @empujandoDummyPorAbajo="reposDummy(0, 5)"
       @empujandoDummyPorDerecha="reposDummy(5, 0)"
       @crearRequerimento="crearRequerimento('objetivo', $event)"
@@ -82,7 +85,11 @@ export default {
     objetivos: Array,
     idProyecto: String,
     usuarioResponsableProyecto: Boolean,
-    activo: Boolean,    
+    activo: Boolean,
+    deshabilitar: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -186,9 +193,8 @@ export default {
     reposDummy(factorx, factory) {
       this.$set(this.posDummy, "x", this.posDummy.x + 20 * factorx);
       this.$set(this.posDummy, "y", this.posDummy.y + 20 * factory);
-      
     },
-    scrollDiagrama({x, y}){
+    scrollDiagrama({ x, y }) {
       this.$el.scrollBy(x, y);
     },
     actualizarInfoTrabajos(idTrabajo, info) {
@@ -203,112 +209,120 @@ export default {
         `Preparando mutación para setear que ${idNodoRequiere} requiere a ${idNodoRequerido} de tipo ${tipoNodoRequerido}`
       );
       const tipoNodoRequiere = this.tipoNodoSeleccionado;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation(
-            $idProyecto:ID!,
-            $idNodoRequiere: ID!,
-            $idNodoRequerido: ID!,
-            $tipoNodoRequiere: String!,
-            $tipoNodoRequerido: String!,
-          ) {
-            crearRequerimentoEntreNodosProyecto(
-              idProyecto:$idProyecto,
-              idNodoRequiere: $idNodoRequiere,
-              idNodoRequerido: $idNodoRequerido,
-              tipoNodoRequiere: $tipoNodoRequiere,
-              tipoNodoRequerido: $tipoNodoRequerido,
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idProyecto: ID!
+              $idNodoRequiere: ID!
+              $idNodoRequerido: ID!
+              $tipoNodoRequiere: String!
+              $tipoNodoRequerido: String!
             ) {
-              nodo {
-                ...on Objetivo{
-                  id
-                  vinculos{
-                    idRef
-                    tipoRef
-                    tipo
+              crearRequerimentoEntreNodosProyecto(
+                idProyecto: $idProyecto
+                idNodoRequiere: $idNodoRequiere
+                idNodoRequerido: $idNodoRequerido
+                tipoNodoRequiere: $tipoNodoRequiere
+                tipoNodoRequerido: $tipoNodoRequerido
+              ) {
+                nodo {
+                  ... on Objetivo {
+                    id
+                    vinculos {
+                      idRef
+                      tipoRef
+                      tipo
+                    }
                   }
-                }
-                ...on Trabajo{
-                  id
-                  vinculos{
-                    idRef
-                    tipoRef
-                    tipo
+                  ... on Trabajo {
+                    id
+                    vinculos {
+                      idRef
+                      tipoRef
+                      tipo
+                    }
                   }
                 }
               }
             }
-          }
-        `,
-        variables: {
-          idProyecto:this.idProyecto,
-          idNodoRequiere,
-          idNodoRequerido,
-          tipoNodoRequiere,
-          tipoNodoRequerido,
-        },
-      }).then(({data:{crearRequerimentoEntreNodosProyecto}})=>{
-        console.log(`Requerimento creado: ${JSON.stringify(crearRequerimentoEntreNodosProyecto)}`);
-      }).catch(error=>{
-        console.log(`Error`, error.message);
-      })
-      ;
+          `,
+          variables: {
+            idProyecto: this.idProyecto,
+            idNodoRequiere,
+            idNodoRequerido,
+            tipoNodoRequiere,
+            tipoNodoRequerido,
+          },
+        })
+        .then(({ data: { crearRequerimentoEntreNodosProyecto } }) => {
+          console.log(
+            `Requerimento creado: ${JSON.stringify(
+              crearRequerimentoEntreNodosProyecto
+            )}`
+          );
+        })
+        .catch((error) => {
+          console.log(`Error`, error.message);
+        });
     },
     eliminarVinculo(tipoNodoRequerido, { idNodoRequiere, idNodoRequerido }) {
       console.log(
         `Preparando mutación para setear que ${idNodoRequiere} ya no está vinculado a ${idNodoRequerido} de tipo ${tipoNodoRequerido}`
       );
       const tipoNodoRequiere = this.tipoNodoSeleccionado;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation(
-            $idProyecto:ID!,
-            $idNodoRequiere: ID!,
-            $idNodoRequerido: ID!,
-            $tipoNodoRequiere: String!,
-            $tipoNodoRequerido: String!,
-          ) {
-            desvincularNodosProyecto(
-              idProyecto:$idProyecto,
-              idNodoRequiere: $idNodoRequiere,
-              idNodoRequerido: $idNodoRequerido,
-              tipoNodoRequiere: $tipoNodoRequiere,
-              tipoNodoRequerido: $tipoNodoRequerido,
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idProyecto: ID!
+              $idNodoRequiere: ID!
+              $idNodoRequerido: ID!
+              $tipoNodoRequiere: String!
+              $tipoNodoRequerido: String!
             ) {
-              nodo {
-                ...on Objetivo{
-                  id
-                  vinculos{
-                    idRef
-                    tipoRef
-                    tipo
+              desvincularNodosProyecto(
+                idProyecto: $idProyecto
+                idNodoRequiere: $idNodoRequiere
+                idNodoRequerido: $idNodoRequerido
+                tipoNodoRequiere: $tipoNodoRequiere
+                tipoNodoRequerido: $tipoNodoRequerido
+              ) {
+                nodo {
+                  ... on Objetivo {
+                    id
+                    vinculos {
+                      idRef
+                      tipoRef
+                      tipo
+                    }
                   }
-                }
-                ...on Trabajo{
-                  id
-                  vinculos{
-                    idRef
-                    tipoRef
-                    tipo
+                  ... on Trabajo {
+                    id
+                    vinculos {
+                      idRef
+                      tipoRef
+                      tipo
+                    }
                   }
                 }
               }
             }
-          }
-        `,
-        variables: {
-          idProyecto:this.idProyecto,
-          idNodoRequiere,
-          idNodoRequerido,
-          tipoNodoRequiere,
-          tipoNodoRequerido,
-        },
-      }).then(()=>{
-        console.log(`Vinculo eliminado`);
-      }).catch(error=>{
-        console.log(`Error`, error.message);
-      })
-      ;
+          `,
+          variables: {
+            idProyecto: this.idProyecto,
+            idNodoRequiere,
+            idNodoRequerido,
+            tipoNodoRequiere,
+            tipoNodoRequerido,
+          },
+        })
+        .then(() => {
+          console.log(`Vinculo eliminado`);
+        })
+        .catch((error) => {
+          console.log(`Error`, error.message);
+        });
     },
   },
   mount() {
@@ -340,12 +354,12 @@ export default {
   top: 0%;
   left: 0%;
   width: 100%;
-  height: 100%;  
+  height: 100%;
   pointer-events: none;
 }
 #dummy {
   position: absolute;
-  width:30px;
+  width: 30px;
   height: 30px;
   pointer-events: none;
 }

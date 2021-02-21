@@ -7,6 +7,14 @@
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
   >
+    <img
+      src="@/assets/iconos/ir.png"
+      alt="abrir"
+      class="bAbrirNodo"
+      title="Abrir este elemento"
+      v-show="seleccionado"
+      @click.left.stop="$emit('meAbrieron')"
+    />
     <div class="zonaNombre">
       <div id="nombre">
         <img
@@ -17,9 +25,13 @@
       </div>
     </div>
 
-     <div id="menuContextual" v-show="menuCx">
+    <div id="menuContextual" v-show="menuCx">
       <template
-        v-if="idNodoSeleccionado != null && idNodoSeleccionado != esteObjetivo.id && (usuarioSuperadministrador==true || usuarioResponsableProyecto)"
+        v-if="
+          idNodoSeleccionado != null &&
+          idNodoSeleccionado != esteObjetivo.id &&
+          (usuarioSuperadministrador == true || usuarioResponsableProyecto)
+        "
       >
         <div class="seccionMenuCx">El elemento seleccionado...</div>
         <div
@@ -27,16 +39,15 @@
           @click.stop="crearRequerimento(idNodoSeleccionado, esteObjetivo.id)"
         >
           Requiere este elemento
-        </div>        
+        </div>
         <div
-          class="botonMenuCx"          
+          class="botonMenuCx"
           @click.stop="eliminarVinculo(idNodoSeleccionado, esteObjetivo.id)"
         >
-          Desconectar          
+          Desconectar
         </div>
       </template>
     </div>
-
   </div>
 </template>
 
@@ -49,15 +60,15 @@ export default {
     idProyecto: String,
     usuarioResponsableProyecto: Boolean,
     seleccionado: Boolean,
-    idNodoSeleccionado:String,
+    idNodoSeleccionado: String,
     posDummy: Object,
-    menuCx:Boolean
+    menuCx: Boolean,
   },
   data() {
     return {
       agarrado: false,
       arrastrandoNodo: 0,
-      umbralArrastreNodo:25,
+      umbralArrastreNodo: 25,
       posicion: {
         x: 0,
         y: 0,
@@ -67,11 +78,16 @@ export default {
   },
   methods: {
     arrastrarNodo(e) {
-      if (!this.agarrado || (this.usuarioResponsableProyecto===false && this.usuarioSuperadministrador===false)) {
+      if (
+        !this.agarrado ||
+        (this.usuarioResponsableProyecto === false &&
+          this.usuarioSuperadministrador === false)
+      ) {
         return;
       }
-      this.arrastrandoNodo=this.arrastrandoNodo+Math.abs(e.movementX)+Math.abs(e.movementY);
-      if(this.arrastrandoNodo<this.umbralArrastreNodo){
+      this.arrastrandoNodo =
+        this.arrastrandoNodo + Math.abs(e.movementX) + Math.abs(e.movementY);
+      if (this.arrastrandoNodo < this.umbralArrastreNodo) {
         return;
       }
       var contenedor = this.$parent.$el;
@@ -95,11 +111,11 @@ export default {
       this.$set(this.posicion, "x", nuevoLeft);
       this.$set(this.posicion, "y", nuevoTop);
 
-      if (this.posDummy.y < (nuevoTop+100)) {
+      if (this.posDummy.y < nuevoTop + 100) {
         console.log(`pushing dummy por abajo`);
         this.$emit("empujandoDummyPorAbajo");
       }
-      if (this.posDummy.x < (nuevoLeft+100)) {
+      if (this.posDummy.x < nuevoLeft + 100) {
         console.log(`pushing dummy por la derecha`);
         this.$emit("empujandoDummyPorDerecha");
       }
@@ -107,38 +123,38 @@ export default {
       const umbralMovimientoBorde = 100;
 
       var distanciasBordes = {
-        der: (posContenedor.left + contenedor.offsetWidth) - e.clientX,
+        der: posContenedor.left + contenedor.offsetWidth - e.clientX,
         izq: e.clientX - posContenedor.left,
-        top: (posContenedor.top + contenedor.offsetHeight) - e.clientY,
+        top: posContenedor.top + contenedor.offsetHeight - e.clientY,
         bot: e.clientY - posContenedor.top,
       };
 
-      var saliendose={
-        x:0, 
-        y:0,
-      }
+      var saliendose = {
+        x: 0,
+        y: 0,
+      };
 
       if (distanciasBordes.der < umbralMovimientoBorde) {
-         console.log(`der`);
-         saliendose.x=(umbralMovimientoBorde-distanciasBordes.der);
+        console.log(`der`);
+        saliendose.x = umbralMovimientoBorde - distanciasBordes.der;
       }
       if (distanciasBordes.izq < umbralMovimientoBorde) {
-         console.log(`izq`);
-         saliendose.x=(distanciasBordes.izq-umbralMovimientoBorde);
+        console.log(`izq`);
+        saliendose.x = distanciasBordes.izq - umbralMovimientoBorde;
       }
       if (distanciasBordes.top < umbralMovimientoBorde) {
-         console.log(`top`);
-         saliendose.y=(umbralMovimientoBorde-distanciasBordes.top);
+        console.log(`top`);
+        saliendose.y = umbralMovimientoBorde - distanciasBordes.top;
       }
       if (distanciasBordes.bot < umbralMovimientoBorde) {
-         console.log(`bot`);
-         saliendose.y=(distanciasBordes.bot-umbralMovimientoBorde);
+        console.log(`bot`);
+        saliendose.y = distanciasBordes.bot - umbralMovimientoBorde;
       }
 
       this.$emit("saliendose", saliendose);
     },
     guardarPosicion() {
-      if (this.arrastrandoNodo<this.umbralArrastreNodo) {
+      if (this.arrastrandoNodo < this.umbralArrastreNodo) {
         this.agarrado = false;
         return;
       }
@@ -181,14 +197,18 @@ export default {
           console.log(`Error. E: ${error}`);
         });
     },
-    crearRequerimento(idNodoRequiere, idNodoRequerido){
-      console.log(`Se fijara que ${idNodoRequiere} requiere a ${idNodoRequerido}`);
-      this.$emit("crearRequerimento", {idNodoRequiere, idNodoRequerido} );
+    crearRequerimento(idNodoRequiere, idNodoRequerido) {
+      console.log(
+        `Se fijara que ${idNodoRequiere} requiere a ${idNodoRequerido}`
+      );
+      this.$emit("crearRequerimento", { idNodoRequiere, idNodoRequerido });
     },
-    eliminarVinculo(idNodoRequiere, idNodoRequerido){
-      console.log(`Se fijara que ${idNodoRequiere} ya no requiere a ${idNodoRequerido}`);
-      this.$emit("eliminarVinculo", {idNodoRequiere, idNodoRequerido} );
-    }
+    eliminarVinculo(idNodoRequiere, idNodoRequerido) {
+      console.log(
+        `Se fijara que ${idNodoRequiere} ya no requiere a ${idNodoRequerido}`
+      );
+      this.$emit("eliminarVinculo", { idNodoRequiere, idNodoRequerido });
+    },
   },
   computed: {
     estiloPosicion() {
@@ -204,12 +224,12 @@ export default {
       };
     },
     estiloZeta() {
-      let valorZ = 0;      
-      if (this.arrastrandoNodo>this.umbralArrastreNodo || this.seleccionado) {
+      let valorZ = 0;
+      if (this.arrastrandoNodo > this.umbralArrastreNodo || this.seleccionado) {
         valorZ = 100;
       }
-      if(this.menuCx){
-        valorZ=200;
+      if (this.menuCx) {
+        valorZ = 200;
       }
       return {
         zIndex: valorZ,
@@ -263,8 +283,7 @@ export default {
 }
 #nombre {
   font-size: 14px;
-  user-select:none;
-
+  user-select: none;
 }
 .iconoObjetivo {
   width: 20px;
@@ -289,9 +308,23 @@ export default {
   font-size: 15px;
   color: rgb(71, 71, 71);
   padding: 5px 10px;
-
 }
 .botonMenuCx:hover {
   background-color: gray;
+}
+.bAbrirNodo {
+  padding: 3px;
+  background-color: rgb(168, 221, 223);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 105%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+}
+.bAbrirNodo:hover {
+  background-color: cadetblue;
 }
 </style>

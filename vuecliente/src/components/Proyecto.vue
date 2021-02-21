@@ -176,6 +176,7 @@
           :idsTrabajos="esteProyecto.idsTrabajos"
           :usuarioResponsableProyecto="usuarioResponsableProyecto"
           :activo="idNodoAbierto==null"
+          :deshabilitar="realizandoOperacionDiagrama"
           @crearTrabajoEnPosicion="crearNuevoTrabajo"
           @crearObjetivoEnPosicion="crearNuevoObjetivo"
           @nodoAbierto="abrirNodo"
@@ -323,6 +324,7 @@ export default {
       enviandoQueryResponsables: false,
 
       creandoTrabajo: false,
+      creandoObjetivo:false,
 
       idTrabajoSeleccionado: null,
       idObjetivoSeleccionado: null,
@@ -391,6 +393,9 @@ export default {
         nombre: this.esteProyecto.nombre,
       };
     },
+    realizandoOperacionDiagrama(){
+      return (this.creandoTrabajo||this.creandoObjetivo);
+    }
   },
   methods: {
     guardarNuevoNombre() {
@@ -661,6 +666,7 @@ export default {
     },
     crearNuevoObjetivo(posicion) {
       console.log(`enviando mutacion de crear nuevo objetivo`);
+      this.creandoObjetivo = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -718,8 +724,10 @@ export default {
         })
         .then((respuesta) => {
           console.log(`respuesta. ${respuesta}`);
+          this.creandoObjetivo = false;
         })
         .catch((error) => {
+          this.creandoObjetivo = false;
           console.log(`error: ${error}`);
         });
     },
