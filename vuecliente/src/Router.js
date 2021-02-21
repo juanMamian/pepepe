@@ -16,6 +16,7 @@ import PortadaActividadesEstudiantiles from "./components/actividadesProfes/Port
 import ActividadEspecifica from "./components/actividadesProfes/ActividadEspecifica"
 import Home from "./components/Home"
 import Trabajo from "./components/Trabajo"
+import BuscadorTrabajos from "./components/BuscadorTrabajos"
 
 Vue.use(Router);
 
@@ -48,6 +49,7 @@ const routes = [
             }
         }
     },
+    { path: "/trabajos", component: BuscadorTrabajos },
     { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
     { path: "/proyectos", name: "proyectos", component: Proyectos },
     { path: "/proyecto/:idProyecto", name: "verProyecto", component: Proyecto },

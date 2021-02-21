@@ -44,9 +44,16 @@ export const typeDefs = gql`
        nodo: NodoProyecto,
    }
 
+   type PaginaTrabajosProyectos{
+        hayMas:Boolean,
+        infoTrabajos:[InfoBasicaTrabajo]
+    }
+
     extend type Query{
         proyectos: [Proyecto!],
         proyecto(idProyecto:ID!): Proyecto
+
+        listaTodosTrabajosProyectos(pagina: Int!, pagina:Int!):PaginaTrabajosProyectos,
     }
     extend type Mutation{
         editarNombreProyecto(idProyecto: ID!, nuevoNombre: String!):Proyecto,
@@ -64,6 +71,7 @@ export const typeDefs = gql`
         addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
         removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
         setPosicionTrabajoDiagramaProyecto(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
+        editarKeywordsTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
 
         crearObjetivoEnProyecto(idProyecto: ID!, posicion:CoordsInput):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
@@ -73,6 +81,7 @@ export const typeDefs = gql`
 
         crearRequerimentoEntreNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
         desvincularNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
+
     }
     
     
@@ -144,7 +153,27 @@ export const resolvers = {
 
             }
             return elProyecto
-        }
+        },
+        async listaTodosTrabajosProyectos(_: any, {pagina }, contexto: contextoQuery) {
+            console.log(`Petición de info basica de todos trabajos de proyectos`);
+            const sizePaginaTrabajos=50;
+            if(contexto.usuario.id===""){
+                console.log(`Usuario no logeado`);
+                throw new AuthenticationError("No autorizado");
+            }
+            
+            try {
+                var numActividades = await Trabajo.countDocuments({}).exec();
+                var losTrabajos: any = await Trabajo.find({}, "nombre").limit(sizePaginaTrabajos).skip(pagina * sizePaginaTrabajos).exec();
+            } catch (error) {
+                console.log(`Error buscando trabajos. E: ${error}`);
+                return new ApolloError("Error conectando con la base de datos");
+            }            
+
+            let hayMas = pagina * sizePaginaTrabajos < numActividades;
+            console.log(`Enviando pagina ${pagina} de trabajos`);
+            return { hayMas, infoTrabajos: losTrabajos }
+        },
 
     },
 
@@ -525,9 +554,9 @@ export const resolvers = {
                 console.log(`Coordenadas del nuevo trabajo ilícitas`);
                 throw new ApolloError("Coordenadas ilícitas");
             }
-            
+
             try {
-                var nuevoTrabajo: any = await new Trabajo({ idForo: idNuevoForo, diagramaProyecto: { posicion } });
+                var nuevoTrabajo: any = await new Trabajo({idProyectoParent:idProyecto, idForo: idNuevoForo, diagramaProyecto: { posicion } });
                 var idNuevoTrabajo = nuevoTrabajo._id;
                 await nuevoTrabajo.save();
             } catch (error) {
@@ -672,6 +701,48 @@ export const resolvers = {
             console.log(`Descripcion guardado`);
             return elTrabajo;
         },
+        async editarKeywordsTrabajoProyecto(_: any, { idProyecto, idTrabajo, nuevoKeywords }, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Keywords de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            const charProhibidosKeywordsTrabajo = /[^ a-zA-Zñ,]/;
+
+            if (charProhibidosKeywordsTrabajo.test(nuevoKeywords)) {
+                throw new ApolloError("Keywords ilegal");
+            }
+
+            nuevoKeywords = nuevoKeywords.trim();
+
+
+            try {
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "Trabajo no existía";
+                }
+                elTrabajo.keywords = nuevoKeywords;
+                console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
+                await elTrabajo.save();
+            } catch (error) {
+                console.log(`error guardando el trabajo modificado: ${error}`);
+            }
+            console.log(`Keywords guardado`);
+            return elTrabajo;
+        },
         addResponsableTrabajo: async function (_: any, { idTrabajo, idUsuario }: any, contexto: contextoQuery) {
             console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo}`);
             let credencialesUsuario = contexto.usuario;
@@ -795,7 +866,7 @@ export const resolvers = {
         setPosicionTrabajoDiagramaProyecto: async function (_: any, { idProyecto, idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
             console.log(`Guardando posicion de trabajo en el diagrama del proyecto`);
 
-            if(nuevaPosicion.x<0 || nuevaPosicion.y<0){
+            if (nuevaPosicion.x < 0 || nuevaPosicion.y < 0) {
                 throw new UserInputError("Nueva posición ilegal");
             }
 
@@ -832,7 +903,6 @@ export const resolvers = {
 
         },
 
-
         async crearObjetivoEnProyecto(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
             console.log(`Peticion de crear un nuevo objetivo en el proyecto con id ${idProyecto}`);
 
@@ -864,7 +934,7 @@ export const resolvers = {
                 console.log("Error guardando el objetivo creado en el proyecto. E: " + error);
                 throw new ApolloError("Error introduciendo el objetivo en el proyecto");
             }
-            
+
             console.log(`Enviando nuevo objetivo: ${nuevoObjetivo}`);
             return nuevoObjetivo;
 
@@ -1104,8 +1174,8 @@ export const resolvers = {
                 console.log(`Error guardando el nodo modificado en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            
-            return {nodo:elqueRequiere};
+
+            return { nodo: elqueRequiere };
 
         },
         desvincularNodosProyecto: async function (_: any, { idProyecto, idNodoRequiere, idNodoRequerido, tipoNodoRequiere, tipoNodoRequerido }, contexto: contextoQuery) {
@@ -1173,9 +1243,11 @@ export const resolvers = {
                 console.log(`Error guardando el nodo modificado en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            return {nodo:elqueRequiere};
+            return { nodo: elqueRequiere };
 
         },
+
+                
     },
     Proyecto: {
         personasResponsables: async function (parent: any, _: any, __: any) {
@@ -1215,12 +1287,12 @@ export const resolvers = {
         },
     },
 
-    NodoProyecto:{
-        __resolveType:function(nodo){
-            if(nodo.responsables){
+    NodoProyecto: {
+        __resolveType: function (nodo) {
+            if (nodo.responsables) {
                 return "Trabajo"
             }
-            else if(nodo.estado){
+            else if (nodo.estado) {
                 return "Objetivo"
             }
         }

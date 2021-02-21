@@ -7,7 +7,6 @@ import { router } from "./Router"
 const clienteUrl = process.env.NODE_ENV === 'production'? serverUrl+'/pepepe' : 'http://localhost:8080'
 
 Vue.mixin({
-
   data() {
     return {
       serverUrl,      

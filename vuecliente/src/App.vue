@@ -4,56 +4,59 @@
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
       <router-link
         to="/actividadesVirtuales2021"
-        v-if="usuarioLogeado == true"
-        class="hoverNegro"
+        v-if="usuarioLogeado == true"        
       >
-        <div class="botonNav" id="navActividadesVirtuales">
+        <div class="botonNav hoverNegro" id="navActividadesVirtuales">
           Actividades virtuales
         </div>
       </router-link>
 
-      <router-link
-        to="/proyectos"
-        class="hoverNegro"
-        v-if="usuarioLogeado == true"
-      >
-        <div class="botonNav" id="navProyectos">Proyectos</div>
-      </router-link>
+      <div id="bloqueProyectos">
+        <router-link
+          to="/proyectos"          
+          v-if="usuarioLogeado == true"
+        >
+          <div class="botonNav hoverNegro" id="navProyectos">Proyectos</div>
+        </router-link>
+        <div id="enlacesHijosProyectos" class="contenedorHijos">
+          <router-link
+          to="/trabajos"
+          v-if="usuarioLogeado == true"
+        >
+          <div class="botonNav hoverNegro" id="navProyectos">Buscar trabajos</div>
+        </router-link>
+        </div>
+      </div>
 
-      <router-link to="/atlas" class="hoverNegro">
-        <div class="botonNav" id="navAtlas">Atlas de conocimientos</div>
-      </router-link>
-
-      <router-link
-        to="/trabajos"
-        class="hoverNegro disabled"
-        v-if="usuarioLogeado == true"
-      >
-        <div class="botonNav" id="navTrabajos">Trabajos</div>
+      <router-link to="/atlas">
+        <div class="botonNav hoverNegro" id="navAtlas">Atlas de conocimientos</div>
       </router-link>
 
       <router-link
         to="/personas"
         v-if="usuarioAdministrador || usuarioSuperadministrador"
-        class="hoverNegro"
       >
-        <div class="botonNav" id="navActividadesVirtuales">Personas</div>
+        <div class="botonNav hoverNegro" id="navActividadesVirtuales">Personas</div>
       </router-link>
       <router-link
         to="/registro"
-        class="botonNav hoverNegro"
         id="navRegistro"
         v-if="usuarioSuperadministrador"
       >
-        <div>Registrar usuario</div></router-link
+        <div class="botonNav hoverNegro">Registrar usuario</div></router-link
       >
       <div id="botonesNavDerecha">
         <div
           id="bloqueNotificaciones"
           v-if="usuarioLogeado"
-          v-show="(yo.notificaciones.length > 0 || yo.notificacionesActividadForos.length>0)"
+          v-show="
+            yo.notificaciones.length > 0 ||
+            yo.notificacionesActividadForos.length > 0
+          "
         >
-          <span id="numeroNotificaciones">{{ yo.notificaciones.length + yo.notificacionesActividadForos.length }}</span>
+          <span id="numeroNotificaciones">{{
+            yo.notificaciones.length + yo.notificacionesActividadForos.length
+          }}</span>
           <img
             src="@/assets/iconos/campanita.png"
             alt="Notificaciones"
@@ -65,7 +68,7 @@
             <notificacion-actividad-foros
               :estaNotificacion="notificacionActividadForos"
               :key="notificacionActividadForos.id"
-              v-for="notificacionActividadForos of yo.notificacionesActividadForos"              
+              v-for="notificacionActividadForos of yo.notificacionesActividadForos"
             />
             <notificacion
               :key="notificacion.id"
@@ -213,7 +216,7 @@ export default {
       mostrandoNotificaciones: false,
       yo: {
         notificaciones: [],
-        notificacionesActividadForos:[],
+        notificacionesActividadForos: [],
       },
     };
   },
@@ -350,6 +353,9 @@ input {
   user-select: none;
   pointer-events: none;
 }
+.opaco {
+  opacity: 0.6;
+}
 </style>
 
 <style scoped>
@@ -409,6 +415,8 @@ input {
   font-size: 18px;
   font-family: "Poppins", sans-serif;
   color: white;
+  height: 100%;
+  box-sizing: border-box;
 }
 #botonesNavDerecha {
   margin-left: auto;
@@ -458,5 +466,18 @@ input {
 .disabled {
   opacity: 0.8;
   pointer-events: none;
+}
+#bloqueProyectos{
+  position: relative;
+}
+#bloqueProyectos:hover>.contenedorHijos{
+  display: block;
+}
+.contenedorHijos{
+  background-color: #f0a646;
+  position: absolute;
+  top: 100%;
+  left: 0%;
+  display: none;
 }
 </style>

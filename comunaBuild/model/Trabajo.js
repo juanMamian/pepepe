@@ -30,6 +30,9 @@ exports.esquemaTrabajo.add({
         required: true,
         default: []
     },
+    idProyectoParent: {
+        type: String,
+    },
     idForo: {
         type: String,
     },
@@ -37,6 +40,9 @@ exports.esquemaTrabajo.add({
         type: [VinculosNodosProyecto_1.EsquemaVinculosNodosProyecto],
         required: true,
         default: []
+    },
+    keywords: {
+        type: String,
     },
     diagramaProyecto: {
         posicion: {
@@ -53,4 +59,5 @@ exports.esquemaTrabajo.add({
         }
     }
 });
+exports.esquemaTrabajo.index({ keywords: "text" });
 exports.ModeloTrabajo = mongoose_1.default.model("Trabajo", exports.esquemaTrabajo);

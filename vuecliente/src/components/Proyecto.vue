@@ -921,7 +921,6 @@ export default {
   width: 92%;
   left: 4%;
   top: 10%;
-  max-height: 80%;
   position: absolute;
 }
 </style>

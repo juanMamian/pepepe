@@ -27,7 +27,10 @@ esquemaTrabajo.add({
         type:[String],
         required:true,
         default:[]
-    },        
+    },
+    idProyectoParent:{
+        type:String,
+    },
     idForo:{
         type:String,        
     },
@@ -35,6 +38,9 @@ esquemaTrabajo.add({
         type:[EsquemaVinculosNodosProyecto],
         required:true,
         default:[]
+    },
+    keywords:{
+        type:String,
     },
     diagramaProyecto:{
         posicion:{
@@ -53,5 +59,7 @@ esquemaTrabajo.add({
     }
    
 });
+
+esquemaTrabajo.index({keywords:"text"});
 
 export const ModeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);

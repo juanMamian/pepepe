@@ -54,9 +54,16 @@ exports.typeDefs = apollo_server_express_1.gql `
        nodo: NodoProyecto,
    }
 
+   type PaginaTrabajosProyectos{
+        hayMas:Boolean,
+        infoTrabajos:[InfoBasicaTrabajo]
+    }
+
     extend type Query{
         proyectos: [Proyecto!],
         proyecto(idProyecto:ID!): Proyecto
+
+        listaTodosTrabajosProyectos(pagina: Int!, pagina:Int!):PaginaTrabajosProyectos,
     }
     extend type Mutation{
         editarNombreProyecto(idProyecto: ID!, nuevoNombre: String!):Proyecto,
@@ -74,6 +81,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
         removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
         setPosicionTrabajoDiagramaProyecto(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
+        editarKeywordsTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
 
         crearObjetivoEnProyecto(idProyecto: ID!, posicion:CoordsInput):Objetivo,
         eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
@@ -83,6 +91,7 @@ exports.typeDefs = apollo_server_express_1.gql `
 
         crearRequerimentoEntreNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
         desvincularNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
+
     }
     
     
@@ -158,7 +167,28 @@ exports.resolvers = {
                 }
                 return elProyecto;
             });
-        }
+        },
+        listaTodosTrabajosProyectos(_, { pagina }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Petición de info basica de todos trabajos de proyectos`);
+                const sizePaginaTrabajos = 50;
+                if (contexto.usuario.id === "") {
+                    console.log(`Usuario no logeado`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var numActividades = yield Trabajo_1.ModeloTrabajo.countDocuments({}).exec();
+                    var losTrabajos = yield Trabajo_1.ModeloTrabajo.find({}, "nombre").limit(sizePaginaTrabajos).skip(pagina * sizePaginaTrabajos).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando trabajos. E: ${error}`);
+                    return new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let hayMas = pagina * sizePaginaTrabajos < numActividades;
+                console.log(`Enviando pagina ${pagina} de trabajos`);
+                return { hayMas, infoTrabajos: losTrabajos };
+            });
+        },
     },
     Mutation: {
         addPosibleResponsableProyecto: function (_, { idProyecto, idUsuario }, contexto) {
@@ -506,7 +536,7 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Coordenadas ilícitas");
                 }
                 try {
-                    var nuevoTrabajo = yield new Trabajo_1.ModeloTrabajo({ idForo: idNuevoForo, diagramaProyecto: { posicion } });
+                    var nuevoTrabajo = yield new Trabajo_1.ModeloTrabajo({ idProyectoParent: idProyecto, idForo: idNuevoForo, diagramaProyecto: { posicion } });
                     var idNuevoTrabajo = nuevoTrabajo._id;
                     yield nuevoTrabajo.save();
                 }
@@ -634,6 +664,45 @@ exports.resolvers = {
                     console.log(`error guardando el trabajo modificado: ${error}`);
                 }
                 console.log(`Descripcion guardado`);
+                return elTrabajo;
+            });
+        },
+        editarKeywordsTrabajoProyecto(_, { idProyecto, idTrabajo, nuevoKeywords }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Keywords de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                const charProhibidosKeywordsTrabajo = /[^ a-zA-Zñ,]/;
+                if (charProhibidosKeywordsTrabajo.test(nuevoKeywords)) {
+                    throw new apollo_server_express_1.ApolloError("Keywords ilegal");
+                }
+                nuevoKeywords = nuevoKeywords.trim();
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "Trabajo no existía";
+                    }
+                    elTrabajo.keywords = nuevoKeywords;
+                    console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log(`error guardando el trabajo modificado: ${error}`);
+                }
+                console.log(`Keywords guardado`);
                 return elTrabajo;
             });
         },

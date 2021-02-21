@@ -1,12 +1,14 @@
 <template>
   <div class="iconoTrabajo">
-    <img src="@/assets/iconos/ir.png" class="botonIr" @click="navegarAlTrabajo" title="Abrir la página de este trabajo"/>
+    <img
+      src="@/assets/iconos/ir.png"
+      class="botonIr"
+      @click="navegarAlTrabajo"
+      title="Abrir la página de este trabajo"
+    />
     <div id="zonaNombre" :class="{ bordeAbajo: seleccionado }">
       <div class="barraSuperiorZona">
-        <div
-          class="controlesZona"
-          v-show="usuarioResponsableProyecto"
-        >
+        <div class="controlesZona" v-show="usuarioResponsableProyecto">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -44,10 +46,7 @@
     <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
         <span class="nombreZona">Descripcion</span>
-        <div
-          class="controlesZona"
-          v-show="usuarioResponsableProyecto"
-        >
+        <div class="controlesZona" v-show="usuarioResponsableProyecto">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -115,11 +114,7 @@
       </div>
     </div>
 
-    <div
-      id="zonaNodosConocimiento"
-      class="zonaPrimerNivel"
-      v-show="false"
-    >
+    <div id="zonaNodosConocimiento" class="zonaPrimerNivel" v-show="false">
       <div class="nombreZona">Nodos de conocimiento involucrados</div>
       <div id="controlesNodosConocimiento" class="controlesZona">
         <div
@@ -152,7 +147,46 @@
       </div>
     </div>
 
-    
+    <div id="zonaKeywords" class="zonaPrimerNivel" v-show="usuarioResponsableProyecto">
+      <div class="barraSuperiorZona">
+        <span class="nombreZona">Palabras clave</span>
+        <div class="controlesZona">
+          <img
+            src="@/assets/iconos/editar.png"
+            alt="Editar"
+            id="bEditarKeywords"
+            class="bEditar"
+            title="Editar palabras clave del trabajo"
+            @click.stop="toggleEditandoKeywords"
+          />
+          <img
+            src="@/assets/iconos/guardar.png"
+            alt="Guardar"
+            title="guardar"
+            class="bGuardar"
+            id="bGuardarNuevoKeywords"
+            v-show="
+              editandoKeywords == true && nuevoKeywordsIlegal == false
+            "
+            @click.stop="guardarNuevoKeywords"
+          />
+        </div>
+      </div>
+
+      <div id="keywords" ref="keywords" v-show="!editandoKeywords">
+        {{ esteTrabajo.keywords }}
+      </div>
+
+      <textarea
+        id="inputNuevoKeywords"
+        ref="inputNuevoKeywords"
+        :class="{ letrasRojas: nuevoKeywordsIlegal }"
+        v-model="nuevoKeywords"
+        v-show="editandoKeywords"
+        @keypress.enter.prevent="guardarNuevoKeywords"
+      />
+      <loading v-show="enviandoNuevoKeywords" texto="Enviando..." />
+    </div>
 
     <div id="controlesTrabajo">
       <div
@@ -170,18 +204,21 @@
 import gql from "graphql-tag";
 import BuscadorNodosConocimiento from "../atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
-import IconoPersonaAutonomo from './IconoPersonaAutonomo.vue';
+import IconoPersonaAutonomo from "./IconoPersonaAutonomo.vue";
 
 const charProhibidosNombreTrabajo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionTrabajo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+const charProhibidosKeywordsTrabajo = /[^ a-zA-Zñ,]/;
 
 const QUERY_TRABAJO = gql`
   query($idTrabajo: ID!) {
     trabajo(idTrabajo: $idTrabajo) {
       id
       nombre
-      descripcion      
+      descripcion
       responsables
+      keywords
+      idProyectoParent
     }
   }
 `;
@@ -191,17 +228,18 @@ export default {
   components: {
     BuscadorNodosConocimiento,
     Loading,
-    IconoPersonaAutonomo
+    IconoPersonaAutonomo,
   },
   apollo: {
     esteTrabajo: {
-     query: QUERY_TRABAJO,
+      query: QUERY_TRABAJO,
       variables() {
         return {
           idTrabajo: this.idTrabajo,
         };
       },
       update({ trabajo }) {
+        if(!trabajo.keywords)trabajo.keywords="";
         return trabajo;
       },
       skip() {
@@ -225,17 +263,24 @@ export default {
       nuevoDescripcion: "Nueva descripcion",
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
+
+      nuevoKeywords: "palabras clave",
+      editandoKeywords: false,
+      enviandoNuevoKeywords: false,
     };
   },
   props: {
     idProyecto: String,
     seleccionado: Boolean,
-    usuarioResponsableProyecto: Boolean,
+    usuarioResponsableProyecto: {
+      type: Boolean,
+      defaul: false,
+    },
     idTrabajo: String,
   },
   computed: {
     usuarioResponsableTrabajo: function () {
-      return this.esteTrabajo.responsables.includes(this.usuario.id);        
+      return this.esteTrabajo.responsables.includes(this.usuario.id);
     },
     nuevoNombreIlegal() {
       if (this.nuevoNombre.length < 1) {
@@ -255,13 +300,22 @@ export default {
       }
       return false;
     },
-    infoAsParent(){
+    nuevoKeywordsIlegal() {
+      if (this.nuevoKeywords.length < 1) {
+        return true;
+      }
+      if (charProhibidosKeywordsTrabajo.test(this.nuevoKeywords)) {
+        return true;
+      }
+      return false;
+    },
+    infoAsParent() {
       return {
         id: this.esteTrabajo.id,
         tipo: "trabajo",
         nombre: this.esteTrabajo.nombre,
-      }
-    }
+      };
+    },
   },
   methods: {
     guardarNuevoNombre() {
@@ -291,7 +345,7 @@ export default {
           `,
           variables: {
             idTrabajo: this.esteTrabajo.id,
-            idProyecto: this.idProyecto,
+            idProyecto: this.esteTrabajo.idProyectoParent,
             nuevoNombre: this.nuevoNombre,
           },
         })
@@ -334,7 +388,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.idProyecto,
+            idProyecto: this.esteTrabajo.idProyectoParent,
             idTrabajo: this.esteTrabajo.id,
             nuevoDescripcion: this.nuevoDescripcion,
           },
@@ -348,6 +402,50 @@ export default {
           console.log(`Error. E :${error}`);
         });
     },
+    guardarNuevoKeywords() {
+      if (this.nuevoKeywordsIlegal) {
+        console.log(`No enviado`);
+        return;
+      }
+      if (this.nuevoKeywords == this.esteTrabajo.keywords) {
+        this.editandoKeywords = false;
+        return;
+      }
+      console.log(`guardando nuevo keywords`);
+      this.enviandoNuevoKeywords = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idProyecto: ID!
+              $idTrabajo: ID!
+              $nuevoKeywords: String!
+            ) {
+              editarKeywordsTrabajoProyecto(
+                idProyecto: $idProyecto
+                idTrabajo: $idTrabajo
+                nuevoKeywords: $nuevoKeywords
+              ) {
+                id
+                keywords
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.esteTrabajo.idProyectoParent,
+            idTrabajo: this.esteTrabajo.id,
+            nuevoKeywords: this.nuevoKeywords,
+          },
+        })
+        .then(() => {
+          this.enviandoNuevoKeywords = false;
+          this.editandoKeywords = false;
+        })
+        .catch((error) => {
+          this.enviandoNuevoKeywords = false;
+          console.log(`Error. E :${error}`);
+        });
+    },
     toggleEditandoNombre() {
       this.editandoNombre = !this.editandoNombre;
       this.nuevoNombre = this.esteTrabajo.nombre;
@@ -358,9 +456,15 @@ export default {
       this.editandoDescripcion = !this.editandoDescripcion;
       this.nuevoDescripcion = this.esteTrabajo.descripcion;
     },
+    toggleEditandoKeywords() {
+      this.$refs.inputNuevoKeywords.style.height =
+        this.$refs.keywords.offsetHeight + "px";
+      this.editandoKeywords = !this.editandoKeywords;
+      this.nuevoKeywords = this.esteTrabajo.keywords;
+    },
     asumirComoResponsable() {
       console.log(
-        `enviando id ${this.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.idEsteProyecto}`
+        `enviando id ${this.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.esteTrabajo.idProyectoParent}`
       );
       this.$apollo
         .mutate({
@@ -427,7 +531,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.idProyecto,
+            idProyecto: this.esteTrabajo.idProyectoParent,
             idTrabajo: this.esteTrabajo.id,
           },
         })
@@ -441,9 +545,9 @@ export default {
           console.log(`Error. E: ${error}`);
         });
     },
-    navegarAlTrabajo(){
-      this.$router.push("/trabajo/"+this.idTrabajo);
-    }
+    navegarAlTrabajo() {
+      this.$router.push("/trabajo/" + this.idTrabajo);
+    },
   },
 };
 </script>
@@ -455,7 +559,7 @@ export default {
   min-height: 50px;
   position: relative;
   padding: 5px 10px;
-  padding-bottom: 20px;
+  padding-bottom: 40px;
   background-color: rgb(230, 247, 247);
 }
 
@@ -541,7 +645,29 @@ export default {
   margin: 10px auto;
   resize: vertical;
 }
+#zonaKeywords{
+  min-height: 100px;
+}
+#keywords {
+  font-size: 19px;
+  width: 95%;
+  margin: 10px auto;
+  padding: 10px;
+  min-height: 80px;
+  resize: vertical;
+  border: none;
+  background-color: transparent;
+}
 
+#inputNuevoKeywords {
+  width: 95%;
+  font-size: 19px;
+  height: 70px;
+  display: block;
+  margin: 10px auto;
+  resize: vertical;
+  resize: none;
+}
 .bEditar {
   width: 30px;
   height: 30px;
@@ -567,7 +693,7 @@ export default {
   font-size: 13px;
   flex-direction: row-reverse;
 }
-.botonesControles{
+.botonesControles {
   border-radius: 3px;
   cursor: pointer;
   padding: 3px 5px;
@@ -587,20 +713,19 @@ export default {
   margin-top: 5px;
   margin-bottom: 5px;
 }
-.botonIr{
-  position:absolute;
+.botonIr {
+  position: absolute;
   top: 0%;
   left: 0%;
-  cursor: pointer; 
-  z-index: 10; 
+  cursor: pointer;
+  z-index: 10;
   border-radius: 50%;
   width: 30px;
   height: 30px;
   padding: 5px;
 }
 
-.botonIr:hover{
+.botonIr:hover {
   background-color: bisque;
-
 }
 </style>
