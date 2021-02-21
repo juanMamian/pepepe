@@ -8,6 +8,14 @@
         v-model="textoBusqueda"
         @keypress.enter="buscarTrabajosDB"
       />
+      <img
+            src="@/assets/iconos/search.png"
+            alt="Buscar"
+            id="bBuscar"
+            class="boton"
+            title="Buscar trabajo"
+            @click.stop="buscarTrabajosDB"
+          />
       <div id="textoBuscado" v-show="viendoBusqueda">
         {{ textoBuscado }}
         <div class="bCancelar" @click.stop="viendoBusqueda = false; anuncioTrabajosBuscados=null;">
@@ -18,6 +26,7 @@
     <div id="anuncioTrabajosBuscados" v-show="anuncioTrabajosBuscados">
       {{ anuncioTrabajosBuscados }}
     </div>
+
     <div
       id="zonaListaTrabajos"
       ref="zonaListaTrabajos"
@@ -35,6 +44,8 @@
           class="nombreTrabajo"
           :key="'nombreT-' + infoTrabajo.id"
           v-for="infoTrabajo of todosTrabajos.infoTrabajos"
+          @dblclick.stop="idTrabajoSeleccionado = infoTrabajo.id;
+              setPosicionIconoTrabajo()"
         >
           <img
             src="@/assets/iconos/iconoTrabajo.png"
@@ -200,6 +211,9 @@ export default {
       this.$set(this.posicionIconoTrabajo, "top", scrollLista + "px");
     },
     buscarTrabajosDB() {
+      if(this.textoBusqueda.length<1){
+        return;
+      }
       this.anuncioTrabajosBuscados = "Buscando...";
       console.log(`Refetching búsqueda`);
       this.$apollo
@@ -315,12 +329,15 @@ export default {
 .bCancelar {
   width: 20px;
   height: 20px;
-  background-color: red;
+  background-color: rgb(255, 113, 113);
   border: 1px solid black;
   position: relative;
   border-radius: 50%;
   margin-left: 10px;
   cursor: pointer;
+}
+.bCancelar:hover {
+  background-color: red;
 }
 
 .linea1 {
@@ -339,6 +356,19 @@ export default {
   background-color: black;
   transform: rotate(90deg);
   z-index: 2;
+}
+
+#bBuscar{
+  width:30px;
+  height:30px;
+  border-radius: 50%;
+  cursor: pointer;
+  margin: 0px auto;
+  display: block;
+}
+
+#bBuscar:hover{
+  background-color: cadetblue;
 }
 </style>
 
