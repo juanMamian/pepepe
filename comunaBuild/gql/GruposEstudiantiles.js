@@ -29,7 +29,8 @@ exports.typeDefs = apollo_server_express_1.gql `
 
     input InputNuevaRespuestaActividadEstudiantil{
         mensaje:String,
-        infoArchivo:InfoArchivoSubido
+        infoArchivo:InfoArchivoSubido,
+        enlaceAdjunto:[String],
     }
 
     type MinimoElemento{
@@ -55,6 +56,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         comentario:String,
         archivo:InfoArchivo,        
         infoAutor:PublicUsuario,
+        enlaceAdjunto:[String],
     }
 
     type ResultadoPublicar{

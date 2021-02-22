@@ -24,6 +24,9 @@ const esquemaParticipacion = new mongoose.Schema({
         nombres:String,
         apellidos:String,
         username:String
+    },
+    enlaceAdjunto:{
+        type:[String],        
     }
 
 });

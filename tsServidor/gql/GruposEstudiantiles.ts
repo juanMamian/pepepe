@@ -31,7 +31,8 @@ export const typeDefs = gql`
 
     input InputNuevaRespuestaActividadEstudiantil{
         mensaje:String,
-        infoArchivo:InfoArchivoSubido
+        infoArchivo:InfoArchivoSubido,
+        enlaceAdjunto:[String],
     }
 
     type MinimoElemento{
@@ -57,6 +58,7 @@ export const typeDefs = gql`
         comentario:String,
         archivo:InfoArchivo,        
         infoAutor:PublicUsuario,
+        enlaceAdjunto:[String],
     }
 
     type ResultadoPublicar{

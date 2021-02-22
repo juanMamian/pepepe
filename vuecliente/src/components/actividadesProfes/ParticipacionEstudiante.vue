@@ -7,7 +7,8 @@
     }"
   >
     <div id="autorParticipacion">
-      {{ estaParticipacion.infoAutor.nombres }} {{estaParticipacion.infoAutor.apellidos}} - {{fechaFormateada}}
+      {{ estaParticipacion.infoAutor.nombres }}
+      {{ estaParticipacion.infoAutor.apellidos }} - {{ fechaFormateada }}
     </div>
     <textarea
       disabled
@@ -24,8 +25,33 @@
           src="@/assets/iconos/downloadFile.png"
           alt="Descargar archivo"
           id="imgDownloadArchivo"
-          v-if="estaParticipacion.archivo && estaParticipacion.archivo.googleDriveDirectLink"
+          v-if="
+            estaParticipacion.archivo &&
+            estaParticipacion.archivo.googleDriveDirectLink
+          "
         />
+      </a>
+    </div>
+    <div
+      class="enlacesAdjuntos"
+      v-show="
+        estaParticipacion.enlaceAdjunto &&
+        estaParticipacion.enlaceAdjunto.length > 0
+      "
+    >
+      <a
+        target="_blank"
+        :href="enlace"
+        :key="index"
+        v-for="(enlace, index) of estaParticipacion.enlaceAdjunto"
+      >
+        <div
+          class="enlaceAdjunto"
+          :key="index"
+          v-for="(enlace, index) of estaParticipacion.enlaceAdjunto"
+        >
+          {{ enlace }}
+        </div>
       </a>
     </div>
     <div
@@ -35,7 +61,11 @@
         usuarioSuperadministrador
       "
     >
-      <div id="bEliminarParticipacion" class="controlesParticipacion hoverGris" @click="eliminarse">
+      <div
+        id="bEliminarParticipacion"
+        class="controlesParticipacion hoverGris"
+        @click="eliminarse"
+      >
         Eliminar
       </div>
     </div>
@@ -82,8 +112,8 @@ export default {
         });
     },
     eliminarse() {
-      if(!confirm("¿Seguro de que quieres eliminar este mensaje?")){
-        return
+      if (!confirm("¿Seguro de que quieres eliminar este mensaje?")) {
+        return;
       }
       this.$emit("eliminandose", this.estaParticipacion.id);
     },
@@ -92,9 +122,9 @@ export default {
     participacionDelPropioEstudiante: function () {
       return this.idEstudianteDesarrollo == this.estaParticipacion.infoAutor.id;
     },
-    fechaFormateada(){
+    fechaFormateada() {
       return new Date(this.estaParticipacion.fechaUpload);
-    }
+    },
   },
 };
 </script>
@@ -120,7 +150,7 @@ export default {
   margin-left: auto;
   max-width: auto;
   min-height: 180px;
-  font-size:18px;
+  font-size: 18px;
 }
 
 .comentarioPropio {
@@ -154,7 +184,17 @@ export default {
 .controlesParticipacion {
   cursor: pointer;
 }
-#bEliminarParticipacion:hover{
+#bEliminarParticipacion:hover {
   background-color: red;
+}
+.enlaceAdjunto {
+  font-style: italic;
+  font-size: 14px;
+  word-wrap: break-word;
+  border-radius: 15px;
+  background-color: rgb(187, 116, 187);
+  padding: 3px 5px;
+  cursor: pointer;
+  max-width: 600px;
 }
 </style>

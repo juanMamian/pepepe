@@ -28,6 +28,9 @@ const esquemaParticipacion = new mongoose_1.default.Schema({
         nombres: String,
         apellidos: String,
         username: String
+    },
+    enlaceAdjunto: {
+        type: [String],
     }
 });
 esquemaParticipacion.pre('validate', function () {

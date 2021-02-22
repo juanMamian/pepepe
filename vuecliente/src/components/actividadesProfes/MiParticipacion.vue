@@ -22,7 +22,7 @@
       :class="{
         mensajePropio: participacionEstudiante,
         mensajeOtro: !participacionEstudiante,
-        letrasRojas:mensajeIlegal
+        letrasRojas: mensajeIlegal,
       }"
       name="mensaje"
       id="mensaje"
@@ -32,7 +32,12 @@
       v-show="cuadroAbierto"
       placeholder="Escribe un mensaje"
     ></textarea>
-    <div id="adjuntarArchivo" v-show="cuadroAbierto">
+
+    <div
+      id="bloqueAdjuntarArchivo"
+      class="bloqueAdjuntar"
+      v-show="cuadroAbierto"
+    >
       <input
         type="file"
         id="inputArchivoAdjunto"
@@ -46,8 +51,53 @@
         title="adjuntar un archivo"
         @click="abrirSelectorDeArchivos"
       />
-      <div id="nombreArchivoSeleccionado">{{ nombreArchivoSeleccionado }}</div>
+      <div id="nombreArchivoSeleccionado" v-show="nombreArchivoSeleccionado">
+        <span>{{ nombreArchivoSeleccionado }}</span>
+      </div>
     </div>
+    <div
+      id="bloqueAdjuntarArchivo"
+      class="bloqueAdjuntar"
+      v-show="cuadroAbierto"
+    >
+      <img
+        src="@/assets/iconos/hypervinculo.png"
+        alt="Ajuntar enlace"
+        id="imgAdjuntarEnlace"
+        title="adjuntar un enlace"
+        @click="introduciendoEnlace = true"
+      />
+      <input
+        type="text"
+        v-show="introduciendoEnlace === true"
+        class="inputAdjuntarEnlace"
+        placeholder="escribe o pega el enlace"
+        v-model="enlaceAdjuntable"
+      />
+      <div id="nombreEnlaceAdjuntado" v-show="enlaceAdjunto && !introduciendoEnlace">
+        <span >{{
+          enlaceAdjunto
+        }}</span>
+      </div>
+      <div
+        id="bCancelarEnlaceAdjunto"
+        v-show="enlaceAdjunto"
+        @click.stop="enlaceAdjunto = null; enlaceAdjuntable=null;"
+      >
+        <div class="linea1"><div class="linea2"></div></div>
+      </div>
+      <img
+        src="@/assets/iconos/success.png"
+        alt="enviar"
+        id="bAceptarAdjuntarEnlace"
+        v-show="introduciendoEnlace && !enlaceAdjuntableIlegal"
+        @click.stop="
+          enlaceAdjunto = enlaceAdjuntable;
+          introduciendoEnlace = false;
+        "
+      />
+    </div>
+
     <loading
       v-show="enviandoRespuesta"
       :texto="'Enviando respuesta...'"
@@ -73,7 +123,7 @@
 import axios from "axios";
 import Loading from "../utilidades/Loading.vue";
 import gql from "graphql-tag";
-import { fragmentoDesarrollo } from '../utilidades/recursosGql';
+import { fragmentoDesarrollo } from "../utilidades/recursosGql";
 
 var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@*="-]/;
 
@@ -88,6 +138,9 @@ export default {
       nombreArchivoSeleccionado: null,
       cuadroAbierto: false,
       enviandoRespuesta: false,
+      introduciendoEnlace: false,
+      enlaceAdjuntable: null,
+      enlaceAdjunto: null,
     };
   },
   props: {
@@ -98,7 +151,7 @@ export default {
       default: false,
     },
     idDesarrollo: String,
-    nuevoDesarrollo:Boolean,
+    nuevoDesarrollo: Boolean,
   },
   methods: {
     abrirSelectorDeArchivos() {
@@ -115,21 +168,26 @@ export default {
       if (!inputArchivoAdjunto.value) {
         console.log(`El input de archivo adjunto estaba vacio`);
         let nuevaRespuesta = {
-              infoArchivo: {
-                idGoogleDrive: "",
-                googleDriveDirectLink: "",
-                extension: "",
-                nombre: "",
-              },
-              mensaje: this.mensaje,
-            };
+          infoArchivo: {
+            idGoogleDrive: "",
+            googleDriveDirectLink: "",
+            extension: "",
+            nombre: "",
+          },
+          mensaje: this.mensaje,
+        };
+        if (this.enlaceAdjunto) {
+          console.log(`Con enlace adjunto ${this.enlaceAdjunto}`);
+
+          nuevaRespuesta.enlaceAdjunto = [this.enlaceAdjunto];
+        }
         this.enviarNuevaRespuesta(nuevaRespuesta);
       } else {
         const archivoAdjunto = inputArchivoAdjunto.files[0];
         const fileType = archivoAdjunto["type"];
         console.log(`subiendo un ${fileType}`);
         datos.append("archivoAdjunto", archivoAdjunto);
-        var dis=this;
+        var dis = this;
         axios({
           method: "post",
           url:
@@ -155,7 +213,10 @@ export default {
               },
               mensaje: dis.mensaje,
             };
-
+            if (this.enlaceAdjunto) {
+              console.log(`Con enlace adjunto ${this.enlaceAdjunto}`);
+              nuevaRespuesta.enlaceAdjunto = [this.enlaceAdjunto];
+            }
             this.enviarNuevaRespuesta(nuevaRespuesta);
           })
           .catch((error) => {
@@ -169,23 +230,34 @@ export default {
           });
       }
     },
-    enviarNuevaRespuesta(nuevaRespuesta) {      
+    enviarNuevaRespuesta(nuevaRespuesta) {
       this.$apollo
         .mutate({
           mutation: gql`
-          mutation($idGrupo:ID, $idActividad:ID, $idDesarrollo:ID, $nuevaRespuesta:InputNuevaRespuestaActividadEstudiantil, $nuevoDesarrollo: Boolean){
-            publicarRespuestaActividadEstudiantil(idGrupo: $idGrupo, idActividad: $idActividad, idDesarrollo:$idDesarrollo, nuevaRespuesta:$nuevaRespuesta, nuevoDesarrollo:$nuevoDesarrollo){
-                nuevaRespuesta{
+            mutation(
+              $idGrupo: ID
+              $idActividad: ID
+              $idDesarrollo: ID
+              $nuevaRespuesta: InputNuevaRespuestaActividadEstudiantil
+              $nuevoDesarrollo: Boolean
+            ) {
+              publicarRespuestaActividadEstudiantil(
+                idGrupo: $idGrupo
+                idActividad: $idActividad
+                idDesarrollo: $idDesarrollo
+                nuevaRespuesta: $nuevaRespuesta
+                nuevoDesarrollo: $nuevoDesarrollo
+              ) {
+                nuevaRespuesta {
                   ...fragParticipacion
                 }
-                nuevoDesarrollo{
+                nuevoDesarrollo {
                   ...fragDesarrollo
                 }
-              
+              }
             }
-          }
-          ${fragmentoDesarrollo}
-        `,
+            ${fragmentoDesarrollo}
+          `,
           variables: {
             idGrupo: this.idGrupo,
             idActividad: this.idActividad,
@@ -213,11 +285,15 @@ export default {
             this.mensaje = "";
             this.$refs.inputArchivoAdjunto.value = null;
             this.nombreArchivoSeleccionado = null;
+            this.enlaceAdjunto = null;
+            this.enlaceAdjuntable = null;
           }
         )
         .catch((error) => {
           this.enviandoRespuesta = false;
-          console.log(`Error publicando respuesta. E: ${JSON.stringify(error.errors)}`);
+          console.log(
+            `Error publicando respuesta. E: ${JSON.stringify(error.errors)}`
+          );
         });
       //Parte vieja
     },
@@ -237,6 +313,8 @@ export default {
         this.$refs.inputArchivoAdjunto.value = null;
         this.nombreArchivoSeleccionado = null;
         this.cuadroAbierto = false;
+        this.enlaceAdjunto = null;
+        this.enlaceAdjuntable = null;
       }
     },
   },
@@ -246,6 +324,20 @@ export default {
         return true;
       }
       if (charProhibidosMensaje.test(this.mensaje)) {
+        return true;
+      }
+      return false;
+    },
+    enlaceAdjuntableIlegal() {
+      if (!this.enlaceAdjuntable) return true;
+      if (this.enlaceAdjuntable.substr(0, 8) != "https://") {
+        console.log(
+          `El inicio ${this.enlaceAdjuntable.substr(0, 8)} difiere del esperado`
+        );
+        return true;
+      }
+
+      if (this.enlaceAdjuntable.length < 7) {
         return true;
       }
       return false;
@@ -260,14 +352,6 @@ export default {
   border-radius: 10px;
   padding: 10px;
   position: relative;
-  display: grid;
-  grid-template-columns: 10% 1fr 10%;
-  grid-template-rows: 10% 1fr 15px 60px;
-  grid-template-areas:
-    "........ titulo ..."
-    "adjuntar mensaje ..."
-    "........ loading ......"
-    "........ enviar .......";
 }
 
 .participacionPropia {
@@ -279,19 +363,16 @@ export default {
 }
 #titulo {
   text-align: center;
-  grid-area: titulo;
 }
 
 #iconoMensaje {
-  position: absolute;
-  right: 10px;
-  top: 10px;
   margin-left: 10px;
   width: 30px;
   height: 30px;
   cursor: pointer;
   background-color: rgb(156, 204, 156);
   border-radius: 50%;
+  float: right;
 }
 
 #iconoMensaje:hover {
@@ -300,11 +381,16 @@ export default {
 
 #mensaje {
   border-radius: 5px;
+  width: 90%;
   resize: none;
   padding: 5px 7px;
-  grid-area: mensaje;
   display: block;
   font-size: 22px;
+  margin: 3px auto;
+}
+.bloqueAdjuntar {
+  display: flex;
+  align-items: center;
 }
 
 .mensajePropio {
@@ -329,6 +415,93 @@ export default {
   background-color: indianred;
 }
 
+#nombreArchivoSeleccionado {
+  padding: 20px 3px;
+  margin-left: 20px;
+}
+
+#nombreArchivoSeleccionado > span {
+  font-style: italic;
+  font-size: 14px;
+  word-wrap: break-word;
+  border-radius: 15px;
+  background-color: rgb(129, 66, 129);
+  padding: 3px 5px;
+}
+
+#imgAdjuntarEnlace {
+  border-radius: 50%;
+  padding: 3px;
+  background-color: rgb(156, 214, 216);
+  width: 45px;
+  height: 45px;
+  cursor: pointer;
+}
+#imgAdjuntarEnlace:hover {
+  background-color: cadetblue;
+}
+.inputAdjuntarEnlace {
+  margin-left: 20px;
+  width: 350px;
+  padding: 3px 5px;
+  border-radius: 10px;
+}
+#nombreEnlaceAdjuntado {
+  max-width: 500px;
+  margin-left: 20px;
+  border-radius: 15px;
+  background-color: rgb(129, 66, 129);
+  padding: 5px;
+}
+#nombreEnlaceAdjuntado > span {
+  font-style: italic;
+  font-size: 14px;
+  word-wrap: break-word;
+  
+  padding: 3px 5px;
+}
+#bCancelarEnlaceAdjunto {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-color: rgb(219, 74, 74);
+  cursor: pointer;
+  border-radius: 50%;
+  position: relative;
+  margin-left: 10px;
+}
+#bCancelarEnlaceAdjunto:hover {
+  background-color: red;
+}
+#bCancelarEnlaceAdjunto > .linea1 {
+  width: 90%;
+  height: 2px;
+  border-radius: 1px;
+  position: absolute;
+  top: 48%;
+  left: 5%;
+  background-color: black;
+  transform: rotate(45deg);
+}
+#bCancelarEnlaceAdjunto > .linea1 > .linea2 {
+  background-color: black;
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+  transform: rotate(90deg);
+}
+#bAceptarAdjuntarEnlace {
+  margin-left: 10px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background-color: rgb(138, 192, 194);
+  cursor: pointer;
+}
+#bAceptarAdjuntarEnlace:hover {
+  background-color: cadetblue;
+}
+
 #imgEnviar {
   width: 50px;
   height: 50px;
@@ -342,25 +515,8 @@ export default {
   background-color: rgb(137, 108, 199);
 }
 
-#nombreArchivoSeleccionado {
-  grid-area: adjuntar;
-  opacity: 0.8;
-  color: gray;
-  font-style: italic;
-  font-size: 12px;
-  word-wrap: break-word;
-}
-#nombreArchivoSeleccionado:hover {
-  opacity: 1;
-}
-
-#adjuntarArchivo {
-  text-align: left;
-  grid-area: adjuntar;
-}
 #enviar {
   text-align: center;
-  grid-area: enviar;
 }
 
 @media only screen and (max-width: 500px) {
@@ -369,16 +525,12 @@ export default {
     height: 20px;
   }
   #imgAdjuntar {
-    width: 25px;
-    height: 25px;
+    width: 30px;
+    height: 30px;
   }
 }
 
 #inputArchivoAdjunto {
   display: none;
-}
-
-.miParticipacion .loading {
-  grid-area: loading;
 }
 </style>

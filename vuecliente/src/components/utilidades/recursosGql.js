@@ -31,6 +31,7 @@ export const fragmentoParticipacion = gql`
         googleDriveDirectLink,        
       }
       comentario
+      enlaceAdjunto
       infoAutor{
         ...fragMinimoPersona
       }
