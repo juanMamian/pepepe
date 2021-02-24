@@ -750,11 +750,18 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError('${error conectando con la base de datos}');
                 }
                 var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
+                var usuarioYaTeniaDesarrollo = false;
                 try {
                     var laActividad = yield ColeccionActividadesEsteGrupo.findById(idActividad).exec();
                     if (!laActividad)
                         throw "Actividad no encontrada";
+                    if (laActividad.desarrollos.some(d => d.infoEstudiante.id == elUsuario._id)) {
+                        usuarioYaTeniaDesarrollo = true;
+                    }
                     if (nuevoDesarrollo) {
+                        if (usuarioYaTeniaDesarrollo) {
+                            throw "Intentando crear un nuevo desarrollo para un usuario que ya tenía desarrollo";
+                        }
                         var desarrolloCreado = laActividad.desarrollos.create({
                             idEstudiante: elUsuario._id,
                             participaciones: [],
@@ -767,7 +774,6 @@ exports.resolvers = {
                         });
                         laActividad.desarrollos.push(desarrolloCreado);
                         idDesarrollo = desarrolloCreado._id;
-                        elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                     }
                     var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                 }

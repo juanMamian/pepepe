@@ -803,20 +803,20 @@ export const resolvers = {
 
             var ColeccionActividadesEsteGrupo = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
 
+            var usuarioYaTeniaDesarrollo=false;
+           
             try {
-                var laActividad: any = await ColeccionActividadesEsteGrupo.findById(idActividad).exec();
+                var laActividad: any = await ColeccionActividadesEsteGrupo.findById(idActividad).exec();         
                 if (!laActividad) throw "Actividad no encontrada";
-                if (nuevoDesarrollo) {
-                    try {
-                        if(laActividad.desarrollos.some(d=>d.infoEstudiante.id==elUsuario._id)){
-                            console.log(`Error: Intentando crear un desarrollo de un estudiante que ya tenía`);
-                            throw new ApolloError("Error. Respuesta nueva ya existía");
-                        } 
-                    } catch (error) {
-                        console.log(`Error verificando si el desarrollo ya existía. E: ${error}`);
-                        throw new ApolloError("Error verificando información en la base de datos");
-                    }
+                
+                if(laActividad.desarrollos.some(d=>d.infoEstudiante.id==elUsuario._id)){
+                    usuarioYaTeniaDesarrollo=true;
+                }
+                if (nuevoDesarrollo) {      
                     
+                    if(usuarioYaTeniaDesarrollo){
+                        throw "Intentando crear un nuevo desarrollo para un usuario que ya tenía desarrollo";
+                    }
 
                     var desarrolloCreado = laActividad.desarrollos.create({
                         idEstudiante: elUsuario._id,
@@ -830,7 +830,6 @@ export const resolvers = {
                     })
                     laActividad.desarrollos.push(desarrolloCreado);
                     idDesarrollo = desarrolloCreado._id;
-                    elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                 } 
                 var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
             } catch (error) {
