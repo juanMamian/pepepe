@@ -105,6 +105,7 @@
         </div>
         <iframe
           id="visorContenido"
+          :ref="'contenidoExterno'+seccion.nombre"
           :src="direccionNodo+'/'+seccion.nombre+'/'"
           v-show="!editandoArchivosContenidos"
           
@@ -299,6 +300,8 @@ export default {
       enviandoQueryExpertos: false,
 
       editandoArchivosContenidos:false,
+
+      versionExplicacionRef:0,
     };
   },
   computed: {
@@ -718,7 +721,6 @@ export default {
           
         }
       }).then(()=>{
-
       }).catch((error)=>{
         archivo.enviandoInfo=false;
         console.log(`Error. E: ${error}`);

@@ -807,6 +807,17 @@ export const resolvers = {
                 var laActividad: any = await ColeccionActividadesEsteGrupo.findById(idActividad).exec();
                 if (!laActividad) throw "Actividad no encontrada";
                 if (nuevoDesarrollo) {
+                    try {
+                        if(laActividad.desarrollos.some(d=>d.infoEstudiante.id==elUsuario._id)){
+                            console.log(`Error: Intentando crear un desarrollo de un estudiante que ya tenía`);
+                            throw new ApolloError("Error. Respuesta nueva ya existía");
+                        } 
+                    } catch (error) {
+                        console.log(`Error verificando si el desarrollo ya existía. E: ${error}`);
+                        throw new ApolloError("Error verificando información en la base de datos");
+                    }
+                    
+
                     var desarrolloCreado = laActividad.desarrollos.create({
                         idEstudiante: elUsuario._id,
                         participaciones: [],
