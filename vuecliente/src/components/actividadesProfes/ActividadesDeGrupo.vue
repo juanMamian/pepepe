@@ -303,6 +303,8 @@ export default {
       paginaMisActividades: 0,
       paginaTodasActividades: 0,
 
+      sizePaginaActividades: 5,
+
       hayMasMisActividades: true,
       hayMasTodasActividades: true,
 
@@ -416,14 +418,26 @@ export default {
                 variables: { idGrupo: this.$route.params.idGrupo, pagina: 0 },
               });
               console.log(`Cache: ${JSON.stringify(cache)}`);
-              cache.misActividadesCreadasGrupoEstudiantil.actividades.unshift(
+              var nuevoCache = JSON.parse(JSON.stringify(cache));
+              nuevoCache.misActividadesCreadasGrupoEstudiantil.actividades.unshift(
                 nuevaActividad
               );
-              cache.misActividadesCreadasGrupoEstudiantil.actividades.pop();
+              console.log(`Unshifted Cache: ${JSON.stringify(nuevoCache)}`);
+
+              if (
+                nuevoCache.misActividadesCreadasGrupoEstudiantil.actividades &&
+                nuevoCache.misActividadesCreadasGrupoEstudiantil.actividades
+                  .length > this.sizePaginaActividades
+              ) {
+                nuevoCache.misActividadesCreadasGrupoEstudiantil.actividades.pop();
+              }
+
+              console.log(`Popped Cache: ${JSON.stringify(nuevoCache)}`);
+
               store.writeQuery({
                 query: QUERY_MIS_ACTIVIDADES_CREADAS,
                 variables: { idGrupo: this.$route.params.idGrupo, pagina: 0 },
-                data: cache,
+                data: nuevoCache,
               });
               console.log(`cache actualizado`);
             } catch (error) {

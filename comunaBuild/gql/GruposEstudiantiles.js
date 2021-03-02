@@ -265,7 +265,7 @@ exports.resolvers = {
         },
         misActividadesCreadasGrupoEstudiantil(_, { idGrupo, pagina }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Petición de actividades creadas por el usuario`);
+                console.log(`Petición de actividades creadas por el usuario: pagina ${pagina}`);
                 let credencialesUsuario = contexto.usuario;
                 try {
                     var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
@@ -318,7 +318,6 @@ exports.resolvers = {
                     actividadesGrupo[i].idGrupo = idGrupo;
                 }
                 let hayMas = pagina * sizePaginaActividades < numActividades;
-                console.log(`Enviando todas actividades del grupo ${elGrupo.nombre}`);
                 return { hayMas, actividades: actividadesGrupo };
             });
         },
@@ -623,18 +622,22 @@ exports.resolvers = {
         },
         eliminarActividadDeGrupoEstudiantil: function (_, { idActividad, idGrupo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`peticion de eliminar una actividad con id ${idActividad} de un proyecto con id ${idGrupo}`);
+                console.log(`peticion de eliminar una actividad con id ${idActividad} de un grupo con id ${idGrupo}`);
+                var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                 try {
                     var elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findById(idGrupo).exec();
                     if (!elGrupo) {
                         throw "grupo no encontrado";
                     }
-                    var laActividad = elGrupo.actividades.id(idActividad);
+                    var laActividad = yield ColeccionActividadesEsteGrupo.findById(idActividad).exec();
+                    if (!laActividad)
+                        throw "Actividad no encontrada";
                 }
                 catch (error) {
                     console.log("Error buscando el grupo en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
+                console.log(`Grupo ${elGrupo.nombre}`);
                 //Authorización
                 let credencialesUsuario = contexto.usuario;
                 if (!credencialesUsuario.permisos.includes("actividadesEstudiantiles-administrador") && !credencialesUsuario.permisos.includes("superadministrador") && laActividad.idCreador != credencialesUsuario.id) {
@@ -642,7 +645,6 @@ exports.resolvers = {
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
-                    var ColeccionActividadesEsteGrupo = mongoose_1.default.model("actividadesGrupo" + idGrupo, GrupoEstudiantil_1.esquemaActividad, "actividadesGrupo" + idGrupo);
                     yield ColeccionActividadesEsteGrupo.findByIdAndDelete(idActividad);
                 }
                 catch (error) {

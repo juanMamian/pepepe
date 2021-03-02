@@ -284,7 +284,7 @@ export const resolvers = {
             return elGrupoEstudiantil;
         },
         async misActividadesCreadasGrupoEstudiantil(_: any, { idGrupo, pagina }, contexto: contextoQuery) {
-            console.log(`Petición de actividades creadas por el usuario`);
+            console.log(`Petición de actividades creadas por el usuario: pagina ${pagina}`);
             let credencialesUsuario = contexto.usuario;
 
             try {
@@ -339,7 +339,6 @@ export const resolvers = {
             }
 
             let hayMas = pagina * sizePaginaActividades < numActividades;
-            console.log(`Enviando todas actividades del grupo ${elGrupo.nombre}`);
             return { hayMas, actividades: actividadesGrupo }
         },
         gruposEstudiantiles: async function (_: any, __: any, contexto: contextoQuery) {
@@ -663,20 +662,24 @@ export const resolvers = {
 
         },
         eliminarActividadDeGrupoEstudiantil: async function (_: any, { idActividad, idGrupo }: any, contexto: contextoQuery) {
-            console.log(`peticion de eliminar una actividad con id ${idActividad} de un proyecto con id ${idGrupo}`);
+            console.log(`peticion de eliminar una actividad con id ${idActividad} de un grupo con id ${idGrupo}`);
+
+            var ColeccionActividadesEsteGrupo = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
 
             try {
                 var elGrupo: any = await GrupoEstudiantil.findById(idGrupo).exec();
                 if (!elGrupo) {
                     throw "grupo no encontrado"
                 }
-                var laActividad = elGrupo.actividades.id(idActividad);
+                var laActividad:any = await ColeccionActividadesEsteGrupo.findById(idActividad).exec();
+                if(!laActividad) throw "Actividad no encontrada"
             }
             catch (error) {
                 console.log("Error buscando el grupo en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
+            console.log(`Grupo ${elGrupo.nombre}`);
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
@@ -686,7 +689,6 @@ export const resolvers = {
             }
 
             try {
-                var ColeccionActividadesEsteGrupo = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
                 await ColeccionActividadesEsteGrupo.findByIdAndDelete(idActividad);
             }
             catch (error) {
