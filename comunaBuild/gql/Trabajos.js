@@ -16,6 +16,16 @@ const Nodo = require("../model/atlas/Nodo");
 const Foro_1 = require("../model/Foros/Foro");
 const Proyecto_1 = require("../model/Proyecto");
 exports.typeDefs = apollo_server_express_1.gql `
+
+    type MaterialTrabajo{
+        id: ID,
+        nombre: String,
+        descripcion:String,
+        cantidadNecesaria:Int,
+        cantidadDisponible:Int,    
+        idTrabajoParent:ID,
+    }
+
    type Trabajo{
        id: ID,
        nombre: String,
@@ -28,6 +38,7 @@ exports.typeDefs = apollo_server_express_1.gql `
        keywords:String,
        idProyectoParent:ID,
        estadoDesarrollo:String,
+       materiales:[MaterialTrabajo]
    }
 
    type InfoBasicaTrabajo{
@@ -40,6 +51,14 @@ exports.typeDefs = apollo_server_express_1.gql `
        trabajo(idTrabajo: ID!):Trabajo,
        busquedaTrabajosProyectos(textoBusqueda:String!):[InfoBasicaTrabajo],
        trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo]
+   }
+
+   extend type Mutation{
+    crearMaterialEnTrabajoDeProyecto(idProyecto:ID!, idTrabajo:ID!):MaterialTrabajo,
+    eliminarMaterialDeTrabajo(idTrabajo:ID!, idMaterial: ID!):Boolean,
+    editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
+    editarDescripcionMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoDescripcion: String!):MaterialTrabajo,
+    editarCantidadesMaterialTrabajo(idTrabajo: ID!, idMaterial:ID!, nuevoCantidadNecesaria:Int!, nuevoCantidadDisponible:Int):MaterialTrabajo,
    }
 
 `;
@@ -149,4 +168,203 @@ exports.resolvers = {
             });
         }
     },
+    Mutation: {
+        crearMaterialEnTrabajoDeProyecto(_, { idProyecto, idTrabajo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Peticion de crear un nuevo material en el trabajo con id ${idTrabajo}`);
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario.id) {
+                    console.log(`Usuario no autenticado`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo)
+                        throw "Trabajo no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error buscando el trabajo. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    var nuevoMaterial = elTrabajo.materiales.create();
+                    elTrabajo.materiales.push(nuevoMaterial);
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el material creado en el trabajo. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el material en el trabajo");
+                }
+                console.log(`Enviando nuevo material: ${nuevoMaterial}`);
+                return nuevoMaterial;
+            });
+        },
+        editarNombreMaterialTrabajo(_, { idTrabajo, idMaterial, nuevoNombre }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`cambiando el nombre del material con id ${idMaterial} del trabajo con id ${idTrabajo}`);
+                const charProhibidosNombreMaterial = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+                nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
+                if (charProhibidosNombreMaterial.test(nuevoNombre)) {
+                    throw new apollo_server_express_1.ApolloError("Nombre ilegal");
+                }
+                nuevoNombre = nuevoNombre.trim();
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "trabajo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el trabajo. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Erro en la conexión con la base de datos");
+                }
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                if (!elTrabajo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                    console.log(`Error de autenticacion editando nombre de trabajo`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elMaterial = elTrabajo.materiales.id(idMaterial);
+                    if (!elMaterial) {
+                        console.log(`Material no encontrado en el trabajo`);
+                        throw "No existía el material";
+                    }
+                    elMaterial.nombre = nuevoNombre;
+                }
+                catch (error) {
+                    console.log("Error cambiando el nombre en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error guardando el nombre en la base de datos");
+                }
+                try {
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el material creado en el trabajo. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el material en el trabajo");
+                }
+                console.log(`Nombre cambiado`);
+                return elMaterial;
+            });
+        },
+        editarDescripcionMaterialTrabajo(_, { idTrabajo, idMaterial, nuevoDescripcion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||`);
+                console.log(`Solicitud de set descripcion de material con id ${idMaterial} del trabajo con id ${idTrabajo}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "trabajo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el trabajo. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elTrabajo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Descripcion de trabajo`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                const charProhibidosDescripcionMaterial = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+                if (charProhibidosDescripcionMaterial.test(nuevoDescripcion)) {
+                    throw new apollo_server_express_1.ApolloError("Descripcion ilegal");
+                }
+                nuevoDescripcion = nuevoDescripcion.trim();
+                let elMaterial = elTrabajo.materiales.id(idMaterial);
+                if (!elMaterial) {
+                    console.log(`No existía el material`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                elMaterial.descripcion = nuevoDescripcion;
+                try {
+                    console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log(`error guardando el trabajo con coordenadas manuales: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error guardando información en la base de datos");
+                }
+                console.log(`Descripcion guardado`);
+                return elMaterial;
+            });
+        },
+        editarCantidadesMaterialTrabajo(_, { idTrabajo, idMaterial, nuevoCantidadNecesaria, nuevoCantidadDisponible }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||`);
+                console.log(`Solicitud de set cantidades de material con id ${idMaterial} del trabajo con id ${idTrabajo}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "trabajo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el trabajo. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elTrabajo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Descripcion de trabajo`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                //Validacion
+                nuevoCantidadNecesaria = parseInt(nuevoCantidadNecesaria);
+                nuevoCantidadDisponible = parseInt(nuevoCantidadDisponible);
+                if (nuevoCantidadDisponible < 0 || nuevoCantidadNecesaria < 0) {
+                    throw new apollo_server_express_1.UserInputError("Datos no válidos");
+                }
+                let elMaterial = elTrabajo.materiales.id(idMaterial);
+                if (!elMaterial) {
+                    console.log(`No existía el material`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                elMaterial.cantidadNecesaria = nuevoCantidadNecesaria;
+                elMaterial.cantidadDisponible = nuevoCantidadDisponible;
+                try {
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log(`error guardando el trabajo con coordenadas manuales: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error guardando información en la base de datos");
+                }
+                console.log(`Cantidades guardado`);
+                return elMaterial;
+            });
+        },
+        eliminarMaterialDeTrabajo(_, { idMaterial, idTrabajo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`peticion de eliminar un material con id ${idMaterial} de un trabajo con id ${idTrabajo}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "trabajo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el trabajo en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elTrabajo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando nombre de trabajo`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    yield Trabajo_1.ModeloTrabajo.findByIdAndUpdate(idTrabajo, { $pull: { materiales: { "_id": idMaterial } } });
+                }
+                catch (error) {
+                    console.log("Error eliminando el material. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`eliminado`);
+                return true;
+            });
+        },
+    }
 };

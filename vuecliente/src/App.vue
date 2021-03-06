@@ -2,48 +2,61 @@
   <div id="app">
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
-      <router-link
-        to="/actividadesVirtuales2021"
-        v-if="usuarioLogeado == true"        
-      >
-        <div class="botonNavBarra botonNav hoverNegro" id="navActividadesVirtuales">
+      <router-link to="/actividadesVirtuales2021" v-if="usuarioLogeado == true">
+        <div
+          class="botonNavBarra botonNav hoverNegro"
+          id="navActividadesVirtuales"
+        >
           Actividades virtuales
         </div>
       </router-link>
 
       <div id="bloqueProyectos">
-        <router-link
-          to="/proyectos"          
-          v-if="usuarioLogeado == true"
-        >
-          <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">Proyectos</div>
+        <router-link to="/proyectos" v-if="usuarioLogeado == true">
+          <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
+            Proyectos
+          </div>
         </router-link>
         <div id="enlacesHijosProyectos" class="contenedorHijos">
-          <router-link
-          to="/trabajos"
-          v-if="usuarioLogeado == true"
-        >
-          <div class="botonNavHijo botonNav hoverNegro" id="navProyectos">Trabajos</div>
-        </router-link>
+          <router-link to="/trabajos" v-if="usuarioLogeado == true">
+            <div class="botonNavHijo botonNav hoverNegro" id="navTrabajos">
+              Trabajos
+            </div>
+          </router-link>
+          <router-link to="/materiales" v-if="usuarioLogeado == true">
+            <div class="botonNavHijo botonNav hoverNegro" id="navMateriales">
+              Materiales
+            </div>
+          </router-link>
         </div>
+        
       </div>
 
       <router-link to="/atlas">
-        <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">Atlas de conocimientos</div>
+        <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
+          Atlas de conocimientos
+        </div>
       </router-link>
 
       <router-link
         to="/personas"
         v-if="usuarioAdministrador || usuarioSuperadministrador"
       >
-        <div class="botonNavBarra botonNav hoverNegro" id="navActividadesVirtuales">Personas</div>
+        <div
+          class="botonNavBarra botonNav hoverNegro"
+          id="navActividadesVirtuales"
+        >
+          Personas
+        </div>
       </router-link>
       <router-link
         to="/registro"
         id="navRegistro"
         v-if="usuarioSuperadministrador"
       >
-        <div class="botonNavBarra botonNav hoverNegro">Registrar usuario</div></router-link
+        <div class="botonNavBarra botonNav hoverNegro">
+          Registrar usuario
+        </div></router-link
       >
       <div id="botonesNavDerecha">
         <div
@@ -417,10 +430,10 @@ input {
   color: white;
   box-sizing: border-box;
 }
-.botonNavBarra{
+.botonNavBarra {
   height: 100%;
 }
-.botonNavHijo{
+.botonNavHijo {
   padding-bottom: 30px;
 }
 #botonesNavDerecha {
@@ -472,13 +485,13 @@ input {
   opacity: 0.8;
   pointer-events: none;
 }
-#bloqueProyectos{
+#bloqueProyectos {
   position: relative;
 }
-#bloqueProyectos:hover>.contenedorHijos{
+#bloqueProyectos:hover > .contenedorHijos {
   display: block;
 }
-.contenedorHijos{
+.contenedorHijos {
   background-color: #f0a646;
   position: absolute;
   top: 100%;

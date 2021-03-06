@@ -1,6 +1,30 @@
 import mongoose from "mongoose";
 import {EsquemaVinculosNodosProyecto} from "./VinculosNodosProyecto";
 
+const esquemaMaterial= new mongoose.Schema({
+    nombre:{
+        type:String,
+        required:true,
+        min:3,
+        max:100,
+        default:"Nuevo material"
+    },
+    descripcion:{
+        type:String,
+        max:2000,
+    },
+    cantidadNecesaria:{
+        type:Number,
+        required:true,
+        default:1,
+    },
+    cantidadDisponible:{
+        type:Number,
+        required:true,
+        default:0,
+    }
+
+});
 
 export var esquemaTrabajo = new mongoose.Schema();
 
@@ -61,7 +85,10 @@ esquemaTrabajo.add({
                 default:0
             }
         }
-
+    },
+    materiales:{
+        type:[esquemaMaterial],
+        default:[],
     }
    
 });

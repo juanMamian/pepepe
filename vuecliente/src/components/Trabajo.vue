@@ -1,24 +1,20 @@
 <template>
   <div class="trabajo">
     <div id="zonaNombre" class="bordeAbajo">
-      <div class="barraSuperiorZona">
-       
-      </div>
+      <div class="barraSuperiorZona"></div>
       <div id="nombre">
         {{ esteTrabajo.nombre }}
-      </div>      
+      </div>
       <img src="@/assets/iconos/iconoTrabajo.png" alt="" id="imagenIcono" />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
         <span class="nombreZona">Descripcion</span>
-        
       </div>
 
       <div id="descripcion" ref="descripcion">
         {{ esteTrabajo.descripcion }}
       </div>
-
     </div>
 
     <div id="zonaResponsables" class="zonaPrimerNivel">
@@ -51,21 +47,15 @@
       </div>
     </div>
 
-    <div
-      id="zonaNodosConocimiento"
-      class="zonaPrimerNivel"
-      v-show="false"
-    >
+    <div id="zonaNodosConocimiento" class="zonaPrimerNivel" v-show="false">
       <div class="nombreZona">Nodos de conocimiento involucrados</div>
       <div id="controlesNodosConocimiento" class="controlesZona">
-        <div
-          class="controlesNodosConocimiento hoverGris botonesControles"          
-        >
+        <div class="controlesNodosConocimiento hoverGris botonesControles">
           Añadir
         </div>
         <div
           class="controlesNodosConocimiento hoverGris botonesControles"
-          v-if="            
+          v-if="
             idNodoSeleccionado != null &&
             esteTrabajo.nodosConocimiento.some(
               (n) => n.id == idNodoSeleccionado
@@ -86,14 +76,43 @@
       </div>
     </div>
 
-    <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel" v-if="esteTrabajo.idForo">
+    <div id="zonaMateriales" ref="zonaMateriales" class="zonaPrimerNivel" @click.stop="idMaterialSeleccionado = null">
+      <div class="nombreZona">Materiales</div>
+      <div id="controlesMateriales" class="controlesZona">
+        <div
+          class="controlesMateriales botonesControles hoverGris"
+          v-if="usuarioResponsableTrabajo"
+          @click="crearNuevoMaterial"
+        >
+          Añadir material
+        </div>
+      </div>
+
+      <div id="listaMateriales" >
+        <material-trabajo
+          v-for="material of esteTrabajo.materiales"
+          :key="material.id"
+          :esteMaterial="material"
+          :seleccionado="material.id == idMaterialSeleccionado"
+          :usuarioResponsableTrabajo="usuarioResponsableTrabajo"
+          :idTrabajo="esteTrabajo.id"
+          @click.native.stop="idMaterialSeleccionado = material.id"
+          @meElimine="eliminarMaterialDeCache(material.id)"
+        />
+      </div>
+    </div>
+
+    <div
+      id="zonaForo"
+      ref="zonaForo"
+      class="zonaPrimerNivel"
+      v-if="esteTrabajo.idForo"
+    >
       <div class="nombreZona">foro</div>
       <foro :parent="infoAsParent" :idForo="esteTrabajo.idForo" />
     </div>
 
-    <div id="controlesTrabajo">
-      
-    </div>
+    <div id="controlesTrabajo"></div>
   </div>
 </template>
 
@@ -101,8 +120,8 @@
 import gql from "graphql-tag";
 import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Foro from "./Foro.vue";
-import IconoPersonaAutonomo from './proyecto/IconoPersonaAutonomo.vue';
-
+import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
+import MaterialTrabajo from "./trabajo/MaterialTrabajo.vue";
 
 const QUERY_TRABAJO = gql`
   query($idTrabajo: ID!) {
@@ -112,6 +131,14 @@ const QUERY_TRABAJO = gql`
       descripcion
       idForo
       responsables
+      idProyectoParent
+      materiales {
+        id
+        nombre
+        descripcion
+        cantidadNecesaria
+        cantidadDisponible
+      }
     }
   }
 `;
@@ -121,11 +148,12 @@ export default {
   components: {
     BuscadorNodosConocimiento,
     Foro,
-    IconoPersonaAutonomo
+    IconoPersonaAutonomo,
+    MaterialTrabajo,
   },
   apollo: {
     esteTrabajo: {
-     query: QUERY_TRABAJO,
+      query: QUERY_TRABAJO,
       variables() {
         return {
           idTrabajo: this.$route.params.idTrabajo,
@@ -148,22 +176,23 @@ export default {
       idNodoSeleccionado: null,
       deshabilitado: false,
 
+      idMaterialSeleccionado: null,
+      creandoMaterial: false,
     };
-  },  
+  },
   computed: {
     usuarioResponsableTrabajo: function () {
-      return this.esteTrabajo.responsables.includes(this.usuario.id);        
-    },   
-    infoAsParent(){
+      return this.esteTrabajo.responsables.includes(this.usuario.id);
+    },
+    infoAsParent() {
       return {
         id: this.esteTrabajo.id,
         tipo: "trabajo",
         nombre: this.esteTrabajo.nombre,
-      }
-    }
+      };
+    },
   },
   methods: {
-   
     asumirComoResponsable() {
       console.log(
         `enviando id ${this.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.idEsteProyecto}`
@@ -216,7 +245,98 @@ export default {
           console.log("error: " + error);
         });
     },
-    
+
+    crearNuevoMaterial() {
+      console.log(`enviando mutacion de crear nuevo material`);
+      this.creandoMaterial = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idProyecto: ID!, $idTrabajo: ID!) {
+              crearMaterialEnTrabajoDeProyecto(
+                idProyecto: $idProyecto
+                idTrabajo: $idTrabajo
+              ) {
+                id
+                nombre
+                descripcion
+                cantidadNecesaria
+                cantidadDisponible
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.esteTrabajo.idProyectoParent,
+            idTrabajo: this.esteTrabajo.id,
+          },
+          update: (store, { data: { crearMaterialEnTrabajoDeProyecto } }) => {
+            console.log(
+              `respuesta: ${JSON.stringify(
+                JSON.stringify(crearMaterialEnTrabajoDeProyecto)
+              )}`
+            );
+            const nuevoMaterial = crearMaterialEnTrabajoDeProyecto;
+            try {
+              let cache = store.readQuery({
+                query: QUERY_TRABAJO,
+                variables: {
+                  idProyecto: this.esteTrabajo.idProyectoParent,
+                  idTrabajo: this.esteTrabajo.id,
+                },
+              });
+
+              let nuevoCache = JSON.parse(JSON.stringify(cache));
+              nuevoCache.trabajo.materiales.push(nuevoMaterial);
+
+              store.writeQuery({
+                query: QUERY_TRABAJO,
+                variables: {
+                  idProyecto: this.esteTrabajo.idProyectoParent,
+                  idTrabajo: this.esteTrabajo.id,
+                },
+                data: nuevoCache,
+              });
+              console.log(`cache actualizado`);
+            } catch (error) {
+              console.log(`Error actualizando cache: ${error}`);
+              return;
+            }
+          },
+        })
+        .then((respuesta) => {
+          console.log(`respuesta. ${respuesta}`);
+          this.creandoMaterial = false;
+        })
+        .catch((error) => {
+          this.creandoMaterial = false;
+          console.log(`error: ${error}`);
+        });
+    },
+    eliminarMaterialDeCache(idMaterial) {
+      let store = this.$apollo.provider.defaultClient;
+      let cache = store.readQuery({
+        query: QUERY_TRABAJO,
+        variables: {
+          idTrabajo: this.esteTrabajo.id,
+        },
+      });
+      let nuevoCache = JSON.parse(JSON.stringify(cache));
+      let indexT = nuevoCache.trabajo.materiales.findIndex(
+        (t) => t.id == idMaterial
+      );
+      if (indexT > -1) {
+        nuevoCache.trabajo.materiales.splice(indexT, 1);
+      } else {
+        console.log(`El material no existía en el trabajo`);
+      }
+      store.writeQuery({
+        query: QUERY_TRABAJO,
+        variables: {
+          idTrabajo: this.esteTrabajo.id,
+        },
+        data: nuevoCache,
+      });
+    },
   },
 };
 </script>
@@ -225,7 +345,6 @@ export default {
 .trabajo {
   border: 2px solid #0b8794;
   border-radius: 5px;
-  min-height: 50px;
   position: relative;
   padding: 5px 10px;
   padding-bottom: 20px;
@@ -266,6 +385,7 @@ export default {
 .nombreZona {
   font-size: 18px;
   padding: 5px 20px;
+  font-weight: bold;
 }
 #zonaNombre {
   position: relative;
@@ -331,7 +451,7 @@ export default {
   font-size: 13px;
   flex-direction: row-reverse;
 }
-.botonesControles{
+.botonesControles {
   border-radius: 3px;
   cursor: pointer;
   padding: 3px 5px;
@@ -350,5 +470,11 @@ export default {
   vertical-align: middle;
   margin-top: 5px;
   margin-bottom: 5px;
+}
+
+#listaMateriales{
+  padding: 10px 0px;
+  border-radius:15px;
+  border: 2px solid cadetblue;
 }
 </style>

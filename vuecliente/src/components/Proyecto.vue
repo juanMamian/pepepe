@@ -369,7 +369,7 @@ export default {
       return false;
     },
     nuevoNombreIlegal() {
-      if (this.nuevoNombre.length < 1) {
+      if (!this.nuevoNombre || this.nuevoNombre.length < 1) {
         return true;
       }
       if (charProhibidosNombreProyecto.test(this.nuevoNombre)) {
