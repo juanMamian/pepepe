@@ -39,6 +39,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         objetivos: [Objetivo],
         idForo:ID,
         idsTrabajos:[ID],
+        materiales:[MaterialTrabajo],
     }
     type Objetivo{
        id: ID,
@@ -1302,6 +1303,28 @@ exports.resolvers = {
                     return [];
                 }
                 return usuariosPosiblesResponsables;
+            });
+        },
+        materiales: function (parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Resolviendo materiales de ${parent.id} con ${parent.idsTrabajos.length} trabajos`);
+                try {
+                    var losTrabajos = yield Trabajo_1.ModeloTrabajo.find({ "_id": { $in: parent.idsTrabajos } }).select("nombre materiales").exec();
+                }
+                catch (error) {
+                    console.log(`Error querying los trabajos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var aMateriales = [];
+                for (var i = 0; i < losTrabajos.length; i++) {
+                    let esteTrabajo = losTrabajos[i];
+                    for (var j = 0; j < esteTrabajo.materiales.length; j++) {
+                        let esteMaterial = esteTrabajo.materiales[j];
+                        esteMaterial.idTrabajoParent = esteTrabajo._id;
+                        aMateriales.push(esteMaterial);
+                    }
+                }
+                return aMateriales;
             });
         },
     },

@@ -6,6 +6,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloTrabajo = exports.esquemaTrabajo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const VinculosNodosProyecto_1 = require("./VinculosNodosProyecto");
+const esquemaMaterial = new mongoose_1.default.Schema({
+    nombre: {
+        type: String,
+        required: true,
+        min: 3,
+        max: 100,
+        default: "Nuevo material"
+    },
+    descripcion: {
+        type: String,
+        max: 2000,
+    },
+    cantidadNecesaria: {
+        type: Number,
+        required: true,
+        default: 1,
+    },
+    cantidadDisponible: {
+        type: Number,
+        required: true,
+        default: 0,
+    }
+});
 exports.esquemaTrabajo = new mongoose_1.default.Schema();
 exports.esquemaTrabajo.add({
     nombre: {
@@ -63,6 +86,10 @@ exports.esquemaTrabajo.add({
                 default: 0
             }
         }
+    },
+    materiales: {
+        type: [esquemaMaterial],
+        default: [],
     }
 });
 exports.esquemaTrabajo.index({ keywords: "text" });

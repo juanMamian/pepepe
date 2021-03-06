@@ -29,6 +29,7 @@ export const typeDefs = gql`
         objetivos: [Objetivo],
         idForo:ID,
         idsTrabajos:[ID],
+        materiales:[MaterialTrabajo],
     }
     type Objetivo{
        id: ID,
@@ -157,24 +158,24 @@ export const resolvers = {
             }
             return elProyecto
         },
-        async listaTodosTrabajosProyectos(_: any, {pagina }, contexto: contextoQuery) {
+        async listaTodosTrabajosProyectos(_: any, { pagina }, contexto: contextoQuery) {
             console.log(`Petición de info basica de todos trabajos de proyectos`);
-            const sizePaginaTrabajos=35;
-            if(contexto.usuario.id===""){
+            const sizePaginaTrabajos = 35;
+            if (contexto.usuario.id === "") {
                 console.log(`Usuario no logeado`);
                 throw new AuthenticationError("No autorizado");
             }
-            
+
             try {
                 var numTrabajos = await Trabajo.countDocuments({}).exec();
-                console.log(`Hay ${numTrabajos} trabajos en la base de datos`);    
+                console.log(`Hay ${numTrabajos} trabajos en la base de datos`);
                 var losTrabajos: any = await Trabajo.find({}, "nombre").limit(sizePaginaTrabajos).skip(pagina * sizePaginaTrabajos).exec();
             } catch (error) {
                 console.log(`Error buscando trabajos. E: ${error}`);
                 return new ApolloError("Error conectando con la base de datos");
-            }            
+            }
 
-            let hayMas = (pagina+1) * sizePaginaTrabajos < numTrabajos;
+            let hayMas = (pagina + 1) * sizePaginaTrabajos < numTrabajos;
             console.log(`Enviando pagina ${pagina} de trabajos`);
             return { hayMas, infoTrabajos: losTrabajos }
         },
@@ -208,7 +209,7 @@ export const resolvers = {
                 throw new ApolloError("El usuario ya estaba en la lista");
             }
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -254,7 +255,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -321,7 +322,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -560,7 +561,7 @@ export const resolvers = {
             }
 
             try {
-                var nuevoTrabajo: any = await new Trabajo({idProyectoParent:idProyecto, idForo: idNuevoForo, diagramaProyecto: { posicion } });
+                var nuevoTrabajo: any = await new Trabajo({ idProyectoParent: idProyecto, idForo: idNuevoForo, diagramaProyecto: { posicion } });
                 var idNuevoTrabajo = nuevoTrabajo._id;
                 await nuevoTrabajo.save();
             } catch (error) {
@@ -762,7 +763,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -787,9 +788,9 @@ export const resolvers = {
             }
 
             try {
-                const indexT=elUsuario.misTrabajos.indexOf(elTrabajo._id);
-                if(indexT>-1)elUsuario.misTrabajos.splice(indexT, 1);
-                
+                const indexT = elUsuario.misTrabajos.indexOf(elTrabajo._id);
+                if (indexT > -1) elUsuario.misTrabajos.splice(indexT, 1);
+
                 elTrabajo.responsables.push(idUsuario);
                 elUsuario.misTrabajos.push(elTrabajo._id);
                 console.log(`Usuario añadido a la lista de responsables`);
@@ -823,7 +824,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -856,8 +857,8 @@ export const resolvers = {
             console.log(`Usuario retirado de la lista de responsables`);
 
             try {
-                const indexT=elUsuario.misTrabajos.indexOf(elTrabajo._id);
-                if(indexT>-1)elUsuario.misTrabajos.splice(indexT, 1);
+                const indexT = elUsuario.misTrabajos.indexOf(elTrabajo._id);
+                if (indexT > -1) elUsuario.misTrabajos.splice(indexT, 1);
 
                 await elTrabajo.save();
                 await elUsuario.save();
@@ -1336,7 +1337,7 @@ export const resolvers = {
 
         },
 
-                
+
     },
     Proyecto: {
         personasResponsables: async function (parent: any, _: any, __: any) {
@@ -1373,6 +1374,26 @@ export const resolvers = {
             }
 
             return usuariosPosiblesResponsables;
+        },
+        materiales: async function (parent: any, _: any, __: any) {
+            console.log(`Resolviendo materiales de ${parent.id} con ${parent.idsTrabajos.length} trabajos`);
+
+            try {
+                var losTrabajos: any = await Trabajo.find({ "_id": { $in: parent.idsTrabajos } }).select("nombre materiales").exec();
+            } catch (error) {
+                console.log(`Error querying los trabajos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            var aMateriales:any[] = [];
+            for (var i = 0; i < losTrabajos.length; i++) {
+                let esteTrabajo=losTrabajos[i];
+                for(var j=0;j<esteTrabajo.materiales.length;j++){
+                    let esteMaterial=esteTrabajo.materiales[j];
+                    esteMaterial.idTrabajoParent=esteTrabajo._id;
+                    aMateriales.push(esteMaterial);
+                }                
+            }
+            return aMateriales;
         },
     },
 
