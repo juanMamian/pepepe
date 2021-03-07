@@ -503,4 +503,9 @@ export default {
 #bEliminar:hover{
   background-color: red;
 }
+
+.inputNuevoNombre{
+  min-width: 300px;
+  padding: 5px;
+}
 </style>
