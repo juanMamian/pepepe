@@ -1,11 +1,16 @@
 <template>
   <div class="foro">
-    <div
-      class="barraSuperiorForo"
-      :class="{ seleccionable: conversacionAbierta }"
-      @click="idConversacionSeleccionada = null"
-    >
-      <div id="anuncio">Conversaciones</div>
+    <div class="barraSuperiorForo">
+      <div id="anuncio" v-show="idConversacionSeleccionada === null">
+        Conversaciones
+      </div>
+      <div
+        id="bRegresarConversaciones"
+        v-show="idConversacionSeleccionada != null"
+        @click="idConversacionSeleccionada = null"
+      >
+        Volver a conversaciones
+      </div>
       <div id="controlesForo">
         <div
           class="controlesForo botonesControles"
@@ -224,9 +229,19 @@ export default {
 
 .barraSuperiorForo {
   display: flex;
+  background-color: #ddfeff;
 }
-.barraSuperiorForo:not(.seleccionable) {
-  background-color: #4db9b9;
+
+#bRegresarConversaciones {
+  padding: 20px 5px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 10px;
+  margin: 10px auto;
+  border: 2px solid black;
+}
+#bRegresarConversaciones:hover{
+  background-color: cadetblue;
 }
 #controlesForo {
   margin-left: auto;
@@ -246,17 +261,11 @@ export default {
 .zonaConversaciones {
   padding-left: 0px;
 }
-.seleccionable {
-  background-color: #95cccc;
-  cursor: pointer;
-}
-.seleccionable:hover {
-  background-color: #4db9b9;
-}
+
 .zonaSelectorPagina {
   display: flex;
   padding: 2px 10px;
-  background-color: #4db9b9;
+  background-color: #ddfeff;
 }
 .selectorPagina {
   border: 1px solid black;
