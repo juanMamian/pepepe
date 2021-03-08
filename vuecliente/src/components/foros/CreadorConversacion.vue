@@ -45,6 +45,7 @@ export default {
   name: "CreadorConversacion",
   props: {
     idForo: String,
+    parent:Object,
   },
   data() {
     return {
@@ -68,10 +69,11 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idForo: ID!, $input: InputIniciarConversacion) {
+            mutation($idForo: ID!, $input: InputIniciarConversacion, $parent:InputParent) {
               iniciarConversacionConPrimerMensajeForo(
-                idForo: $idForo
-                input: $input
+                idForo: $idForo,
+                input: $input,
+                parent: $parent,
               ) {
                 ...fragConversacion
               }
@@ -81,6 +83,7 @@ export default {
           variables: {
             idForo: dis.idForo,
             input,
+            parent:dis.parent
           },
         })
         .then(({ data: { iniciarConversacionConPrimerMensajeForo } }) => {

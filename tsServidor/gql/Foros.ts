@@ -82,7 +82,7 @@ export const typeDefs = gql`
     }
 
     extend type Mutation{
-        iniciarConversacionConPrimerMensajeForo(idForo: ID!, input: InputIniciarConversacion):Conversacion,
+        iniciarConversacionConPrimerMensajeForo(idForo: ID!, input: InputIniciarConversacion, parent:InputParent):Conversacion,
         eliminarRespuesta(idRespuesta:ID!, idConversacion:ID!):Boolean,
         postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta, parent: InputParent):RespuestaConversacionForo,
         setCantidadRespuestasConversacionLeidasPorUsuario(idUsuario:ID!, idForo:ID!, idConversacion: ID!, cantidadRespuestasLeidas:Int!):Boolean
@@ -185,7 +185,7 @@ export const resolvers = {
     },
     Mutation: {
 
-        async iniciarConversacionConPrimerMensajeForo(_: any, { idForo, input }: any, contexto: contextoQuery) {
+        async iniciarConversacionConPrimerMensajeForo(_: any, { idForo, input, parent }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||||`);
             console.log(`Recibida solicitud de iniciar una conversacion con primera respuesta en foro con id ${idForo} con input: ${JSON.stringify(input)}`);
 
@@ -268,6 +268,62 @@ export const resolvers = {
                 console.log(`Error guardando el foro con la nueva conversacion. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+
+            //Crear notificacion para los miembros del parent.
+
+            console.log(`Creando notificacion para los miembros del ${parent.tipo} ${parent.nombre}`);
+            try {
+                if (parent.tipo == "proyecto") {
+                    var elParent: any = await Proyecto.findById(parent.id, "_id responsables").exec();
+                    var idsMiembros = elParent.responsables;
+                }
+                else if (parent.tipo == "trabajo") {
+                    var elParent: any = await Trabajo.findById(parent.id, "_id responsables").exec();
+                    var idsMiembros = elParent.responsables;
+                }
+                else if (parent.tipo == "nodoConocimiento") {
+                    var elParent: any = await NodoConocimiento.findById(parent.id, "_id expertos").exec();
+                    var idsMiembros = elParent.expertos;
+                }
+                else {
+                    console.log(`Error: tipo de parent no reconocido`);
+                }
+
+            } catch (error) {
+                console.log(`Error recopilando la lista de miembros. E: ${error}`);
+            }
+
+
+            console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
+            let indexU = idsMiembros.indexOf(credencialesUsuario.id);
+            if (indexU > -1) {
+                idsMiembros.splice(indexU, 1);
+            }
+
+            for (let idMiembro of idsMiembros) {
+                try {
+                    let elNotificado: any = await Usuario.findById(idMiembro).exec();
+                    if (!elNotificado) throw "Notificado " + idMiembro + " no encontrado";
+                    var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
+                    if (indexNotificacion > -1) {
+                        console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
+                        elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
+                    }
+                    else{
+                        elNotificado.notificacionesActividadForos.push({
+                            idParent:parent.id,
+                            tipoParent: parent.tipo,
+                            nombreParent:parent.nombre,
+                            numeroRespuestasNuevas:1,
+                        });                        
+                    }
+                    await elNotificado.save();
+                } catch (error) {
+                    console.log(`Error buscando el notificado: E: ${error}`);
+                }
+            }
+
+
             console.log(`Nueva conversacion creada`);
             return nuevaConversacion;
 

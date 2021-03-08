@@ -50,17 +50,17 @@ export default {
           idParent,
         },
         update: (store, { data: { eliminarNotificacionActividadForos } }) => {
-          if (eliminarNotificacionActividadForos) {
+          if (eliminarNotificacionActividadForos) {            
             let cache = store.readQuery({
               query: QUERY_YO,
-            });
+            });            
             let nuevoCache = JSON.parse(JSON.stringify(cache));
             let indexN = nuevoCache.yo.notificacionesActividadForos.findIndex(
               (n) => n.idParent == idParent
             );
             if (indexN > -1) {
               nuevoCache.yo.notificacionesActividadForos.splice(indexN, 1);
-            }
+            }            
             store.writeQuery({
               query: QUERY_YO,
               data: nuevoCache,

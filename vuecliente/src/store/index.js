@@ -70,29 +70,30 @@ export default new Vuex.Store({
         },
 
         setRespuestasLeidasConversacionUsuario(state, datos){
-            console.log(`Setting con datos: ${JSON.stringify(datos)}`);
-            var infoForo=state.usuario.foros.find(f=>f.id==datos.idForo);
-            console.log(`State foros: ${JSON.stringify(state.usuario.foros)}`);
+            var infoForo=state.usuario.foros.find(f=>f.idForo==datos.idForo);
             if(!infoForo){
                 var nuevoInfoForo={
                     idForo:datos.idForo,
-                    conversaciones:[]
+                    conversaciones:[],
+                    __typename:"InfoForosUsuario"
                 };
                 state.usuario.foros.push(nuevoInfoForo);
                 infoForo=state.usuario.foros.find(f=>f.idForo==datos.idForo);
             }
-            console.log(`State foros: ${JSON.stringify(state.usuario.foros)}`);
+            
 
-            var infoConversacion=infoForo.conversaciones.find(c=>c.idconversacion==datos.idConversacion);
+            var infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==datos.idConversacion);
             if(!infoConversacion){
                 var nuevoInfoConversacion={
                     idConversacion:datos.idConversacion,                    
+                    __typename:"InfoConversacionesUsuario"
                 }
                 infoForo.conversaciones.push(nuevoInfoConversacion);
                 infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==datos.idConversacion);
             }
             infoConversacion.respuestasLeidas=datos.respuestasLeidas;                        
-            console.log(`State foros: ${JSON.stringify(state.usuario.foros)}`);
+            console.log(`En variable IC: ${JSON.stringify(infoConversacion)}`);
+            console.log(`En state IC: ${JSON.stringify(state.usuario.foros.find(f=>f.idForo==datos.idForo).conversaciones.find(c=>c.idConversacion==datos.idConversacion))}`);
         }
     }
 });

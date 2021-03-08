@@ -35,6 +35,7 @@
           esteForo.id
         "
         :idForo="esteForo.id"
+        :parent="parent"
         v-show="creandoConversacion"
         @hiceConversacion="addConversacion($event)"
       />
