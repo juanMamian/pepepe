@@ -29,7 +29,6 @@
             </div>
           </router-link>
         </div>
-        
       </div>
 
       <router-link to="/atlas">
@@ -159,6 +158,13 @@ export const QUERY_YO = gql`
         nombreParent
       }
       permisos
+      foros {
+        idForo
+        conversaciones {
+          idConversacion
+          respuestasLeidas
+        }
+      }
     }
   }
 `;
@@ -184,6 +190,10 @@ export default {
     yo: {
       query: QUERY_YO,
       fetchPolicy: "network-only",
+      update({ yo }){
+        this.$store.commit("setInfoForosUsuario", yo.foros);
+        return yo
+      },
       skip() {
         return !this.usuarioLogeado;
       },

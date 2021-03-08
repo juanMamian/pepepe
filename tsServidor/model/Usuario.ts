@@ -149,6 +149,27 @@ const esquemaUsuario = new mongoose.Schema({
         type:[String],
         required:true,
         default:[]
+    },
+    foros:{
+        type:[{
+            idForo:{
+                type:String,
+                required:true,
+            },
+            conversaciones:{
+                type:[{
+                    idConversacion:{
+                        type:String,
+                        required:true,
+                    },
+                    respuestasLeidas:{
+                        type:Number,
+                        default:0,
+                    }
+                }],
+                default:[]                
+            }
+        }]
     }
 
 });

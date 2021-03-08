@@ -55,6 +55,16 @@ export const typeDefs = gql`
         nodoConocimiento: NodoConocimiento
     }
 
+    type InfoConversacionesUsuario{
+        idConversacion:ID,
+        respuestasLeidas:Int,
+    }
+
+    type InfoForosUsuario{
+        idForo:ID,
+        conversaciones:[InfoConversacionesUsuario]
+    }
+
     type Usuario{
         id: ID,
         nombres:String,
@@ -72,6 +82,7 @@ export const typeDefs = gql`
         nombreGrupoEstudiantil:String,
         notificaciones:[Notificacion],
         notificacionesActividadForos:[NotificacionActividadForos],
+        foros:[InfoForosUsuario]
     }
     input DatosEditablesUsuario{
         nombres:String,

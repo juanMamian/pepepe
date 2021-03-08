@@ -10,7 +10,29 @@
         class="imagenConversacion"
       />
       {{ estaConversacion.titulo }}
+      <span class="datosConversacion">
+        <span
+          class="dato datoRespuestasNoLeidas"
+          title="Respuestas nuevas en esta conversación"
+          v-show="
+            estaConversacion.cantidadRespuestas >
+            cantidadRespuestasLeidasUsuario
+          "
+        >
+          {{
+            estaConversacion.cantidadRespuestas -
+            cantidadRespuestasLeidasUsuario
+          }}
+        </span>
+        <span
+          class="dato datoCantidadRespuestas"
+          title="Cantidad de respuestas en esta conversación"
+        >
+          {{ estaConversacion.cantidadRespuestas }}
+        </span>
+      </span>
     </div>
+
     <div
       class="zonaSelectorPaginas"
       v-if="numPaginas > 0"
@@ -133,7 +155,8 @@ export default {
         };
       },
     },
-    parent:Object,
+    idForo: String,
+    parent: Object,
     seleccionado: Boolean,
     usuarioMiembro: {
       type: Boolean,
@@ -170,6 +193,27 @@ export default {
       }
     },
   },
+  computed: {
+    cantidadRespuestasLeidasUsuario() {
+      if (this.usuario && this.usuario.foros) {
+        const infoForo = this.usuario.foros.find(
+          (f) => f.idForo == this.idForo
+        );
+        if (!infoForo) {
+          return 0;
+        }
+        const infoConversacion = infoForo.conversaciones.find(
+          (c) => c.idConversacion == this.estaConversacion.id
+        );
+        if (!infoConversacion) {
+          return 0;
+        }
+        return infoConversacion.respuestasLeidas;
+      } else {
+        return 0;
+      }
+    },
+  },
 };
 </script>
 
@@ -195,15 +239,37 @@ export default {
   padding: 15px 10px;
   margin: 5px;
   font-weight: bold;
-  display: flex;
+  display: grid;
   align-items: center;
+  grid-template-columns: 100px 1fr 200px;
 }
 .imagenConversacion {
   width: 50px;
   height: 50px;
   margin-right: 10px;
 }
+.datosConversacion {
+  padding: 10px 10px;
+}
+.dato {
+  margin: 0px 4px;
+  cursor: pointer;
+}
 
+.datoRespuestasNoLeidas {
+  border-radius: 10px;
+  border: 1px solid chocolate;
+  padding: 6px;
+  text-align: center;
+  background-color: rgb(243, 206, 180);
+}
+
+.datoCantidadRespuestas {
+  border-radius: 10px;
+  border: 1px solid rgb(75, 73, 73);
+  padding: 6px;
+  text-align: center;
+}
 .zonaRespuestas {
   padding-left: 0px;
 }
@@ -226,7 +292,7 @@ export default {
 .selectorPagina {
   border: 1px solid black;
   padding: 3px 5px;
-  margin:2px;
+  margin: 2px;
   border-radius: 5px;
   cursor: pointer;
   background-color: #aec6de;

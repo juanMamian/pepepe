@@ -61,12 +61,19 @@
           :estaConversacion="conversacion"
           :seleccionado="idConversacionSeleccionada == conversacion.id"
           :usuarioMiembro="usuarioMiembro"
+          :idForo="idForo"
           :parent="parent"
           v-show="
             idConversacionSeleccionada == conversacion.id ||
             !conversacionAbierta
           "
-          @click.native="idConversacionSeleccionada = conversacion.id"
+          @click.native="
+            idConversacionSeleccionada = conversacion.id;
+            setConversacionLeida(
+              conversacion.id,
+              conversacion.cantidadRespuestas
+            );
+          "
           @meElimine="refreshPagina"
         />
       </div>
@@ -192,6 +199,57 @@ export default {
       this.idConversacionSeleccionada = null;
       this.$apollo.queries.numPaginas.refresh();
     },
+    setConversacionLeida(idConversacion, cantidadRespuestasLeidas) {
+      if (!this.usuario || !this.usuario.id) {
+        return;
+      } else {
+        console.log(`Setting conversación leida`);
+
+        this.$apollo
+          .mutate({
+            mutation: gql`
+              mutation(
+                $idUsuario: ID!
+                $idForo: ID!
+                $idConversacion: ID!
+                $cantidadRespuestasLeidas: Int!
+              ) {
+                setCantidadRespuestasConversacionLeidasPorUsuario(
+                  idUsuario: $idUsuario
+                  idForo: $idForo
+                  idConversacion: $idConversacion
+                  cantidadRespuestasLeidas: $cantidadRespuestasLeidas
+                )
+              }
+            `,
+            variables: {
+              idUsuario: this.usuario.id,
+              idForo: this.idForo,
+              idConversacion,
+              cantidadRespuestasLeidas: parseInt(cantidadRespuestasLeidas),
+            },
+          })
+          .then(
+            ({
+              data: { setCantidadRespuestasConversacionLeidasPorUsuario },
+            }) => {
+              console.log(
+                `Resultado: ${setCantidadRespuestasConversacionLeidasPorUsuario}`
+              );
+              if (setCantidadRespuestasConversacionLeidasPorUsuario) {
+                this.$store.commit("setRespuestasLeidasConversacionUsuario", {
+                  idForo: this.idForo,
+                  idConversacion,
+                  respuestasLeidas: cantidadRespuestasLeidas,
+                });
+              }
+            }
+          )
+          .catch((error) => {
+            console.log(`Error. E: ${error}`);
+          });
+      }
+    },
   },
   computed: {
     usuarioMiembro() {
@@ -212,6 +270,7 @@ export default {
       return this.idConversacionSeleccionada;
     },
   },
+  
 };
 </script>
 
@@ -240,7 +299,7 @@ export default {
   margin: 10px auto;
   border: 2px solid black;
 }
-#bRegresarConversaciones:hover{
+#bRegresarConversaciones:hover {
   background-color: cadetblue;
 }
 #controlesForo {

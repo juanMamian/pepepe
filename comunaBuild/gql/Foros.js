@@ -94,7 +94,8 @@ exports.typeDefs = apollo_server_express_1.gql `
     extend type Mutation{
         iniciarConversacionConPrimerMensajeForo(idForo: ID!, input: InputIniciarConversacion):Conversacion,
         eliminarRespuesta(idRespuesta:ID!, idConversacion:ID!):Boolean,
-        postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta, parent: InputParent):RespuestaConversacionForo
+        postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta, parent: InputParent):RespuestaConversacionForo,
+        setCantidadRespuestasConversacionLeidasPorUsuario(idUsuario:ID!, idForo:ID!, idConversacion: ID!, cantidadRespuestasLeidas:Int!):Boolean
     }
 
 `;
@@ -450,6 +451,56 @@ exports.resolvers = {
                 }
                 console.log(`Respuesta posted`);
                 return laRespuesta;
+            });
+        },
+        setCantidadRespuestasConversacionLeidasPorUsuario(_, { idUsuario, idForo, idConversacion, cantidadRespuestasLeidas }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`///////////////////`);
+                console.log(`Setting respuestas leidas en conversacion ${idConversacion} en foro con id ${idForo}`);
+                const credencialesUsuario = contexto.usuario;
+                if (idUsuario != credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).select("foros").exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado en la base de datos";
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var infoForo = elUsuario.foros.find(f => f.idForo == idForo);
+                console.log(`** elUsuario.foros: ${elUsuario.foros}`);
+                if (!infoForo) {
+                    var nuevoInfoForo = {
+                        idForo,
+                        conversaciones: []
+                    };
+                    elUsuario.foros.push(nuevoInfoForo);
+                    infoForo = elUsuario.foros.find(f => f.idForo == idForo);
+                }
+                console.log(`** elUsuario.foros despues de creado el foro: ${elUsuario.foros}`);
+                var infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
+                if (!infoConversacion) {
+                    var nuevoInfoConversacion = {
+                        idConversacion,
+                        respuestasLeidas: 0,
+                    };
+                    infoForo.conversaciones.push(nuevoInfoConversacion);
+                    infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
+                }
+                infoConversacion.respuestasLeidas = cantidadRespuestasLeidas;
+                console.log(`** elUsuario.foros después de creada la conversación: ${elUsuario.foros}`);
+                console.log(`el usuario quedó: ${elUsuario}`);
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando nuevos datos del usuario. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
             });
         }
     },

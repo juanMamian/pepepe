@@ -22,7 +22,8 @@ export default new Vuex.Store({
             id: null,
             atlas:{
                 centroVista:null,
-            }
+            },
+            foros:[]
         },
         token: null,
 
@@ -62,6 +63,36 @@ export default new Vuex.Store({
 
         setCentroVistaAtlas(state, nuevoCentro){
             state.usuario.atlas.centroVista=nuevoCentro;
+        },
+
+        setInfoForosUsuario(state, foros){
+            state.usuario.foros=foros;
+        },
+
+        setRespuestasLeidasConversacionUsuario(state, datos){
+            console.log(`Setting con datos: ${JSON.stringify(datos)}`);
+            var infoForo=state.usuario.foros.find(f=>f.id==datos.idForo);
+            console.log(`State foros: ${JSON.stringify(state.usuario.foros)}`);
+            if(!infoForo){
+                var nuevoInfoForo={
+                    idForo:datos.idForo,
+                    conversaciones:[]
+                };
+                state.usuario.foros.push(nuevoInfoForo);
+                infoForo=state.usuario.foros.find(f=>f.idForo==datos.idForo);
+            }
+            console.log(`State foros: ${JSON.stringify(state.usuario.foros)}`);
+
+            var infoConversacion=infoForo.conversaciones.find(c=>c.idconversacion==datos.idConversacion);
+            if(!infoConversacion){
+                var nuevoInfoConversacion={
+                    idConversacion:datos.idConversacion,                    
+                }
+                infoForo.conversaciones.push(nuevoInfoConversacion);
+                infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==datos.idConversacion);
+            }
+            infoConversacion.respuestasLeidas=datos.respuestasLeidas;                        
+            console.log(`State foros: ${JSON.stringify(state.usuario.foros)}`);
         }
     }
 });

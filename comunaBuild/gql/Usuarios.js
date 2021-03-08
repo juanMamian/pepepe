@@ -52,6 +52,16 @@ exports.typeDefs = apollo_server_express_1.gql `
         nodoConocimiento: NodoConocimiento
     }
 
+    type InfoConversacionesUsuario{
+        idConversacion:ID,
+        respuestasLeidas:Int,
+    }
+
+    type InfoForosUsuario{
+        idForo:ID,
+        conversaciones:[InfoConversacionesUsuario]
+    }
+
     type Usuario{
         id: ID,
         nombres:String,
@@ -69,6 +79,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         nombreGrupoEstudiantil:String,
         notificaciones:[Notificacion],
         notificacionesActividadForos:[NotificacionActividadForos],
+        foros:[InfoForosUsuario]
     }
     input DatosEditablesUsuario{
         nombres:String,

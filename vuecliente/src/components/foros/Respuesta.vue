@@ -25,7 +25,7 @@
       <div
         class="controlRespuesta"
         id="bEliminar"
-        v-if="usuarioAutor || usuarioSuperadministrador"
+        v-if="usuarioSuperadministrador"
         @click="eliminarse"
       >
         Eliminar
