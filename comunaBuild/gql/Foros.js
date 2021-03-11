@@ -253,7 +253,8 @@ exports.resolvers = {
                     titulo,
                     idCreador: credencialesUsuario.id,
                     respuestas: [respuesta],
-                    acceso: "publico"
+                    acceso: "publico",
+                    cantidadRespuestas: 1
                 });
                 let idConversacion = nuevaConversacion._id;
                 try {
@@ -350,7 +351,8 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`Error eliminando respuesta. E: ${error}`);
                 }
-                if ((yield Respuesta.countDocuments().exec()) < 1) {
+                const cantRespuestas = yield Respuesta.countDocuments().exec();
+                if (cantRespuestas < 1) {
                     console.log(`La conversación quedó vacía. Eliminando`);
                     try {
                         let elForo = yield Foro_1.ModeloForo.findOne({ "conversaciones._id": idConversacion }).exec();
@@ -371,6 +373,23 @@ exports.resolvers = {
                         }
                         console.log("Collection droped");
                     });
+                }
+                else {
+                    //Actualizar el número de respuestas en esta conversación
+                    console.log(`Setting cant respuestas en ${cantRespuestas}`);
+                    try {
+                        let elForo = yield Foro_1.ModeloForo.findOne({ "conversaciones._id": idConversacion }).exec();
+                        if (!elForo) {
+                            console.log(`Foro no encontrado`);
+                            throw "Foro no encontrado";
+                        }
+                        elForo.conversaciones.id(idConversacion).cantidadRespuestas = cantRespuestas;
+                        yield elForo.save();
+                    }
+                    catch (error) {
+                        console.log(`Error actualizando la cantidad de respuestas en esta conversación`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
                 }
                 console.log(`Respuesta eliminada`);
                 return true;
@@ -439,6 +458,7 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 let cantRespuestas = yield Respuesta.countDocuments().exec();
+                console.log(`Cant respuestas después: ${cantRespuestas}`);
                 try {
                     laConversacion.cantidadRespuestas = cantRespuestas;
                     laConversacion.infoUltimaRespuesta = {
@@ -522,7 +542,6 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 var infoForo = elUsuario.foros.find(f => f.idForo == idForo);
-                console.log(`** elUsuario.foros: ${elUsuario.foros}`);
                 if (!infoForo) {
                     var nuevoInfoForo = {
                         idForo,
@@ -531,7 +550,6 @@ exports.resolvers = {
                     elUsuario.foros.push(nuevoInfoForo);
                     infoForo = elUsuario.foros.find(f => f.idForo == idForo);
                 }
-                console.log(`** elUsuario.foros despues de creado el foro: ${elUsuario.foros}`);
                 var infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
                 if (!infoConversacion) {
                     var nuevoInfoConversacion = {
@@ -542,8 +560,6 @@ exports.resolvers = {
                     infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
                 }
                 infoConversacion.respuestasLeidas = cantidadRespuestasLeidas;
-                console.log(`** elUsuario.foros después de creada la conversación: ${elUsuario.foros}`);
-                console.log(`el usuario quedó: ${elUsuario}`);
                 try {
                     yield elUsuario.save();
                 }

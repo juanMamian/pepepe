@@ -253,7 +253,8 @@ export const resolvers = {
                 titulo,
                 idCreador: credencialesUsuario.id,
                 respuestas: [respuesta],
-                acceso: "publico"
+                acceso: "publico",
+                cantidadRespuestas:1
             });
 
             let idConversacion = nuevaConversacion._id;
@@ -358,7 +359,9 @@ export const resolvers = {
                 console.log(`Error eliminando respuesta. E: ${error}`);
             }
 
-            if (await Respuesta.countDocuments().exec() < 1) {
+            const cantRespuestas:number=await Respuesta.countDocuments().exec();
+
+            if (cantRespuestas < 1) {
                 console.log(`La conversación quedó vacía. Eliminando`);
 
                 try {
@@ -384,6 +387,23 @@ export const resolvers = {
                     console.log("Collection droped");
                 });
 
+            }
+            else{
+                //Actualizar el número de respuestas en esta conversación
+                console.log(`Setting cant respuestas en ${cantRespuestas}`);
+
+                try {
+                    let elForo: any = await Foro.findOne({ "conversaciones._id": idConversacion }).exec();
+                    if (!elForo) {
+                        console.log(`Foro no encontrado`);
+                        throw "Foro no encontrado";
+                    }
+                    elForo.conversaciones.id(idConversacion).cantidadRespuestas=cantRespuestas;                    
+                    await elForo.save();
+                } catch (error) {
+                    console.log(`Error actualizando la cantidad de respuestas en esta conversación`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
             }
             console.log(`Respuesta eliminada`);
 
@@ -451,7 +471,9 @@ export const resolvers = {
 
             console.log(`En la conversación ${laConversacion.titulo}`);
 
+
             let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
+    
             const laRespuesta = new Respuesta(nuevaRespuesta);
 
             try {
@@ -461,7 +483,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             let cantRespuestas: number = await Respuesta.countDocuments().exec();
-
+            console.log(`Cant respuestas después: ${cantRespuestas}`);
             try {
                 laConversacion.cantidadRespuestas = cantRespuestas;
                 laConversacion.infoUltimaRespuesta = {
@@ -548,7 +570,6 @@ export const resolvers = {
             }
 
             var infoForo=elUsuario.foros.find(f=>f.idForo==idForo);
-            console.log(`** elUsuario.foros: ${elUsuario.foros}`);
             if(!infoForo){
                 var nuevoInfoForo={
                     idForo,
@@ -557,7 +578,6 @@ export const resolvers = {
                 elUsuario.foros.push(nuevoInfoForo);
                 infoForo=elUsuario.foros.find(f=>f.idForo==idForo);
             }
-            console.log(`** elUsuario.foros despues de creado el foro: ${elUsuario.foros}`);
 
             var infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==idConversacion);
             if(!infoConversacion){
@@ -570,9 +590,7 @@ export const resolvers = {
             }
 
             infoConversacion.respuestasLeidas=cantidadRespuestasLeidas;
-            console.log(`** elUsuario.foros después de creada la conversación: ${elUsuario.foros}`);
 
-            console.log(`el usuario quedó: ${elUsuario}`);
 
             try {
                 await elUsuario.save();

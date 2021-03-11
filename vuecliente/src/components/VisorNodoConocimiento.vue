@@ -4,7 +4,11 @@
       <div id="zonaNombre">
         <div
           class="controlesZona"
-          v-show="usuarioExperto || usuarioSuperadministrador || usuarioAdministradorAtlas"
+          v-show="
+            usuarioExperto ||
+            usuarioSuperadministrador ||
+            usuarioAdministradorAtlas
+          "
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -38,24 +42,67 @@
       <div id="barraLateral">
         <div
           class="selectorSeccion"
-          v-for="(seccion) of seccionesOrganizadas"
-          :class="{selectorSeleccionado: seccionSeleccionada==seccion.nombre}"
-          :key="seccion.nombre"
-          @click="seccionSeleccionada = seccion.nombre"
+          v-for="seccion of seccionesOrganizadas"
+          :class="{
+            selectorSeleccionado: seccion.id == idSeccionSeleccionada,
+            selectorSeccionBasica: seccion.seccionBasica,
+          }"
+          :key="seccion.id"
+          @click="idSeccionSeleccionada = seccion.id"
         >
           {{ seccion.texto }}
-         
+          <img
+            src="@/assets/iconos/delete.png"
+            alt="Eliminar"
+            title="Eliminar esta seccion"
+            class="bEliminarSeccion"
+            @click="eliminarSeccion(seccion.id)"
+          />
+        </div>
+        <div
+          id="bAddSeccion"
+          class="botonZonaCrearSeccion"
+          v-if="usuarioSuperadministrador"
+          @click="creandoNuevaSeccion = !creandoNuevaSeccion; nombreNuevaSeccion=null"
+        >
+          {{ creandoNuevaSeccion ? "Cancelar" : "Crear sección" }}
+        </div>
+        <div
+          id="creadorSeccion"
+          v-if="usuarioSuperadministrador"
+          v-show="creandoNuevaSeccion"
+        >
+          <input
+            type="text"
+            v-model="nombreNuevaSeccion"
+            max="30"
+            placeholder="Nombre"
+            style="font-size:16px"
+            :class="{ letrasRojas: nombreNuevaSeccionIlegal }"
+          />
+          <div
+            id="bCrearNuevaSeccion"
+            class="botonZonaCrearSeccion"
+            :class="{ deshabilitado: nombreNuevaSeccionIlegal }"
+            @click="crearNuevaSeccion"
+          >
+            Crear
+          </div>
         </div>
       </div>
 
       <div
         id="seccionDescripcion"
         class="seccionPrimerNivel"
-        v-show="seccionSeleccionada == 'descripcion'"
+        v-show="idSeccionSeleccionada == 'seccionBasica1'"
       >
         <div
           class="controlesZona"
-          v-show="usuarioExperto || usuarioSuperadministrador || usuarioAdministradorAtlas"
+          v-show="
+            usuarioExperto ||
+            usuarioSuperadministrador ||
+            usuarioAdministradorAtlas
+          "
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -91,43 +138,92 @@
         />
         <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
       </div>
-      
-      <div :key="seccion.nombre" v-for="seccion of esteNodo.secciones" class="seccionPrimerNivel seccionContenidoExterno" :class="'seccion'+seccion.nombre" v-show="seccionSeleccionada == seccion.nombre">        
-        <div class="barraControlesContenidosExternos" v-if="usuarioExperto==true || usuarioAdministradorAtlas==true || usuarioSuperadministrador==true">
+
+      <div
+        :key="seccion.id"
+        v-for="seccion of esteNodo.secciones"
+        class="seccionPrimerNivel seccionContenidoExterno"
+        :class="'seccion' + seccion.nombre"
+        v-show="idSeccionSeleccionada == seccion.id"
+      >
+        <div
+          class="barraControlesContenidosExternos"
+          v-if="
+            usuarioExperto == true ||
+            usuarioAdministradorAtlas == true ||
+            usuarioSuperadministrador == true
+          "
+        >
           <img
-              src="@/assets/iconos/editar.png"
-              alt="Editar"
-              :id="'bEditarSeccion'+seccion.nombre"
-              class="bEditar botonesEditarContenidosExternos"
-              title="Seleccionar archivos de contenido"
-              @click.stop="editandoArchivosContenidos=!editandoArchivosContenidos"
-            />
+            src="@/assets/iconos/editar.png"
+            alt="Editar"
+            :id="'bEditarSeccion' + seccion.nombre"
+            class="bEditar botonesEditarContenidosExternos"
+            title="Seleccionar archivos de contenido"
+            @click.stop="
+              editandoArchivosContenidos = !editandoArchivosContenidos
+            "
+          />
         </div>
         <iframe
           id="visorContenido"
-          :ref="'contenidoExterno'+seccion.nombre"
-          :src="direccionNodo+'/'+seccion.nombre+'/'"
+          :ref="'contenidoExterno' + seccion.id"
+          :src="direccionNodo + '/' + seccion.id + '/'"
           v-show="!editandoArchivosContenidos"
-          
         ></iframe>
-        <div class="cuadroCargaArchivos" v-if="usuarioExperto==true || usuarioAdministradorAtlas==true || usuarioSuperadministrador==true" v-show="editandoArchivosContenidos">
-          <div class="archivoExistente" :class="{deshabilitado:archivo.enviandoInfo}" :key="index" v-for="(archivo, index) of seccion.archivos"><div class="botonMarcarPrimario" :class="{rojo:archivo.primario}" @click="marcarPrimario(archivo, seccion.nombre)"></div>{{archivo.nombre}} <span class="botonBorrarArchivoExistente" @click="borrarArchivoExistenteSeccionNodo(archivo, seccion.nombre)">Borrar</span></div>
-          <input type="file" class="inputArchivoContenido" @change="subirArchivoContenido($event,seccion)"/>
+        <div
+          class="cuadroCargaArchivos"
+          v-if="
+            usuarioExperto == true ||
+            usuarioAdministradorAtlas == true ||
+            usuarioSuperadministrador == true
+          "
+          v-show="editandoArchivosContenidos"
+        >
+          <div
+            class="archivoExistente"
+            :class="{ deshabilitado: archivo.enviandoInfo }"
+            :key="index"
+            v-for="(archivo, index) of seccion.archivos"
+          >
+            <div
+              class="botonMarcarPrimario"
+              :class="{ rojo: archivo.primario }"
+              @click="marcarPrimario(archivo, seccion.id)"
+            ></div>
+            {{ archivo.nombre }}
+            <span
+              class="botonBorrarArchivoExistente"
+              @click="
+                borrarArchivoExistenteSeccionNodo(archivo, seccion.id)
+              "
+              >Borrar</span
+            >
+          </div>
+          <input
+            type="file"
+            class="inputArchivoContenido"
+            @change="subirArchivoContenido($event, seccion)"
+          />
         </div>
       </div>
-      
 
       <div
         id="seccionExpertos"
         class="seccionPrimerNivel"
-        v-show="seccionSeleccionada == 'expertos'"
+        v-show="idSeccionSeleccionada == 'seccionBasica2'"
       >
         <div id="controlesExpertos" class="controlesZona">
           <loading v-show="enviandoQueryExpertos" texto="Esperando..." />
           <div
             class="controlesExpertos hoverGris botonesControles"
             :class="{ deshabilitado: enviandoQueryExpertos }"
-            v-if="usuarioLogeado == true && (usuarioSuperadministrador==true || usuarioAdministradorAtlas==true) && !usuarioExperto" 
+            v-if="
+              usuarioLogeado == true &&
+              (usuarioSuperadministrador == true ||
+                usuarioAdministradorAtlas == true) &&
+              !usuarioExperto
+            "
             id="asumirExperto"
             @click="asumirComoExperto"
           >
@@ -200,7 +296,7 @@
         id="seccionForos"
         ref="zonaForos"
         class="seccionPrimerNivel"
-        v-show="seccionSeleccionada == 'foros'"
+        v-show="idSeccionSeleccionada == 'seccionBasica3'"
       >
         <div class="nombreForo" v-if="usuarioExperto">Foro expertos</div>
         <foro
@@ -221,10 +317,11 @@ import gql from "graphql-tag";
 import Loading from "./utilidades/Loading.vue";
 import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
 import Foro from "./Foro.vue";
-import axios from 'axios';
+import axios from "axios";
 
 const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
 const QUERY_NODO = gql`
   query($idNodo: ID!) {
@@ -236,9 +333,10 @@ const QUERY_NODO = gql`
       posiblesExpertos
       idForoPublico
       idForoExpertos
-      secciones{
+      secciones {
+        id
         nombre
-        archivos{
+        archivos {
           nombre
           primario
         }
@@ -265,12 +363,14 @@ export default {
         };
       },
       update({ nodo }) {
-        nodo.secciones.forEach(seccion=>{          
-          seccion.subiendoArchivo=false;
-          seccion.archivos.forEach(archivo=>{
-            archivo.enviandoInfo=false;
-          })         
-        })
+        nodo.secciones.forEach((seccion) => {
+          seccion.subiendoArchivo = false;
+          seccion.editandose = false;
+          seccion.texto = seccion.nombre;
+          seccion.archivos.forEach((archivo) => {
+            archivo.enviandoInfo = false;
+          });
+        });
         return nodo;
       },
     },
@@ -280,12 +380,38 @@ export default {
       esteNodo: {
         expertos: [],
         posiblesExpertos: [],
-        secciones:[]
+        secciones: [],
       },
-      secciones: [{nombre: "descripcion", texto:"Descripción"}, {nombre:"expertos", texto: "Expertos"}, {nombre: "foros", texto:"Foros"}],
-      indexInicioContenidos:1,
-      seccionesContenidos:[{nombre:"explicacion", texto:"Explicación", editandose:false, subiendoArchivo:false}],
-      seccionSeleccionada: "descripcion",
+      seccionesBasicas: [
+        {
+          nombre: "descripcion",
+          texto: "Descripción",
+          id: "seccionBasica1",
+          seccionBasica: true,
+        },
+        {
+          nombre: "expertos",
+          texto: "Expertos",
+          id: "seccionBasica2",
+          seccionBasica: true,
+        },
+        {
+          nombre: "foros",
+          texto: "Foros",
+          id: "seccionBasica3",
+          seccionBasica: true,
+        },
+      ],
+      indexInicioContenidos: 1,
+      seccionesContenidos: [
+        {
+          nombre: "explicacion",
+          texto: "Explicación",
+          editandose: false,
+          subiendoArchivo: false,
+        },
+      ],
+      idSeccionSeleccionada: "seccionBasica1",
 
       nuevoNombre: "Nuevo nombre",
       editandoNombre: false,
@@ -299,16 +425,24 @@ export default {
       expertoSeleccionadoEstaAceptado: false,
       enviandoQueryExpertos: false,
 
-      editandoArchivosContenidos:false,
+      editandoArchivosContenidos: false,
 
-      versionExplicacionRef:0,
+      versionExplicacionRef: 0,
+
+      nombreNuevaSeccion: "",
+      creandoNuevaSeccion: false,
     };
   },
   computed: {
-    seccionesOrganizadas(){
-      let lasSecciones=this.secciones;
-      lasSecciones.splice(this.indexInicioContenidos, 0, ...this.seccionesContenidos);
-      return lasSecciones
+    seccionesOrganizadas() {
+        let lasSecciones = [
+        this.seccionesBasicas[0],
+        ...this.esteNodo.secciones,
+        this.seccionesBasicas[1],
+        this.seccionesBasicas[2],
+      ];
+
+      return lasSecciones;
     },
     direccionNodo: function () {
       return (
@@ -360,7 +494,18 @@ export default {
     },
     usuarioAdministradorAtlas: function () {
       if (!this.$store.state.usuario.permisos) return false;
-      return (this.$store.state.usuario.permisos.includes("atlasAdministrador")) ? true : false
+      return this.$store.state.usuario.permisos.includes("atlasAdministrador")
+        ? true
+        : false;
+    },
+    nombreNuevaSeccionIlegal() {
+      if (!this.nombreNuevaSeccion || this.nombreNuevaSeccion.length < 1) {
+        return true;
+      }
+      if (charProhibidosNombreNuevaSeccion.test(this.nombreNuevaSeccion)) {
+        return true;
+      }
+      return false;
     },
   },
   methods: {
@@ -562,14 +707,14 @@ export default {
           console.log(`Error. E :${error}`);
         });
     },
-    subirArchivoContenido(e, seccion){
-      let inputArchivo =e.target;
+    subirArchivoContenido(e, seccion) {
+      let inputArchivo = e.target;
       var datos = new FormData();
       const nuevoArchivo = inputArchivo.files[0];
-      
+
       datos.append("nuevoArchivo", nuevoArchivo);
       datos.append("idNodo", this.esteNodo.id);
-      datos.append("nombreSeccion", seccion.nombre);
+      datos.append("idSeccion", seccion.id);
       seccion.subiendoArchivo = true;
       axios({
         method: "post",
@@ -580,154 +725,287 @@ export default {
           Authorization: "Bearer " + this.$store.state.token,
         },
       })
-        .then(({ data :{infoArchivo}}) => {
+        .then(({ data: { infoArchivo } }) => {
           seccion.subiendoArchivo = false;
 
-          const store=this.$apollo.provider.defaultClient;
-          const cache=store.readQuery({
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
             query: QUERY_NODO,
-            variables:{
-              idNodo:this.$route.params.idNodo
-            }
+            variables: {
+              idNodo: this.$route.params.idNodo,
+            },
           });
 
-          var nuevoCache=JSON.parse(JSON.stringify(cache));
-          var laSeccion=nuevoCache.nodo.secciones.find(s=>s.nombre==seccion.nombre);
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          var laSeccion = nuevoCache.nodo.secciones.find(
+            (s) => s.id == seccion.id
+          );
           laSeccion.archivos.push(infoArchivo);
           store.writeQuery({
-            query:QUERY_NODO,
-            variables:{
-              idNodo:this.$route.params.idNodo
+            query: QUERY_NODO,
+            variables: {
+              idNodo: this.$route.params.idNodo,
             },
-            data:nuevoCache
+            data: nuevoCache,
           });
         })
         .catch((error) => {
           seccion.subiendoArchivo = false;
           console.log(`Error subiendo archivo. E: ${error}`);
         });
-        
     },
-    borrarArchivoExistenteSeccionNodo(archivo, nombreSeccion){
-      const nombreArchivo=archivo.nombre;
-      if(!confirm("Borrando archivo ¿Continuar?")){
+    borrarArchivoExistenteSeccionNodo(archivo, idSeccion) {
+      const nombreArchivo = archivo.nombre;
+      if (!confirm("Borrando archivo ¿Continuar?")) {
         console.log(`Cancelado`);
-        return
+        return;
       }
-      const dis=this;
-      archivo.enviandoInfo=true;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idNodo:ID!, $nombreSeccion:String!, $nombreArchivo:String!){
-            eliminarArchivoSeccionNodo(idNodo:$idNodo, nombreSeccion:$nombreSeccion, nombreArchivo:$nombreArchivo)
-          }
-        `,
-        variables:{
-          idNodo:this.$route.params.idNodo,
-          nombreSeccion,
-          nombreArchivo
-        },
-        update(store, {data:{eliminarArchivoSeccionNodo}}){
-          archivo.enviandoInfo=false;
-          
-          if(!eliminarArchivoSeccionNodo){
-            console.log(`Archivo no eliminado`);
-            return
-          }
-          const cache=store.readQuery({
-            query: QUERY_NODO,
-            variables:{
-              idNodo:dis.$route.params.idNodo
+      const dis = this;
+      archivo.enviandoInfo = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idNodo: ID!
+              $idSeccion: ID!
+              $nombreArchivo: String!
+            ) {
+              eliminarArchivoSeccionNodo(
+                idNodo: $idNodo
+                idSeccion: $idSeccion
+                nombreArchivo: $nombreArchivo
+              )
             }
-          });
-          var nuevoCache=JSON.parse(JSON.stringify(cache));
+          `,
+          variables: {
+            idNodo: this.$route.params.idNodo,
+            idSeccion,
+            nombreArchivo,
+          },
+          update(store, { data: { eliminarArchivoSeccionNodo } }) {
+            archivo.enviandoInfo = false;
 
-          var laSeccion=nuevoCache.nodo.secciones.find(s=>s.nombre==nombreSeccion);
-          if(!laSeccion){
-            console.log(`Seccion no encontrada`);
-            return;
-          }
+            if (!eliminarArchivoSeccionNodo) {
+              console.log(`Archivo no eliminado`);
+              return;
+            }
+            const cache = store.readQuery({
+              query: QUERY_NODO,
+              variables: {
+                idNodo: dis.$route.params.idNodo,
+              },
+            });
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
 
-          var indexA=laSeccion.archivos.findIndex(a=>a.nombre==nombreArchivo);
-          if(indexA>-1){
-            laSeccion.archivos.splice(indexA, 1);
+            var laSeccion = nuevoCache.nodo.secciones.find(
+              (s) => s.id == idSeccion
+            );
+            if (!laSeccion) {
+              console.log(`Seccion no encontrada`);
+              return;
+            }
+
+            var indexA = laSeccion.archivos.findIndex(
+              (a) => a.nombre == nombreArchivo
+            );
+            if (indexA > -1) {
+              laSeccion.archivos.splice(indexA, 1);
+              store.writeQuery({
+                query: QUERY_NODO,
+                variables: {
+                  idNodo: dis.$route.params.idNodo,
+                },
+                data: nuevoCache,
+              });
+            } else {
+              console.log(`Archivo no encontrado`);
+            }
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          archivo.enviandoInfo = false;
+          console.log(`Error. E: ${error}`);
+        });
+    },
+    marcarPrimario(archivo, idSeccion) {
+      const nombreArchivo = archivo.nombre;
+    
+      console.log(`Marcando ${nombreArchivo} como primario en la sección ${idSeccion}`);
+
+      const dis = this;
+      archivo.enviandoInfo = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idNodo: ID!
+              $idSeccion: ID!
+              $nombreArchivo: String!
+            ) {
+              marcarPrimarioArchivoSeccionNodo(
+                idNodo: $idNodo
+                idSeccion: $idSeccion
+                nombreArchivo: $nombreArchivo
+              )
+            }
+          `,
+          variables: {
+            idNodo: this.$route.params.idNodo,
+            idSeccion,
+            nombreArchivo,
+          },
+          update(store, { data: { marcarPrimarioArchivoSeccionNodo } }) {
+            archivo.enviandoInfo = false;
+
+            if (!marcarPrimarioArchivoSeccionNodo) {
+              console.log(`Archivo no marcado`);
+              return;
+            }
+            const cache = store.readQuery({
+              query: QUERY_NODO,
+              variables: {
+                idNodo: dis.$route.params.idNodo,
+              },
+            });
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+
+            var laSeccion = nuevoCache.nodo.secciones.find(
+              (s) => s.id == idSeccion
+            );
+            if (!laSeccion) {
+              console.log(`Seccion no encontrada`);
+              return;
+            }
+
+            laSeccion.archivos.forEach((archivo) => {
+              archivo.primario = archivo.nombre == nombreArchivo ? true : false;
+            });
+
             store.writeQuery({
               query: QUERY_NODO,
-              variables:{
-                idNodo:dis.$route.params.idNodo
+              variables: {
+                idNodo: dis.$route.params.idNodo,
               },
-              data:nuevoCache
-            })
-          }
-          else{
-            console.log(`Archivo no encontrado`);
-          }
-        }
-      }).then(()=>{
-
-      }).catch((error)=>{
-        archivo.enviandoInfo=false;
-        console.log(`Error. E: ${error}`);
-      })
+              data: nuevoCache,
+            });
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          archivo.enviandoInfo = false;
+          console.log(`Error. E: ${error}`);
+        });
     },
-    marcarPrimario(archivo, nombreSeccion){
-      const nombreArchivo=archivo.nombre;
-      
+    crearNuevaSeccion() {
+      console.log(
+        `Creando nueva sección con nombre ${this.nombreNuevaSeccion}`
+      );
       const dis=this;
-      archivo.enviandoInfo=true;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idNodo:ID!, $nombreSeccion:String!, $nombreArchivo:String!){
-            marcarPrimarioArchivoSeccionNodo(idNodo:$idNodo, nombreSeccion:$nombreSeccion, nombreArchivo:$nombreArchivo)
-          }
-        `,
-        variables:{
-          idNodo:this.$route.params.idNodo,
-          nombreSeccion,
-          nombreArchivo
-        },
-        update(store, {data:{marcarPrimarioArchivoSeccionNodo}}){
-          archivo.enviandoInfo=false;
-          
-          if(!marcarPrimarioArchivoSeccionNodo){
-            console.log(`Archivo no marcado`);
-            return
-          }
-          const cache=store.readQuery({
-            query: QUERY_NODO,
-            variables:{
-              idNodo:dis.$route.params.idNodo
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idNodo: ID!, $nombreNuevaSeccion: String!) {
+              crearNuevaSeccionNodoConocimiento(
+                idNodo: $idNodo
+                nombreNuevaSeccion: $nombreNuevaSeccion
+              ) {
+                id
+                nombre
+                archivos {
+                  nombre
+                  primario
+                }
+                tipoPrimario
+              }
             }
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            nombreNuevaSeccion: this.nombreNuevaSeccion,
+          },
+        })
+        .then(({ data: { crearNuevaSeccionNodoConocimiento } }) => {
+          console.log(`Seccion creada: ${JSON.stringify(crearNuevaSeccionNodoConocimiento)}`);
+          let store = dis.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_NODO,
+            variables: { idNodo: dis.esteNodo.id },
           });
-          var nuevoCache=JSON.parse(JSON.stringify(cache));
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          nuevoCache.nodo.secciones.push(crearNuevaSeccionNodoConocimiento);
 
-          var laSeccion=nuevoCache.nodo.secciones.find(s=>s.nombre==nombreSeccion);
-          if(!laSeccion){
-            console.log(`Seccion no encontrada`);
-            return;
-          }
-
-          laSeccion.archivos.forEach(archivo=>{
-            archivo.primario=archivo.nombre==nombreArchivo?true:false;
-          })
-          
           store.writeQuery({
             query: QUERY_NODO,
-            variables:{
-              idNodo:dis.$route.params.idNodo
-            },
+            variables: { idNodo: dis.esteNodo.id },
             data:nuevoCache
-          })
-          
-        }
-      }).then(()=>{
-      }).catch((error)=>{
-        archivo.enviandoInfo=false;
-        console.log(`Error. E: ${error}`);
-      })
-    }
+          });
+
+          this.creandoNuevaSeccion=false;
+          this.nombreNuevaSeccion=null;
+        })
+        .catch((error) => {
+          console.log(`Error. E: ${error}`);
+        });
+    },
+    eliminarSeccion(idSeccion) {
+      if (
+        !confirm(
+          "Eliminando esta sección con todos sus contenidos. ¿Continuar?"
+        )
+      ) {
+        return;
+      }
+
+      console.log(`Enviando mutación de eliminar seccion ${idSeccion}`);
+      const dis = this;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idNodo: ID!, $idSeccion: ID!) {
+              eliminarSeccionNodoConocimiento(
+                idNodo: $idNodo
+                idSeccion: $idSeccion
+              )
+            }
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            idSeccion,
+          },
+        })
+        .then(({ data: { eliminarSeccionNodoConocimiento } }) => {
+          console.log(`resultado: ${eliminarSeccionNodoConocimiento}`);
+          if (eliminarSeccionNodoConocimiento) {
+            let store = dis.$apollo.provider.defaultClient;
+            const cache = store.readQuery({
+              query: QUERY_NODO,
+              variables: { idNodo: dis.esteNodo.id },
+            });
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+
+            const indexS = nuevoCache.nodo.secciones.findIndex(
+              (s) => s.id == idSeccion
+            );
+            if (indexS > -1) {
+              nuevoCache.nodo.secciones.splice(indexS, 1);
+              store.writeQuery({
+                query: QUERY_NODO,
+                variables: {
+                  idNodo: dis.esteNodo.id,
+                },
+                data: nuevoCache,
+              });
+            } else {
+              console.log(`Seccion no encontrada`);
+            }
+          }
+        })
+        .catch((error) => {
+          console.log(`Error: E: ${error}`);
+        });
+    },
   },
-  
 };
 </script>
 
@@ -784,8 +1062,29 @@ export default {
 .selectorSeccion:hover {
   background-color: bisque;
 }
-.selectorSeleccionado{
-    background-color: bisque;
+.selectorSeccion:not(.selectorSeccionBasica):hover > .bEliminarSeccion {
+  visibility: visible;
+}
+.selectorSeleccionado {
+  background-color: bisque;
+}
+.botonZonaCrearSeccion{
+  cursor: pointer;
+  padding: 3px 5px;
+  text-align: center;
+}
+.botonZonaCrearSeccion:hover{
+  background-color: cadetblue;
+}
+.bEliminarSeccion {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  float: right;
+  visibility: hidden;
+}
+.bEliminarSeccion:hover {
+  background-color: chocolate;
 }
 .seccionPrimerNivel {
   grid-area: contenido;
@@ -845,37 +1144,37 @@ export default {
   padding: 5px 10px;
   background-color: #5fbf78;
 }
-.seccionContenidoExterno{
+.seccionContenidoExterno {
   position: relative;
 }
-.barraControlesContenidosExternos{
+.barraControlesContenidosExternos {
   position: absolute;
   transform: translateY(-100%);
-  top:0%;
-  left:0%;
+  top: 0%;
+  left: 0%;
   width: 100%;
   display: flex;
   flex-direction: row-reverse;
   opacity: 0.5;
   padding: 5px;
 }
-.barraControlesContenidosExternos:hover{
+.barraControlesContenidosExternos:hover {
   opacity: 1;
 }
-.botonesEditarContenidosExternos{
+.botonesEditarContenidosExternos {
   width: 30px;
   height: 30px;
   border-radius: 50%;
   cursor: pointer;
   margin-right: 10px;
 }
-.botonesEditarContenidosExternos:hover{
+.botonesEditarContenidosExternos:hover {
   background-color: grey;
 }
-.cuadroCargaArchivos{
+.cuadroCargaArchivos {
   margin: 50px auto;
 }
-.archivoExistente{
+.archivoExistente {
   padding: 5px 10px;
   border-radius: 5px;
   background-color: rgb(107, 235, 107);
@@ -884,26 +1183,25 @@ export default {
   display: flex;
   font-size: 17px;
 }
-.botonBorrarArchivoExistente{
-  margin-left:auto;
-  cursor:pointer;
+.botonBorrarArchivoExistente {
+  margin-left: auto;
+  cursor: pointer;
   padding: 3px 5px;
   border-radius: 3px;
-  font-size: 13px
-  ;
+  font-size: 13px;
 }
-.botonBorrarArchivoExistente:hover{
+.botonBorrarArchivoExistente:hover {
   background-color: grey;
 }
-.botonMarcarPrimario{
+.botonMarcarPrimario {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 1px solid black;  
+  border: 1px solid black;
   cursor: pointer;
   margin-right: 10px;
 }
-.rojo{
+.rojo {
   background-color: red;
 }
 </style>

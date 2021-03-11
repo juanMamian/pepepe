@@ -93,11 +93,11 @@ router.post("/subirArchivoContenidoSeccionNodo", upload.single("nuevoArchivo"), 
         return res.status(401).send("No autorizado");
     }
 
-    const nombreSeccion = req.body.nombreSeccion;
+    const idSeccion = req.body.idSeccion;
 
-    console.log(`Subiendo archivo para la sección ${nombreSeccion} del nodo ${elNodo.nombre}`);
+    console.log(`Subiendo archivo para la sección ${idSeccion} del nodo ${elNodo.nombre}`);
 
-    var laSeccion = elNodo.secciones.find(s => s.nombre = nombreSeccion);
+    var laSeccion = elNodo.secciones.id(idSeccion);
     if (!laSeccion) {
         console.log(`La sección no existía en este nodo`);
         return res.status(400).send("Seccion no existía");

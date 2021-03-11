@@ -37,6 +37,7 @@ type InfoArchivoContenidoNodo{
 }
 
 type SeccionContenidoNodo{
+    id:ID,
     nombre:String,
     archivos:[InfoArchivoContenidoNodo],
     tipoPrimario:String,
@@ -96,8 +97,11 @@ extend type Mutation{
     addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
     removeExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
 
-    eliminarArchivoSeccionNodo(idNodo:ID!, nombreSeccion:String!, nombreArchivo:String!):Boolean
-    marcarPrimarioArchivoSeccionNodo(idNodo:ID!, nombreSeccion:String!, nombreArchivo:String!):Boolean
+    eliminarArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean
+    marcarPrimarioArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean,
+
+    crearNuevaSeccionNodoConocimiento(idNodo:ID!, nombreNuevaSeccion:String!):SeccionContenidoNodo,
+    eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
 }
 `;
 exports.resolvers = {
@@ -649,7 +653,7 @@ exports.resolvers = {
                 return elNodo;
             });
         },
-        eliminarArchivoSeccionNodo: function (_, { idNodo, nombreSeccion, nombreArchivo }, contexto) {
+        eliminarArchivoSeccionNodo: function (_, { idNodo, idSeccion, nombreArchivo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Solicitud de eliminar archivo ${nombreArchivo}`);
                 try {
@@ -668,7 +672,7 @@ exports.resolvers = {
                     console.log(`El usuario no tenia permisos para efectuar esta operación`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
-                var laSeccion = elNodo.secciones.find(s => s.nombre == nombreSeccion);
+                var laSeccion = elNodo.secciones.id(idSeccion);
                 if (!laSeccion) {
                     console.log(`Sección no encontrada`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
@@ -709,7 +713,7 @@ exports.resolvers = {
                 return true;
             });
         },
-        marcarPrimarioArchivoSeccionNodo: function (_, { idNodo, nombreSeccion, nombreArchivo }, contexto) {
+        marcarPrimarioArchivoSeccionNodo: function (_, { idNodo, idSeccion, nombreArchivo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 try {
                     var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
@@ -727,7 +731,7 @@ exports.resolvers = {
                     console.log(`El usuario no tenia permisos para efectuar esta operación`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
-                var laSeccion = elNodo.secciones.find(s => s.nombre == nombreSeccion);
+                var laSeccion = elNodo.secciones.id(idSeccion);
                 if (!laSeccion) {
                     console.log(`Sección no encontrada`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
@@ -766,6 +770,87 @@ exports.resolvers = {
                 return encontrado;
             });
         },
+        crearNuevaSeccionNodoConocimiento: function (_, { idNodo, nombreNuevaSeccion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                //Authorización
+                if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
+                    console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "Nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el nodo`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+                if (charProhibidosNombreNuevaSeccion.test(nombreNuevaSeccion) || nombreNuevaSeccion.length > 30) {
+                    throw new apollo_server_express_1.ApolloError("Nombre ilegal");
+                }
+                var nuevaSeccion = elNodo.secciones.create({
+                    nombre: nombreNuevaSeccion
+                });
+                console.log(`Secciones: ${elNodo.secciones}`);
+                console.log(`Nueva Seccion: ${nuevaSeccion}`);
+                elNodo.secciones.push(nuevaSeccion);
+                console.log(`Secciones: ${elNodo.secciones}`);
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el nodo`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return nuevaSeccion;
+            });
+        },
+        eliminarSeccionNodoConocimiento: function (_, { idNodo, idSeccion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                //Authorización
+                if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
+                    console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "Nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el nodo`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var laSeccion = elNodo.secciones.id(idSeccion);
+                if (!laSeccion) {
+                    throw new apollo_server_express_1.ApolloError("Sección no encontrada");
+                }
+                const idCarpeta = laSeccion.idCarpeta;
+                if (idCarpeta) {
+                    try {
+                        yield CarpetaArchivos_1.ModeloCarpetaArchivos.findByIdAndDelete(idCarpeta).exec();
+                        console.log(`Carpeta eliminada`);
+                    }
+                    catch (error) {
+                        console.log(`Error eliminando la carpeta con id: ${idCarpeta}. E: ${error}`);
+                    }
+                }
+                try {
+                    yield Nodo_1.ModeloNodo.findByIdAndUpdate(idNodo, { $pull: { secciones: { _id: idSeccion } } });
+                }
+                catch (error) {
+                    console.log(`Error pulling la seccion`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
+            });
+        }
     },
     SeccionContenidoNodo: {
         archivos(parent, _, __) {

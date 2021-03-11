@@ -19,12 +19,12 @@ const util_1 = require("util");
 const CarpetaArchivos_1 = require("../../model/CarpetaArchivos");
 const Nodo_1 = require("../../model/atlas/Nodo");
 const access = util_1.promisify(fs_1.default.access);
-router.get("/:idNodo/:nombreSeccion/:nombreArchivo", function (req, res) {
+router.get("/:idNodo/:idSeccion/:nombreArchivo", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(`(1)Acceso al archivo ${req.params.nombreArchivo} de contenido de sección de nodo`);
         const idNodo = req.params.idNodo;
-        const nombreSeccion = req.params.nombreSeccion;
+        const idSeccion = req.params.idSeccion;
         const nombreArchivo = req.params.nombreArchivo;
+        console.log(`(1)Acceso al archivo ${req.params.nombreArchivo} de contenido de sección con id ${idSeccion} de nodo`);
         let pathDefault = path_1.default.join(__dirname, '../../assetsAtlas/contenidosNodos/', "default", "index.html");
         try {
             var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre secciones").exec();
@@ -35,7 +35,7 @@ router.get("/:idNodo/:nombreSeccion/:nombreArchivo", function (req, res) {
             console.log(`Error buscando el nodo en la base de datos`);
             return res.sendFile(pathDefault);
         }
-        const laSeccion = elNodo.secciones.find(s => s.nombre == nombreSeccion);
+        const laSeccion = elNodo.secciones.id(idSeccion);
         if (!laSeccion) {
             console.log(`Seccion no encontrada`);
             return res.sendFile(pathDefault);
@@ -68,11 +68,11 @@ router.get("/:idNodo/:nombreSeccion/:nombreArchivo", function (req, res) {
         return res.send(elArchivo.payload);
     });
 });
-router.get("/:idNodo/:nombreSeccion", function (req, res) {
+router.get("/:idNodo/:idSeccion", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(`(2)Acceso a un archivo primario de contenido de sección ${req.params.nombreSeccion} de nodo`);
+        console.log(`(2)Acceso a un archivo primario de contenido de sección ${req.params.idSeccion} de nodo`);
         const idNodo = req.params.idNodo;
-        const nombreSeccion = req.params.nombreSeccion;
+        const idSeccion = req.params.idSeccion;
         const nombreArchivo = req.params.nombreArchivo;
         let pathDefault = path_1.default.join(__dirname, '../../assetsAtlas/contenidosNodos/', "default", "index.html");
         try {
@@ -84,7 +84,7 @@ router.get("/:idNodo/:nombreSeccion", function (req, res) {
             console.log(`Error buscando el nodo en la base de datos`);
             return res.sendFile(pathDefault);
         }
-        const laSeccion = elNodo.secciones.find(s => s.nombre == nombreSeccion);
+        const laSeccion = elNodo.secciones.id(idSeccion);
         if (!laSeccion) {
             console.log(`Seccion no encontrada`);
             return res.sendFile(pathDefault);

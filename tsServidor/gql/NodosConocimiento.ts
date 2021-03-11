@@ -3,7 +3,7 @@ import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloForo as Foro } from "../model/Foros/Foro"
-import {ModeloCarpetaArchivos as CarpetasArchivos} from "../model/CarpetaArchivos";
+import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
 
 /*
 interface NodoConocimiento{
@@ -34,7 +34,7 @@ interface NodoConocimiento {
     coordY: number,
     vinculos: Array<Vinculo>,
     coordsManuales: Array<Coords>,
-    
+
 }
 
 interface Vinculo {
@@ -70,6 +70,7 @@ type InfoArchivoContenidoNodo{
 }
 
 type SeccionContenidoNodo{
+    id:ID,
     nombre:String,
     archivos:[InfoArchivoContenidoNodo],
     tipoPrimario:String,
@@ -129,8 +130,11 @@ extend type Mutation{
     addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
     removeExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
 
-    eliminarArchivoSeccionNodo(idNodo:ID!, nombreSeccion:String!, nombreArchivo:String!):Boolean
-    marcarPrimarioArchivoSeccionNodo(idNodo:ID!, nombreSeccion:String!, nombreArchivo:String!):Boolean
+    eliminarArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean
+    marcarPrimarioArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean,
+
+    crearNuevaSeccionNodoConocimiento(idNodo:ID!, nombreNuevaSeccion:String!):SeccionContenidoNodo,
+    eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
 }
 `;
 
@@ -262,7 +266,7 @@ export const resolvers = {
     Mutation: {
         async eliminarNodo(_: any, { idNodo }: any, contexto: contextoQuery) {
             console.log(`peticion de eliminar nodo con id ${idNodo}`);
-            
+
             let credencialesUsuario = contexto.usuario;
 
             let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
@@ -283,14 +287,14 @@ export const resolvers = {
 
         },
         async crearNodo(_: any, { infoNodo }: any, contexto: contextoQuery) {
-            let credencialesUsuario=contexto.usuario;
+            let credencialesUsuario = contexto.usuario;
             let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];;
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
                 throw new AuthenticationError("No autorizado");
             }
             console.log(`Creando nuevo nodo de conocimiento`);
-            
+
             try {
                 var nuevoForoPublico: any = await Foro.create({
                     acceso: "publico",
@@ -361,7 +365,7 @@ export const resolvers = {
             return { modificados };
 
         },
-        crearVinculo: async function (_: any, args: any, contexto:contextoQuery) {
+        crearVinculo: async function (_: any, args: any, contexto: contextoQuery) {
             let modificados: Array<NodoConocimiento> = [];
             console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
             let credencialesUsuario = contexto.usuario;
@@ -415,7 +419,7 @@ export const resolvers = {
             console.log(`vinculo entre ${args.idSource} y ${args.idTarget} creado`);
             return { modificados };
         },
-        eliminarVinculoFromTo: async function (_: any, args: any, contexto:contextoQuery) {
+        eliminarVinculoFromTo: async function (_: any, args: any, contexto: contextoQuery) {
             let modificados: Array<NodoConocimiento> = [];
             console.log(`desvinculando ${args.idSource} de ${args.idTarget}`);
             let credencialesUsuario = contexto.usuario;
@@ -457,7 +461,7 @@ export const resolvers = {
         },
         editarNombreNodo: async function (_: any, { idNodo, nuevoNombre }: any, contexto: contextoQuery) {
             let modificados: Array<NodoConocimiento> = [];
-           
+
             try {
                 var elNodo: any = await Nodo.findById(idNodo, "nombre expertos coordsManuales").exec();
             }
@@ -474,7 +478,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            nuevoNombre=nuevoNombre.trim();
+            nuevoNombre = nuevoNombre.trim();
             const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
             if (charProhibidosNombreNodo.test(nuevoNombre)) {
                 throw new ApolloError("Nombre ilegal");
@@ -555,7 +559,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -626,7 +630,7 @@ export const resolvers = {
                 throw new ApolloError("El usuario ya estaba en la lista");
             }
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -672,7 +676,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
                     throw new ApolloError("Error buscando al usuario en la base de datos");
@@ -717,7 +721,7 @@ export const resolvers = {
             return elNodo
 
         },
-        eliminarArchivoSeccionNodo: async function (_: any, { idNodo, nombreSeccion, nombreArchivo }: any, contexto: contextoQuery) {
+        eliminarArchivoSeccionNodo: async function (_: any, { idNodo, idSeccion, nombreArchivo }: any, contexto: contextoQuery) {
             console.log(`Solicitud de eliminar archivo ${nombreArchivo}`);
             try {
                 var elNodo: any = await Nodo.findById(idNodo).exec();
@@ -739,34 +743,34 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            var laSeccion=elNodo.secciones.find(s=>s.nombre==nombreSeccion);
-            if(!laSeccion){
+            var laSeccion = elNodo.secciones.id(idSeccion);
+            if (!laSeccion) {
                 console.log(`Sección no encontrada`);
                 throw new ApolloError("Error conectando con la base de datos")
             }
 
-            if(!laSeccion.idCarpeta){
+            if (!laSeccion.idCarpeta) {
                 console.log(`Carpeta no especificada`);
                 throw new ApolloError("Informacion de la seccion inesperada");
             }
 
             try {
-                var laCarpeta:any=await CarpetasArchivos.findById(laSeccion.idCarpeta).exec();
-                if(!laCarpeta)throw "Carpeta no encontrada"
+                var laCarpeta: any = await CarpetasArchivos.findById(laSeccion.idCarpeta).exec();
+                if (!laCarpeta) throw "Carpeta no encontrada"
             } catch (error) {
                 console.log(`Error buscando la carpeta de la seccion`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            laCarpeta.archivos.forEach(archivo=>{
+            laCarpeta.archivos.forEach(archivo => {
                 console.log(`Nombre: ${archivo.nombre}`);
             })
-            
-            const indexA=laCarpeta.archivos.findIndex(a=>a.nombre==nombreArchivo);
-            if(indexA>-1){
+
+            const indexA = laCarpeta.archivos.findIndex(a => a.nombre == nombreArchivo);
+            if (indexA > -1) {
                 laCarpeta.archivos.pull(laCarpeta.archivos[indexA]);
             }
-            else{
+            else {
                 console.log(`Archivo no encontrado`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
@@ -782,7 +786,7 @@ export const resolvers = {
             console.log(`Archivo eliminado`);
             return true;
         },
-        marcarPrimarioArchivoSeccionNodo: async function (_: any, { idNodo, nombreSeccion, nombreArchivo }: any, contexto: contextoQuery) {
+        marcarPrimarioArchivoSeccionNodo: async function (_: any, { idNodo, idSeccion, nombreArchivo }: any, contexto: contextoQuery) {
             try {
                 var elNodo: any = await Nodo.findById(idNodo).exec();
                 if (!elNodo) {
@@ -803,34 +807,34 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            var laSeccion=elNodo.secciones.find(s=>s.nombre==nombreSeccion);
-            if(!laSeccion){
+            var laSeccion = elNodo.secciones.id(idSeccion);
+            if (!laSeccion) {
                 console.log(`Sección no encontrada`);
                 throw new ApolloError("Error conectando con la base de datos")
             }
 
-            if(!laSeccion.idCarpeta){
+            if (!laSeccion.idCarpeta) {
                 console.log(`Carpeta no especificada`);
                 throw new ApolloError("Informacion de la seccion inesperada");
             }
 
             try {
-                var laCarpeta:any=await CarpetasArchivos.findById(laSeccion.idCarpeta).exec();
-                if(!laCarpeta)throw "Carpeta no encontrada"
+                var laCarpeta: any = await CarpetasArchivos.findById(laSeccion.idCarpeta).exec();
+                if (!laCarpeta) throw "Carpeta no encontrada"
             } catch (error) {
                 console.log(`Error buscando la carpeta de la seccion`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var encontrado=false;
-            
-            laCarpeta.archivos.forEach(archivo=>{
-                if(archivo.nombre==nombreArchivo){
-                    archivo.primario=true;
-                    encontrado=true;
+            var encontrado = false;
+
+            laCarpeta.archivos.forEach(archivo => {
+                if (archivo.nombre == nombreArchivo) {
+                    archivo.primario = true;
+                    encontrado = true;
                 }
-                else{
-                    archivo.primario=false;
+                else {
+                    archivo.primario = false;
                 }
             });
 
@@ -844,44 +848,132 @@ export const resolvers = {
             console.log(`Archivo seteado`);
             return encontrado;
         },
+
+        crearNuevaSeccionNodoConocimiento: async function (_: any, { idNodo, nombreNuevaSeccion }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            
+            //Authorización
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
+                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elNodo:any=await Nodo.findById(idNodo).exec();
+                if(!elNodo){
+                    throw "Nodo no encontrado";
+                }
+            } catch (error) {
+                console.log(`Error buscando el nodo`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+            if (charProhibidosNombreNuevaSeccion.test(nombreNuevaSeccion) || nombreNuevaSeccion.length>30) {
+                throw new ApolloError("Nombre ilegal");
+            }
+            
+            var nuevaSeccion=elNodo.secciones.create({
+                nombre:nombreNuevaSeccion
+            });
+            console.log(`Secciones: ${elNodo.secciones}`);
+            console.log(`Nueva Seccion: ${nuevaSeccion}`);
+            elNodo.secciones.push(nuevaSeccion);
+            console.log(`Secciones: ${elNodo.secciones}`);
+
+
+            try {
+               await elNodo.save();
+            } catch (error) {
+                console.log(`Error guardando el nodo`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            
+            return nuevaSeccion;
+        },
+        eliminarSeccionNodoConocimiento:async function(_:any, {idNodo, idSeccion}:any, contexto: contextoQuery){
+            let credencialesUsuario = contexto.usuario;
+            
+            //Authorización
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
+                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elNodo:any=await Nodo.findById(idNodo).exec();
+                if(!elNodo){
+                    throw "Nodo no encontrado";
+                }
+            } catch (error) {
+                console.log(`Error buscando el nodo`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var laSeccion = elNodo.secciones.id(idSeccion);
+            if(!laSeccion){
+                throw new ApolloError("Sección no encontrada");
+            }
+
+            const idCarpeta=laSeccion.idCarpeta;
+            if(idCarpeta){
+                try {
+                    await CarpetasArchivos.findByIdAndDelete(idCarpeta).exec();
+                    console.log(`Carpeta eliminada`);
+                } catch (error) {
+                    console.log(`Error eliminando la carpeta con id: ${idCarpeta}. E: ${error}`);
+                }
+            }      
+
+            try {
+                await Nodo.findByIdAndUpdate(idNodo, {$pull:{secciones:{_id:idSeccion}}});
+            } catch (error) {
+                console.log(`Error pulling la seccion`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }            
+
+            return true;
+        }
     },
 
-    SeccionContenidoNodo:{
-        async archivos(parent:any, _:any, __:any){
-            if(!parent.idCarpeta){
+    SeccionContenidoNodo: {
+        async archivos(parent: any, _: any, __: any) {
+            if (!parent.idCarpeta) {
                 console.log(`No habia carpeta`);
                 return []
             }
 
             try {
-                var laCarpeta:any=await CarpetasArchivos.findById(parent.idCarpeta, "archivos").exec();
-                if(!laCarpeta)throw "Carpeta no existía"
+                var laCarpeta: any = await CarpetasArchivos.findById(parent.idCarpeta, "archivos").exec();
+                if (!laCarpeta) throw "Carpeta no existía"
             } catch (error) {
                 console.log(`Error buscando carpeta en base de datos. E: ${error}`);
                 return []
             }
 
-            const infoArchivos=laCarpeta.archivos.map(a=>{ return {nombre: a.nombre, primario: a.primario}});
+            const infoArchivos = laCarpeta.archivos.map(a => { return { nombre: a.nombre, primario: a.primario } });
             return infoArchivos
         },
-        async tipoPrimario(parent:any, _:any, __:any){
-            if(!parent.idCarpeta){
+        async tipoPrimario(parent: any, _: any, __: any) {
+            if (!parent.idCarpeta) {
                 console.log(`No habia carpeta`);
                 return null
             }
 
             try {
-                var laCarpeta:any=await CarpetasArchivos.findById(parent.idCarpeta, "archivos").exec();        
-                if(!laCarpeta)throw "Carpeta no existía";
-                var elPrimario=laCarpeta.archivos.find(a=>a.primario==true);
-                if(!elPrimario)throw "No habia primario"
+                var laCarpeta: any = await CarpetasArchivos.findById(parent.idCarpeta, "archivos").exec();
+                if (!laCarpeta) throw "Carpeta no existía";
+                var elPrimario = laCarpeta.archivos.find(a => a.primario == true);
+                if (!elPrimario) throw "No habia primario"
 
             } catch (error) {
                 console.log(`Error buscando carpeta y primario en base de datos. E: ${error}`);
                 return null
             }
 
-            if(!elPrimario.mimetype){
+            if (!elPrimario.mimetype) {
                 console.log(`No habia mimetype`);
                 return null
             }

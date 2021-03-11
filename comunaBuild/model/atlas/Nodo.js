@@ -73,17 +73,15 @@ esquemaNodo.add({
                     type: String,
                     required: true,
                     max: 40,
-                    min: 3,
-                    unique: true
+                    min: 2,
+                    default: "Nueva sección"
                 },
                 idCarpeta: {
                     type: String,
                 }
             }],
         required: true,
-        default: [{
-                nombre: "explicacion",
-            }]
+        default: []
     },
     coordx: Number,
     coordy: Number,

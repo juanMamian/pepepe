@@ -7,11 +7,12 @@ import { ModeloNodo as Nodo } from "../../model/atlas/Nodo";
 
 const access = promisify(fs.access);
 
-router.get("/:idNodo/:nombreSeccion/:nombreArchivo", async function (req, res) {
-    console.log(`(1)Acceso al archivo ${req.params.nombreArchivo} de contenido de sección de nodo`);
+router.get("/:idNodo/:idSeccion/:nombreArchivo", async function (req, res) {
     const idNodo = req.params.idNodo;
-    const nombreSeccion=req.params.nombreSeccion;
+    const idSeccion=req.params.idSeccion;
     const nombreArchivo=req.params.nombreArchivo;
+    console.log(`(1)Acceso al archivo ${req.params.nombreArchivo} de contenido de sección con id ${idSeccion} de nodo`);
+
     let pathDefault = path.join(__dirname, '../../assetsAtlas/contenidosNodos/', "default", "index.html");
 
     try {
@@ -22,7 +23,7 @@ router.get("/:idNodo/:nombreSeccion/:nombreArchivo", async function (req, res) {
         return res.sendFile(pathDefault);
     }
 
-    const laSeccion=elNodo.secciones.find(s=>s.nombre==nombreSeccion);
+    const laSeccion=elNodo.secciones.id(idSeccion);
 
     if(!laSeccion){
         console.log(`Seccion no encontrada`);
@@ -55,10 +56,10 @@ router.get("/:idNodo/:nombreSeccion/:nombreArchivo", async function (req, res) {
 
 });
 
-router.get("/:idNodo/:nombreSeccion", async function (req, res) {
-    console.log(`(2)Acceso a un archivo primario de contenido de sección ${req.params.nombreSeccion} de nodo`);
+router.get("/:idNodo/:idSeccion", async function (req, res) {
+    console.log(`(2)Acceso a un archivo primario de contenido de sección ${req.params.idSeccion} de nodo`);
     const idNodo = req.params.idNodo;
-    const nombreSeccion=req.params.nombreSeccion;
+    const idSeccion=req.params.idSeccion;
     const nombreArchivo=req.params.nombreArchivo;
     
     let pathDefault = path.join(__dirname, '../../assetsAtlas/contenidosNodos/', "default", "index.html");
@@ -71,7 +72,7 @@ router.get("/:idNodo/:nombreSeccion", async function (req, res) {
         return res.sendFile(pathDefault);
     }
 
-    const laSeccion=elNodo.secciones.find(s=>s.nombre==nombreSeccion);
+    const laSeccion=elNodo.secciones.id(idSeccion);
 
     if(!laSeccion){
         console.log(`Seccion no encontrada`);
