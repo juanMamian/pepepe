@@ -56,6 +56,7 @@
             alt="Eliminar"
             title="Eliminar esta seccion"
             class="bEliminarSeccion"
+            v-if="usuarioSuperadministrador"
             @click="eliminarSeccion(seccion.id)"
           />
         </div>
