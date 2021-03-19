@@ -106,6 +106,7 @@
           :idActividad="actividad.id"
           :seleccionada="idActividadSeleccionada == actividad.id"
           :idGrupo="esteGrupo.id"
+          :idEstudianteSeleccionadoGrupo="idEstudianteSeleccionado"
           @click.native="
             idActividadSeleccionada != actividad.id
               ? (idActividadSeleccionada = actividad.id)
@@ -155,6 +156,7 @@
           :idActividad="actividad.id"
           :seleccionada="idActividadSeleccionada == actividad.id"
           :idGrupo="esteGrupo.id"
+          :idEstudianteSeleccionadoGrupo="idEstudianteSeleccionado"
           @click.native="
             idActividadSeleccionada != actividad.id
               ? (idActividadSeleccionada = actividad.id)

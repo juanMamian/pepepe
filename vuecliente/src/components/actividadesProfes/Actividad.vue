@@ -51,10 +51,16 @@
         title="Nuevo(s) mensaje(s)"
       />
       <img
-        v-if="usuarioCompletoActividad"
+        v-if="usuarioCompletoActividad || estadoEstudianteSeleccionado=='completado'"
         class="alertas alertaActividadCompletada"
         src="@/assets/iconos/success.png"
-        title="¡Completaste esta actividad!"
+        title="¡Actividad completada!"
+      />
+      <img
+        v-if="estadoEstudianteSeleccionado=='desarrollando'"
+        class="alertas alertaActividadEnCurso"
+        src="@/assets/iconos/play.png"
+        title="¡Actividad en curso!"
       />
     </div>
     <div
@@ -378,6 +384,7 @@ export default {
     seleccionada: Boolean,
     idActividad: String,
     idGrupo: String,
+    idEstudianteSeleccionadoGrupo:String,
   },
   methods: {
     eliminarse() {
@@ -810,6 +817,20 @@ export default {
       ).length;
       return estadoAvanceGrupo;
     },
+    estadoEstudianteSeleccionado(){
+      if(!this.idEstudianteSeleccionadoGrupo){
+        return "noIniciado";
+      }
+
+      let desarrolloSeleccionado = this.estaActividad.desarrollos.find(
+        (d) => d.infoEstudiante.id == this.idEstudianteSeleccionadoGrupo
+      );
+
+      if(!desarrolloSeleccionado){
+        return "noIniciado";
+      }
+      return desarrolloSeleccionado.estado;      
+    }
   },
   watch: {
     usuarioLogeado: function () {
@@ -855,6 +876,9 @@ export default {
 }
 .alertaActividadCompletada {
   background-color: rgb(112, 161, 112);
+}
+.alertaActividadEnCurso {  
+   background-color: orange;
 }
 .alertaNuevoMensaje {
   background-color: orange;
