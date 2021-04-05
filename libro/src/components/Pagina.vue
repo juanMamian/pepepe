@@ -2,7 +2,7 @@
   <div
     class="pagina"
     :style="[estiloColumna, estiloSize, estiloApariencia]"
-    :class="{ seleccionada, deshabilitado: uploadingInfo, segundoPlano }"
+    :class="{ seleccionada, deshabilitado: uploadingInfo, segundoPlano, cursorTexto:creandoTexto, cursorImagen:creandoImagen }"
     @mousedown.left.stop="accionCrearElemento"
     @mousemove="resizeFantasmaElemento"
     @mouseup="endDibujandoElemento"
@@ -27,6 +27,8 @@
         desactivarHerramientas();        
         creandoImagen = true;
       "
+      @mousedown.stop=""
+      @mouseup.stop=""
     />
 
     <div
@@ -52,7 +54,7 @@
       :idLibro="idLibro"
       :idPagina="estaPagina.id"
       :sizePagina="size"
-      :seleccionado="idElementoSeleccionado == cuadroImagen.id"
+      :seleccionado="idElementoSeleccionado == cuadroImagen.id && seleccionada"
       :paginaSeleccionada="seleccionada"
       @click.native="resolverSeleccion($event, cuadroImagen.id)"      
       @meElimine="$emit('elimineCuadroImagen', cuadroImagen.id)"
@@ -67,7 +69,7 @@
       :idLibro="idLibro"
       :idPagina="estaPagina.id"
       :sizePagina="size"
-      :seleccionado="idElementoSeleccionado == cuadroTexto.id"
+      :seleccionado="idElementoSeleccionado == cuadroTexto.id && seleccionada"
       :paginaSeleccionada="seleccionada"
       @click.native="resolverSeleccion($event, cuadroTexto.id)"      
       @meElimine="$emit('elimineCuadroTexto', cuadroTexto.id)"
@@ -413,7 +415,12 @@ export default {
   
   user-select: none;
 }
-
+.cursorTexto{
+cursor:url('~../assets/iconos/punteroTexto.png'), default;
+}
+.cursorImagen{
+cursor:url('~../assets/iconos/punteroImagen.png'), default;
+}
 .segundoPlano {
   opacity: 0.3;
 }

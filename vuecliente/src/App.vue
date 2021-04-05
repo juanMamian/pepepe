@@ -50,7 +50,7 @@
               Atlas de conocimientos
             </div>
           </router-link>
-          <a target="_blank" :href="tallerCuentosUrl+'?t='+$store.state.token">
+          <a target="_blank" :href="tallerCuentosUrl+'?t='+$store.state.token" v-show="usuarioLogeado">
             <div
               class="botonNavBarra botonNav hoverNegro botonNavHijo"
               id="navAtlas"

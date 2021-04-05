@@ -275,6 +275,7 @@ export default {
         });
     },
     removePaginaFromCache(idPagina) {
+      this.idPaginaSeleccionada=null;
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
         query: QUERY_LIBRO,
@@ -292,7 +293,7 @@ export default {
           query: QUERY_LIBRO,
           variables: { idLibro: this.idLibro },
           data: nuevoCache,
-        });
+        });        
       } else {
         console.log(`La pagina no estaba en el caché`);
       }
@@ -323,9 +324,6 @@ export default {
         data:nuevoCache
       });
 
-      this.$nextTick(()=>{
-        
-      })
     },
     updateCacheConNuevoCuadroTexto(nuevoCuadroTexto, idPagina){
       console.log(`Se actualizara el cache con info: ${nuevoCuadroTexto} en la pagina ${idPagina}`);
