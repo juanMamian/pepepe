@@ -10,6 +10,10 @@ const esquemaAudioEmbeded = new mongoose.Schema({
 });
 
 const esquemaCuadrosImagen= new mongoose.Schema({
+    sinArchivo:{
+        type:Boolean,
+        default:true,
+    },
     archivo:{
         type:Buffer,
     },
@@ -87,7 +91,10 @@ const esquemaPagina = new mongoose.Schema({
     color:{
         type:String,
         max:30,
-        default:"#000000"
+        default:"#9acd92"
+    },
+    numPag:{
+        type:Number,
     }
 })
 
@@ -95,7 +102,16 @@ export const esquemaLibro = new mongoose.Schema({
     paginas:{
         type:[esquemaPagina],
         default:[],
+    },
+    idsEditores:{
+        type: [String],
+        default:[],
+    },
+    titulo:{
+        type:String,
+        default:"Nuevo libro"
     }
+
 });
 
-export const ModeloNodo=mongoose.model("Libro", esquemaLibro);
+export const ModeloLibro=mongoose.model("Libro", esquemaLibro);

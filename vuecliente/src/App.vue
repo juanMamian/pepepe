@@ -11,7 +11,7 @@
         </div>
       </router-link>
 
-      <div id="bloqueProyectos">
+      <div id="bloqueProyectos" class="bloqueBotones">
         <router-link to="/proyectos" v-if="usuarioLogeado == true">
           <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
             Proyectos
@@ -19,23 +19,47 @@
         </router-link>
         <div id="enlacesHijosProyectos" class="contenedorHijos">
           <router-link to="/trabajos" v-if="usuarioLogeado == true">
-            <div class="botonNavHijo botonNav hoverNegro" id="navTrabajos">
+            <div
+              class="botonNavHijo botonNav hoverNegro botonNavHijo"
+              id="navTrabajos"
+            >
               Trabajos
             </div>
           </router-link>
           <router-link to="/materiales" v-if="usuarioLogeado == true">
-            <div class="botonNavHijo botonNav hoverNegro" id="navMateriales">
+            <div
+              class="botonNavHijo botonNav hoverNegro botonNavHijo"
+              id="navMateriales"
+            >
               Materiales
             </div>
           </router-link>
         </div>
       </div>
 
-      <router-link to="/atlas">
+      <div id="bloqueHerramientas" class="bloqueBotones">
         <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
-          Atlas de conocimientos
+          Herramientas
         </div>
-      </router-link>
+        <div id="enlacesHijosHerramientas" class="contenedorHijos">
+          <router-link to="/atlas">
+            <div
+              class="botonNavBarra botonNav hoverNegro botonNavHijo"
+              id="navAtlas"
+            >
+              Atlas de conocimientos
+            </div>
+          </router-link>
+          <a target="_blank" :href="tallerCuentosUrl+'?t='+$store.state.token">
+            <div
+              class="botonNavBarra botonNav hoverNegro botonNavHijo"
+              id="navAtlas"
+            >
+              Taller de creación de cuentos
+            </div>
+          </a>
+        </div>
+      </div>
 
       <router-link
         to="/personas"
@@ -131,6 +155,10 @@ import gql from "graphql-tag";
 import Notificacion from "./components/usuario/Notificacion.vue";
 import NotificacionActividadForos from "./components/usuario/NotificacionActividadForos.vue";
 
+export const tallerCuentosUrl=process.env.NODE_ENV === 'production'
+? 'https://pe-pe-pe.herokuapp.com/tallerCuentos'
+: 'http://localhost:8081'
+
 export const QUERY_YO = gql`
   query {
     yo {
@@ -190,9 +218,9 @@ export default {
     yo: {
       query: QUERY_YO,
       fetchPolicy: "network-only",
-      update({ yo }){
+      update({ yo }) {
         this.$store.commit("setInfoForosUsuario", yo.foros);
-        return yo
+        return yo;
       },
       skip() {
         return !this.usuarioLogeado;
@@ -235,6 +263,7 @@ export default {
   components: { Notificacion, NotificacionActividadForos },
   data() {
     return {
+      tallerCuentosUrl,
       accionesLogeado: false,
       mostrandoNotificaciones: false,
       yo: {
@@ -495,10 +524,11 @@ input {
   opacity: 0.8;
   pointer-events: none;
 }
-#bloqueProyectos {
+.bloqueBotones {
   position: relative;
 }
-#bloqueProyectos:hover > .contenedorHijos {
+
+.bloqueBotones:hover > .contenedorHijos {
   display: block;
 }
 .contenedorHijos {
@@ -508,5 +538,8 @@ input {
   left: 0%;
   display: none;
   width: 150px;
+}
+.botonNavHijo {
+  padding-bottom: 15px;
 }
 </style>

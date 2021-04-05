@@ -5,6 +5,7 @@ import { typeDefs as tdProyectos, resolvers as rProyectos } from "./Proyectos"
 import { typeDefs as tdTrabajos, resolvers as rTrabajos } from "./Trabajos"
 import { typeDefs as tdGruposEstudiantiles, resolvers as rGruposEstudiantiles } from "./GruposEstudiantiles"
 import { typeDefs as tdForos, resolvers as rForos } from "./Foros"
+import {typeDefs as tdCuentos, resolvers as rCuentos} from "./cuentos/Libro"
 import merge from "lodash/merge"
 import { InterfaceCredencialesUsuario } from "./tsObjetos"
 import { makeExecutableSchema } from "apollo-server-express";
@@ -32,8 +33,8 @@ const globalTypeDefs = gql`
     }
 `;
 
-const typeDefs = [globalTypeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos, tdGruposEstudiantiles, tdForos];
-const resolvers = merge({}, rNodos, rUsuarios, rProyectos, rTrabajos, rGruposEstudiantiles, rForos);
+const typeDefs = [globalTypeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos, tdGruposEstudiantiles, tdForos, tdCuentos];
+const resolvers = merge({}, rNodos, rUsuarios, rProyectos, rTrabajos, rGruposEstudiantiles, rForos, rCuentos);
 
 export const esquema = makeExecutableSchema({
     typeDefs,

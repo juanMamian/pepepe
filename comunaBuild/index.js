@@ -13,6 +13,7 @@ const routesNodos = require("./routes/atlas/nodos");
 const routesActividadesProfes = require("./routes/actividadesProfes");
 const routesForos = require("./routes/foros");
 const routesContenidosNodos = require("./routes/atlas/contenidosNodos");
+const routesCuentos = require("./routes/cuentos");
 const mongoose_1 = require("./mongoose");
 const ejwt = require("express-jwt");
 const cors_1 = __importDefault(require("cors"));
@@ -24,6 +25,11 @@ app.use("/pepepe", express_1.default.static(__dirname + '/clientes/pepepe'));
 app.get("/pepepe", function (req, res) {
     res.sendFile(__dirname + "/clientes/pepepe/index.html");
 });
+//rutas tallerCuentos
+app.use("/tallerCuentos", express_1.default.static(__dirname + "/clientes/tallerCuentos"));
+app.get("/tallerCuentos", function (req, res) {
+    res.sendFile(__dirname + "/clientes/tallerCuentos/index.html");
+});
 Schema_1.aServer.applyMiddleware({ app });
 //Carpetas publicas
 app.use("/assetsAtlas/contenidosNodos", routesContenidosNodos);
@@ -34,12 +40,16 @@ const rutaEvidencias = /api\/actividadesProfes\/evidencia\/\S+/;
 const rutaAdjuntos = /api\/foros\/adjuntos\/\S+/;
 const rutaIconos = /api\/atlas\/iconos\/\S+/;
 const rutaContenidosSeccion = /api\/atlas\/seccion\/\S+/;
+const rutaArchivosCuadroImagen = /apiCuentos\/imagenCuento\/\S+/;
+const rutaArchivosAudioImagen = /apiCuentos\/audioImagen\/\S+/;
+const rutaArchivosAudioTexto = /apiCuentos\/audioTexto\/\S+/;
 //Routes
 app.use(express_1.default.json());
 app.use("/api/usuarios", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: ['/api/usuarios/login', '/api/usuarios/registro', rutaFotografias] }), usuariosRoutes);
 app.use("/api/atlas", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaIconos, rutaContenidosSeccion] }), routesNodos);
 app.use("/api/actividadesProfes", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaGuias, rutaEvidencias] }), routesActividadesProfes);
 app.use("/api/foros", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaAdjuntos] }), routesForos);
+app.use("/apiCuentos", cors_1.default(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaArchivosCuadroImagen, rutaArchivosAudioTexto, rutaArchivosAudioImagen] }), routesCuentos);
 app.get("/", function (req, res) {
     return res.redirect("/pepepe");
 });
