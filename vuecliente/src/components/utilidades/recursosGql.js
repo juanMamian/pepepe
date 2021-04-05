@@ -106,6 +106,7 @@ export const fragmentoRespuesta = gql`
     id
     fecha
     mensaje
+    enlaceAdjunto
     infoAutor{
       id
       nombres

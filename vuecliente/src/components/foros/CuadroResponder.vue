@@ -38,6 +38,56 @@
       placeholder="Escribe aquí tu respuesta"
     ></textarea>
 
+    <!--  -->
+    <div
+      id="bloqueAdjuntarEnlace"
+      class="bloqueAdjuntar"
+      v-show="cuadroAbierto"
+    >
+      <img
+        src="@/assets/iconos/hypervinculo.png"
+        alt="Ajuntar enlace"
+        id="imgAdjuntarEnlace"
+        title="adjuntar un enlace"
+        @click="introduciendoEnlace = true"
+      />
+      <input
+        type="text"
+        v-show="introduciendoEnlace === true"
+        class="inputAdjuntarEnlace"
+        placeholder="escribe o pega el enlace"
+        v-model="enlaceAdjuntable"
+      />
+      <div
+        id="nombreEnlaceAdjuntado"
+        v-show="enlaceAdjunto && !introduciendoEnlace"
+      >
+        <span>{{ enlaceAdjunto }}</span>
+      </div>
+      <div
+        id="bCancelarEnlaceAdjunto"
+        v-show="enlaceAdjunto"
+        @click.stop="
+          enlaceAdjunto = null;
+          enlaceAdjuntable = null;
+        "
+      >
+        <div class="linea1"><div class="linea2"></div></div>
+      </div>
+      <img
+        src="@/assets/iconos/success.png"
+        alt="enviar"
+        id="bAceptarAdjuntarEnlace"
+        v-show="introduciendoEnlace && !enlaceAdjuntableIlegal"
+        @click.stop="
+          enlaceAdjunto = enlaceAdjuntable;
+          introduciendoEnlace = false;
+        "
+      />
+    </div>
+
+    <!--  -->
+
     <img
       v-show="cuadroAbierto && !enviandoRespuesta"
       :class="{ deshabilitado: mensajeIlegal }"
@@ -47,6 +97,7 @@
       id="bEnviar"
       @click="evaluarAdjunto"
     />
+
     <loading texto="Enviando respuesta..." v-show="enviandoRespuesta" />
   </div>
 </template>
@@ -57,14 +108,14 @@ import Loading from "../utilidades/Loading.vue";
 import { fragmentoRespuesta } from "../utilidades/recursosGql";
 import axios from "axios";
 
-var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
 
 export default {
   components: { Loading },
   name: "CuadroResponder",
   props: {
     idConversacion: String,
-    parent:Object,
+    parent: Object,
   },
   data() {
     return {
@@ -72,6 +123,10 @@ export default {
       cuadroAbierto: false,
       enviandoRespuesta: false,
       nombreArchivoSeleccionado: null,
+
+      introduciendoEnlace: false,
+      enlaceAdjuntable: null,
+      enlaceAdjunto: null,
     };
   },
   methods: {
@@ -89,6 +144,9 @@ export default {
           infoArchivo: null,
           mensaje: this.mensaje,
         };
+        if (this.enlaceAdjunto) {
+          nuevaRespuesta.enlaceAdjunto = [this.enlaceAdjunto];
+        }
         this.enviarNuevaRespuesta(nuevaRespuesta);
       } else {
         const archivoAdjunto = inputArchivoAdjunto.files[0];
@@ -119,6 +177,9 @@ export default {
               },
               mensaje: dis.mensaje,
             };
+            if (this.enlaceAdjunto) {
+              nuevaRespuesta.enlaceAdjunto = [this.enlaceAdjunto];
+            }
 
             this.enviarNuevaRespuesta(nuevaRespuesta);
           })
@@ -146,13 +207,13 @@ export default {
           mutation: gql`
             mutation(
               $idConversacion: ID!
-              $nuevaRespuesta: InputNuevaRespuesta,
-              $parent:InputParent
+              $nuevaRespuesta: InputNuevaRespuesta
+              $parent: InputParent
             ) {
               postRespuestaConversacion(
                 idConversacion: $idConversacion
-                nuevaRespuesta: $nuevaRespuesta,
-                parent:$parent
+                nuevaRespuesta: $nuevaRespuesta
+                parent: $parent
               ) {
                 ...fragRespuesta
               }
@@ -168,6 +229,8 @@ export default {
         .then(({ data: { postRespuestaConversacion } }) => {
           dis.enviandoRespuesta = false;
           this.$emit("hiceRespuesta", postRespuestaConversacion);
+          this.enlaceAdjunto = null;
+          this.enlaceAdjuntable = null;
           this.cerrarse();
         })
         .catch((error) => {
@@ -202,6 +265,20 @@ export default {
         return true;
       }
       if (charProhibidosMensaje.test(this.mensaje)) {
+        return true;
+      }
+      return false;
+    },
+    enlaceAdjuntableIlegal() {
+      if (!this.enlaceAdjuntable) return true;
+      if (this.enlaceAdjuntable.substr(0, 8) != "https://") {
+        console.log(
+          `El inicio ${this.enlaceAdjuntable.substr(0, 8)} difiere del esperado`
+        );
+        return true;
+      }
+
+      if (this.enlaceAdjuntable.length < 7) {
         return true;
       }
       return false;
@@ -266,5 +343,82 @@ export default {
   padding: 3px;
   border-radius: 10px;
   display: inline-block;
+}
+.bloqueAdjuntar {
+  display: flex;
+  align-items: center;
+}
+
+#imgAdjuntarEnlace {
+  border-radius: 50%;
+  padding: 3px;
+  background-color: rgb(156, 214, 216);
+  width: 45px;
+  height: 45px;
+  cursor: pointer;
+}
+#imgAdjuntarEnlace:hover {
+  background-color: cadetblue;
+}
+.inputAdjuntarEnlace {
+  margin-left: 20px;
+  width: 350px;
+  padding: 3px 5px;
+  border-radius: 10px;
+}
+#nombreEnlaceAdjuntado {
+  max-width: 500px;
+  margin-left: 20px;
+  border-radius: 15px;
+  background-color: rgb(129, 66, 129);
+  padding: 5px;
+}
+#nombreEnlaceAdjuntado > span {
+  font-style: italic;
+  font-size: 14px;
+  word-wrap: break-word;
+
+  padding: 3px 5px;
+}
+#bCancelarEnlaceAdjunto {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-color: rgb(219, 74, 74);
+  cursor: pointer;
+  border-radius: 50%;
+  position: relative;
+  margin-left: 10px;
+}
+#bCancelarEnlaceAdjunto:hover {
+  background-color: red;
+}
+#bCancelarEnlaceAdjunto > .linea1 {
+  width: 90%;
+  height: 2px;
+  border-radius: 1px;
+  position: absolute;
+  top: 48%;
+  left: 5%;
+  background-color: black;
+  transform: rotate(45deg);
+}
+#bCancelarEnlaceAdjunto > .linea1 > .linea2 {
+  background-color: black;
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+  transform: rotate(90deg);
+}
+#bAceptarAdjuntarEnlace {
+  margin-left: 10px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background-color: rgb(138, 192, 194);
+  cursor: pointer;
+}
+#bAceptarAdjuntarEnlace:hover {
+  background-color: cadetblue;
 }
 </style>

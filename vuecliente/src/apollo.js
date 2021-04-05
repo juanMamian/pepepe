@@ -8,6 +8,8 @@ import {WebSocketLink} from "apollo-link-ws"
 import {getMainDefinition} from "apollo-utilities"
  import {setContext} from "apollo-link-context"
 import Vue from 'vue'
+import { onError } from '@apollo/client/link/error'
+
 
 Vue.use(VueApollo);
 
@@ -55,8 +57,20 @@ const authLink=setContext((_, {headers})=>{
         }
     }
 });
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  if (process.env.NODE_ENV !== 'production') {
+    if (graphQLErrors)
+      graphQLErrors.map(({ message, locations, path }) =>
+        console.log(
+          `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+        ),
+      )
 
-const link=authLink.concat(httpLink);
+    if (networkError) console.log(`[Network error]: ${networkError}`)
+  }
+});
+
+const link=errorLink.concat(authLink).concat(httpLink);
 
 
 const finalLink = split(

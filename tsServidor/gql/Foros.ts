@@ -15,8 +15,9 @@ import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; const Nodo = requir
 export const typeDefs = gql`
 
     input InputNuevaRespuesta{
-        mensaje:String
-        infoArchivo:InfoArchivoSubido
+        mensaje:String,
+        infoArchivo:InfoArchivoSubido,
+        enlaceAdjunto:[String],
     }
 
     input InputParent{
@@ -35,6 +36,7 @@ export const typeDefs = gql`
         fecha:Date,
         archivo:InfoArchivo,
         mensaje:String,
+        enlaceAdjunto:[String],
         autor: PublicUsuario,
         infoAutor:PublicUsuario,
     }

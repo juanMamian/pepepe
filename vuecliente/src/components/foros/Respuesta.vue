@@ -21,6 +21,29 @@
       </a>
     </div>
 
+    <div
+      class="enlacesAdjuntos"
+      v-show="
+        estaRespuesta.enlaceAdjunto &&
+        estaRespuesta.enlaceAdjunto.length > 0
+      "
+    >
+      <a
+        target="_blank"
+        :href="enlace"
+        :key="index"
+        v-for="(enlace, index) of estaRespuesta.enlaceAdjunto"
+      >
+        <div
+          class="enlaceAdjunto"
+          :key="index"
+          v-for="(enlace, index) of estaRespuesta.enlaceAdjunto"
+        >
+          {{ enlace }}
+        </div>
+      </a>
+    </div>
+
     <div class="controles">
       <div
         class="controlRespuesta"
@@ -99,9 +122,10 @@ export default {
   grid-template-areas:
     "info info info"
     "autor mensaje adjunto"
+    "... enlaceAdjunto enlaceAdjunto"
     "controles controles controles";
   grid-template-columns: 100px 1fr 60px;
-  grid-template-rows: 50px 1fr 15px;
+  grid-template-rows: 50px 1fr 20px 15px;
   row-gap: 10px;
   align-items: center;
   justify-items: center;
@@ -152,5 +176,20 @@ export default {
   height: 45px;
   border-radius: 50%;
   background-color: #4bb36b;
+}
+
+.enlacesAdjuntos{
+  grid-area: enlaceAdjunto;
+  justify-self: left;
+}
+.enlaceAdjunto {
+  font-style: italic;
+  font-size: 14px;
+  word-wrap: break-word;
+  border-radius: 15px;
+  background-color: rgb(187, 116, 187);
+  padding: 3px 5px;
+  cursor: pointer;
+  max-width: 600px;
 }
 </style>

@@ -21,6 +21,10 @@ exports.esquemaRespuestaConversacion = new mongoose_1.default.Schema({
         type: String,
         required: true,
     },
+    enlaceAdjunto: {
+        type: [String],
+        default: []
+    },
     idAutor: {
         type: String,
         required: true,
@@ -73,5 +77,5 @@ exports.esquemaConversacion.pre('save', function (next) {
     }
     next();
 });
-exports.charProhibidosMensajeRespuesta = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+exports.charProhibidosMensajeRespuesta = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
 exports.ModeloConversacion = mongoose_1.default.model("Conversacion", exports.esquemaConversacion);

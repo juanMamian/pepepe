@@ -25,8 +25,9 @@ const Nodo = require("../model/atlas/Nodo");
 exports.typeDefs = apollo_server_express_1.gql `
 
     input InputNuevaRespuesta{
-        mensaje:String
-        infoArchivo:InfoArchivoSubido
+        mensaje:String,
+        infoArchivo:InfoArchivoSubido,
+        enlaceAdjunto:[String],
     }
 
     input InputParent{
@@ -45,6 +46,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         fecha:Date,
         archivo:InfoArchivo,
         mensaje:String,
+        enlaceAdjunto:[String],
         autor: PublicUsuario,
         infoAutor:PublicUsuario,
     }
