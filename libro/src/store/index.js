@@ -28,8 +28,10 @@ export default new Vuex.Store({
         },
         setUserInfo(state, token){
             const datos=parseJwt(token);
+            
             state.usuario.username=datos.username,
             state.usuario.id=datos.id;
+            state.usuario.permisos=datos.permisos
         },
         deslogearse(state){
             state.usuario.username=null;

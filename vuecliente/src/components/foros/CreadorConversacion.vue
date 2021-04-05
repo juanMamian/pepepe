@@ -37,7 +37,7 @@
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 import { fragmentoConversacion } from "../utilidades/recursosGql";
-var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
 const charProhibidosTitulo = /[^ a-zA-ZÀ-ž0-9_():.,-¡!¿?]/;
 
 export default {

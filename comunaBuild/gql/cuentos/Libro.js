@@ -62,6 +62,8 @@ exports.typeDefs = apollo_server_express_1.gql `
     extend type Query{
         libro(idLibro:ID!):Libro,
         misLibros:[Libro],
+        todosLibros:[Libro],
+
     }
 
     extend type Mutation{
@@ -103,10 +105,30 @@ exports.resolvers = {
         misLibros: function (_, __, context) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Peticion mis libros de: `);
-                console.log(`Credenciales usuario: ${JSON.stringify(context)}`);
                 const usuario = context.usuario;
                 try {
                     var losLibros = yield Libro_1.ModeloLibro.find({ idsEditores: usuario.id }).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando misLibros. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Enviando ${losLibros.length} libros`);
+                return losLibros;
+            });
+        },
+        todosLibros: function (_, __, context) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Peticion mis libros de: `);
+                console.log(`Credenciales usuario: ${JSON.stringify(context)}`);
+                const credencialesUsuario = context.usuario;
+                let permisosEspeciales = ["superadministrador"];
+                if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion pidiendo todosLibros`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var losLibros = yield Libro_1.ModeloLibro.find({}).exec();
                 }
                 catch (error) {
                     console.log(`Error buscando misLibros. E: ${error}`);

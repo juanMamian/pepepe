@@ -171,6 +171,7 @@ exports.resolvers = {
         },
         conversacionesPaginaForo(_, { idForo, pagina }, __) {
             return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de conversaciones de foro ${idForo} para la página ${pagina}`);
                 try {
                     var elForo = yield Foro_1.ModeloForo.findById(idForo).exec();
                     if (!elForo) {
@@ -183,9 +184,10 @@ exports.resolvers = {
                 }
                 let todasConversaciones = elForo.conversaciones;
                 let numConversaciones = todasConversaciones.length;
+                console.log(`Hay un total de ${numConversaciones}`);
                 var numPaginas = 0;
                 if (numConversaciones > 0) {
-                    numPaginas = Math.ceil(numConversaciones / sizePaginaConversacion);
+                    numPaginas = Math.ceil(numConversaciones / sizePaginaForo);
                 }
                 if (pagina < 1 || pagina > numPaginas) {
                     pagina = numPaginas;

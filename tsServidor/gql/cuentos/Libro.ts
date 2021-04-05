@@ -54,6 +54,8 @@ export const typeDefs = gql`
     extend type Query{
         libro(idLibro:ID!):Libro,
         misLibros:[Libro],
+        todosLibros:[Libro],
+
     }
 
     extend type Mutation{
@@ -92,13 +94,33 @@ export const resolvers = {
             return elLibro;
         },
         misLibros: async function (_: any, __: any, context: contextoQuery) {
-            console.log(`Peticion mis libros de: `);
-            console.log(`Credenciales usuario: ${JSON.stringify(context)}`);
+            console.log(`Peticion mis libros de: `);            
 
             const usuario = context.usuario;
 
             try {
                 var losLibros: any = await Libro.find({ idsEditores: usuario.id }).exec();
+            } catch (error) {
+                console.log(`Error buscando misLibros. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Enviando ${losLibros.length} libros`);
+            return losLibros;
+        },
+        todosLibros: async function (_: any, __: any, context: contextoQuery) {
+            console.log(`Peticion mis libros de: `);
+            console.log(`Credenciales usuario: ${JSON.stringify(context)}`);
+
+            const credencialesUsuario = context.usuario;
+            let permisosEspeciales = ["superadministrador"];
+            if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion pidiendo todosLibros`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var losLibros: any = await Libro.find({}).exec();
             } catch (error) {
                 console.log(`Error buscando misLibros. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");

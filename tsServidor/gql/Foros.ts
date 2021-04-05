@@ -157,7 +157,7 @@ export const resolvers = {
             return { numPaginas, pagina, respuestas: lasRespuestas };
         },
         async conversacionesPaginaForo(_: any, { idForo, pagina }, __: any) {
-
+            console.log(`Solicitud de conversaciones de foro ${idForo} para la página ${pagina}`);
             try {
                 var elForo: any = await Foro.findById(idForo).exec();
                 if (!elForo) {
@@ -170,10 +170,11 @@ export const resolvers = {
 
             let todasConversaciones = elForo.conversaciones;
             let numConversaciones = todasConversaciones.length;
+            console.log(`Hay un total de ${numConversaciones}`);
 
             var numPaginas = 0;
             if (numConversaciones > 0) {
-                numPaginas = Math.ceil(numConversaciones / sizePaginaConversacion);
+                numPaginas = Math.ceil(numConversaciones / sizePaginaForo);
             }
             if (pagina < 1 || pagina > numPaginas) {
                 pagina = numPaginas;
