@@ -14,6 +14,9 @@ Vue.mixin({
   computed:{
     usuario(){
       return this.$store.state.usuario
+    },
+    usuarioSuperadministrador(){
+      return this.$store.state.usuario.permisos.includes("superadministrador");
     }
   }
 })

@@ -1,6 +1,19 @@
 <template>
-  <div class="cuadroImagen" :style="[estiloLayout]" @click="playAudio" :class="{conAudio:esteCuadroImagen.audio, deshabilitado:updatingInfo, enPaginaSeleccionada:paginaSeleccionada}">
-    <img :src="urlImagen+'?v='+versionImagen" alt="ilustracion" class="imagenContenido" />
+  <div
+    class="cuadroImagen"
+    :style="[estiloLayout]"
+    @click="playAudio"
+    :class="{
+      conAudio: esteCuadroImagen.audio,
+      deshabilitado: updatingInfo,
+      enPaginaSeleccionada: paginaSeleccionada,
+    }"
+  >
+    <img
+      :src="urlImagen + '?v=' + versionImagen"
+      alt="ilustracion"
+      class="imagenContenido"
+    />
 
     <div
       id="dragHandle"
@@ -33,33 +46,38 @@
       @click="eliminarse"
     />
 
-    <input type="file" id="inputArchivoImagen" style="display:none" ref="inputArchivoImagen" @change="uploadArchivoCuadroImagen">
+    <input
+      type="file"
+      id="inputArchivoImagen"
+      style="display: none"
+      ref="inputArchivoImagen"
+      @change="uploadArchivoCuadroImagen"
+    />
 
     <audio type="audio/ogg" v-if="esteCuadroImagen.audio" ref="audio">
       <source :src="urlAudio" type="audio/ogg" />
     </audio>
-
   </div>
 </template>
 
 <script>
-import { gql } from 'apollo-server-core';
-import axios from 'axios';
+import { gql } from "apollo-server-core";
+import axios from "axios";
 export default {
   name: "cuadroImagen",
   props: {
     esteCuadroImagen: Object,
     idLibro: String,
     idPagina: String,
-    sizePagina:Object,
-    seleccionado:Boolean,
-    archivoCuadroImagenPagina:Object,
-    paginaSeleccionada:Boolean,
+    sizePagina: Object,
+    seleccionado: Boolean,
+    archivoCuadroImagenPagina: Object,
+    paginaSeleccionada: Boolean,
   },
   data() {
     return {
       resizing: false,
-      dragging:false,
+      dragging: false,
       posicion: {
         x: null,
         y: null,
@@ -68,8 +86,8 @@ export default {
         x: null,
         y: null,
       },
-      updatingInfo:false,
-      versionImagen:0,
+      updatingInfo: false,
+      versionImagen: 0,
     };
   },
   computed: {
@@ -103,7 +121,7 @@ export default {
       return {
         width: this.dragging ? 200 + "px" : 10 + "px",
         height: this.dragging ? 200 + "px" : 10 + "px",
-      };      
+      };
     },
     urlAudio() {
       return (
@@ -118,8 +136,8 @@ export default {
     },
   },
   methods: {
-    playAudio(){
-      if(!this.esteCuadroImagen.audio)return;
+    playAudio() {
+      if (!this.esteCuadroImagen.audio) return;
       this.$refs.audio.play();
     },
     iniciarResize() {
@@ -127,7 +145,6 @@ export default {
     },
     resize(e) {
       if (this.resizing) {
-
         var cuadroPos = {
           x: this.$el.getBoundingClientRect().left,
           y: this.$el.getBoundingClientRect().top,
@@ -136,13 +153,13 @@ export default {
         const nuevox = e.clientX - cuadroPos.x - 5;
         const nuevoy = e.clientY - cuadroPos.y - 5;
 
-        
         var nuevoxP = Math.floor((nuevox * 100) / this.sizePagina.x);
         var nuevoyP = Math.floor((nuevoy * 100) / this.sizePagina.y);
 
-        if(this.posicion.x+nuevoxP>100)nuevoxP=Math.floor(100-this.posicion.x);
-        if(this.posicion.y+nuevoyP>100)nuevoyP=Math.floor(100-this.posicion.y);
-
+        if (this.posicion.x + nuevoxP > 100)
+          nuevoxP = Math.floor(100 - this.posicion.x);
+        if (this.posicion.y + nuevoyP > 100)
+          nuevoyP = Math.floor(100 - this.posicion.y);
 
         this.$set(this.size, "x", nuevoxP);
         this.$set(this.size, "y", nuevoyP);
@@ -150,6 +167,36 @@ export default {
     },
     finResize() {
       this.resizing = false;
+
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation(
+            $idLibro: ID!
+            $idPagina: ID!
+            $idCuadroImagen: ID!
+            $nuevoSize: CoordsInput!
+          ) {
+            updateSizeCuadroImagen(
+              idLibro: $idLibro
+              idPagina: $idPagina
+              idCuadroImagen: $idCuadroImagen
+              nuevoSize: $nuevoSize
+            ) {
+              id
+              size {
+                x
+                y
+              }
+            }
+          }
+        `,
+        variables: {
+          idLibro: this.idLibro,
+          idPagina: this.idPagina,
+          idCuadroImagen: this.esteCuadroImagen.id,
+          nuevoSize: this.size,
+        },
+      });
     },
 
     iniciarDrag() {
@@ -169,20 +216,19 @@ export default {
           y: posMouse.y + 20,
         };
 
-        if(nuevaPos.x+this.$el.offsetWidth>elemPagina.offsetWidth){
-          nuevaPos.x=elemPagina.offsetWidth-this.$el.offsetWidth;          
+        if (nuevaPos.x + this.$el.offsetWidth > elemPagina.offsetWidth) {
+          nuevaPos.x = elemPagina.offsetWidth - this.$el.offsetWidth;
         }
-        if(nuevaPos.x<0){
-          nuevaPos.x=0;          
-        }
-
-        if(nuevaPos.y+this.$el.offsetHeight>elemPagina.offsetHeight){
-          nuevaPos.y=elemPagina.offsetHeight-this.$el.offsetHeight;          
-        }
-        if(nuevaPos.y<0){
-          nuevaPos.y=0;          
+        if (nuevaPos.x < 0) {
+          nuevaPos.x = 0;
         }
 
+        if (nuevaPos.y + this.$el.offsetHeight > elemPagina.offsetHeight) {
+          nuevaPos.y = elemPagina.offsetHeight - this.$el.offsetHeight;
+        }
+        if (nuevaPos.y < 0) {
+          nuevaPos.y = 0;
+        }
 
         var nuevaPosP = {
           x: Math.round((nuevaPos.x * 100) / elemPagina.offsetWidth),
@@ -224,7 +270,7 @@ export default {
         },
       });
     },
-  
+
     uploadArchivoCuadroImagen() {
       var datos = new FormData();
       if (!this.$refs.inputArchivoImagen.value) {
@@ -267,14 +313,18 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idLibro: ID!, $idPagina: ID!, $idCuadroImagen:ID!) {
-              eliminarCuadroImagenLibro(idLibro: $idLibro, idPagina: $idPagina, idCuadroImagen:$idCuadroImagen)
+            mutation($idLibro: ID!, $idPagina: ID!, $idCuadroImagen: ID!) {
+              eliminarCuadroImagenLibro(
+                idLibro: $idLibro
+                idPagina: $idPagina
+                idCuadroImagen: $idCuadroImagen
+              )
             }
           `,
           variables: {
             idLibro: this.idLibro,
             idPagina: this.idPagina,
-            idCuadroImagen:this.esteCuadroImagen.id,
+            idCuadroImagen: this.esteCuadroImagen.id,
           },
         })
         .then(({ data: { eliminarCuadroImagenLibro } }) => {
@@ -291,10 +341,13 @@ export default {
   },
   mounted() {
     console.log(`Montado`);
-    this.posicion = this.esteCuadroImagen.posicion;
-    this.size = this.esteCuadroImagen.size;    
+    this.$set(this.posicion, "x", this.esteCuadroImagen.posicion.x);
+    this.$set(this.posicion, "y", this.esteCuadroImagen.posicion.y);
 
-    if(this.esteCuadroImagen.sinArchivo){
+    this.$set(this.size, "x", this.esteCuadroImagen.size.x);
+    this.$set(this.size, "y", this.esteCuadroImagen.size.y);
+
+    if (this.esteCuadroImagen.sinArchivo) {
       console.log(`Abriendo el input de archivo`);
       this.$refs.inputArchivoImagen.click();
     }
@@ -305,14 +358,14 @@ export default {
 <style scoped>
 .cuadroImagen {
   position: absolute;
-   border-width: 1px;
+  border-width: 1px;
   border-style: solid;
 }
-.cuadroImagen:not(.enPaginaSeleccionada){
+.cuadroImagen:not(.enPaginaSeleccionada) {
   border-color: transparent;
 }
-.enPaginaSeleccionada{
-  border-color:purple;
+.enPaginaSeleccionada {
+  border-color: purple;
 }
 .imagenContenido {
   width: 100%;
@@ -359,8 +412,8 @@ export default {
   transform: translate(-50%, -50%);
   background-color: green;
 }
-.conAudio{
-  cursor:pointer;
+.conAudio {
+  cursor: pointer;
 }
 
 #bEliminarCuadroImagen {

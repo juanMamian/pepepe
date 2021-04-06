@@ -156,6 +156,7 @@ export default {
       skip() {
         return this.idLibro == null;
       },
+      fetchPolicy:"cache-and-network"
     },
   },
   props: {

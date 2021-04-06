@@ -20,6 +20,7 @@ export default new Vuex.Store({
             username:null,
             nombres:null,
             id:null,
+            permisos:[]
         }
     },
     mutations:{

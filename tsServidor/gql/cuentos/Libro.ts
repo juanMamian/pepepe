@@ -72,6 +72,7 @@ export const typeDefs = gql`
         eliminarCuadroTextoLibro(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!):Boolean,
 
         updatePosicionCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoPosicion:CoordsInput!):CuadroImagenCuento,
+        updateSizeCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoSize:CoordsInput!):CuadroImagenCuento,
         eliminarCuadroImagenLibro(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!):Boolean,
 
     }
@@ -498,6 +499,47 @@ export const resolvers = {
 
             return nuevoCuadroImagen;
 
+        },
+        async updateSizeCuadroImagen(_: any, { idLibro, idPagina, idCuadroImagen, nuevoSize }: any, contexto: contextoQuery) {
+            console.log(`Solicitud de update size de cuadro imágen en la pagina ${idPagina} del libro ${idLibro}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elLibro: any = await Libro.findById(idLibro).exec();
+                if (!elLibro) {
+                    throw "libro no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el libro. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion updating size de cuadro de imágen`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var laPagina = elLibro.paginas.id(idPagina);
+            if (!laPagina) {
+                console.log(`Pagina no encontrada`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var elCuadroImagen = laPagina.cuadrosImagen.id(idCuadroImagen);
+            if (!elCuadroImagen) {
+                console.log(`CuadroImagen no encontrado`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            try {
+                elCuadroImagen.size = nuevoSize;
+                await elLibro.save();
+            } catch (error) {
+                console.log(`Error guardando el libro. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return elCuadroImagen
         },
         async updatePosicionCuadroImagen(_: any, { idLibro, idPagina, idCuadroImagen, nuevoPosicion }: any, contexto: contextoQuery) {
             console.log(`Solicitud de update posicion de cuadro imágen en la pagina ${idPagina} del libro ${idLibro}`);

@@ -80,6 +80,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         eliminarCuadroTextoLibro(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!):Boolean,
 
         updatePosicionCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoPosicion:CoordsInput!):CuadroImagenCuento,
+        updateSizeCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoSize:CoordsInput!):CuadroImagenCuento,
         eliminarCuadroImagenLibro(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!):Boolean,
 
     }
@@ -486,6 +487,46 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 return nuevoCuadroImagen;
+            });
+        },
+        updateSizeCuadroImagen(_, { idLibro, idPagina, idCuadroImagen, nuevoSize }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de update size de cuadro imágen en la pagina ${idPagina} del libro ${idLibro}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elLibro = yield Libro_1.ModeloLibro.findById(idLibro).exec();
+                    if (!elLibro) {
+                        throw "libro no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el libro. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion updating size de cuadro de imágen`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laPagina = elLibro.paginas.id(idPagina);
+                if (!laPagina) {
+                    console.log(`Pagina no encontrada`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var elCuadroImagen = laPagina.cuadrosImagen.id(idCuadroImagen);
+                if (!elCuadroImagen) {
+                    console.log(`CuadroImagen no encontrado`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    elCuadroImagen.size = nuevoSize;
+                    yield elLibro.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el libro. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elCuadroImagen;
             });
         },
         updatePosicionCuadroImagen(_, { idLibro, idPagina, idCuadroImagen, nuevoPosicion }, contexto) {
