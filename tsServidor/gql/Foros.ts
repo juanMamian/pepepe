@@ -28,7 +28,7 @@ export const typeDefs = gql`
 
     input InputIniciarConversacion{
         titulo:String,
-        primeraRespuesta:String
+        primeraRespuesta:InputNuevaRespuesta
     }
 
     type RespuestaConversacionForo{
@@ -231,31 +231,29 @@ export const resolvers = {
 
             let primeraRespuesta = input.primeraRespuesta;
 
-            primeraRespuesta = primeraRespuesta.trim();
-            if (charProhibidosMensajeRespuesta.test(primeraRespuesta)) {
+            let mensaje = primeraRespuesta.mensaje;
+            mensaje = mensaje.trim();
+            if (charProhibidosMensajeRespuesta.test(mensaje)) {
                 console.log(`El mensaje contenia caracteres ilegales`);
                 throw new ApolloError("Mensaje ilegal");
             }
 
+            primeraRespuesta.mensaje = mensaje;
+            primeraRespuesta.archivo = primeraRespuesta.infoArchivo;
 
+            primeraRespuesta.idAutor = credencialesUsuario.id;
             let infoAutor = {
                 id: elUsuario._id,
                 nombres: elUsuario.nombres,
                 apellidos: elUsuario.apellidos,
                 username: elUsuario.username,
             }
+            primeraRespuesta.infoAutor = infoAutor;
 
-            let respuesta = {
-                mensaje: primeraRespuesta,
-                idAutor: credencialesUsuario.id,
-                infoAutor,
-            }
-
-
+            
             let nuevaConversacion = elForo.conversaciones.create({
                 titulo,
                 idCreador: credencialesUsuario.id,
-                respuestas: [respuesta],
                 acceso: "publico",
                 cantidadRespuestas:1
             });
@@ -264,10 +262,11 @@ export const resolvers = {
 
             try {
                 await elForo.conversaciones.push(nuevaConversacion);
-                await elForo.save();
+                
                 let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
-                let laRespuesta = new Respuesta(respuesta);
+                let laRespuesta = new Respuesta(primeraRespuesta);
                 await laRespuesta.save();
+                await elForo.save();
             } catch (error) {
                 console.log(`Error guardando el foro con la nueva conversacion. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");

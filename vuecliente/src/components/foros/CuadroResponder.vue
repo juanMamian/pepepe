@@ -1,6 +1,6 @@
 <template>
   <div class="cuadroResponder">
-    <div id="barraSuperior">
+    <div id="barraSuperior" v-show="idConversacion">
       <img
         src="@/assets/iconos/mensaje.png"
         alt="Contestar"
@@ -10,6 +10,17 @@
       />
       <span id="tituloCuadro">Envía una respuesta</span>
     </div>
+
+    <textarea
+      v-show="cuadroAbierto"
+      name="inputMensaje"
+      id="inputMensaje"
+      :class="{ letrasRojas: mensajeIlegal }"
+      v-model="mensaje"
+      placeholder="Escribe aquí tu respuesta"
+    ></textarea>
+
+    <!--  -->
     <div id="adjuntarArchivo" v-show="cuadroAbierto">
       <input
         type="file"
@@ -29,61 +40,54 @@
         {{ nombreArchivoSeleccionado }}
       </div>
     </div>
-    <textarea
-      v-show="cuadroAbierto"
-      name="inputMensaje"
-      id="inputMensaje"
-      :class="{ letrasRojas: mensajeIlegal }"
-      v-model="mensaje"
-      placeholder="Escribe aquí tu respuesta"
-    ></textarea>
-
     <!--  -->
     <div
       id="bloqueAdjuntarEnlace"
       class="bloqueAdjuntar"
       v-show="cuadroAbierto"
     >
-      <img
-        src="@/assets/iconos/hypervinculo.png"
-        alt="Ajuntar enlace"
-        id="imgAdjuntarEnlace"
-        title="adjuntar un enlace"
-        @click="introduciendoEnlace = true"
-      />
-      <input
-        type="text"
-        v-show="introduciendoEnlace === true"
-        class="inputAdjuntarEnlace"
-        placeholder="escribe o pega el enlace"
-        v-model="enlaceAdjuntable"
-      />
-      <div
-        id="nombreEnlaceAdjuntado"
-        v-show="enlaceAdjunto && !introduciendoEnlace"
-      >
-        <span>{{ enlaceAdjunto }}</span>
+      <div id="zonaIntroducirEnlace">
+        <img
+          src="@/assets/iconos/hypervinculo.png"
+          alt="Ajuntar enlace"
+          id="imgAdjuntarEnlace"
+          title="adjuntar un enlace"
+          @click="introduciendoEnlace = true"
+        />
+        <input
+          type="text"
+          v-show="introduciendoEnlace === true"
+          class="inputAdjuntarEnlace"
+          placeholder="escribe o pega el enlace"
+          v-model="enlaceAdjuntable"
+        />
+        <img
+          src="@/assets/iconos/success.png"
+          alt="Confirmar"
+          id="bAceptarAdjuntarEnlace"
+          v-show="introduciendoEnlace && !enlaceAdjuntableIlegal"
+          @click.stop="
+            enlaceAdjunto.push(enlaceAdjuntable);
+            enlaceAdjuntable=null;
+            introduciendoEnlace = false;
+          "
+        />
       </div>
-      <div
-        id="bCancelarEnlaceAdjunto"
-        v-show="enlaceAdjunto"
-        @click.stop="
-          enlaceAdjunto = null;
-          enlaceAdjuntable = null;
-        "
-      >
-        <div class="linea1"><div class="linea2"></div></div>
+      <div class="enlaceAdjuntado" v-for="(enlace, index) of enlaceAdjunto" :key="index">
+        <div
+          id="nombreEnlaceAdjuntado"          
+        >
+          <span>{{ enlace }}</span>
+        </div>
+        <div
+          id="bCancelarEnlaceAdjunto"          
+          @click.stop="
+            enlaceAdjunto.splice(index, 1);            
+          "
+        >
+          <div class="linea1"><div class="linea2"></div></div>
+        </div>
       </div>
-      <img
-        src="@/assets/iconos/success.png"
-        alt="enviar"
-        id="bAceptarAdjuntarEnlace"
-        v-show="introduciendoEnlace && !enlaceAdjuntableIlegal"
-        @click.stop="
-          enlaceAdjunto = enlaceAdjuntable;
-          introduciendoEnlace = false;
-        "
-      />
     </div>
 
     <!--  -->
@@ -105,7 +109,10 @@
 <script>
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
-import { fragmentoRespuesta } from "../utilidades/recursosGql";
+import {
+  fragmentoConversacion,
+  fragmentoRespuesta,
+} from "../utilidades/recursosGql";
 import axios from "axios";
 
 var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
@@ -114,7 +121,9 @@ export default {
   components: { Loading },
   name: "CuadroResponder",
   props: {
+    tituloNuevaConversacion: String,
     idConversacion: String,
+    idForo: String,
     parent: Object,
   },
   data() {
@@ -126,7 +135,7 @@ export default {
 
       introduciendoEnlace: false,
       enlaceAdjuntable: null,
-      enlaceAdjunto: null,
+      enlaceAdjunto: [],
     };
   },
   methods: {
@@ -144,10 +153,14 @@ export default {
           infoArchivo: null,
           mensaje: this.mensaje,
         };
-        if (this.enlaceAdjunto) {
-          nuevaRespuesta.enlaceAdjunto = [this.enlaceAdjunto];
+        if (this.enlaceAdjunto && this.enlaceAdjunto.length>0) {
+          nuevaRespuesta.enlaceAdjunto = this.enlaceAdjunto;
         }
-        this.enviarNuevaRespuesta(nuevaRespuesta);
+        if (!this.idConversacion) {
+          this.crearConversacionConRespuesta(nuevaRespuesta);
+        } else {
+          this.enviarNuevaRespuesta(nuevaRespuesta);
+        }
       } else {
         const archivoAdjunto = inputArchivoAdjunto.files[0];
         const fileType = archivoAdjunto["type"];
@@ -177,11 +190,14 @@ export default {
               },
               mensaje: dis.mensaje,
             };
-            if (this.enlaceAdjunto) {
-              nuevaRespuesta.enlaceAdjunto = [this.enlaceAdjunto];
+            if (this.enlaceAdjunto && this.enlaceAdjunto.length>0) {
+              nuevaRespuesta.enlaceAdjunto = this.enlaceAdjunto;
             }
-
-            this.enviarNuevaRespuesta(nuevaRespuesta);
+            if (!this.idConversacion) {
+              this.crearConversacionConRespuesta(nuevaRespuesta);
+            } else {
+              this.enviarNuevaRespuesta(nuevaRespuesta);
+            }
           })
           .catch((error) => {
             this.enviandoRespuesta = false;
@@ -193,6 +209,53 @@ export default {
             }
           });
       }
+    },
+    crearConversacionConRespuesta(nuevaRespuesta) {
+      if (!this.tituloNuevaConversacion) {
+        return;
+      }
+      var input = {
+        titulo: this.tituloNuevaConversacion,
+        primeraRespuesta: nuevaRespuesta,
+      };
+      this.enviandoRespuesta = true;
+      var dis = this;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $idForo: ID!
+              $input: InputIniciarConversacion
+              $parent: InputParent
+            ) {
+              iniciarConversacionConPrimerMensajeForo(
+                idForo: $idForo
+                input: $input
+                parent: $parent
+              ) {
+                ...fragConversacion
+              }
+            }
+            ${fragmentoConversacion}
+          `,
+          variables: {
+            idForo: dis.idForo,
+            input,
+            parent: dis.parent,
+          },
+        })
+        .then(({ data: { iniciarConversacionConPrimerMensajeForo } }) => {
+          dis.enviandoRespuesta = false;
+          dis.$emit(
+            "hiceConversacion",
+            iniciarConversacionConPrimerMensajeForo
+          );
+          this.reset();
+        })
+        .catch((error) => {
+          dis.enviandoRespuesta = false;
+          console.log(`Error. E: ${error}`);
+        });
     },
     enviarNuevaRespuesta(nuevaRespuesta) {
       if (this.mensajeIlegal) {
@@ -228,9 +291,7 @@ export default {
         })
         .then(({ data: { postRespuestaConversacion } }) => {
           dis.enviandoRespuesta = false;
-          this.$emit("hiceRespuesta", postRespuestaConversacion);
-          this.enlaceAdjunto = null;
-          this.enlaceAdjuntable = null;
+          this.$emit("hiceRespuesta", postRespuestaConversacion);         
           this.cerrarse();
         })
         .catch((error) => {
@@ -242,9 +303,7 @@ export default {
       this.cuadroAbierto = !this.cuadroAbierto;
     },
     cerrarse() {
-      this.mensaje = null;
-      this.$refs.inputArchivoAdjunto.value = null;
-      this.nombreArchivoSeleccionado = null;
+      this.reset();
       this.cuadroAbierto = false;
     },
     actualizarNombreDeArchivo() {
@@ -257,6 +316,12 @@ export default {
     },
     abrirSelectorDeArchivos() {
       this.$refs.inputArchivoAdjunto.click();
+    },
+    reset() {
+      this.nombreArchivoSeleccionado = null;
+      this.$refs.inputArchivoAdjunto.value = null;
+      this.mensaje = null;
+      (this.enlaceAdjuntable = null), (this.enlaceAdjunto = []);
     },
   },
   computed: {
@@ -283,6 +348,12 @@ export default {
       }
       return false;
     },
+  },
+  mounted() {
+    console.log(`Revisando si hay idConversacion`);
+    if (!this.idConversacion) {
+      this.cuadroAbierto = true;
+    }
   },
 };
 </script>
@@ -344,11 +415,13 @@ export default {
   border-radius: 10px;
   display: inline-block;
 }
-.bloqueAdjuntar {
+/* .bloqueAdjuntar {
+  
+} */
+#zonaIntroducirEnlace {
   display: flex;
   align-items: center;
 }
-
 #imgAdjuntarEnlace {
   border-radius: 50%;
   padding: 3px;
@@ -366,12 +439,20 @@ export default {
   padding: 3px 5px;
   border-radius: 10px;
 }
+.enlaceAdjuntado{
+  display: flex;
+  align-items: center;
+  margin: 3px;
+}
 #nombreEnlaceAdjuntado {
-  max-width: 500px;
+  width: 400px;
   margin-left: 20px;
   border-radius: 15px;
-  background-color: rgb(129, 66, 129);
-  padding: 5px;
+  background-color: rgba(129, 66, 129, 0.349);
+  padding: 5px;  
+}
+#nombreEnlaceAdjuntado:hover {
+  background-color: rgba(129, 66, 129, 0.733);
 }
 #nombreEnlaceAdjuntado > span {
   font-style: italic;

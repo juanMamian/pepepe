@@ -28,7 +28,7 @@
       </div>
     </div>
     <div class="zonaConversaciones">
-      <creador-conversacion
+      <!-- <creador-conversacion
         v-if="
           usuarioLogeado &&
           (esteForo.acceso == 'publico' || usuarioMiembro == true) &&
@@ -38,7 +38,33 @@
         :parent="parent"
         v-show="creandoConversacion"
         @hiceConversacion="addConversacion($event)"
-      />
+      /> -->
+      <div
+        id="zonaCrearConversacion"
+        v-if="
+          usuarioLogeado &&
+          (esteForo.acceso == 'publico' || usuarioMiembro == true) &&
+          esteForo.id
+        "
+        v-show="creandoConversacion"
+      >
+        <center><h3>Creando conversación</h3></center>
+        <input
+          type="text"
+          v-model="tituloNuevaConversacion"
+          id="inputTituloNuevaConversacion"
+          placeholder="Titulo de la nueva conversación"
+          :class="{letrasRojas:tituloNuevaConversacionIlegal}"
+        />
+        <cuadro-responder
+          :idForo="esteForo.id"
+          :parent="parent"
+          :tituloNuevaConversacion="tituloNuevaConversacion"
+          :class="{ deshabilitado: tituloNuevaConversacionIlegal }"
+          @hiceConversacion="addConversacion($event)"
+        />
+      </div>
+
       <div class="zonaSelectorPagina" v-if="numPaginas && !conversacionAbierta">
         <div
           class="selectorPagina"
@@ -84,12 +110,15 @@
 
 <script>
 import gql from "graphql-tag";
-import CreadorConversacion from "./foros/CreadorConversacion.vue";
+// import CreadorConversacion from "./foros/CreadorConversacion.vue";
 import {
   fragmentoConversacion,
   fragmentoResponsables,
 } from "./utilidades/recursosGql";
 import Conversacion from "./foros/Conversacion.vue";
+import CuadroResponder from "./foros/CuadroResponder.vue";
+
+const charProhibidosTituloNuevaConversacion = /[^ a-zA-ZÀ-ž0-9_():.,-¡!¿?]/;
 
 const QUERY_FORO = gql`
   query($idForo: ID!) {
@@ -118,7 +147,7 @@ const QUERY_CONVERSACIONES_PAGINA = gql`
 `;
 
 export default {
-  components: { CreadorConversacion, Conversacion },
+  components: { Conversacion, CuadroResponder },
   name: "Foro",
   apollo: {
     esteForo: {
@@ -173,6 +202,8 @@ export default {
       creandoConversacion: false,
       numPaginaSeleccionada: 0,
       conversacionesPorPagina: {},
+
+      tituloNuevaConversacion: null,
     };
   },
   methods: {
@@ -194,6 +225,7 @@ export default {
       if (this.numPaginaSeleccionada != targetPagina) {
         this.numPaginaSeleccionada = targetPagina;
       }
+      this.tituloNuevaConversacion=null;
     },
     refreshPagina() {
       //let store = this.$apollo.provider.defaultClient;
@@ -270,8 +302,21 @@ export default {
     conversacionAbierta() {
       return this.idConversacionSeleccionada;
     },
+    tituloNuevaConversacionIlegal() {
+      if (
+        !this.tituloNuevaConversacion ||
+        this.tituloNuevaConversacion.length < 1
+      ) {
+        return true;
+      }
+      if (
+        charProhibidosTituloNuevaConversacion.test(this.tituloNuevaConversacion)
+      ) {
+        return true;
+      }
+      return false;
+    },
   },
-  
 };
 </script>
 
@@ -345,5 +390,16 @@ export default {
 }
 #anuncio {
   padding: 5px 5px;
+}
+#zonaCrearConversacion {
+  border: 2px solid cadetblue;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: rgba(95, 158, 160, 0.329);
+}
+#inputTituloNuevaConversacion {
+  font-size: 20px;
+  padding: 3px 5px;
+  width: min(80%, 500px);
 }
 </style>

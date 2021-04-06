@@ -35,9 +35,7 @@
         v-for="(enlace, index) of estaRespuesta.enlaceAdjunto"
       >
         <div
-          class="enlaceAdjunto"
-          :key="index"
-          v-for="(enlace, index) of estaRespuesta.enlaceAdjunto"
+          class="enlaceAdjunto"          
         >
           {{ enlace }}
         </div>
@@ -125,7 +123,7 @@ export default {
     "... enlaceAdjunto enlaceAdjunto"
     "controles controles controles";
   grid-template-columns: 100px 1fr 60px;
-  grid-template-rows: 50px 1fr 20px 15px;
+  grid-template-rows: 50px 1fr min-content 15px;
   row-gap: 10px;
   align-items: center;
   justify-items: center;
@@ -187,9 +185,13 @@ export default {
   font-size: 14px;
   word-wrap: break-word;
   border-radius: 15px;
-  background-color: rgb(187, 116, 187);
+  background-color: rgba(129, 66, 129, 0.349);
   padding: 3px 5px;
   cursor: pointer;
   max-width: 600px;
+  margin:3px;
+}
+.enlaceAdjunto:hover{
+  background-color: rgba(129, 66, 129, 0.733);
 }
 </style>

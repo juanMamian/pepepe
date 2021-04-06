@@ -38,7 +38,7 @@ exports.typeDefs = apollo_server_express_1.gql `
 
     input InputIniciarConversacion{
         titulo:String,
-        primeraRespuesta:String
+        primeraRespuesta:InputNuevaRespuesta
     }
 
     type RespuestaConversacionForo{
@@ -237,36 +237,35 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Titulo ilegal");
                 }
                 let primeraRespuesta = input.primeraRespuesta;
-                primeraRespuesta = primeraRespuesta.trim();
-                if (Conversacion_1.charProhibidosMensajeRespuesta.test(primeraRespuesta)) {
+                let mensaje = primeraRespuesta.mensaje;
+                mensaje = mensaje.trim();
+                if (Conversacion_1.charProhibidosMensajeRespuesta.test(mensaje)) {
                     console.log(`El mensaje contenia caracteres ilegales`);
                     throw new apollo_server_express_1.ApolloError("Mensaje ilegal");
                 }
+                primeraRespuesta.mensaje = mensaje;
+                primeraRespuesta.archivo = primeraRespuesta.infoArchivo;
+                primeraRespuesta.idAutor = credencialesUsuario.id;
                 let infoAutor = {
                     id: elUsuario._id,
                     nombres: elUsuario.nombres,
                     apellidos: elUsuario.apellidos,
                     username: elUsuario.username,
                 };
-                let respuesta = {
-                    mensaje: primeraRespuesta,
-                    idAutor: credencialesUsuario.id,
-                    infoAutor,
-                };
+                primeraRespuesta.infoAutor = infoAutor;
                 let nuevaConversacion = elForo.conversaciones.create({
                     titulo,
                     idCreador: credencialesUsuario.id,
-                    respuestas: [respuesta],
                     acceso: "publico",
                     cantidadRespuestas: 1
                 });
                 let idConversacion = nuevaConversacion._id;
                 try {
                     yield elForo.conversaciones.push(nuevaConversacion);
-                    yield elForo.save();
                     let Respuesta = mongoose_1.default.model("respuestasDeConversacion" + idConversacion, Conversacion_1.esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
-                    let laRespuesta = new Respuesta(respuesta);
+                    let laRespuesta = new Respuesta(primeraRespuesta);
                     yield laRespuesta.save();
+                    yield elForo.save();
                 }
                 catch (error) {
                     console.log(`Error guardando el foro con la nueva conversacion. E: ${error}`);
