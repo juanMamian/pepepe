@@ -23,6 +23,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         sinArchivo:Boolean
         tipoActivacionSecundario:String,
         posicion:Coords,
+        posicionZeta:Int,
         size:Coords,
         originalSize:Coords,
         audio: AudioEmbedded,
@@ -39,6 +40,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         id:ID,
         texto:String,
         posicion:Coords,
+        posicionZeta:Int,
         size:Coords,
         formato:FormatoTexto,
         audio:AudioEmbedded,
@@ -70,17 +72,22 @@ exports.typeDefs = apollo_server_express_1.gql `
         crearNuevoLibro:Libro,
         eliminarPaginaDeLibro(idLibro:ID!, idPagina:ID!):Boolean,
         editarTituloLibro(idLibro:ID!, nuevoTitulo:String):Libro,
+
         crearNuevaPaginaLibro(idLibro:ID!):PaginaCuento,
+        setNuevoColorPaginaLibro(idLibro:ID!, idPagina:ID!, nuevoColor:String!):PaginaCuento,
+        
         crearCuadroTextoPaginaLibro(idLibro:ID!, idPagina:ID!, datosPosicion:CoordsInput!, datosSize: CoordsInput!):CuadroTextoCuento,
-        crearCuadroImagenPaginaLibro(idLibro:ID!, idPagina:ID!, datosPosicion:CoordsInput!, datosSize: CoordsInput!):CuadroImagenCuento,
     
         updateTextoCuadroTextoCuento(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!, nuevoTexto:String!):CuadroTextoCuento,
         updateSizeCuadroTexto(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!, nuevoSize:CoordsInput!):CuadroTextoCuento,
         updatePosicionCuadroTexto(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!, nuevoPosicion:CoordsInput!):CuadroTextoCuento,
+        setPosicionZCuadroTexto(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!, nuevoPosicionZ:Int!):CuadroTextoCuento,
         eliminarCuadroTextoLibro(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!):Boolean,
 
+        crearCuadroImagenPaginaLibro(idLibro:ID!, idPagina:ID!, datosPosicion:CoordsInput!, datosSize: CoordsInput!):CuadroImagenCuento,
         updatePosicionCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoPosicion:CoordsInput!):CuadroImagenCuento,
         updateSizeCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoSize:CoordsInput!):CuadroImagenCuento,
+        setPosicionZCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoPosicionZ:Int!):CuadroImagenCuento,
         eliminarCuadroImagenLibro(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!):Boolean,
 
     }
@@ -165,6 +172,40 @@ exports.resolvers = {
                 }
                 catch (error) {
                     console.log(`Error eliminando la página ${idPagina} del libro`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
+            });
+        },
+        setNuevoColorPaginaLibro(_, { idLibro, idPagina, nuevoColor }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elLibro = yield Libro_1.ModeloLibro.findById(idLibro).exec();
+                    if (!elLibro) {
+                        throw "libro no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el libro. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando color de página de libro`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laPagina = elLibro.paginas.id(idPagina);
+                if (!laPagina) {
+                    console.log(`Pagina no encontrada`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                laPagina.color = nuevoColor;
+                try {
+                    yield elLibro.save();
+                }
+                catch (error) {
+                    console.log(`Error cambiando color de la página ${idPagina} del libro`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 return true;
@@ -415,6 +456,46 @@ exports.resolvers = {
                 return elCuadroTexto;
             });
         },
+        setPosicionZCuadroTexto(_, { idLibro, idPagina, idCuadroTexto, nuevoPosicionZ }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de update posicionZ de cuadro texto en la pagina ${idPagina} del libro ${idLibro}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elLibro = yield Libro_1.ModeloLibro.findById(idLibro).exec();
+                    if (!elLibro) {
+                        throw "libro no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el libro. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion updating posicionZ de cuadro de texto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laPagina = elLibro.paginas.id(idPagina);
+                if (!laPagina) {
+                    console.log(`Pagina no encontrada`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var elCuadroTexto = laPagina.cuadrosTexto.id(idCuadroTexto);
+                if (!elCuadroTexto) {
+                    console.log(`CuadroTexto no encontrado`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    elCuadroTexto.posicionZeta = nuevoPosicionZ;
+                    yield elLibro.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el libro. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elCuadroTexto;
+            });
+        },
         eliminarCuadroTextoLibro(_, { idLibro, idPagina, idCuadroTexto }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Solicitud de eliminar cuadro texto en la pagina ${idPagina} del libro ${idLibro}`);
@@ -520,6 +601,46 @@ exports.resolvers = {
                 }
                 try {
                     elCuadroImagen.size = nuevoSize;
+                    yield elLibro.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el libro. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elCuadroImagen;
+            });
+        },
+        setPosicionZCuadroImagen(_, { idLibro, idPagina, idCuadroImagen, nuevoPosicionZ }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de update posicionZ de cuadro imágen en la pagina ${idPagina} del libro ${idLibro}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elLibro = yield Libro_1.ModeloLibro.findById(idLibro).exec();
+                    if (!elLibro) {
+                        throw "libro no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el libro. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion updating posicionZ de cuadro de imágen`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laPagina = elLibro.paginas.id(idPagina);
+                if (!laPagina) {
+                    console.log(`Pagina no encontrada`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var elCuadroImagen = laPagina.cuadrosImagen.id(idCuadroImagen);
+                if (!elCuadroImagen) {
+                    console.log(`CuadroImagen no encontrado`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    elCuadroImagen.posicionZeta = nuevoPosicionZ;
                     yield elLibro.save();
                 }
                 catch (error) {

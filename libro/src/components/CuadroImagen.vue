@@ -15,6 +15,11 @@
       class="imagenContenido"
     />
 
+    <div id="zHandlers" v-show="seleccionado">
+      <div class="zHandler" id="bSendBack" title="Mover hacia atrás" @click="posicionZeta=posicionZeta>0?posicionZeta-1:0"></div>
+      <div class="zHandler" id="bBringFront" title="Mover hacia adelante" @click="posicionZeta++"></div>
+    </div>
+
     <div
       id="dragHandle"
       v-show="seleccionado"
@@ -23,7 +28,7 @@
       @mousemove="drag"
       @mouseup="finDrag"
     >
-      <div id="bolitaDragHandle"></div>
+      <div id="bolitaDragHandle" :class="{enDuda:posicionZeta!=esteCuadroImagen.posicionZeta}" title="arrastrar">{{posicionZeta}}</div>
     </div>
 
     <div
@@ -63,6 +68,7 @@
 <script>
 import { gql } from "apollo-server-core";
 import axios from "axios";
+import debounce from "debounce";
 export default {
   name: "cuadroImagen",
   props: {
@@ -73,9 +79,11 @@ export default {
     seleccionado: Boolean,
     archivoCuadroImagenPagina: Object,
     paginaSeleccionada: Boolean,
+    zBase:Number,
   },
   data() {
     return {
+      posicionZeta:0,
       resizing: false,
       dragging: false,
       posicion: {
@@ -98,6 +106,9 @@ export default {
 
         width: this.size.x + "%",
         height: this.size.y + "%",
+
+        zIndex:this.seleccionado?this.zBase+this.posicionZeta+100:this.zBase+this.posicionZeta,
+
       };
     },
     urlImagen() {
@@ -299,6 +310,26 @@ export default {
           console.log(`Error uploading archivo de cuadroImagen. E: ${error}`);
         });
     },
+    guardarPosicionZeta: debounce(function(){
+      if(this.posicionZeta==this.esteCuadroImagen.posicionZeta)return;
+      console.log(`Guardando posición zeta`);
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idLibro:ID!, $idPagina:ID!, $idCuadroImagen:ID!, $nuevoPosicionZ:Int!){
+            setPosicionZCuadroImagen(idLibro:$idLibro, idPagina:$idPagina, idCuadroImagen:$idCuadroImagen, nuevoPosicionZ:$nuevoPosicionZ){
+              id
+              posicionZeta
+            }
+          }
+        `,
+        variables:{
+          idLibro:this.idLibro,
+          idPagina:this.idPagina,
+          idCuadroImagen:this.esteCuadroImagen.id,
+          nuevoPosicionZ:this.posicionZeta,
+        }
+      });
+    },3000),
 
     eliminarse() {
       if (
@@ -339,6 +370,12 @@ export default {
         });
     },
   },
+  watch:{
+    posicionZeta(){
+      console.log(`Cambio de posicion zeta`);
+      this.guardarPosicionZeta();
+    }
+  },
   mounted() {
     console.log(`Montado`);
     this.$set(this.posicion, "x", this.esteCuadroImagen.posicion.x);
@@ -346,6 +383,8 @@ export default {
 
     this.$set(this.size, "x", this.esteCuadroImagen.size.x);
     this.$set(this.size, "y", this.esteCuadroImagen.size.y);
+
+    this.posicionZeta=this.esteCuadroImagen.posicionZeta;
 
     if (this.esteCuadroImagen.sinArchivo) {
       console.log(`Abriendo el input de archivo`);
@@ -411,6 +450,7 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: green;
+  text-align: center;
 }
 .conAudio {
   cursor: pointer;
@@ -429,5 +469,42 @@ export default {
 }
 #bEliminarCuadroImagen:hover {
   background-color: rgba(128, 0, 128, 0.637);
+}
+
+#zHandlers{
+  position: absolute;
+  top:-33px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(104, 7, 104, 0.534);
+  border-radius: 13px;
+  padding: 5px 10px;
+  display: grid;
+  grid-template-columns: 16px 30px 16px;
+}
+
+.zHandler{
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;    
+}
+#bSendBack{
+  background-color: rgba(8, 83, 8, 0.377);
+  grid-column: 1/2;
+}
+#bSendBack:hover{
+  background-color: rgba(8, 83, 8, 0.61); 
+}
+#bBringFront{
+  background-color: rgb(8, 83, 8);
+  grid-column: 3/4;
+}
+#bBringFront:hover{
+  background-color: rgb(4, 56, 4);
+
+}
+.enDuda{
+  color: purple;
 }
 </style>

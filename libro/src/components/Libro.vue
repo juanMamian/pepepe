@@ -73,6 +73,7 @@ export const fragmentoCuadroTexto = gql`
   fragment fragCuadroTexto on CuadroTextoCuento {
     id
     texto
+    posicionZeta
     posicion {
       x
       y
@@ -98,6 +99,7 @@ export const fragmentoCuadroImagen = gql`
     id
     sinArchivo
     tipoActivacionSecundario
+    posicionZeta
     posicion {
       x
       y

@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build --dest ../comunaBuild/clientes/tallerCuentos",    
+    "build": "vue-cli-service build --dest ../comunaBuild/clientes/tallerCuentos",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "axios": "^0.21.1",
     "core-js": "^3.6.5",
+    "debounce": "^1.2.1",
     "vue": "^2.6.11",
     "vue-apollo": "^3.0.5",
     "vuex": "^3.6.2"

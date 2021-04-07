@@ -15,6 +15,7 @@ export const typeDefs = gql`
         sinArchivo:Boolean
         tipoActivacionSecundario:String,
         posicion:Coords,
+        posicionZeta:Int,
         size:Coords,
         originalSize:Coords,
         audio: AudioEmbedded,
@@ -31,6 +32,7 @@ export const typeDefs = gql`
         id:ID,
         texto:String,
         posicion:Coords,
+        posicionZeta:Int,
         size:Coords,
         formato:FormatoTexto,
         audio:AudioEmbedded,
@@ -62,17 +64,22 @@ export const typeDefs = gql`
         crearNuevoLibro:Libro,
         eliminarPaginaDeLibro(idLibro:ID!, idPagina:ID!):Boolean,
         editarTituloLibro(idLibro:ID!, nuevoTitulo:String):Libro,
+
         crearNuevaPaginaLibro(idLibro:ID!):PaginaCuento,
+        setNuevoColorPaginaLibro(idLibro:ID!, idPagina:ID!, nuevoColor:String!):PaginaCuento,
+        
         crearCuadroTextoPaginaLibro(idLibro:ID!, idPagina:ID!, datosPosicion:CoordsInput!, datosSize: CoordsInput!):CuadroTextoCuento,
-        crearCuadroImagenPaginaLibro(idLibro:ID!, idPagina:ID!, datosPosicion:CoordsInput!, datosSize: CoordsInput!):CuadroImagenCuento,
     
         updateTextoCuadroTextoCuento(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!, nuevoTexto:String!):CuadroTextoCuento,
         updateSizeCuadroTexto(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!, nuevoSize:CoordsInput!):CuadroTextoCuento,
         updatePosicionCuadroTexto(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!, nuevoPosicion:CoordsInput!):CuadroTextoCuento,
+        setPosicionZCuadroTexto(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!, nuevoPosicionZ:Int!):CuadroTextoCuento,
         eliminarCuadroTextoLibro(idLibro:ID!, idPagina:ID!, idCuadroTexto:ID!):Boolean,
 
+        crearCuadroImagenPaginaLibro(idLibro:ID!, idPagina:ID!, datosPosicion:CoordsInput!, datosSize: CoordsInput!):CuadroImagenCuento,
         updatePosicionCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoPosicion:CoordsInput!):CuadroImagenCuento,
         updateSizeCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoSize:CoordsInput!):CuadroImagenCuento,
+        setPosicionZCuadroImagen(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!, nuevoPosicionZ:Int!):CuadroImagenCuento,
         eliminarCuadroImagenLibro(idLibro:ID!, idPagina:ID!, idCuadroImagen:ID!):Boolean,
 
     }
@@ -157,6 +164,40 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error eliminando la página ${idPagina} del libro`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return true;
+        },
+        async setNuevoColorPaginaLibro(_: any, { idLibro, idPagina, nuevoColor }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elLibro: any = await Libro.findById(idLibro).exec();
+                if (!elLibro) {
+                    throw "libro no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el libro. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando color de página de libro`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var laPagina=elLibro.paginas.id(idPagina);
+            if(!laPagina){
+                console.log(`Pagina no encontrada`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            laPagina.color=nuevoColor;
+
+            try {                
+                await elLibro.save();
+            } catch (error) {
+                console.log(`Error cambiando color de la página ${idPagina} del libro`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
             return true;
@@ -421,7 +462,48 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             return elCuadroTexto
-        },        
+        },
+        async setPosicionZCuadroTexto(_: any, { idLibro, idPagina, idCuadroTexto, nuevoPosicionZ }: any, contexto: contextoQuery) {
+            console.log(`Solicitud de update posicionZ de cuadro texto en la pagina ${idPagina} del libro ${idLibro}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elLibro: any = await Libro.findById(idLibro).exec();
+                if (!elLibro) {
+                    throw "libro no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el libro. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion updating posicionZ de cuadro de texto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var laPagina = elLibro.paginas.id(idPagina);
+            if (!laPagina) {
+                console.log(`Pagina no encontrada`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var elCuadroTexto = laPagina.cuadrosTexto.id(idCuadroTexto);
+            if (!elCuadroTexto) {
+                console.log(`CuadroTexto no encontrado`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            try {
+                elCuadroTexto.posicionZeta = nuevoPosicionZ;
+                await elLibro.save();
+            } catch (error) {
+                console.log(`Error guardando el libro. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return elCuadroTexto
+        },
         async eliminarCuadroTextoLibro(_: any, { idLibro, idPagina, idCuadroTexto }: any, contexto: contextoQuery) {
             console.log(`Solicitud de eliminar cuadro texto en la pagina ${idPagina} del libro ${idLibro}`);
             let credencialesUsuario = contexto.usuario;
@@ -534,6 +616,47 @@ export const resolvers = {
 
             try {
                 elCuadroImagen.size = nuevoSize;
+                await elLibro.save();
+            } catch (error) {
+                console.log(`Error guardando el libro. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return elCuadroImagen
+        },
+        async setPosicionZCuadroImagen(_: any, { idLibro, idPagina, idCuadroImagen, nuevoPosicionZ }: any, contexto: contextoQuery) {
+            console.log(`Solicitud de update posicionZ de cuadro imágen en la pagina ${idPagina} del libro ${idLibro}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elLibro: any = await Libro.findById(idLibro).exec();
+                if (!elLibro) {
+                    throw "libro no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el libro. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion updating posicionZ de cuadro de imágen`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var laPagina = elLibro.paginas.id(idPagina);
+            if (!laPagina) {
+                console.log(`Pagina no encontrada`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var elCuadroImagen = laPagina.cuadrosImagen.id(idCuadroImagen);
+            if (!elCuadroImagen) {
+                console.log(`CuadroImagen no encontrado`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            try {
+                elCuadroImagen.posicionZeta = nuevoPosicionZ;
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);

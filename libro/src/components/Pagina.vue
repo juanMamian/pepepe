@@ -2,7 +2,13 @@
   <div
     class="pagina"
     :style="[estiloColumna, estiloSize, estiloApariencia]"
-    :class="{ seleccionada, deshabilitado: uploadingInfo, segundoPlano, cursorTexto:creandoTexto, cursorImagen:creandoImagen }"
+    :class="{
+      seleccionada,
+      deshabilitado: uploadingInfo,
+      segundoPlano,
+      cursorTexto: creandoTexto,
+      cursorImagen: creandoImagen,
+    }"
     @mousedown.left.stop="accionCrearElemento"
     @mousemove="resizeFantasmaElemento"
     @mouseup="endDibujandoElemento"
@@ -12,9 +18,19 @@
       <img
         src="@/assets/iconos/delete.png"
         class="bControlesPagina bEliminarPagina"
+        title="Eliminar esta página"
         @click="eliminarse"
       />
+      <img
+        src="@/assets/iconos/paletaColores.png"
+        alt="Color"
+        class="bControlesPagina bSelectColorPagina"
+        title="Seleccionar color de la página"
+        @click.stop="$refs.inputColorPagina.click()"
+      />
     </div>
+
+    <input type="color" v-model="colorSeleccionado" style="display:none" @change="guardarNuevoColor" ref="inputColorPagina">
 
     <herramientas-edicion
       v-show="seleccionada"
@@ -24,7 +40,7 @@
         creandoTexto = true;
       "
       @creacionImagen="
-        desactivarHerramientas();        
+        desactivarHerramientas();
         creandoImagen = true;
       "
       @mousedown.stop=""
@@ -43,11 +59,11 @@
       :style="[estiloLayoutFantasmaImagen]"
       v-show="dibujandoImagen"
     ></div>
-    
+
     <cuadro-imagen
       v-for="cuadroImagen of estaPagina.cuadrosImagen"
       class="elementoPagina"
-      :ref="'cuadroImagen'+cuadroImagen.id"
+      :ref="'cuadroImagen' + cuadroImagen.id"
       :class="{ primerPlano: idElementoSeleccionado == cuadroImagen.id }"
       :key="cuadroImagen.id"
       :esteCuadroImagen="cuadroImagen"
@@ -56,7 +72,8 @@
       :sizePagina="size"
       :seleccionado="idElementoSeleccionado == cuadroImagen.id && seleccionada"
       :paginaSeleccionada="seleccionada"
-      @click.native="resolverSeleccion($event, cuadroImagen.id)"      
+      :zBase="zElementos"
+      @click.native="resolverSeleccion($event, cuadroImagen.id)"
       @meElimine="$emit('elimineCuadroImagen', cuadroImagen.id)"
     />
 
@@ -71,7 +88,8 @@
       :sizePagina="size"
       :seleccionado="idElementoSeleccionado == cuadroTexto.id && seleccionada"
       :paginaSeleccionada="seleccionada"
-      @click.native="resolverSeleccion($event, cuadroTexto.id)"      
+      :zBase="zElementos"
+      @click.native="resolverSeleccion($event, cuadroTexto.id)"
       @meElimine="$emit('elimineCuadroTexto', cuadroTexto.id)"
     />
   </div>
@@ -108,12 +126,15 @@ export default {
       ancho: 450,
       alto: 600,
       uploadingInfo: false,
+      colorSeleccionado: "#ffffff",
 
       creandoTexto: false,
       creandoImagen: false,
 
       dibujandoTexto: false,
       dibujandoImagen: false,
+
+      zElementos:100,
 
       posFantasmaTexto: {
         x: 0,
@@ -160,7 +181,7 @@ export default {
     },
     estiloApariencia() {
       return {
-        backgroundColor: this.estaPagina.color,
+        backgroundColor: this.colorSeleccionado,
       };
     },
     estiloLayoutFantasmaTexto() {
@@ -398,13 +419,40 @@ export default {
           console.log(`Hubo ${error.graphQLErrors} errores graphql`);
         });
     },
-    resolverSeleccion(e, idElemento){
-      if(this.seleccionada){
+    resolverSeleccion(e, idElemento) {
+      if (this.seleccionada) {
         e.stopPropagation();
-        this.idElementoSeleccionado=idElemento;
+        this.idElementoSeleccionado = idElemento;
       }
+    },
+    guardarNuevoColor(){
+      console.log(`Guardando nuevo color de página.`);
+      
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idLibro:ID!, $idPagina:ID!, $nuevoColor:String!){
+            setNuevoColorPaginaLibro(idLibro:$idLibro, idPagina: $idPagina, nuevoColor:$nuevoColor){
+              id
+              color
+            }
+          }
+        `,
+        variables:{
+          idLibro:this.idLibro,
+          idPagina:this.estaPagina.id,
+          nuevoColor:this.$refs.inputColorPagina.value
+        }
+      }).then(()=>{
+        console.log(`Nuevo color guardado`);
+      }).catch((error)=>{
+        console.log(`Error guardando el nuevo color de página. E: ${error}`);        
+        this.colorSeleccionado=this.estaPagina.color;
+      })
     }
   },
+  mounted(){
+    this.colorSeleccionado=this.estaPagina.color;
+  }
 };
 </script>
 
@@ -412,21 +460,19 @@ export default {
 .pagina {
   border: 2px solid black;
   position: relative;
-  
+
   user-select: none;
 }
-.cursorTexto{
-cursor:url('~../assets/iconos/punteroTexto.png'), default;
+.cursorTexto {
+  cursor: url("~../assets/iconos/punteroTexto.png"), default;
 }
-.cursorImagen{
-cursor:url('~../assets/iconos/punteroImagen.png'), default;
+.cursorImagen {
+  cursor: url("~../assets/iconos/punteroImagen.png"), default;
 }
 .segundoPlano {
   opacity: 0.3;
 }
-.elementoPagina {
-  z-index: 100;
-}
+
 .primerPlano {
   z-index: 500;
 }
@@ -451,7 +497,10 @@ cursor:url('~../assets/iconos/punteroImagen.png'), default;
 
   cursor: pointer;
   display: inline-block;
-  background-color: rgb(255, 231, 255);
+  background-color: rgba(189, 111, 189, 0.185);
+}
+.bControlesPagina:hover {
+  background-color: rgba(189, 111, 189, 0.555);
 }
 
 #herramientasEdicion {

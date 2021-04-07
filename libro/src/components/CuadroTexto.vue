@@ -3,7 +3,11 @@
     class="cuadroTexto"
     :style="[estiloLayout]"
     @click="playAudio"
-    :class="{ conAudio: esteCuadroTexto.audio, deshabilitado: updatingInfo, enPaginaSeleccionada:paginaSeleccionada }"
+    :class="{
+      conAudio: esteCuadroTexto.audio,
+      deshabilitado: updatingInfo,
+      enPaginaSeleccionada: paginaSeleccionada,
+    }"
   >
     <div
       class="texto"
@@ -52,6 +56,10 @@
     >
       {{ esteCuadroTexto.texto }}
     </div>
+    <div id="zHandlers" v-show="seleccionado">
+      <div class="zHandler" id="bSendBack" title="Mover hacia atrás" @click="posicionZeta=posicionZeta>0?posicionZeta-1:0"></div>
+      <div class="zHandler" id="bBringFront" title="Mover hacia adelante" @click="posicionZeta++"></div>
+    </div>
 
     <div
       id="dragHandle"
@@ -61,9 +69,10 @@
       @mousemove="drag"
       @mouseup="finDrag"
     >
-      <div id="bolitaDragHandle"></div>
+      <div id="bolitaDragHandle" :class="{enDuda:posicionZeta!=esteCuadroTexto.posicionZeta}" title="Arrastrar">{{ posicionZeta }}</div>
     </div>
 
+    
     <div
       id="resizeHandle"
       :style="[sizeResizeHandle]"
@@ -83,6 +92,7 @@
 
 <script>
 import { gql } from "apollo-server-core";
+import debounce from "debounce"
 export default {
   name: "CuadroTexto",
   props: {
@@ -91,7 +101,8 @@ export default {
     esteCuadroTexto: Object,
     sizePagina: Object,
     seleccionado: Boolean,
-    paginaSeleccionada:Boolean,
+    paginaSeleccionada: Boolean,
+    zBase:Number,
   },
   data() {
     return {
@@ -103,6 +114,7 @@ export default {
       resizing: false,
       dragging: false,
 
+      posicionZeta:0,
       posicion: {
         x: null,
         y: null,
@@ -125,6 +137,8 @@ export default {
 
         width: this.size.x + "%",
         height: this.size.y + "%",
+
+        zIndex:this.seleccionado?this.zBase+this.posicionZeta+100:this.zBase+this.posicionZeta,
       };
     },
     estiloFormato() {
@@ -278,7 +292,6 @@ export default {
         this.esteCuadroTexto.texto.length < 1
       )
         return;
-      console.log(`Ajustando font size texto`);
       let hTexto = this.$refs.texto.offsetHeight;
       let hDummy = this.$refs.textoDummy.offsetHeight;
       let wDummy = this.$refs.textoDummy.scrollWidth;
@@ -286,24 +299,16 @@ export default {
       // if (!confirm("continuar")) {
       //   return;
       // }
-      console.log(`Dummy: ${wDummy}x${hDummy}. Texto: ${wTexto}x${hTexto}`);
 
       if (hDummy >= hTexto || wDummy >= wTexto) {
-        console.log(
-          `El dummy es más grande que el texto. Disminuyendo font size`
-        );
         this.fontSizeDummy = this.fontSizeDummy - 2;
         this.$nextTick(() => {
           let hTexto = this.$refs.texto.offsetHeight;
           let hDummy = this.$refs.textoDummy.offsetHeight;
           let wDummy = this.$refs.textoDummy.scrollWidth;
           let wTexto = this.$refs.texto.offsetWidth;
-          console.log(
-            `Ahora: Dummy: ${wDummy}x${hDummy}. texto: ${wTexto}x${hTexto}`
-          );
 
           if ((hDummy < hTexto && wDummy < wTexto) || this.fontSizeDummy < 5) {
-            console.log(`Encontrado`);
             this.fontSizeTexto = this.fontSizeDummy;
             this.fontSizeInput = this.fontSizeDummy;
             return;
@@ -312,24 +317,18 @@ export default {
           }
         });
       } else if (hDummy < hTexto && wDummy < wTexto) {
-        console.log(
-          `El dummy es más pequeño que el texto. Creciendo font size`
-        );
         this.fontSizeDummy = this.fontSizeDummy + 2;
         this.$nextTick(() => {
           let hTexto = this.$refs.texto.offsetHeight;
           let hDummy = this.$refs.textoDummy.offsetHeight;
           let wDummy = this.$refs.textoDummy.scrollWidth;
           let wTexto = this.$refs.texto.offsetWidth;
-          console.log(
-            `Ahora: Dummy: ${wDummy}x${hDummy}. Texto: ${wTexto}x${hTexto}`
-          );
+
           if (
             hDummy >= hTexto ||
             wDummy >= wTexto ||
             this.fontSizeDummy > 100
           ) {
-            console.log(`Encontrado`);
             this.fontSizeDummy = this.fontSizeDummy - 2;
             console.log(`Quedó en ${this.fontSizeDummy}`);
             this.fontSizeTexto = this.fontSizeDummy;
@@ -344,29 +343,18 @@ export default {
     },
     findFontSizeInput() {
       if (!this.nuevoTexto || this.nuevoTexto.length < 1) return;
-      console.log(`Ajustando font size input`);
       let hInput = this.$refs.inputNuevoTexto.offsetHeight;
       let hDummy = this.$refs.dummyInput.scrollHeight;
       let wDummy = this.$refs.dummyInput.scrollWidth;
       let wInput = this.$refs.inputNuevoTexto.offsetWidth;
-      // if (!confirm("continuar")) {
-      //   return;
-      // }
-      console.log(`Dummy: ${wDummy}x${hDummy}. Input: ${wInput}x${hInput}`);
 
       if (hDummy >= hInput || wDummy >= wInput) {
-        console.log(
-          `El dummy es más grande que el input. Disminuyendo font size`
-        );
         this.fontSizeInputDummy = this.fontSizeInputDummy - 2;
         this.$nextTick(() => {
           let hInput = this.$refs.inputNuevoTexto.offsetHeight;
           let hDummy = this.$refs.dummyInput.scrollHeight;
           let wDummy = this.$refs.dummyInput.scrollWidth;
           let wInput = this.$refs.inputNuevoTexto.offsetWidth;
-          console.log(
-            `Ahora: Dummy: ${wDummy}x${hDummy}. Input: ${wInput}x${hInput}`
-          );
 
           if (
             (hDummy < hInput && wDummy < wInput) ||
@@ -379,18 +367,13 @@ export default {
           }
         });
       } else if (hDummy < hInput && wDummy < wInput) {
-        console.log(
-          `El dummy es más pequeño que el input. Creciendo font size`
-        );
         this.fontSizeInputDummy = this.fontSizeInputDummy + 2;
         this.$nextTick(() => {
           let hInput = this.$refs.inputNuevoTexto.offsetHeight;
           let hDummy = this.$refs.dummyInput.scrollHeight;
           let wDummy = this.$refs.dummyInput.scrollWidth;
           let wInput = this.$refs.inputNuevoTexto.offsetWidth;
-          console.log(
-            `Ahora: Dummy: ${wDummy}x${hDummy}. Input: ${wInput}x${hInput}`
-          );
+
           if (
             hDummy >= hInput ||
             wDummy >= wInput ||
@@ -459,9 +442,9 @@ export default {
         this.fontSizeInputDummy = this.fontSizeTexto;
         this.nuevoTexto = this.esteCuadroTexto.texto;
         this.editandoTexto = true;
-        this.$nextTick(()=>{
+        this.$nextTick(() => {
           this.$refs.inputNuevoTexto.focus();
-        })
+        });
       }
     },
 
@@ -575,6 +558,27 @@ export default {
           this.updatingInfo = false;
         });
     },
+
+    guardarPosicionZeta: debounce(function(){
+      console.log(`Guardando posición zeta`);
+      if(this.posicionZeta==this.esteCuadroTexto.posicionZeta)return;
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idLibro:ID!, $idPagina:ID!, $idCuadroTexto:ID!, $nuevoPosicionZ:Int!){
+            setPosicionZCuadroTexto(idLibro:$idLibro, idPagina:$idPagina, idCuadroTexto:$idCuadroTexto, nuevoPosicionZ:$nuevoPosicionZ){
+              id
+              posicionZeta
+            }
+          }
+        `,
+        variables:{
+          idLibro:this.idLibro,
+          idPagina:this.idPagina,
+          idCuadroTexto:this.esteCuadroTexto.id,
+          nuevoPosicionZ:this.posicionZeta,
+        }
+      });
+    },3000),
   },
   watch: {
     nuevoTexto() {
@@ -592,6 +596,10 @@ export default {
         this.editandoTexto = false;
       }
     },
+    posicionZeta(){
+      console.log(`Cambio de posicion zeta`);
+      this.guardarPosicionZeta();
+    }
   },
   mounted() {
     this.$set(this.posicion, "x", this.esteCuadroTexto.posicion.x);
@@ -600,6 +608,7 @@ export default {
     this.$set(this.size, "x", this.esteCuadroTexto.size.x);
     this.$set(this.size, "y", this.esteCuadroTexto.size.y);
 
+    this.posicionZeta=this.esteCuadroTexto.posicionZeta;
     this.$nextTick(() => {
       this.findFontSize();
     });
@@ -617,17 +626,17 @@ export default {
   white-space: pre-wrap;
 }
 .cuadroTexto {
-  position: absolute;  
+  position: absolute;
   resize: both;
-  
+
   border-width: 1px;
   border-style: solid;
 }
-.cuadroTexto:not(.enPaginaSeleccionada){
+.cuadroTexto:not(.enPaginaSeleccionada) {
   border-color: transparent;
 }
-.enPaginaSeleccionada{
-  border-color:purple;
+.enPaginaSeleccionada {
+  border-color: purple;
 }
 .textoDummy {
   width: 99%;
@@ -714,6 +723,7 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: green;
+  text-align: center;
 }
 
 .conAudio {
@@ -750,4 +760,41 @@ export default {
 #bEliminarCuadroTexto:hover {
   background-color: rgba(128, 0, 128, 0.637);
 }
+
+#zHandlers{
+  position: absolute;
+  top:-33px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(104, 7, 104, 0.534);
+  border-radius: 13px;
+  padding: 5px 10px;
+  display: grid;
+  grid-template-columns: 16px 30px 16px;
+}
+.zHandler{
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;    
+}
+#bSendBack{
+  background-color: rgba(8, 83, 8, 0.377);
+  grid-column: 1/2;
+}
+#bSendBack:hover{
+  background-color: rgba(8, 83, 8, 0.61); 
+}
+#bBringFront{
+  background-color: rgb(8, 83, 8);
+  grid-column: 3/4;
+}
+#bBringFront:hover{
+  background-color: rgb(4, 56, 4);
+
+}
+.enDuda{
+  color: purple;
+}
+
 </style>

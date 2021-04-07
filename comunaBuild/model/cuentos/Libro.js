@@ -33,6 +33,11 @@ const esquemaCuadrosImagen = new mongoose_1.default.Schema({
         x: Number,
         y: Number,
     },
+    posicionZeta: {
+        type: Number,
+        min: 0,
+        default: 0,
+    },
     size: {
         x: Number,
         y: Number,
@@ -53,6 +58,11 @@ const esquemaCuadroTexto = new mongoose_1.default.Schema({
     posicion: {
         x: Number,
         y: Number,
+    },
+    posicionZeta: {
+        type: Number,
+        min: 0,
+        default: 0,
     },
     size: {
         x: Number,

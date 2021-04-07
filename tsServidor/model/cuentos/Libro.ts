@@ -29,6 +29,11 @@ const esquemaCuadrosImagen= new mongoose.Schema({
         x:Number,
         y:Number,
     },
+    posicionZeta:{
+        type:Number, 
+        min:0,
+        default:0,        
+    },
     size:{
         x:Number,
         y:Number,
@@ -50,6 +55,11 @@ const esquemaCuadroTexto = new mongoose.Schema({
     posicion:{
         x:Number,
         y: Number,
+    },
+    posicionZeta:{
+        type:Number, 
+        min:0,
+        default:0,        
     },
     size:{
         x:Number,
