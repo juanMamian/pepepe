@@ -414,8 +414,8 @@ export default {
 <style scoped>
 .libro {
   margin-top: 100px;
-
   border: 2px solid black;
+  padding-bottom: 80vh;
 }
 #zonaTitulo {
   padding: 5px 10px;

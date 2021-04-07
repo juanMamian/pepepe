@@ -4,7 +4,7 @@
     <todos-libros v-if="usuarioSuperadministrador" @libroSeleccionado="seleccionarLibro" />
     <mis-libros @libroSeleccionado="seleccionarLibro" />
 
-    <libro :idLibro="idLibroSeleccionado" v-if="idLibroSeleccionado != null" />
+    <libro :idLibro="idLibroSeleccionado" v-if="idLibroSeleccionado != null" ref="elLibro"/>
   </div>
 </template>
 
@@ -28,6 +28,9 @@ export default {
   methods: {
     seleccionarLibro(idLibro) {
       this.idLibroSeleccionado = idLibro;
+      this.$nextTick(function(){
+        this.$refs.elLibro.$el.scrollIntoView({behavior:'smooth'});
+      })
     },
   },
   computed: {
