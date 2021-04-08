@@ -39,7 +39,11 @@
         />
         <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
       </div>
-      <div id="barraLateral">
+      
+      <!--  -->
+      <img src="@/assets/iconos/menuMobile.png" id="bAbrirBarraLateral" @click="mostrandoBarraLateral=!mostrandoBarraLateral">
+
+      <div id="barraLateral" :class="{barraLateralInvisible:!mostrandoBarraLateral}" @click="mostrandoBarraLateral=false">
         <div
           class="selectorSeccion"
           v-for="seccion of seccionesOrganizadas"
@@ -64,7 +68,10 @@
           id="bAddSeccion"
           class="botonZonaCrearSeccion"
           v-if="usuarioSuperadministrador"
-          @click="creandoNuevaSeccion = !creandoNuevaSeccion; nombreNuevaSeccion=null"
+          @click="
+            creandoNuevaSeccion = !creandoNuevaSeccion;
+            nombreNuevaSeccion = null;
+          "
         >
           {{ creandoNuevaSeccion ? "Cancelar" : "Crear sección" }}
         </div>
@@ -78,7 +85,7 @@
             v-model="nombreNuevaSeccion"
             max="30"
             placeholder="Nombre"
-            style="font-size:16px"
+            style="font-size: 16px"
             :class="{ letrasRojas: nombreNuevaSeccionIlegal }"
           />
           <div
@@ -91,224 +98,227 @@
           </div>
         </div>
       </div>
-
-      <div
-        id="seccionDescripcion"
-        class="seccionPrimerNivel"
-        v-show="idSeccionSeleccionada == 'seccionBasica1'"
-      >
+      
+      <!--  -->
+      
+      <div id="contenedorSecciones">
         <div
-          class="controlesZona"
-          v-show="
-            usuarioExperto ||
-            usuarioSuperadministrador ||
-            usuarioAdministradorAtlas
-          "
+          id="seccionDescripcion"
+          class="seccionPrimerNivel"
+          v-show="idSeccionSeleccionada == 'seccionBasica1'"
         >
-          <img
-            src="@/assets/iconos/editar.png"
-            alt="Editar"
-            id="bEditarDescripcion"
-            class="bEditar botonesControlesZona"
-            title="Editar Descripción del nodo"
-            @click.stop="toggleEditandoDescripcion"
-          />
-          <img
-            src="@/assets/iconos/guardar.png"
-            alt="Guardar"
-            title="guardar"
-            class="bGuardar botonesControlesZona"
-            id="bGuardarNuevoDescripcion"
+          <div
+            class="controlesZona"
             v-show="
-              editandoDescripcion == true && nuevoDescripcionIlegal == false
+              usuarioExperto ||
+              usuarioSuperadministrador ||
+              usuarioAdministradorAtlas
             "
-            @click.stop="guardarNuevoDescripcion"
-          />
-        </div>
-        <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
-          {{ esteNodo.descripcion }}
-        </div>
-
-        <textarea
-          id="inputNuevoDescripcion"
-          ref="inputNuevoDescripcion"
-          :class="{ letrasRojas: nuevoDescripcionIlegal }"
-          v-model="nuevoDescripcion"
-          v-show="editandoDescripcion"
-          placeholder="¡Escribe una descripción acerca de este tema!"
-        />
-        <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
-      </div>
-
-      <div
-        :key="seccion.id"
-        v-for="seccion of esteNodo.secciones"
-        class="seccionPrimerNivel seccionContenidoExterno"
-        :class="'seccion' + seccion.nombre"
-        v-show="idSeccionSeleccionada == seccion.id"
-      >
-        <div
-          class="barraControlesContenidosExternos"
-          v-if="
-            usuarioExperto == true ||
-            usuarioAdministradorAtlas == true ||
-            usuarioSuperadministrador == true
-          "
-        >
-          <img
-            src="@/assets/iconos/editar.png"
-            alt="Editar"
-            :id="'bEditarSeccion' + seccion.nombre"
-            class="bEditar botonesEditarContenidosExternos"
-            title="Seleccionar archivos de contenido"
-            @click.stop="
-              editandoArchivosContenidos = !editandoArchivosContenidos
-            "
-          />
-        </div>
-        <iframe
-          id="visorContenido"
-          :ref="'contenidoExterno' + seccion.id"
-          :src="direccionNodo + '/' + seccion.id + '/'"
-          v-show="!editandoArchivosContenidos"
-        ></iframe>
-        <div
-          class="cuadroCargaArchivos"
-          v-if="
-            usuarioExperto == true ||
-            usuarioAdministradorAtlas == true ||
-            usuarioSuperadministrador == true
-          "
-          v-show="editandoArchivosContenidos"
-        >
-          <div
-            class="archivoExistente"
-            :class="{ deshabilitado: archivo.enviandoInfo }"
-            :key="index"
-            v-for="(archivo, index) of seccion.archivos"
           >
-            <div
-              class="botonMarcarPrimario"
-              :class="{ rojo: archivo.primario }"
-              @click="marcarPrimario(archivo, seccion.id)"
-            ></div>
-            {{ archivo.nombre }}
-            <span
-              class="botonBorrarArchivoExistente"
-              @click="
-                borrarArchivoExistenteSeccionNodo(archivo, seccion.id)
+            <img
+              src="@/assets/iconos/editar.png"
+              alt="Editar"
+              id="bEditarDescripcion"
+              class="bEditar botonesControlesZona"
+              title="Editar Descripción del nodo"
+              @click.stop="toggleEditandoDescripcion"
+            />
+            <img
+              src="@/assets/iconos/guardar.png"
+              alt="Guardar"
+              title="guardar"
+              class="bGuardar botonesControlesZona"
+              id="bGuardarNuevoDescripcion"
+              v-show="
+                editandoDescripcion == true && nuevoDescripcionIlegal == false
               "
-              >Borrar</span
-            >
+              @click.stop="guardarNuevoDescripcion"
+            />
           </div>
-          <input
-            type="file"
-            class="inputArchivoContenido"
-            @change="subirArchivoContenido($event, seccion)"
-          />
-        </div>
-      </div>
+          <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
+            {{ esteNodo.descripcion }}
+          </div>
 
-      <div
-        id="seccionExpertos"
-        class="seccionPrimerNivel"
-        v-show="idSeccionSeleccionada == 'seccionBasica2'"
-      >
-        <div id="controlesExpertos" class="controlesZona">
-          <loading v-show="enviandoQueryExpertos" texto="Esperando..." />
+          <textarea
+            id="inputNuevoDescripcion"
+            ref="inputNuevoDescripcion"
+            :class="{ letrasRojas: nuevoDescripcionIlegal }"
+            v-model="nuevoDescripcion"
+            v-show="editandoDescripcion"
+            placeholder="¡Escribe una descripción acerca de este tema!"
+          />
+          <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
+        </div>
+        <div
+          :key="seccion.id"
+          v-for="seccion of esteNodo.secciones"
+          class="seccionPrimerNivel seccionContenidoExterno"
+          :class="'seccion' + seccion.nombre"
+          v-show="idSeccionSeleccionada == seccion.id"
+        >
           <div
-            class="controlesExpertos hoverGris botonesControles"
-            :class="{ deshabilitado: enviandoQueryExpertos }"
+            class="barraControlesContenidosExternos"
             v-if="
-              usuarioLogeado == true &&
-              (usuarioSuperadministrador == true ||
-                usuarioAdministradorAtlas == true) &&
-              !usuarioExperto
-            "
-            id="asumirExperto"
-            @click="asumirComoExperto"
-          >
-            Asumir
-          </div>
-          <div
-            class="controlesExpertos hoverGris botonesControles"
-            :class="{ deshabilitado: enviandoQueryExpertos }"
-            v-if="usuarioLogeado && !usuarioExperto && !usuarioPosibleExperto"
-            id="botonAddExperto"
-            @click="entrarListaPosiblesExpertos"
-          >
-            Quiero aportar como experto
-          </div>
-          <div
-            class="controlesExpertos hoverGris botonesControles"
-            :class="{ deshabilitado: enviandoQueryExpertos }"
-            v-if="
-              usuarioLogeado == true &&
-              (usuarioExperto == true || usuarioPosibleExperto == true)
-            "
-            @click="abandonarListaExpertos"
-          >
-            Abandonar
-          </div>
-          <div
-            class="controlesExpertos hoverGris botonesControles"
-            :class="{ deshabilitado: enviandoQueryExpertos }"
-            v-if="
-              (usuarioLogeado == true && usuarioExperto == true) ||
+              usuarioExperto == true ||
+              usuarioAdministradorAtlas == true ||
               usuarioSuperadministrador == true
             "
-            v-show="
-              idExpertoSeleccionado != null &&
-              expertoSeleccionadoEstaAceptado == false
-            "
-            @click="aceptarExperto(idExpertoSeleccionado)"
           >
-            Aceptar como experto
+            <img
+              src="@/assets/iconos/editar.png"
+              alt="Editar"
+              :id="'bEditarSeccion' + seccion.nombre"
+              class="bEditar botonesEditarContenidosExternos"
+              title="Seleccionar archivos de contenido"
+              @click.stop="
+                editandoArchivosContenidos = !editandoArchivosContenidos
+              "
+            />
+          </div>
+          <iframe
+            id="visorContenido"
+            :ref="'contenidoExterno' + seccion.id"
+            :src="direccionNodo + '/' + seccion.id + '/'"
+            v-show="!editandoArchivosContenidos"
+          ></iframe>
+          <div
+            class="cuadroCargaArchivos"
+            v-if="
+              usuarioExperto == true ||
+              usuarioAdministradorAtlas == true ||
+              usuarioSuperadministrador == true
+            "
+            v-show="editandoArchivosContenidos"
+          >
+            <div
+              class="archivoExistente"
+              :class="{ deshabilitado: archivo.enviandoInfo }"
+              :key="index"
+              v-for="(archivo, index) of seccion.archivos"
+            >
+              <div
+                class="botonMarcarPrimario"
+                :class="{ rojo: archivo.primario }"
+                @click="marcarPrimario(archivo, seccion.id)"
+              ></div>
+              {{ archivo.nombre }}
+              <span
+                class="botonBorrarArchivoExistente"
+                @click="borrarArchivoExistenteSeccionNodo(archivo, seccion.id)"
+                >Borrar</span
+              >
+            </div>
+            <input
+              type="file"
+              class="inputArchivoContenido"
+              @change="subirArchivoContenido($event, seccion)"
+            />
           </div>
         </div>
-        <div id="listaExpertos">
-          <icono-persona-autonomo
-            :idPersona="idPersona"
-            :key="idPersona"
-            v-for="idPersona of esteNodo.expertos"
-            :seleccionado="idExpertoSeleccionado == idPersona"
-            @click.native.stop="
-              idExpertoSeleccionado = idPersona;
-              expertoSeleccionadoEstaAceptado = true;
-            "
-          />
 
-          <icono-persona-autonomo
-            class="personaPosibleExperto"
-            :idPersona="idPersona"
-            :key="idPersona"
-            v-for="idPersona of esteNodo.posiblesExpertos"
-            :seleccionado="idExpertoSeleccionado == idPersona"
-            @click.native.stop="
-              idExpertoSeleccionado = idPersona;
-              expertoSeleccionadoEstaAceptado = false;
-            "
-            @dblclick.native.shift="aceptarExperto(idPersona)"
+        <div
+          id="seccionExpertos"
+          class="seccionPrimerNivel"
+          v-show="idSeccionSeleccionada == 'seccionBasica2'"
+        >
+          <div id="controlesExpertos" class="controlesZona">
+            <loading v-show="enviandoQueryExpertos" texto="Esperando..." />
+            <div
+              class="controlesExpertos hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryExpertos }"
+              v-if="
+                usuarioLogeado == true &&
+                (usuarioSuperadministrador == true ||
+                  usuarioAdministradorAtlas == true) &&
+                !usuarioExperto
+              "
+              id="asumirExperto"
+              @click="asumirComoExperto"
+            >
+              Asumir
+            </div>
+            <div
+              class="controlesExpertos hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryExpertos }"
+              v-if="usuarioLogeado && !usuarioExperto && !usuarioPosibleExperto"
+              id="botonAddExperto"
+              @click="entrarListaPosiblesExpertos"
+            >
+              Quiero aportar como experto
+            </div>
+            <div
+              class="controlesExpertos hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryExpertos }"
+              v-if="
+                usuarioLogeado == true &&
+                (usuarioExperto == true || usuarioPosibleExperto == true)
+              "
+              @click="abandonarListaExpertos"
+            >
+              Abandonar
+            </div>
+            <div
+              class="controlesExpertos hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryExpertos }"
+              v-if="
+                (usuarioLogeado == true && usuarioExperto == true) ||
+                usuarioSuperadministrador == true
+              "
+              v-show="
+                idExpertoSeleccionado != null &&
+                expertoSeleccionadoEstaAceptado == false
+              "
+              @click="aceptarExperto(idExpertoSeleccionado)"
+            >
+              Aceptar como experto
+            </div>
+          </div>
+          <div id="listaExpertos">
+            <icono-persona-autonomo
+              :idPersona="idPersona"
+              :key="idPersona"
+              v-for="idPersona of esteNodo.expertos"
+              :seleccionado="idExpertoSeleccionado == idPersona"
+              @click.native.stop="
+                idExpertoSeleccionado = idPersona;
+                expertoSeleccionadoEstaAceptado = true;
+              "
+            />
+
+            <icono-persona-autonomo
+              class="personaPosibleExperto"
+              :idPersona="idPersona"
+              :key="idPersona"
+              v-for="idPersona of esteNodo.posiblesExpertos"
+              :seleccionado="idExpertoSeleccionado == idPersona"
+              @click.native.stop="
+                idExpertoSeleccionado = idPersona;
+                expertoSeleccionadoEstaAceptado = false;
+              "
+              @dblclick.native.shift="aceptarExperto(idPersona)"
+            />
+          </div>
+        </div>
+
+        <div
+          id="seccionForos"
+          ref="zonaForos"
+          class="seccionPrimerNivel"
+          v-show="idSeccionSeleccionada == 'seccionBasica3'"
+        >
+          <div class="nombreForo" v-if="usuarioExperto">Foro expertos</div>
+          <foro
+            :parent="infoAsParent"
+            v-if="usuarioExperto"
+            :idForo="esteNodo.idForoExpertos"
           />
+          <br v-if="usuarioExperto" />
+          <div class="nombreForo">Foro público</div>
+          <foro :parent="infoAsParent" :idForo="esteNodo.idForoPublico" />
         </div>
       </div>
-
-      <div
-        id="seccionForos"
-        ref="zonaForos"
-        class="seccionPrimerNivel"
-        v-show="idSeccionSeleccionada == 'seccionBasica3'"
-      >
-        <div class="nombreForo" v-if="usuarioExperto">Foro expertos</div>
-        <foro
-          :parent="infoAsParent"
-          v-if="usuarioExperto"
-          :idForo="esteNodo.idForoExpertos"
-        />
-        <br v-if="usuarioExperto" />
-        <div class="nombreForo">Foro público</div>
-        <foro :parent="infoAsParent" :idForo="esteNodo.idForoPublico" />
-      </div>
+      
+      <!--  -->
     </div>
   </div>
 </template>
@@ -432,11 +442,13 @@ export default {
 
       nombreNuevaSeccion: "",
       creandoNuevaSeccion: false,
+
+      mostrandoBarraLateral:false,
     };
   },
   computed: {
     seccionesOrganizadas() {
-        let lasSecciones = [
+      let lasSecciones = [
         this.seccionesBasicas[0],
         ...this.esteNodo.secciones,
         this.seccionesBasicas[1],
@@ -766,11 +778,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation(
-              $idNodo: ID!
-              $idSeccion: ID!
-              $nombreArchivo: String!
-            ) {
+            mutation($idNodo: ID!, $idSeccion: ID!, $nombreArchivo: String!) {
               eliminarArchivoSeccionNodo(
                 idNodo: $idNodo
                 idSeccion: $idSeccion
@@ -831,19 +839,17 @@ export default {
     },
     marcarPrimario(archivo, idSeccion) {
       const nombreArchivo = archivo.nombre;
-    
-      console.log(`Marcando ${nombreArchivo} como primario en la sección ${idSeccion}`);
+
+      console.log(
+        `Marcando ${nombreArchivo} como primario en la sección ${idSeccion}`
+      );
 
       const dis = this;
       archivo.enviandoInfo = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation(
-              $idNodo: ID!
-              $idSeccion: ID!
-              $nombreArchivo: String!
-            ) {
+            mutation($idNodo: ID!, $idSeccion: ID!, $nombreArchivo: String!) {
               marcarPrimarioArchivoSeccionNodo(
                 idNodo: $idNodo
                 idSeccion: $idSeccion
@@ -902,7 +908,7 @@ export default {
       console.log(
         `Creando nueva sección con nombre ${this.nombreNuevaSeccion}`
       );
-      const dis=this;
+      const dis = this;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -927,7 +933,11 @@ export default {
           },
         })
         .then(({ data: { crearNuevaSeccionNodoConocimiento } }) => {
-          console.log(`Seccion creada: ${JSON.stringify(crearNuevaSeccionNodoConocimiento)}`);
+          console.log(
+            `Seccion creada: ${JSON.stringify(
+              crearNuevaSeccionNodoConocimiento
+            )}`
+          );
           let store = dis.$apollo.provider.defaultClient;
           const cache = store.readQuery({
             query: QUERY_NODO,
@@ -939,11 +949,11 @@ export default {
           store.writeQuery({
             query: QUERY_NODO,
             variables: { idNodo: dis.esteNodo.id },
-            data:nuevoCache
+            data: nuevoCache,
           });
 
-          this.creandoNuevaSeccion=false;
-          this.nombreNuevaSeccion=null;
+          this.creandoNuevaSeccion = false;
+          this.nombreNuevaSeccion = null;
         })
         .catch((error) => {
           console.log(`Error. E: ${error}`);
@@ -1019,17 +1029,13 @@ export default {
 #layout {
   width: 100%;
   height: 100%;
-  display: grid;
-  grid-template-columns: 250px 1fr 250px;
-  grid-template-rows: 70px 1fr;
-  grid-template-areas:
-    "nombre nombre nombre"
-    "barraLateral contenido contenido";
+  position:relative;
 }
 #zonaNombre {
-  grid-area: nombre;
   display: flex;
   background-color: burlywood;
+  height: 100px;
+  width: 100%;
 }
 #nombre {
   font-size: 23px;
@@ -1045,13 +1051,34 @@ export default {
   display: block;
   margin: 10px auto;
 }
-#barraLateral {
-  grid-area: barraLateral;
-  background-color: burlywood;
+#bAbrirBarraLateral{
+  display: block;
+  margin: 10px auto;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: rgb(221, 174, 116);
 }
-
+#bAbrirBarraLateral:hover{
+  background-color: rgb(255, 219, 175);
+}
+#barraLateral {
+  position: absolute;
+  top: 180px;
+  width: 100%;
+  background-color: burlywood;
+  z-index: 1;
+}
+.barraLateralInvisible{
+  display: none;
+}
+#contenedorSecciones {
+  width: 100%;
+  height: 100%;
+}
 #visorContenido {
-  grid-area: contenido;
   width: 100%;
   height: 100%;
 }
@@ -1069,12 +1096,12 @@ export default {
 .selectorSeleccionado {
   background-color: bisque;
 }
-.botonZonaCrearSeccion{
+.botonZonaCrearSeccion {
   cursor: pointer;
   padding: 3px 5px;
   text-align: center;
 }
-.botonZonaCrearSeccion:hover{
+.botonZonaCrearSeccion:hover {
   background-color: cadetblue;
 }
 .bEliminarSeccion {
@@ -1088,7 +1115,8 @@ export default {
   background-color: chocolate;
 }
 .seccionPrimerNivel {
-  grid-area: contenido;
+  width: 100%;
+  height: 100%;
 }
 #seccionDescripcion {
   min-width: 100px;
@@ -1204,5 +1232,38 @@ export default {
 }
 .rojo {
   background-color: red;
+}
+
+@media only screen and (min-width: 768px) {
+  #layout {
+    display: grid;
+    grid-template-columns: 250px 1fr 250px;
+    grid-template-rows: 70px 1fr;
+    grid-template-areas:
+      "nombre nombre nombre"
+      "barraLateral contenido contenido";
+  }
+  #zonaNombre {
+    grid-area: nombre;
+    display: flex;
+    height: 100%;
+    background-color: burlywood;
+  }
+  #bAbrirBarraLateral{
+    display: none;
+  }
+  #barraLateral {
+    position: unset;
+    grid-area: barraLateral;
+    background-color: burlywood;
+  }
+  .barraLateralInvisible{
+    display: block;
+  }
+  #contenedorSecciones {
+    grid-area: contenido;
+    width: 100%;
+    height: 100%;
+  }
 }
 </style>

@@ -327,10 +327,14 @@ export default {
 </script>
 
 <style>
+html{
+  height: 100vh;
+}
 body {
   margin: 0px;
   width: 100%;
   height: 100vh;
+  
   background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
     no-repeat;
   font-family: "Varela Round", sans-serif;
