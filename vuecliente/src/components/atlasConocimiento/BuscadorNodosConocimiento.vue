@@ -106,11 +106,11 @@ export default {
   },
   watch: {
     textoBusqueda: function () {      
-      this.mostrandoLista=false;
-      
+      this.mostrandoLista=false;      
     },
     cerrarBusqueda() {
       this.mostrandoInput = false;
+      this.mostrandoLista=false;
     },
   },
 };
