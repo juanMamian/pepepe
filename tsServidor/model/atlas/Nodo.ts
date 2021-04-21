@@ -1,9 +1,7 @@
 import mongoose from "mongoose";
 
 
-
-var esquemaNodo = new mongoose.Schema();
-esquemaNodo.add({
+var esquemaNodo = new mongoose.Schema({
     nombre: {
         type: String,
         min: 3,
@@ -13,6 +11,9 @@ esquemaNodo.add({
     },
     descripcion:{
         type:String
+    },
+    keywords:{
+        type:String,
     },
     icono: {
         type: Buffer
@@ -105,5 +106,6 @@ esquemaNodo.methods.verificarVinculo=function(this:any,idRef, eliminar){
     return respuesta;
 }
 
+esquemaNodo.index({nombre:"text", keywords: "text", descripcion:"text"});
 
 export const ModeloNodo = mongoose.model("Nodo", esquemaNodo);

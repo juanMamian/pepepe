@@ -52,6 +52,7 @@ type NodoConocimiento{
     coordsManuales: Coords,
     resumen:String,
     descripcion:String,
+    keywords:String,
     idForoPublico:ID,
     idForoExpertos:ID,
     expertos: [String],
@@ -81,7 +82,7 @@ extend type Query{
     todosNodos: [NodoConocimiento],
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
-    busquedaAmplia(palabrasBuscadas:[String]!):[NodoConocimiento]
+    busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
 },
 
 extend type Mutation{
@@ -92,6 +93,8 @@ extend type Mutation{
     crearNodo(infoNodo:NodoConocimientoInput):NodoConocimiento
     eliminarNodo(idNodo:ID!):ID,
     editarDescripcionNodoConocimiento(idNodo:ID!, nuevoDescripcion:String!):NodoConocimiento,
+    editarKeywordsNodoConocimiento(idNodo:ID!, nuevoKeywords:String!):NodoConocimiento,
+
 
     addExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
     addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
@@ -109,23 +112,19 @@ exports.resolvers = {
         busquedaAmplia: function (_, { palabrasBuscadas }, __) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`buscando nodos de conocimientos que contengan: ${palabrasBuscadas}`);
-                console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
+                // console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
                 if (palabrasBuscadas.length < 1) {
                     console.log(`No habia palabras buscadas`);
                 }
-                let palabrasBuscadasConcatenadas = palabrasBuscadas.join("|");
                 try {
-                    var opciones = yield Nodo_1.ModeloNodo.find({ nombre: { $regex: palabrasBuscadasConcatenadas, $options: "gi" } }, "nombre resumen").limit(5);
+                    var opciones = yield Nodo_1.ModeloNodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion coordsManuales").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
                 }
                 catch (error) {
                     console.log(". E: " + error);
                     throw new apollo_server_express_1.ApolloError("");
                 }
-                console.log(`opciones: ${opciones}`);
-                return [{
-                        id: 1,
-                        nombre: "kuan"
-                    }];
+                console.log(`${opciones.length} opciones: ${opciones}`);
+                return opciones;
             });
         },
         todosNodos: function () {
@@ -139,6 +138,7 @@ exports.resolvers = {
                     console.log(`error fetching todos los nodos. e: ` + error);
                     return;
                 }
+                console.log(`Enviando: ${todosNodos}`);
                 return todosNodos;
             });
         },
@@ -485,6 +485,42 @@ exports.resolvers = {
                     console.log(`error guardando el nodo: ${error}`);
                 }
                 console.log(`Descripcion guardado`);
+                return resNodo;
+            });
+        },
+        editarKeywordsNodoConocimiento: function (_, { idNodo, nuevoKeywords }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`|||||||||||||||||||`);
+                console.log(`Solicitud de set keywords del nodo con id ${idNodo}`);
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el nodo. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let credencialesUsuario = contexto.usuario;
+                let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
+                if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                const charProhibidosKeywordsNodo = /[^ a-zA-Z0-9]/;
+                if (charProhibidosKeywordsNodo.test(nuevoKeywords)) {
+                    throw new apollo_server_express_1.ApolloError("Keywords ilegal");
+                }
+                nuevoKeywords = nuevoKeywords.trim();
+                try {
+                    console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
+                    var resNodo = yield Nodo_1.ModeloNodo.findByIdAndUpdate(idNodo, { keywords: nuevoKeywords }, { new: true }).exec();
+                }
+                catch (error) {
+                    console.log(`error guardando el nodo: ${error}`);
+                }
+                console.log(`Keywords guardado`);
                 return resNodo;
             });
         },

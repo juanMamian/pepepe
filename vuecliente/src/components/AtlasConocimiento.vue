@@ -2,7 +2,7 @@
   <div
     class="atlasConocimiento"
     @mousedown.left.exact.stop="panningVista = true"
-    @click="idNodoMenuCx = '-1'"
+    @click="idNodoMenuCx = '-1'; cerrarBusqueda++"
     @click.exact="idNodoSeleccionado = '-1'"
     @mousemove="panVista($event)"
     @mouseup="panningVista = false"
@@ -10,6 +10,7 @@
     @touchmove.prevent.stop="movimientoMobile"
     @touchstart="iniciaMovimientoTouch"
   >
+    <buscador-nodos-conocimiento @nodoSeleccionado="centrarEnNodo" ref="buscadorNodos" :cerrarBusqueda="cerrarBusqueda"/>
     <div id="contenedorNodos">
       <canvases
         :todosNodos="todosNodos"
@@ -44,6 +45,7 @@
 import gql from "graphql-tag";
 import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
 import Canvases from "./atlasConocimiento/Canvases.vue";
+import BuscadorNodosConocimiento from './atlasConocimiento/BuscadorNodosConocimiento.vue';
 
 const QUERY_NODOS=gql`
         query {
@@ -65,7 +67,7 @@ const QUERY_NODOS=gql`
       `
 
 export default {
-  components: { NodoConocimiento, Canvases },
+  components: { NodoConocimiento, Canvases, BuscadorNodosConocimiento },
   name: "AtlasConocimiento",
   apollo: {
     todosNodos: {
@@ -95,7 +97,9 @@ export default {
       actualizarVinculosGrises: 0,
 
       ultimoTouchX:0,
-      ultimoTouchY:0
+      ultimoTouchY:0,
+
+      cerrarBusqueda:0,
     };
   },
   computed: {
@@ -124,6 +128,14 @@ export default {
     },
   },
   methods: {
+    centrarEnNodo(n){
+      console.log(`Centrando en ${JSON.stringify(n)}`);
+      
+      this.$set(this.centroVista, "x", n.coordsManuales.x - (this.$el.offsetWidth/2));
+      this.$set(this.centroVista, "y", n.coordsManuales.y - (this.$el.offsetHeight/2));
+      this.seleccionNodo(n);
+      //this.centroVista=e;
+    },
     iniciaMovimientoTouch(e){
       this.ultimoTouchX=e.changedTouches[0].clientX;
       this.ultimoTouchY=e.changedTouches[0].clientY;
@@ -331,8 +343,11 @@ export default {
       */
     },
     seleccionNodo(nodo) {
+      console.log(`Seleccionando nodo ${JSON.stringify(nodo)}`);
       this.idNodoSeleccionado = nodo.id;
+      console.log(`idNodoSeleccionado: ${this.idNodoSeleccionado}`);
       if (!this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
+        console.log(`No encontrado`);
         return null;
       }
 
@@ -548,5 +563,12 @@ export default {
   user-select: none;
   overflow: hidden;
   pointer-events: none;
+}
+#buscadorNodosConocimiento{
+  position: absolute;
+  top: 1%;
+  left:1%;
+  /* transform: translateX(-50%); */
+  z-index: 1;
 }
 </style>

@@ -1,10 +1,39 @@
 <template>
   <div id="buscadorNodosConocimiento">
-    <input type="text" placeholder="Buscar" v-model="palabraBuscada" />
-    <img id="imagenTentativa" src="" alt="" />
-    <div class="opciones">
-      <div class="opcion" :key="opcion.id" v-for="opcion of opciones">
-        {{ opcion.nombre }}
+    <img
+      src="@/assets/iconos/search.png"
+      alt="Lupa"
+      title="Buscar nodos de conocimiento"
+      id="imagenLupa"
+      :class="{ opaco: !mostrandoInput }"
+      @click.stop="mostrandoInput = true"
+    />
+    <transition name="unfold">
+      <input
+        type="text"
+        placeholder="Buscar"
+        v-model="textoBusqueda"
+        id="inputBuscador"
+        v-show="mostrandoInput"
+        autocomplete="off"
+        @click.stop=""
+        @keypress.enter="buscarDatabase"
+      />
+    </transition>
+
+    <loading texto="Buscando" v-show="esperandoResultados" />
+
+    <div id="listaResultados" v-show="mostrandoLista">
+      <div
+        class="resultado"
+        :key="resultado.id"
+        v-for="resultado of resultados"
+        @click.stop="
+          $emit('nodoSeleccionado', resultado);
+          mostrandoInput = false;
+        "
+      >
+        {{ resultado.nombre }}
       </div>
     </div>
   </div>
@@ -12,68 +41,125 @@
 
 <script>
 import gql from "graphql-tag";
-var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
+import Loading from '../utilidades/Loading.vue';
+// import throttle from "lodash/throttle";
+// import debounce from "lodash/debounce"
+
 
 export default {
+  components: { Loading },
   name: "BuscadorNodosConocimiento",
   data() {
     return {
-      palabraBuscada: "",
+      textoBusqueda: "",
       cantidadPalabrasValidas: 0,
-      opciones: [],
+      resultados: [],
+
+      mostrandoInput: false,
+      mostrandoLista:false,
+
+      esperandoResultados:false,
     };
   },
-  watch: {
-    palabraBuscada: function (nueva) {
-      //   console.log(`nueva palabra: ${nueva}`);
-      nueva = nueva.trim();
-      nueva = nueva.replace(charProhibidosNombre, "");
-      nueva = nueva.replace(/\s\s+/g, " ");
-
-      let palabras = nueva.split(" ");
-      let palabrasValidas = [];
-      let indexValidas = 0;
-      for (let i = 0; i < palabras.length; i++) {
-        if (palabras[i].length >= 3) {
-          palabrasValidas[indexValidas] = palabras[i];
-          indexValidas++;
-        }
-      }
-      this.palabrasValidas = palabrasValidas;
-      this.cantidadPalabrasValidas = palabrasValidas.length;
-      console.log(`cantidad palabras validas: ${this.cantidadPalabrasValidas}`);
+  props: {
+    cerrarBusqueda: Number,
+  },
+  methods: {
+    cerrar() {
+      this.mostrandoInput = false;
     },
-    cantidadPalabrasValidas: function (actual, anterior) {
-      if (actual > anterior) {
-        console.log(`Descargando nuevas opciones`);
-        this.$apollo
-          .query({
-            query: gql`
-              query($palabrasBuscadas: [String]!) {
-                busquedaAmplia(palabrasBuscadas: $palabrasBuscadas) {
-                  id
-                  nombre
-                  resumen
+    buscarDatabase() {
+      console.log(`******Descargando resultados de búsqueda`);
+      this.esperandoResultados=true;
+      this.$apollo
+        .query({
+          query: gql`
+            query($palabrasBuscadas: String!) {
+              busquedaAmplia(palabrasBuscadas: $palabrasBuscadas) {
+                id
+                nombre
+                resumen
+                coordsManuales {
+                  x
+                  y
                 }
               }
-            `,
-            variables: {
-              palabrasBuscadas: this.palabrasValidas,
-            },
-            fetchPolicy: "network-only",
-          })
-          .then(({ data: { busquedaAmplia } }) => {
-            console.log(`respuesta: ${JSON.stringify(busquedaAmplia)}`);
-            this.opciones = busquedaAmplia;
-          })
-          .catch((error) => {
-            console.log(`Error: ${error}`);
-          });
-      }
+            }
+          `,
+          variables: {
+            palabrasBuscadas: this.textoBusqueda,
+          },
+          fetchPolicy: "network-only",
+        })
+        .then(({ data: { busquedaAmplia } }) => {
+          console.log(`respuesta: ${JSON.stringify(busquedaAmplia)}`);
+          this.resultados = busquedaAmplia;
+          this.esperandoResultados=false;
+          this.mostrandoLista=true;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.esperandoResultados=false;
+
+        });
+    },
+  },
+  watch: {
+    textoBusqueda: function () {      
+      this.mostrandoLista=false;
+      
+    },
+    cerrarBusqueda() {
+      this.mostrandoInput = false;
     },
   },
 };
 </script>
 
 <style scoped>
+#inputBuscador {
+  font-size: 20px;
+  border-radius: 4px;
+  width: 280px;
+}
+
+#imagenLupa {
+  width: 30px;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 3px;
+  background-color: rgba(128, 128, 128, 0.144);
+}
+
+#imagenLupa:hover {
+  background-color: rgb(128, 128, 128);
+  opacity: 1;
+}
+.opaco {
+  opacity: 0.5;
+}
+#listaResultados {
+  margin: 2px auto;
+  width: 280px;
+}
+
+.resultado {
+  padding: 5px 15px;
+  font-size: 18px;
+  background-color: lightblue;
+  cursor: pointer;
+}
+.resultado:hover {
+  background-color: rgb(133, 179, 194);
+}
+
+.unfold-enter {
+  width: 0px;
+}
+.unfold-enter-active {
+  transition: width 1s;
+}
+.unfold-enter-to {
+  width: 281px;
+}
 </style>

@@ -39,11 +39,19 @@
         />
         <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
       </div>
-      
-      <!--  -->
-      <img src="@/assets/iconos/menuMobile.png" id="bAbrirBarraLateral" @click="mostrandoBarraLateral=!mostrandoBarraLateral">
 
-      <div id="barraLateral" :class="{barraLateralInvisible:!mostrandoBarraLateral}" @click="mostrandoBarraLateral=false">
+      <!--  -->
+      <img
+        src="@/assets/iconos/menuMobile.png"
+        id="bAbrirBarraLateral"
+        @click="mostrandoBarraLateral = !mostrandoBarraLateral"
+      />
+
+      <div
+        id="barraLateral"
+        :class="{ barraLateralInvisible: !mostrandoBarraLateral }"
+        @click="mostrandoBarraLateral = false"
+      >
         <div
           class="selectorSeccion"
           v-for="seccion of seccionesOrganizadas"
@@ -53,6 +61,7 @@
           }"
           :key="seccion.id"
           @click="idSeccionSeleccionada = seccion.id"
+          v-show="seccion.id!='seccionBasica4' || usuarioSuperadministrador || usuarioAdministradorAtlas"
         >
           {{ seccion.texto }}
           <img
@@ -98,9 +107,9 @@
           </div>
         </div>
       </div>
-      
+
       <!--  -->
-      
+
       <div id="contenedorSecciones">
         <div
           id="seccionDescripcion"
@@ -316,8 +325,58 @@
           <div class="nombreForo">Foro público</div>
           <foro :parent="infoAsParent" :idForo="esteNodo.idForoPublico" />
         </div>
+
+        <div
+          id="seccionKeywords"
+          class="seccionPrimerNivel"
+          v-show="idSeccionSeleccionada == 'seccionBasica4' && (usuarioSuperadministrador || usuarioAdministradorAtlas)"
+        >
+          <div
+            class="controlesZona"
+            v-show="
+              usuarioExperto ||
+              usuarioSuperadministrador ||
+              usuarioAdministradorAtlas
+            "
+          >
+            <img
+              src="@/assets/iconos/editar.png"
+              alt="Editar"
+              id="bEditarKeywords"
+              class="bEditar botonesControlesZona"
+              title="Editar keywords del nodo"
+              @click.stop="toggleEditandoKeywords"
+            />
+            <img
+              src="@/assets/iconos/guardar.png"
+              alt="Guardar"
+              title="guardar"
+              class="bGuardar botonesControlesZona"
+              id="bGuardarNuevoKeywords"
+              v-show="
+                editandoKeywords == true && nuevoKeywordsIlegal == false
+              "
+              @click.stop="guardarNuevoKeywords"
+            />
+          </div>
+          <div id="keywords" ref="keywords" v-show="!editandoKeywords">
+            {{ esteNodo.keywords }}
+          </div>
+
+          <textarea
+            id="inputNuevoKeywords"
+            ref="inputNuevoKeywords"
+            :class="{ letrasRojas: nuevoKeywordsIlegal }"
+            v-model="nuevoKeywords"
+            v-show="editandoKeywords"
+            placeholder="Escribe las palabras clave para encontrar este nodo"
+            @keypress.enter.prevent.stop="guardarNuevoKeywords"
+          />
+          <loading v-show="enviandoNuevoKeywords" texto="Enviando..." />
+        </div>
+        
       </div>
-      
+
       <!--  -->
     </div>
   </div>
@@ -333,6 +392,8 @@ import axios from "axios";
 const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+const charProhibidosKeywordsNodo = /[^ a-zA-Z0-9]/;
+
 
 const QUERY_NODO = gql`
   query($idNodo: ID!) {
@@ -340,10 +401,11 @@ const QUERY_NODO = gql`
       nombre
       id
       descripcion
+      keywords
       expertos
       posiblesExpertos
       idForoPublico
-      idForoExpertos
+      idForoExpertos      
       secciones {
         id
         nombre
@@ -412,6 +474,12 @@ export default {
           id: "seccionBasica3",
           seccionBasica: true,
         },
+        {
+          nombre: "keywords",
+          texto: "Palabras clave",
+          id: "seccionBasica4",
+          seccionBasica: true,
+        },
       ],
       indexInicioContenidos: 1,
       seccionesContenidos: [
@@ -432,6 +500,10 @@ export default {
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
 
+      nuevoKeywords: null,
+      editandoKeywords: false,
+      enviandoNuevoKeywords: false,
+
       idExpertoSeleccionado: null,
       expertoSeleccionadoEstaAceptado: false,
       enviandoQueryExpertos: false,
@@ -443,7 +515,7 @@ export default {
       nombreNuevaSeccion: "",
       creandoNuevaSeccion: false,
 
-      mostrandoBarraLateral:false,
+      mostrandoBarraLateral: false,
     };
   },
   computed: {
@@ -451,8 +523,7 @@ export default {
       let lasSecciones = [
         this.seccionesBasicas[0],
         ...this.esteNodo.secciones,
-        this.seccionesBasicas[1],
-        this.seccionesBasicas[2],
+        ...this.seccionesBasicas.slice(1),
       ];
 
       return lasSecciones;
@@ -498,6 +569,15 @@ export default {
       }
       return false;
     },
+    nuevoKeywordsIlegal() {
+      if (!this.nuevoKeywords || this.nuevoKeywords.length < 1) {
+        return true;
+      }
+      if (charProhibidosKeywordsNodo.test(this.nuevoKeywords)) {
+        return true;
+      }
+      return false;
+    },
     infoAsParent() {
       return {
         id: this.esteNodo.id,
@@ -527,6 +607,12 @@ export default {
         this.$refs.descripcion.offsetHeight + "px";
       this.editandoDescripcion = !this.editandoDescripcion;
       this.nuevoDescripcion = this.esteNodo.descripcion;
+    },
+    toggleEditandoKeywords() {
+      this.$refs.inputNuevoKeywords.style.height =
+        this.$refs.keywords.offsetHeight + "px";
+      this.editandoKeywords = !this.editandoKeywords;
+      this.nuevoKeywords = this.esteNodo.keywords;
     },
     toggleEditandoNombre() {
       this.editandoNombre = !this.editandoNombre;
@@ -567,6 +653,44 @@ export default {
         })
         .catch(({ graphQLErrors }) => {
           this.enviandoNuevoDescripcion = false;
+          console.log(`Error. E :${graphQLErrors}`);
+        });
+    },
+    guardarNuevoKeywords() {
+      if (this.nuevoKeywordsIlegal) {
+        console.log(`Keywords ilegal`);
+        return;
+      }
+      if (this.nuevoKeywords == this.esteNodo.keywords) {
+        this.editandoKeywords = false;
+        return;
+      }
+      console.log(`guardando nuevo keywords`);
+      this.enviandoNuevoKeywords = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idNodo: ID!, $nuevoKeywords: String!) {
+              editarKeywordsNodoConocimiento(
+                idNodo: $idNodo
+                nuevoKeywords: $nuevoKeywords
+              ) {
+                id
+                keywords
+              }
+            }
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            nuevoKeywords: this.nuevoKeywords,
+          },
+        })
+        .then(() => {
+          this.enviandoNuevoKeywords = false;
+          this.editandoKeywords = false;
+        })
+        .catch(({ graphQLErrors }) => {
+          this.enviandoNuevoKeywords = false;
           console.log(`Error. E :${graphQLErrors}`);
         });
     },
@@ -1029,7 +1153,7 @@ export default {
 #layout {
   width: 100%;
   height: 100%;
-  position:relative;
+  position: relative;
 }
 #zonaNombre {
   display: flex;
@@ -1051,7 +1175,7 @@ export default {
   display: block;
   margin: 10px auto;
 }
-#bAbrirBarraLateral{
+#bAbrirBarraLateral {
   display: block;
   margin: 10px auto;
   width: 50px;
@@ -1061,7 +1185,7 @@ export default {
   border-radius: 10px;
   background-color: rgb(221, 174, 116);
 }
-#bAbrirBarraLateral:hover{
+#bAbrirBarraLateral:hover {
   background-color: rgb(255, 219, 175);
 }
 #barraLateral {
@@ -1071,7 +1195,7 @@ export default {
   background-color: burlywood;
   z-index: 1;
 }
-.barraLateralInvisible{
+.barraLateralInvisible {
   display: none;
 }
 #contenedorSecciones {
@@ -1135,7 +1259,29 @@ export default {
   resize: vertical;
   white-space: pre-wrap;
 }
+
+
 #inputNuevoDescripcion {
+  width: min(600px, 90%);
+  font-size: 19px;
+  height: 70px;
+  display: block;
+  margin: 65px auto;
+  resize: vertical;
+}
+#keywords {
+  border: 1px solid rgb(0, 0, 44);
+  background-color: #fdeedb;
+  border-radius: 10px;
+  margin: 65px auto;
+  width: min(600px, 90%);
+  font-size: 19px;
+  padding: 10px;
+  min-height: 100px;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+#inputNuevoKeywords {
   width: min(600px, 90%);
   font-size: 19px;
   height: 70px;
@@ -1249,7 +1395,7 @@ export default {
     height: 100%;
     background-color: burlywood;
   }
-  #bAbrirBarraLateral{
+  #bAbrirBarraLateral {
     display: none;
   }
   #barraLateral {
@@ -1257,7 +1403,7 @@ export default {
     grid-area: barraLateral;
     background-color: burlywood;
   }
-  .barraLateralInvisible{
+  .barraLateralInvisible {
     display: block;
   }
   #contenedorSecciones {

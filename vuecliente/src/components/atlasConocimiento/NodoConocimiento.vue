@@ -53,7 +53,8 @@
     </div>
     <div
       id="nombre"
-      ref="nombre"            
+      ref="nombre"
+      :class="{nombreSeleccionado:seleccionado}"            
     >
       {{ esteNodo.nombre }}
     </div>
@@ -277,11 +278,19 @@ export default {
   min-height: 10px;
   min-width: 20px;
   text-align: center;
-  width: 160%;
-  left: -30%;
-  border: 1px solid orange;
+  /* width: 160%; */
+  padding: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid rgb(5, 102, 109);
   border-radius: 3px;
+}
+#nombre:not(.nombreSeleccionado){
   background-color: lightblue;
+
+}
+.nombreSeleccionado{
+  background-color: rgb(108, 179, 202);
 }
 #menuContextual {
   position: absolute;
@@ -323,16 +332,15 @@ export default {
 }
 .botonAbrirNodo{
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   cursor: pointer;
   margin: 10px auto;
   border-radius: 50%;
-  padding: 10px;
-  background-color: rgb(219, 193, 243);
-
+  padding: 10px;  
+  background-color: rgb(214, 176, 130);
 }
 .botonAbrirNodo:hover{
-  background-color: rgb(194, 148, 236);
+  background-color: rgb(190, 145, 88);
 }
 </style>

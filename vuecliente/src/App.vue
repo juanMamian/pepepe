@@ -319,6 +319,7 @@ export default {
       if (secsActual < datosU.exp) {
         this.$store.commit("logearse", token);
       } else {
+        console.log(`Token expirado`);
         this.$store.commit("deslogearse");
       }
     }

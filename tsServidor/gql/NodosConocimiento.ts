@@ -85,6 +85,7 @@ type NodoConocimiento{
     coordsManuales: Coords,
     resumen:String,
     descripcion:String,
+    keywords:String,
     idForoPublico:ID,
     idForoExpertos:ID,
     expertos: [String],
@@ -114,7 +115,7 @@ extend type Query{
     todosNodos: [NodoConocimiento],
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
-    busquedaAmplia(palabrasBuscadas:[String]!):[NodoConocimiento]
+    busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
 },
 
 extend type Mutation{
@@ -125,6 +126,8 @@ extend type Mutation{
     crearNodo(infoNodo:NodoConocimientoInput):NodoConocimiento
     eliminarNodo(idNodo:ID!):ID,
     editarDescripcionNodoConocimiento(idNodo:ID!, nuevoDescripcion:String!):NodoConocimiento,
+    editarKeywordsNodoConocimiento(idNodo:ID!, nuevoKeywords:String!):NodoConocimiento,
+
 
     addExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
     addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
@@ -142,23 +145,20 @@ export const resolvers = {
     Query: {
         busquedaAmplia: async function (_: any, { palabrasBuscadas }, __: any) {
             console.log(`buscando nodos de conocimientos que contengan: ${palabrasBuscadas}`);
-            console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
+            // console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
             if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
             }
-            let palabrasBuscadasConcatenadas = palabrasBuscadas.join("|");
-            try {
-                var opciones = await Nodo.find({ nombre: { $regex: palabrasBuscadasConcatenadas, $options: "gi" } }, "nombre resumen").limit(5);
+            
+            try {                
+                var opciones:any = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({locale:"en", strength:1}).select("nombre descripcion coordsManuales").sort({ score: { $meta: 'textScore' } }).limit(10).exec();                
             }
             catch (error) {
                 console.log(". E: " + error);
                 throw new ApolloError("");
             }
-            console.log(`opciones: ${opciones}`);
-            return [{
-                id: 1,
-                nombre: "kuan"
-            }]
+            console.log(`${opciones.length} opciones: ${opciones}`);
+            return opciones
         },
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
@@ -170,6 +170,8 @@ export const resolvers = {
                 console.log(`error fetching todos los nodos. e: ` + error);
                 return;
             }
+
+            console.log(`Enviando: ${todosNodos}`);
 
             return todosNodos;
         },
@@ -534,6 +536,47 @@ export const resolvers = {
                 console.log(`error guardando el nodo: ${error}`);
             }
             console.log(`Descripcion guardado`);
+            return resNodo;
+        },
+        editarKeywordsNodoConocimiento: async function (_: any, { idNodo, nuevoKeywords }: any, contexto: contextoQuery) {
+            console.log(`|||||||||||||||||||`);
+            console.log(`Solicitud de set keywords del nodo con id ${idNodo}`);
+            try {
+                var elNodo: any = await Nodo.findById(idNodo).exec();
+                if (!elNodo) {
+                    throw "nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el nodo. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
+
+            if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+
+            const charProhibidosKeywordsNodo = /[^ a-zA-Z0-9]/;
+
+            if (charProhibidosKeywordsNodo.test(nuevoKeywords)) {
+                throw new ApolloError("Keywords ilegal");
+            }
+
+            nuevoKeywords = nuevoKeywords.trim();
+
+            try {
+                console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
+                var resNodo: any = await Nodo.findByIdAndUpdate(idNodo, { keywords: nuevoKeywords }, { new: true }).exec();
+            } catch (error) {
+                console.log(`error guardando el nodo: ${error}`);
+            }
+            console.log(`Keywords guardado`);
             return resNodo;
         },
         addExpertoNodo: async function (_: any, { idNodo, idUsuario }: any, contexto: contextoQuery) {

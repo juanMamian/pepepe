@@ -5,8 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloNodo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
-var esquemaNodo = new mongoose_1.default.Schema();
-esquemaNodo.add({
+var esquemaNodo = new mongoose_1.default.Schema({
     nombre: {
         type: String,
         min: 3,
@@ -16,6 +15,9 @@ esquemaNodo.add({
     },
     descripcion: {
         type: String
+    },
+    keywords: {
+        type: String,
     },
     icono: {
         type: Buffer
@@ -105,4 +107,5 @@ esquemaNodo.methods.verificarVinculo = function (idRef, eliminar) {
     }
     return respuesta;
 };
+esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" });
 exports.ModeloNodo = mongoose_1.default.model("Nodo", esquemaNodo);
