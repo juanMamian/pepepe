@@ -22,6 +22,7 @@ const Usuario_1 = require("../model/Usuario");
 const Nodo_1 = require("../model/atlas/Nodo");
 const Trabajo_1 = require("../model/Trabajo");
 const Nodo = require("../model/atlas/Nodo");
+const Libro_1 = require("../model/cuentos/Libro");
 exports.typeDefs = apollo_server_express_1.gql `
 
     input InputNuevaRespuesta{
@@ -81,7 +82,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     type Foro{
         id:ID,
         acceso:String,
-        miembros:[PublicUsuario]       
+        miembros:[String]       
         conversaciones:[Conversacion], 
     }
 
@@ -286,6 +287,10 @@ exports.resolvers = {
                         var elParent = yield Nodo_1.ModeloNodo.findById(parent.id, "_id expertos").exec();
                         var idsMiembros = elParent.expertos;
                     }
+                    else if (parent.tipo == "libro") {
+                        var elParent = yield Libro_1.ModeloLibro.findById(parent.id, "_id idsEditores").exec();
+                        var idsMiembros = elParent.idsEditores;
+                    }
                     else {
                         console.log(`Error: tipo de parent no reconocido`);
                     }
@@ -293,33 +298,35 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`Error recopilando la lista de miembros. E: ${error}`);
                 }
-                console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
-                let indexU = idsMiembros.indexOf(credencialesUsuario.id);
-                if (indexU > -1) {
-                    idsMiembros.splice(indexU, 1);
-                }
-                for (let idMiembro of idsMiembros) {
-                    try {
-                        let elNotificado = yield Usuario_1.ModeloUsuario.findById(idMiembro).exec();
-                        if (!elNotificado)
-                            throw "Notificado " + idMiembro + " no encontrado";
-                        var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
-                        if (indexNotificacion > -1) {
-                            console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
-                            elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
-                        }
-                        else {
-                            elNotificado.notificacionesActividadForos.push({
-                                idParent: parent.id,
-                                tipoParent: parent.tipo,
-                                nombreParent: parent.nombre,
-                                numeroRespuestasNuevas: 1,
-                            });
-                        }
-                        yield elNotificado.save();
+                if (idsMiembros) {
+                    console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
+                    let indexU = idsMiembros.indexOf(credencialesUsuario.id);
+                    if (indexU > -1) {
+                        idsMiembros.splice(indexU, 1);
                     }
-                    catch (error) {
-                        console.log(`Error buscando el notificado: E: ${error}`);
+                    for (let idMiembro of idsMiembros) {
+                        try {
+                            let elNotificado = yield Usuario_1.ModeloUsuario.findById(idMiembro).exec();
+                            if (!elNotificado)
+                                throw "Notificado " + idMiembro + " no encontrado";
+                            var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
+                            if (indexNotificacion > -1) {
+                                console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
+                                elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
+                            }
+                            else {
+                                elNotificado.notificacionesActividadForos.push({
+                                    idParent: parent.id,
+                                    tipoParent: parent.tipo,
+                                    nombreParent: parent.nombre,
+                                    numeroRespuestasNuevas: 1,
+                                });
+                            }
+                            yield elNotificado.save();
+                        }
+                        catch (error) {
+                            console.log(`Error buscando el notificado: E: ${error}`);
+                        }
                     }
                 }
                 console.log(`Nueva conversacion creada`);
@@ -452,6 +459,15 @@ exports.resolvers = {
                 nuevaRespuesta.infoAutor = infoAutor;
                 console.log(`En la conversación ${laConversacion.titulo}`);
                 let Respuesta = mongoose_1.default.model("respuestasDeConversacion" + idConversacion, Conversacion_1.esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
+                try {
+                    var ultimaRespuesta = yield Respuesta.findOne({}).sort({ fecha: -1 }).limit(1).exec();
+                    if (!ultimaRespuesta)
+                        throw "Ultima respuesta no encontrada";
+                    var ultimoRespondedor = ultimaRespuesta.idAutor;
+                }
+                catch (error) {
+                    console.log(`Error buscando la ultima respuesta. E: ${error}`);
+                }
                 const laRespuesta = new Respuesta(nuevaRespuesta);
                 try {
                     yield laRespuesta.save();
@@ -487,6 +503,10 @@ exports.resolvers = {
                         var elParent = yield Nodo_1.ModeloNodo.findById(parent.id, "_id expertos").exec();
                         var idsMiembros = elParent.expertos;
                     }
+                    else if (parent.tipo == "libro") {
+                        var elParent = yield Libro_1.ModeloLibro.findById(parent.id, "_id idsEditores").exec();
+                        var idsMiembros = elParent.idsEditores;
+                    }
                     else {
                         console.log(`Error: tipo de parent no reconocido`);
                     }
@@ -494,33 +514,38 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`Error recopilando la lista de miembros. E: ${error}`);
                 }
-                console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
-                let indexU = idsMiembros.indexOf(credencialesUsuario.id);
-                if (indexU > -1) {
-                    idsMiembros.splice(indexU, 1);
+                if (idsMiembros && !idsMiembros.includes(ultimoRespondedor)) {
+                    idsMiembros.push(ultimoRespondedor);
                 }
-                for (let idMiembro of idsMiembros) {
-                    try {
-                        let elNotificado = yield Usuario_1.ModeloUsuario.findById(idMiembro).exec();
-                        if (!elNotificado)
-                            throw "Notificado " + idMiembro + " no encontrado";
-                        var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
-                        if (indexNotificacion > -1) {
-                            console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
-                            elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
-                        }
-                        else {
-                            elNotificado.notificacionesActividadForos.push({
-                                idParent: parent.id,
-                                tipoParent: parent.tipo,
-                                nombreParent: parent.nombre,
-                                numeroRespuestasNuevas: 1,
-                            });
-                        }
-                        yield elNotificado.save();
+                if (idsMiembros) {
+                    console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
+                    let indexU = idsMiembros.indexOf(credencialesUsuario.id);
+                    if (indexU > -1) {
+                        idsMiembros.splice(indexU, 1);
                     }
-                    catch (error) {
-                        console.log(`Error buscando el notificado: E: ${error}`);
+                    for (let idMiembro of idsMiembros) {
+                        try {
+                            let elNotificado = yield Usuario_1.ModeloUsuario.findById(idMiembro).exec();
+                            if (!elNotificado)
+                                throw "Notificado " + idMiembro + " no encontrado";
+                            var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
+                            if (indexNotificacion > -1) {
+                                console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
+                                elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
+                            }
+                            else {
+                                elNotificado.notificacionesActividadForos.push({
+                                    idParent: parent.id,
+                                    tipoParent: parent.tipo,
+                                    nombreParent: parent.nombre,
+                                    numeroRespuestasNuevas: 1,
+                                });
+                            }
+                            yield elNotificado.save();
+                        }
+                        catch (error) {
+                            console.log(`Error buscando el notificado: E: ${error}`);
+                        }
                     }
                 }
                 console.log(`Respuesta posted`);
@@ -573,27 +598,6 @@ exports.resolvers = {
                 return true;
             });
         }
-    },
-    Foro: {
-        miembros: function (parent, _, __) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent.miembros) {
-                    return [];
-                }
-                let idsMiembros = parent.miembros;
-                try {
-                    var usuariosMiembros = yield Usuario_1.ModeloUsuario.find({ _id: { $in: idsMiembros } }).exec();
-                    if (!usuariosMiembros) {
-                        console.log(`No habia usuarios miembros`);
-                    }
-                }
-                catch (error) {
-                    console.log(`error buscando a los miembros del proyecto. E: ${error}`);
-                    return [];
-                }
-                return usuariosMiembros;
-            });
-        },
     },
     Conversacion: {
         creador: function (parent, _, __) {

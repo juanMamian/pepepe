@@ -17,7 +17,13 @@ Vue.mixin({
     },
     usuarioSuperadministrador(){
       return this.$store.state.usuario.permisos.includes("superadministrador");
-    }
+    },    
+    usuarioLogeado: function () {
+      if(!this.$store.state.token){
+        return false;
+      }
+      return true;
+    },
   }
 })
 

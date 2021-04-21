@@ -54,6 +54,7 @@
         @elimineCuadroImagen="removeCuadroImagenFromCache($event, pagina.id)"
       />
     </div>
+
     <div
       id="bCrearNuevaPagina"
       @click.stop="crearNuevaPaginaLibro"
@@ -61,12 +62,22 @@
     >
       Crear nueva página
     </div>
+
+    <div id="zonaForos">
+      <div class="tituloForo">Foro de editores</div>
+      <foro v-if="libro.idForo" :parent="infoAsParent" :idForo="libro.idForo"/>
+
+    </div>
+
+
+
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
 import Pagina from "./Pagina.vue";
+import Foro from './Foro.vue';
 const charProhibidosTitulo = /[^ a-zA-ZÀ-ž0-9_():.,-¿?¡!]/;
 
 export const fragmentoCuadroTexto = gql`
@@ -138,14 +149,15 @@ const QUERY_LIBRO = gql`
       titulo
       paginas {
         ...fragPagina
-      }
+      },
+      idForo
     }
   }
   ${fragmentoPagina}
 `;
 
 export default {
-  components: { Pagina },
+  components: { Pagina, Foro },
   name: "Libro",
   apollo: {
     libro: {
@@ -198,6 +210,13 @@ export default {
         return true;
       }
       return false;
+    },
+    infoAsParent() {
+      return {
+        id: this.idLibro,
+        tipo: "libro",
+        nombre: this.libro.titulo,
+      };
     },
   },
   methods: {
@@ -414,8 +433,8 @@ export default {
 <style scoped>
 .libro {
   margin-top: 100px;
-
   border: 2px solid black;
+  padding-bottom: 80vh;
 }
 #zonaTitulo {
   padding: 5px 10px;
@@ -456,5 +475,11 @@ export default {
 
 #bCrearNuevaPagina:hover {
   background-color: rgb(182, 105, 182);
+}
+
+.tituloForo{
+  font-size: 19px;
+  padding: 5px 10px;
+  background-color: cadetblue;
 }
 </style>

@@ -80,10 +80,7 @@ export const resolvers = {
                     console.log(`Error buscando proyecto parent. E: ${error}`);
                     throw new ApolloError("Error conectando con la base datos");
                 }
-            }
-
-            
-
+            }            
 
             if (!elTrabajo.idForo) {
                 tieneForo = false;
@@ -121,7 +118,6 @@ export const resolvers = {
                     console.log(`Error guardando el trabajo`);
                     throw new ApolloError("Error conectando con la base de datos");
                 }
-
             }
             return elTrabajo;
         },

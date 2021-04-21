@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Libro_1 = require("../../model/cuentos/Libro");
+const Foro_1 = require("../../model/Foros/Foro");
 exports.typeDefs = apollo_server_express_1.gql `
 
     type AudioEmbedded{
@@ -59,6 +60,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         paginas: [PaginaCuento],
         idsEditores: [String],
         titulo:String,
+        idForo:String,
     }
 
     extend type Query{
@@ -72,6 +74,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         crearNuevoLibro:Libro,
         eliminarPaginaDeLibro(idLibro:ID!, idPagina:ID!):Boolean,
         editarTituloLibro(idLibro:ID!, nuevoTitulo:String):Libro,
+        eliminarLibro(idLibro:ID!):Boolean,
 
         crearNuevaPaginaLibro(idLibro:ID!):PaginaCuento,
         setNuevoColorPaginaLibro(idLibro:ID!, idPagina:ID!, nuevoColor:String!):PaginaCuento,
@@ -105,6 +108,46 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`Error buscando libro. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var tieneForo = true;
+                if (!elLibro.idForo) {
+                    tieneForo = false;
+                }
+                else {
+                    try {
+                        let elForo = yield Foro_1.ModeloForo.findById(elLibro.idForo).exec();
+                        if (!elForo) {
+                            console.log(`El foro no existía. Se creará uno nuevo`);
+                            tieneForo = false;
+                        }
+                    }
+                    catch (error) {
+                        console.log(`Error buscando foro en la base de datos. E :${error}`);
+                    }
+                }
+                if (!tieneForo) {
+                    console.log(`El libro ${elLibro.titulo} no tenía foro. Creando con miembros: ${elLibro.idsEditores}.`);
+                    try {
+                        var nuevoForo = yield Foro_1.ModeloForo.create({
+                            miembros: elLibro.idsEditores,
+                            acceso: "privado"
+                        });
+                        var idNuevoForo = nuevoForo._id;
+                        yield nuevoForo.save();
+                    }
+                    catch (error) {
+                        console.log(`Error creando el nuevo foro. E: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                    console.log(`Nuevo foro con id ${idNuevoForo} creado`);
+                    try {
+                        elLibro.idForo = idNuevoForo;
+                        yield elLibro.save();
+                    }
+                    catch (error) {
+                        console.log(`Error guardando el libro`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
                 }
                 console.log(`enviando libro ${elLibro.id}`);
                 return elLibro;
@@ -264,6 +307,34 @@ exports.resolvers = {
                 }
                 console.log(`Titulo guardado`);
                 return resLibro;
+            });
+        },
+        eliminarLibro(_, { idLibro }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elLibro = yield Libro_1.ModeloLibro.findById(idLibro).exec();
+                    if (!elLibro) {
+                        throw "libro no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el libro. E: ` + error);
+                }
+                //Authorización
+                let permisosEspeciales = ["superadministrador"];
+                if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion eliminando libro`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    yield Libro_1.ModeloLibro.findByIdAndDelete(idLibro).exec();
+                }
+                catch (error) {
+                    console.log(`Error eliminando el libro`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
             });
         },
         crearNuevaPaginaLibro(_, { idLibro }, contexto) {

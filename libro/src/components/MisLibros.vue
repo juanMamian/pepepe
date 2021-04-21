@@ -76,6 +76,25 @@ export default {
           }
       });
     },
+    removerLibroCache(idLibro){
+      const store=this.$apollo.provider.defaultClient;
+      const cache=store.readQuery({
+        query: QUERY_MIS_LIBROS,        
+      });
+      var nuevoCache=JSON.parse(JSON.stringify(cache));
+
+      const indexL=nuevoCache.misLibros.findIndex(l=>l.id==idLibro);
+      if(indexL>-1){
+        nuevoCache.misLibros.splice(indexL, 1);
+        store.writeQuery({
+          query: QUERY_MIS_LIBROS,
+          data: nuevoCache
+        });
+      }
+      else{
+        console.log(`Libro no estaba en caché`);
+      }
+    },
     seleccionarLibro(idLibro){
         this.$emit("libroSeleccionado", idLibro);
     }

@@ -120,7 +120,10 @@ export const esquemaLibro = new mongoose.Schema({
     titulo:{
         type:String,
         default:"Nuevo libro"
-    }
+    },
+    idForo:{
+        type:String,        
+    },
 
 });
 
