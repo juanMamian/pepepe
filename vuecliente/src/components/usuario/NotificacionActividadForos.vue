@@ -12,6 +12,7 @@
 <script>
 import gql from "graphql-tag";
 import { QUERY_YO } from "../../App.vue";
+
 export default {
   name: "NotificacionActividadForos",
   props: {
@@ -27,13 +28,22 @@ export default {
       var enlace = "/";
       enlace +=
         this.estaNotificacion.tipoParent + "/" + this.estaNotificacion.idParent;
-      this.eliminarse();
-      this.$router.push(enlace).catch((error) => {
-        console.log(`Error de navegación: ${error.message.substr(0, 28)}`);
-        if (error.message.substr(0, 28) == "Avoided redundant navigation") {
-          console.log(`Error por navegación`);
-        }
-      });
+
+      if (this.estaNotificacion.tipoParent == "libro") {
+        console.log(`Es el enlace a un libro`);
+        var enlaceLibro =this.tallerCuentosUrl+'?t='+this.$store.state.token+"&l="+this.estaNotificacion.idParent;
+        console.log(`Abriendo enlace: ${enlaceLibro}`);
+        window.open(enlaceLibro, "_blank");
+        this.eliminarse();
+      } else {
+        this.eliminarse();
+        this.$router.push(enlace).catch((error) => {
+          console.log(`Error de navegación: ${error.message.substr(0, 28)}`);
+          if (error.message.substr(0, 28) == "Avoided redundant navigation") {
+            console.log(`Error por navegación`);
+          }
+        });
+      }
     },
     eliminarse() {
       let idParent = this.estaNotificacion.idParent;
@@ -41,26 +51,24 @@ export default {
       this.$apollo.mutate({
         mutation: gql`
           mutation($idParent: ID!) {
-            eliminarNotificacionActividadForos(
-              idParent: $idParent
-            )
+            eliminarNotificacionActividadForos(idParent: $idParent)
           }
         `,
         variables: {
           idParent,
         },
         update: (store, { data: { eliminarNotificacionActividadForos } }) => {
-          if (eliminarNotificacionActividadForos) {            
+          if (eliminarNotificacionActividadForos) {
             let cache = store.readQuery({
               query: QUERY_YO,
-            });            
+            });
             let nuevoCache = JSON.parse(JSON.stringify(cache));
             let indexN = nuevoCache.yo.notificacionesActividadForos.findIndex(
               (n) => n.idParent == idParent
             );
             if (indexN > -1) {
               nuevoCache.yo.notificacionesActividadForos.splice(indexN, 1);
-            }            
+            }
             store.writeQuery({
               query: QUERY_YO,
               data: nuevoCache,
@@ -82,7 +90,12 @@ export default {
         this.estaNotificacion.nombreParent;
 
       return mensaje;
-    },    
+    },
+    tallerCuentosUrl() {
+      return process.env.NODE_ENV === "production"
+        ? "https://pe-pe-pe.herokuapp.com/tallerCuentos"
+        : "http://localhost:8081";
+    },
   },
 };
 </script>

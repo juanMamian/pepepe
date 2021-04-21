@@ -54,7 +54,7 @@
           v-model="tituloNuevaConversacion"
           id="inputTituloNuevaConversacion"
           placeholder="Titulo de la nueva conversación"
-          :class="{letrasRojas:tituloNuevaConversacionIlegal}"
+          :class="{ letrasRojas: tituloNuevaConversacionIlegal }"
         />
         <cuadro-responder
           :idForo="esteForo.id"
@@ -111,10 +111,7 @@
 <script>
 import gql from "graphql-tag";
 // import CreadorConversacion from "./foros/CreadorConversacion.vue";
-import {
-  fragmentoConversacion,
-  fragmentoResponsables,
-} from "./utilidades/recursosGql";
+import { fragmentoConversacion } from "./utilidades/recursosGql";
 import Conversacion from "./foros/Conversacion.vue";
 import CuadroResponder from "./foros/CuadroResponder.vue";
 
@@ -125,12 +122,9 @@ const QUERY_FORO = gql`
     foro(idForo: $idForo) {
       id
       acceso
-      miembros {
-        ...fragResponsables
-      }
+      miembros
     }
   }
-  ${fragmentoResponsables}
 `;
 
 const QUERY_CONVERSACIONES_PAGINA = gql`
@@ -225,7 +219,7 @@ export default {
       if (this.numPaginaSeleccionada != targetPagina) {
         this.numPaginaSeleccionada = targetPagina;
       }
-      this.tituloNuevaConversacion=null;
+      this.tituloNuevaConversacion = null;
     },
     refreshPagina() {
       //let store = this.$apollo.provider.defaultClient;
@@ -289,11 +283,7 @@ export default {
       if (this.esteForo.acceso == "publico") {
         return true;
       } else if (this.esteForo.acceso == "privado") {
-        if (
-          this.esteForo.miembros.some(
-            (m) => m.id == this.$store.state.usuario.id
-          )
-        ) {
+        if (this.esteForo.miembros.includes(this.$store.state.usuario.id)) {
           return true;
         }
       }

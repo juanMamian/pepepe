@@ -50,7 +50,11 @@
               Atlas de conocimientos
             </div>
           </router-link>
-          <a target="_blank" :href="tallerCuentosUrl+'?t='+$store.state.token" v-show="usuarioLogeado">
+          <a
+            target="_blank"
+            :href="tallerCuentosUrl + '?t=' + $store.state.token"
+            v-show="usuarioLogeado"
+          >
             <div
               class="botonNavBarra botonNav hoverNegro botonNavHijo"
               id="navAtlas"
@@ -154,10 +158,6 @@
 import gql from "graphql-tag";
 import Notificacion from "./components/usuario/Notificacion.vue";
 import NotificacionActividadForos from "./components/usuario/NotificacionActividadForos.vue";
-
-export const tallerCuentosUrl=process.env.NODE_ENV === 'production'
-? 'https://pe-pe-pe.herokuapp.com/tallerCuentos'
-: 'http://localhost:8081'
 
 export const QUERY_YO = gql`
   query {
@@ -263,7 +263,6 @@ export default {
   components: { Notificacion, NotificacionActividadForos },
   data() {
     return {
-      tallerCuentosUrl,
       accionesLogeado: false,
       mostrandoNotificaciones: false,
       yo: {
@@ -273,6 +272,11 @@ export default {
     };
   },
   computed: {
+    tallerCuentosUrl() {
+      return process.env.NODE_ENV === "production"
+        ? "https://pe-pe-pe.herokuapp.com/tallerCuentos"
+        : "http://localhost:8081";
+    },
     username: function () {
       return this.$store.state.usuario.username;
     },

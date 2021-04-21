@@ -330,7 +330,7 @@ export default {
             this.fontSizeDummy > 100
           ) {
             this.fontSizeDummy = this.fontSizeDummy - 2;
-            console.log(`Quedó en ${this.fontSizeDummy}`);
+            
             this.fontSizeTexto = this.fontSizeDummy;
             this.fontSizeInput = this.fontSizeDummy;
 
@@ -596,8 +596,7 @@ export default {
         this.editandoTexto = false;
       }
     },
-    posicionZeta(){
-      console.log(`Cambio de posicion zeta`);
+    posicionZeta(){      
       this.guardarPosicionZeta();
     }
   },

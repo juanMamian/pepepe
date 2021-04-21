@@ -44,7 +44,7 @@ const esquemaNotificacionActividadForo = new mongoose_1.default.Schema({
     tipoParent: {
         type: String,
         required: true,
-        enum: ["proyecto", "trabajo", "nodoConocimiento"],
+        enum: ["proyecto", "trabajo", "nodoConocimiento", "libro"],
     },
     nombreParent: {
         type: String,

@@ -3,6 +3,7 @@ import { lexicographicSortSchema } from "graphql";
 import mongoose from "mongoose";
 import { ModeloLibro as Libro } from "../../model/cuentos/Libro";
 import { contextoQuery } from "../tsObjetos";
+import { ModeloForo as Foro } from "../../model/Foros/Foro"
 
 export const typeDefs = gql`
 
@@ -51,6 +52,7 @@ export const typeDefs = gql`
         paginas: [PaginaCuento],
         idsEditores: [String],
         titulo:String,
+        idForo:String,
     }
 
     extend type Query{
@@ -64,6 +66,7 @@ export const typeDefs = gql`
         crearNuevoLibro:Libro,
         eliminarPaginaDeLibro(idLibro:ID!, idPagina:ID!):Boolean,
         editarTituloLibro(idLibro:ID!, nuevoTitulo:String):Libro,
+        eliminarLibro(idLibro:ID!):Boolean,
 
         crearNuevaPaginaLibro(idLibro:ID!):PaginaCuento,
         setNuevoColorPaginaLibro(idLibro:ID!, idPagina:ID!, nuevoColor:String!):PaginaCuento,
@@ -95,6 +98,46 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error buscando libro. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var tieneForo=true;
+
+            if (!elLibro.idForo) {
+                tieneForo = false;
+            }
+            else {
+                try {
+                    let elForo: any = await Foro.findById(elLibro.idForo).exec();
+                    if (!elForo) {
+                        console.log(`El foro no existía. Se creará uno nuevo`);
+                        tieneForo = false;
+                    }
+                } catch (error) {
+                    console.log(`Error buscando foro en la base de datos. E :${error}`);
+                }
+            }
+
+            if (!tieneForo) {
+                console.log(`El libro ${elLibro.titulo} no tenía foro. Creando con miembros: ${elLibro.idsEditores}.`);
+                try {
+                    var nuevoForo: any = await Foro.create({
+                        miembros: elLibro.idsEditores,
+                        acceso: "privado"
+                    });
+                    var idNuevoForo = nuevoForo._id;
+                    await nuevoForo.save();
+                } catch (error) {
+                    console.log(`Error creando el nuevo foro. E: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo foro con id ${idNuevoForo} creado`);
+                try {
+                    elLibro.idForo = idNuevoForo;
+                    await elLibro.save();
+                } catch (error) {
+                    console.log(`Error guardando el libro`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
             }
 
             console.log(`enviando libro ${elLibro.id}`);
@@ -259,6 +302,33 @@ export const resolvers = {
             }
             console.log(`Titulo guardado`);
             return resLibro;
+        },
+        async eliminarLibro(_: any, { idLibro }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elLibro: any = await Libro.findById(idLibro).exec();
+                if (!elLibro) {
+                    throw "libro no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el libro. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion eliminando libro`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                await Libro.findByIdAndDelete(idLibro).exec();                
+            } catch (error) {
+                console.log(`Error eliminando el libro`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return true;
         },
 
         async crearNuevaPaginaLibro(_: any, { idLibro }: any, contexto: contextoQuery) {

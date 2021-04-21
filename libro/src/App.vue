@@ -1,17 +1,48 @@
 <template>
   <div id="app">
     <center><h2>Taller de creación de cuentos</h2></center>
-    <todos-libros v-if="usuarioSuperadministrador" @libroSeleccionado="seleccionarLibro" />
-    <mis-libros @libroSeleccionado="seleccionarLibro" />
+    <todos-libros
+      ref="todosLibros"
+      v-if="usuarioSuperadministrador"      
+      @elimineUnLibro="removerLibroCache"
+      @libroSeleccionado="seleccionarLibro"
+      :idLibroSeleccionado="idLibroSeleccionado"
+    />
+    <mis-libros @libroSeleccionado="seleccionarLibro" ref="misLibros" />
 
-    <libro :idLibro="idLibroSeleccionado" v-if="idLibroSeleccionado != null" ref="elLibro"/>
+    <libro
+      :idLibro="idLibroSeleccionado"
+      v-if="idLibroSeleccionado != null"
+      ref="elLibro"
+      :key="idLibroSeleccionado"
+    />
   </div>
 </template>
 
 <script>
+import { gql } from 'apollo-server-core';
 import Libro from "./components/Libro.vue";
 import MisLibros from "./components/MisLibros.vue";
 import TodosLibros from "./components/TodosLibros.vue";
+
+
+export const QUERY_YO = gql`
+  query {
+    yo {
+      id
+      nombres
+      apellidos      
+      permisos
+      foros {
+        idForo
+        conversaciones {
+          idConversacion
+          respuestasLeidas
+        }
+      }
+    }
+  }
+`;
 
 export default {
   name: "App",
@@ -19,6 +50,19 @@ export default {
     Libro,
     MisLibros,
     TodosLibros,
+  },
+  apollo:{
+    yo: {
+      query: QUERY_YO,
+      fetchPolicy: "network-only",
+      update({ yo }) {
+        this.$store.commit("setInfoForosUsuario", yo.foros);
+        return yo;
+      },
+      skip() {
+        return !this.usuarioLogeado;
+      },
+    }
   },
   data() {
     return {
@@ -28,15 +72,23 @@ export default {
   methods: {
     seleccionarLibro(idLibro) {
       this.idLibroSeleccionado = idLibro;
-      this.$nextTick(function(){
-        this.$refs.elLibro.$el.scrollIntoView({behavior:'smooth'});
-      })
+      this.$nextTick(function () {
+        this.$refs.elLibro.$el.scrollIntoView({ behavior: "smooth" });
+      });
     },
+    removerLibroCache(idLibro){
+      this.$refs.misLibros.removerLibroCache(idLibro);
+      this.$refs.todosLibros.removerLibroCache(idLibro);
+
+    }
   },
   computed: {
     usuarioSuperadministrador() {
-
-      if(this.usuario && this.usuario.id && this.usuario.permisos.includes("superadministrador")){
+      if (
+        this.usuario &&
+        this.usuario.id &&
+        this.usuario.permisos.includes("superadministrador")
+      ) {
         return true;
       }
       return false;
@@ -66,6 +118,15 @@ export default {
     } else {
       this.$store.commit("deslogearse");
       localStorage.clear();
+    }
+    //Seleccionar libro by URL
+
+    const idLibroURL=params.get("l");
+    if(idLibroURL){
+      this.idLibroSeleccionado=idLibroURL;
+      this.$nextTick(function () {
+        this.$refs.elLibro.$el.scrollIntoView({ behavior: "smooth" });
+      });
     }
   },
 };

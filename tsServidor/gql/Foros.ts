@@ -10,6 +10,7 @@ import { contextoQuery } from "./tsObjetos"
 import { drive, jwToken } from "../routes/utilidades"
 import { ModeloNodo as NodoConocimiento } from "../model/atlas/Nodo";
 import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; const Nodo = require("../model/atlas/Nodo");
+import { ModeloLibro as Libro } from "../model/cuentos/Libro";
 
 
 export const typeDefs = gql`
@@ -71,7 +72,7 @@ export const typeDefs = gql`
     type Foro{
         id:ID,
         acceso:String,
-        miembros:[PublicUsuario]       
+        miembros:[String]       
         conversaciones:[Conversacion], 
     }
 
@@ -250,19 +251,19 @@ export const resolvers = {
             }
             primeraRespuesta.infoAutor = infoAutor;
 
-            
+
             let nuevaConversacion = elForo.conversaciones.create({
                 titulo,
                 idCreador: credencialesUsuario.id,
                 acceso: "publico",
-                cantidadRespuestas:1
+                cantidadRespuestas: 1
             });
 
             let idConversacion = nuevaConversacion._id;
 
             try {
                 await elForo.conversaciones.push(nuevaConversacion);
-                
+
                 let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
                 let laRespuesta = new Respuesta(primeraRespuesta);
                 await laRespuesta.save();
@@ -288,6 +289,10 @@ export const resolvers = {
                     var elParent: any = await NodoConocimiento.findById(parent.id, "_id expertos").exec();
                     var idsMiembros = elParent.expertos;
                 }
+                else if (parent.tipo == "libro") {
+                    var elParent: any = await Libro.findById(parent.id, "_id idsEditores").exec();
+                    var idsMiembros = elParent.idsEditores;
+                }
                 else {
                     console.log(`Error: tipo de parent no reconocido`);
                 }
@@ -296,33 +301,34 @@ export const resolvers = {
                 console.log(`Error recopilando la lista de miembros. E: ${error}`);
             }
 
+            if (idsMiembros) {
+                console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
+                let indexU = idsMiembros.indexOf(credencialesUsuario.id);
+                if (indexU > -1) {
+                    idsMiembros.splice(indexU, 1);
+                }
 
-            console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
-            let indexU = idsMiembros.indexOf(credencialesUsuario.id);
-            if (indexU > -1) {
-                idsMiembros.splice(indexU, 1);
-            }
-
-            for (let idMiembro of idsMiembros) {
-                try {
-                    let elNotificado: any = await Usuario.findById(idMiembro).exec();
-                    if (!elNotificado) throw "Notificado " + idMiembro + " no encontrado";
-                    var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
-                    if (indexNotificacion > -1) {
-                        console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
-                        elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
+                for (let idMiembro of idsMiembros) {
+                    try {
+                        let elNotificado: any = await Usuario.findById(idMiembro).exec();
+                        if (!elNotificado) throw "Notificado " + idMiembro + " no encontrado";
+                        var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
+                        if (indexNotificacion > -1) {
+                            console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
+                            elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
+                        }
+                        else {
+                            elNotificado.notificacionesActividadForos.push({
+                                idParent: parent.id,
+                                tipoParent: parent.tipo,
+                                nombreParent: parent.nombre,
+                                numeroRespuestasNuevas: 1,
+                            });
+                        }
+                        await elNotificado.save();
+                    } catch (error) {
+                        console.log(`Error buscando el notificado: E: ${error}`);
                     }
-                    else{
-                        elNotificado.notificacionesActividadForos.push({
-                            idParent:parent.id,
-                            tipoParent: parent.tipo,
-                            nombreParent:parent.nombre,
-                            numeroRespuestasNuevas:1,
-                        });                        
-                    }
-                    await elNotificado.save();
-                } catch (error) {
-                    console.log(`Error buscando el notificado: E: ${error}`);
                 }
             }
 
@@ -361,7 +367,7 @@ export const resolvers = {
                 console.log(`Error eliminando respuesta. E: ${error}`);
             }
 
-            const cantRespuestas:number=await Respuesta.countDocuments().exec();
+            const cantRespuestas: number = await Respuesta.countDocuments().exec();
 
             if (cantRespuestas < 1) {
                 console.log(`La conversación quedó vacía. Eliminando`);
@@ -390,7 +396,7 @@ export const resolvers = {
                 });
 
             }
-            else{
+            else {
                 //Actualizar el número de respuestas en esta conversación
                 console.log(`Setting cant respuestas en ${cantRespuestas}`);
 
@@ -400,7 +406,7 @@ export const resolvers = {
                         console.log(`Foro no encontrado`);
                         throw "Foro no encontrado";
                     }
-                    elForo.conversaciones.id(idConversacion).cantidadRespuestas=cantRespuestas;                    
+                    elForo.conversaciones.id(idConversacion).cantidadRespuestas = cantRespuestas;
                     await elForo.save();
                 } catch (error) {
                     console.log(`Error actualizando la cantidad de respuestas en esta conversación`);
@@ -475,7 +481,15 @@ export const resolvers = {
 
 
             let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
-    
+
+            try {
+                var ultimaRespuesta:any=await Respuesta.findOne({}).sort({fecha:-1}).limit(1).exec();
+                if(!ultimaRespuesta)throw "Ultima respuesta no encontrada";
+                var ultimoRespondedor=ultimaRespuesta.idAutor;
+            } catch (error) {
+                console.log(`Error buscando la ultima respuesta. E: ${error}`);
+            }
+            
             const laRespuesta = new Respuesta(nuevaRespuesta);
 
             try {
@@ -512,6 +526,10 @@ export const resolvers = {
                     var elParent: any = await NodoConocimiento.findById(parent.id, "_id expertos").exec();
                     var idsMiembros = elParent.expertos;
                 }
+                else if (parent.tipo == "libro") {
+                    var elParent: any = await Libro.findById(parent.id, "_id idsEditores").exec();
+                    var idsMiembros = elParent.idsEditores;
+                }
                 else {
                     console.log(`Error: tipo de parent no reconocido`);
                 }
@@ -519,79 +537,82 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error recopilando la lista de miembros. E: ${error}`);
             }
-
-
-            console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
-            let indexU = idsMiembros.indexOf(credencialesUsuario.id);
-            if (indexU > -1) {
-                idsMiembros.splice(indexU, 1);
+            if(idsMiembros && !idsMiembros.includes(ultimoRespondedor)){
+                idsMiembros.push(ultimoRespondedor);
             }
 
-            for (let idMiembro of idsMiembros) {
-                try {
-                    let elNotificado: any = await Usuario.findById(idMiembro).exec();
-                    if (!elNotificado) throw "Notificado " + idMiembro + " no encontrado";
-                    var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
-                    if (indexNotificacion > -1) {
-                        console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
-                        elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
+            if (idsMiembros) {
+                console.log(`notificando a ${idsMiembros.length} usuarios: ${idsMiembros}`);
+                let indexU = idsMiembros.indexOf(credencialesUsuario.id);
+                if (indexU > -1) {
+                    idsMiembros.splice(indexU, 1);
+                }
+
+                for (let idMiembro of idsMiembros) {
+                    try {
+                        let elNotificado: any = await Usuario.findById(idMiembro).exec();
+                        if (!elNotificado) throw "Notificado " + idMiembro + " no encontrado";
+                        var indexNotificacion = elNotificado.notificacionesActividadForos.findIndex(n => n.tipoParent == parent.tipo && n.idParent == parent.id);
+                        if (indexNotificacion > -1) {
+                            console.log(`Ya existía notificacion (${indexNotificacion}) de actividad en este elemento con cantidad ${elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas}`);
+                            elNotificado.notificacionesActividadForos[indexNotificacion].numeroRespuestasNuevas++;
+                        }
+                        else {
+                            elNotificado.notificacionesActividadForos.push({
+                                idParent: parent.id,
+                                tipoParent: parent.tipo,
+                                nombreParent: parent.nombre,
+                                numeroRespuestasNuevas: 1,
+                            });
+                        }
+                        await elNotificado.save();
+                    } catch (error) {
+                        console.log(`Error buscando el notificado: E: ${error}`);
                     }
-                    else{
-                        elNotificado.notificacionesActividadForos.push({
-                            idParent:parent.id,
-                            tipoParent: parent.tipo,
-                            nombreParent:parent.nombre,
-                            numeroRespuestasNuevas:1,
-                        });                        
-                    }
-                    await elNotificado.save();
-                } catch (error) {
-                    console.log(`Error buscando el notificado: E: ${error}`);
                 }
             }
-
             console.log(`Respuesta posted`);
 
             return laRespuesta;
 
         },
-        async setCantidadRespuestasConversacionLeidasPorUsuario(_: any, {idUsuario, idForo, idConversacion, cantidadRespuestasLeidas }: any, contexto: contextoQuery) {
+        async setCantidadRespuestasConversacionLeidasPorUsuario(_: any, { idUsuario, idForo, idConversacion, cantidadRespuestasLeidas }: any, contexto: contextoQuery) {
             console.log(`///////////////////`);
             console.log(`Setting respuestas leidas en conversacion ${idConversacion} en foro con id ${idForo}`);
-            const credencialesUsuario=contexto.usuario;
-            if(idUsuario!=credencialesUsuario.id){
+            const credencialesUsuario = contexto.usuario;
+            if (idUsuario != credencialesUsuario.id) {
                 throw new AuthenticationError("No autorizado");
             }
 
             try {
-                var elUsuario:any=await Usuario.findById(idUsuario).select("foros").exec();
-                if(!elUsuario)throw "Usuario no encontrado en la base de datos";
+                var elUsuario: any = await Usuario.findById(idUsuario).select("foros").exec();
+                if (!elUsuario) throw "Usuario no encontrado en la base de datos";
             } catch (error) {
                 console.log(`Error buscando el usuario. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var infoForo=elUsuario.foros.find(f=>f.idForo==idForo);
-            if(!infoForo){
-                var nuevoInfoForo={
+            var infoForo = elUsuario.foros.find(f => f.idForo == idForo);
+            if (!infoForo) {
+                var nuevoInfoForo = {
                     idForo,
-                    conversaciones:[]
+                    conversaciones: []
                 }
                 elUsuario.foros.push(nuevoInfoForo);
-                infoForo=elUsuario.foros.find(f=>f.idForo==idForo);
+                infoForo = elUsuario.foros.find(f => f.idForo == idForo);
             }
 
-            var infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==idConversacion);
-            if(!infoConversacion){
-                var nuevoInfoConversacion={
+            var infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
+            if (!infoConversacion) {
+                var nuevoInfoConversacion = {
                     idConversacion,
-                    respuestasLeidas:0,
+                    respuestasLeidas: 0,
                 };
                 infoForo.conversaciones.push(nuevoInfoConversacion);
-                infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==idConversacion);
+                infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
             }
 
-            infoConversacion.respuestasLeidas=cantidadRespuestasLeidas;
+            infoConversacion.respuestasLeidas = cantidadRespuestasLeidas;
 
 
             try {
@@ -603,29 +624,7 @@ export const resolvers = {
             return true;
         }
     },
-    Foro: {
-        miembros: async function (parent: any, _: any, __: any) {
 
-
-            if (!parent.miembros) {
-                return [];
-            }
-            let idsMiembros = parent.miembros;
-
-            try {
-                var usuariosMiembros = await Usuario.find({ _id: { $in: idsMiembros } }).exec();
-                if (!usuariosMiembros) {
-                    console.log(`No habia usuarios miembros`);
-                }
-            } catch (error) {
-                console.log(`error buscando a los miembros del proyecto. E: ${error}`);
-                return [];
-            }
-
-
-            return usuariosMiembros;
-        },
-    },
     Conversacion: {
         creador: async function (parent: any, _: any, __: any) {
             if (!parent.idCreador) {

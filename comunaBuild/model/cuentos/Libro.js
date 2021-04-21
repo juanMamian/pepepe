@@ -120,6 +120,9 @@ exports.esquemaLibro = new mongoose_1.default.Schema({
     titulo: {
         type: String,
         default: "Nuevo libro"
-    }
+    },
+    idForo: {
+        type: String,
+    },
 });
 exports.ModeloLibro = mongoose_1.default.model("Libro", exports.esquemaLibro);
