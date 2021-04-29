@@ -40,8 +40,14 @@ export const typeDefs = gql`
         fecha:Date
     }
 
+    type DatoNodoUsuario{
+        idNodo:ID,
+        objetivo:Boolean
+    }
+
     type infoAtlas{
-        centroVista:Coords
+        centroVista:Coords,
+        datosNodos:[DatoNodoUsuario],
     }
 
     enum relacionUsuarioConocimiento{
@@ -82,7 +88,8 @@ export const typeDefs = gql`
         nombreGrupoEstudiantil:String,
         notificaciones:[Notificacion],
         notificacionesActividadForos:[NotificacionActividadForos],
-        foros:[InfoForosUsuario]
+        foros:[InfoForosUsuario],
+
     }
     input DatosEditablesUsuario{
         nombres:String,
@@ -118,7 +125,8 @@ export const typeDefs = gql`
         addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
         eliminarUsuario(idUsuario:ID!):Boolean,
         eliminarNotificacion(idNotificacion:ID!):Boolean,
-        eliminarNotificacionActividadForos(idParent:ID!):Boolean
+        eliminarNotificacionActividadForos(idParent:ID!):Boolean,
+        setNodoObjetivo(idNodo:ID!, nuevoEstadoObjetivo:Boolean):Boolean
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -372,6 +380,34 @@ export const resolvers = {
             }
             console.log(`Notificacion eliminada`);
             return true;
+        },
+        setNodoObjetivo: async function (_: any, { idNodo, nuevoEstadoObjetivo }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            if(!credencialesUsuario||!credencialesUsuario.id){
+                throw new AuthenticationError("No autenticado");
+            }
+
+            console.log(`Seting nodo objetivo de ${idNodo} en ${nuevoEstadoObjetivo} para el usuario ${credencialesUsuario.id}`);            
+
+            try {
+                var elUsuario:any= await Usuario.findById(credencialesUsuario.id).exec();
+                var indexN = elUsuario.atlas.datosNodos.findIndex(n=>n.idNodo==idNodo);
+                if(indexN>-1){
+                    elUsuario.atlas.datosNodos[indexN].objetivo=nuevoEstadoObjetivo;
+                }
+                else{
+                    elUsuario.atlas.datosNodos.push({
+                        idNodo,
+                        objetivo:nuevoEstadoObjetivo
+                    });
+                }
+                await elUsuario.save();
+                return true;
+            } catch (error) {
+                console.log(`error guardando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+            
         },
     },
     Usuario: {

@@ -133,6 +133,15 @@ const esquemaUsuario = new mongoose.Schema({
                 required: true,
                 default: 0
             }
+        },
+        datosNodos:{
+            type: [
+                {
+                    idNodo:String,
+                    objetivo: Boolean
+                }
+            ],
+            default:[]
         }
     },
     notificaciones: {

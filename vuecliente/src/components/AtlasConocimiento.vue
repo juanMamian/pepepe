@@ -2,10 +2,9 @@
   <div
     class="atlasConocimiento"
     @mousedown.left.exact.stop="panningVista = true"
-    @click="idNodoMenuCx = '-1'; cerrarBusqueda++"
-    @click.exact="idNodoSeleccionado = '-1'"
+    @click="idNodoMenuCx = '-1'; cerrarBusqueda++"    
     @mousemove="panVista($event)"
-    @mouseup="panningVista = false"
+    @mouseup="clickFondoAtlas"
     @dblclick.ctrl.shift.self.stop="crearNodo"
     @touchmove.prevent.stop="movimientoMobile"
     @touchstart="iniciaMovimientoTouch"
@@ -22,9 +21,10 @@
       <nodo-conocimiento
         :nodoSeleccionado="nodoSeleccionado"
         :todosNodos="todosNodos"
-        :idNodoMenuCx="idNodoMenuCx"
+        :idNodoMenuCx="idNodoMenuCx"        
         :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
         :key="nodo.id"
+        :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
         v-for="nodo of todosNodos"
         :esteNodo="nodo"
         :centroVista="centroVista"
@@ -34,6 +34,7 @@
         @eliminacionVinculo="eliminarVinculo"
         @cambioDePosicionManual="cambiarCoordsManualesNodo"
         @eliminar="eliminarNodo"        
+        @cambieEstadoObjetivo="setEstadoObjetivoNodoCache($event, nodo.id)"
       />
     </div>
   </div>
@@ -46,6 +47,7 @@ import gql from "graphql-tag";
 import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
 import Canvases from "./atlasConocimiento/Canvases.vue";
 import BuscadorNodosConocimiento from './atlasConocimiento/BuscadorNodosConocimiento.vue';
+import { QUERY_YO } from '../../../libro/src/App.vue';
 
 const QUERY_NODOS=gql`
         query {
@@ -66,6 +68,20 @@ const QUERY_NODOS=gql`
         }
       `
 
+const QUERY_DATOS_USUARIO_NODOS=gql`
+query {
+  yo{
+    id
+    atlas{
+      datosNodos{
+        idNodo
+        objetivo
+      }
+    }
+  }
+}
+`;
+
 export default {
   components: { NodoConocimiento, Canvases, BuscadorNodosConocimiento },
   name: "AtlasConocimiento",
@@ -77,6 +93,12 @@ export default {
       },
       fetchPolicy:"cache-and-network"
     },
+    yo:{
+      query: QUERY_DATOS_USUARIO_NODOS,
+      skip(){
+        return !this.usuarioLogeado;
+      }
+    }
   },
   data() {
     return {
@@ -89,6 +111,7 @@ export default {
       },
       actualizarTrazos: 0,
       panningVista: false,
+      vistaPanned:false,
       nodosConectadosAlSeleccionado: {
         listaCompleta: [],
         listaPorNiveles: [],
@@ -103,6 +126,12 @@ export default {
     };
   },
   computed: {
+    idsNodosObjetivos(){
+      if(!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos){
+        return []
+      }
+      return this.yo.atlas.datosNodos.filter(n=>n.objetivo==true).map(n=>n.idNodo);
+    },
     nodoSeleccionado: function () {
       if (!this.todosNodos) {
         console.log(`NO HAY NODOS`);
@@ -127,7 +156,31 @@ export default {
       return (this.$store.state.usuario.permisos.includes("atlasAdministrador")) ? true : false
     },
   },
-  methods: {
+  methods: {    
+    clickFondoAtlas(){
+      if(!this.vistaPanned)this.idNodoSeleccionado="-1"
+      this.panningVista = false;
+      this.vistaPanned=false;
+    },
+    setEstadoObjetivoNodoCache(nuevoEstado, idNodo){
+      console.log(`Seting en cache al nodo ${idNodo} con estado objetivo: ${nuevoEstado}`);
+      const store=this.$apollo.defaultClient.provider;
+      const cache=store.readQuery({
+        query: QUERY_YO,
+      });
+      var nuevoCache=JSON.parse(JSON.stringify(cache));
+      var indexN = nuevoCache.yo.atlas.datosNodos.findIndex(n=>n.id==idNodo);
+      if(indexN>-1){
+        nuevoCache.yo.atlas.datosNodos[indexN].objetivo=nuevoEstado;
+      }
+      else{
+        nuevoCache.yo.atlas.datosNodos.push({
+          __typename:"DatoNodoUsuario",
+          idNodo,
+          objetivo:nuevoEstado
+        })
+      }
+    },
     centrarEnNodo(n){
       console.log(`Centrando en ${JSON.stringify(n)}`);
       
@@ -337,13 +390,13 @@ export default {
       }
       this.desplazarVista(e.movementX, e.movementY)
       e.preventDefault();
+      this.vistaPanned=true;
       
       /*this.centroVista.x -= e.movementX;
       this.centroVista.y -= e.movementY;
       */
     },
-    seleccionNodo(nodo) {
-      console.log(`Seleccionando nodo ${JSON.stringify(nodo)}`);
+    seleccionNodo(nodo) {      
       this.idNodoSeleccionado = nodo.id;
       console.log(`idNodoSeleccionado: ${this.idNodoSeleccionado}`);
       if (!this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {

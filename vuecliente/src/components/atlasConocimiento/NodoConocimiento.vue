@@ -9,6 +9,7 @@
     @mouseleave="arrastrandoNodo = false; mostrandoCuadritoDescripcion=false"
     @dblclick="abrirPaginaNodo"
   >
+    <img src="@/assets/iconos/target.png" alt="Objetivo" v-show="esNodoObjetivo" class="imagenTarget" />
     <img
       :src="this.serverUrl+'/api/atlas/iconos/' + esteNodo.id"
       alt=""
@@ -25,6 +26,20 @@
         @click.stop="copiarId"
       >
         {{ esteNodo.id }}
+      </div>
+      <div
+        class="botonMenuCx"
+        v-if="usuarioLogeado && !esNodoObjetivo"
+        @click.stop="setNodoObjetivo(true)"
+      >
+        Fijar como objetivo
+      </div>
+      <div
+        class="botonMenuCx"
+        v-if="usuarioLogeado && esNodoObjetivo"
+        @click.stop="setNodoObjetivo(false)"
+      >
+        Retirar como objetivo
       </div>
       <template
         v-if="nodoSeleccionado.id != -1 && nodoSeleccionado.id != esteNodo.id && (usuarioSuperadministrador==true || usuarioAdministradorAtlas==true)"
@@ -67,6 +82,7 @@
 </template>
 
 <script>
+import gql from 'graphql-tag';
 
 export default {
   name: "NodoConocimiento",
@@ -93,6 +109,7 @@ export default {
       type: Object,
       required: true,
     },
+    esNodoObjetivo:Boolean,
     centroVista: Object,
     idNodoMenuCx: String,
     nodoSeleccionado: {
@@ -163,6 +180,23 @@ export default {
     },
   },
   methods: {
+    setNodoObjetivo(nuevoEstadoObjetivo){
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation ($idNodo:ID!, $nuevoEstadoObjetivo: Boolean!){
+            setNodoObjetivo(idNodo:$idNodo, nuevoEstadoObjetivo:$nuevoEstadoObjetivo)
+          }
+        `,
+        variables:{
+          idNodo:this.esteNodo.id,
+          nuevoEstadoObjetivo
+        }
+      }).then(({data:{setNodoObjetivo}})=>{
+        if(setNodoObjetivo){
+          this.$emit("cambieEstadoObjetivo", nuevoEstadoObjetivo);
+        }
+      });
+    },
     abrirPaginaNodo() {
       this.$router.push("/nodoConocimiento/" + this.esteNodo.id);
     },
@@ -342,5 +376,18 @@ export default {
 }
 .botonAbrirNodo:hover{
   background-color: rgb(190, 145, 88);
+}
+
+.imagenTarget{
+  width: 180%;
+  position:absolute;
+  top: -40%;
+  left: -40%;
+  z-index: 10;
+  opacity: 0.86;
+}
+.imagenTarget:hover{
+  opacity: 0.16;
+
 }
 </style>
