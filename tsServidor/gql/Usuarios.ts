@@ -42,12 +42,14 @@ export const typeDefs = gql`
 
     type DatoNodoUsuario{
         idNodo:ID,
-        objetivo:Boolean
+        objetivo:Boolean,
+        aprendido:Boolean
     }
 
     type infoAtlas{
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
+        idNodoTarget:ID
     }
 
     enum relacionUsuarioConocimiento{
@@ -127,6 +129,10 @@ export const typeDefs = gql`
         eliminarNotificacion(idNotificacion:ID!):Boolean,
         eliminarNotificacionActividadForos(idParent:ID!):Boolean,
         setNodoObjetivo(idNodo:ID!, nuevoEstadoObjetivo:Boolean):Boolean
+        setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):Boolean        
+        setNodoAtlasTarget(idNodo:ID!):Boolean,
+        nulificarNodoTargetUsuarioAtlas:Boolean
+
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -401,6 +407,72 @@ export const resolvers = {
                         objetivo:nuevoEstadoObjetivo
                     });
                 }
+                await elUsuario.save();
+                return true;
+            } catch (error) {
+                console.log(`error guardando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+            
+        },
+        setNodoAtlasAprendidoUsuario: async function (_: any, { idNodo, nuevoEstadoAprendido }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            if(!credencialesUsuario||!credencialesUsuario.id){
+                throw new AuthenticationError("No autenticado");
+            }
+
+            console.log(`Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);            
+
+            try {
+                var elUsuario:any= await Usuario.findById(credencialesUsuario.id).exec();
+                var indexN = elUsuario.atlas.datosNodos.findIndex(n=>n.idNodo==idNodo);
+                if(indexN>-1){
+                    elUsuario.atlas.datosNodos[indexN].aprendido=nuevoEstadoAprendido;
+                }
+                else{
+                    elUsuario.atlas.datosNodos.push({
+                        idNodo,
+                        aprendido:nuevoEstadoAprendido
+                    });
+                }
+                await elUsuario.save();
+                return true;
+            } catch (error) {
+                console.log(`error guardando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+            
+        },
+        setNodoAtlasTarget: async function (_: any, { idNodo}: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            if(!credencialesUsuario||!credencialesUsuario.id){
+                throw new AuthenticationError("No autenticado");
+            }
+
+            console.log(`Seting nodo ${idNodo} como target para el usuario ${credencialesUsuario.id}`);            
+
+            try {
+                var elUsuario:any= await Usuario.findById(credencialesUsuario.id).exec();
+                elUsuario.atlas.idNodoTarget=idNodo;                
+                await elUsuario.save();
+                return true;
+            } catch (error) {
+                console.log(`error guardando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+            
+        },        
+        nulificarNodoTargetUsuarioAtlas: async function (_: any, __: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            if(!credencialesUsuario||!credencialesUsuario.id){
+                throw new AuthenticationError("No autenticado");
+            }
+
+            console.log(`Seting nodo target null para el usuario ${credencialesUsuario.id}`);            
+
+            try {
+                var elUsuario:any= await Usuario.findById(credencialesUsuario.id).exec();
+                elUsuario.atlas.idNodoTarget=null;                
                 await elUsuario.save();
                 return true;
             } catch (error) {

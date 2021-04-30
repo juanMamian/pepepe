@@ -47,29 +47,36 @@ export default {
         };
       },
     },
+    idsNecesariosParaTarget:Array,
     nodoRelevante: [Object],
+    idNodoTarget: String,
     todosNodos: Array,
     centroVista: Object,
     actualizar: Number,
   },
   methods: {
     crearImagenTodosVinculos: function () {
-      if (this.todosNodos.length <= 1) return;
+      var nodosRelevantes = this.todosNodos;
+      if (this.idNodoTarget) {
+        nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
+      }
+
+      if (nodosRelevantes <= 1) return;
 
       this.lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
       //Calcular el tamaño del diagrama
       let bordesCanvasTodosVinculos = {};
 
-      bordesCanvasTodosVinculos.top = this.todosNodos.reduce((acc, n) => {
+      bordesCanvasTodosVinculos.top = nodosRelevantes.reduce((acc, n) => {
         return n.coordsManuales.y > acc ? n.coordsManuales.y : acc;
       }, 0);
-      bordesCanvasTodosVinculos.bot = this.todosNodos.reduce((acc, n) => {
+      bordesCanvasTodosVinculos.bot = nodosRelevantes.reduce((acc, n) => {
         return n.coordsManuales.y < acc ? n.coordsManuales.y : acc;
       }, 0);
-      bordesCanvasTodosVinculos.left = this.todosNodos.reduce((acc, n) => {
+      bordesCanvasTodosVinculos.left = nodosRelevantes.reduce((acc, n) => {
         return n.coordsManuales.x < acc ? n.coordsManuales.x : acc;
       }, 0);
-      bordesCanvasTodosVinculos.right = this.todosNodos.reduce((acc, n) => {
+      bordesCanvasTodosVinculos.right = nodosRelevantes.reduce((acc, n) => {
         return n.coordsManuales.x > acc ? n.coordsManuales.x : acc;
       }, 0);
 
@@ -110,13 +117,13 @@ export default {
       this.lapiz.clearRect(0, 0, anchoDiagrama, altoDiagrama);
       this.lapiz.beginPath();
       this.lapiz.strokeStyle = "#b3b3b3";
-      for (let nodo of this.todosNodos) {
+      for (let nodo of nodosRelevantes) {
         for (let vinculo of nodo.vinculos) {
-          if(!this.todosNodos.some(n=>n.id==vinculo.idRef))continue
+          if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) continue;
           if (vinculo.rol == "source") {
             this.dibujarLineaEntreNodos(
               nodo,
-              this.todosNodos.find((nodo) => nodo.id == vinculo.idRef)
+              nodosRelevantes.find((nodo) => nodo.id == vinculo.idRef)
             );
           }
         }
@@ -124,6 +131,15 @@ export default {
       this.lapiz.stroke();
     },
     crearImagenVinculosSeleccionado: function () {
+
+      var nodosRelevantes = this.todosNodos;
+
+      if (this.idNodoTarget) {
+        nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
+      }
+
+      if (nodosRelevantes <= 1) return;
+
       this.lapiz = this.$refs.canvasVinculosSeleccionado.getContext("2d");
       this.lapiz.clearRect(
         0,
@@ -132,20 +148,20 @@ export default {
         this.lapiz.canvas.height
       );
 
-      if (this.todosNodos.some((n) => n.id == this.nodoSeleccionado.id)) {
+      if (nodosRelevantes.some((n) => n.id == this.nodoSeleccionado.id)) {
         //Lineas verdes de posiblidades
         this.lapiz.beginPath();
-        this.lapiz.lineWidth=2;
+        this.lapiz.lineWidth = 2;
         this.lapiz.strokeStyle = "#008000";
 
         //Lineas verdes de salida
         for (let vinculo of this.nodoSeleccionado.vinculos) {
-          if (!this.todosNodos.some((n) => n.id == vinculo.idRef)) {
+          if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) {
             console.log(`ALERTA. Vinculo a ${vinculo.idRef} huerfano`);
             continue;
           }
           if (vinculo.rol == "source") {
-            let otroNodo = this.todosNodos.find((n) => n.id == vinculo.idRef);
+            let otroNodo = nodosRelevantes.find((n) => n.id == vinculo.idRef);
             this.dibujarLineaEntreNodos(this.nodoSeleccionado, otroNodo);
           }
         }
@@ -155,12 +171,12 @@ export default {
         this.lapiz.beginPath();
         this.lapiz.strokeStyle = "#b80e0e";
         for (let vinculo of this.nodoSeleccionado.vinculos) {
-          if (!this.todosNodos.some((n) => n.id == vinculo.idRef)) {
+          if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) {
             console.log(`ALERTA. Vinculo a ${vinculo.idRef} huerfano`);
             continue;
           }
           if (vinculo.rol == "target") {
-            let otroNodo = this.todosNodos.find((n) => n.id == vinculo.idRef);
+            let otroNodo = nodosRelevantes.find((n) => n.id == vinculo.idRef);
             this.dibujarLineaEntreNodos(otroNodo, this.nodoSeleccionado);
           }
         }
@@ -176,7 +192,7 @@ export default {
         x: nodoTo.coordsManuales.x - this.posicionCanvasActivo.x,
         y: nodoTo.coordsManuales.y - this.posicionCanvasActivo.y,
       };
-      
+
       this.lapiz.moveTo(inicio.x, inicio.y);
       this.lapiz.lineTo(final.x, final.y);
       //ahora la flechita
@@ -254,17 +270,19 @@ export default {
         left: left + "px",
       };
     },
-      
   },
   watch: {
     todosNodos: function () {
-      if(this.todosNodos.length<1)return
-      console.log(`Redibujando lineas`);
+      if (this.todosNodos.length < 1) return;
       this.crearImagenTodosVinculos();
       this.crearImagenVinculosSeleccionado();
     },
     nodoSeleccionado: function () {
       this.crearImagenVinculosSeleccionado();
+    },
+    idNodoTarget() {
+      console.log(`Trazando todos vínculos teniendo en cuenta el target`);
+      this.crearImagenTodosVinculos();
     },
   },
   mounted() {
@@ -280,10 +298,8 @@ export default {
   position: absolute;
 }
 #canvasVinculosSeleccionado {
-  border: 0px solid pink;
 }
 #canvasTodosVinculos {
   z-index: 0;
-  border: 2px solid green;
 }
 </style>

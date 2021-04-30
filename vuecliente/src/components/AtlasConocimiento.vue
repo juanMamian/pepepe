@@ -2,88 +2,117 @@
   <div
     class="atlasConocimiento"
     @mousedown.left.exact.stop="panningVista = true"
-    @click="idNodoMenuCx = '-1'; cerrarBusqueda++"    
+    @click="
+      idNodoMenuCx = '-1';
+      cerrarBusqueda++;
+    "
     @mousemove="panVista($event)"
-    @mouseup="clickFondoAtlas"
+    @mouseup.left="clickFondoAtlas"
     @dblclick.ctrl.shift.self.stop="crearNodo"
     @touchmove.prevent.stop="movimientoMobile"
     @touchstart="iniciaMovimientoTouch"
   >
-    <buscador-nodos-conocimiento @nodoSeleccionado="centrarEnNodo" ref="buscadorNodos" :cerrarBusqueda="cerrarBusqueda"/>
+    <buscador-nodos-conocimiento
+      @nodoSeleccionado="centrarEnNodo"
+      ref="buscadorNodos"
+      :cerrarBusqueda="cerrarBusqueda"
+    />
+    <panel-objetivos
+      :nodosObjetivo="nodosObjetivo"
+      :idNodoTarget="idNodoTarget"
+      @targetSeleccionado="setNodoTargetCache"
+      @nodoSeleccionado="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
+      @nulificarNodoTarget="nulificarNodoTarget"
+    />
     <div id="contenedorNodos">
       <canvases
         :todosNodos="todosNodos"
         :nodoSeleccionado="nodoSeleccionado"
+        :idNodoTarget="idNodoTarget"
+        :idsNecesariosParaTarget="idsNecesariosParaTarget"
         :centroVista="centroVista"
-        v-if="todosNodos.length>1"
+        v-if="todosNodos.length > 1"
       />
 
       <nodo-conocimiento
         :nodoSeleccionado="nodoSeleccionado"
         :todosNodos="todosNodos"
-        :idNodoMenuCx="idNodoMenuCx"        
+        :idNodoMenuCx="idNodoMenuCx"
         :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
         :key="nodo.id"
-        :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
         v-for="nodo of todosNodos"
         :esteNodo="nodo"
         :centroVista="centroVista"
+        :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
+        :esTarget="idNodoTarget == nodo.id"
+        :idsNodosAprendidos="idsNodosAprendidos"
+        :escondido="
+          idNodoTarget &&
+          !idsNecesariosParaTarget.includes(nodo.id) &&
+          idNodoTarget != nodo.id
+        "
+        @click.right.native.stop.prevent="idNodoMenuCx = nodo.id"
         @click.native.stop="seleccionNodo(nodo)"
-        @click.right.native.prevent="idNodoMenuCx = nodo.id"
         @creacionVinculo="crearVinculo"
         @eliminacionVinculo="eliminarVinculo"
         @cambioDePosicionManual="cambiarCoordsManualesNodo"
-        @eliminar="eliminarNodo"        
+        @eliminar="eliminarNodo"
         @cambieEstadoObjetivo="setEstadoObjetivoNodoCache($event, nodo.id)"
+        @tengoNuevoValorAprendido="setNodoAprendidoCache($event, nodo.id)"
       />
     </div>
   </div>
 </template>
 
 <script>
-
-
 import gql from "graphql-tag";
 import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
 import Canvases from "./atlasConocimiento/Canvases.vue";
-import BuscadorNodosConocimiento from './atlasConocimiento/BuscadorNodosConocimiento.vue';
-import { QUERY_YO } from '../../../libro/src/App.vue';
+import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
+import PanelObjetivos from "./atlasConocimiento/PanelObjetivos.vue";
 
-const QUERY_NODOS=gql`
-        query {
-          todosNodos {
-            nombre
-            descripcion
-            id
-            coordsManuales {
-              x
-              y
-            }
-            vinculos {
-              idRef
-              rol
-              tipo
-            }
-          }
-        }
-      `
-
-const QUERY_DATOS_USUARIO_NODOS=gql`
-query {
-  yo{
-    id
-    atlas{
-      datosNodos{
-        idNodo
-        objetivo
+const QUERY_NODOS = gql`
+  query {
+    todosNodos {
+      nombre
+      descripcion
+      id
+      coordsManuales {
+        x
+        y
+      }
+      vinculos {
+        idRef
+        rol
+        tipo
       }
     }
   }
-}
+`;
+
+const QUERY_DATOS_USUARIO_NODOS = gql`
+  query {
+    yo {
+      id
+      atlas {
+        datosNodos {
+          idNodo
+          objetivo
+          aprendido
+        }
+        idNodoTarget
+      }
+    }
+  }
 `;
 
 export default {
-  components: { NodoConocimiento, Canvases, BuscadorNodosConocimiento },
+  components: {
+    NodoConocimiento,
+    Canvases,
+    BuscadorNodosConocimiento,
+    PanelObjetivos,
+  },
   name: "AtlasConocimiento",
   apollo: {
     todosNodos: {
@@ -91,27 +120,35 @@ export default {
       result: function () {
         this.dibujarVinculosGrises();
       },
-      fetchPolicy:"cache-and-network"
+      fetchPolicy: "cache-and-network",
     },
-    yo:{
+    yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
-      skip(){
-        return !this.usuarioLogeado;
-      }
-    }
+      skip() {
+        return !this.usuarioLogeado || this.todosNodos.length<1;
+      },
+    },
   },
   data() {
     return {
       todosNodos: [],
       idNodoSeleccionado: "-1",
       idNodoMenuCx: "-1",
+      idsNecesariosParaTarget: [],
+
+      yo: {
+        atlas: {
+          datosNodos:[]
+        },
+      },
+
       centroVista: {
         x: 0,
         y: 0,
       },
       actualizarTrazos: 0,
       panningVista: false,
-      vistaPanned:false,
+      vistaPanned: false,
       nodosConectadosAlSeleccionado: {
         listaCompleta: [],
         listaPorNiveles: [],
@@ -119,18 +156,25 @@ export default {
       profundidadNodosConectadosAlSeleccionado: 1,
       actualizarVinculosGrises: 0,
 
-      ultimoTouchX:0,
-      ultimoTouchY:0,
+      ultimoTouchX: 0,
+      ultimoTouchY: 0,
 
-      cerrarBusqueda:0,
+      cerrarBusqueda: 0,
     };
   },
   computed: {
-    idsNodosObjetivos(){
-      if(!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos){
-        return []
+    idsNodosObjetivos() {
+      if (!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos) {
+        return [];
       }
-      return this.yo.atlas.datosNodos.filter(n=>n.objetivo==true).map(n=>n.idNodo);
+      return this.yo.atlas.datosNodos
+        .filter((n) => n.objetivo == true)
+        .map((n) => n.idNodo);
+    },
+    nodosObjetivo() {
+      return this.todosNodos.filter((n) =>
+        this.idsNodosObjetivos.includes(n.id)
+      );
     },
     nodoSeleccionado: function () {
       if (!this.todosNodos) {
@@ -153,59 +197,164 @@ export default {
     },
     usuarioAdministradorAtlas: function () {
       if (!this.$store.state.usuario.permisos) return false;
-      return (this.$store.state.usuario.permisos.includes("atlasAdministrador")) ? true : false
+      return this.$store.state.usuario.permisos.includes("atlasAdministrador")
+        ? true
+        : false;
     },
+    idNodoTarget() {
+      return this.yo.atlas.idNodoTarget;
+    },
+    idsNodosAprendidos(){
+      return this.yo.atlas.datosNodos.filter(n=>n.aprendido==true).map(n=>n.idNodo);      
+    }
   },
-  methods: {    
-    clickFondoAtlas(){
-      if(!this.vistaPanned)this.idNodoSeleccionado="-1"
-      this.panningVista = false;
-      this.vistaPanned=false;
-    },
-    setEstadoObjetivoNodoCache(nuevoEstado, idNodo){
-      console.log(`Seting en cache al nodo ${idNodo} con estado objetivo: ${nuevoEstado}`);
-      const store=this.$apollo.defaultClient.provider;
-      const cache=store.readQuery({
-        query: QUERY_YO,
+  methods: {
+    encontrarNodosNecesariosDeNodo(idNodo, listaTotal) {
+      const elNodo = this.todosNodos.find((n) => n.id == idNodo);
+      if (!elNodo) {
+        return listaTotal;
+      }
+      const necesarios = elNodo.vinculos
+        .filter((v) => v.rol == "target")
+        .map((v) => v.idRef);
+      necesarios.forEach((necesario) => {
+        if (!listaTotal.includes(necesario)) {
+          listaTotal.push(necesario);
+          listaTotal = this.encontrarNodosNecesariosDeNodo(
+            necesario,
+            listaTotal
+          );
+        }
       });
-      var nuevoCache=JSON.parse(JSON.stringify(cache));
-      var indexN = nuevoCache.yo.atlas.datosNodos.findIndex(n=>n.id==idNodo);
-      if(indexN>-1){
-        nuevoCache.yo.atlas.datosNodos[indexN].objetivo=nuevoEstado;
-      }
-      else{
-        nuevoCache.yo.atlas.datosNodos.push({
-          __typename:"DatoNodoUsuario",
-          idNodo,
-          objetivo:nuevoEstado
-        })
-      }
+      return listaTotal;
     },
-    centrarEnNodo(n){
-      console.log(`Centrando en ${JSON.stringify(n)}`);
-      
-      this.$set(this.centroVista, "x", n.coordsManuales.x - (this.$el.offsetWidth/2));
-      this.$set(this.centroVista, "y", n.coordsManuales.y - (this.$el.offsetHeight/2));
+    clickFondoAtlas() {
+      if (!this.vistaPanned) this.idNodoSeleccionado = "-1";
+      this.panningVista = false;
+      this.vistaPanned = false;
+    },
+    setEstadoObjetivoNodoCache(nuevoEstado, idNodo) {
+      console.log(
+        `Seting en cache al nodo ${idNodo} con estado objetivo: ${nuevoEstado}`
+      );
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      var indexN = nuevoCache.yo.atlas.datosNodos.findIndex(
+        (n) => n.idNodo == idNodo
+      );
+      if (indexN > -1) {
+        nuevoCache.yo.atlas.datosNodos[indexN].objetivo = nuevoEstado;
+      } else {
+        console.log(`No estaba en caché. Pushing`);
+        nuevoCache.yo.atlas.datosNodos.push({
+          __typename: "DatoNodoUsuario",
+          idNodo,
+          objetivo: nuevoEstado,
+        });
+      }
+      store.writeQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+        data: nuevoCache,
+      });
+    },
+    setNodoAprendidoCache(nuevoEstado, idNodo) {
+      console.log(
+        `Seting en cache al nodo ${idNodo} con estado aprendido: ${nuevoEstado}`
+      );
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      var indexN = nuevoCache.yo.atlas.datosNodos.findIndex(
+        (n) => n.idNodo == idNodo
+      );
+      if (indexN > -1) {
+        nuevoCache.yo.atlas.datosNodos[indexN].aprendido = nuevoEstado;
+      } else {
+        console.log(`No estaba en caché. Pushing`);
+        nuevoCache.yo.atlas.datosNodos.push({
+          __typename: "DatoNodoUsuario",
+          idNodo,
+          objetivo:false,
+          aprendido: nuevoEstado,
+        });
+      }
+      store.writeQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+        data: nuevoCache,
+      });
+    },
+    setNodoTargetCache(idNodo) {
+      console.log(`Seting en cache al nodo ${idNodo} como target`);
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      nuevoCache.yo.atlas.idNodoTarget = idNodo;
+      store.writeQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+        data: nuevoCache,
+      });
+    },
+    nulificarNodoTarget() {
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation {
+              nulificarNodoTargetUsuarioAtlas
+            }
+          `,
+        })
+        .then(({ data: { nulificarNodoTargetUsuarioAtlas } }) => {
+          if (nulificarNodoTargetUsuarioAtlas) {
+            const store = this.$apollo.provider.defaultClient;
+            const cache = store.readQuery({
+              query: QUERY_DATOS_USUARIO_NODOS,
+            });
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+            nuevoCache.yo.atlas.idNodoTarget = null;
+            store.writeQuery({
+              query: QUERY_DATOS_USUARIO_NODOS,
+              data: nuevoCache,
+            });
+          }
+        });
+    },
+    centrarEnNodo(n) {
+      this.$set(
+        this.centroVista,
+        "x",
+        n.coordsManuales.x - this.$el.offsetWidth / 2
+      );
+      this.$set(
+        this.centroVista,
+        "y",
+        n.coordsManuales.y - this.$el.offsetHeight / 2
+      );
       this.seleccionNodo(n);
       //this.centroVista=e;
     },
-    iniciaMovimientoTouch(e){
-      this.ultimoTouchX=e.changedTouches[0].clientX;
-      this.ultimoTouchY=e.changedTouches[0].clientY;
-
+    iniciaMovimientoTouch(e) {
+      this.ultimoTouchX = e.changedTouches[0].clientX;
+      this.ultimoTouchY = e.changedTouches[0].clientY;
     },
-    movimientoMobile(e){
-      const deltaX=e.changedTouches[0].clientX - this.ultimoTouchX;
-      const deltaY=e.changedTouches[0].clientY - this.ultimoTouchY;
-      this.ultimoTouchX=e.changedTouches[0].clientX;
-      this.ultimoTouchY=e.changedTouches[0].clientY;
+    movimientoMobile(e) {
+      const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
+      const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
+      this.ultimoTouchX = e.changedTouches[0].clientX;
+      this.ultimoTouchY = e.changedTouches[0].clientY;
 
       this.desplazarVista(deltaX, deltaY);
     },
     cambiarCoordsManualesNodo(idNodo, coordsManuales) {
-      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
         console.log(`No autorizado`);
-        return
+        return;
       }
       this.todosNodos[
         this.todosNodos.findIndex((n) => n.id == idNodo)
@@ -239,11 +388,11 @@ export default {
         });
     },
     eliminarNodo(idNodo) {
-      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
         console.log(`No autorizado`);
-        return
+        return;
       }
-      if(!confirm("¿Seguro de que quieres eliminar este nodo?"))return
+      if (!confirm("¿Seguro de que quieres eliminar este nodo?")) return;
       console.log(`enviando mutacion de eliminar nodo`);
       this.$apollo
         .mutate({
@@ -255,39 +404,40 @@ export default {
           variables: {
             idNodo,
           },
-          update(store, {data:{eliminarNodo}}){
-            if(!eliminarNodo){
+          update(store, { data: { eliminarNodo } }) {
+            if (!eliminarNodo) {
               console.log(`Nodo no fue eliminado`);
-              return
+              return;
             }
-            const cache=store.readQuery({
-              query: QUERY_NODOS,            
+            const cache = store.readQuery({
+              query: QUERY_NODOS,
             });
-            var nuevoCache=JSON.parse(JSON.stringify(cache));
-            const indexN=nuevoCache.todosNodos.findIndex(n=>n.id==idNodo);
-            if(indexN>-1){
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+            const indexN = nuevoCache.todosNodos.findIndex(
+              (n) => n.id == idNodo
+            );
+            if (indexN > -1) {
               nuevoCache.todosNodos.splice(indexN, 1);
               store.writeQuery({
-                query:QUERY_NODOS,
-                data:nuevoCache              
+                query: QUERY_NODOS,
+                data: nuevoCache,
               });
+            } else {
+              console.log(`El nodo no estaba presente`);
             }
-            else{
-              console.log(`El nodo no estaba presente`);              
-            }
-          }
+          },
         })
         .then((data) => {
           console.log(`quitando el objeto del array. ${data}`);
         });
     },
     crearNodo(e) {
-      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
         console.log(`Error usuario no autorizado`);
-        return
+        return;
       }
       console.log(`enviando una mutación de crear nodo`);
-      
+
       let posContenedor = document
         .getElementById("contenedorNodos")
         .getBoundingClientRect();
@@ -305,55 +455,58 @@ export default {
         },
       };
       console.log(`en las coordenadas: ${nuevoLeft}, ${nuevoTop} `);
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($infoNodo: NodoConocimientoInput) {
-            crearNodo(infoNodo: $infoNodo) {
-              nombre
-              descripcion
-              id
-              coordsManuales {
-                x
-                y
-              }
-              vinculos {
-                idRef
-                rol
-                tipo
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($infoNodo: NodoConocimientoInput) {
+              crearNodo(infoNodo: $infoNodo) {
+                nombre
+                descripcion
+                id
+                coordsManuales {
+                  x
+                  y
+                }
+                vinculos {
+                  idRef
+                  rol
+                  tipo
+                }
               }
             }
-          }
-        `,
-        variables: {
-          infoNodo,
-        },
-        update(store, {data:{crearNodo}}){
-          const cache=store.readQuery({
-            query:QUERY_NODOS,            
-          });
-          //console.log(`Cache: ${JSON.stringify(cache)}`);
-          var nuevoCache=JSON.parse(JSON.stringify(cache));
-          let losNodos=nuevoCache.todosNodos;
-          losNodos.push(crearNodo);
-          store.writeQuery({
-            query: QUERY_NODOS,
-            data: nuevoCache,
-          });
-        }
-      }).then(({data:{crearNodo}})=>{ 
-        console.log(`Creado ${crearNodo.id}`);
-        //this.$router.push("/nodoConocimiento/"+crearNodo.id);
-      }).catch((error)=>{
-        console.log(`Error. E: ${error}`);
-      });
+          `,
+          variables: {
+            infoNodo,
+          },
+          update(store, { data: { crearNodo } }) {
+            const cache = store.readQuery({
+              query: QUERY_NODOS,
+            });
+            //console.log(`Cache: ${JSON.stringify(cache)}`);
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+            let losNodos = nuevoCache.todosNodos;
+            losNodos.push(crearNodo);
+            store.writeQuery({
+              query: QUERY_NODOS,
+              data: nuevoCache,
+            });
+          },
+        })
+        .then(({ data: { crearNodo } }) => {
+          console.log(`Creado ${crearNodo.id}`);
+          //this.$router.push("/nodoConocimiento/"+crearNodo.id);
+        })
+        .catch((error) => {
+          console.log(`Error. E: ${error}`);
+        });
     },
     descargarCentroVista() {
       let dis = this;
       this.$apollo
         .query({
           query: gql`
-            query{
-              yo{
+            query {
+              yo {
                 id
                 atlas {
                   centroVista {
@@ -369,7 +522,7 @@ export default {
           },
           fetchPolicy: "network-only",
         })
-        .then(function ({ data:{yo} }) {          
+        .then(function ({ data: { yo } }) {
           let coords = yo.atlas.centroVista;
           dis.$set(dis.centroVista, "x", coords.x);
           dis.$set(dis.centroVista, "y", coords.y);
@@ -379,26 +532,25 @@ export default {
           console.log(`error fetching centro vista: ${error}`);
         });
     },
-    desplazarVista(deltaX, deltaY){
-      this.$set(this.centroVista, "x", this.centroVista.x - deltaX);
-      this.$set(this.centroVista, "y", this.centroVista.y - deltaY);
+    desplazarVista(deltaX, deltaY) {
+      this.$set(this.centroVista, "x", Math.round(this.centroVista.x - deltaX));
+      this.$set(this.centroVista, "y", Math.round(this.centroVista.y - deltaY));
       this.actualizarTrazos++;
     },
     panVista(e) {
       if (!this.panningVista) {
         return;
       }
-      this.desplazarVista(e.movementX, e.movementY)
+      this.desplazarVista(e.movementX, e.movementY);
       e.preventDefault();
-      this.vistaPanned=true;
-      
+      this.vistaPanned = true;
+
       /*this.centroVista.x -= e.movementX;
       this.centroVista.y -= e.movementY;
       */
     },
-    seleccionNodo(nodo) {      
+    seleccionNodo(nodo) {
       this.idNodoSeleccionado = nodo.id;
-      console.log(`idNodoSeleccionado: ${this.idNodoSeleccionado}`);
       if (!this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
         console.log(`No encontrado`);
         return null;
@@ -431,7 +583,7 @@ export default {
       };
     },
     async eliminarVinculo(args) {
-      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
         console.log(`No autorizado`);
         return;
       }
@@ -471,7 +623,7 @@ export default {
       this.actualizarVinculosGrises++;
     },
     async crearVinculo(args) {
-      if(!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas){
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
         console.log(`No autorizado`);
         return;
       }
@@ -557,12 +709,23 @@ export default {
     route: function (to) {
       console.log(`cambio de navegación a ${to.path}`);
     },
+    idNodoTarget(idNodoTarget) {
+      if(!idNodoTarget){
+        this.idsNecesariosParaTarget=[];
+        return;
+      }
+      console.log(`iniciando busqueda de requeridos de nodo ${idNodoTarget}`);
+      this.idsNecesariosParaTarget = this.encontrarNodosNecesariosDeNodo(
+        idNodoTarget,
+        []
+      );
+    },
   },
   mounted() {
-    if (!this.usuario.atlas || !this.usuario.atlas.centroVista) { 
+    if (!this.usuario.atlas || !this.usuario.atlas.centroVista) {
       console.log(`No había info de centro vista en la store. Descargando`);
       this.descargarCentroVista();
-      return
+      return;
     }
     this.$set(this.centroVista, "x", this.usuario.atlas.centroVista.x);
     this.$set(this.centroVista, "y", this.usuario.atlas.centroVista.y);
@@ -617,11 +780,22 @@ export default {
   overflow: hidden;
   pointer-events: none;
 }
-#buscadorNodosConocimiento{
+#buscadorNodosConocimiento {
   position: absolute;
   top: 1%;
-  left:1%;
+  left: 1%;
   /* transform: translateX(-50%); */
   z-index: 1;
+}
+#panelObjetivos {
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.2;
+  z-index: 100;
+}
+#panelObjetivos:hover {
+  opacity: 1;
 }
 </style>

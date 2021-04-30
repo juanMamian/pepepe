@@ -138,11 +138,13 @@ const esquemaUsuario = new mongoose.Schema({
             type: [
                 {
                     idNodo:String,
-                    objetivo: Boolean
+                    objetivo: Boolean,
+                    aprendido:Boolean,
                 }
             ],
             default:[]
-        }
+        },
+        idNodoTarget:String,
     },
     notificaciones: {
         type: [esquemaNotificacion],

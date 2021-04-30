@@ -138,7 +138,7 @@ exports.resolvers = {
                     console.log(`error fetching todos los nodos. e: ` + error);
                     return;
                 }
-                console.log(`Enviando: ${todosNodos}`);
+                // console.log(`Enviando: ${todosNodos}`);
                 return todosNodos;
             });
         },

@@ -37,8 +37,16 @@ exports.typeDefs = apollo_server_express_1.gql `
         fecha:Date
     }
 
+    type DatoNodoUsuario{
+        idNodo:ID,
+        objetivo:Boolean,
+        aprendido:Boolean
+    }
+
     type infoAtlas{
-        centroVista:Coords
+        centroVista:Coords,
+        datosNodos:[DatoNodoUsuario],
+        idNodoTarget:ID
     }
 
     enum relacionUsuarioConocimiento{
@@ -79,7 +87,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         nombreGrupoEstudiantil:String,
         notificaciones:[Notificacion],
         notificacionesActividadForos:[NotificacionActividadForos],
-        foros:[InfoForosUsuario]
+        foros:[InfoForosUsuario],
+
     }
     input DatosEditablesUsuario{
         nombres:String,
@@ -115,7 +124,12 @@ exports.typeDefs = apollo_server_express_1.gql `
         addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
         eliminarUsuario(idUsuario:ID!):Boolean,
         eliminarNotificacion(idNotificacion:ID!):Boolean,
-        eliminarNotificacionActividadForos(idParent:ID!):Boolean
+        eliminarNotificacionActividadForos(idParent:ID!):Boolean,
+        setNodoObjetivo(idNodo:ID!, nuevoEstadoObjetivo:Boolean):Boolean
+        setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):Boolean        
+        setNodoAtlasTarget(idNodo:ID!):Boolean,
+        nulificarNodoTargetUsuarioAtlas:Boolean
+
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -365,6 +379,100 @@ exports.resolvers = {
                 }
                 console.log(`Notificacion eliminada`);
                 return true;
+            });
+        },
+        setNodoObjetivo: function (_, { idNodo, nuevoEstadoObjetivo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario || !credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No autenticado");
+                }
+                console.log(`Seting nodo objetivo de ${idNodo} en ${nuevoEstadoObjetivo} para el usuario ${credencialesUsuario.id}`);
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idNodo);
+                    if (indexN > -1) {
+                        elUsuario.atlas.datosNodos[indexN].objetivo = nuevoEstadoObjetivo;
+                    }
+                    else {
+                        elUsuario.atlas.datosNodos.push({
+                            idNodo,
+                            objetivo: nuevoEstadoObjetivo
+                        });
+                    }
+                    yield elUsuario.save();
+                    return true;
+                }
+                catch (error) {
+                    console.log(`error guardando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+            });
+        },
+        setNodoAtlasAprendidoUsuario: function (_, { idNodo, nuevoEstadoAprendido }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario || !credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No autenticado");
+                }
+                console.log(`Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idNodo);
+                    if (indexN > -1) {
+                        elUsuario.atlas.datosNodos[indexN].aprendido = nuevoEstadoAprendido;
+                    }
+                    else {
+                        elUsuario.atlas.datosNodos.push({
+                            idNodo,
+                            aprendido: nuevoEstadoAprendido
+                        });
+                    }
+                    yield elUsuario.save();
+                    return true;
+                }
+                catch (error) {
+                    console.log(`error guardando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+            });
+        },
+        setNodoAtlasTarget: function (_, { idNodo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario || !credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No autenticado");
+                }
+                console.log(`Seting nodo ${idNodo} como target para el usuario ${credencialesUsuario.id}`);
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    elUsuario.atlas.idNodoTarget = idNodo;
+                    yield elUsuario.save();
+                    return true;
+                }
+                catch (error) {
+                    console.log(`error guardando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+            });
+        },
+        nulificarNodoTargetUsuarioAtlas: function (_, __, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario || !credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No autenticado");
+                }
+                console.log(`Seting nodo target null para el usuario ${credencialesUsuario.id}`);
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    elUsuario.atlas.idNodoTarget = null;
+                    yield elUsuario.save();
+                    return true;
+                }
+                catch (error) {
+                    console.log(`error guardando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
             });
         },
     },

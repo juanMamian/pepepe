@@ -132,7 +132,18 @@ const esquemaUsuario = new mongoose_1.default.Schema({
                 required: true,
                 default: 0
             }
-        }
+        },
+        datosNodos: {
+            type: [
+                {
+                    idNodo: String,
+                    objetivo: Boolean,
+                    aprendido: Boolean,
+                }
+            ],
+            default: []
+        },
+        idNodoTarget: String,
     },
     notificaciones: {
         type: [esquemaNotificacion],

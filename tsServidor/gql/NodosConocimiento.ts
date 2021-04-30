@@ -171,7 +171,7 @@ export const resolvers = {
                 return;
             }
 
-            console.log(`Enviando: ${todosNodos}`);
+            // console.log(`Enviando: ${todosNodos}`);
 
             return todosNodos;
         },
