@@ -1,4 +1,5 @@
 <template>
+<transition name="recogerseArriba">
   <div class="notificacion" @click="visitar">
     <div id="info">{{ fechaFormateada }}</div>
     <img
@@ -12,6 +13,7 @@
     />
     <div id="texto" v-html="mensaje"></div>
   </div>
+  </transition>
 </template>
 
 <script>
@@ -123,6 +125,7 @@ export default {
   align-items: center;
   justify-items: center;
   cursor: pointer;
+  overflow: hidden;
 }
 .notificacion:hover {
   background-color: rgb(231, 168, 119);
@@ -143,5 +146,11 @@ export default {
 }
 .textoTarget {
   color: white;
+}
+.recogerseArriba-leave-to{
+  height: 0px;
+}
+.recogerseArriba-leave-active{
+  transition: height 0.3s;
 }
 </style>

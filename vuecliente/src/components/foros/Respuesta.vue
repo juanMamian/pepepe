@@ -113,9 +113,9 @@ export default {
 
 <style scoped>
 .respuesta {
-  background-color: rgb(168, 213, 234);
-  border: 2px solid rgb(16, 89, 122);
-  border-radius: 5px;
+  background-color: rgb(255 205 164);
+  
+  border-radius: 15px;
   display: grid;
   grid-template-areas:
     "info info info"

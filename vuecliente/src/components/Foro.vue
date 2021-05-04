@@ -312,8 +312,8 @@ export default {
 
 <style scoped>
 .foro {
-  border: 2px solid black;
-  background-color: rgb(241, 241, 241);
+  border: 2px solid white;
+  background-color: rgb(239 158 93);
   margin: 0px auto;
 }
 #nombreForo {
@@ -323,35 +323,42 @@ export default {
 }
 
 .barraSuperiorForo {
-  display: flex;
-  background-color: #ddfeff;
+  display: grid;
+  grid-template-columns: 1fr 100px 1fr;
 }
 
 #bRegresarConversaciones {
-  padding: 20px 5px;
+  padding: 15px 5px;
   text-align: center;
   cursor: pointer;
-  border-radius: 10px;
-  margin: 10px auto;
-  border: 2px solid black;
+  border-radius: 7px;
+  grid-column: 2/3;
+  justify-self: center;
+  align-self: center;
+  border: 1px solid black;
+  margin: 10px;
+  background-color: #f5a25f;
 }
 #bRegresarConversaciones:hover {
-  background-color: cadetblue;
+    background-color: #f8cba6;
+
 }
 #controlesForo {
   margin-left: auto;
   display: flex;
   flex-flow: row-reverse;
+  grid-column: 3/4;
 }
 .controlesForo {
   margin-left: 10px;
+  
 }
 .botonesControles {
   padding: 3px 5px;
   cursor: pointer;
 }
 .botonesControles:hover {
-  background-color: #95cccc;
+  background-color: #f8cba6;
 }
 .zonaConversaciones {
   padding-left: 0px;
@@ -360,7 +367,6 @@ export default {
 .zonaSelectorPagina {
   display: flex;
   padding: 2px 10px;
-  background-color: #ddfeff;
 }
 .selectorPagina {
   border: 1px solid black;
@@ -368,14 +374,16 @@ export default {
   margin: 2px;
   border-radius: 5px;
   cursor: pointer;
-  background-color: #4db9b9;
+  background-color: #f5a25f;
+  
 }
 
 .selectorPagina:hover {
-  background-color: #95cccc;
+    background-color: #f8cba6;
 }
 .selectorSeleccionado {
-  background-color: #95cccc;
+    background-color: #f8cba6;
+
   pointer-events: none;
 }
 #anuncio {

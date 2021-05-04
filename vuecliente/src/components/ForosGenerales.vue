@@ -32,10 +32,10 @@ export default {
 <style scoped>
     #anuncioBienvenida{
         border-radius: 20px;
-        border: 2px solid cadetblue;
+        border: 2px solid rgb(136 84 43);
         padding: 15px 20px;
         width: min(600px, 90%);
         margin: 20px auto;
-        background-color: rgb(168, 205, 206);
+        background-color: rgb(239 158 93);
     }
 </style>

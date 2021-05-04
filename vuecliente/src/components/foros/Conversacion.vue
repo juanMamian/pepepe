@@ -219,15 +219,15 @@ export default {
 
 <style scoped>
 .conversacion {
-  background-color: #91bfec;
-  border: 1px solid #023004;
+  background-color: #ffd0aa;
+  border: 1px solid white;
   padding: 0px 0px;
 }
 .conversacion:hover {
-  background-color: #aec6de;
+  background-color: #f7b57f;
 }
 .seleccionado {
-  background-color: #aec6de;
+  background-color: #f7b57f;
 }
 .respuesta {
   margin: 5px;
@@ -242,6 +242,7 @@ export default {
   display: grid;
   align-items: center;
   grid-template-columns: 100px 1fr 200px;
+  color: #9c1a1a;
 }
 .imagenConversacion {
   width: 50px;
@@ -295,14 +296,14 @@ export default {
   margin: 2px;
   border-radius: 5px;
   cursor: pointer;
-  background-color: #aec6de;
+  background-color: #ffd0aa;
 }
 
 .selectorPagina:hover {
-  background-color: #cddbe9;
+  background-color: #f7b57f;
 }
 .selectorSeleccionado {
-  background-color: #cddbe9;
+  background-color: #f7b57f;
   pointer-events: none;
 }
 </style>

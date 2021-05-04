@@ -360,10 +360,10 @@ export default {
 
 <style scoped>
 .cuadroResponder {
-  border: 2px solid rgb(3, 49, 87);
-  background-color: rgb(194, 213, 238);
+  border: 2px solid white;
   margin: 5px;
   border-radius: 10px;
+  background-color: #ffcda4;
 }
 #barraSuperior {
   display: flex;
@@ -375,7 +375,7 @@ export default {
   border-radius: 50%;
   width: 30px;
   height: 30px;
-  background-color: green;
+  background-color: #e2a03d;
 }
 #bEnviar {
   display: block;
@@ -384,10 +384,10 @@ export default {
   border-radius: 50%;
   width: 40px;
   height: 40px;
-  background-color: green;
+  background-color: #f5a25f;
 }
 #bEnviar:hover {
-  background-color: rgb(84, 224, 103);
+  background-color: #f7760e;
 }
 #inputMensaje {
   width: 80%;
@@ -404,10 +404,10 @@ export default {
   height: 50px;
   border-radius: 50%;
   cursor: pointer;
-  background-color: #ecd1d1;
+  background-color: #f5a25f;
 }
 #imgAdjuntar:hover {
-  background-color: #55b95c;
+  background-color: #f7760e;
 }
 #nombreArchivoSeleccionado {
   background-color: #55b95c;
@@ -425,13 +425,13 @@ export default {
 #imgAdjuntarEnlace {
   border-radius: 50%;
   padding: 3px;
-  background-color: rgb(156, 214, 216);
+  background-color: #f5a25f;
   width: 45px;
   height: 45px;
   cursor: pointer;
 }
 #imgAdjuntarEnlace:hover {
-  background-color: cadetblue;
+  background-color: #f7760e;
 }
 .inputAdjuntarEnlace {
   margin-left: 20px;
