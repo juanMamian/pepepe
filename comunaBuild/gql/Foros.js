@@ -291,6 +291,9 @@ exports.resolvers = {
                         var elParent = yield Libro_1.ModeloLibro.findById(parent.id, "_id idsEditores").exec();
                         var idsMiembros = elParent.idsEditores;
                     }
+                    else if (parent.tipo == "forosGenerales") {
+                        var idsMiembros = [];
+                    }
                     else {
                         console.log(`Error: tipo de parent no reconocido`);
                     }

@@ -293,6 +293,9 @@ export const resolvers = {
                     var elParent: any = await Libro.findById(parent.id, "_id idsEditores").exec();
                     var idsMiembros = elParent.idsEditores;
                 }
+                else if(parent.tipo == "forosGenerales") {
+                    var idsMiembros:any=[];                    
+                }
                 else {
                     console.log(`Error: tipo de parent no reconocido`);
                 }

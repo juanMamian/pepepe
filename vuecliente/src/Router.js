@@ -18,6 +18,7 @@ import Home from "./components/Home"
 import Trabajo from "./components/Trabajo"
 import BuscadorTrabajos from "./components/BuscadorTrabajos"
 import TodosMateriales from "./components/TodosMateriales"
+import ForosGenerales from "./components/ForosGenerales"
 
 Vue.use(Router);
 
@@ -51,6 +52,7 @@ const routes = [
         }
     },
     { path: "/trabajos", component: BuscadorTrabajos },
+    { path: "/foros", component: ForosGenerales },
     { path: "/materiales", component: TodosMateriales },
     { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
     { path: "/proyectos", name: "proyectos", component: Proyectos },
