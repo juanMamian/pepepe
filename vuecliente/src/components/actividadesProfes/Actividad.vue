@@ -7,6 +7,7 @@
       deshabilitado: actividadDeshabilitada,
     }"
   >
+    <div class="infoFecha" v-show="!seleccionada">{{ fechaFormateada }}</div>
     <div
       id="contenedorAvancesGrupo"
       v-if="usuarioCreadorActividad || usuarioProfe"
@@ -830,7 +831,17 @@ export default {
         return "noIniciado";
       }
       return desarrolloSeleccionado.estado;      
-    }
+    },
+    fechaFormateada: function () {
+      let laFecha = new Date(this.estaActividad.fechaUpload).toString();
+      let indexParentesis = laFecha.indexOf("(");
+      let fechaCorta = laFecha.substr(0, indexParentesis);
+      let indexGMT = fechaCorta.indexOf("GMT");
+      if (indexGMT > -1) {
+        fechaCorta = fechaCorta.substr(0, indexGMT);
+      }
+      return fechaCorta;
+    },
   },
   watch: {
     usuarioLogeado: function () {
@@ -862,7 +873,14 @@ export default {
   background-color: rgb(240, 240, 240);
   padding-bottom: 30px;
 }
-
+.infoFecha{
+  font-size: 11px;
+  font-style: italic;
+  color: gray;
+  position: absolute;
+  bottom: 100%;
+  right: 2%;
+}
 #contenedorAlertas {
   position: absolute;
   top: 0;
