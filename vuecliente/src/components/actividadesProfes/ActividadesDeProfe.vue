@@ -219,7 +219,7 @@ export default {
   position: relative;
 }
 .actividad {
-  margin: 10px auto;
+  margin: 20px auto;
   max-width: 700px;
   box-shadow: 2px 2px 2px 2px rgb(190, 190, 190);
 }
