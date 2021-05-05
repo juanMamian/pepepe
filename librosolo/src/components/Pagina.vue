@@ -1,12 +1,22 @@
 <template>
-  <div class="pagina"></div>
+  <div class="pagina" :style="estilo">
+    <div class="numPagina">
+      {{numPagina}}
+    </div>
+
+    <cuadro-texto v-for="cuadroTexto of estaPagina.cuadrosTexto" :key="cuadroTexto.id" :esteCuadroTexto="cuadroTexto"/>
+
+  </div>
 </template>
 
 <script>
+import CuadroTexto from './CuadroTexto.vue';
 export default {
+  components: { CuadroTexto },
   name: "Pagina",
   props: {
     estaPagina: Object,
+    numPagina:Number,
   },
   data() {
     return {
@@ -21,6 +31,8 @@ export default {
       return {
         width: this.ancho+"px",
         height: this.alto+"px",
+        backgroundColor: this.estaPagina.color,
+
       }
     }
   }
@@ -34,6 +46,12 @@ export default {
 }
 
 .elementoPagina {
+  position: absolute;
+}
+
+.numPagina{
+  color: gray;
+  user-select: none;
   position: absolute;
 }
 </style>
