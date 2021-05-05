@@ -52,7 +52,7 @@
       "
       @saliendose="scrollDiagrama"
       @dblclick.native="$emit('nodoAbierto', objetivo.id)"
-      @meAbrieron="$emit('nodoAbierto', idTrabajo)"
+      @meAbrieron="$emit('nodoAbierto', objetivo.id)"
       @empujandoDummyPorAbajo="reposDummy(0, 5)"
       @empujandoDummyPorDerecha="reposDummy(5, 0)"
       @crearRequerimento="crearRequerimento('objetivo', $event)"
