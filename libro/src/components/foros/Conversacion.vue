@@ -321,5 +321,6 @@ export default {
 .selectorSeleccionado {
   background-color: #cddbe9;
   pointer-events: none;
+  font-weight: bold;
 }
 </style>

@@ -340,8 +340,7 @@ export default {
   background-color: #f5a25f;
 }
 #bRegresarConversaciones:hover {
-    background-color: #f8cba6;
-
+  background-color: #f8cba6;
 }
 #controlesForo {
   margin-left: auto;
@@ -351,7 +350,6 @@ export default {
 }
 .controlesForo {
   margin-left: 10px;
-  
 }
 .botonesControles {
   padding: 3px 5px;
@@ -374,17 +372,16 @@ export default {
   margin: 2px;
   border-radius: 5px;
   cursor: pointer;
-  background-color: #f5a25f;
-  
+  background-color: #f7b57f;
 }
 
 .selectorPagina:hover {
-    background-color: #f8cba6;
+  background-color: #ffd0aa;
 }
 .selectorSeleccionado {
-    background-color: #f8cba6;
-
+  background-color: #ffd0aa;
   pointer-events: none;
+  font-weight: bold;
 }
 #anuncio {
   padding: 5px 5px;

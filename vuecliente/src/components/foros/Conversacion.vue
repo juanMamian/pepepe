@@ -296,14 +296,19 @@ export default {
   margin: 2px;
   border-radius: 5px;
   cursor: pointer;
-  background-color: #ffd0aa;
+  background-color: #f7b57f;
+
 }
 
 .selectorPagina:hover {
-  background-color: #f7b57f;
+    background-color: #ffd0aa;
+
 }
 .selectorSeleccionado {
-  background-color: #f7b57f;
+    background-color: #ffd0aa;
+
   pointer-events: none;
+  font-weight: bold;
+
 }
 </style>

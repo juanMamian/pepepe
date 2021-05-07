@@ -485,6 +485,7 @@ exports.resolvers = {
                     laConversacion.cantidadRespuestas = cantRespuestas;
                     laConversacion.infoUltimaRespuesta = {
                         idAutor: credencialesUsuario.id,
+                        fecha: Date.now()
                     };
                     yield elForo.save();
                 }
