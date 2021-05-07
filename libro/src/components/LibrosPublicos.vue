@@ -41,7 +41,7 @@
             <div class="nombreLibro">
               {{ portada.titulo }}
             </div>
-            <div class="controlesLibro">
+            <div class="controlesLibro" @click.stop="">
               <img
                 src="@/assets/iconos/delete.png"
                 alt="Eliminar"
