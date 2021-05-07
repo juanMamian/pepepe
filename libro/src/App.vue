@@ -3,6 +3,7 @@
     <center><h2>Taller de creación de cuentos</h2></center>
     <todos-libros
       ref="todosLibros"
+      class="bloqueListaLibros"
       v-if="usuarioSuperadministrador"
       :URLLibrosolo="URLLibrosolo"
       @elimineUnLibro="removerLibroCache"
@@ -12,6 +13,7 @@
     <libros-publicos
       ref="librosPublicos"
       v-if="usuarioLogeado"
+      class="bloqueListaLibros"
       :URLLibrosolo="URLLibrosolo"
       @elimineUnLibro="removerLibroCache"
       @libroSeleccionado="seleccionarLibro"
@@ -19,6 +21,7 @@
     />
     <mis-libros
       :URLLibrosolo="URLLibrosolo"
+      class="bloqueListaLibros"
       @libroSeleccionado="seleccionarLibro"
       ref="misLibros"
     />
@@ -151,7 +154,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 body {
   background-color: rgb(228 227 227);
 }
@@ -162,4 +165,106 @@ body {
   opacity: 0.5;
   pointer-events: none;
 }
+
+</style>
+
+<style>
+
+.bloqueListaLibros{
+  background-color: #ceccdc;
+  border: 2px solid purple;
+  border-radius: 6px;
+}
+.trianguloBullet{
+  
+  border:10px solid transparent;
+  border-left: 10px solid black;
+  
+  display: inline-block;
+  margin-right: 20px;
+  transform-origin: left center;
+  transition: transform 0.2s;
+}
+.tituloZona{
+  padding-left:15px ;
+}
+
+.portadaLibro {
+  padding: 5px 10px;
+  font-size: inherit;
+  cursor: pointer;
+  padding-bottom: 20px;
+  display: grid;
+  grid-template-columns: 20px 200px 1fr 200px;
+  grid-template-areas: "bullet nombre ... controles";
+  background-color:rgb(128 128 128 / 11%)
+
+}
+.portadaLibro:hover {
+  background-color: rgba(128, 0, 128, 0.233);
+}
+.bulletPortada{
+  width: 10px;
+  height: 10px;
+  background-color: purple;
+  border-radius: 50%;
+  justify-self: center;
+  align-self: center;  
+}
+.nombreLibro{
+  align-self: center;
+}
+
+.seleccionado {
+  background-color: rgba(128, 0, 128, 0.233);
+}
+
+.nombreLibro {
+  grid-area: nombre;
+}
+
+.controlesLibro {
+  grid-area: controles;
+  visibility: hidden;
+  align-self: center;
+}
+
+.portadaLibro:hover > .controlesLibro {
+  visibility: visible;
+}
+.controlLibro {
+  width: 29px;
+  float: right;
+  border-radius: 50%;
+  cursor: pointer;
+  margin: 0px 10px;
+}
+.controlLibro:hover {
+  background-color: gray;
+}
+
+.bloqueAutor {
+  padding: 20px 0px;
+  margin: 20px 0px;
+  background-color: rgb(128 128 128 / 11%);  
+  
+}
+
+.iconoPersonaAutonomo {
+  margin: 5px 25px;
+}
+
+.simboloLoading{
+animation: girar 1.5s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes girar{
+  0%{transform: rotateZ(0deg);}
+  100%{transform: rotateZ(360deg);}
+}
+
 </style>

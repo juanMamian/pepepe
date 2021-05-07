@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    
+    <img src="@/assets/iconos/loading.png" alt="Cargando" class="simboloLoading" style="width:50px; margin: 30px auto; display: block" v-show="$apollo.queries.libro.loading">
 
     <div id="contenedorPaginas">
       <pagina
@@ -166,7 +166,7 @@ export default {
         return {
           idLibro: this.idLibro,
         };
-      },
+      },      
       skip() {
         return this.idLibro == null;
       },

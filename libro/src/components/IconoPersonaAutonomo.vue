@@ -178,6 +178,7 @@ export default {
 
 .nombres {
   background-color: rgb(243, 216, 204);
+  font-size: 14px;
   position: absolute;
   top: 105%;
   left: 50%;

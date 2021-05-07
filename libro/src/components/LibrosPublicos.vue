@@ -1,9 +1,24 @@
 <template>
   <div id="librosPublicos">
-    <h3 style="cursor: pointer" @click="desplegado = !desplegado">
+    <h4
+      style="cursor: pointer"
+      class="tituloZona"
+      @click="desplegado = !desplegado"
+    >
+      <div
+        class="trianguloBullet"
+        :style="{ transform: desplegado ? 'rotateZ(90deg)' : 'rotateZ(0deg)' }"
+      ></div>
       Libros publicos
-    </h3>
+    </h4>
     <div id="controlesLibrosPublicos"></div>
+    <img
+      src="@/assets/iconos/loading.png"
+      alt="Cargando"
+      class="simboloLoading"
+      style="width: 20px; margin: 10px auto; display: block"
+      v-show="desplegado && $apollo.queries.librosPublicos.loading"
+    />
 
     <div id="listaLibrosPublicos" v-show="desplegado">
       <div
@@ -27,14 +42,6 @@
               {{ portada.titulo }}
             </div>
             <div class="controlesLibro">
-              <a :href="URLLibrosolo + '?id=' + portada.id" target="_blank">
-                <img
-                  src="@/assets/iconos/libroAbierto.png"
-                  class="controlLibro"
-                  alt="Libro"
-                  title="Ver libro"                  
-                />
-              </a>
               <img
                 src="@/assets/iconos/delete.png"
                 alt="Eliminar"
@@ -43,6 +50,14 @@
                 v-show="usuarioSuperadministrador"
                 @click.stop="eliminarLibro(portada.id)"
               />
+              <a :href="URLLibrosolo + '?id=' + portada.id" target="_blank">
+                <img
+                  src="@/assets/iconos/libroAbierto.png"
+                  class="controlLibro"
+                  alt="Libro"
+                  title="Ver libro"
+                />
+              </a>
             </div>
           </div>
         </div>
@@ -96,7 +111,9 @@ export default {
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
 
-      const indexL = nuevoCache.librosPublicos.findIndex((l) => l.id == idLibro);
+      const indexL = nuevoCache.librosPublicos.findIndex(
+        (l) => l.id == idLibro
+      );
       if (indexL > -1) {
         nuevoCache.librosPublicos.splice(indexL, 1);
         store.writeQuery({
@@ -138,7 +155,7 @@ export default {
           `Datos insuficientes para decidir si usuario es súperadministrador`
         );
         return false;
-      }      
+      }
       return this.usuario.permisos.includes("superadministrador");
     },
     librosPorAutor() {
@@ -161,73 +178,4 @@ export default {
 </script>
 
 <style scoped>
-#librosPublicos {
-  padding: 10px;
-  border: 2px solid cadetblue;
-  margin: 10px;
-  border-radius: 15px;
-  padding: 15px;
-  font-size: 22px;
-}
-
-.bControlTodosLibros {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  cursor: pointer;
-  margin: 5px 10px;
-}
-.bControlTodosLibros:hover {
-  background-color: rgb(241, 153, 241);
-}
-
-.bloqueAutor {
-  padding: 20px 0px;
-  margin: 20px 0px;
-  background-color: rgba(128, 128, 128, 0.404);
-  border-radius: 20px;
-}
-
-.iconoPersonaAutonomo {
-  margin: 5px 25px;
-}
-
-.portadaLibro {
-  padding: 5px 10px;
-  font-size: inherit;
-  cursor: pointer;
-  padding-bottom: 20px;
-  display: grid;
-  grid-template-columns: 200px 1fr 200px;
-  grid-template-areas: "nombre ... controles";
-}
-.portadaLibro:hover {
-  background-color: rgba(128, 0, 128, 0.233);
-}
-.seleccionado {
-  background-color: rgba(128, 0, 128, 0.233);
-}
-
-.nombreLibro {
-  grid-area: nombre;
-}
-
-.controlesLibro {
-  grid-area: controles;
-  visibility: hidden;
-}
-
-.portadaLibro:hover > .controlesLibro {
-  visibility: visible;
-}
-.controlLibro {
-  width: 29px;
-  
-  border-radius: 50%;
-  cursor: pointer;
-  margin: 0px 10px;
-}
-.controlLibro:hover {
-  background-color: gray;
-}
 </style>

@@ -1,7 +1,14 @@
 <template>
   <div id="misLibros">
-    <h3>Mis libros</h3>
-    <div id="controlesMisLibros">
+    <h4
+      style="cursor: pointer"
+      class="tituloZona"
+      @click="desplegado = !desplegado"
+    >
+     <div class="trianguloBullet" :style="{transform: desplegado?'rotateZ(90deg)':'rotateZ(0deg)'}"></div>
+      Mis libros
+    </h4>
+    <div id="controlesMisLibros" v-show="desplegado">
       <img
         src="@/assets/iconos/libro.png"
         class="bControlMisLibros"
@@ -9,8 +16,15 @@
         @click="crearNuevoLibro"
       />
     </div>
+    <img
+      src="@/assets/iconos/loading.png"
+      alt="Cargando"
+      class="simboloLoading"
+      style="width: 20px; margin: 10px auto; display: block"
+      v-show="desplegado && $apollo.queries.misLibros.loading"
+    />
 
-    <div id="listaMisLibros">
+    <div id="listaMisLibros" v-show="desplegado">
       <div
         class="portadaLibro"
         v-for="portada of misLibros"
@@ -21,6 +35,14 @@
           {{ portada.titulo }}
         </div>
         <div class="controlesLibro">
+          <img
+            src="@/assets/iconos/delete.png"
+            alt="Eliminar"
+            title="Eliminar este libro"
+            class="controlLibro"
+            v-show="usuarioSuperadministrador"
+            @click.stop="eliminarLibro(portada.id)"
+          />
           <a :href="URLLibrosolo + '?id=' + portada.id" target="_blank">
             <img
               src="@/assets/iconos/libroAbierto.png"
@@ -37,14 +59,6 @@
             v-show="usuarioSuperadministrador"
             :style="{ backgroundColor: portada.publico ? 'green' : '' }"
             @click.stop="setLibroPublico(portada.id, !portada.publico)"
-          />
-          <img
-            src="@/assets/iconos/delete.png"
-            alt="Eliminar"
-            title="Eliminar este libro"
-            class="controlLibro"
-            v-show="usuarioSuperadministrador"
-            @click.stop="eliminarLibro(portada.id)"
           />
         </div>
       </div>
@@ -79,7 +93,9 @@ export default {
     URLLibrosolo: String,
   },
   data() {
-    return {};
+    return {
+      desplegado: true,
+    };
   },
   methods: {
     crearNuevoLibro() {
@@ -184,23 +200,24 @@ export default {
               data: nuevoCache,
             });
           }
-        }).catch((error)=>{
+        })
+        .catch((error) => {
           console.log(`Error. E: ${error}`);
           const store = this.$apollo.provider.defaultClient;
-            const cache = store.readQuery({
-              query: QUERY_MIS_LIBROS,
-            });
-            var nuevoCache = JSON.parse(JSON.stringify(cache));
-            var laPortada = nuevoCache.misLibros.find((p) => p.id == idLibro);
-            if (!laPortada) {
-              console.log(`Libro no estaba en caché`);
-              return;
-            }
-            laPortada.publico = !nuevoEstado;
-            store.writeQuery({
-              query: QUERY_MIS_LIBROS,
-              data: nuevoCache,
-            });
+          const cache = store.readQuery({
+            query: QUERY_MIS_LIBROS,
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          var laPortada = nuevoCache.misLibros.find((p) => p.id == idLibro);
+          if (!laPortada) {
+            console.log(`Libro no estaba en caché`);
+            return;
+          }
+          laPortada.publico = !nuevoEstado;
+          store.writeQuery({
+            query: QUERY_MIS_LIBROS,
+            data: nuevoCache,
+          });
         });
     },
   },
@@ -208,15 +225,6 @@ export default {
 </script>
 
 <style scoped>
-#misLibros {
-  padding: 10px;
-  border: 2px solid cadetblue;
-  margin: 10px;
-  border-radius: 15px;
-  padding: 15px;
-  font-size: 22px;
-}
-
 .bControlMisLibros {
   width: 50px;
   height: 50px;
@@ -226,41 +234,5 @@ export default {
 }
 .bControlMisLibros:hover {
   background-color: rgb(241, 153, 241);
-}
-
-.portadaLibro {
-  padding: 5px 10px;
-  font-size: inherit;
-  cursor: pointer;
-  padding-bottom: 20px;
-  display: grid;
-  grid-template-columns: 200px 1fr 200px;
-  grid-template-areas: "nombre ... controles";
-}
-.portadaLibro:hover {
-  background-color: rgba(128, 0, 128, 0.233);
-}
-
-.nombreLibro {
-  grid-area: nombre;
-}
-
-.controlesLibro {
-  grid-area: controles;
-  visibility: hidden;
-}
-
-.portadaLibro:hover > .controlesLibro {
-  visibility: visible;
-}
-.controlLibro {
-  width: 29px;
-
-  border-radius: 50%;
-  cursor: pointer;
-  margin: 0px 10px;
-}
-.controlLibro:hover {
-  background-color: gray;
 }
 </style>
