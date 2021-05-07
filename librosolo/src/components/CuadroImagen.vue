@@ -7,15 +7,15 @@
       conAudio: esteCuadroImagen.audio,
     }"
   >
+    <img src="@/assets/iconos/loading.png" alt="Cargando" class="simboloLoading" v-if="imagenLoaded==false">
 
     <img
       :src="urlImagen + '?v=' + versionImagen"
       alt="ilustracion"
       draggable="false"
       class="imagenContenido"
-      
+      @load="imagenLoaded=true"      
     />
-    <img src="@/assets/iconos/loading.png" alt="Cargando" class="simboloLoading">
 
 
     <audio type="audio/ogg" v-if="esteCuadroImagen.audio" ref="audio">
@@ -37,6 +37,7 @@ export default {
   data() {
     return {
       versionImagen: 0,
+      imagenLoaded:false,
     };
   },
   computed: {

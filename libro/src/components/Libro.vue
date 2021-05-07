@@ -46,7 +46,7 @@
         :segundoPlano="
           idPaginaSeleccionada != null && idPaginaSeleccionada != pagina.id
         "
-        @click.native.stop="usuarioEditor?idPaginaSeleccionada = pagina.id:null"
+        @click.native.stop="usuarioEditor || usuarioSuperadministrador?idPaginaSeleccionada = pagina.id:null"
         @meElimine="removePaginaFromCache(pagina.id)"
         @tengoNuevoCuadroTexto="updateCacheConNuevoCuadroTexto($event, pagina.id)"
         @tengoNuevoCuadroImagen="updateCacheConNuevoCuadroImagen($event, pagina.id)"

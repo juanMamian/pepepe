@@ -13,9 +13,10 @@
       :src="urlImagen + '?v=' + versionImagen"
       alt="ilustracion"
       class="imagenContenido"
+      @load="imagenLoaded=true"
     />
 
-    <img src="@/assets/iconos/loading.png" alt="Cargando" class="simboloLoading">
+    <img src="@/assets/iconos/loading.png" alt="Cargando" class="simboloLoading" v-if="!imagenLoaded">
 
     <div id="zHandlers" v-show="seleccionado">
       <div class="zHandler" id="bSendBack" title="Mover hacia atrás" @click="posicionZeta=posicionZeta>0?posicionZeta-1:0"></div>
@@ -98,6 +99,7 @@ export default {
       },
       updatingInfo: false,
       versionImagen: 0,
+      imagenLoaded:false,
     };
   },
   computed: {
