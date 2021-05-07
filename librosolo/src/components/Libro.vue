@@ -24,6 +24,7 @@
           :key="pagina.id"
           :class="{ reverso: index % 2 > 0 }"
           :numPagina="index+((numeroH-1)*2)"
+          :idLibro="idLibro"
           @mousedown.left.native="swipingPagina = true"
           @mouseup.left.native="endSwipe"
           @mousemove.native="
@@ -189,26 +190,39 @@ export default {
 </script>
 
 <style scoped>
+#libro{
+  overflow: hidden;
+}
 #contenedorHojas {
-  width: 900px;
-  height: 600px;
+  width: 138vh;
+  height: 92vh;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  perspective: 4000px;
+
 }
 .hoja {
-  border: 2px dotted black;
   position: absolute;
   left: 50%;
-  margin: 20px;
-  width: 450px;
-  height: 600px;
+  /* width: 450px;
+  height: 600px; */
+  height: 92vh;
+  width: 69vh;
   perspective-origin: left bottom;
-  perspective: 1200px;
   transform-origin: 0% 0%;
   transition: transform 0.5s;
   transform-style: preserve-3d;
+}
+.girada {
+  transform: rotateY(-180deg);
+}
+.hoja:not(.girada)>.reverso{
+  pointer-events: none;
+}
+.girada>.pagina:not(.reverso){
+  pointer-events: none;
 }
 
 .reverso {
@@ -220,7 +234,5 @@ export default {
   left: 0px;
   backface-visibility: hidden;
 }
-.girada {
-  transform: rotateY(-180deg);
-}
+
 </style>

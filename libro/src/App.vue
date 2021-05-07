@@ -3,12 +3,25 @@
     <center><h2>Taller de creación de cuentos</h2></center>
     <todos-libros
       ref="todosLibros"
-      v-if="usuarioSuperadministrador"      
+      v-if="usuarioSuperadministrador"
+      :URLLibrosolo="URLLibrosolo"
       @elimineUnLibro="removerLibroCache"
       @libroSeleccionado="seleccionarLibro"
       :idLibroSeleccionado="idLibroSeleccionado"
     />
-    <mis-libros @libroSeleccionado="seleccionarLibro" ref="misLibros" />
+    <libros-publicos
+      ref="librosPublicos"
+      v-if="usuarioLogeado"
+      :URLLibrosolo="URLLibrosolo"
+      @elimineUnLibro="removerLibroCache"
+      @libroSeleccionado="seleccionarLibro"
+      :idLibroSeleccionado="idLibroSeleccionado"
+    />
+    <mis-libros
+      :URLLibrosolo="URLLibrosolo"
+      @libroSeleccionado="seleccionarLibro"
+      ref="misLibros"
+    />
 
     <libro
       :idLibro="idLibroSeleccionado"
@@ -20,18 +33,18 @@
 </template>
 
 <script>
-import { gql } from 'apollo-server-core';
+import { gql } from "apollo-server-core";
 import Libro from "./components/Libro.vue";
 import MisLibros from "./components/MisLibros.vue";
 import TodosLibros from "./components/TodosLibros.vue";
-
+import LibrosPublicos from "./components/LibrosPublicos.vue";
 
 export const QUERY_YO = gql`
   query {
     yo {
       id
       nombres
-      apellidos      
+      apellidos
       permisos
       foros {
         idForo
@@ -50,8 +63,9 @@ export default {
     Libro,
     MisLibros,
     TodosLibros,
+    LibrosPublicos,
   },
-  apollo:{
+  apollo: {
     yo: {
       query: QUERY_YO,
       fetchPolicy: "network-only",
@@ -62,7 +76,7 @@ export default {
       skip() {
         return !this.usuarioLogeado;
       },
-    }
+    },
   },
   data() {
     return {
@@ -76,11 +90,11 @@ export default {
         this.$refs.elLibro.$el.scrollIntoView({ behavior: "smooth" });
       });
     },
-    removerLibroCache(idLibro){
+    removerLibroCache(idLibro) {
       this.$refs.misLibros.removerLibroCache(idLibro);
+      this.$refs.librosPublicos.removerLibroCache(idLibro);
       this.$refs.todosLibros.removerLibroCache(idLibro);
-
-    }
+    },
   },
   computed: {
     usuarioSuperadministrador() {
@@ -102,6 +116,11 @@ export default {
       // console.log(`Usuario tiene permisos: ${this.usuario.permisos}`);
       // return this.usuario.permisos.includes("superadministrador");
     },
+    URLLibrosolo() {
+      return process.env.NODE_ENV === "production"
+        ? "https://pe-pe-pe.herokuapp.com/libro"
+        : "http://localhost:8082";
+    },
   },
   mounted() {
     let uri = window.location.search.substring(1);
@@ -121,9 +140,9 @@ export default {
     }
     //Seleccionar libro by URL
 
-    const idLibroURL=params.get("l");
-    if(idLibroURL){
-      this.idLibroSeleccionado=idLibroURL;
+    const idLibroURL = params.get("l");
+    if (idLibroURL) {
+      this.idLibroSeleccionado = idLibroURL;
       this.$nextTick(function () {
         this.$refs.elLibro.$el.scrollIntoView({ behavior: "smooth" });
       });

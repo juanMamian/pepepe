@@ -124,5 +124,9 @@ exports.esquemaLibro = new mongoose_1.default.Schema({
     idForo: {
         type: String,
     },
+    publico: {
+        type: Boolean,
+        default: false,
+    }
 });
 exports.ModeloLibro = mongoose_1.default.model("Libro", exports.esquemaLibro);

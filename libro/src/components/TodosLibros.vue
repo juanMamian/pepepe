@@ -1,6 +1,8 @@
 <template>
   <div id="todosLibros">
-    <h3 style="cursor:pointer" @click="desplegado=!desplegado">Todos los libros</h3>
+    <h3 style="cursor: pointer" @click="desplegado = !desplegado">
+      Todos los libros
+    </h3>
     <div id="controlesTodosLibros"></div>
 
     <div id="listaMisLibros" v-show="desplegado">
@@ -25,12 +27,20 @@
               {{ portada.titulo }}
             </div>
             <div class="controlesLibro">
+              <a :href="URLLibrosolo + '?id=' + portada.id" target="_blank">
+                <img
+                  src="@/assets/iconos/libroAbierto.png"
+                  class="controlLibro"
+                  alt="Libro"
+                  title="Ver libro"                  
+                />
+              </a>
               <img
                 src="@/assets/iconos/delete.png"
                 alt="Eliminar"
                 title="Eliminar este libro"
                 class="controlLibro"
-                v-show="usuarioSuperadministrador || usuarioAdministradorAtlas"
+                v-show="usuarioSuperadministrador"
                 @click.stop="eliminarLibro(portada.id)"
               />
             </div>
@@ -68,55 +78,58 @@ export default {
   },
   props: {
     idLibroSeleccionado: String,
+    URLLibrosolo: String,
   },
   data() {
     return {
-      desplegado:false,
+      desplegado: false,
     };
   },
   methods: {
     seleccionarLibro(idLibro) {
       this.$emit("libroSeleccionado", idLibro);
     },
-    removerLibroCache(idLibro){
-      const store=this.$apollo.provider.defaultClient;
-      const cache=store.readQuery({
-        query: QUERY_TODOS_LIBROS,        
+    removerLibroCache(idLibro) {
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_TODOS_LIBROS,
       });
-      var nuevoCache=JSON.parse(JSON.stringify(cache));
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
 
-      const indexL=nuevoCache.todosLibros.findIndex(l=>l.id==idLibro);
-      if(indexL>-1){
+      const indexL = nuevoCache.todosLibros.findIndex((l) => l.id == idLibro);
+      if (indexL > -1) {
         nuevoCache.todosLibros.splice(indexL, 1);
         store.writeQuery({
           query: QUERY_TODOS_LIBROS,
-          data: nuevoCache
+          data: nuevoCache,
         });
-      }
-      else{
+      } else {
         console.log(`Libro no estaba en caché`);
       }
     },
-    eliminarLibro(idLibro){
-      if(!confirm("Eliminando un libro. ¿Continuar?"))return;
+    eliminarLibro(idLibro) {
+      if (!confirm("Eliminando un libro. ¿Continuar?")) return;
 
-      this.$apollo.mutate({
-        mutation:gql`
-          mutation($idLibro:ID!){
-            eliminarLibro(idLibro:$idLibro)
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idLibro: ID!) {
+              eliminarLibro(idLibro: $idLibro)
+            }
+          `,
+          variables: {
+            idLibro,
+          },
+        })
+        .then(({ data: { eliminarLibro } }) => {
+          if (eliminarLibro) {
+            this.$emit("elimineUnLibro", idLibro);
           }
-        `,
-        variables:{
-          idLibro
-        }
-      }).then(({data:{eliminarLibro}})=>{
-        if(eliminarLibro){
-          this.$emit("elimineUnLibro", idLibro);
-        }
-      }).catch((error)=>{
-        console.log(`Error. E: ${error}`);
-      })
-    }
+        })
+        .catch((error) => {
+          console.log(`Error. E: ${error}`);
+        });
+    },
   },
   computed: {
     usuarioSuperadministrador() {
@@ -126,13 +139,13 @@ export default {
         );
         return false;
       }
-      console.log(`Usuario tiene permisos: ${this.usuario.permisos}`);
+      
       return this.usuario.permisos.includes("superadministrador");
     },
     librosPorAutor() {
       var objetoFinal = {};
-      if(!this.todosLibros){
-        return objetoFinal
+      if (!this.todosLibros) {
+        return objetoFinal;
       }
       this.todosLibros.forEach((libro) => {
         let idAutor = libro.idsEditores[0];
@@ -176,7 +189,7 @@ export default {
   border-radius: 20px;
 }
 
-.iconoPersonaAutonomo{
+.iconoPersonaAutonomo {
   margin: 5px 25px;
 }
 
@@ -209,9 +222,11 @@ export default {
   visibility: visible;
 }
 .controlLibro {
-  width: 25px;
+  width: 29px;
+  
   border-radius: 50%;
   cursor: pointer;
+  margin: 0px 10px;
 }
 .controlLibro:hover {
   background-color: gray;

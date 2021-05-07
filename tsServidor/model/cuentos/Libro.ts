@@ -124,6 +124,10 @@ export const esquemaLibro = new mongoose.Schema({
     idForo:{
         type:String,        
     },
+    publico:{
+        type:Boolean,
+        default: false,
+    }
 
 });
 

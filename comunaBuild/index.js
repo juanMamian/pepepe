@@ -30,6 +30,11 @@ app.use("/tallerCuentos", express_1.default.static(__dirname + "/clientes/taller
 app.get("/tallerCuentos", function (req, res) {
     res.sendFile(__dirname + "/clientes/tallerCuentos/index.html");
 });
+//rutas libro
+app.use("/libro", express_1.default.static(__dirname + "/clientes/libro"));
+app.get("/libro", function (req, res) {
+    res.sendFile(__dirname + "/clientes/libro/index.html");
+});
 Schema_1.aServer.applyMiddleware({ app });
 //Carpetas publicas
 app.use("/assetsAtlas/contenidosNodos", routesContenidosNodos);
