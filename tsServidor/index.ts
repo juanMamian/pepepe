@@ -31,6 +31,13 @@ app.get("/tallerCuentos", function (req: Request, res: Response) {
   res.sendFile(__dirname + "/clientes/tallerCuentos/index.html");
 });
 
+//rutas libro
+app.use("/libro", express.static(__dirname+"/clientes/libro"));
+app.get("/libro", function (req: Request, res: Response) {
+  res.sendFile(__dirname + "/clientes/libro/index.html");
+});
+
+
 aServer.applyMiddleware({ app });
 
 //Carpetas publicas

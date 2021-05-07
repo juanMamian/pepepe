@@ -15,6 +15,8 @@
       class="imagenContenido"
     />
 
+    <img src="@/assets/iconos/loading.png" alt="Cargando" class="simboloLoading">
+
     <div id="zHandlers" v-show="seleccionado">
       <div class="zHandler" id="bSendBack" title="Mover hacia atrás" @click="posicionZeta=posicionZeta>0?posicionZeta-1:0"></div>
       <div class="zHandler" id="bBringFront" title="Mover hacia adelante" @click="posicionZeta++"></div>
@@ -409,6 +411,7 @@ export default {
 .imagenContenido {
   width: 100%;
   height: 100%;
+  z-index: 0;
 }
 #resizeHandle {
   position: absolute;
@@ -506,5 +509,25 @@ export default {
 }
 .enDuda{
   color: purple;
+}
+
+.simboloLoading{
+  width: 50px;
+  height: 50px;
+  animation: girar 1.5s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  pointer-events: none;
+  user-select: none;
+  position: absolute;
+  top:50%;
+  left:50%;
+  transform: translate(-50% -50%);
+  z-index: -1;
+}
+
+@keyframes girar{
+  0%{transform: rotateZ(0deg);}
+  100%{transform: rotateZ(360deg);}
 }
 </style>

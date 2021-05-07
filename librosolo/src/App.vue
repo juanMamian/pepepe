@@ -19,13 +19,11 @@ export default {
   },
   mounted() {
     let uri = window.location.search.substring(1);
-    let params = new URLSearchParams(uri);
-
-    this.idLibro = params.get("id");
+    let params = new URLSearchParams(uri);    
     
     //Seleccionar libro by URL
 
-    const idLibroURL=params.get("l");
+    const idLibroURL=params.get("id");
     if(idLibroURL){
       this.idLibroSeleccionado=idLibroURL;    
     }
@@ -35,6 +33,5 @@ export default {
 
 <style>
 #app {
-  margin-top: 60px;
 }
 </style>

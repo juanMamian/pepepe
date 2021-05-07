@@ -53,13 +53,14 @@ export const typeDefs = gql`
         idsEditores: [String],
         titulo:String,
         idForo:String,
+        publico:Boolean,
     }
 
     extend type Query{
         libro(idLibro:ID!):Libro,
         misLibros:[Libro],
         todosLibros:[Libro],
-
+        librosPublicos:[Libro],
     }
 
     extend type Mutation{
@@ -67,6 +68,7 @@ export const typeDefs = gql`
         eliminarPaginaDeLibro(idLibro:ID!, idPagina:ID!):Boolean,
         editarTituloLibro(idLibro:ID!, nuevoTitulo:String):Libro,
         eliminarLibro(idLibro:ID!):Boolean,
+        setLibroPublico(idLibro:ID!, nuevoEstado:Boolean!):Boolean,
 
         crearNuevaPaginaLibro(idLibro:ID!):PaginaCuento,
         setNuevoColorPaginaLibro(idLibro:ID!, idPagina:ID!, nuevoColor:String!):PaginaCuento,
@@ -178,6 +180,25 @@ export const resolvers = {
             }
 
             console.log(`Enviando ${losLibros.length} libros`);
+            return losLibros;
+        },
+        librosPublicos: async function (_: any, __: any, context: contextoQuery) {
+            console.log(`Peticion de libros publicos`);
+            const credencialesUsuario = context.usuario;
+            
+            if (!credencialesUsuario.id || credencialesUsuario.id.length<1) {
+                console.log(`Error de autenticacion pidiendo libros publicos`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var losLibros: any = await Libro.find({publico: true}).exec();
+            } catch (error) {
+                console.log(`Error buscando misLibros. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Enviando ${losLibros.length} libros publicos`);
             return losLibros;
         }
     },
@@ -328,6 +349,36 @@ export const resolvers = {
                 console.log(`Error eliminando el libro`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+            return true;
+        },
+        async setLibroPublico(_:any, {idLibro, nuevoEstado}:any, contexto: contextoQuery){
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elLibro: any = await Libro.findById(idLibro).exec();
+                if (!elLibro) {
+                    throw "libro no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el libro. E: ` + error);
+            }
+
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];
+            if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion eliminando libro`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            elLibro.publico=nuevoEstado;
+
+            try {
+                await elLibro.save();
+            } catch (error) {
+                console.log(`Error guardando el libro con nuevo estado publico ${nuevoEstado}. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
             return true;
         },
 

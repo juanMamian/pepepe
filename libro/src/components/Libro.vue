@@ -46,7 +46,7 @@
         :segundoPlano="
           idPaginaSeleccionada != null && idPaginaSeleccionada != pagina.id
         "
-        @click.native.stop="idPaginaSeleccionada = pagina.id"
+        @click.native.stop="usuarioEditor?idPaginaSeleccionada = pagina.id:null"
         @meElimine="removePaginaFromCache(pagina.id)"
         @tengoNuevoCuadroTexto="updateCacheConNuevoCuadroTexto($event, pagina.id)"
         @tengoNuevoCuadroImagen="updateCacheConNuevoCuadroImagen($event, pagina.id)"
@@ -218,6 +218,9 @@ export default {
         nombre: this.libro.titulo,
       };
     },
+    usuarioEditor(){
+      return this.libro.idsEditores.includes(this.usuario.id);
+    }
   },
   methods: {
     toggleEditandoTitulo() {
