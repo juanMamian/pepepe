@@ -3,7 +3,7 @@
     <div id="contenedorHojas" v-if="libro.paginas">
       <div
         class="hoja"
-        :class="{ girada: numeroH - 1 < centroHojas }"
+        :class="{ girada: numeroH - 1 < centroHojas, tapada: Math.abs((numeroH-1)-centroHojas)>=1 }"
         v-for="numeroH of Math.ceil(libro.paginas.length / 2)"
         :key="numeroH"
         :style="[
@@ -215,6 +215,9 @@ export default {
   transition: transform 0.5s;
   transform-style: preserve-3d;
 }
+.tapada{
+  pointer-events: none;
+}
 .girada {
   transform: rotateY(-180deg);
 }
@@ -233,6 +236,8 @@ export default {
   top: 0px;
   left: 0px;
   backface-visibility: hidden;
+  transform-style: preserve-3d;
+
 }
 
 </style>

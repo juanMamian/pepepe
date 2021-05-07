@@ -13,6 +13,7 @@
       alt="ilustracion"
       draggable="false"
       class="imagenContenido"
+      
     />
     <img src="@/assets/iconos/loading.png" alt="Cargando" class="simboloLoading">
 
@@ -93,6 +94,7 @@ export default {
   height: 100%;
   user-select: none;
   z-index: 0;
+  pointer-events: none;
 }
 
 .conAudio {
