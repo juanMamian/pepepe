@@ -2,98 +2,110 @@
   <div id="app">
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
-      <router-link to="/actividadesVirtuales2021" v-if="usuarioLogeado == true">
-        <div
-          class="botonNavBarra botonNav hoverNegro"
-          id="navActividadesVirtuales"
+      <img
+        id="botonDesplegarNav"
+        src="@/assets/iconos/menuMobile.png"
+        alt="Menu"
+        @click="mostrandoNav = !mostrandoNav"
+      />
+      <div id="botonesNavEnlaces" :class="{enlacesOcultos:!mostrandoNav}" @click="mostrandoNav=false">
+        <router-link
+          to="/actividadesVirtuales2021"
+          v-if="usuarioLogeado == true"
         >
-          Actividades virtuales
-        </div>
-      </router-link>
-
-      <router-link to="/foros" v-if="usuarioLogeado == true">
-        <div
-          class="botonNavBarra botonNav hoverNegro"
-          id="navActividadesVirtuales"
-        >
-          Foros
-        </div>
-      </router-link>
-
-      <div id="bloqueProyectos" class="bloqueBotones">
-        <router-link to="/proyectos" v-if="usuarioLogeado == true">
-          <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
-            Proyectos
+          <div
+            class="botonNavBarra botonNav hoverNegro"
+            id="navActividadesVirtuales"
+          >
+            Actividades virtuales
           </div>
         </router-link>
-        <div id="enlacesHijosProyectos" class="contenedorHijos">
-          <router-link to="/trabajos" v-if="usuarioLogeado == true">
-            <div
-              class="botonNavHijo botonNav hoverNegro botonNavHijo"
-              id="navTrabajos"
-            >
-              Trabajos
-            </div>
-          </router-link>
-          <router-link to="/materiales" v-if="usuarioLogeado == true">
-            <div
-              class="botonNavHijo botonNav hoverNegro botonNavHijo"
-              id="navMateriales"
-            >
-              Materiales
-            </div>
-          </router-link>
-        </div>
-      </div>
 
-      <div id="bloqueHerramientas" class="bloqueBotones">
-        <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
-          Herramientas
-        </div>
-        <div id="enlacesHijosHerramientas" class="contenedorHijos">
-          <router-link to="/atlas">
-            <div
-              class="botonNavBarra botonNav hoverNegro botonNavHijo"
-              id="navAtlas"
-            >
-              Atlas de conocimientos
-            </div>
-          </router-link>
-          <a
-            target="_blank"
-            :href="tallerCuentosUrl + '?t=' + $store.state.token"
-            v-show="usuarioLogeado"
+        <router-link to="/foros" v-if="usuarioLogeado == true">
+          <div
+            class="botonNavBarra botonNav hoverNegro"
+            id="navActividadesVirtuales"
           >
-            <div
-              class="botonNavBarra botonNav hoverNegro botonNavHijo"
-              id="navAtlas"
-            >
-              Taller de creación de cuentos
-            </div>
-          </a>
-        </div>
-      </div>
+            Foros
+          </div>
+        </router-link>
 
-      <router-link
-        to="/personas"
-        v-if="usuarioAdministrador || usuarioSuperadministrador"
-      >
-        <div
-          class="botonNavBarra botonNav hoverNegro"
-          id="navActividadesVirtuales"
-        >
-          Personas
+        <div id="bloqueProyectos" class="bloqueBotones">
+          <router-link to="/proyectos" v-if="usuarioLogeado == true">
+            <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
+              Proyectos
+            </div>
+          </router-link>
+          <div id="enlacesHijosProyectos" class="contenedorHijos">
+            <router-link to="/trabajos" v-if="usuarioLogeado == true">
+              <div
+                class="botonNavHijo botonNav hoverNegro botonNavHijo"
+                id="navTrabajos"
+              >
+                Trabajos
+              </div>
+            </router-link>
+            <router-link to="/materiales" v-if="usuarioLogeado == true">
+              <div
+                class="botonNavHijo botonNav hoverNegro botonNavHijo"
+                id="navMateriales"
+              >
+                Materiales
+              </div>
+            </router-link>
+          </div>
         </div>
-      </router-link>
-      <router-link
-        to="/registro"
-        id="navRegistro"
-        v-if="usuarioSuperadministrador"
-      >
-        <div class="botonNavBarra botonNav hoverNegro">
-          Registrar usuario
-        </div></router-link
-      >
+
+        <div id="bloqueHerramientas" class="bloqueBotones">
+          <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
+            Herramientas
+          </div>
+          <div id="enlacesHijosHerramientas" class="contenedorHijos">
+            <router-link to="/atlas">
+              <div
+                class="botonNavBarra botonNav hoverNegro botonNavHijo"
+                id="navAtlas"
+              >
+                Atlas de conocimientos
+              </div>
+            </router-link>
+            <a
+              target="_blank"
+              :href="tallerCuentosUrl + '?t=' + $store.state.token"
+              v-show="usuarioLogeado"
+            >
+              <div
+                class="botonNavBarra botonNav hoverNegro botonNavHijo"
+                id="navAtlas"
+              >
+                Taller de creación de cuentos
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <router-link
+          to="/personas"
+          v-if="usuarioAdministrador || usuarioSuperadministrador"
+        >
+          <div
+            class="botonNavBarra botonNav hoverNegro"
+            id="navActividadesVirtuales"
+          >
+            Personas
+          </div>
+        </router-link>
+
+        <router-link
+          to="/registro"
+          id="navRegistro"
+          v-if="usuarioSuperadministrador"
+        >
+          <div class="botonNavBarra botonNav hoverNegro">
+            Registrar usuario
+          </div></router-link
+        >
+      </div>
       <div id="botonesNavDerecha">
         <div
           id="bloqueNotificaciones"
@@ -278,6 +290,9 @@ export default {
         notificaciones: [],
         notificacionesActividadForos: [],
       },
+
+      mostrandoNav: false,
+      navSeleccionado: "home",
     };
   },
   computed: {
@@ -341,14 +356,14 @@ export default {
 </script>
 
 <style>
-html{
+html {
   height: 100vh;
 }
 body {
   margin: 0px;
   width: 100%;
   height: 100vh;
-  
+
   background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
     no-repeat;
   font-family: "Varela Round", sans-serif;
@@ -433,17 +448,32 @@ input {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-rows: 45px 1fr 5px;
+  grid-template-rows: 65px 1fr 5px;
+
   grid-template-columns: 1fr;
   padding-left: 5px;
   padding-right: 5px;
   box-sizing: border-box;
   z-index: 0;
 }
-@media only screen and (max-width: 1150px) {
-  #app {
-    grid-template-rows: 65px 1fr 5px;
-  }
+
+#botonDesplegarNav {
+  display: block;
+  width: 35px;
+  height: 35px;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: rgb(228 129 36);
+  align-self: center;
+}
+#botonesNavEnlaces{
+  position: relative;
+  top: 100%;
+  left:-55px;
+  background-color: rgb(239, 174, 74);
+}
+.enlacesOcultos{
+  display: none;
 }
 .router-link-active {
   background-color: rgba(0, 0, 0, 0.247);
@@ -482,16 +512,18 @@ input {
   padding-right: 15px;
   cursor: pointer;
   user-select: none;
-  font-size: 18px;
+  font-size: 15px;
   font-family: "Poppins", sans-serif;
   color: white;
   box-sizing: border-box;
+  background-color: rgb(239, 174, 74);
 }
 .botonNavBarra {
-  height: 100%;
+  padding: 10px 10px;
 }
 .botonNavHijo {
   padding-bottom: 30px;
+  padding-left: 25px;
 }
 #botonesNavDerecha {
   margin-left: auto;
@@ -535,9 +567,7 @@ input {
   padding-right: 35px;
   min-width: 150px;
 }
-.hoverNegro:hover {
-  background-color: rgba(0, 0, 0, 0.315);
-}
+
 .disabled {
   opacity: 0.8;
   pointer-events: none;
@@ -546,18 +576,56 @@ input {
   position: relative;
 }
 
-.bloqueBotones:hover > .contenedorHijos {
+
+.contenedorHijos {  
   display: block;
-}
-.contenedorHijos {
-  background-color: #f0a646;
-  position: absolute;
-  top: 100%;
-  left: 0%;
-  display: none;
-  width: 150px;
+  
 }
 .botonNavHijo {
   padding-bottom: 15px;
+}
+
+@media only screen and (min-width: 768px) {
+  #app {
+    grid-template-rows: 45px 1fr 5px;
+  }
+  #botonDesplegarNav {
+    display: none;
+  }
+  .enlacesOcultos{
+    display: block;
+  }
+  #botonesNavEnlaces{
+    display: flex;
+    background-color:transparent;
+    top: 0px;
+    left: 0px;
+  }
+  .botonNav{
+    background-color:transparent;
+    font-size: 18px;
+    height: 100%;
+  }
+  .botonNavBarra {
+    height: 100%;
+    padding: 13px 15px;
+  }
+  .botonNavHijo{
+    padding-left:15px;
+  }
+  .hoverNegro:hover {
+  background-color: rgba(0, 0, 0, 0.315);
+  }
+  .contenedorHijos{
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0%;
+    width: 150px;
+    background-color:#f0a446 ;
+  }
+  .bloqueBotones:hover > .contenedorHijos {
+  display: block;
+  }
 }
 </style>

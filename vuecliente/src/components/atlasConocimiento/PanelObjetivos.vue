@@ -62,6 +62,6 @@ export default {
 }
 .iconoNodoConocimiento{
     display: inline-block;
-    margin: 0px 30px;
+    margin: 0px 20px;
 }
 </style>

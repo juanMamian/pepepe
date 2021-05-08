@@ -16,12 +16,13 @@ export default {
 <style>
 
 .anuncio{
-    width:500px;
+    width:min(500px, 90%);
     min-height:100px;
     margin:100px auto;
     border-radius: 15px;
-    border: 2px solid rgb(144, 144, 197);
-    padding:10px
+    border: 2px solid #a86a18;
+    padding:10px;
+    background-color: #f0a646;
 }
 
 </style>

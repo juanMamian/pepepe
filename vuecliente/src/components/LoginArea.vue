@@ -155,20 +155,24 @@ export default {
   margin-top: 15px;
   display: block;
   padding: 5px;
+  background-color: #fbe2cb;
 }
 #ventanaCentral {
   margin: 5% auto;
   padding: 20px;
-  width: 50%;
-  min-width: 550px;
+  width: min(550px, 90%);  
   box-shadow: 3px 3px grey, 3px 3px 3px 3px grey;
-  background-color: rgb(248, 248, 248);
+  background-color: rgb(232 191 155);
 }
 .botonEnviar {
   display: block;
   margin-left: auto;
   margin-right: auto;
   font-size: 20px;
+  padding: 10px 5px;
+  background-color: #f2933e;
+  border-radius: 5px;
+  cursor: pointer;
 }
 .loginFail {
   color: red;
