@@ -183,7 +183,7 @@ exports.resolvers = {
                     console.log(`Error buscando el foro`);
                     new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                let todasConversaciones = elForo.conversaciones.sort((a, b) => b.infoUltimaRespuesta.fecha - a.infoUltimaRespuesta.fecha);
+                let todasConversaciones = elForo.conversaciones.sort((a, b) => a.infoUltimaRespuesta.fecha - b.infoUltimaRespuesta.fecha);
                 let numConversaciones = todasConversaciones.length;
                 console.log(`Hay un total de ${numConversaciones}`);
                 var numPaginas = 0;

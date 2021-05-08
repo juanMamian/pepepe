@@ -169,7 +169,7 @@ export const resolvers = {
                 new ApolloError("Error conectando con la base de datos");
             }
 
-            let todasConversaciones = elForo.conversaciones.sort((a, b)=>b.infoUltimaRespuesta.fecha-a.infoUltimaRespuesta.fecha);
+            let todasConversaciones = elForo.conversaciones.sort((a, b)=>a.infoUltimaRespuesta.fecha-b.infoUltimaRespuesta.fecha);
             let numConversaciones = todasConversaciones.length;
             console.log(`Hay un total de ${numConversaciones}`);
 

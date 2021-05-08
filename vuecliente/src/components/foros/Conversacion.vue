@@ -236,40 +236,38 @@ export default {
   cursor: pointer;
 }
 .tituloConversacion {
-  padding: 15px 10px;
+  padding: 15px 0px;
   margin: 5px;
   font-weight: bold;
   display: grid;
   align-items: center;
-  grid-template-columns: 100px 1fr 200px;
+  grid-template-columns: 35px 1fr 50px;
   color: #9c1a1a;
 }
 .imagenConversacion {
-  width: 50px;
-  height: 50px;
+  width: 30px;
+  height: 30px;
   margin-right: 10px;
 }
 .datosConversacion {
-  padding: 10px 10px;
+  padding: 10px 0px;
 }
 .dato {
-  margin: 0px 4px;
+  margin: 0px 3px;
   cursor: pointer;
+  border-radius: 10px;
+  padding: 3px;
+  text-align: center;
+  font-size: 12px;
 }
 
 .datoRespuestasNoLeidas {
-  border-radius: 10px;
   border: 1px solid chocolate;
-  padding: 6px;
-  text-align: center;
   background-color: rgb(243, 206, 180);
 }
 
 .datoCantidadRespuestas {
-  border-radius: 10px;
   border: 1px solid rgb(75, 73, 73);
-  padding: 6px;
-  text-align: center;
 }
 .zonaRespuestas {
   padding-left: 0px;
@@ -309,6 +307,31 @@ export default {
 
   pointer-events: none;
   font-weight: bold;
+}
 
+@media only screen and (min-width: 768px) {
+.tituloConversacion {
+  padding: 15px 10px;
+  margin: 5px;
+  font-weight: bold;
+  display: grid;
+  align-items: center;
+  grid-template-columns: 65px 1fr 90px;
+  color: #9c1a1a;
+}
+.imagenConversacion {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+.dato {
+  margin: 0px 4px;
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 6px;
+  text-align: center;
+  font-size: 14px;
+
+}
 }
 </style>
