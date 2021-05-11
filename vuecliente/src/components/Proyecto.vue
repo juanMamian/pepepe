@@ -680,6 +680,7 @@ export default {
                 id
                 nombre
                 descripcion
+                estado
                 vinculos {
                   idRef
                   tipoRef

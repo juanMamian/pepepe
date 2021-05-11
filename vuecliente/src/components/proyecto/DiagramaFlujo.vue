@@ -12,7 +12,7 @@
     @mousemove="panVista"
     
   >
-    <canvas-diagrama-flujo :todosNodos="infoNodos" :style="[posicionCanvasFlechas]" :factorZoom="Number((zoom/100).toFixed(2))" />
+    <canvas-diagrama-flujo :todosNodos="infoNodos" :style="[posicionCanvasFlechas]" :factorZoom="factorZoom" />
     <nodo-trabajo
       v-for="idTrabajo of idsTrabajos"
       :key="idTrabajo"
@@ -24,7 +24,7 @@
       :menuCx="idNodoClickDerecho === idTrabajo"
       :idNodoSeleccionado="idNodoSeleccionado"
       :centroVista="centroVista"
-      :factorZoom="Number((zoom/100).toFixed(2))"
+      :factorZoom="Number(factorZoom.toFixed(2))"
       @click.native="
         idNodoSeleccionado = idTrabajo;
         tipoNodoSeleccionado = 'trabajo';
@@ -47,7 +47,7 @@
       :posDummy="posDummy"
       :menuCx="idNodoClickDerecho === objetivo.id"
       :centroVista="centroVista"
-      :factorZoom="Number((zoom/100).toFixed(2))"
+      :factorZoom="factorZoom"
       @click.native="
         idNodoSeleccionado = objetivo.id;
         tipoNodoSeleccionado = 'objetivo';
@@ -142,8 +142,8 @@ export default {
     },
     posicionCanvasFlechas(){
       return {
-        top: Math.round(-this.centroVista.y*(this.zoom/100))+"px",
-        left: Math.round(-this.centroVista.x*(this.zoom/100))+"px"
+        top: Math.round(-this.centroVista.y*this.factorZoom)+"px",
+        left: Math.round(-this.centroVista.x*this.factorZoom)+"px"
       }
     },
     centroVista(){
@@ -151,6 +151,9 @@ export default {
         x: Math.round(this.centroVistaDecimal.x),
         y: Math.round(this.centroVistaDecimal.y),
       }
+    },
+    factorZoom(){
+      return Number((this.zoom/100).toFixed(2));
     }
   },
   methods: {
@@ -177,12 +180,13 @@ export default {
       };
 
       var contenedor = this.$el;
-      let posContenedor = contenedor.getBoundingClientRect();
+      let posContenedor = contenedor.getBoundingClientRect();      
+
       posicion.x = Math.round(
-        e.clientX + this.centroVista.x - posContenedor.left 
+        ((e.clientX - posContenedor.left)/this.factorZoom)+this.centroVista.x                
       );
       posicion.y = Math.round(
-        e.clientY + this.centroVista.y - posContenedor.top 
+        ((e.clientY - posContenedor.top)/this.factorZoom)+this.centroVista.y
       );
 
       this.$emit("crearTrabajoEnPosicion", posicion);
@@ -340,7 +344,7 @@ export default {
       if(!this.panningVista){
         return
       }      
-      this.desplazarVista((e.movementX/(this.zoom/100)), (e.movementY/(this.zoom/100)));
+      this.desplazarVista((e.movementX/this.factorZoom), (e.movementY/this.factorZoom));
       e.preventDefault();
       this.vistaPanned = true;
     },
@@ -368,8 +372,8 @@ export default {
       }
 
       const posZoom={
-        x: Math.round((e.clientX-posContenedor.left)/(this.zoom/100))+this.centroVista.x,
-        y: Math.round((e.clientY-posContenedor.top)/(this.zoom/100))+this.centroVista.y
+        x: Math.round((e.clientX-posContenedor.left)/this.factorZoom)+this.centroVista.x,
+        y: Math.round((e.clientY-posContenedor.top)/this.factorZoom)+this.centroVista.y
       }
 
 
@@ -387,8 +391,8 @@ export default {
 
       //Pan vista de acuerdo con la posición del mouse respecto del atlas                       
 
-      this.$set(this.centroVistaDecimal, "x", posZoom.x-((posContenedor.width/(this.zoom/100))*proporciones.x) );
-      this.$set(this.centroVistaDecimal, "y", posZoom.y-((posContenedor.height/(this.zoom/100))*proporciones.y) );
+      this.$set(this.centroVistaDecimal, "x", posZoom.x-((posContenedor.width/this.factorZoom)*proporciones.x) );
+      this.$set(this.centroVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );
 
     }
   },
