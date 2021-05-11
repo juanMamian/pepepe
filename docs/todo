@@ -20,7 +20,7 @@ Reestructuracion no-urgente
 *Revisar el resolveType de nodoProyecto en los resolvers de proyectos.
 *Reparar la publicación de una nueva respuesta en actividades estudiantiles: Puede hacerse sin necesidad de la variable "Nuebo desarrollo", seleccionando el desarrollo en el que se publicará usando la información "infoEstudiante"
 *Revisar minimos y maximos en campos string de la base de datos
-
+*Debouncear el guardado de posicion de trabajos y objetivos en el diagrama de flujo de los proyectos
 
 Funcionalidad urgente
 

@@ -2,25 +2,27 @@
   <div
     class="nodoObjetivo"
     :class="{ seleccionado }"
-    :style="[estiloPosicion, estiloZeta]"
+    :style="[estiloPosicion, estiloZeta, estiloSize]"
     @mousedown.left="agarrado = true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
   >
     <img
-      src="@/assets/iconos/ir.png"
+      src="@/assets/iconos/maximizar.png"
       alt="abrir"
       class="bAbrirNodo"
-      title="Abrir este elemento"
+      title="Ampliar información"
       v-show="seleccionado"
       @click.left.stop="$emit('meAbrieron')"
     />
     <div class="zonaNombre">
-      <div id="nombre">
+      <div id="nombre" draggable="false">
         <img
           src="@/assets/iconos/estrella.png"
           alt=""
           class="iconoObjetivo"
+          draggable="false"
+          :style="{width: Math.round(17*factorZoom)+'px'}"
           :class="{
             iconoCompletado: esteObjetivo.estado === 'cumplido',
           }"
@@ -66,17 +68,21 @@ export default {
     idNodoSeleccionado: String,
     posDummy: Object,
     menuCx: Boolean,
+    centroVista:Object,
+    factorZoom:Number,
   },
   data() {
     return {
       agarrado: false,
       arrastrandoNodo: 0,
-      umbralArrastreNodo: 25,
+      umbralArrastreNodo: 10,
       posicion: {
         x: 0,
         y: 0,
       },
       montado: false,
+      widthBase:150,
+      heightBase:100
     };
   },
   methods: {
@@ -94,67 +100,24 @@ export default {
         return;
       }
       var contenedor = this.$parent.$el;
-      let posContenedor = this.$parent.$el.getBoundingClientRect();
+      let posContenedor = contenedor.getBoundingClientRect();
       let nuevoTop = Math.round(
-        e.clientY - posContenedor.top + contenedor.scrollTop
+        ((e.clientY - posContenedor.top)/this.factorZoom)+this.centroVista.y
       );
       let nuevoLeft = Math.round(
-        e.clientX - posContenedor.left + contenedor.scrollLeft
+        ((e.clientX - posContenedor.left)/this.factorZoom)+this.centroVista.x
       );
 
       const stepPosx = 25;
-      const stepPosy = 15;
+      const stepPosy = 15;      
 
-      const factorPosx = Math.floor(nuevoLeft / stepPosx);
-      const factorPosy = Math.floor(nuevoTop / stepPosy);
-
-      nuevoLeft = factorPosx * stepPosx;
-      nuevoTop = factorPosy * stepPosy;
+      nuevoLeft = nuevoLeft-(nuevoLeft%stepPosx);
+      nuevoTop = nuevoTop - (nuevoTop%stepPosy);
 
       this.$set(this.posicion, "x", nuevoLeft);
       this.$set(this.posicion, "y", nuevoTop);
 
-      if (this.posDummy.y < nuevoTop + 100) {
-        console.log(`pushing dummy por abajo`);
-        this.$emit("empujandoDummyPorAbajo");
-      }
-      if (this.posDummy.x < nuevoLeft + 100) {
-        console.log(`pushing dummy por la derecha`);
-        this.$emit("empujandoDummyPorDerecha");
-      }
-
-      const umbralMovimientoBorde = 100;
-
-      var distanciasBordes = {
-        der: posContenedor.left + contenedor.offsetWidth - e.clientX,
-        izq: e.clientX - posContenedor.left,
-        top: posContenedor.top + contenedor.offsetHeight - e.clientY,
-        bot: e.clientY - posContenedor.top,
-      };
-
-      var saliendose = {
-        x: 0,
-        y: 0,
-      };
-
-      if (distanciasBordes.der < umbralMovimientoBorde) {
-        console.log(`der`);
-        saliendose.x = umbralMovimientoBorde - distanciasBordes.der;
-      }
-      if (distanciasBordes.izq < umbralMovimientoBorde) {
-        console.log(`izq`);
-        saliendose.x = distanciasBordes.izq - umbralMovimientoBorde;
-      }
-      if (distanciasBordes.top < umbralMovimientoBorde) {
-        console.log(`top`);
-        saliendose.y = umbralMovimientoBorde - distanciasBordes.top;
-      }
-      if (distanciasBordes.bot < umbralMovimientoBorde) {
-        console.log(`bot`);
-        saliendose.y = distanciasBordes.bot - umbralMovimientoBorde;
-      }
-
-      this.$emit("saliendose", saliendose);
+      
     },
     guardarPosicion() {
       if (this.arrastrandoNodo < this.umbralArrastreNodo) {
@@ -217,8 +180,8 @@ export default {
     estiloPosicion() {
       if (this.montado) {
         return {
-          top: this.posicion.y - this.$el.offsetHeight / 2 + "px",
-          left: this.posicion.x - this.$el.offsetWidth / 2 + "px",
+          top: ((this.posicion.y -this.centroVista.y)*this.factorZoom) - this.$el.offsetHeight / 2 + "px",
+          left: ((this.posicion.x - this.centroVista.x)*this.factorZoom) - this.$el.offsetWidth / 2 + "px",
         };
       }
       return {
@@ -238,6 +201,14 @@ export default {
         zIndex: valorZ,
       };
     },
+    estiloSize(){
+      return {
+        width: Math.round(this.widthBase*(this.factorZoom))+"px",
+        height: Math.round(this.heightBase*(this.factorZoom))+"px",
+        fontSize:Math.round(14*this.factorZoom)+"px",
+        padding:Math.round(5*this.factorZoom)+'px'
+      }
+    }
   },
   watch: {
     esteObjetivo() {
@@ -272,11 +243,10 @@ export default {
 
 <style scoped>
 .nodoObjetivo {
-  width: 200px;
+  
   position: absolute;
   border-radius: 5px;
-  border: 1px solid rgb(82, 2, 26);
-  padding: 10px 10px;
+  border: 1px solid rgb(82, 2, 26);  
   background-color: rgb(238, 117, 117);
   cursor: pointer;
 }
@@ -284,13 +254,11 @@ export default {
   border-width: 2px;
   border-color: purple;
 }
-#nombre {
-  font-size: 14px;
+#nombre {  
   user-select: none;
 }
 .iconoObjetivo {
-  width: 17px;
-  height: 17px;
+  
   border-radius: 50%;
   padding: 3px;
 }

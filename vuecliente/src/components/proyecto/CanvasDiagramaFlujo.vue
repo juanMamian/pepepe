@@ -19,6 +19,7 @@ export default {
   name: "CanvasDiagramaFlujo",
   props: {
     todosNodos: Array,
+    factorZoom:Number,
     nodoSeleccionado: {
       type: Object,
       default() {
@@ -123,43 +124,58 @@ export default {
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo) {
       let inicio = {
-        x: nodoFrom.posicion.x,
-        y: nodoFrom.posicion.y,
+        x: nodoFrom.posicion.x*this.factorZoom,
+        y: nodoFrom.posicion.y*this.factorZoom,
       };
       let final = {
-        x: nodoTo.posicion.x,
-        y: nodoTo.posicion.y,
+        x: nodoTo.posicion.x*this.factorZoom,
+        y: nodoTo.posicion.y*this.factorZoom,
       };
+
+      const distanciaVertical=final.y-inicio.y;
+      const largoCodo=Math.round(distanciaVertical*0.5);
+
+      const primeraEsquina={
+        x:inicio.x,
+        y:inicio.y+largoCodo
+      }
+
+      const segundaEsquina={
+        x:final.x,
+        y:final.y-largoCodo
+      }
 
       this.lapiz.moveTo(inicio.x, inicio.y);
+      this.lapiz.lineTo(primeraEsquina.x, primeraEsquina.y);
+      this.lapiz.lineTo(segundaEsquina.x, segundaEsquina.y);
       this.lapiz.lineTo(final.x, final.y);
       //ahora la flechita
-      let centro = {
-        x: (final.x + inicio.x) / 2,
-        y: (final.y + inicio.y) / 2,
-      };
-      let longitudAla = 7;
-      let anguloVinculo = Math.atan(
-        (final.y - inicio.y) / (final.x - inicio.x)
-      );
-      if (final.y - inicio.y < 0 && final.x - inicio.x < 0)
-        anguloVinculo += Math.PI;
-      if (final.y - inicio.y > 0 && final.x - inicio.x < 0)
-        anguloVinculo += Math.PI;
-      //anguloVinculo=anguloVinculo*180/Math.PI;
+      // let centro = {
+      //   x: (final.x + inicio.x) / 2,
+      //   y: (final.y + inicio.y) / 2,
+      // };
+      // let longitudAla = 7;
+      // let anguloVinculo = Math.atan(
+      //   (final.y - inicio.y) / (final.x - inicio.x)
+      // );
+      // if (final.y - inicio.y < 0 && final.x - inicio.x < 0)
+      //   anguloVinculo += Math.PI;
+      // if (final.y - inicio.y > 0 && final.x - inicio.x < 0)
+      //   anguloVinculo += Math.PI;
+      // //anguloVinculo=anguloVinculo*180/Math.PI;
 
-      let puntaAlaIzquierda = {
-        x: centro.x + longitudAla * Math.cos(anguloVinculo - (3 * Math.PI) / 4),
-        y: centro.y + longitudAla * Math.sin(anguloVinculo - (3 * Math.PI) / 4),
-      };
-      let puntaAlaDerecha = {
-        x: centro.x + longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4),
-        y: centro.y + longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4),
-      };
-      this.lapiz.moveTo(centro.x, centro.y);
-      this.lapiz.lineTo(puntaAlaIzquierda.x, puntaAlaIzquierda.y);
-      this.lapiz.moveTo(centro.x, centro.y);
-      this.lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
+      // let puntaAlaIzquierda = {
+      //   x: centro.x + longitudAla * Math.cos(anguloVinculo - (3 * Math.PI) / 4),
+      //   y: centro.y + longitudAla * Math.sin(anguloVinculo - (3 * Math.PI) / 4),
+      // };
+      // let puntaAlaDerecha = {
+      //   x: centro.x + longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4),
+      //   y: centro.y + longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4),
+      // };
+      // this.lapiz.moveTo(centro.x, centro.y);
+      // this.lapiz.lineTo(puntaAlaIzquierda.x, puntaAlaIzquierda.y);
+      // this.lapiz.moveTo(centro.x, centro.y);
+      // this.lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
     },
   },
   watch: {
@@ -171,12 +187,18 @@ export default {
     nodoSeleccionado: function () {
       this.crearImagenVinculosSeleccionado();
     },
+    factorZoom(){
+      this.crearImagenTodosVinculos();
+      this.crearImagenVinculosSeleccionado();
+    }
   },
   mounted() {
     this.montado = true;
     this.crearImagenTodosVinculos();
-    this.crearImagenVinculosSeleccionado();
+    this.crearImagenVinculosSeleccionado();    
   },
+  
+
 };
 </script>
 

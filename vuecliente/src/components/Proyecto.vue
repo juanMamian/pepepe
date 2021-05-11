@@ -43,144 +43,184 @@
         />
       </div>
       <div id="zonaDescripcion" class="zonaPrimerNivel">
-        <div class="nombreZona">Descripcion</div>
-        <div class="controlesZona" v-show="usuarioResponsableProyecto">
-          <img
-            src="@/assets/iconos/editar.png"
-            alt="Editar"
-            id="bEditarrDescripcion"
-            class="bEditar"
-            title="Editar descripcion del proyecto"
-            @click="toggleEditandoDescripcion"
-          />
-          <img
-            src="@/assets/iconos/guardar.png"
-            alt="Guardar"
-            title="guardar"
-            class="bGuardar"
-            id="bGuardarNuevoDescripcion"
-            v-show="
-              editandoDescripcion == true && nuevoDescripcionIlegal == false
-            "
-            @click="guardarNuevoDescripcion"
-          />
+        <div
+          class="nombreZona"
+          @click="mostrandoDescripcion = !mostrandoDescripcion"
+        >
+          <div
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoDescripcion
+                ? 'rotateZ(90deg)'
+                : 'rotateZ(0deg)',
+            }"
+          ></div>
+          Descripcion
         </div>
+        <div v-show="mostrandoDescripcion">
+          <div class="controlesZona" v-if="usuarioResponsableProyecto">
+            <img
+              src="@/assets/iconos/editar.png"
+              alt="Editar"
+              id="bEditarrDescripcion"
+              class="bEditar"
+              title="Editar descripcion del proyecto"
+              @click="toggleEditandoDescripcion"
+            />
+            <img
+              src="@/assets/iconos/guardar.png"
+              alt="Guardar"
+              title="guardar"
+              class="bGuardar"
+              id="bGuardarNuevoDescripcion"
+              v-show="
+                editandoDescripcion == true && nuevoDescripcionIlegal == false
+              "
+              @click="guardarNuevoDescripcion"
+            />
+          </div>
+          <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
+            {{ esteProyecto.descripcion }}
+          </div>
 
-        <!-- <textarea
-        id="descripcion"
-        readonly
-        :value="esteProyecto.descripcion"
-        v-show="!editandoDescripcion"
-      /> -->
-        <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
-          {{ esteProyecto.descripcion }}
+          <textarea
+            id="inputNuevoDescripcion"
+            ref="inputNuevoDescripcion"
+            :class="{ letrasRojas: nuevoDescripcionIlegal }"
+            v-model="nuevoDescripcion"
+            v-show="editandoDescripcion"
+          />
+          <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
         </div>
-
-        <textarea
-          id="inputNuevoDescripcion"
-          ref="inputNuevoDescripcion"
-          :class="{ letrasRojas: nuevoDescripcionIlegal }"
-          v-model="nuevoDescripcion"
-          v-show="editandoDescripcion"
-        />
-        <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
       </div>
+
       <div id="zonaResponsables" class="zonaPrimerNivel">
-        <div class="nombreZona">Responsables</div>
-        <div id="controlesResponsables" class="controlesZona">
-          <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
+        <div class="nombreZona" @click="mostrandoResponsables=!mostrandoResponsables">
           <div
-            class="controlesResponsables hoverGris botonesControles"
-            :class="{ deshabilitado: enviandoQueryResponsables }"
-            v-if="
-              usuarioLogeado == true && esteProyecto.responsables.length < 1
-            "
-            id="asumirResponsable"
-            @click="asumirComoResponsable"
-          >
-            Asumir
-          </div>
-          <div
-            class="controlesResponsables hoverGris botonesControles"
-            :class="{ deshabilitado: enviandoQueryResponsables }"
-            v-if="
-              usuarioLogeado &&
-              !usuarioResponsableProyecto &&
-              !usuarioPosibleResponsableProyecto &&
-              esteProyecto.responsables.length > 0
-            "
-            id="botonAddResponsable"
-            @click="entrarListaPosiblesResponsables"
-          >
-            Quiero hacerme responsable
-          </div>
-          <div
-            class="controlesResponsables hoverGris botonesControles"
-            :class="{ deshabilitado: enviandoQueryResponsables }"
-            v-if="
-              usuarioLogeado == true &&
-              (usuarioResponsableProyecto == true ||
-                usuarioPosibleResponsableProyecto == true)
-            "
-            @click="abandonarListaResponsables"
-          >
-            Abandonar
-          </div>
-          <div
-            class="controlesResponsables hoverGris botonesControles"
-            :class="{ deshabilitado: enviandoQueryResponsables }"
-            v-if="usuarioLogeado == true && usuarioResponsableProyecto == true"
-            v-show="
-              idResponsableSeleccionado != null &&
-              responsableSeleccionadoEstaAceptado == false
-            "
-            @click="aceptarResponsable(idResponsableSeleccionado)"
-          >
-            Aceptar como responsable
-          </div>
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoResponsables
+                ? 'rotateZ(90deg)'
+                : 'rotateZ(0deg)',
+            }"
+          ></div>
+          Responsables
         </div>
-        <div id="listaResponsables">
-          <icono-persona-autonomo
-            :idPersona="idPersona"
-            :key="idPersona"
-            v-for="idPersona of esteProyecto.responsables"
-            :seleccionado="idResponsableSeleccionado == idPersona"
-            @click.native.stop="
-              idResponsableSeleccionado = idPersona;
-              responsableSeleccionadoEstaAceptado = true;
-            "
-          />
+        <div v-show="mostrandoResponsables">
+          <div id="controlesResponsables" class="controlesZona">
+            <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
+            <div
+              class="controlesResponsables hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryResponsables }"
+              v-if="
+                usuarioLogeado == true && esteProyecto.responsables.length < 1
+              "
+              id="asumirResponsable"
+              @click="asumirComoResponsable"
+            >
+              Asumir
+            </div>
+            <div
+              class="controlesResponsables hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryResponsables }"
+              v-if="
+                usuarioLogeado &&
+                !usuarioResponsableProyecto &&
+                !usuarioPosibleResponsableProyecto &&
+                esteProyecto.responsables.length > 0
+              "
+              id="botonAddResponsable"
+              @click="entrarListaPosiblesResponsables"
+            >
+              Quiero hacerme responsable
+            </div>
+            <div
+              class="controlesResponsables hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryResponsables }"
+              v-if="
+                usuarioLogeado == true &&
+                (usuarioResponsableProyecto == true ||
+                  usuarioPosibleResponsableProyecto == true)
+              "
+              @click="abandonarListaResponsables"
+            >
+              Abandonar
+            </div>
+            <div
+              class="controlesResponsables hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryResponsables }"
+              v-if="
+                usuarioLogeado == true && usuarioResponsableProyecto == true
+              "
+              v-show="
+                idResponsableSeleccionado != null &&
+                responsableSeleccionadoEstaAceptado == false
+              "
+              @click="aceptarResponsable(idResponsableSeleccionado)"
+            >
+              Aceptar como responsable
+            </div>
+          </div>
+          <div id="listaResponsables">
+            <icono-persona-autonomo
+              :idPersona="idPersona"
+              :key="idPersona"
+              v-for="idPersona of esteProyecto.responsables"
+              :seleccionado="idResponsableSeleccionado == idPersona"
+              @click.native.stop="
+                idResponsableSeleccionado = idPersona;
+                responsableSeleccionadoEstaAceptado = true;
+              "
+            />
 
-          <icono-persona-autonomo
-            class="personaPosibleResponsable"
-            :idPersona="idPersona"
-            :key="idPersona"
-            v-for="idPersona of esteProyecto.posiblesResponsables"
-            :seleccionado="idResponsableSeleccionado == idPersona"
-            @click.native.stop="
-              idResponsableSeleccionado = idPersona;
-              responsableSeleccionadoEstaAceptado = false;
-            "
-            @dblclick.native.shift="aceptarResponsable(idPersona)"
-          />
+            <icono-persona-autonomo
+              class="personaPosibleResponsable"
+              :idPersona="idPersona"
+              :key="idPersona"
+              v-for="idPersona of esteProyecto.posiblesResponsables"
+              :seleccionado="idResponsableSeleccionado == idPersona"
+              @click.native.stop="
+                idResponsableSeleccionado = idPersona;
+                responsableSeleccionadoEstaAceptado = false;
+              "
+              @dblclick.native.shift="aceptarResponsable(idPersona)"
+            />
+          </div>
         </div>
       </div>
 
-      <div id="zonaDiagramaFlujo" class="zonaPrimerNivel" ref="zonaDiagramaFlujo">
-        <div class="nombreZona">Diagrama de flujo</div>
-        <div id="controlesObjetivos" class="controlesZona">          
+      <div
+        id="zonaDiagramaFlujo"
+        class="zonaPrimerNivel"
+        ref="zonaDiagramaFlujo"
+      >
+        <div
+          class="nombreZona"
+          @click="mostrandoDiagramaFlujo = !mostrandoDiagramaFlujo"
+        >
+          <div
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoDiagramaFlujo
+                ? 'rotateZ(90deg)'
+                : 'rotateZ(0deg)',
+            }"
+          ></div>
+          Diagrama de flujo
         </div>
+        <div id="controlesObjetivos" class="controlesZona"></div>
         <diagrama-flujo
           :idProyecto="esteProyecto.id"
           :objetivos="esteProyecto.objetivos"
           :idsTrabajos="esteProyecto.idsTrabajos"
           :usuarioResponsableProyecto="usuarioResponsableProyecto"
-          :activo="idNodoAbierto==null"
+          :activo="idNodoAbierto == null"
           :deshabilitar="realizandoOperacionDiagrama"
+          v-if="mostrandoDiagramaFlujo"
           @crearTrabajoEnPosicion="crearNuevoTrabajo"
           @crearObjetivoEnPosicion="crearNuevoObjetivo"
           @nodoAbierto="abrirNodo"
-          @click.native="idNodoAbierto=null"
+          @click.native="idNodoAbierto = null"
         />
         <iconoObjetivo
           class="ventanaNodo"
@@ -204,62 +244,19 @@
           @meElimine="eliminarTrabajoDeCache(idTrabajo)"
         />
       </div>
-
-      <!-- <div id="zonaObjetivos" class="zonaPrimerNivel">
-        <div class="nombreZona">Objetivos</div>
-        <div id="controlesObjetivos" class="controlesZona">
-          <div
-            class="controlesObjetivos botonesControles hoverGris"
-            v-if="usuarioResponsableProyecto"
-            @click="crearNuevoObjetivo"
-          >
-            Crear objetivo
-          </div>
-        </div>
-        <div id="listaObjetivos" @click.self="idObjetivoSeleccionado = null">
-          <iconoObjetivo
-            v-for="objetivo of esteProyecto.objetivos"
-            :key="objetivo.id"
-            :idProyecto="esteProyecto.id"
-            :esteObjetivo="objetivo"
-            :seleccionado="idObjetivoSeleccionado == objetivo.id"
-            :usuarioResponsableProyecto="usuarioResponsableProyecto"
-            @click.native="idObjetivoSeleccionado = objetivo.id"
-            @meElimine="eliminarObjetivoDeCache(objetivo.id)"
-          />
-        </div>
-      </div>
-
-      <div id="zonaTrabajos" class="zonaPrimerNivel">
-        <div class="nombreZona">Trabajos:</div>
-        <div id="controlesTrabajos" class="controlesZona">
-          <div
-            class="controlesTrabajos hoverGris botonesControles"
-            @click="crearNuevoTrabajo"
-            v-if="usuarioResponsableProyecto"
-            v-show="!creandoTrabajo"
-          >
-            Crear trabajo
-          </div>
-          <loading texto="Enviando..." v-show="creandoTrabajo" />
-        </div>
-        <div id="listaTrabajos" @click.self="idTrabajoSeleccionado = null">
-          <iconoTrabajo
-            v-for="idTrabajo of esteProyecto.idsTrabajos"
-            :key="idTrabajo"
-            :idTrabajo="idTrabajo"
-            :idProyecto="esteProyecto.id"
-            :seleccionado="idTrabajoSeleccionado == idTrabajo"
-            :usuarioResponsableProyecto="usuarioResponsableProyecto"
-            @click.native="idTrabajoSeleccionado = idTrabajo"
-            @meElimine="eliminarTrabajoDeCache(idTrabajo)"
-          />
-        </div>
-      </div> -->
-
       <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
-        <div class="nombreZona">foro</div>
-        <foro :parent="infoAsParent" :idForo="esteProyecto.idForo" />
+        <div class="nombreZona" @click="mostrandoForo=!mostrandoForo">
+          <div
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoForo
+                ? 'rotateZ(90deg)'
+                : 'rotateZ(0deg)',
+            }"
+          ></div>
+          foro
+        </div>
+        <foro :parent="infoAsParent" :idForo="esteProyecto.idForo" v-show="mostrandoForo" />
       </div>
     </template>
   </div>
@@ -308,7 +305,7 @@ export default {
         this.loading = false;
         return respuesta.proyecto;
       },
-      fetchPolicy:"cache-and-network"
+      fetchPolicy: "cache-and-network",
     },
   },
   data() {
@@ -324,7 +321,7 @@ export default {
       enviandoQueryResponsables: false,
 
       creandoTrabajo: false,
-      creandoObjetivo:false,
+      creandoObjetivo: false,
 
       idTrabajoSeleccionado: null,
       idObjetivoSeleccionado: null,
@@ -338,6 +335,11 @@ export default {
       enviandoNuevoDescripcion: false,
 
       idNodoAbierto: null,
+
+      mostrandoDescripcion: true,
+      mostrandoResponsables: true,
+      mostrandoDiagramaFlujo: false,
+      mostrandoForo:true,
     };
   },
   computed: {
@@ -393,9 +395,9 @@ export default {
         nombre: this.esteProyecto.nombre,
       };
     },
-    realizandoOperacionDiagrama(){
-      return (this.creandoTrabajo||this.creandoObjetivo);
-    }
+    realizandoOperacionDiagrama() {
+      return this.creandoTrabajo || this.creandoObjetivo;
+    },
   },
   methods: {
     guardarNuevoNombre() {
@@ -678,7 +680,7 @@ export default {
                 id
                 nombre
                 descripcion
-                vinculos{
+                vinculos {
                   idRef
                   tipoRef
                   tipo
@@ -698,7 +700,9 @@ export default {
           },
           update: (store, { data: { crearObjetivoEnProyecto } }) => {
             console.log(
-              `respuesta: ${JSON.stringify(JSON.stringify(crearObjetivoEnProyecto))}`
+              `respuesta: ${JSON.stringify(
+                JSON.stringify(crearObjetivoEnProyecto)
+              )}`
             );
             const nuevoObjetivo = crearObjetivoEnProyecto;
             try {
@@ -864,14 +868,13 @@ export default {
 .bGuardar:hover {
   background-color: rgb(209, 209, 209);
 }
-#zonaResponsables {
-  min-height: 40px;
+#zonaResponsables {  
   align-items: center;
 }
 .zonaPrimerNivel {
   border: 2px solid black;
   position: relative;
-  min-height: 50px;
+  min-height: 10px;
 }
 
 #listaTrabajos {
@@ -902,6 +905,7 @@ export default {
   font-size: 18px;
   background-color: teal;
   padding: 3px 5px;
+  cursor:pointer;
 }
 #listaResponsables {
   display: flex;
@@ -920,15 +924,27 @@ export default {
 }
 #zonaDiagramaFlujo {
   position: relative;
-  min-height: 700px;
-  overflow: scroll;
-  max-height: 1100px;
+  overflow: hidden;
   user-select: none;
+  min-height: 0px;
 }
 .ventanaNodo {
-  width: 92%;
+  width: min(350px, 90%);
+  height: min(800px, 90%);
   left: 4%;
-  top: 10%;
+  top: 5%;
   position: absolute;
+  overflow-y: scroll;
+  box-sizing: border-box;
+}
+
+.trianguloBullet {
+  border: 10px solid transparent;
+  border-left: 10px solid black;
+  display: inline-block;
+  margin-right: 10px;
+  margin-left: 10px;
+  transform-origin: left center;
+  transition: transform 0.2s;
 }
 </style>

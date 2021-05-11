@@ -1,17 +1,18 @@
-<template>
+<template> 
   <div
     class="diagramaFlujo"
     :class="{ deshabilitado: deshabilitar }"
     id="diagramaFlujo"
-    :style="[opacidad]"
+    :style="[opacidad, {backgroundColor:hovered?'rgb(225, 229, 241)':'white'}]"
+    @mouseenter="hovered=true"
+    @mouseleave="hovered=false"
     @click.right.self.prevent="abrirMenuCx"
-    @click.left.self="
-      idNodoClickDerecho = null;
-      idNodoSeleccionado = null;
-      mostrandoMenuCx = false;
-    "
+    @mousedown.left.self="panningVista=true"
+    @mouseup.left.self="mouseUpFondo"
+    @mousemove="panVista"
+    
   >
-    <canvas-diagrama-flujo :todosNodos="infoNodos" />
+    <canvas-diagrama-flujo :todosNodos="infoNodos" :style="[posicionCanvasFlechas]" :factorZoom="Number((zoom/100).toFixed(2))" />
     <nodo-trabajo
       v-for="idTrabajo of idsTrabajos"
       :key="idTrabajo"
@@ -22,15 +23,14 @@
       :posDummy="posDummy"
       :menuCx="idNodoClickDerecho === idTrabajo"
       :idNodoSeleccionado="idNodoSeleccionado"
+      :centroVista="centroVista"
+      :factorZoom="Number((zoom/100).toFixed(2))"
       @click.native="
         idNodoSeleccionado = idTrabajo;
         tipoNodoSeleccionado = 'trabajo';
       "
       @dblclick.native="$emit('nodoAbierto', idTrabajo)"
-      @meAbrieron="$emit('nodoAbierto', idTrabajo)"
-      @empujandoDummyPorAbajo="reposDummy(0, 5)"
-      @empujandoDummyPorDerecha="reposDummy(5, 0)"
-      @saliendose="scrollDiagrama"
+      @meAbrieron="$emit('nodoAbierto', idTrabajo)"            
       @miInfo="actualizarInfoTrabajos(idTrabajo, $event)"
       @crearRequerimento="crearRequerimento('trabajo', $event)"
       @eliminarVinculo="eliminarVinculo('trabajo', $event)"
@@ -46,21 +46,18 @@
       :idNodoSeleccionado="idNodoSeleccionado"
       :posDummy="posDummy"
       :menuCx="idNodoClickDerecho === objetivo.id"
+      :centroVista="centroVista"
+      :factorZoom="Number((zoom/100).toFixed(2))"
       @click.native="
         idNodoSeleccionado = objetivo.id;
         tipoNodoSeleccionado = 'objetivo';
-      "
-      @saliendose="scrollDiagrama"
+      "      
       @dblclick.native="$emit('nodoAbierto', objetivo.id)"
-      @meAbrieron="$emit('nodoAbierto', objetivo.id)"
-      @empujandoDummyPorAbajo="reposDummy(0, 5)"
-      @empujandoDummyPorDerecha="reposDummy(5, 0)"
+      @meAbrieron="$emit('nodoAbierto', objetivo.id)"      
       @crearRequerimento="crearRequerimento('objetivo', $event)"
       @eliminarVinculo="eliminarVinculo('objetivo', $event)"
       @click.right.native.prevent.stop="idNodoClickDerecho = objetivo.id"
-    />
-
-    <div id="dummy" ref="dummy" :style="[estiloPosDummy]"></div>
+    />    
 
     <div id="menuCx" :style="posMenuCx" v-show="mostrandoMenuCx">
       <div class="itemMenuCx" @click="crearTrabajoAqui">Crear trabajo aquí</div>
@@ -106,6 +103,17 @@ export default {
       },
       infoTrabajos: [],
       idNodoClickDerecho: null,
+
+      centroVistaDecimal:{
+        x:0,
+        y:0
+      },      
+
+      hovered:false,
+
+      zoom:100,
+      maxZoom:200,
+      minZoom:50,
     };
   },
   computed: {
@@ -120,12 +128,6 @@ export default {
         opacity: this.activo ? 1 : 0.4,
       };
     },
-    estiloPosDummy() {
-      return {
-        top: this.posDummy.y + "px",
-        left: this.posDummy.x + "px",
-      };
-    },
     infoObjetivos() {
       return this.objetivos.map((objetivo) => {
         return {
@@ -138,6 +140,18 @@ export default {
     infoNodos() {
       return this.infoObjetivos.concat(this.infoTrabajos);
     },
+    posicionCanvasFlechas(){
+      return {
+        top: Math.round(-this.centroVista.y*(this.zoom/100))+"px",
+        left: Math.round(-this.centroVista.x*(this.zoom/100))+"px"
+      }
+    },
+    centroVista(){
+      return {
+        x: Math.round(this.centroVistaDecimal.x),
+        y: Math.round(this.centroVistaDecimal.y),
+      }
+    }
   },
   methods: {
     abrirMenuCx(e) {
@@ -165,10 +179,10 @@ export default {
       var contenedor = this.$el;
       let posContenedor = contenedor.getBoundingClientRect();
       posicion.x = Math.round(
-        e.clientX - posContenedor.left + contenedor.scrollLeft
+        e.clientX + this.centroVista.x - posContenedor.left 
       );
       posicion.y = Math.round(
-        e.clientY - posContenedor.top + contenedor.scrollTop
+        e.clientY + this.centroVista.y - posContenedor.top 
       );
 
       this.$emit("crearTrabajoEnPosicion", posicion);
@@ -182,21 +196,14 @@ export default {
       var contenedor = this.$el;
       let posContenedor = contenedor.getBoundingClientRect();
       posicion.x = Math.round(
-        e.clientX - posContenedor.left + contenedor.scrollLeft
+        e.clientX + this.centroVista.x - posContenedor.left 
       );
       posicion.y = Math.round(
-        e.clientY - posContenedor.top + contenedor.scrollTop
+        e.clientY + this.centroVista.y - posContenedor.top 
       );
 
       this.$emit("crearObjetivoEnPosicion", posicion);
-    },
-    reposDummy(factorx, factory) {
-      this.$set(this.posDummy, "x", this.posDummy.x + 20 * factorx);
-      this.$set(this.posDummy, "y", this.posDummy.y + 20 * factory);
-    },
-    scrollDiagrama({ x, y }) {
-      this.$el.scrollBy(x, y);
-    },
+    },   
     actualizarInfoTrabajos(idTrabajo, info) {
       const indexT = this.infoTrabajos.findIndex((t) => t.id === idTrabajo);
       if (indexT > -1) {
@@ -323,7 +330,67 @@ export default {
         .catch((error) => {
           console.log(`Error`, error.message);
         });
+    },  
+    desplazarVista(deltaX, deltaY) {
+      this.$set(this.centroVistaDecimal, "x",this.centroVistaDecimal.x - deltaX);
+      this.$set(this.centroVistaDecimal, "y",this.centroVistaDecimal.y - deltaY);
+      //this.actualizarTrazos++;
     },
+    panVista(e){
+      if(!this.panningVista){
+        return
+      }      
+      this.desplazarVista((e.movementX/(this.zoom/100)), (e.movementY/(this.zoom/100)));
+      e.preventDefault();
+      this.vistaPanned = true;
+    },
+    mouseUpFondo(){
+      if(!this.vistaPanned){    
+        this.idNodoSeleccionado = null;
+        this.mostrandoMenuCx = false;
+        this.idNodoClickDerecho = null;
+      }
+      this.vistaPanned=false;
+      this.panningVista=false;
+    },
+    zoomVista(e){
+      if(!this.hovered || !e.ctrlKey){
+        return
+      }
+      e.preventDefault();      
+      
+      var contenedor = this.$el;
+      let posContenedor = contenedor.getBoundingClientRect();
+
+      const proporciones={
+        x: (e.clientX-posContenedor.left)/posContenedor.width,
+        y: (e.clientY-posContenedor.top)/posContenedor.height,
+      }
+
+      const posZoom={
+        x: Math.round((e.clientX-posContenedor.left)/(this.zoom/100))+this.centroVista.x,
+        y: Math.round((e.clientY-posContenedor.top)/(this.zoom/100))+this.centroVista.y
+      }
+
+
+      const factorZoom=0.2;
+      var nuevoZoom=this.zoom-Math.round(e.deltaY*factorZoom);
+      if(nuevoZoom<this.minZoom){
+        this.zoom=this.minZoom;
+      }
+      else if(nuevoZoom>this.maxZoom){
+        this.zoom=this.maxZoom
+      }
+      else{
+        this.zoom=nuevoZoom;
+      }
+
+      //Pan vista de acuerdo con la posición del mouse respecto del atlas                       
+
+      this.$set(this.centroVistaDecimal, "x", posZoom.x-((posContenedor.width/(this.zoom/100))*proporciones.x) );
+      this.$set(this.centroVistaDecimal, "y", posZoom.y-((posContenedor.height/(this.zoom/100))*proporciones.y) );
+
+    }
   },
   mount() {
     this.$set(
@@ -337,6 +404,12 @@ export default {
       this.$$parent.$refs.zonaDiagramaFlujo.offsetHeight
     );
   },
+  created(){
+    window.addEventListener("wheel", this.zoomVista, {passive:false});
+  },
+  removed(){
+    window.removeEventListener("wheel", this.zoomVista);
+  }
 };
 </script>
 
@@ -347,7 +420,7 @@ export default {
   position: relative;
   overflow: scroll;
   background-color: rgb(225, 229, 241);
-  scroll-behavior: smooth;
+  overflow: hidden;
 }
 #canvasDiagramaFlujo {
   position: absolute;

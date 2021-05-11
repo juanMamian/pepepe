@@ -1,10 +1,14 @@
 <template>
   <div class="iconoTrabajo">
     <img
-      src="@/assets/iconos/ir.png"
-      class="botonIr"
-      @click="navegarAlTrabajo"
-      title="Abrir la página de este trabajo"
+      src="@/assets/iconos/iconoTrabajo.png"
+      alt=""
+      id="imagenIcono"
+      :class="{
+        iconoCompletado: esteTrabajo.estadoDesarrollo === 'completado',
+        deshabilitado: togglingEstado,
+      }"
+      @click="usuarioResponsableProyecto ? toggleEstadoTrabajo() : null"
     />
     <div id="zonaNombre" :class="{ bordeAbajo: seleccionado }">
       <div id="nombre">
@@ -40,17 +44,7 @@
         </div>
       </div>
 
-      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />     
-      <img
-        src="@/assets/iconos/iconoTrabajo.png"
-        alt=""
-        id="imagenIcono"
-        :class="{
-          iconoCompletado: esteTrabajo.estadoDesarrollo === 'completado',
-          deshabilitado: togglingEstado,
-        }"
-        @click="usuarioResponsableProyecto ? toggleEstadoTrabajo() : null"
-      />
+      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
@@ -93,7 +87,7 @@
       <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
 
-    <div id="zonaResponsables" class="zonaPrimerNivel">
+    <div id="zonaResponsables" class="zonaPrimerNivel" v-if="false">
       <div class="nombreZona">Responsables</div>
       <div id="controlesResponsables" class="controlesZona">
         <div
@@ -199,7 +193,14 @@
       <loading v-show="enviandoNuevoKeywords" texto="Enviando..." />
     </div>
 
-    <div id="controlesTrabajo">
+     <img
+        src="@/assets/iconos/abrirLink.png"
+        class="botonIr"
+        @click="navegarAlTrabajo"
+        title="Abrir la página de este trabajo"
+      />
+
+    <div id="controlesTrabajo">     
       <div
         class="controlesTrabajo hoverGris bEliminar"
         @click="eliminarse"
@@ -229,7 +230,7 @@ const QUERY_TRABAJO = gql`
       descripcion
       responsables
       keywords
-      idProyectoParent,
+      idProyectoParent
       estadoDesarrollo
     }
   }
@@ -573,11 +574,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation(
-              $idProyecto: ID!
-              $idTrabajo: ID!
-              $nuevoEstado: String!
-            ) {
+            mutation($idProyecto: ID!, $idTrabajo: ID!, $nuevoEstado: String!) {
               setEstadoTrabajoProyecto(
                 idProyecto: $idProyecto
                 idTrabajo: $idTrabajo
@@ -792,18 +789,19 @@ export default {
   margin-bottom: 5px;
 }
 .botonIr {
-  position: absolute;
-  top: 0%;
-  left: 0%;
+  
   cursor: pointer;
   z-index: 10;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   padding: 5px;
+  margin: 6px auto;
+  display: block;
+  background-color: chocolate;
 }
 
 .botonIr:hover {
-  background-color: bisque;
+  background-color: rgb(223, 141, 82);
 }
 </style>
