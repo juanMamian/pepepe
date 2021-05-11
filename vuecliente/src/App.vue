@@ -11,7 +11,7 @@
       <div id="botonesNavEnlaces" :class="{enlacesOcultos:!mostrandoNav}" @click="mostrandoNav=false">
         <router-link
           to="/actividadesVirtuales2021"
-          v-if="usuarioLogeado == true"
+          v-if="usuarioLogeado == true && usuario.permisos && usuario.permisos.includes('usuario')"
         >
           <div
             class="botonNavBarra botonNav hoverNegro"
