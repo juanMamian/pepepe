@@ -9,7 +9,7 @@ exports.esquemaRespuestaConversacion = new mongoose_1.default.Schema({
     fecha: {
         type: Date,
         required: true,
-        default: Date.now()
+        default: Date.now
     },
     archivo: {
         nombre: String,
@@ -67,7 +67,7 @@ exports.esquemaConversacion = new mongoose_1.default.Schema({
         fecha: {
             type: Date,
             required: true,
-            default: Date.now()
+            default: new Date(2021, 2, 1),
         }
     }
 });

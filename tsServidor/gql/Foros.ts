@@ -168,8 +168,12 @@ export const resolvers = {
                 console.log(`Error buscando el foro`);
                 new ApolloError("Error conectando con la base de datos");
             }
+            
+            //console.log(`Antes de sort: ${elForo.conversaciones.map(c=>c.infoUltimaRespuesta.fecha)}`);
 
             let todasConversaciones = elForo.conversaciones.sort((a, b)=>a.infoUltimaRespuesta.fecha-b.infoUltimaRespuesta.fecha);
+            //console.log(`Despues de sort: ${todasConversaciones.map(c=>c.infoUltimaRespuesta.fecha)}`);
+
             let numConversaciones = todasConversaciones.length;
             console.log(`Hay un total de ${numConversaciones}`);
 
@@ -178,7 +182,7 @@ export const resolvers = {
                 numPaginas = Math.ceil(numConversaciones / sizePaginaForo);
             }
             if (pagina < 1 || pagina > numPaginas) {
-                pagina = numPaginas;
+                pagina = 1;
             }
 
             let conversacionesPagina = todasConversaciones.splice((pagina - 1) * sizePaginaForo, sizePaginaForo);

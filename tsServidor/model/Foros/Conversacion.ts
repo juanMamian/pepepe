@@ -5,7 +5,7 @@ export const esquemaRespuestaConversacion = new mongoose.Schema({
     fecha: {
         type: Date,
         required: true,
-        default: Date.now()
+        default: Date.now
     },
     archivo: {
         nombre: String,
@@ -66,7 +66,7 @@ export const esquemaConversacion = new mongoose.Schema({
         fecha: {
             type: Date,
             required:true,
-            default: Date.now()
+            default:new Date(2021, 2, 1),
         }
     }
 });

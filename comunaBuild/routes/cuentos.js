@@ -133,8 +133,8 @@ router.post("/subirArchivoCuadroImagen", upload.single("imagen"), function (err,
                     //let altoOriginal=await imgOriginal.metadata().height;                
                     var imgFinal = imgOriginal;
                     console.log(`Ancho: ${anchoOriginal}`);
-                    if (anchoOriginal > 600) {
-                        console.log(`Empequeñeciendo a 600 width. Tenía ${anchoOriginal}`);
+                    if (anchoOriginal > 800) {
+                        console.log(`Empequeñeciendo a 800 width. Tenía ${anchoOriginal}`);
                         imgFinal = yield imgOriginal.resize({ width: 800 }).toBuffer();
                     }
                     else {
