@@ -126,5 +126,8 @@ export const fragmentoConversacion = gql`
     estado
     acceso   
     cantidadRespuestas
+    infoUltimaRespuesta{
+      fecha      
+    }
   }
 `;

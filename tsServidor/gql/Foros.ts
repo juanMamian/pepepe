@@ -89,6 +89,7 @@ export const typeDefs = gql`
         eliminarRespuesta(idRespuesta:ID!, idConversacion:ID!):Boolean,
         postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta, parent: InputParent):RespuestaConversacionForo,
         setCantidadRespuestasConversacionLeidasPorUsuario(idUsuario:ID!, idForo:ID!, idConversacion: ID!, cantidadRespuestasLeidas:Int!):Boolean
+        setTodasRespuestasConversacionLeidasPorUsuario(idUsuario:ID!, idForo:ID!, idConversacion: ID!):Int
     }
 
 `;
@@ -169,10 +170,7 @@ export const resolvers = {
                 new ApolloError("Error conectando con la base de datos");
             }
             
-            //console.log(`Antes de sort: ${elForo.conversaciones.map(c=>c.infoUltimaRespuesta.fecha)}`);
-
-            let todasConversaciones = elForo.conversaciones.sort((a, b)=>a.infoUltimaRespuesta.fecha-b.infoUltimaRespuesta.fecha);
-            //console.log(`Despues de sort: ${todasConversaciones.map(c=>c.infoUltimaRespuesta.fecha)}`);
+            let todasConversaciones = elForo.conversaciones.sort((b, a)=>a.infoUltimaRespuesta.fecha-b.infoUltimaRespuesta.fecha);
 
             let numConversaciones = todasConversaciones.length;
             console.log(`Hay un total de ${numConversaciones}`);
@@ -511,7 +509,7 @@ export const resolvers = {
                 laConversacion.cantidadRespuestas = cantRespuestas;
                 laConversacion.infoUltimaRespuesta = {
                     idAutor: credencialesUsuario.id,
-                    fecha:Date.now
+                    fecha:Date.now()
                 }
                 await elForo.save();
             } catch (error) {
@@ -630,6 +628,60 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             return true;
+        },
+        async setTodasRespuestasConversacionLeidasPorUsuario(_: any, { idUsuario, idForo, idConversacion }: any, contexto: contextoQuery) {
+            console.log(`///////////////////`);
+            console.log(`Setting todas respuestas leidas en conversacion ${idConversacion} en foro con id ${idForo}`);
+            const credencialesUsuario = contexto.usuario;
+            if (idUsuario != credencialesUsuario.id) {
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elUsuario: any = await Usuario.findById(idUsuario).select("foros").exec();
+                if (!elUsuario) throw "Usuario no encontrado en la base de datos";
+            } catch (error) {
+                console.log(`Error buscando el usuario. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var infoForo = elUsuario.foros.find(f => f.idForo == idForo);
+            if (!infoForo) {
+                var nuevoInfoForo = {
+                    idForo,
+                    conversaciones: []
+                }
+                elUsuario.foros.push(nuevoInfoForo);
+                infoForo = elUsuario.foros.find(f => f.idForo == idForo);
+            }
+
+            var infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
+            if (!infoConversacion) {
+                var nuevoInfoConversacion = {
+                    idConversacion,
+                    respuestasLeidas: 0,
+                };
+                infoForo.conversaciones.push(nuevoInfoConversacion);
+                infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
+            }
+
+            const Respuesta:any = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
+            try {
+                var cantRespuestas: number = await Respuesta.countDocuments().exec();                
+            } catch (error) {
+                console.log(`Error contando las respuestas. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            infoConversacion.respuestasLeidas = cantRespuestas;
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando nuevos datos del usuario. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return cantRespuestas;
         }
     },
 

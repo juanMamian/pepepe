@@ -148,7 +148,6 @@ export default {
       var datos = new FormData();
 
       if (!inputArchivoAdjunto.value) {
-        console.log(`El input de archivo adjunto estaba vacio`);
         let nuevaRespuesta = {
           infoArchivo: null,
           mensaje: this.mensaje,
@@ -261,7 +260,6 @@ export default {
       if (this.mensajeIlegal) {
         return;
       }
-      console.log(`Enviando respuesta`);
 
       var dis = this;
       this.enviandoRespuesta = true;

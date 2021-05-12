@@ -99,6 +99,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         eliminarRespuesta(idRespuesta:ID!, idConversacion:ID!):Boolean,
         postRespuestaConversacion(idConversacion: ID!, nuevaRespuesta: InputNuevaRespuesta, parent: InputParent):RespuestaConversacionForo,
         setCantidadRespuestasConversacionLeidasPorUsuario(idUsuario:ID!, idForo:ID!, idConversacion: ID!, cantidadRespuestasLeidas:Int!):Boolean
+        setTodasRespuestasConversacionLeidasPorUsuario(idUsuario:ID!, idForo:ID!, idConversacion: ID!):Int
     }
 
 `;
@@ -183,9 +184,7 @@ exports.resolvers = {
                     console.log(`Error buscando el foro`);
                     new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                //console.log(`Antes de sort: ${elForo.conversaciones.map(c=>c.infoUltimaRespuesta.fecha)}`);
-                let todasConversaciones = elForo.conversaciones.sort((a, b) => a.infoUltimaRespuesta.fecha - b.infoUltimaRespuesta.fecha);
-                //console.log(`Despues de sort: ${todasConversaciones.map(c=>c.infoUltimaRespuesta.fecha)}`);
+                let todasConversaciones = elForo.conversaciones.sort((b, a) => a.infoUltimaRespuesta.fecha - b.infoUltimaRespuesta.fecha);
                 let numConversaciones = todasConversaciones.length;
                 console.log(`Hay un total de ${numConversaciones}`);
                 var numPaginas = 0;
@@ -487,7 +486,7 @@ exports.resolvers = {
                     laConversacion.cantidadRespuestas = cantRespuestas;
                     laConversacion.infoUltimaRespuesta = {
                         idAutor: credencialesUsuario.id,
-                        fecha: Date.now
+                        fecha: Date.now()
                     };
                     yield elForo.save();
                 }
@@ -602,6 +601,60 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 return true;
+            });
+        },
+        setTodasRespuestasConversacionLeidasPorUsuario(_, { idUsuario, idForo, idConversacion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`///////////////////`);
+                console.log(`Setting todas respuestas leidas en conversacion ${idConversacion} en foro con id ${idForo}`);
+                const credencialesUsuario = contexto.usuario;
+                if (idUsuario != credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).select("foros").exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado en la base de datos";
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var infoForo = elUsuario.foros.find(f => f.idForo == idForo);
+                if (!infoForo) {
+                    var nuevoInfoForo = {
+                        idForo,
+                        conversaciones: []
+                    };
+                    elUsuario.foros.push(nuevoInfoForo);
+                    infoForo = elUsuario.foros.find(f => f.idForo == idForo);
+                }
+                var infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
+                if (!infoConversacion) {
+                    var nuevoInfoConversacion = {
+                        idConversacion,
+                        respuestasLeidas: 0,
+                    };
+                    infoForo.conversaciones.push(nuevoInfoConversacion);
+                    infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
+                }
+                const Respuesta = mongoose_1.default.model("respuestasDeConversacion" + idConversacion, Conversacion_1.esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
+                try {
+                    var cantRespuestas = yield Respuesta.countDocuments().exec();
+                }
+                catch (error) {
+                    console.log(`Error contando las respuestas. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                infoConversacion.respuestasLeidas = cantRespuestas;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando nuevos datos del usuario. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return cantRespuestas;
             });
         }
     },

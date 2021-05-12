@@ -1,10 +1,17 @@
 <template>
   <div
     class="conversacion"
-    :class="{ seleccionado, deshabilitado: seleccionado && loading }"
+    :class="{
+      seleccionado,
+      deshabilitado: seleccionado && loading,
+      conRespuestasNoLeidas:
+        estaConversacion.cantidadRespuestas > cantidadRespuestasLeidasUsuario,
+    }"
   >
-    <div class="infoConfersacion">
-      
+    <div class="infoConversacion">
+      {{ estaConversacion.cantidadRespuestas }} publicacion{{
+        estaConversacion.cantidadRespuestas > 1 ? "es" : ""
+      }}. Última publicación en {{ fechaFormateada }}
     </div>
     <div class="tituloConversacion">
       <img
@@ -26,12 +33,6 @@
             estaConversacion.cantidadRespuestas -
             cantidadRespuestasLeidasUsuario
           }}
-        </span>
-        <span
-          class="dato datoCantidadRespuestas"
-          title="Cantidad de respuestas en esta conversación"
-        >
-          {{ estaConversacion.cantidadRespuestas }}
         </span>
       </span>
     </div>
@@ -124,10 +125,7 @@ export default {
       },
       update({
         respuestasPaginaDeConversacion: { pagina, numPaginas, respuestas },
-      }) {
-        console.log(
-          `Llenando con ${respuestas.length} respuestas la pagina ${pagina} de ${numPaginas}`
-        );
+      }) {        
         this.$set(this.respuestasPorPagina, pagina, respuestas);
         if (this.numPaginaSeleccionada != pagina) {
           this.numPaginaSeleccionada = pagina;
@@ -178,12 +176,13 @@ export default {
           this.$set(this.respuestasPorPagina, targetPagina, []);
         }
       }
-      console.log(`Pushing en targetPagina ${targetPagina}`);
       this.respuestasPorPagina[targetPagina].push(nuevaRespuesta);
       this.$refs.cuadroResponder.cerrarse();
       if (this.numPaginaSeleccionada != targetPagina) {
         this.numPaginaSeleccionada = targetPagina;
       }
+      console.log(`Emitiendo 'respuesta publicada'`);
+      this.$emit("respuestaPublicada");
     },
     updateRespuestaEliminada(idRespuesta, pagina) {
       console.log(`Respuesta ${idRespuesta} eliminada de la pagina ${pagina}`);
@@ -216,24 +215,55 @@ export default {
         return 0;
       }
     },
+    fechaFormateada: function () {
+      if (
+        !this.estaConversacion.infoUltimaRespuesta ||
+        !this.estaConversacion.infoUltimaRespuesta.fecha
+      ) {
+        return "Fecha desconocida";
+      }
+      let laFecha = new Date(
+        this.estaConversacion.infoUltimaRespuesta.fecha
+      ).toString();
+      let indexParentesis = laFecha.indexOf("(");
+      let fechaCorta = laFecha.substr(0, indexParentesis);
+      let indexGMT = fechaCorta.indexOf("GMT");
+      if (indexGMT > -1) {
+        fechaCorta = fechaCorta.substr(0, indexGMT);
+      }
+      return fechaCorta;
+    },
   },
+  watch:{
+    seleccionado(nuevo, viejo){
+      if(nuevo && !viejo){
+        this.$emit("meAbrieron");
+      }
+    }
+  }
 };
 </script>
 
 <style scoped>
 .conversacion {
-  background-color: #ffd0aa;
+  background-color: #fdc190;
   border: 1px solid white;
   padding: 0px 0px;
 }
 .conversacion:hover {
   background-color: #f7b57f;
 }
+.conRespuestasNoLeidas {
+  background-color: #f8cca8;
+}
 .seleccionado {
   background-color: #f7b57f;
 }
-.infoConversacion{
-
+.infoConversacion {
+  font-size: 10px;
+  font-style: italic;
+  color: gray;
+  text-align: right;
 }
 .respuesta {
   margin: 5px;
@@ -301,43 +331,40 @@ export default {
   border-radius: 5px;
   cursor: pointer;
   background-color: #f7b57f;
-
 }
 
 .selectorPagina:hover {
-    background-color: #ffd0aa;
-
+  background-color: #ffd0aa;
 }
 .selectorSeleccionado {
-    background-color: #ffd0aa;
+  background-color: #ffd0aa;
 
   pointer-events: none;
   font-weight: bold;
 }
 
 @media only screen and (min-width: 768px) {
-.tituloConversacion {
-  padding: 15px 10px;
-  margin: 5px;
-  font-weight: bold;
-  display: grid;
-  align-items: center;
-  grid-template-columns: 65px 1fr 90px;
-  color: #9c1a1a;
-}
-.imagenConversacion {
-  width: 50px;
-  height: 50px;
-  margin-right: 10px;
-}
-.dato {
-  margin: 0px 4px;
-  cursor: pointer;
-  border-radius: 10px;
-  padding: 6px;
-  text-align: center;
-  font-size: 14px;
-
-}
+  .tituloConversacion {
+    padding: 15px 10px;
+    margin: 5px;
+    font-weight: bold;
+    display: grid;
+    align-items: center;
+    grid-template-columns: 65px 1fr 90px;
+    color: #9c1a1a;
+  }
+  .imagenConversacion {
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+  }
+  .dato {
+    margin: 0px 4px;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 6px;
+    text-align: center;
+    font-size: 14px;
+  }
 }
 </style>

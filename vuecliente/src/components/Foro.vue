@@ -7,7 +7,10 @@
       <div
         id="bRegresarConversaciones"
         v-show="idConversacionSeleccionada != null"
-        @click="idConversacionSeleccionada = null"
+        @click="
+          idConversacionSeleccionada = null;
+          $apollo.queries.numPaginas.refetch();
+        "
       >
         Volver a conversaciones
       </div>
@@ -94,14 +97,17 @@
             idConversacionSeleccionada == conversacion.id ||
             !conversacionAbierta
           "
-          @click.native="
-            idConversacionSeleccionada = conversacion.id;
-            setConversacionLeida(
-              conversacion.id,
-              conversacion.cantidadRespuestas
-            );
+          @click.native="idConversacionSeleccionada = conversacion.id"
+          @meAbrieron="
+            setTodaConversacionLeida(conversacion.id)
           "
           @meElimine="refreshPagina"
+          @respuestaPublicada="
+            setTodaConversacionLeida(
+              conversacion.id,
+              conversacion.cantidadRespuestas
+            )
+          "
         />
       </div>
     </div>
@@ -216,15 +222,60 @@ export default {
       }
       console.log(`Pushing en targetPagina ${targetPagina}`);
       this.conversacionesPorPagina[targetPagina].push(nuevaConversacion);
+      this.setTodaConversacionLeida(nuevaConversacion.id);
+
       if (this.numPaginaSeleccionada != targetPagina) {
         this.numPaginaSeleccionada = targetPagina;
       }
       this.tituloNuevaConversacion = null;
+
+
     },
     refreshPagina() {
       //let store = this.$apollo.provider.defaultClient;
       this.idConversacionSeleccionada = null;
       this.$apollo.queries.numPaginas.refresh();
+    },    
+    setTodaConversacionLeida(idConversacion) {
+      if (!this.usuario || !this.usuario.id) {
+        return;
+      } else {
+        console.log(`Setting toda conversación leida`);
+
+        this.$apollo
+          .mutate({
+            mutation: gql`
+              mutation($idUsuario: ID!, $idForo: ID!, $idConversacion: ID!) {
+                setTodasRespuestasConversacionLeidasPorUsuario(
+                  idUsuario: $idUsuario
+                  idForo: $idForo
+                  idConversacion: $idConversacion
+                )
+              }
+            `,
+            variables: {
+              idUsuario: this.usuario.id,
+              idForo: this.idForo,
+              idConversacion,
+            },
+          })
+          .then(
+            ({ data: { setTodasRespuestasConversacionLeidasPorUsuario } }) => {
+              console.log(
+                `Resultado: ${setTodasRespuestasConversacionLeidasPorUsuario}`
+              );
+
+              this.$store.commit("setRespuestasLeidasConversacionUsuario", {
+                idForo: this.idForo,
+                idConversacion,
+                respuestasLeidas: setTodasRespuestasConversacionLeidasPorUsuario,
+              });
+            }
+          )
+          .catch((error) => {
+            console.log(`Error. E: ${error}`);
+          });
+      }
     },
     setConversacionLeida(idConversacion, cantidadRespuestasLeidas) {
       if (!this.usuario || !this.usuario.id) {

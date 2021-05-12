@@ -7,7 +7,7 @@
     "devBuild": "nodemon comunaBuild/index.js",
     "start": "node comunaBuild/index.js",
     "dev": "nodemon tsServidor/index.ts",
-    "lbuild": "npx tsc -p ."
+    "build": "npx tsc -p ."
   },
   "engines": {
     "node": "14.x"
