@@ -9,6 +9,9 @@
     "dev": "nodemon tsServidor/index.ts",
     "build": "tsc -p ."
   },
+  "engines":{
+    "node": "12.x"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
