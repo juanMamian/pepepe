@@ -3,6 +3,9 @@
     class="conversacion"
     :class="{ seleccionado, deshabilitado: seleccionado && loading }"
   >
+    <div class="infoConfersacion">
+      
+    </div>
     <div class="tituloConversacion">
       <img
         src="@/assets/iconos/conversacion.png"
@@ -228,6 +231,9 @@ export default {
 }
 .seleccionado {
   background-color: #f7b57f;
+}
+.infoConversacion{
+
 }
 .respuesta {
   margin: 5px;

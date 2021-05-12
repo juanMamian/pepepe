@@ -7,10 +7,10 @@
     "devBuild": "nodemon comunaBuild/index.js",
     "start": "node comunaBuild/index.js",
     "dev": "nodemon tsServidor/index.ts",
-    "build": "tsc -p ."
+    "lbuild": "npx tsc -p ."
   },
-  "engines":{
-    "node": "12.x"
+  "engines": {
+    "node": "14.x"
   },
   "author": "",
   "license": "ISC",
@@ -40,7 +40,7 @@
     "@types/node": "^14.14.16",
     "nodemon": "^2.0.4",
     "ts-node": "^9.1.1",
-    "typescript": "^4.1.3",
+    "typescript": "^4.2.4",
     "vue-cli-plugin-apollo": "~0.22.2"
   }
 }

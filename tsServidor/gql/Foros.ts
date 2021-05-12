@@ -511,7 +511,7 @@ export const resolvers = {
                 laConversacion.cantidadRespuestas = cantRespuestas;
                 laConversacion.infoUltimaRespuesta = {
                     idAutor: credencialesUsuario.id,
-                    fecha:Date.now()
+                    fecha:Date.now
                 }
                 await elForo.save();
             } catch (error) {
