@@ -62,7 +62,7 @@ const esquemaCuadroTexto = new mongoose_1.default.Schema({
     posicionZeta: {
         type: Number,
         min: 0,
-        default: 0,
+        default: 1,
     },
     size: {
         x: Number,
