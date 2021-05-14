@@ -55,8 +55,7 @@
             src="@/assets/iconos/share.png"
             alt="Compartir"
             title="Compartir este libro en la sección de libros públicos"
-            class="controlLibro"
-            v-show="usuarioSuperadministrador"
+            class="controlLibro"            
             :style="{ backgroundColor: portada.publico ? 'green' : '' }"
             @click.stop="setLibroPublico(portada.id, !portada.publico)"
           />
@@ -75,6 +74,7 @@ const QUERY_MIS_LIBROS = gql`
       id
       titulo
       publico
+      idsEditores
     }
   }
 `;
