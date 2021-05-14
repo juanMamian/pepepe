@@ -186,8 +186,6 @@ export const resolvers = {
             let conversacionesPagina = todasConversaciones.splice((pagina - 1) * sizePaginaForo, sizePaginaForo);
             return { pagina, numPaginas, conversaciones: conversacionesPagina };
         }
-
-
     },
     Mutation: {
 
@@ -235,8 +233,15 @@ export const resolvers = {
             let primeraRespuesta = input.primeraRespuesta;
 
             let mensaje = primeraRespuesta.mensaje;
-            mensaje = mensaje.trim();
-            if (charProhibidosMensajeRespuesta.test(mensaje)) {
+            var todosMensajes=mensaje;
+
+            primeraRespuesta.interpolaciones.forEach(interpolacion=>{
+                if(interpolacion.mensaje){
+                    todosMensajes+=interpolacion.mensaje;
+                }
+            });
+
+            if (charProhibidosMensajeRespuesta.test(todosMensajes)) {
                 console.log(`El mensaje contenia caracteres ilegales`);
                 throw new ApolloError("Mensaje ilegal");
             }
@@ -462,9 +467,16 @@ export const resolvers = {
                 }
             }
 
-            let mensaje = nuevaRespuesta.mensaje;
-            mensaje = mensaje.trim();
-            if (charProhibidosMensajeRespuesta.test(mensaje)) {
+            let mensaje = nuevaRespuesta.mensaje;            
+
+            var todosMensajes=mensaje;
+            nuevaRespuesta.interpolaciones.foreEach(interpolacion=>{
+                if(interpolacion.mensaje){
+                    todosMensajes+=interpolacion.mensaje;
+                }
+            })
+
+            if (charProhibidosMensajeRespuesta.test(todosMensajes)) {
                 console.log(`El mensaje contenia caracteres ilegales`);
                 throw new ApolloError("Mensaje ilegal");
             }

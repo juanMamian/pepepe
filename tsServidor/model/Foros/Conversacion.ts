@@ -30,6 +30,16 @@ export const esquemaRespuestaConversacion = new mongoose.Schema({
         nombres:String,
         apellidos:String,
         username:String
+    },
+    interpolaciones:{
+        tipo:{
+            type:String,
+            required:true,
+            enum:["video", "quote", "imagen"]
+        },
+        enlaceIframe:{
+            type:String,            
+        }
     }
 
 });
