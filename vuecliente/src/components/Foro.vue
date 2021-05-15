@@ -209,25 +209,27 @@ export default {
   methods: {
     addConversacion(nuevaConversacion) {
       this.creandoConversacion = false;
-      var targetPagina = this.numPaginas;
-      console.log(`Target página: ${targetPagina}`);
-      if (
-        this.conversacionesPorPagina[targetPagina].length >= 6 ||
-        targetPagina < 1
-      ) {
-        targetPagina++;
-        if (!this.conversacionesPorPagina[targetPagina]) {
-          this.$set(this.conversacionesPorPagina, targetPagina, []);
-        }
-      }
-      console.log(`Pushing en targetPagina ${targetPagina}`);
-      this.conversacionesPorPagina[targetPagina].push(nuevaConversacion);
+      // var targetPagina = this.numPaginas;
+      // console.log(`Target página: ${targetPagina}`);
+      // if (
+      //   this.conversacionesPorPagina[targetPagina].length >= 6 ||
+      //   targetPagina < 1
+      // ) {
+      //   targetPagina++;
+      //   if (!this.conversacionesPorPagina[targetPagina]) {
+      //     this.$set(this.conversacionesPorPagina, targetPagina, []);
+      //   }
+      // }
+      // console.log(`Pushing en targetPagina ${targetPagina}`);
+      // this.conversacionesPorPagina[targetPagina].push(nuevaConversacion);
       this.setTodaConversacionLeida(nuevaConversacion.id);
 
-      if (this.numPaginaSeleccionada != targetPagina) {
-        this.numPaginaSeleccionada = targetPagina;
-      }
+      // if (this.numPaginaSeleccionada != targetPagina) {
+      //   this.numPaginaSeleccionada = targetPagina;
+      // }
       this.tituloNuevaConversacion = null;
+      this.numPaginaSeleccionada=1;
+      this.$apollo.queries.numPaginas.refetch();
 
 
     },

@@ -65,6 +65,7 @@
             :key="respuesta.id"
             :idConversacion="estaConversacion.id"
             :estaRespuesta="respuesta"
+            @meQuierenCitar="citarRespuesta"
             @meElimine="updateRespuestaEliminada(respuesta.id, index)"
           />
         </div>
@@ -76,8 +77,7 @@
           usuarioLogeado &&
           (estaConversacion.acceso == 'publico' || usuarioMiembro == true) &&
           estaConversacion.id
-        "
-        v-show="numPaginaSeleccionada == numPaginas"
+        "        
         :idConversacion="estaConversacion.id"
         @hiceRespuesta="addRespuesta($event)"
       />
@@ -194,6 +194,9 @@ export default {
         this.$apollo.queries.numPaginas.refresh();
       }
     },
+    citarRespuesta(quote){
+      this.$refs.cuadroResponder.interpolarQuote(quote);
+    }
   },
   computed: {
     cantidadRespuestasLeidasUsuario() {

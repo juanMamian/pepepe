@@ -25,10 +25,32 @@ const Nodo = require("../model/atlas/Nodo");
 const Libro_1 = require("../model/cuentos/Libro");
 exports.typeDefs = apollo_server_express_1.gql `
 
+    input InputInfoAutorQuote{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String,
+    }
+
+    input InputQuote{
+        mensaje:String,
+        interpolaciones:[InputInterpolacion]
+        infoAutor:InputInfoAutorQuote
+        fecha:Date
+    }
+
+    input InputInterpolacion{
+        tipo:String,
+        enlaceIframe:String,
+        quote:InputQuote,        
+        mensaje:String,
+    }
+
     input InputNuevaRespuesta{
         mensaje:String,
         infoArchivo:InfoArchivoSubido,
         enlaceAdjunto:[String],
+        interpolaciones:[InputInterpolacion]
     }
 
     input InputParent{
@@ -42,11 +64,33 @@ exports.typeDefs = apollo_server_express_1.gql `
         primeraRespuesta:InputNuevaRespuesta
     }
 
+    type InfoAutorQuote{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String,
+    }
+
+    type Quote{
+        mensaje:String,
+        interpolaciones:[Interpolacion]
+        infoAutor:InfoAutorQuote
+        fecha:Date
+    }
+
+    type Interpolacion{
+        tipo:String,
+        enlaceIframe:String,
+        mensaje:String,
+        quote:Quote
+    }
+
     type RespuestaConversacionForo{
         id: ID
         fecha:Date,
         archivo:InfoArchivo,
         mensaje:String,
+        interpolaciones:[Interpolacion]
         enlaceAdjunto:[String],
         autor: PublicUsuario,
         infoAutor:PublicUsuario,
@@ -240,11 +284,22 @@ exports.resolvers = {
                 }
                 let primeraRespuesta = input.primeraRespuesta;
                 let mensaje = primeraRespuesta.mensaje;
-                mensaje = mensaje.trim();
-                if (Conversacion_1.charProhibidosMensajeRespuesta.test(mensaje)) {
+                var todosMensajes = mensaje;
+                primeraRespuesta.interpolaciones.forEach(interpolacion => {
+                    if (interpolacion.mensaje) {
+                        todosMensajes += interpolacion.mensaje;
+                    }
+                });
+                if (Conversacion_1.charProhibidosMensajeRespuesta.test(todosMensajes)) {
                     console.log(`El mensaje contenia caracteres ilegales`);
                     throw new apollo_server_express_1.ApolloError("Mensaje ilegal");
                 }
+                primeraRespuesta.interpolaciones.forEach((interpolacion) => {
+                    if (interpolacion.tipo == "video" && interpolacion.enlaceIframe.substr(0, 24) != "https://www.youtube.com/") {
+                        console.log(`Tipo de enlace no aceptado`);
+                        throw new apollo_server_express_1.ApolloError("Enlace de video no valido");
+                    }
+                });
                 primeraRespuesta.mensaje = mensaje;
                 primeraRespuesta.archivo = primeraRespuesta.infoArchivo;
                 primeraRespuesta.idAutor = credencialesUsuario.id;
@@ -259,7 +314,11 @@ exports.resolvers = {
                     titulo,
                     idCreador: credencialesUsuario.id,
                     acceso: "publico",
-                    cantidadRespuestas: 1
+                    cantidadRespuestas: 1,
+                    infoUltimaRespuesta: {
+                        idAutor: credencialesUsuario.id,
+                        fecha: Date.now()
+                    }
                 });
                 let idConversacion = nuevaConversacion._id;
                 try {
@@ -446,11 +505,22 @@ exports.resolvers = {
                     }
                 }
                 let mensaje = nuevaRespuesta.mensaje;
-                mensaje = mensaje.trim();
-                if (Conversacion_1.charProhibidosMensajeRespuesta.test(mensaje)) {
+                var todosMensajes = mensaje;
+                nuevaRespuesta.interpolaciones.forEach(interpolacion => {
+                    if (interpolacion.mensaje) {
+                        todosMensajes += interpolacion.mensaje;
+                    }
+                });
+                if (Conversacion_1.charProhibidosMensajeRespuesta.test(todosMensajes)) {
                     console.log(`El mensaje contenia caracteres ilegales`);
                     throw new apollo_server_express_1.ApolloError("Mensaje ilegal");
                 }
+                nuevaRespuesta.interpolaciones.forEach((interpolacion) => {
+                    if (interpolacion.tipo == "video" && interpolacion.enlaceIframe.substr(0, 24) != "https://www.youtube.com/") {
+                        console.log(`Tipo de enlace no aceptado`);
+                        throw new apollo_server_express_1.ApolloError("Enlace de video no valido");
+                    }
+                });
                 nuevaRespuesta.mensaje = mensaje;
                 nuevaRespuesta.archivo = nuevaRespuesta.infoArchivo;
                 nuevaRespuesta.idAutor = credencialesUsuario.id;

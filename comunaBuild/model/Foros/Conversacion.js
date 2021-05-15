@@ -5,6 +5,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloConversacion = exports.charProhibidosMensajeRespuesta = exports.esquemaConversacion = exports.esquemaRespuestaConversacion = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
+var esquemaInterpolacion = new mongoose_1.default.Schema({
+    tipo: {
+        type: String,
+        required: true,
+        enum: ["video", "quote", "imagen"]
+    },
+    enlaceIframe: {
+        type: String,
+    },
+    mensaje: {
+        type: String,
+    }
+});
+esquemaInterpolacion.add({
+    quote: {
+        type: {
+            mensaje: String,
+            infoAutor: {
+                id: String,
+                nombres: String,
+                apellidos: String,
+                username: String,
+            },
+            interpolaciones: [esquemaInterpolacion],
+            fecha: Date,
+        },
+    },
+});
 exports.esquemaRespuestaConversacion = new mongoose_1.default.Schema({
     fecha: {
         type: Date,
@@ -19,7 +47,6 @@ exports.esquemaRespuestaConversacion = new mongoose_1.default.Schema({
     },
     mensaje: {
         type: String,
-        required: true,
     },
     enlaceAdjunto: {
         type: [String],
@@ -34,7 +61,8 @@ exports.esquemaRespuestaConversacion = new mongoose_1.default.Schema({
         nombres: String,
         apellidos: String,
         username: String
-    }
+    },
+    interpolaciones: [esquemaInterpolacion]
 });
 exports.esquemaConversacion = new mongoose_1.default.Schema({
     titulo: {

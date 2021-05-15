@@ -3,15 +3,30 @@
     <div class="infoRespuesta">{{ fechaFormateada }}</div>
     <img
       :src="
-        this.serverUrl + '/api/usuarios/fotografias/' + estaRespuesta.infoAutor.id
+        this.serverUrl +
+        '/api/usuarios/fotografias/' +
+        estaRespuesta.infoAutor.id
       "
       :alt="estaRespuesta.infoAutor.nombre"
       class="caritaAutor"
     />
-    <div class="mensajeRespuesta">
-      {{ estaRespuesta.mensaje }}
+    <div id="zonaCuerpoMensaje">
+      <div class="mensajeRespuesta">
+        {{ estaRespuesta.mensaje }}
+      </div>
+      <interpolacion
+        v-for="interpolacion of estaRespuesta.interpolaciones"
+        :key="interpolacion.id"
+        :estaInterpolacion="interpolacion"
+      />
     </div>
-    <div id="archivo" v-if="estaRespuesta.archivo && estaRespuesta.archivo.googleDriveDirectLink">
+
+    <div
+      id="archivo"
+      v-if="
+        estaRespuesta.archivo && estaRespuesta.archivo.googleDriveDirectLink
+      "
+    >
       <a :href="estaRespuesta.archivo.googleDriveDirectLink">
         <img
           src="@/assets/iconos/downloadFile.png"
@@ -24,8 +39,7 @@
     <div
       class="enlacesAdjuntos"
       v-show="
-        estaRespuesta.enlaceAdjunto &&
-        estaRespuesta.enlaceAdjunto.length > 0
+        estaRespuesta.enlaceAdjunto && estaRespuesta.enlaceAdjunto.length > 0
       "
     >
       <a
@@ -34,15 +48,20 @@
         :key="index"
         v-for="(enlace, index) of estaRespuesta.enlaceAdjunto"
       >
-        <div
-          class="enlaceAdjunto"          
-        >
+        <div class="enlaceAdjunto">
           {{ enlace }}
         </div>
       </a>
     </div>
 
     <div class="controles">
+      <img
+        src="@/assets/iconos/quote.png"
+        alt="Cita"
+        title="Citar esta respuesta"
+        class="botonInsertar"
+        @click="emitirSolicitudCita"
+      />
       <div
         class="controlRespuesta"
         id="bEliminar"
@@ -57,13 +76,15 @@
 
 <script>
 import gql from "graphql-tag";
+import Interpolacion from "./Interpolacion.vue";
 export default {
+  components: { Interpolacion },
   name: "Respuesta",
   props: {
     estaRespuesta: {
       type: Object,
     },
-    idConversacion:String
+    idConversacion: String,
   },
   computed: {
     fechaFormateada: function () {
@@ -84,6 +105,21 @@ export default {
     },
   },
   methods: {
+    emitirSolicitudCita(){
+      var quote={
+        mensaje: this.estaRespuesta.mensaje,
+        interpolaciones:this.estaRespuesta.interpolaciones,
+        infoAutor:this.estaRespuesta.infoAutor,
+        fecha:this.estaRespuesta.fecha 
+      }
+
+      quote.interpolaciones.forEach(interpolacion=>{
+        delete interpolacion.__typename;
+      })
+      delete quote.infoAutor.__typename;
+
+      this.$emit('meQuierenCitar', quote)
+    },
     eliminarse() {
       let dis = this;
       if (!confirm("Eliminando respuesta ¿Continuar?")) {
@@ -91,13 +127,16 @@ export default {
       }
       this.$apollo.mutate({
         mutation: gql`
-          mutation($idRespuesta: ID!, $idConversacion:ID!) {
-            eliminarRespuesta(idRespuesta: $idRespuesta, idConversacion:$idConversacion)
+          mutation($idRespuesta: ID!, $idConversacion: ID!) {
+            eliminarRespuesta(
+              idRespuesta: $idRespuesta
+              idConversacion: $idConversacion
+            )
           }
         `,
         variables: {
           idRespuesta: this.estaRespuesta.id,
-          idConversacion:this.idConversacion
+          idConversacion: this.idConversacion,
         },
         update(store, { data: { eliminarRespuesta } }) {
           if (eliminarRespuesta) {
@@ -114,7 +153,7 @@ export default {
 <style scoped>
 .respuesta {
   background-color: rgb(255 205 164);
-  
+
   border-radius: 15px;
   display: grid;
   grid-template-areas:
@@ -136,19 +175,23 @@ export default {
   grid-area: info;
   width: 100%;
 }
-.mensajeRespuesta {
-  padding: 5px 10px;
+#zonaCuerpoMensaje {
   grid-area: mensaje;
   width: 100%;
-  height: 100%;
   padding: 10px;
+  height: 100%;
+}
+.mensajeRespuesta {
   white-space: pre-wrap;
+  margin-bottom: 15px;
+  font-size: 20px;
 }
 .caritaAutor {
   width: 70px;
   height: 70px;
   border-radius: 50%;
   grid-area: autor;
+  align-self: flex-start;
 }
 .controles {
   grid-area: controles;
@@ -164,7 +207,7 @@ export default {
 .controlRespuesta:hover {
   background-color: red;
 }
-#archivo{
+#archivo {
   padding: 5px;
 }
 
@@ -176,7 +219,7 @@ export default {
   background-color: #4bb36b;
 }
 
-.enlacesAdjuntos{
+.enlacesAdjuntos {
   grid-area: enlaceAdjunto;
   justify-self: left;
 }
@@ -189,9 +232,18 @@ export default {
   padding: 3px 5px;
   cursor: pointer;
   max-width: 600px;
-  margin:3px;
+  margin: 3px;
 }
-.enlaceAdjunto:hover{
+.enlaceAdjunto:hover {
   background-color: rgba(129, 66, 129, 0.733);
+}
+.botonInsertar {
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+.botonInsertar:hover {
+  background-color: gray;
 }
 </style>
