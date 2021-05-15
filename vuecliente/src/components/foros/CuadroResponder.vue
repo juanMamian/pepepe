@@ -18,7 +18,6 @@
         ref="inputMensaje"
         :class="{ letrasRojas: mensajeIlegal }"
         v-model="mensaje"
-        placeholder="Escribe aquí tu respuesta"
         rows="2"
         @input="checkHeight"
       ></textarea>
@@ -349,6 +348,18 @@ export default {
       this.interpolaciones=[];
       (this.enlaceAdjuntable = null), (this.enlaceAdjunto = []);
     },
+    interpolarQuote(quote){
+      var nuevaInterpolacion={
+        tipo:"quote",
+        quote,
+      }
+
+      this.interpolaciones.push(nuevaInterpolacion);
+      if(!this.cuadroAbierto)this.cuadroAbierto=true;
+      this.$nextTick(()=>{
+        this.$el.scrollIntoView({behavior:"smooth"});
+      })
+    },
     insertarCreadorInterpolacion(tipo) {
       var nuevaInterpolacion = {
         tipo,
@@ -398,18 +409,40 @@ export default {
       this.$set(this.interpolaciones[index], "enlaceIframe", enlace);
       
     },
+    retirarTypeName(arrayInterpolaciones){
+      console.log(`Retirando typenames`);
+      arrayInterpolaciones.forEach(interpolacion=>{
+        delete interpolacion.__typename        
+        if(interpolacion.quote){
+          delete interpolacion.quote.__typename
+          if(interpolacion.quote.infoAutor){
+            delete interpolacion.quote.infoAutor.__typename
+          }
+          if(interpolacion.quote.interpolaciones){
+            interpolacion.quote.interpolaciones=this.retirarTypeName(interpolacion.quote.interpolaciones)
+          }
+        }
+      });
+      return arrayInterpolaciones
+    },
     setInterpolacionesData(){
       this.interpolaciones.forEach((interpolacion, index)=>{
         interpolacion.mensaje=this.$refs.creadoresInterpolacion[index].mensaje;
-      })
+      });
+      this.interpolaciones=this.retirarTypeName(this.interpolaciones);
     }
   },
   computed: {
     mensajeIlegal() {
-      if (!this.mensaje || this.mensaje.length < 1) {
-        return true;
-      }
-      if (charProhibidosMensaje.test(this.mensaje)) {
+      var mensajeTotal=this.mensaje?this.mensaje:'';
+      
+      this.interpolaciones.forEach(interpolacion=>{
+        if(interpolacion.mensaje){
+          mensajeTotal+=interpolacion.mensaje;
+        }
+      })
+
+      if (charProhibidosMensaje.test(mensajeTotal)) {
         return true;
       }
       return false;

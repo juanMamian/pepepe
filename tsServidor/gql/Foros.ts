@@ -15,10 +15,24 @@ import { ModeloLibro as Libro } from "../model/cuentos/Libro";
 
 export const typeDefs = gql`
 
+    input InputInfoAutorQuote{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String,
+    }
+
+    input InputQuote{
+        mensaje:String,
+        interpolaciones:[InputInterpolacion]
+        infoAutor:InputInfoAutorQuote
+        fecha:Date
+    }
+
     input InputInterpolacion{
         tipo:String,
         enlaceIframe:String,
-        idQuote:String,        
+        quote:InputQuote,        
         mensaje:String,
     }
 
@@ -40,11 +54,25 @@ export const typeDefs = gql`
         primeraRespuesta:InputNuevaRespuesta
     }
 
+    type InfoAutorQuote{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String,
+    }
+
+    type Quote{
+        mensaje:String,
+        interpolaciones:[Interpolacion]
+        infoAutor:InfoAutorQuote
+        fecha:Date
+    }
+
     type Interpolacion{
         tipo:String,
         enlaceIframe:String,
         mensaje:String,
-        idQuote:String
+        quote:Quote
     }
 
     type RespuestaConversacionForo{
@@ -185,8 +213,8 @@ export const resolvers = {
                 console.log(`Error buscando el foro`);
                 new ApolloError("Error conectando con la base de datos");
             }
-            
-            let todasConversaciones = elForo.conversaciones.sort((b, a)=>a.infoUltimaRespuesta.fecha-b.infoUltimaRespuesta.fecha);
+
+            let todasConversaciones = elForo.conversaciones.sort((b, a) => a.infoUltimaRespuesta.fecha - b.infoUltimaRespuesta.fecha);
 
             let numConversaciones = todasConversaciones.length;
             console.log(`Hay un total de ${numConversaciones}`);
@@ -249,11 +277,11 @@ export const resolvers = {
             let primeraRespuesta = input.primeraRespuesta;
 
             let mensaje = primeraRespuesta.mensaje;
-            var todosMensajes=mensaje;
+            var todosMensajes = mensaje;
 
-            primeraRespuesta.interpolaciones.forEach(interpolacion=>{
-                if(interpolacion.mensaje){
-                    todosMensajes+=interpolacion.mensaje;
+            primeraRespuesta.interpolaciones.forEach(interpolacion => {
+                if (interpolacion.mensaje) {
+                    todosMensajes += interpolacion.mensaje;
                 }
             });
 
@@ -262,10 +290,10 @@ export const resolvers = {
                 throw new ApolloError("Mensaje ilegal");
             }
 
-            primeraRespuesta.interpolaciones.forEach((interpolacion)=>{
-                if(interpolacion.tipo=="video" && interpolacion.enlaceIframe.substr(0, 24)!="https://www.youtube.com/"){
+            primeraRespuesta.interpolaciones.forEach((interpolacion) => {
+                if (interpolacion.tipo == "video" && interpolacion.enlaceIframe.substr(0, 24) != "https://www.youtube.com/") {
                     console.log(`Tipo de enlace no aceptado`);
-                    throw new ApolloError("Enlace de video no valido")                  ;
+                    throw new ApolloError("Enlace de video no valido");
                 }
             });
 
@@ -287,9 +315,9 @@ export const resolvers = {
                 idCreador: credencialesUsuario.id,
                 acceso: "publico",
                 cantidadRespuestas: 1,
-                infoUltimaRespuesta:{
-                    idAutor:credencialesUsuario.id,
-                    fecha:Date.now()
+                infoUltimaRespuesta: {
+                    idAutor: credencialesUsuario.id,
+                    fecha: Date.now()
                 }
             });
 
@@ -327,8 +355,8 @@ export const resolvers = {
                     var elParent: any = await Libro.findById(parent.id, "_id idsEditores").exec();
                     var idsMiembros = elParent.idsEditores;
                 }
-                else if(parent.tipo == "forosGenerales") {
-                    var idsMiembros:any=[];                    
+                else if (parent.tipo == "forosGenerales") {
+                    var idsMiembros: any = [];
                 }
                 else {
                     console.log(`Error: tipo de parent no reconocido`);
@@ -494,12 +522,12 @@ export const resolvers = {
                 }
             }
 
-            let mensaje = nuevaRespuesta.mensaje;            
+            let mensaje = nuevaRespuesta.mensaje;
 
-            var todosMensajes=mensaje;
-            nuevaRespuesta.interpolaciones.forEach(interpolacion=>{
-                if(interpolacion.mensaje){
-                    todosMensajes+=interpolacion.mensaje;
+            var todosMensajes = mensaje;
+            nuevaRespuesta.interpolaciones.forEach(interpolacion => {
+                if (interpolacion.mensaje) {
+                    todosMensajes += interpolacion.mensaje;
                 }
             })
 
@@ -508,10 +536,10 @@ export const resolvers = {
                 throw new ApolloError("Mensaje ilegal");
             }
 
-            nuevaRespuesta.interpolaciones.forEach((interpolacion)=>{
-                if(interpolacion.tipo=="video" && interpolacion.enlaceIframe.substr(0, 24)!="https://www.youtube.com/"){
+            nuevaRespuesta.interpolaciones.forEach((interpolacion) => {
+                if (interpolacion.tipo == "video" && interpolacion.enlaceIframe.substr(0, 24) != "https://www.youtube.com/") {
                     console.log(`Tipo de enlace no aceptado`);
-                    throw new ApolloError("Enlace de video no valido")                  ;
+                    throw new ApolloError("Enlace de video no valido");
                 }
             });
 
@@ -534,13 +562,13 @@ export const resolvers = {
             let Respuesta = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
 
             try {
-                var ultimaRespuesta:any=await Respuesta.findOne({}).sort({fecha:-1}).limit(1).exec();
-                if(!ultimaRespuesta)throw "Ultima respuesta no encontrada";
-                var ultimoRespondedor=ultimaRespuesta.idAutor;
+                var ultimaRespuesta: any = await Respuesta.findOne({}).sort({ fecha: -1 }).limit(1).exec();
+                if (!ultimaRespuesta) throw "Ultima respuesta no encontrada";
+                var ultimoRespondedor = ultimaRespuesta.idAutor;
             } catch (error) {
                 console.log(`Error buscando la ultima respuesta. E: ${error}`);
             }
-            
+
             const laRespuesta = new Respuesta(nuevaRespuesta);
 
             try {
@@ -555,7 +583,7 @@ export const resolvers = {
                 laConversacion.cantidadRespuestas = cantRespuestas;
                 laConversacion.infoUltimaRespuesta = {
                     idAutor: credencialesUsuario.id,
-                    fecha:Date.now()
+                    fecha: Date.now()
                 }
                 await elForo.save();
             } catch (error) {
@@ -589,7 +617,7 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error recopilando la lista de miembros. E: ${error}`);
             }
-            if(idsMiembros && !idsMiembros.includes(ultimoRespondedor)){
+            if (idsMiembros && !idsMiembros.includes(ultimoRespondedor)) {
                 idsMiembros.push(ultimoRespondedor);
             }
 
@@ -711,9 +739,9 @@ export const resolvers = {
                 infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == idConversacion);
             }
 
-            const Respuesta:any = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
+            const Respuesta: any = mongoose.model("respuestasDeConversacion" + idConversacion, esquemaRespuestaConversacion, "respuestasDeConversacion" + idConversacion);
             try {
-                var cantRespuestas: number = await Respuesta.countDocuments().exec();                
+                var cantRespuestas: number = await Respuesta.countDocuments().exec();
             } catch (error) {
                 console.log(`Error contando las respuestas. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");

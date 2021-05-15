@@ -25,10 +25,24 @@ const Nodo = require("../model/atlas/Nodo");
 const Libro_1 = require("../model/cuentos/Libro");
 exports.typeDefs = apollo_server_express_1.gql `
 
+    input InputInfoAutorQuote{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String,
+    }
+
+    input InputQuote{
+        mensaje:String,
+        interpolaciones:[InputInterpolacion]
+        infoAutor:InputInfoAutorQuote
+        fecha:Date
+    }
+
     input InputInterpolacion{
         tipo:String,
         enlaceIframe:String,
-        idQuote:String,        
+        quote:InputQuote,        
         mensaje:String,
     }
 
@@ -50,11 +64,25 @@ exports.typeDefs = apollo_server_express_1.gql `
         primeraRespuesta:InputNuevaRespuesta
     }
 
+    type InfoAutorQuote{
+        id:String,
+        nombres:String,
+        apellidos:String,
+        username:String,
+    }
+
+    type Quote{
+        mensaje:String,
+        interpolaciones:[Interpolacion]
+        infoAutor:InfoAutorQuote
+        fecha:Date
+    }
+
     type Interpolacion{
         tipo:String,
         enlaceIframe:String,
         mensaje:String,
-        idQuote:String
+        quote:Quote
     }
 
     type RespuestaConversacionForo{

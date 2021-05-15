@@ -1,5 +1,34 @@
 import mongoose from "mongoose";
 
+var esquemaInterpolacion = new mongoose.Schema({    
+        tipo: {
+            type: String,
+            required: true,
+            enum: ["video", "quote", "imagen"]
+        },
+        enlaceIframe: {
+            type: String,
+        },        
+        mensaje:{
+            type:String,
+        }    
+})
+esquemaInterpolacion.add({
+    quote: {
+        type: {
+            mensaje:String,
+            infoAutor:{
+                id:String,
+                nombres:String,
+                apellidos:String,
+                username:String,
+            },
+            interpolaciones:[esquemaInterpolacion],
+            fecha:Date,                
+        },
+    },
+})
+
 export const esquemaRespuestaConversacion = new mongoose.Schema({
 
     fecha: {
@@ -14,8 +43,7 @@ export const esquemaRespuestaConversacion = new mongoose.Schema({
         googleDriveDirectLink: String,
     },
     mensaje: {
-        type: String,
-        required: true,
+        type: String,        
     },
     enlaceAdjunto: {
         type: [String],
@@ -31,23 +59,7 @@ export const esquemaRespuestaConversacion = new mongoose.Schema({
         apellidos: String,
         username: String
     },
-    interpolaciones:
-        [{
-            tipo: {
-                type: String,
-                required: true,
-                enum: ["video", "quote", "imagen"]
-            },
-            enlaceIframe: {
-                type: String,
-            },
-            idQuote: {
-                type: String,
-            },
-            mensaje:{
-                type:String,
-            }
-        }]
+    interpolaciones:[esquemaInterpolacion]
 
 });
 

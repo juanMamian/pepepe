@@ -55,6 +55,13 @@
     </div>
 
     <div class="controles">
+      <img
+        src="@/assets/iconos/quote.png"
+        alt="Cita"
+        title="Citar esta respuesta"
+        class="botonInsertar"
+        @click="emitirSolicitudCita"
+      />
       <div
         class="controlRespuesta"
         id="bEliminar"
@@ -77,7 +84,7 @@ export default {
     estaRespuesta: {
       type: Object,
     },
-    idConversacion:String
+    idConversacion: String,
   },
   computed: {
     fechaFormateada: function () {
@@ -98,6 +105,21 @@ export default {
     },
   },
   methods: {
+    emitirSolicitudCita(){
+      var quote={
+        mensaje: this.estaRespuesta.mensaje,
+        interpolaciones:this.estaRespuesta.interpolaciones,
+        infoAutor:this.estaRespuesta.infoAutor,
+        fecha:this.estaRespuesta.fecha 
+      }
+
+      quote.interpolaciones.forEach(interpolacion=>{
+        delete interpolacion.__typename;
+      })
+      delete quote.infoAutor.__typename;
+
+      this.$emit('meQuierenCitar', quote)
+    },
     eliminarse() {
       let dis = this;
       if (!confirm("Eliminando respuesta ¿Continuar?")) {
@@ -105,13 +127,16 @@ export default {
       }
       this.$apollo.mutate({
         mutation: gql`
-          mutation($idRespuesta: ID!, $idConversacion:ID!) {
-            eliminarRespuesta(idRespuesta: $idRespuesta, idConversacion:$idConversacion)
+          mutation($idRespuesta: ID!, $idConversacion: ID!) {
+            eliminarRespuesta(
+              idRespuesta: $idRespuesta
+              idConversacion: $idConversacion
+            )
           }
         `,
         variables: {
           idRespuesta: this.estaRespuesta.id,
-          idConversacion:this.idConversacion
+          idConversacion: this.idConversacion,
         },
         update(store, { data: { eliminarRespuesta } }) {
           if (eliminarRespuesta) {
@@ -158,7 +183,7 @@ export default {
 }
 .mensajeRespuesta {
   white-space: pre-wrap;
-  margin-bottom:15px;
+  margin-bottom: 15px;
   font-size: 20px;
 }
 .caritaAutor {
@@ -166,8 +191,7 @@ export default {
   height: 70px;
   border-radius: 50%;
   grid-area: autor;
-  align-self:flex-start;
-
+  align-self: flex-start;
 }
 .controles {
   grid-area: controles;
@@ -212,5 +236,14 @@ export default {
 }
 .enlaceAdjunto:hover {
   background-color: rgba(129, 66, 129, 0.733);
+}
+.botonInsertar {
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+.botonInsertar:hover {
+  background-color: gray;
 }
 </style>

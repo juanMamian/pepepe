@@ -101,16 +101,67 @@ export const fragmentoProyecto = gql`
   
 `;
 
+const fragmentoQuote =gql`
+  fragment fragQuote on Quote{
+    mensaje    
+    infoAutor{
+      id
+      nombres
+      apellidos
+      username
+    }
+    fecha
+  }
+`;
+
+const fragmentoInterpolacion =gql`
+  fragment fragInterpolacion on Interpolacion{
+    tipo
+    enlaceIframe
+    mensaje    
+  }
+`;
+
 export const fragmentoRespuesta = gql`
   fragment fragRespuesta on RespuestaConversacionForo{
     id
     fecha
     mensaje
     interpolaciones{
-      tipo
-      enlaceIframe
-      idQuote
-      mensaje
+      ...fragInterpolacion
+      quote{
+        ...fragQuote
+        interpolaciones{
+          ...fragInterpolacion
+          quote{
+            ...fragQuote
+            interpolaciones{
+              ...fragInterpolacion
+              quote{
+                ...fragQuote
+                interpolaciones{
+                  ...fragInterpolacion
+                  quote{
+                    ...fragQuote
+                    interpolaciones{
+                      ...fragInterpolacion
+                      quote{
+                        ...fragQuote
+                        interpolaciones{
+                          ...fragInterpolacion
+                          quote{
+                            ...fragQuote
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
     enlaceAdjunto
     infoAutor{
@@ -123,6 +174,8 @@ export const fragmentoRespuesta = gql`
       googleDriveDirectLink
     }
   }
+  ${fragmentoQuote}, 
+  ${fragmentoInterpolacion}
 `;
 
 export const fragmentoConversacion = gql`

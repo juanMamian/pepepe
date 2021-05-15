@@ -7,7 +7,7 @@
       <div class="rayaX1"></div>
       <div class="rayaX2"></div>
     </div>
-    <div id="bloqueIframe">
+    <div id="bloqueIframe" v-if="estaInterpolacion.tipo == 'video'">
       <iframe
         id="elIframe"
         :src="estaInterpolacion.enlaceIframe"
@@ -20,8 +20,8 @@
           type="text"
           id="inputEnlace"
           v-model="enlaceIframe"
-          @input="enlaceAceptado=false"
-          @keypress.enter="setEnlaceIframe"                    
+          @input="enlaceAceptado = false"
+          @keypress.enter="setEnlaceIframe"
           @paste="onPasteEnlace"
           placeholder="Introduce el enlace"
         />
@@ -29,7 +29,7 @@
           src="@/assets/iconos/success.png"
           width="17px"
           style="cursor: pointer"
-          :style="[{backgroundColor:enlaceAceptado?'green':''}]"
+          :style="[{ backgroundColor: enlaceAceptado ? 'green' : '' }]"
           alt="Ok"
           title="Aceptar"
           class="bAceptar"
@@ -40,10 +40,15 @@
 
     <div id="bloqueQuote" v-if="estaInterpolacion.tipo == 'quote'">
       <div id="infoQuote">
-        {{ estaInterpolacion.quote.nombreAutor }} escribio:
+        {{ estaInterpolacion.quote.infoAutor.nombres }} escribio:
       </div>
       <div id="quote">
         {{ estaInterpolacion.quote.mensaje }}
+        <interpolacion
+          v-for="interpolacion of estaInterpolacion.quote.interpolaciones"
+          :key="interpolacion.id"
+          :estaInterpolacion="interpolacion"
+        />
       </div>
     </div>
 
@@ -61,9 +66,11 @@
 </template>
 
 <script>
+import Interpolacion from "./Interpolacion.vue";
 var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
 
 export default {
+  components: { Interpolacion },
   name: "CreadorInterpolacion",
   props: {
     estaInterpolacion: Object,
@@ -74,12 +81,12 @@ export default {
       enlaceIframe: null,
       enlaceIframeSet: null,
 
-      enlaceAceptado:false,
+      enlaceAceptado: false,
     };
   },
   methods: {
     onPasteEnlace() {
-      this.enlaceAceptado=false;
+      this.enlaceAceptado = false;
       console.log(`Paste`);
       // setTimeout(() => {
       //   console.log(`Seting con url ${this.enlaceIframe}`);
@@ -97,16 +104,15 @@ export default {
           this.enlaceIframe.substr(32);
       }
 
-      if(this.enlaceIframe.substr(0, 24)!="https://www.youtube.com/"){
-        console.log(`Enlace no válido`);    
-        this.enlaceIframe.    
-        alert("Enlace no válido");
-        return
+      if (this.enlaceIframe.substr(0, 24) != "https://www.youtube.com/") {
+        console.log(`Enlace no válido`);
+        this.enlaceIframe.alert("Enlace no válido");
+        return;
       }
 
       this.enlaceIframeSet = this.enlaceIframe;
       this.$emit("enlaceIframeSet", this.enlaceIframeSet);
-      this.enlaceAceptado=true;
+      this.enlaceAceptado = true;
     },
     checkHeight() {
       while (
@@ -150,6 +156,8 @@ export default {
   font-size: 11px;
   font-style: italic;
   color: gray;
+  width: 90%;
+  margin: 5px auto;
 }
 
 #quote {
@@ -176,7 +184,7 @@ export default {
   margin: 2px auto;
   width: 280px;
 }
-.bAceptar{
+.bAceptar {
   border-radius: 50%;
 }
 .bAceptar:hover {
@@ -188,7 +196,7 @@ export default {
   width: 250px;
   margin-right: 5px;
 }
-#zonaMensaje{
+#zonaMensaje {
   margin-top: 15px;
 }
 #inputMensaje {
@@ -218,7 +226,7 @@ export default {
 .rayaX1 {
   position: absolute;
   top: 50%;
-  left: 54%;
+  left: 50%;
   background-color: black;
 
   transform: translate(-50%, -50%) rotate(45deg);
@@ -228,7 +236,7 @@ export default {
 .rayaX2 {
   position: absolute;
   top: 50%;
-  left: 54%;
+  left: 50%;
   background-color: black;
   transform: translate(-50%, -50%) rotate(-45deg);
   height: 2px;
