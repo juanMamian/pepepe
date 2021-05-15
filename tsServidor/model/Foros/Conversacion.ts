@@ -17,30 +17,37 @@ export const esquemaRespuestaConversacion = new mongoose.Schema({
         type: String,
         required: true,
     },
-    enlaceAdjunto:{
-        type:[String],
-        default:[]
+    enlaceAdjunto: {
+        type: [String],
+        default: []
     },
     idAutor: {
         type: String,
         required: true,
     },
-    infoAutor:{
-        id:String,
-        nombres:String,
-        apellidos:String,
-        username:String
+    infoAutor: {
+        id: String,
+        nombres: String,
+        apellidos: String,
+        username: String
     },
-    interpolaciones:{
-        tipo:{
-            type:String,
-            required:true,
-            enum:["video", "quote", "imagen"]
-        },
-        enlaceIframe:{
-            type:String,            
-        }
-    }
+    interpolaciones:
+        [{
+            tipo: {
+                type: String,
+                required: true,
+                enum: ["video", "quote", "imagen"]
+            },
+            enlaceIframe: {
+                type: String,
+            },
+            idQuote: {
+                type: String,
+            },
+            mensaje:{
+                type:String,
+            }
+        }]
 
 });
 
@@ -75,8 +82,8 @@ export const esquemaConversacion = new mongoose.Schema({
         idAutor: String,
         fecha: {
             type: Date,
-            required:true,
-            default:new Date(2021, 2, 1),
+            required: true,
+            default: new Date(2021, 2, 1),
         }
     }
 });

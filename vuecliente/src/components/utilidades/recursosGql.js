@@ -106,6 +106,12 @@ export const fragmentoRespuesta = gql`
     id
     fecha
     mensaje
+    interpolaciones{
+      tipo
+      enlaceIframe
+      idQuote
+      mensaje
+    }
     enlaceAdjunto
     infoAutor{
       id

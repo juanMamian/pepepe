@@ -3,15 +3,30 @@
     <div class="infoRespuesta">{{ fechaFormateada }}</div>
     <img
       :src="
-        this.serverUrl + '/api/usuarios/fotografias/' + estaRespuesta.infoAutor.id
+        this.serverUrl +
+        '/api/usuarios/fotografias/' +
+        estaRespuesta.infoAutor.id
       "
       :alt="estaRespuesta.infoAutor.nombre"
       class="caritaAutor"
     />
-    <div class="mensajeRespuesta">
-      {{ estaRespuesta.mensaje }}
+    <div id="zonaCuerpoMensaje">
+      <div class="mensajeRespuesta">
+        {{ estaRespuesta.mensaje }}
+      </div>
+      <interpolacion
+        v-for="interpolacion of estaRespuesta.interpolaciones"
+        :key="interpolacion.id"
+        :estaInterpolacion="interpolacion"
+      />
     </div>
-    <div id="archivo" v-if="estaRespuesta.archivo && estaRespuesta.archivo.googleDriveDirectLink">
+
+    <div
+      id="archivo"
+      v-if="
+        estaRespuesta.archivo && estaRespuesta.archivo.googleDriveDirectLink
+      "
+    >
       <a :href="estaRespuesta.archivo.googleDriveDirectLink">
         <img
           src="@/assets/iconos/downloadFile.png"
@@ -24,8 +39,7 @@
     <div
       class="enlacesAdjuntos"
       v-show="
-        estaRespuesta.enlaceAdjunto &&
-        estaRespuesta.enlaceAdjunto.length > 0
+        estaRespuesta.enlaceAdjunto && estaRespuesta.enlaceAdjunto.length > 0
       "
     >
       <a
@@ -34,9 +48,7 @@
         :key="index"
         v-for="(enlace, index) of estaRespuesta.enlaceAdjunto"
       >
-        <div
-          class="enlaceAdjunto"          
-        >
+        <div class="enlaceAdjunto">
           {{ enlace }}
         </div>
       </a>
@@ -57,7 +69,9 @@
 
 <script>
 import gql from "graphql-tag";
+import Interpolacion from "./Interpolacion.vue";
 export default {
+  components: { Interpolacion },
   name: "Respuesta",
   props: {
     estaRespuesta: {
@@ -114,7 +128,7 @@ export default {
 <style scoped>
 .respuesta {
   background-color: rgb(255 205 164);
-  
+
   border-radius: 15px;
   display: grid;
   grid-template-areas:
@@ -136,19 +150,24 @@ export default {
   grid-area: info;
   width: 100%;
 }
-.mensajeRespuesta {
-  padding: 5px 10px;
+#zonaCuerpoMensaje {
   grid-area: mensaje;
   width: 100%;
-  height: 100%;
   padding: 10px;
+  height: 100%;
+}
+.mensajeRespuesta {
   white-space: pre-wrap;
+  margin-bottom:15px;
+  font-size: 20px;
 }
 .caritaAutor {
   width: 70px;
   height: 70px;
   border-radius: 50%;
   grid-area: autor;
+  align-self:flex-start;
+
 }
 .controles {
   grid-area: controles;
@@ -164,7 +183,7 @@ export default {
 .controlRespuesta:hover {
   background-color: red;
 }
-#archivo{
+#archivo {
   padding: 5px;
 }
 
@@ -176,7 +195,7 @@ export default {
   background-color: #4bb36b;
 }
 
-.enlacesAdjuntos{
+.enlacesAdjuntos {
   grid-area: enlaceAdjunto;
   justify-self: left;
 }
@@ -189,9 +208,9 @@ export default {
   padding: 3px 5px;
   cursor: pointer;
   max-width: 600px;
-  margin:3px;
+  margin: 3px;
 }
-.enlaceAdjunto:hover{
+.enlaceAdjunto:hover {
   background-color: rgba(129, 66, 129, 0.733);
 }
 </style>

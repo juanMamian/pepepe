@@ -15,10 +15,18 @@ import { ModeloLibro as Libro } from "../model/cuentos/Libro";
 
 export const typeDefs = gql`
 
+    input InputInterpolacion{
+        tipo:String,
+        enlaceIframe:String,
+        idQuote:String,        
+        mensaje:String,
+    }
+
     input InputNuevaRespuesta{
         mensaje:String,
         infoArchivo:InfoArchivoSubido,
         enlaceAdjunto:[String],
+        interpolaciones:[InputInterpolacion]
     }
 
     input InputParent{
@@ -32,11 +40,19 @@ export const typeDefs = gql`
         primeraRespuesta:InputNuevaRespuesta
     }
 
+    type Interpolacion{
+        tipo:String,
+        enlaceIframe:String,
+        mensaje:String,
+        idQuote:String
+    }
+
     type RespuestaConversacionForo{
         id: ID
         fecha:Date,
         archivo:InfoArchivo,
         mensaje:String,
+        interpolaciones:[Interpolacion]
         enlaceAdjunto:[String],
         autor: PublicUsuario,
         infoAutor:PublicUsuario,
@@ -246,6 +262,13 @@ export const resolvers = {
                 throw new ApolloError("Mensaje ilegal");
             }
 
+            primeraRespuesta.interpolaciones.forEach((interpolacion)=>{
+                if(interpolacion.tipo=="video" && interpolacion.enlaceIframe.substr(0, 24)!="https://www.youtube.com/"){
+                    console.log(`Tipo de enlace no aceptado`);
+                    throw new ApolloError("Enlace de video no valido")                  ;
+                }
+            });
+
             primeraRespuesta.mensaje = mensaje;
             primeraRespuesta.archivo = primeraRespuesta.infoArchivo;
 
@@ -263,7 +286,11 @@ export const resolvers = {
                 titulo,
                 idCreador: credencialesUsuario.id,
                 acceso: "publico",
-                cantidadRespuestas: 1
+                cantidadRespuestas: 1,
+                infoUltimaRespuesta:{
+                    idAutor:credencialesUsuario.id,
+                    fecha:Date.now()
+                }
             });
 
             let idConversacion = nuevaConversacion._id;
@@ -470,7 +497,7 @@ export const resolvers = {
             let mensaje = nuevaRespuesta.mensaje;            
 
             var todosMensajes=mensaje;
-            nuevaRespuesta.interpolaciones.foreEach(interpolacion=>{
+            nuevaRespuesta.interpolaciones.forEach(interpolacion=>{
                 if(interpolacion.mensaje){
                     todosMensajes+=interpolacion.mensaje;
                 }
@@ -480,6 +507,13 @@ export const resolvers = {
                 console.log(`El mensaje contenia caracteres ilegales`);
                 throw new ApolloError("Mensaje ilegal");
             }
+
+            nuevaRespuesta.interpolaciones.forEach((interpolacion)=>{
+                if(interpolacion.tipo=="video" && interpolacion.enlaceIframe.substr(0, 24)!="https://www.youtube.com/"){
+                    console.log(`Tipo de enlace no aceptado`);
+                    throw new ApolloError("Enlace de video no valido")                  ;
+                }
+            });
 
             nuevaRespuesta.mensaje = mensaje;
             nuevaRespuesta.archivo = nuevaRespuesta.infoArchivo;

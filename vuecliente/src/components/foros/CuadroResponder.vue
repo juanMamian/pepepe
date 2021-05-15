@@ -171,6 +171,7 @@ export default {
       this.enviandoRespuesta = true;
       let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
       var datos = new FormData();
+      this.setInterpolacionesData();
 
       if (!inputArchivoAdjunto.value) {
         let nuevaRespuesta = {
@@ -345,6 +346,7 @@ export default {
       this.nombreArchivoSeleccionado = null;
       this.$refs.inputArchivoAdjunto.value = null;
       this.mensaje = null;
+      this.interpolaciones=[];
       (this.enlaceAdjuntable = null), (this.enlaceAdjunto = []);
     },
     insertarCreadorInterpolacion(tipo) {
@@ -395,6 +397,11 @@ export default {
       console.log(`Seting enlace iframe en el array de interpolaciones`);
       this.$set(this.interpolaciones[index], "enlaceIframe", enlace);
       
+    },
+    setInterpolacionesData(){
+      this.interpolaciones.forEach((interpolacion, index)=>{
+        interpolacion.mensaje=this.$refs.creadoresInterpolacion[index].mensaje;
+      })
     }
   },
   computed: {

@@ -92,8 +92,6 @@ export default new Vuex.Store({
                 infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==datos.idConversacion);
             }
             infoConversacion.respuestasLeidas=datos.respuestasLeidas;                        
-            console.log(`En variable IC: ${JSON.stringify(infoConversacion)}`);
-            console.log(`En state IC: ${JSON.stringify(state.usuario.foros.find(f=>f.idForo==datos.idForo).conversaciones.find(c=>c.idConversacion==datos.idConversacion))}`);
         }
     }
 });

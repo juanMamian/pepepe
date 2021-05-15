@@ -20,9 +20,8 @@
           type="text"
           id="inputEnlace"
           v-model="enlaceIframe"
-          @keypress.enter="setEnlaceIframe"
-          @blur="setEnlaceIframe"
-          @change="setEnlaceIframe"
+          @input="enlaceAceptado=false"
+          @keypress.enter="setEnlaceIframe"                    
           @paste="onPasteEnlace"
           placeholder="Introduce el enlace"
         />
@@ -30,6 +29,7 @@
           src="@/assets/iconos/success.png"
           width="17px"
           style="cursor: pointer"
+          :style="[{backgroundColor:enlaceAceptado?'green':''}]"
           alt="Ok"
           title="Aceptar"
           class="bAceptar"
@@ -73,15 +73,18 @@ export default {
       mensaje: null,
       enlaceIframe: null,
       enlaceIframeSet: null,
+
+      enlaceAceptado:false,
     };
   },
   methods: {
     onPasteEnlace() {
+      this.enlaceAceptado=false;
       console.log(`Paste`);
-      setTimeout(() => {
-        console.log(`Seting con url ${this.enlaceIframe}`);
-        this.setEnlaceIframe();
-      }, 300);
+      // setTimeout(() => {
+      //   console.log(`Seting con url ${this.enlaceIframe}`);
+      //   this.setEnlaceIframe();
+      // }, 300);
     },
     setEnlaceIframe() {
       if (!this.enlaceIframe || this.enlaceIframe.substr(0, 8) != "https://") {
@@ -93,8 +96,17 @@ export default {
           "embed/" +
           this.enlaceIframe.substr(32);
       }
+
+      if(this.enlaceIframe.substr(0, 24)!="https://www.youtube.com/"){
+        console.log(`Enlace no válido`);    
+        this.enlaceIframe.    
+        alert("Enlace no válido");
+        return
+      }
+
       this.enlaceIframeSet = this.enlaceIframe;
       this.$emit("enlaceIframeSet", this.enlaceIframeSet);
+      this.enlaceAceptado=true;
     },
     checkHeight() {
       while (
@@ -164,9 +176,11 @@ export default {
   margin: 2px auto;
   width: 280px;
 }
+.bAceptar{
+  border-radius: 50%;
+}
 .bAceptar:hover {
   background-color: green;
-  border-radius: 50%;
 }
 #inputEnlace {
   font-size: 19px;
@@ -174,7 +188,9 @@ export default {
   width: 250px;
   margin-right: 5px;
 }
-
+#zonaMensaje{
+  margin-top: 15px;
+}
 #inputMensaje {
   width: 100%;
   background-color: transparent;

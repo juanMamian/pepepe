@@ -34,7 +34,23 @@ exports.esquemaRespuestaConversacion = new mongoose_1.default.Schema({
         nombres: String,
         apellidos: String,
         username: String
-    }
+    },
+    interpolaciones: [{
+            tipo: {
+                type: String,
+                required: true,
+                enum: ["video", "quote", "imagen"]
+            },
+            enlaceIframe: {
+                type: String,
+            },
+            idQuote: {
+                type: String,
+            },
+            mensaje: {
+                type: String,
+            }
+        }]
 });
 exports.esquemaConversacion = new mongoose_1.default.Schema({
     titulo: {
