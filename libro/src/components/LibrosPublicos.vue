@@ -147,6 +147,39 @@ export default {
           console.log(`Error. E: ${error}`);
         });
     },
+    toggleLibro({libro, nuevoEstado}){
+      const publico=nuevoEstado;
+      console.log(`Toggling libro en la lista de libros publicos. Estado: ${publico}`);
+      const store=this.$apollo.provider.defaultClient;
+      const cache=store.readQuery({
+        query: QUERY_LIBROS_PUBLICOS
+      });
+      var nuevoCache=JSON.parse(JSON.stringify(cache));
+
+      if(publico){          
+        if(!nuevoCache.librosPublicos.some(p=>p.id==libro.id)){
+          console.log(`Pushing libro a la lista de libros públicos`);
+          nuevoCache.librosPublicos.push(libro);
+          store.writeQuery({
+            query:QUERY_LIBROS_PUBLICOS,
+            data:nuevoCache
+          });
+        }
+        else{
+          console.log(`El libro ya estaba en la lista de libros públicos`);
+        }
+      }
+      else{
+        const indexP=nuevoCache.librosPublicos.findIndex(p=>p.id==libro.id)
+        if(indexP>-1){
+          nuevoCache.librosPublicos.splice(indexP, 1);
+          store.writeQuery({
+            query:QUERY_LIBROS_PUBLICOS,
+            data:nuevoCache
+          });
+        }
+      }
+    }
   },
   computed: {
     usuarioSuperadministrador() {

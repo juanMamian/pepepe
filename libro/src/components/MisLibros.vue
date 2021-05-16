@@ -13,8 +13,10 @@
         src="@/assets/iconos/libro.png"
         class="bControlMisLibros"
         title="Crear nuevo libro"
+        v-show="!creandoNuevoLibro"
         @click="crearNuevoLibro"
       />
+      <img src="@/assets/iconos/loading.png" alt="Cargando" style="width:15px" v-show="creandoNuevoLibro">
     </div>
     <img
       src="@/assets/iconos/loading.png"
@@ -95,12 +97,13 @@ export default {
   data() {
     return {
       desplegado: true,
+      creandoNuevoLibro:false,
     };
   },
   methods: {
     crearNuevoLibro() {
       if (!confirm("¿Crear un nuevo libro?")) return;
-
+      this.creandoNuevoLibro=true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -109,12 +112,14 @@ export default {
                 id
                 titulo
                 publico
+                idsEditores
               }
             }
           `,
         })
         .then(({ data: { crearNuevoLibro } }) => {
           console.log(`Creado ${JSON.stringify(crearNuevoLibro)}`);
+          this.creandoNuevoLibro=false;
           const store = this.$apollo.provider.defaultClient;
           const cache = store.readQuery({
             query: QUERY_MIS_LIBROS,
@@ -129,6 +134,8 @@ export default {
           } else {
             console.log(`El libro ya estaba incluido en el caché`);
           }
+
+          this.seleccionarLibro(crearNuevoLibro.id)
         });
     },
     removerLibroCache(idLibro) {
@@ -199,6 +206,8 @@ export default {
               query: QUERY_MIS_LIBROS,
               data: nuevoCache,
             });
+
+            this.$emit("toggleLibroPublico", {libro: this.misLibros.find(p=>p.id==idLibro), nuevoEstado})
           }
         })
         .catch((error) => {

@@ -23,6 +23,7 @@
       :URLLibrosolo="URLLibrosolo"
       class="bloqueListaLibros"
       @libroSeleccionado="seleccionarLibro"
+      @toggleLibroPublico="$refs.librosPublicos.toggleLibro($event)"
       ref="misLibros"
     />
 
