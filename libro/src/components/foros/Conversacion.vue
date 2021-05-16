@@ -1,8 +1,18 @@
 <template>
   <div
     class="conversacion"
-    :class="{ seleccionado, deshabilitado: seleccionado && loading }"
+    :class="{
+      seleccionado,
+      deshabilitado: seleccionado && loading,
+      conRespuestasNoLeidas:
+        estaConversacion.cantidadRespuestas > cantidadRespuestasLeidasUsuario,
+    }"
   >
+    <div class="infoConversacion">
+      {{ estaConversacion.cantidadRespuestas }} publicacion{{
+        estaConversacion.cantidadRespuestas > 1 ? "es" : ""
+      }}. Última publicación en {{ fechaFormateada }}
+    </div>
     <div class="tituloConversacion">
       <img
         src="@/assets/iconos/conversacion.png"
@@ -23,12 +33,6 @@
             estaConversacion.cantidadRespuestas -
             cantidadRespuestasLeidasUsuario
           }}
-        </span>
-        <span
-          class="dato datoCantidadRespuestas"
-          title="Cantidad de respuestas en esta conversación"
-        >
-          {{ estaConversacion.cantidadRespuestas }}
         </span>
       </span>
     </div>
@@ -61,6 +65,7 @@
             :key="respuesta.id"
             :idConversacion="estaConversacion.id"
             :estaRespuesta="respuesta"
+            @meQuierenCitar="citarRespuesta"
             @meElimine="updateRespuestaEliminada(respuesta.id, index)"
           />
         </div>
@@ -72,8 +77,7 @@
           usuarioLogeado &&
           (estaConversacion.acceso == 'publico' || usuarioMiembro == true) &&
           estaConversacion.id
-        "
-        v-show="numPaginaSeleccionada == numPaginas"
+        "        
         :idConversacion="estaConversacion.id"
         @hiceRespuesta="addRespuesta($event)"
       />
@@ -89,24 +93,7 @@
 import gql from "graphql-tag";
 import CuadroResponder from "./CuadroResponder.vue";
 import Respuesta from "./Respuesta.vue";
-
-export const fragmentoRespuesta = gql`
-  fragment fragRespuesta on RespuestaConversacionForo{
-    id
-    fecha
-    mensaje
-    enlaceAdjunto
-    infoAutor{
-      id
-      nombres
-      apellidos
-      username
-    }
-    archivo{
-      googleDriveDirectLink
-    }
-  }
-`;
+import { fragmentoRespuesta } from "../utilidades/recursosGql";
 
 const QUERY_RESPUESTAS = gql`
   query($idConversacion: ID!, $pagina: Int!) {
@@ -138,10 +125,7 @@ export default {
       },
       update({
         respuestasPaginaDeConversacion: { pagina, numPaginas, respuestas },
-      }) {
-        console.log(
-          `Llenando con ${respuestas.length} respuestas la pagina ${pagina} de ${numPaginas}`
-        );
+      }) {        
         this.$set(this.respuestasPorPagina, pagina, respuestas);
         if (this.numPaginaSeleccionada != pagina) {
           this.numPaginaSeleccionada = pagina;
@@ -192,12 +176,13 @@ export default {
           this.$set(this.respuestasPorPagina, targetPagina, []);
         }
       }
-      console.log(`Pushing en targetPagina ${targetPagina}`);
       this.respuestasPorPagina[targetPagina].push(nuevaRespuesta);
       this.$refs.cuadroResponder.cerrarse();
       if (this.numPaginaSeleccionada != targetPagina) {
         this.numPaginaSeleccionada = targetPagina;
       }
+      console.log(`Emitiendo 'respuesta publicada'`);
+      this.$emit("respuestaPublicada");
     },
     updateRespuestaEliminada(idRespuesta, pagina) {
       console.log(`Respuesta ${idRespuesta} eliminada de la pagina ${pagina}`);
@@ -209,6 +194,9 @@ export default {
         this.$apollo.queries.numPaginas.refresh();
       }
     },
+    citarRespuesta(quote){
+      this.$refs.cuadroResponder.interpolarQuote(quote);
+    }
   },
   computed: {
     cantidadRespuestasLeidasUsuario() {
@@ -230,21 +218,55 @@ export default {
         return 0;
       }
     },
+    fechaFormateada: function () {
+      if (
+        !this.estaConversacion.infoUltimaRespuesta ||
+        !this.estaConversacion.infoUltimaRespuesta.fecha
+      ) {
+        return "Fecha desconocida";
+      }
+      let laFecha = new Date(
+        this.estaConversacion.infoUltimaRespuesta.fecha
+      ).toString();
+      let indexParentesis = laFecha.indexOf("(");
+      let fechaCorta = laFecha.substr(0, indexParentesis);
+      let indexGMT = fechaCorta.indexOf("GMT");
+      if (indexGMT > -1) {
+        fechaCorta = fechaCorta.substr(0, indexGMT);
+      }
+      return fechaCorta;
+    },
   },
+  watch:{
+    seleccionado(nuevo, viejo){
+      if(nuevo && !viejo){
+        this.$emit("meAbrieron");
+      }
+    }
+  }
 };
 </script>
 
 <style scoped>
 .conversacion {
-  background-color: #91bfec;
-  border: 1px solid #023004;
+  background-color: #fdc190;
+  border: 1px solid white;
   padding: 0px 0px;
 }
 .conversacion:hover {
-  background-color: #aec6de;
+  background-color: #f7b57f;
+}
+.conRespuestasNoLeidas {
+  background-color: #f8cca8;
 }
 .seleccionado {
-  background-color: #aec6de;
+  background-color: #f7b57f;
+}
+.infoConversacion {
+  font-size: 10px;
+  font-style: italic;
+  color: gray;
+  text-align: right;
 }
 .respuesta {
   margin: 5px;
@@ -253,39 +275,38 @@ export default {
   cursor: pointer;
 }
 .tituloConversacion {
-  padding: 15px 10px;
+  padding: 15px 0px;
   margin: 5px;
   font-weight: bold;
   display: grid;
   align-items: center;
-  grid-template-columns: 100px 1fr 200px;
+  grid-template-columns: 35px 1fr 50px;
+  color: #9c1a1a;
 }
 .imagenConversacion {
-  width: 50px;
-  height: 50px;
+  width: 30px;
+  height: 30px;
   margin-right: 10px;
 }
 .datosConversacion {
-  padding: 10px 10px;
+  padding: 10px 0px;
 }
 .dato {
-  margin: 0px 4px;
+  margin: 0px 3px;
   cursor: pointer;
+  border-radius: 10px;
+  padding: 3px;
+  text-align: center;
+  font-size: 12px;
 }
 
 .datoRespuestasNoLeidas {
-  border-radius: 10px;
   border: 1px solid chocolate;
-  padding: 6px;
-  text-align: center;
   background-color: rgb(243, 206, 180);
 }
 
 .datoCantidadRespuestas {
-  border-radius: 10px;
   border: 1px solid rgb(75, 73, 73);
-  padding: 6px;
-  text-align: center;
 }
 .zonaRespuestas {
   padding-left: 0px;
@@ -312,15 +333,41 @@ export default {
   margin: 2px;
   border-radius: 5px;
   cursor: pointer;
-  background-color: #aec6de;
+  background-color: #f7b57f;
 }
 
 .selectorPagina:hover {
-  background-color: #cddbe9;
+  background-color: #ffd0aa;
 }
 .selectorSeleccionado {
-  background-color: #cddbe9;
+  background-color: #ffd0aa;
+
   pointer-events: none;
   font-weight: bold;
+}
+
+@media only screen and (min-width: 768px) {
+  .tituloConversacion {
+    padding: 15px 10px;
+    margin: 5px;
+    font-weight: bold;
+    display: grid;
+    align-items: center;
+    grid-template-columns: 65px 1fr 90px;
+    color: #9c1a1a;
+  }
+  .imagenConversacion {
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+  }
+  .dato {
+    margin: 0px 4px;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 6px;
+    text-align: center;
+    font-size: 14px;
+  }
 }
 </style>

@@ -187,8 +187,8 @@ exports.resolvers = {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
                 }
                 catch (error) {
-                    console.log(`error buscando usuario en la base de datos`);
-                    throw new apollo_server_express_1.ApolloError("");
+                    console.log(`error buscando usuario con id ${idUsuario} en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Error buscando usuario");
                 }
                 return elUsuario;
             });

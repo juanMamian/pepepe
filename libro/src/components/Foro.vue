@@ -7,7 +7,10 @@
       <div
         id="bRegresarConversaciones"
         v-show="idConversacionSeleccionada != null"
-        @click="idConversacionSeleccionada = null"
+        @click="
+          idConversacionSeleccionada = null;
+          $apollo.queries.numPaginas.refetch();
+        "
       >
         Volver a conversaciones
       </div>
@@ -94,14 +97,17 @@
             idConversacionSeleccionada == conversacion.id ||
             !conversacionAbierta
           "
-          @click.native="
-            idConversacionSeleccionada = conversacion.id;
-            setConversacionLeida(
-              conversacion.id,
-              conversacion.cantidadRespuestas
-            );
+          @click.native="idConversacionSeleccionada = conversacion.id"
+          @meAbrieron="
+            setTodaConversacionLeida(conversacion.id)
           "
           @meElimine="refreshPagina"
+          @respuestaPublicada="
+            setTodaConversacionLeida(
+              conversacion.id,
+              conversacion.cantidadRespuestas
+            )
+          "
         />
       </div>
     </div>
@@ -110,20 +116,12 @@
 
 <script>
 import gql from "graphql-tag";
+// import CreadorConversacion from "./foros/CreadorConversacion.vue";
+import { fragmentoConversacion } from "./utilidades/recursosGql";
 import Conversacion from "./foros/Conversacion.vue";
 import CuadroResponder from "./foros/CuadroResponder.vue";
 
 const charProhibidosTituloNuevaConversacion = /[^ a-zA-ZÀ-ž0-9_():.,-¡!¿?]/;
-
-export const fragmentoConversacion = gql`
-  fragment fragConversacion on Conversacion {
-    id
-    titulo
-    estado
-    acceso
-    cantidadRespuestas
-  }
-`;
 
 const QUERY_FORO = gql`
   query($idForo: ID!) {
@@ -211,28 +209,75 @@ export default {
   methods: {
     addConversacion(nuevaConversacion) {
       this.creandoConversacion = false;
-      var targetPagina = this.numPaginas;
-      console.log(`Target página: ${targetPagina}`);
-      if (
-        this.conversacionesPorPagina[targetPagina].length >= 6 ||
-        targetPagina < 1
-      ) {
-        targetPagina++;
-        if (!this.conversacionesPorPagina[targetPagina]) {
-          this.$set(this.conversacionesPorPagina, targetPagina, []);
-        }
-      }
-      console.log(`Pushing en targetPagina ${targetPagina}`);
-      this.conversacionesPorPagina[targetPagina].push(nuevaConversacion);
-      if (this.numPaginaSeleccionada != targetPagina) {
-        this.numPaginaSeleccionada = targetPagina;
-      }
+      // var targetPagina = this.numPaginas;
+      // console.log(`Target página: ${targetPagina}`);
+      // if (
+      //   this.conversacionesPorPagina[targetPagina].length >= 6 ||
+      //   targetPagina < 1
+      // ) {
+      //   targetPagina++;
+      //   if (!this.conversacionesPorPagina[targetPagina]) {
+      //     this.$set(this.conversacionesPorPagina, targetPagina, []);
+      //   }
+      // }
+      // console.log(`Pushing en targetPagina ${targetPagina}`);
+      // this.conversacionesPorPagina[targetPagina].push(nuevaConversacion);
+      this.setTodaConversacionLeida(nuevaConversacion.id);
+
+      // if (this.numPaginaSeleccionada != targetPagina) {
+      //   this.numPaginaSeleccionada = targetPagina;
+      // }
       this.tituloNuevaConversacion = null;
+      this.numPaginaSeleccionada=1;
+      this.$apollo.queries.numPaginas.refetch();
+
+
     },
     refreshPagina() {
       //let store = this.$apollo.provider.defaultClient;
       this.idConversacionSeleccionada = null;
       this.$apollo.queries.numPaginas.refresh();
+    },    
+    setTodaConversacionLeida(idConversacion) {
+      if (!this.usuario || !this.usuario.id) {
+        return;
+      } else {
+        console.log(`Setting toda conversación leida`);
+
+        this.$apollo
+          .mutate({
+            mutation: gql`
+              mutation($idUsuario: ID!, $idForo: ID!, $idConversacion: ID!) {
+                setTodasRespuestasConversacionLeidasPorUsuario(
+                  idUsuario: $idUsuario
+                  idForo: $idForo
+                  idConversacion: $idConversacion
+                )
+              }
+            `,
+            variables: {
+              idUsuario: this.usuario.id,
+              idForo: this.idForo,
+              idConversacion,
+            },
+          })
+          .then(
+            ({ data: { setTodasRespuestasConversacionLeidasPorUsuario } }) => {
+              console.log(
+                `Resultado: ${setTodasRespuestasConversacionLeidasPorUsuario}`
+              );
+
+              this.$store.commit("setRespuestasLeidasConversacionUsuario", {
+                idForo: this.idForo,
+                idConversacion,
+                respuestasLeidas: setTodasRespuestasConversacionLeidasPorUsuario,
+              });
+            }
+          )
+          .catch((error) => {
+            console.log(`Error. E: ${error}`);
+          });
+      }
     },
     setConversacionLeida(idConversacion, cantidadRespuestasLeidas) {
       if (!this.usuario || !this.usuario.id) {
@@ -296,7 +341,7 @@ export default {
         }
       }
       return false;
-    },    
+    },
     conversacionAbierta() {
       return this.idConversacionSeleccionada;
     },
@@ -320,8 +365,8 @@ export default {
 
 <style scoped>
 .foro {
-  border: 2px solid black;
-  background-color: rgb(241, 241, 241);
+  border: 2px solid white;
+  background-color: rgb(239 158 93);
   margin: 0px auto;
 }
 #nombreForo {
@@ -331,25 +376,30 @@ export default {
 }
 
 .barraSuperiorForo {
-  display: flex;
-  background-color: #ddfeff;
+  display: grid;
+  grid-template-columns: 1fr 100px 1fr;
 }
 
 #bRegresarConversaciones {
-  padding: 20px 5px;
+  padding: 15px 5px;
   text-align: center;
   cursor: pointer;
-  border-radius: 10px;
-  margin: 10px auto;
-  border: 2px solid black;
+  border-radius: 7px;
+  grid-column: 2/3;
+  justify-self: center;
+  align-self: center;
+  border: 1px solid black;
+  margin: 10px;
+  background-color: #f5a25f;
 }
 #bRegresarConversaciones:hover {
-  background-color: cadetblue;
+  background-color: #f8cba6;
 }
 #controlesForo {
   margin-left: auto;
   display: flex;
   flex-flow: row-reverse;
+  grid-column: 3/4;
 }
 .controlesForo {
   margin-left: 10px;
@@ -359,7 +409,7 @@ export default {
   cursor: pointer;
 }
 .botonesControles:hover {
-  background-color: #95cccc;
+  background-color: #f8cba6;
 }
 .zonaConversaciones {
   padding-left: 0px;
@@ -368,7 +418,6 @@ export default {
 .zonaSelectorPagina {
   display: flex;
   padding: 2px 10px;
-  background-color: #ddfeff;
 }
 .selectorPagina {
   border: 1px solid black;
@@ -376,15 +425,16 @@ export default {
   margin: 2px;
   border-radius: 5px;
   cursor: pointer;
-  background-color: #4db9b9;
+  background-color: #f7b57f;
 }
 
 .selectorPagina:hover {
-  background-color: #95cccc;
+  background-color: #ffd0aa;
 }
 .selectorSeleccionado {
-  background-color: #95cccc;
+  background-color: #ffd0aa;
   pointer-events: none;
+  font-weight: bold;
 }
 #anuncio {
   padding: 5px 5px;

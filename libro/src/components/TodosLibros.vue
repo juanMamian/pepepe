@@ -24,7 +24,7 @@
         v-for="(listaLibros, idAutor) of librosPorAutor"
         :key="idAutor"
       >
-        <icono-persona-autonomo :idPersona="idAutor" />
+        <icono-persona-autonomo :idPersona="idAutor" v-if="idAutor!='sinAutor'"/>
         <br />
         <br />
         <br />
@@ -161,17 +161,25 @@ export default {
       return this.usuario.permisos.includes("superadministrador");
     },
     librosPorAutor() {
-      var objetoFinal = {};
+      var objetoFinal = {
+        sinAutor:[]
+      };
       if (!this.todosLibros) {
         return objetoFinal;
       }
-      this.todosLibros.forEach((libro) => {
-        let idAutor = libro.idsEditores[0];
-        if (!objetoFinal[idAutor]) {
-          objetoFinal[idAutor] = [libro];
-        } else {
-          objetoFinal[idAutor].push(libro);
+      this.todosLibros.forEach((libro) => {  
+        if(libro.idsEditores.length<1){
+          objetoFinal.sinAutor.push(libro);
+        }      
+        else{
+          let idAutor = libro.idsEditores[0];
+          if (!objetoFinal[idAutor]) {
+            objetoFinal[idAutor] = [libro];
+          } else {
+            objetoFinal[idAutor].push(libro);
+          }
         }
+        
       });
       return objetoFinal;
     },

@@ -11,14 +11,35 @@
       <span id="tituloCuadro">Envía una respuesta</span>
     </div>
 
-    <textarea
-      v-show="cuadroAbierto"
-      name="inputMensaje"
-      id="inputMensaje"
-      :class="{ letrasRojas: mensajeIlegal }"
-      v-model="mensaje"
-      placeholder="Escribe aquí tu respuesta"
-    ></textarea>
+    <div id="zonaMensaje" v-show="cuadroAbierto">
+      <textarea
+        name="inputMensaje"
+        id="inputMensaje"
+        ref="inputMensaje"
+        :class="{ letrasRojas: mensajeIlegal }"
+        v-model="mensaje"
+        rows="2"
+        @input="checkHeight"
+      ></textarea>
+
+      <creador-interpolacion
+        v-for="(interpolacion, index) of interpolaciones"
+        :ref="'creadoresInterpolacion'"
+        :key="index"
+        :estaInterpolacion="interpolacion"
+        @eliminarse="eliminarInterpolacion($event, index)"
+        @enlaceIframeSet="setEnlaceIframeInterpolacion($event, index)"
+      />
+    </div>
+    <div id="zonaInsertar" v-show="cuadroAbierto">
+      <img
+        src="@/assets/iconos/video.png"
+        alt="Video"
+        @click="insertarCreadorInterpolacion('video')"
+        class="bInsertar"
+        title="Insertar un enlace a un video"
+      />
+    </div>
 
     <!--  -->
     <div id="adjuntarArchivo" v-show="cuadroAbierto">
@@ -68,22 +89,22 @@
           v-show="introduciendoEnlace && !enlaceAdjuntableIlegal"
           @click.stop="
             enlaceAdjunto.push(enlaceAdjuntable);
-            enlaceAdjuntable=null;
+            enlaceAdjuntable = null;
             introduciendoEnlace = false;
           "
         />
       </div>
-      <div class="enlaceAdjuntado" v-for="(enlace, index) of enlaceAdjunto" :key="index">
-        <div
-          id="nombreEnlaceAdjuntado"          
-        >
+      <div
+        class="enlaceAdjuntado"
+        v-for="(enlace, index) of enlaceAdjunto"
+        :key="index"
+      >
+        <div id="nombreEnlaceAdjuntado">
           <span>{{ enlace }}</span>
         </div>
         <div
-          id="bCancelarEnlaceAdjunto"          
-          @click.stop="
-            enlaceAdjunto.splice(index, 1);            
-          "
+          id="bCancelarEnlaceAdjunto"
+          @click.stop="enlaceAdjunto.splice(index, 1)"
         >
           <div class="linea1"><div class="linea2"></div></div>
         </div>
@@ -109,16 +130,17 @@
 <script>
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
-import {fragmentoConversacion} from "../Foro.vue"
-import {fragmentoRespuesta} from "./Conversacion.vue"
+import {
+  fragmentoConversacion,
+  fragmentoRespuesta,
+} from "../utilidades/recursosGql";
 import axios from "axios";
+import CreadorInterpolacion from "./CreadorInterpolacion.vue";
 
-
-
-var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
+export var charProhibidosMensaje = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
 
 export default {
-  components: { Loading },
+  components: { Loading, CreadorInterpolacion },
   name: "CuadroResponder",
   props: {
     tituloNuevaConversacion: String,
@@ -136,6 +158,8 @@ export default {
       introduciendoEnlace: false,
       enlaceAdjuntable: null,
       enlaceAdjunto: [],
+
+      interpolaciones: [],
     };
   },
   methods: {
@@ -146,14 +170,15 @@ export default {
       this.enviandoRespuesta = true;
       let inputArchivoAdjunto = this.$refs.inputArchivoAdjunto;
       var datos = new FormData();
+      this.setInterpolacionesData();
 
       if (!inputArchivoAdjunto.value) {
-        console.log(`El input de archivo adjunto estaba vacio`);
         let nuevaRespuesta = {
           infoArchivo: null,
           mensaje: this.mensaje,
+          interpolaciones: this.interpolaciones
         };
-        if (this.enlaceAdjunto && this.enlaceAdjunto.length>0) {
+        if (this.enlaceAdjunto && this.enlaceAdjunto.length > 0) {
           nuevaRespuesta.enlaceAdjunto = this.enlaceAdjunto;
         }
         if (!this.idConversacion) {
@@ -189,8 +214,9 @@ export default {
                 nombre: infoArchivo.extensionDeArchivo,
               },
               mensaje: dis.mensaje,
+              interpolaciones:this.interpolaciones,
             };
-            if (this.enlaceAdjunto && this.enlaceAdjunto.length>0) {
+            if (this.enlaceAdjunto && this.enlaceAdjunto.length > 0) {
               nuevaRespuesta.enlaceAdjunto = this.enlaceAdjunto;
             }
             if (!this.idConversacion) {
@@ -261,8 +287,6 @@ export default {
       if (this.mensajeIlegal) {
         return;
       }
-      console.log(`Enviando respuesta`);
-
       var dis = this;
       this.enviandoRespuesta = true;
       this.$apollo
@@ -291,7 +315,7 @@ export default {
         })
         .then(({ data: { postRespuestaConversacion } }) => {
           dis.enviandoRespuesta = false;
-          this.$emit("hiceRespuesta", postRespuestaConversacion);         
+          this.$emit("hiceRespuesta", postRespuestaConversacion);
           this.cerrarse();
         })
         .catch((error) => {
@@ -321,15 +345,104 @@ export default {
       this.nombreArchivoSeleccionado = null;
       this.$refs.inputArchivoAdjunto.value = null;
       this.mensaje = null;
+      this.interpolaciones=[];
       (this.enlaceAdjuntable = null), (this.enlaceAdjunto = []);
     },
+    interpolarQuote(quote){
+      var nuevaInterpolacion={
+        tipo:"quote",
+        quote,
+      }
+
+      this.interpolaciones.push(nuevaInterpolacion);
+      if(!this.cuadroAbierto)this.cuadroAbierto=true;
+      this.$nextTick(()=>{
+        this.$el.scrollIntoView({behavior:"smooth"});
+      })
+    },
+    insertarCreadorInterpolacion(tipo) {
+      var nuevaInterpolacion = {
+        tipo,
+      };
+
+      this.interpolaciones.push(nuevaInterpolacion);
+    },
+    checkHeight() {
+      console.log(
+        `El textarea tiene un height de ${this.$refs.inputMensaje.offsetHeight} pero un scroll height de ${this.$refs.inputMensaje.scrollHeight}`
+      );
+      while (
+        this.$refs.inputMensaje.scrollHeight >
+        this.$refs.inputMensaje.offsetHeight
+      ) {
+        this.$refs.inputMensaje.rows++;
+      }
+    },
+    eliminarInterpolacion(mensaje, index) {
+      if (mensaje) {
+        if (index == 0) {
+          if (!this.mensaje) {
+            this.mensaje = mensaje;
+          } else {
+            this.mensaje += "\n\n" + mensaje;
+            this.$nextTick(() => {
+              this.checkHeight();
+            });
+          }
+        } else {
+          
+          
+          console.log(
+            `añadiendo el mensaje ${mensaje} al creador de interpolacion ${
+              (index-1)
+            }`
+          );
+          this.$refs.creadoresInterpolacion[index-1].addToMensaje(
+            mensaje
+          );
+        }
+      }
+      this.interpolaciones.splice(index, 1);
+    },
+    setEnlaceIframeInterpolacion(enlace, index){
+      console.log(`Seting enlace iframe en el array de interpolaciones`);
+      this.$set(this.interpolaciones[index], "enlaceIframe", enlace);
+      
+    },
+    retirarTypeName(arrayInterpolaciones){
+      console.log(`Retirando typenames`);
+      arrayInterpolaciones.forEach(interpolacion=>{
+        delete interpolacion.__typename        
+        if(interpolacion.quote){
+          delete interpolacion.quote.__typename
+          if(interpolacion.quote.infoAutor){
+            delete interpolacion.quote.infoAutor.__typename
+          }
+          if(interpolacion.quote.interpolaciones){
+            interpolacion.quote.interpolaciones=this.retirarTypeName(interpolacion.quote.interpolaciones)
+          }
+        }
+      });
+      return arrayInterpolaciones
+    },
+    setInterpolacionesData(){
+      this.interpolaciones.forEach((interpolacion, index)=>{
+        interpolacion.mensaje=this.$refs.creadoresInterpolacion[index].mensaje;
+      });
+      this.interpolaciones=this.retirarTypeName(this.interpolaciones);
+    }
   },
   computed: {
     mensajeIlegal() {
-      if (!this.mensaje || this.mensaje.length < 1) {
-        return true;
-      }
-      if (charProhibidosMensaje.test(this.mensaje)) {
+      var mensajeTotal=this.mensaje?this.mensaje:'';
+      
+      this.interpolaciones.forEach(interpolacion=>{
+        if(interpolacion.mensaje){
+          mensajeTotal+=interpolacion.mensaje;
+        }
+      })
+
+      if (charProhibidosMensaje.test(mensajeTotal)) {
         return true;
       }
       return false;
@@ -360,10 +473,10 @@ export default {
 
 <style scoped>
 .cuadroResponder {
-  border: 2px solid rgb(3, 49, 87);
-  background-color: rgb(194, 213, 238);
+  border: 2px solid white;
   margin: 5px;
   border-radius: 10px;
+  background-color: #ffcda4;
 }
 #barraSuperior {
   display: flex;
@@ -375,26 +488,34 @@ export default {
   border-radius: 50%;
   width: 30px;
   height: 30px;
-  background-color: green;
+  background-color: #e2a03d;
 }
-#bEnviar {
-  display: block;
-  margin: 5px auto;
-  cursor: pointer;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  background-color: green;
-}
-#bEnviar:hover {
-  background-color: rgb(84, 224, 103);
-}
-#inputMensaje {
+
+#zonaMensaje {
+  border: 2px solid black;
   width: 80%;
+  margin: 5px auto;
+}
+
+#inputMensaje {
+  width: 100%;
   display: block;
   margin: 5px auto;
-  min-height: 200px;
   font-size: 20px;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+}
+#zonaInsertar {
+  width: 80%;
+  margin: 0px auto;
+}
+.bInsertar {
+  width: 30px;
+  cursor: pointer;
+  border: 1px solid black;
+  border-radius: 50%;
 }
 #inputArchivoAdjunto {
   display: none;
@@ -404,10 +525,10 @@ export default {
   height: 50px;
   border-radius: 50%;
   cursor: pointer;
-  background-color: #ecd1d1;
+  background-color: #f5a25f;
 }
 #imgAdjuntar:hover {
-  background-color: #55b95c;
+  background-color: #f7760e;
 }
 #nombreArchivoSeleccionado {
   background-color: #55b95c;
@@ -415,9 +536,7 @@ export default {
   border-radius: 10px;
   display: inline-block;
 }
-/* .bloqueAdjuntar {
-  
-} */
+
 #zonaIntroducirEnlace {
   display: flex;
   align-items: center;
@@ -425,13 +544,13 @@ export default {
 #imgAdjuntarEnlace {
   border-radius: 50%;
   padding: 3px;
-  background-color: rgb(156, 214, 216);
+  background-color: #f5a25f;
   width: 45px;
   height: 45px;
   cursor: pointer;
 }
 #imgAdjuntarEnlace:hover {
-  background-color: cadetblue;
+  background-color: #f7760e;
 }
 .inputAdjuntarEnlace {
   margin-left: 20px;
@@ -439,7 +558,7 @@ export default {
   padding: 3px 5px;
   border-radius: 10px;
 }
-.enlaceAdjuntado{
+.enlaceAdjuntado {
   display: flex;
   align-items: center;
   margin: 3px;
@@ -449,7 +568,7 @@ export default {
   margin-left: 20px;
   border-radius: 15px;
   background-color: rgba(129, 66, 129, 0.349);
-  padding: 5px;  
+  padding: 5px;
 }
 #nombreEnlaceAdjuntado:hover {
   background-color: rgba(129, 66, 129, 0.733);
@@ -501,5 +620,17 @@ export default {
 }
 #bAceptarAdjuntarEnlace:hover {
   background-color: cadetblue;
+}
+#bEnviar {
+  display: block;
+  margin: 5px auto;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background-color: #f5a25f;
+}
+#bEnviar:hover {
+  background-color: #f7760e;
 }
 </style>

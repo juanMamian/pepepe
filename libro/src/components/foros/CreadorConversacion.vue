@@ -126,9 +126,7 @@ export default {
 .creadorConversacion {
   width: 90%;
   border-radius: 5px;
-  border: 2px solid teal;
   margin: 2px auto;
-  background-color: rgb(180, 211, 211);
   padding: 5px 15px;
 }
 #nombreAccion {

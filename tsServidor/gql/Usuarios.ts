@@ -190,8 +190,8 @@ export const resolvers = {
             try {
                 var elUsuario:any = await Usuario.findById(idUsuario).exec();
             } catch (error) {
-                console.log(`error buscando usuario en la base de datos`);
-                throw new ApolloError("");
+                console.log(`error buscando usuario con id ${idUsuario} en la base de datos`);
+                throw new ApolloError("Error buscando usuario");
             }
             return elUsuario;
         },
