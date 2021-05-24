@@ -61,17 +61,29 @@
           }"
           :key="seccion.id"
           @click="idSeccionSeleccionada = seccion.id"
-          v-show="seccion.id!='seccionBasica4' || usuarioSuperadministrador || usuarioAdministradorAtlas"
+          v-show="
+            seccion.id != 'seccionBasica4' ||
+            usuarioSuperadministrador ||
+            usuarioAdministradorAtlas
+          "
         >
           {{ seccion.texto }}
-          <img
-            src="@/assets/iconos/delete.png"
-            alt="Eliminar"
-            title="Eliminar esta seccion"
-            class="bEliminarSeccion"
-            v-if="usuarioSuperadministrador"
-            @click="eliminarSeccion(seccion.id)"
-          />
+          <div class="controlesSeccion" :class="{deshabilitado: seccion.editandose}" v-if="usuarioSuperadministrador || usuarioAdministradorAtlas || usuarioExperto">            
+            <div class="bControlesSeccion" @click.stop="moverSeccion(seccion.id, 'bajar')">
+              <div class="bSubirBajar"></div>
+            </div>
+            <div class="bControlesSeccion" @click.stop="moverSeccion(seccion.id, 'subir')">
+              <div class="bSubirBajar bSubir" style="transform: rotateZ(180deg); transform-origin: center center"></div>
+            </div>
+            <img
+              src="@/assets/iconos/delete.png"
+              alt="Eliminar"
+              title="Eliminar esta seccion"
+              class="bEliminarSeccion bControlesSeccion"
+              v-if="usuarioSuperadministrador"
+              @click="eliminarSeccion(seccion.id)"
+            />
+          </div>
         </div>
         <div
           id="bAddSeccion"
@@ -329,7 +341,10 @@
         <div
           id="seccionKeywords"
           class="seccionPrimerNivel"
-          v-show="idSeccionSeleccionada == 'seccionBasica4' && (usuarioSuperadministrador || usuarioAdministradorAtlas)"
+          v-show="
+            idSeccionSeleccionada == 'seccionBasica4' &&
+            (usuarioSuperadministrador || usuarioAdministradorAtlas)
+          "
         >
           <div
             class="controlesZona"
@@ -353,9 +368,7 @@
               title="guardar"
               class="bGuardar botonesControlesZona"
               id="bGuardarNuevoKeywords"
-              v-show="
-                editandoKeywords == true && nuevoKeywordsIlegal == false
-              "
+              v-show="editandoKeywords == true && nuevoKeywordsIlegal == false"
               @click.stop="guardarNuevoKeywords"
             />
           </div>
@@ -374,7 +387,6 @@
           />
           <loading v-show="enviandoNuevoKeywords" texto="Enviando..." />
         </div>
-        
       </div>
 
       <!--  -->
@@ -394,7 +406,6 @@ const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosKeywordsNodo = /[^ a-zA-Z0-9]/;
 
-
 const QUERY_NODO = gql`
   query($idNodo: ID!) {
     nodo(idNodo: $idNodo) {
@@ -405,7 +416,7 @@ const QUERY_NODO = gql`
       expertos
       posiblesExpertos
       idForoPublico
-      idForoExpertos      
+      idForoExpertos
       secciones {
         id
         nombre
@@ -438,7 +449,7 @@ export default {
       update({ nodo }) {
         nodo.secciones.forEach((seccion) => {
           seccion.subiendoArchivo = false;
-          seccion.editandose = false;
+          seccion.editandose = false;          
           seccion.texto = seccion.nombre;
           seccion.archivos.forEach((archivo) => {
             archivo.enviandoInfo = false;
@@ -1091,7 +1102,8 @@ export default {
       ) {
         return;
       }
-
+      var laSeccion=this.esteNodo.secciones.find(s=>s.id==idSeccion)
+      laSeccion.editandose=true;
       console.log(`Enviando mutación de eliminar seccion ${idSeccion}`);
       const dis = this;
       this.$apollo
@@ -1111,6 +1123,7 @@ export default {
         })
         .then(({ data: { eliminarSeccionNodoConocimiento } }) => {
           console.log(`resultado: ${eliminarSeccionNodoConocimiento}`);
+          laSeccion.editandose=false;
           if (eliminarSeccionNodoConocimiento) {
             let store = dis.$apollo.provider.defaultClient;
             const cache = store.readQuery({
@@ -1137,9 +1150,58 @@ export default {
           }
         })
         .catch((error) => {
+          laSeccion.editandose=false;
           console.log(`Error: E: ${error}`);
         });
     },
+    moverSeccion(idSeccion, movimiento){
+      const index=this.esteNodo.secciones.findIndex(s=>s.id==idSeccion);
+      if(index<0 || (movimiento=='subir' && index==0) || (movimiento=='bajar' && index==(this.esteNodo.secciones.length-1))) return
+      
+      var laSeccion=this.esteNodo.secciones.find(s=>s.id==idSeccion)
+      
+      this.$set(laSeccion, "editandose", true);
+      
+      var mov=0;
+      if(movimiento=="subir")mov=-1;
+      if(movimiento=="bajar")mov=1;
+
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idNodo: ID!, $idSeccion:ID!, $movimiento: Int!){
+            moverSeccionNodoConocimiento(idNodo:$idNodo, idSeccion:$idSeccion, movimiento:$movimiento)
+          }
+        `,
+        variables:{
+          idNodo: this.esteNodo.id,
+          idSeccion,
+          movimiento: mov
+        }
+      }).then(({data:{moverSeccionNodoConocimiento}})=>{
+          laSeccion.editandose=false;
+        if(moverSeccionNodoConocimiento){
+          const store=this.$apollo.provider.defaultClient;
+          const cache=store.readQuery({
+            query:QUERY_NODO,
+            variables: {idNodo:this.esteNodo.id}
+          });
+          var nuevoCache=JSON.parse(JSON.stringify(cache));
+          const indexS=nuevoCache.nodo.secciones.findIndex(s=>s.id==idSeccion);
+          if(indexS>-1){
+            nuevoCache.nodo.secciones.splice(indexS+mov, 0, nuevoCache.nodo.secciones.splice(indexS, 1)[0]);
+            store.writeQuery({
+              query:QUERY_NODO,
+              variables:{idNodo:this.esteNodo.id},
+              data:nuevoCache
+            })
+          }
+        }
+      }).catch(()=>{
+        laSeccion.editandose=false;
+        console.log(`Error moviendo sección`);
+      })
+
+    }
   },
 };
 </script>
@@ -1149,6 +1211,7 @@ export default {
   width: 100%;
   height: 100%;
   background-color: #ffdbaf;
+  overflow-x: hidden;
 }
 #layout {
   width: 100%;
@@ -1210,15 +1273,47 @@ export default {
   padding: 15px;
   font-size: 23px;
   cursor: pointer;
+  position:relative;
 }
 .selectorSeccion:hover {
   background-color: bisque;
 }
-.selectorSeccion:not(.selectorSeccionBasica):hover > .bEliminarSeccion {
-  visibility: visible;
+.selectorSeccion:not(.selectorSeccionBasica):hover > .controlesSeccion {
+  display: block;
+}
+.bControlesSeccion{
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  cursor:pointer;
+  display: inline-block;
+  margin-right: 5px;
+  position: relative;
+}
+.bControlesSeccion:hover{
+  background-color: gray;
+}
+.bSubirBajar{
+  border: 10px solid transparent;
+  border-top: 10px solid black;
+  width: 1px;
+  height: 1px;
+  border-radius: 0%;
+  position:relative;
+  top:7px;
+  left:2px
+}
+.bSubir{
+  top: -6px;
 }
 .selectorSeleccionado {
   background-color: bisque;
+}
+.controlesSeccion{
+  display: none;
+  position: absolute;
+  top:0%;
+  right:0%;
 }
 .botonZonaCrearSeccion {
   cursor: pointer;
@@ -1228,13 +1323,7 @@ export default {
 .botonZonaCrearSeccion:hover {
   background-color: cadetblue;
 }
-.bEliminarSeccion {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  float: right;
-  visibility: hidden;
-}
+
 .bEliminarSeccion:hover {
   background-color: chocolate;
 }
@@ -1259,7 +1348,6 @@ export default {
   resize: vertical;
   white-space: pre-wrap;
 }
-
 
 #inputNuevoDescripcion {
   width: min(600px, 90%);

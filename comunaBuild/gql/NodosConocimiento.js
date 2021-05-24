@@ -105,6 +105,7 @@ extend type Mutation{
 
     crearNuevaSeccionNodoConocimiento(idNodo:ID!, nombreNuevaSeccion:String!):SeccionContenidoNodo,
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
+    moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):Boolean,
 }
 `;
 exports.resolvers = {
@@ -879,6 +880,54 @@ exports.resolvers = {
                 }
                 try {
                     yield Nodo_1.ModeloNodo.findByIdAndUpdate(idNodo, { $pull: { secciones: { _id: idSeccion } } });
+                }
+                catch (error) {
+                    console.log(`Error pulling la seccion`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
+            });
+        },
+        moverSeccionNodoConocimiento: function (_, { idNodo, idSeccion, movimiento }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                console.log(`Peticion de mover una sección ${movimiento}`);
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "Nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el nodo`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                const usuarioExperto = elNodo.expertos.includes(credencialesUsuario.id);
+                //Authorización
+                const permisosEspeciales = ["superadministrador", "atlasAdministrador"];
+                if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !usuarioExperto) {
+                    console.log(`Error de autenticacion. Solo lo puede realizar un experto, superadministrador o un atlasAdministrador`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laSeccion = elNodo.secciones.id(idSeccion);
+                if (!laSeccion) {
+                    throw new apollo_server_express_1.ApolloError("Sección no encontrada");
+                }
+                console.log(`Secciones estaba: ${elNodo.secciones.map(s => s.nombre)}`);
+                const indexS = elNodo.secciones.findIndex(s => s.id == idSeccion);
+                if (indexS > -1) {
+                    const nuevoIndexS = indexS + movimiento;
+                    if (nuevoIndexS < 0 || nuevoIndexS >= elNodo.secciones.length) {
+                        throw new apollo_server_express_1.ApolloError("Movimiento ilegal");
+                    }
+                    elNodo.secciones.splice(nuevoIndexS, 0, elNodo.secciones.splice(indexS, 1)[0]);
+                }
+                else {
+                    throw new apollo_server_express_1.ApolloError("Error buscando la sección en la base de datos");
+                }
+                console.log(`Secciones quedó: ${elNodo.secciones.map(s => s.nombre)}`);
+                try {
+                    yield elNodo.save();
                 }
                 catch (error) {
                     console.log(`Error pulling la seccion`);

@@ -4,6 +4,7 @@ import { contextoQuery } from "./tsObjetos"
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloForo as Foro } from "../model/Foros/Foro"
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
+import { EsquemaVinculosNodosProyecto } from "../model/VinculosNodosProyecto";
 
 /*
 interface NodoConocimiento{
@@ -138,6 +139,7 @@ extend type Mutation{
 
     crearNuevaSeccionNodoConocimiento(idNodo:ID!, nombreNuevaSeccion:String!):SeccionContenidoNodo,
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
+    moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):Boolean,
 }
 `;
 
@@ -972,6 +974,56 @@ export const resolvers = {
 
             try {
                 await Nodo.findByIdAndUpdate(idNodo, {$pull:{secciones:{_id:idSeccion}}});
+            } catch (error) {
+                console.log(`Error pulling la seccion`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }            
+
+            return true;
+        },        
+        moverSeccionNodoConocimiento:async function(_:any, {idNodo, idSeccion, movimiento}:any, contexto: contextoQuery){
+            let credencialesUsuario = contexto.usuario;
+            console.log(`Peticion de mover una sección ${movimiento}`);
+            try {
+                var elNodo:any=await Nodo.findById(idNodo).exec();
+                if(!elNodo){
+                    throw "Nodo no encontrado";
+                }
+            } catch (error) {
+                console.log(`Error buscando el nodo`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            const usuarioExperto=elNodo.expertos.includes(credencialesUsuario.id);
+
+            //Authorización
+            const permisosEspeciales=["superadministrador", "atlasAdministrador"]
+
+            if (!credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p)) && !usuarioExperto) {
+                console.log(`Error de autenticacion. Solo lo puede realizar un experto, superadministrador o un atlasAdministrador`);
+                throw new AuthenticationError("No autorizado");
+            }
+            
+            var laSeccion = elNodo.secciones.id(idSeccion);
+            if(!laSeccion){
+                throw new ApolloError("Sección no encontrada");
+            }           
+            console.log(`Secciones estaba: ${elNodo.secciones.map(s=>s.nombre)}`);
+
+            const indexS=elNodo.secciones.findIndex(s=>s.id==idSeccion);
+            if(indexS>-1){
+                const nuevoIndexS=indexS+movimiento;
+                if(nuevoIndexS<0 || nuevoIndexS>=elNodo.secciones.length){
+                    throw new ApolloError("Movimiento ilegal");
+                }
+                elNodo.secciones.splice(nuevoIndexS, 0, elNodo.secciones.splice(indexS, 1)[0]);
+            }   
+            else{
+                throw new ApolloError("Error buscando la sección en la base de datos");
+            }
+            console.log(`Secciones quedó: ${elNodo.secciones.map(s=>s.nombre)}`);
+            try {
+                await elNodo.save();
             } catch (error) {
                 console.log(`Error pulling la seccion`);
                 throw new ApolloError("Error conectando con la base de datos");

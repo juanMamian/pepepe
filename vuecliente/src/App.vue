@@ -451,8 +451,7 @@ input {
   grid-template-rows: 65px 1fr 5px;
 
   grid-template-columns: 1fr;
-  padding-left: 5px;
-  padding-right: 5px;
+  
   box-sizing: border-box;
   z-index: 0;
 }
