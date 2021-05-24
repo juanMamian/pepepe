@@ -593,7 +593,7 @@ export default {
     },
     seleccionado(nuevo) {
       if (nuevo == false) {
-        this.editandoTexto = false;
+        this.guardarNuevoTexto();
       }
     },
     posicionZeta(){      
