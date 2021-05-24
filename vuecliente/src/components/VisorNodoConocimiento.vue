@@ -1502,7 +1502,7 @@ export default {
   }
   .seccionFuncional{
     font-size: 14px;
-    float: inline-end;
+    
   }
 }
 </style>
