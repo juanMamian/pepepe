@@ -58,6 +58,7 @@
           :class="{
             selectorSeleccionado: seccion.id == idSeccionSeleccionada,
             selectorSeccionBasica: seccion.seccionBasica,
+            seccionFuncional:seccion.seccionBasica && seccion.id!='seccionBasica1'
           }"
           :key="seccion.id"
           @click="idSeccionSeleccionada = seccion.id"
@@ -1498,6 +1499,10 @@ export default {
     grid-area: contenido;
     width: 100%;
     height: 100%;
+  }
+  .seccionFuncional{
+    font-size: 14px;
+    float: inline-end;
   }
 }
 </style>
