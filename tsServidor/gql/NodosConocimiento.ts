@@ -47,8 +47,6 @@ interface Vinculo {
 
 
 
-
-
 export const typeDefs = gql`
 type Vinculo{
     id:ID!,
@@ -84,6 +82,10 @@ type NodoConocimiento{
     coordY: Int,
     vinculos: [Vinculo],
     coordsManuales: Coords,
+    coords:Coords,
+    centroMasa:Coords,
+    stuck:Boolean,
+    puntaje:Int,
     resumen:String,
     descripcion:String,
     keywords:String,
@@ -92,12 +94,14 @@ type NodoConocimiento{
     expertos: [String],
     posiblesExpertos:[String],
     secciones:[SeccionContenidoNodo],
+    angulo:Float
 }
 
 input NodoConocimientoInput{
     id: ID,
     nombre: String,
     coordsManuales:CoordsInput,
+    coords:CoordsInput,
     vinculos:[vinculoInput]
 }
 
@@ -165,7 +169,7 @@ export const resolvers = {
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             try {
-                var todosNodos = await Nodo.find({}, "nombre descripcion vinculos coordsManuales coordx coordy ubicado").exec();
+                var todosNodos = await Nodo.find({}, "nombre descripcion vinculos coordsManuales coords centroMasa stuck angulo puntaje coordx coordy ubicado").exec();
                 console.log(`encontrados ${todosNodos.length} nodos`);
             }
             catch (error) {
@@ -358,7 +362,7 @@ export const resolvers = {
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
             }
-            elNodo.coordsManuales = coordsManuales;
+            elNodo.coords = coordsManuales;
             try {
                 console.log(`guardando coords de ${elNodo.nombre} en la base de datos`);
                 await elNodo.save();

@@ -50,6 +50,10 @@ type NodoConocimiento{
     coordY: Int,
     vinculos: [Vinculo],
     coordsManuales: Coords,
+    coords:Coords,
+    centroMasa:Coords,
+    stuck:Boolean,
+    puntaje:Int,
     resumen:String,
     descripcion:String,
     keywords:String,
@@ -58,12 +62,14 @@ type NodoConocimiento{
     expertos: [String],
     posiblesExpertos:[String],
     secciones:[SeccionContenidoNodo],
+    angulo:Float
 }
 
 input NodoConocimientoInput{
     id: ID,
     nombre: String,
     coordsManuales:CoordsInput,
+    coords:CoordsInput,
     vinculos:[vinculoInput]
 }
 
@@ -132,7 +138,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`enviando todos los nombres, vinculos y coordenadas`);
                 try {
-                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre descripcion vinculos coordsManuales coordx coordy ubicado").exec();
+                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre descripcion vinculos coordsManuales coords centroMasa stuck angulo puntaje coordx coordy ubicado").exec();
                     console.log(`encontrados ${todosNodos.length} nodos`);
                 }
                 catch (error) {
@@ -319,7 +325,7 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`error buscando el nodo. E: ` + error);
                 }
-                elNodo.coordsManuales = coordsManuales;
+                elNodo.coords = coordsManuales;
                 try {
                     console.log(`guardando coords de ${elNodo.nombre} en la base de datos`);
                     yield elNodo.save();

@@ -43,6 +43,16 @@ var esquemaNodo = new mongoose.Schema({
         x: Number,
         y:Number
     },
+    coords:{
+        x:Number,
+        y:Number,
+    },
+    centroMasa:{
+        x:Number,
+        y:Number,
+    },
+    stuck:Boolean,
+    puntaje:Number,
     resumen:{
         type:String,
         max:2000,

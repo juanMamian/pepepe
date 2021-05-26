@@ -2,7 +2,7 @@
   <div
     class="nodoConocimiento"
     :style="[estiloPosicion, estiloSize, estiloZeta]"
-    :class="{ fantasmeado: usuarioLogeado && !aprendible && !seleccionado, escondido }"
+    :class="{ fantasmeado: usuarioLogeado && !aprendible && !seleccionado && !callingPosiciones, escondido }"
     @mousedown.ctrl="arrastrandoNodo = true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
@@ -110,14 +110,14 @@
         </div>
       </template>
     </div>
-    <div id="nombre" ref="nombre" :class="{ nombreSeleccionado: seleccionado }">
-      {{ esteNodo.nombre }}
+    <div id="nombre" ref="nombre" :class="{ nombreSeleccionado: seleccionado, nodoStuck:esteNodo.stuck && callingPosiciones }">
+      {{ callingPosiciones?esteNodo.puntaje:esteNodo.nombre }}
     </div>
 
     <div
       class="cuadritoDescripcionNodo"
       v-if="esteNodo && esteNodo.descripcion"
-      v-show="seleccionado"
+      v-show="seleccionado && !callingPosiciones"
     >
       <div class="descripcionNodo">{{ esteNodo.descripcion }}</div>
       <img
@@ -148,10 +148,10 @@ export default {
         x: 50,
         y: 50,
       },
-      posicion: {
-        x: 0,
-        y: 0,
-      },
+     posicion:{
+       x:0,
+       y:0
+     }
     };
   },
   props: {
@@ -179,6 +179,8 @@ export default {
       type: Boolean,
       default: false,
     },
+
+    callingPosiciones:Boolean,
   },
   computed: {
     menuCx() {
@@ -201,6 +203,7 @@ export default {
       }
       return sel;
     },
+   
     estiloPosicion() {
       //Posicion absoluta
       let posY = Math.round(this.posicion.y - this.size.y / 2);
@@ -377,14 +380,13 @@ export default {
       });
     },
   },
-
+  watch:{
+    esteNodo(){
+      this.posicion=this.esteNodo.coords;
+    }
+  },
   mounted() {
-    this.posicion.y = this.esteNodo.coordsManuales.y
-      ? this.esteNodo.coordsManuales.y
-      : 0;
-    this.posicion.x = this.esteNodo.coordsManuales.x
-      ? this.esteNodo.coordsManuales.x
-      : 0;
+      this.posicion=this.esteNodo.coords;
   },
 };
 </script>
@@ -438,11 +440,16 @@ export default {
   border: 1px solid rgb(5, 102, 109);
   border-radius: 3px;
 }
+
 #nombre:not(.nombreSeleccionado) {
   background-color: lightblue;
 }
+
 .nombreSeleccionado {
   background-color: rgb(108, 179, 202);
+}
+#nombre.nodoStuck {
+  background-color: rgb(206, 94, 94);
 }
 #menuContextual {
   position: absolute;
@@ -476,6 +483,7 @@ export default {
   border: 1px solid rgb(0, 0, 44);
   border-radius: 10px;
 }
+
 .descripcionNodo {
   font-size: 15px;
   padding: 10px;

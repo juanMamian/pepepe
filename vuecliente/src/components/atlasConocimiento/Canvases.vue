@@ -12,6 +12,15 @@
       :style="[estiloPosicionRelativaCanvas, sizeCanvasTodosVinculos]"
       class="canvas"
     ></canvas>
+    <canvas
+      id="canvasPosiciones"
+      ref="canvasPosiciones"
+      :style="[estiloPosicionRelativaCanvas, sizeCanvasTodosVinculos]"
+      class="canvas"
+      v-show="callingPosiciones"
+    >
+
+    </canvas>
   </div>
 </template>
 
@@ -26,11 +35,7 @@ export default {
       posicionCanvasTodosVinculos: {
         top: 0,
         left: 0,
-      },
-      sizeCanvasTodosVinculos: {
-        width: 0,
-        height: 0,
-      },
+      },      
       posicionCanvasActivo: {
         x: 0,
         y: 0,
@@ -53,8 +58,62 @@ export default {
     todosNodos: Array,
     centroVista: Object,
     actualizar: Number,
+
+    callingPosiciones:Boolean,
   },
   methods: {
+    crearImagenPosiciones(){
+      
+      console.log(`Creando imagen posiciones`);
+      this.lapiz=this.$refs.canvasPosiciones.getContext("2d")
+      var nodosRelevantes = this.todosNodos;
+      console.log(`Con ${nodosRelevantes.length} nodos relevantes`);
+
+      if(this.nodoSeleccionado && this.nodoSeleccionado.id.length>4) nodosRelevantes=[this.nodoSeleccionado];
+      console.log(`Con ${nodosRelevantes.length} nodos relevantes`);
+      if (nodosRelevantes <= 1) return;
+
+      this.lapiz.canvas.width=parseInt(this.sizeCanvasTodosVinculos.width);
+      this.lapiz.canvas.height=parseInt(this.sizeCanvasTodosVinculos.height);
+      
+      this.lapiz.clearRect(
+        0,
+        0,
+        this.lapiz.canvas.width,
+        this.lapiz.canvas.height
+      );
+
+      this.lapiz.lineWidth=2;
+      this.lapiz.beginPath();
+
+      nodosRelevantes.forEach(nodo=>{
+        this.lapiz.beginPath();
+        this.lapiz.strokeStyle = nodo.stuck?'red':"#9761d2";
+
+        this.lapiz.moveTo(nodo.coords.x -this.posicionCanvasActivo.x, nodo.coords.y-this.posicionCanvasActivo.y);
+        this.lapiz.lineTo(nodo.centroMasa.x - this.posicionCanvasActivo.x, nodo.centroMasa.y - this.posicionCanvasActivo.y);
+        this.lapiz.arc(nodo.centroMasa.x - this.posicionCanvasActivo.x, nodo.centroMasa.y - this.posicionCanvasActivo.y, 10, 0, Math.PI*2);
+        this.lapiz.stroke();     
+     })
+
+     this.lapiz.beginPath();    
+     nodosRelevantes.forEach(nodo=>{
+       if(!nodo.stuck){
+        this.lapiz.strokeStyle = 'blue';
+        let nodox=nodo.coords.x -this.posicionCanvasActivo.x;
+        let nodoy=nodo.coords.y-this.posicionCanvasActivo.y
+        this.lapiz.moveTo(nodox, nodoy);
+        
+        let vectorx=(Math.cos(nodo.angulo)*100);
+        let vectory=(Math.sin(nodo.angulo)*100);
+        
+        this.lapiz.lineTo(nodox+vectorx, nodoy+vectory);
+       }
+       
+     })
+     this.lapiz.stroke();
+
+    },
     crearImagenTodosVinculos: function () {
       var nodosRelevantes = this.todosNodos;
       if (this.idNodoTarget) {
@@ -65,56 +124,14 @@ export default {
 
       this.lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
       //Calcular el tamaño del diagrama
-      let bordesCanvasTodosVinculos = {};
-
-      bordesCanvasTodosVinculos.top = nodosRelevantes.reduce((acc, n) => {
-        return n.coordsManuales.y > acc ? n.coordsManuales.y : acc;
-      }, 0);
-      bordesCanvasTodosVinculos.bot = nodosRelevantes.reduce((acc, n) => {
-        return n.coordsManuales.y < acc ? n.coordsManuales.y : acc;
-      }, 0);
-      bordesCanvasTodosVinculos.left = nodosRelevantes.reduce((acc, n) => {
-        return n.coordsManuales.x < acc ? n.coordsManuales.x : acc;
-      }, 0);
-      bordesCanvasTodosVinculos.right = nodosRelevantes.reduce((acc, n) => {
-        return n.coordsManuales.x > acc ? n.coordsManuales.x : acc;
-      }, 0);
-
-      let anchoDiagrama = parseInt(
-        bordesCanvasTodosVinculos.right - bordesCanvasTodosVinculos.left
-      );
-      let altoDiagrama = parseInt(
-        bordesCanvasTodosVinculos.top - bordesCanvasTodosVinculos.bot
-      );
-
-      if (anchoDiagrama > 5000 || altoDiagrama > 5000) {
-        console.log(`ALERTA. Diagrama demasiado grande`);
-      }
-
-      this.$set(
-        this.posicionCanvasTodosVinculos,
-        "y",
-        bordesCanvasTodosVinculos.bot
-      );
-      this.$set(
-        this.posicionCanvasTodosVinculos,
-        "x",
-        bordesCanvasTodosVinculos.left
-      );
-
+      
       this.posicionCanvasActivo = this.posicionCanvasTodosVinculos;
-
-      this.$set(this.sizeCanvasTodosVinculos, "width", anchoDiagrama + "px");
-      this.$set(this.sizeCanvasTodosVinculos, "height", altoDiagrama + "px");
-
-      this.lapiz.canvas.width = anchoDiagrama;
-      this.lapiz.canvas.height = altoDiagrama;
-
-      this.$refs.canvasVinculosSeleccionado.width = anchoDiagrama;
-      this.$refs.canvasVinculosSeleccionado.height = altoDiagrama;
+      
+      this.lapiz.canvas.width = parseInt(this.sizeCanvasTodosVinculos.width);
+      this.lapiz.canvas.height = parseInt(this.sizeCanvasTodosVinculos.height);
 
       this.lapiz.lineWidth = 1;
-      this.lapiz.clearRect(0, 0, anchoDiagrama, altoDiagrama);
+      this.lapiz.clearRect(0, 0, this.lapiz.canvas.width, this.lapiz.canvas.height);
       this.lapiz.beginPath();
       this.lapiz.strokeStyle = "#b3b3b3";
       for (let nodo of nodosRelevantes) {
@@ -147,6 +164,9 @@ export default {
         this.lapiz.canvas.width,
         this.lapiz.canvas.height
       );
+
+      this.lapiz.canvas.width = parseInt(this.sizeCanvasTodosVinculos.width);
+      this.lapiz.canvas.height = parseInt(this.sizeCanvasTodosVinculos.height);
 
       if (nodosRelevantes.some((n) => n.id == this.nodoSeleccionado.id)) {
         //Lineas verdes de posiblidades
@@ -262,6 +282,63 @@ export default {
     },
   },
   computed: {
+    sizeCanvasTodosVinculos(){
+      var nodosRelevantes = this.todosNodos;
+      if (this.idNodoTarget) {
+        nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
+      }
+
+      if (nodosRelevantes <= 1) return {
+        width:"0px",
+        height:"0px",
+      };
+
+      let bordesCanvasTodosVinculos = {};
+
+      bordesCanvasTodosVinculos.top = nodosRelevantes.reduce((acc, n) => {
+        return n.coordsManuales.y > acc ? n.coordsManuales.y : acc;
+      }, 0);
+      bordesCanvasTodosVinculos.bot = nodosRelevantes.reduce((acc, n) => {
+        return n.coordsManuales.y < acc ? n.coordsManuales.y : acc;
+      }, 0);
+      bordesCanvasTodosVinculos.left = nodosRelevantes.reduce((acc, n) => {
+        return n.coordsManuales.x < acc ? n.coordsManuales.x : acc;
+      }, 0);
+      bordesCanvasTodosVinculos.right = nodosRelevantes.reduce((acc, n) => {
+        return n.coordsManuales.x > acc ? n.coordsManuales.x : acc;
+      }, 0);
+
+      let anchoDiagrama = parseInt(
+        bordesCanvasTodosVinculos.right - bordesCanvasTodosVinculos.left
+      );
+      let altoDiagrama = parseInt(
+        bordesCanvasTodosVinculos.top - bordesCanvasTodosVinculos.bot
+      );
+
+      if (anchoDiagrama > 5000 || altoDiagrama > 5000) {
+        console.log(`ALERTA. Diagrama demasiado grande`);
+      }
+
+      this.$set(
+        this.posicionCanvasTodosVinculos,
+        "y",
+        bordesCanvasTodosVinculos.bot
+      );
+      this.$set(
+        this.posicionCanvasTodosVinculos,
+        "x",
+        bordesCanvasTodosVinculos.left
+      );
+
+      return {
+        width: anchoDiagrama+"px",
+        height: altoDiagrama+"px"
+      }
+      // this.$set(this.sizeCanvasTodosVinculos, "width", anchoDiagrama + "px");
+      // this.$set(this.sizeCanvasTodosVinculos, "height", altoDiagrama + "px");
+      
+      
+    },
     estiloPosicionRelativaCanvas() {
       let top = this.posicionCanvasTodosVinculos.y - this.centroVista.y;
       let left = this.posicionCanvasTodosVinculos.x - this.centroVista.x;
@@ -273,12 +350,16 @@ export default {
   },
   watch: {
     todosNodos: function () {
+      console.log(`Cambio en todos nodos`);
       if (this.todosNodos.length < 1) return;
       this.crearImagenTodosVinculos();
+      if(this.callingPosiciones)this.crearImagenPosiciones();
       this.crearImagenVinculosSeleccionado();
     },
     nodoSeleccionado: function () {
-      this.crearImagenVinculosSeleccionado();
+      if(!this.callingPosiciones)this.crearImagenVinculosSeleccionado();
+      if(this.callingPosiciones)this.crearImagenPosiciones();
+
     },
     idNodoTarget() {
       console.log(`Trazando todos vínculos teniendo en cuenta el target`);
@@ -288,6 +369,7 @@ export default {
   mounted() {
     this.montado = true;
     this.crearImagenTodosVinculos();
+    this.crearImagenPosiciones();
     this.crearImagenVinculosSeleccionado();
   },
 };

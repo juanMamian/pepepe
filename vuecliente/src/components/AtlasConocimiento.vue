@@ -12,6 +12,9 @@
     @touchmove.prevent.stop="movimientoMobile"
     @touchstart="iniciaMovimientoTouch"
   >
+    <div id="botonCallingPosiciones" v-if="usuarioSuperadministrador && usuario.username=='juanMamian'" @click.stop="callingPosiciones=!callingPosiciones" :style="[{backgroundColor:callingPosiciones?'green':'transparent'}]">
+
+    </div>
     <buscador-nodos-conocimiento
       @nodoSeleccionado="centrarEnNodo"
       ref="buscadorNodos"
@@ -31,6 +34,8 @@
         :idNodoTarget="idNodoTarget"
         :idsNecesariosParaTarget="idsNecesariosParaTarget"
         :centroVista="centroVista"
+        :callingPosiciones="callingPosiciones"
+        ref="canvases"
         v-if="todosNodos.length > 1"
       />
 
@@ -51,6 +56,7 @@
           !idsNecesariosParaTarget.includes(nodo.id) &&
           idNodoTarget != nodo.id
         "
+        :callingPosiciones="callingPosiciones"
         @click.right.native.stop.prevent="idNodoMenuCx = nodo.id"
         @click.native.stop="seleccionNodo(nodo)"
         @creacionVinculo="crearVinculo"
@@ -81,6 +87,17 @@ const QUERY_NODOS = gql`
         x
         y
       }
+      coords{
+        x
+        y
+      }
+      centroMasa{
+        x
+        y
+      }
+      stuck
+      angulo
+      puntaje
       vinculos {
         idRef
         rol
@@ -119,6 +136,15 @@ export default {
       query: QUERY_NODOS,
       result: function () {
         this.dibujarVinculosGrises();
+      },
+      pollInterval(){
+        return this.callingPosiciones?5000:null
+      },
+      update({todosNodos}){
+        todosNodos.forEach(nodo=>{
+          nodo.coordsManuales=nodo.coords
+        })
+        return todosNodos
       },
       fetchPolicy: "cache-and-network",
     },
@@ -160,6 +186,8 @@ export default {
       ultimoTouchY: 0,
 
       cerrarBusqueda: 0,
+
+      callingPosiciones:false,
     };
   },
   computed: {
@@ -382,7 +410,9 @@ export default {
             coordsManuales,
           },
         })
-        .then(() => {})
+        .then(() => {
+          this.$refs.canvases.crearImagenTodosVinculos();
+        })
         .catch((error) => {
           console.log(`Error: ${error}`);
         });
@@ -453,6 +483,10 @@ export default {
           x: nuevoLeft,
           y: nuevoTop,
         },
+        coords: {
+          x: nuevoLeft,
+          y: nuevoTop,
+        },
       };
       console.log(`en las coordenadas: ${nuevoLeft}, ${nuevoTop} `);
       this.$apollo
@@ -467,6 +501,17 @@ export default {
                   x
                   y
                 }
+                coords{
+                  x
+                  y
+                }
+                centroMasa{
+                  x
+                  y
+                }
+                angulo
+                stuck
+                puntaje
                 vinculos {
                   idRef
                   rol
@@ -797,5 +842,16 @@ export default {
 }
 #panelObjetivos:hover {
   opacity: 1;
+}
+
+#botonCallingPosiciones{
+  width:20px;
+  height:20px;
+  border-radius: 50%;
+  border:1px solid black;
+  position: absolute;
+  top:1%;
+  right:1%;
+  cursor:pointer;
 }
 </style>
