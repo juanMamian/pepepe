@@ -554,11 +554,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             console.log(`Nuevo foro creado`);
-
-            if (posicion.x < 0 || posicion.y < 0) {
-                console.log(`Coordenadas del nuevo trabajo ilícitas`);
-                throw new ApolloError("Coordenadas ilícitas");
-            }
+            
 
             try {
                 var nuevoTrabajo: any = await new Trabajo({ idProyectoParent: idProyecto, idForo: idNuevoForo, diagramaProyecto: { posicion } });
@@ -880,11 +876,7 @@ export const resolvers = {
         },
         setPosicionTrabajoDiagramaProyecto: async function (_: any, { idProyecto, idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
             console.log(`Guardando posicion de trabajo en el diagrama del proyecto`);
-
-            if (nuevaPosicion.x < 0 || nuevaPosicion.y < 0) {
-                throw new UserInputError("Nueva posición ilegal");
-            }
-
+        
             let credencialesUsuario = contexto.usuario;
             try {
                 var elProyecto: any = await Proyecto.findById(idProyecto).exec();

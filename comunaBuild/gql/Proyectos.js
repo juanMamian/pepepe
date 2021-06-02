@@ -536,10 +536,6 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`Nuevo foro creado`);
-                if (posicion.x < 0 || posicion.y < 0) {
-                    console.log(`Coordenadas del nuevo trabajo ilícitas`);
-                    throw new apollo_server_express_1.ApolloError("Coordenadas ilícitas");
-                }
                 try {
                     var nuevoTrabajo = yield new Trabajo_1.ModeloTrabajo({ idProyectoParent: idProyecto, idForo: idNuevoForo, diagramaProyecto: { posicion } });
                     var idNuevoTrabajo = nuevoTrabajo._id;
@@ -832,9 +828,6 @@ exports.resolvers = {
         setPosicionTrabajoDiagramaProyecto: function (_, { idProyecto, idTrabajo, nuevaPosicion }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Guardando posicion de trabajo en el diagrama del proyecto`);
-                if (nuevaPosicion.x < 0 || nuevaPosicion.y < 0) {
-                    throw new apollo_server_express_1.UserInputError("Nueva posición ilegal");
-                }
                 let credencialesUsuario = contexto.usuario;
                 try {
                     var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();

@@ -3,7 +3,8 @@
     class="nodoConocimiento"
     :style="[estiloPosicion, estiloSize, estiloZeta]"
     :class="{ fantasmeado: usuarioLogeado && !aprendible && !seleccionado && !callingPosiciones, escondido }"
-    @mousedown.ctrl="arrastrandoNodo = true"
+    @mousedown.ctrl.stop="arrastrandoNodo = true"
+    @click.ctrl.capture="stopProp"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
     @mouseenter="mostrandoCuadritoDescripcion = true"
@@ -24,6 +25,7 @@
       alt="Completado"
       title="Aprendizaje de este tema completado"
       v-show="nodoAprendido"
+      :style="[{width: parseInt(20*factorZoom)+'px', left: parseInt(-10*factorZoom)+'px', top: parseInt(-10*factorZoom)+'px'}]"
       class="imagenAprendido"
     />
     <img
@@ -110,7 +112,7 @@
         </div>
       </template>
     </div>
-    <div id="nombre" ref="nombre" :class="{ nombreSeleccionado: seleccionado, nodoStuck:esteNodo.stuck && callingPosiciones }">
+    <div id="nombre" :style="[estiloCartelNombre]" ref="nombre" :class="{ nombreSeleccionado: seleccionado, nodoStuck:esteNodo.stuck && callingPosiciones }">
       {{ callingPosiciones?esteNodo.puntaje:esteNodo.nombre }}
     </div>
 
@@ -144,13 +146,22 @@ export default {
 
       mostrandoCuadritoDescripcion: false,
 
-      baseSize: {
-        x: 50,
-        y: 50,
+      baseSize:{
+        x:50,
+        y:50,
       },
+      
      posicion:{
        x:0,
        y:0
+     },
+
+     estiloNombreBase:{
+       minWidth:20,
+       fontSize:12,
+       minHeight:10,
+       padding: 5,
+       borderRadius:4
      }
     };
   },
@@ -181,11 +192,12 @@ export default {
     },
 
     callingPosiciones:Boolean,
+    factorZoom:Number,
   },
   computed: {
     menuCx() {
       return this.idNodoMenuCx == this.esteNodo.id ? true : false;
-    },
+    },    
     size() {
       let fSize = Object.assign({}, this.baseSize);
       if (this.seleccionado) {
@@ -202,16 +214,15 @@ export default {
         sel = true;
       }
       return sel;
-    },
-   
+    },   
     estiloPosicion() {
       //Posicion absoluta
-      let posY = Math.round(this.posicion.y - this.size.y / 2);
-      let posX = Math.round(this.posicion.x - this.size.x / 2);
+      let posY = Math.round((this.posicion.y - this.size.y / 2)*this.factorZoom);
+      let posX = Math.round((this.posicion.x - this.size.x / 2)*this.factorZoom);
 
       //Ajustar respecto del centro de la vista
-      posY -= this.centroVista.y;
-      posX -= this.centroVista.x;
+      // posY -= this.centroVista.y;
+      // posX -= this.centroVista.x;
       return {
         top: posY + "px",
         left: posX + "px",
@@ -231,8 +242,8 @@ export default {
     },
     estiloSize() {
       return {
-        width: this.size.x + "px",
-        height: this.size.y + "px",
+        width: (this.size.x*this.factorZoom) + "px",
+        height: (this.size.y*this.factorZoom) + "px",
       };
     },
     permisosUsuario: function () {
@@ -261,6 +272,16 @@ export default {
     nodoAprendido() {
       return this.idsNodosAprendidos.includes(this.esteNodo.id);
     },
+    estiloCartelNombre(){
+      return {
+        minWidth: parseInt(this.estiloNombreBase.minWidth*this.factorZoom)+"px",
+        fontSize:parseInt(this.estiloNombreBase.fontSize*this.factorZoom)+"px",
+        minHeight:parseInt(this.estiloNombreBase.minHeight*this.factorZoom)+"px",
+        padding: parseInt(this.estiloNombreBase.padding*this.factorZoom)+"px",
+        borderRadius:parseInt(this.estiloNombreBase.borderRadius*this.factorZoom)+"px",
+      }
+    }
+    
   },
   methods: {
     toggleAprendido() {
@@ -336,10 +357,10 @@ export default {
         .getElementById("contenedorNodos")
         .getBoundingClientRect();
       let nuevoTop = Math.round(
-        e.clientY - posContenedor.top + this.centroVista.y
+        (e.clientY - posContenedor.top)/this.factorZoom
       );
       let nuevoLeft = Math.round(
-        e.clientX - posContenedor.left + this.centroVista.x
+        (e.clientX - posContenedor.left)/this.factorZoom
       );
       this.posicion.y = nuevoTop;
       this.posicion.x = nuevoLeft;
@@ -379,14 +400,18 @@ export default {
         idNodoTo: nodoTo.id,
       });
     },
+    stopProp(e){
+      console.log(`Stopping`);
+      e.stopPropagation();
+    }
   },
   watch:{
     esteNodo(){
-      this.posicion=this.esteNodo.coords;
+      this.posicion={...this.esteNodo.coords};
     }
   },
   mounted() {
-      this.posicion=this.esteNodo.coords;
+      this.posicion={...this.esteNodo.coords};
   },
 };
 </script>
@@ -426,19 +451,13 @@ export default {
 .escondido {
   visibility: hidden;
 }
-#nombre {
-  font-size: 12px;
+#nombre {  
   position: absolute;
   top: 105%;
-  min-height: 10px;
-  min-width: 20px;
-  text-align: center;
-  /* width: 160%; */
-  padding: 5px;
+  text-align: center;    
   left: 50%;
   transform: translateX(-50%);
-  border: 1px solid rgb(5, 102, 109);
-  border-radius: 3px;
+  border: 1px solid rgb(5, 102, 109);  
 }
 
 #nombre:not(.nombreSeleccionado) {
@@ -515,11 +534,8 @@ export default {
 .imagenTarget:hover {
   opacity: 0.16;
 }
-.imagenAprendido{
-  width: 20px;
-  position: absolute;
-  left: -10px;
-  top:-10px;
+.imagenAprendido{  
+  position: absolute;  
   background-color: rgb(33, 168, 33);
   border-radius: 50%;
 }

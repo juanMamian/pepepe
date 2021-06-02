@@ -11,11 +11,9 @@ const routesContenidosNodos=require("./routes/atlas/contenidosNodos");
 const routesCuentos=require("./routes/cuentos");
 import { iniciarMongoose } from "./mongoose";
 
-
 const ejwt = require("express-jwt");
 import cors from "cors";
 import { aServer } from "./gql/Schema";
-
 
 //Rutas pepepe
 console.log(`Carpeta estatica en ${__dirname + '/pepepe'}`);

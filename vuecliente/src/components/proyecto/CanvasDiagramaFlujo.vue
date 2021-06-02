@@ -3,6 +3,7 @@
     <canvas
       id="canvasTodosVinculos"
       ref="canvasTodosVinculos"
+      :style="[offsetCanvasTodosVinculos]"
       class="canvas"
     ></canvas>
     <canvas
@@ -38,58 +39,33 @@ export default {
   methods: {
     crearImagenTodosVinculos: function () {
       if (this.todosNodos.length <= 1) return;
-      this.lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
-      //Calcular el tamaño del diagrama
-      let bordesCanvasTodosVinculos = {};
-
-      bordesCanvasTodosVinculos.top = this.todosNodos.reduce((acc, n) => {
-        return n.posicion.y > acc ? n.posicion.y : acc;
-      }, 0);
-      bordesCanvasTodosVinculos.bot = this.todosNodos.reduce((acc, n) => {
-        return n.posicion.y < acc ? n.posicion.y : acc;
-      }, 0);
-      bordesCanvasTodosVinculos.left = this.todosNodos.reduce((acc, n) => {
-        return n.posicion.x < acc ? n.posicion.x : acc;
-      }, 0);
-      bordesCanvasTodosVinculos.right = this.todosNodos.reduce((acc, n) => {
-        return n.posicion.x > acc ? n.posicion.x : acc;
-      }, 0);
-
-      let anchoDiagrama = parseInt(
-        bordesCanvasTodosVinculos.right - bordesCanvasTodosVinculos.left
-      );
-      let altoDiagrama = parseInt(
-        bordesCanvasTodosVinculos.top - bordesCanvasTodosVinculos.bot
-      );
-
-      if (anchoDiagrama > 5000 || altoDiagrama > 5000) {
-        console.log(`ALERTA. Diagrama demasiado grande`);
+      var lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
+      //Calcular el tamaño del diagrama      
+      const posicionCanvas={
+        x: this.esquinasCanvasTodosVinculos.x1,
+        y: this.esquinasCanvasTodosVinculos.y1,
       }
 
-      this.$set(this.sizeCanvasTodosVinculos, "width", anchoDiagrama + "px");
-      this.$set(this.sizeCanvasTodosVinculos, "height", altoDiagrama + "px");
+      lapiz.canvas.width = this.esquinasCanvasTodosVinculos.x2 - this.esquinasCanvasTodosVinculos.x1;
+      lapiz.canvas.height = this.esquinasCanvasTodosVinculos.y2 - this.esquinasCanvasTodosVinculos.y1;   
 
-      this.lapiz.canvas.width = anchoDiagrama;
-      this.lapiz.canvas.height = altoDiagrama;
-
-      this.$refs.canvasVinculosSeleccionado.width = anchoDiagrama;
-      this.$refs.canvasVinculosSeleccionado.height = altoDiagrama;
-
-      this.lapiz.lineWidth = 1;
-      this.lapiz.clearRect(0, 0, anchoDiagrama, altoDiagrama);
-      this.lapiz.beginPath();
-      this.lapiz.strokeStyle = "#b3b3b3";
+      lapiz.lineWidth = 1;
+      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+      lapiz.beginPath();
+      lapiz.strokeStyle = "#b3b3b3";
       for (let nodo of this.todosNodos) {
         for (let vinculo of nodo.vinculos) {
           if (!this.todosNodos.some((n) => n.id == vinculo.idRef)) continue;
 
           this.dibujarLineaEntreNodos(
             this.todosNodos.find((nodo) => nodo.id == vinculo.idRef),
-            nodo
+            nodo,
+            lapiz,
+            posicionCanvas
           );
         }
       }
-      this.lapiz.stroke();
+      lapiz.stroke();
     },
     crearImagenVinculosSeleccionado: function () {
       this.lapiz = this.$refs.canvasVinculosSeleccionado.getContext("2d");
@@ -122,14 +98,15 @@ export default {
         
       }
     },
-    dibujarLineaEntreNodos(nodoFrom, nodoTo) {
+    dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicionCanvas) {
+      console.log(`trazando con posicion canvas: ${JSON.stringify(posicionCanvas)}`);
       let inicio = {
-        x: nodoFrom.posicion.x*this.factorZoom,
-        y: nodoFrom.posicion.y*this.factorZoom,
+        x: (nodoFrom.posicion.x*this.factorZoom)-posicionCanvas.x,
+        y: (nodoFrom.posicion.y*this.factorZoom)-posicionCanvas.y,
       };
       let final = {
-        x: nodoTo.posicion.x*this.factorZoom,
-        y: nodoTo.posicion.y*this.factorZoom,
+        x: (nodoTo.posicion.x*this.factorZoom)-posicionCanvas.x,
+        y: (nodoTo.posicion.y*this.factorZoom)-posicionCanvas.y,
       };
 
       const distanciaVertical=final.y-inicio.y;
@@ -145,10 +122,10 @@ export default {
         y:final.y-largoCodo
       }
 
-      this.lapiz.moveTo(inicio.x, inicio.y);
-      this.lapiz.lineTo(primeraEsquina.x, primeraEsquina.y);
-      this.lapiz.lineTo(segundaEsquina.x, segundaEsquina.y);
-      this.lapiz.lineTo(final.x, final.y);
+      lapiz.moveTo(inicio.x, inicio.y);
+      lapiz.lineTo(primeraEsquina.x, primeraEsquina.y);
+      lapiz.lineTo(segundaEsquina.x, segundaEsquina.y);
+      lapiz.lineTo(final.x, final.y);
       //ahora la flechita
       // let centro = {
       //   x: (final.x + inicio.x) / 2,
@@ -178,6 +155,51 @@ export default {
       // this.lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
     },
   },
+  computed:{
+    esquinasCanvasTodosVinculos(){
+      var nodosRelevantes=this.todosNodos;
+
+      if (nodosRelevantes.length <= 1) return {
+        x1: 0,
+        y1: 0,
+        x2: 0,
+        y2: 0,        
+      };
+
+      let bordes = {};
+      console.log(`Calculando esquinas con ${nodosRelevantes.length} nodos`);
+      bordes.top = nodosRelevantes.reduce((acc, n) => {
+        //console.log(`Reduciendo ${n.nombre} con coords: ${n.posicion}`);
+        return n.posicion.y > acc ? n.posicion.y : acc;
+      }, 0);
+      bordes.bot = nodosRelevantes.reduce((acc, n) => {
+        return n.posicion.y < acc ? n.posicion.y : acc;
+      }, 0);
+      bordes.left = nodosRelevantes.reduce((acc, n) => {
+        return n.posicion.x < acc ? n.posicion.x : acc;
+      }, 0);
+      bordes.right = nodosRelevantes.reduce((acc, n) => {
+        return n.posicion.x > acc ? n.posicion.x : acc;
+      }, 0);
+
+      return {
+        x1: bordes.left*this.factorZoom,
+        y1: bordes.bot*this.factorZoom,
+        x2: bordes.right*this.factorZoom,
+        y2: bordes.top*this.factorZoom
+      }
+    },
+    offsetCanvasTodosVinculos(){
+      return {
+        left:  this.esquinasCanvasTodosVinculos.x1 + "px",
+        top: this.esquinasCanvasTodosVinculos.y1 + "px",
+
+        width: (this.esquinasCanvasTodosVinculos.x2-this.esquinasCanvasTodosVinculos.x1) + "px",
+        height: (this.esquinasCanvasTodosVinculos.y2-this.esquinasCanvasTodosVinculos.y1) + "px",
+      }
+    }
+
+  },
   watch: {
     todosNodos: function () {
       if (this.todosNodos.length < 1) return;
@@ -190,7 +212,8 @@ export default {
     factorZoom(){
       this.crearImagenTodosVinculos();
       this.crearImagenVinculosSeleccionado();
-    }
+    },
+
   },
   mounted() {
     this.montado = true;
@@ -203,4 +226,10 @@ export default {
 </script>
 
 <style scoped>
+#canvasDiagramaFlujo{
+  position: relative;
+}
+.canvas{
+  position: absolute
+}
 </style>

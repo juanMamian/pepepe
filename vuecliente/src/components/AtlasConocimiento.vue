@@ -2,6 +2,8 @@
   <div
     class="atlasConocimiento"
     @mousedown.left.exact.stop="panningVista = true"
+    @mouseenter="hovered=true"
+    @mouseleave="hovered=false"
     @click="
       idNodoMenuCx = '-1';
       cerrarBusqueda++;
@@ -27,18 +29,19 @@
       @nodoSeleccionado="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
       @nulificarNodoTarget="nulificarNodoTarget"
     />
-    <div id="contenedorNodos">
-      <canvases
+    <canvases
         :todosNodos="todosNodos"
         :nodoSeleccionado="nodoSeleccionado"
         :idNodoTarget="idNodoTarget"
         :idsNecesariosParaTarget="idsNecesariosParaTarget"
         :centroVista="centroVista"
         :callingPosiciones="callingPosiciones"
+        :factorZoom="factorZoom"
+        :style="[offsetContenedorNodos]"
         ref="canvases"
         v-if="todosNodos.length > 1"
       />
-
+    <div id="contenedorNodos" :style="[offsetContenedorNodos]">      
       <nodo-conocimiento
         :nodoSeleccionado="nodoSeleccionado"
         :todosNodos="todosNodos"
@@ -51,6 +54,7 @@
         :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
         :esTarget="idNodoTarget == nodo.id"
         :idsNodosAprendidos="idsNodosAprendidos"
+        :factorZoom="factorZoom"
         :escondido="
           idNodoTarget &&
           !idsNecesariosParaTarget.includes(nodo.id) &&
@@ -157,6 +161,7 @@ export default {
   },
   data() {
     return {
+      hovered:false,
       todosNodos: [],
       idNodoSeleccionado: "-1",
       idNodoMenuCx: "-1",
@@ -168,10 +173,13 @@ export default {
         },
       },
 
-      centroVista: {
-        x: 0,
-        y: 0,
-      },
+      centroVistaDecimal:{
+        x:0,
+        y:0
+      },  
+      zoom:100,
+      minZoom:20,
+      maxZoom:200,      
       actualizarTrazos: 0,
       panningVista: false,
       vistaPanned: false,
@@ -234,6 +242,21 @@ export default {
     },
     idsNodosAprendidos(){
       return this.yo.atlas.datosNodos.filter(n=>n.aprendido==true).map(n=>n.idNodo);      
+    },
+    centroVista(){
+      return {
+        x: Math.round(this.centroVistaDecimal.x),
+        y: Math.round(this.centroVistaDecimal.y),
+      }
+    },
+    factorZoom(){
+      return Number((this.zoom/100).toFixed(2));
+    },
+    offsetContenedorNodos(){
+      return {
+        left: -(this.centroVista.x*this.factorZoom)+"px",
+        top: -(this.centroVista.y*this.factorZoom)+"px",
+      }
     }
   },
   methods: {
@@ -355,14 +378,14 @@ export default {
     },
     centrarEnNodo(n) {
       this.$set(
-        this.centroVista,
+        this.centroVistaDecimal,
         "x",
-        n.coordsManuales.x - this.$el.offsetWidth / 2
+        n.coordsManuales.x - (this.$el.offsetWidth / (2*this.factorZoom))
       );
       this.$set(
-        this.centroVista,
+        this.centroVistaDecimal,
         "y",
-        n.coordsManuales.y - this.$el.offsetHeight / 2
+        n.coordsManuales.y - (this.$el.offsetHeight / (2*this.factorZoom))
       );
       this.seleccionNodo(n);
       //this.centroVista=e;
@@ -398,6 +421,10 @@ export default {
                 modificados {
                   id
                   coordsManuales {
+                    x
+                    y
+                  }
+                  coords{
                     x
                     y
                   }
@@ -472,10 +499,10 @@ export default {
         .getElementById("contenedorNodos")
         .getBoundingClientRect();
       let nuevoTop = Math.round(
-        e.clientY - posContenedor.top + this.centroVista.y
+        (e.clientY - posContenedor.top)/this.factorZoom
       );
       let nuevoLeft = Math.round(
-        e.clientX - posContenedor.left + this.centroVista.x
+        (e.clientX - posContenedor.left)/this.factorZoom
       );
 
       let infoNodo = {
@@ -578,8 +605,8 @@ export default {
         });
     },
     desplazarVista(deltaX, deltaY) {
-      this.$set(this.centroVista, "x", Math.round(this.centroVista.x - deltaX));
-      this.$set(this.centroVista, "y", Math.round(this.centroVista.y - deltaY));
+      this.$set(this.centroVistaDecimal, "x", Math.round(this.centroVistaDecimal.x - (deltaX/this.factorZoom) ) );
+      this.$set(this.centroVistaDecimal, "y", Math.round(this.centroVistaDecimal.y - (deltaY/this.factorZoom) ) );
       this.actualizarTrazos++;
     },
     panVista(e) {
@@ -746,6 +773,51 @@ export default {
       }
       return { listaCompleta, listaPorNiveles };
     },
+    zoomVista(e){
+      if(!this.hovered || !e.ctrlKey){
+        return
+      }
+      e.preventDefault();      
+      
+      var contenedor = this.$el;
+      let posContenedor = contenedor.getBoundingClientRect();
+
+      // const proporciones={
+      //   x: (posContenedor.width - (e.clientX-posContenedor.left))/posContenedor.width,
+      //   y: (posContenedor.height - (e.clientY-posContenedor.top))/posContenedor.height,
+      // }
+
+      // console.log(`Pos contenedor: ${JSON.stringify(posContenedor)}`);
+      // console.log(`posMouseScreen: ${e.clientX}, ${e.clientY}`);
+      //console.log(`Distancia mouse centro px: ${e.clientX-posContenedor.left}, ${e.clientY-posContenedor.top}`);
+      
+      const proporciones={
+        x: (e.clientX-posContenedor.left)/posContenedor.width,
+        y: (e.clientY-posContenedor.top)/posContenedor.height,
+      }
+
+      const posZoom={
+        x: Math.round((e.clientX-posContenedor.left)/this.factorZoom)+this.centroVista.x,
+        y: Math.round((e.clientY-posContenedor.top)/this.factorZoom)+this.centroVista.y
+      }        
+
+      const factorZoom=0.2;
+      var nuevoZoom=this.zoom-Math.round(e.deltaY*factorZoom);
+      if(nuevoZoom<this.minZoom){
+        this.zoom=this.minZoom;
+      }
+      else if(nuevoZoom>this.maxZoom){
+        this.zoom=this.maxZoom
+      }
+      else{
+        this.zoom=nuevoZoom;
+      }
+
+      //Pan vista de acuerdo con la posición del mouse respecto del atlas                       
+
+      this.$set(this.centroVistaDecimal, "x", posZoom.x-((posContenedor.width/this.factorZoom)*proporciones.x) );
+      this.$set(this.centroVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );   
+    }
   },
   watch: {
     nodoSeleccionado: function () {
@@ -772,8 +844,14 @@ export default {
       this.descargarCentroVista();
       return;
     }
-    this.$set(this.centroVista, "x", this.usuario.atlas.centroVista.x);
-    this.$set(this.centroVista, "y", this.usuario.atlas.centroVista.y);
+    this.$set(this.centroVistaDecimal, "x", this.usuario.atlas.centroVista.x);
+    this.$set(this.centroVistaDecimal, "y", this.usuario.atlas.centroVista.y);
+  },
+  created(){
+    window.addEventListener("wheel", this.zoomVista, {passive:false});
+  },
+  removed(){
+    window.removeEventListener("wheel", this.zoomVista);
   },
   beforeRouteLeave(_, __, next) {
     console.log(
@@ -803,6 +881,7 @@ export default {
         next();
       });
   },
+  
 };
 </script>
 
@@ -811,9 +890,7 @@ export default {
   position: relative;
   overflow: scroll;
 }
-#canvases {
-  width: 100%;
-  height: 100%;
+#canvases {  
   position: absolute;
   pointer-events: none;
 }
@@ -822,7 +899,7 @@ export default {
   width: 100%;
   height: 100%;
   user-select: none;
-  overflow: hidden;
+  
   pointer-events: none;
 }
 #buscadorNodosConocimiento {

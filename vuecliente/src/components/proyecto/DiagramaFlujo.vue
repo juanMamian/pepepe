@@ -57,7 +57,7 @@
       @crearRequerimento="crearRequerimento('objetivo', $event)"
       @eliminarVinculo="eliminarVinculo('objetivo', $event)"
       @click.right.native.prevent.stop="idNodoClickDerecho = objetivo.id"
-    />    
+    />        
 
     <div id="menuCx" :style="posMenuCx" v-show="mostrandoMenuCx">
       <div class="itemMenuCx" @click="crearTrabajoAqui">Crear trabajo aquí</div>
@@ -188,7 +188,7 @@ export default {
       posicion.y = Math.round(
         ((e.clientY - posContenedor.top)/this.factorZoom)+this.centroVista.y
       );
-
+      this.mostrandoMenuCx=false;
       this.$emit("crearTrabajoEnPosicion", posicion);
     },
     crearObjetivoAqui(e) {
@@ -205,7 +205,7 @@ export default {
       posicion.y = Math.round(
         e.clientY + this.centroVista.y - posContenedor.top 
       );
-
+      this.mostrandoMenuCx=false;
       this.$emit("crearObjetivoEnPosicion", posicion);
     },   
     actualizarInfoTrabajos(idTrabajo, info) {

@@ -3,13 +3,13 @@
     <canvas
       id="canvasTodosVinculos"
       ref="canvasTodosVinculos"
-      :style="[estiloPosicionRelativaCanvas, sizeCanvasTodosVinculos]"
+      :style="[offsetCanvasTodosVinculos]"
       class="canvas"
     ></canvas>
     <canvas
       id="canvasVinculosSeleccionado"
       ref="canvasVinculosSeleccionado"
-      :style="[estiloPosicionRelativaCanvas, sizeCanvasTodosVinculos]"
+      :style="[offsetCanvasVinculosSeleccionado]"
       class="canvas"
     ></canvas>
     <canvas
@@ -25,6 +25,9 @@
 </template>
 
 <script>
+var debounce =require("debounce");
+
+
 export default {
   name: "Canvases",
   data() {
@@ -60,6 +63,7 @@ export default {
     actualizar: Number,
 
     callingPosiciones:Boolean,
+    factorZoom:Number,
   },
   methods: {
     crearImagenPosiciones(){
@@ -115,37 +119,41 @@ export default {
 
     },
     crearImagenTodosVinculos: function () {
-      var nodosRelevantes = this.todosNodos;
+      var nodosRelevantes=this.todosNodos;
+console.log(`trazando todos vínculos`);
       if (this.idNodoTarget) {
         nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
       }
 
-      if (nodosRelevantes <= 1) return;
+      if (nodosRelevantes.length <= 1) return 
 
-      this.lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
-      //Calcular el tamaño del diagrama
-      
-      this.posicionCanvasActivo = this.posicionCanvasTodosVinculos;
-      
-      this.lapiz.canvas.width = parseInt(this.sizeCanvasTodosVinculos.width);
-      this.lapiz.canvas.height = parseInt(this.sizeCanvasTodosVinculos.height);
+      var lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
+                        
+      lapiz.canvas.width = this.esquinasCanvasTodosVinculos.x2 - this.esquinasCanvasTodosVinculos.x1;
+      lapiz.canvas.height = this.esquinasCanvasTodosVinculos.y2 - this.esquinasCanvasTodosVinculos.y1;
 
-      this.lapiz.lineWidth = 1;
-      this.lapiz.clearRect(0, 0, this.lapiz.canvas.width, this.lapiz.canvas.height);
-      this.lapiz.beginPath();
-      this.lapiz.strokeStyle = "#b3b3b3";
+      const posicionCanvas={
+        x: this.esquinasCanvasTodosVinculos.x1,
+        y: this.esquinasCanvasTodosVinculos.y1,
+      }
+      lapiz.lineWidth = 1;
+      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+      lapiz.beginPath();
+      lapiz.strokeStyle = "#b3b3b3";
       for (let nodo of nodosRelevantes) {
         for (let vinculo of nodo.vinculos) {
           if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) continue;
           if (vinculo.rol == "source") {
             this.dibujarLineaEntreNodos(
               nodo,
-              nodosRelevantes.find((nodo) => nodo.id == vinculo.idRef)
+              nodosRelevantes.find((nodo) => nodo.id == vinculo.idRef),
+              lapiz,
+              posicionCanvas
             );
           }
         }
       }
-      this.lapiz.stroke();
+      lapiz.stroke();
     },
     crearImagenVinculosSeleccionado: function () {
 
@@ -157,22 +165,30 @@ export default {
 
       if (nodosRelevantes <= 1) return;
 
-      this.lapiz = this.$refs.canvasVinculosSeleccionado.getContext("2d");
-      this.lapiz.clearRect(
+      var lapiz = this.$refs.canvasVinculosSeleccionado.getContext("2d");
+
+      lapiz.canvas.width = this.esquinasCanvasVinculosSeleccionado.x2 - this.esquinasCanvasVinculosSeleccionado.x1;
+      lapiz.canvas.height = this.esquinasCanvasVinculosSeleccionado.y2 - this.esquinasCanvasVinculosSeleccionado.y1; 
+
+      const posicionCanvas={
+        x: this.esquinasCanvasVinculosSeleccionado.x1,
+        y: this.esquinasCanvasVinculosSeleccionado.y1,
+      }
+
+      lapiz.clearRect(
         0,
         0,
-        this.lapiz.canvas.width,
-        this.lapiz.canvas.height
+        lapiz.canvas.width,
+        lapiz.canvas.height
       );
 
-      this.lapiz.canvas.width = parseInt(this.sizeCanvasTodosVinculos.width);
-      this.lapiz.canvas.height = parseInt(this.sizeCanvasTodosVinculos.height);
+      
 
       if (nodosRelevantes.some((n) => n.id == this.nodoSeleccionado.id)) {
         //Lineas verdes de posiblidades
-        this.lapiz.beginPath();
-        this.lapiz.lineWidth = 2;
-        this.lapiz.strokeStyle = "#008000";
+        lapiz.beginPath();
+        lapiz.lineWidth = 2;
+        lapiz.strokeStyle = "#008000";
 
         //Lineas verdes de salida
         for (let vinculo of this.nodoSeleccionado.vinculos) {
@@ -182,14 +198,14 @@ export default {
           }
           if (vinculo.rol == "source") {
             let otroNodo = nodosRelevantes.find((n) => n.id == vinculo.idRef);
-            this.dibujarLineaEntreNodos(this.nodoSeleccionado, otroNodo);
+            this.dibujarLineaEntreNodos(this.nodoSeleccionado, otroNodo, lapiz, posicionCanvas);
           }
         }
-        this.lapiz.stroke();
+        lapiz.stroke();
         //Lineas rojas de dependencias
 
-        this.lapiz.beginPath();
-        this.lapiz.strokeStyle = "#b80e0e";
+        lapiz.beginPath();
+        lapiz.strokeStyle = "#b80e0e";
         for (let vinculo of this.nodoSeleccionado.vinculos) {
           if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) {
             console.log(`ALERTA. Vinculo a ${vinculo.idRef} huerfano`);
@@ -197,30 +213,30 @@ export default {
           }
           if (vinculo.rol == "target") {
             let otroNodo = nodosRelevantes.find((n) => n.id == vinculo.idRef);
-            this.dibujarLineaEntreNodos(otroNodo, this.nodoSeleccionado);
+            this.dibujarLineaEntreNodos(otroNodo, this.nodoSeleccionado, lapiz, posicionCanvas);
           }
         }
-        this.lapiz.stroke();
+        lapiz.stroke();
       }
     },
-    dibujarLineaEntreNodos(nodoFrom, nodoTo) {
+    dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicion) {
       let inicio = {
-        x: nodoFrom.coordsManuales.x - this.posicionCanvasActivo.x,
-        y: nodoFrom.coordsManuales.y - this.posicionCanvasActivo.y,
+        x: (nodoFrom.coords.x*this.factorZoom) - posicion.x,
+        y: (nodoFrom.coords.y*this.factorZoom) - posicion.y,
       };
       let final = {
-        x: nodoTo.coordsManuales.x - this.posicionCanvasActivo.x,
-        y: nodoTo.coordsManuales.y - this.posicionCanvasActivo.y,
+        x: (nodoTo.coords.x*this.factorZoom) - posicion.x,
+        y: (nodoTo.coords.y*this.factorZoom) - posicion.y,
       };
 
-      this.lapiz.moveTo(inicio.x, inicio.y);
-      this.lapiz.lineTo(final.x, final.y);
+      lapiz.moveTo(inicio.x, inicio.y);
+      lapiz.lineTo(final.x, final.y);
       //ahora la flechita
       let centro = {
         x: (final.x + inicio.x) / 2,
         y: (final.y + inicio.y) / 2,
       };
-      let longitudAla = 7;
+      let longitudAla = parseInt(7*this.factorZoom);
       let anguloVinculo = Math.atan(
         (final.y - inicio.y) / (final.x - inicio.x)
       );
@@ -238,10 +254,10 @@ export default {
         x: centro.x + longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4),
         y: centro.y + longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4),
       };
-      this.lapiz.moveTo(centro.x, centro.y);
-      this.lapiz.lineTo(puntaAlaIzquierda.x, puntaAlaIzquierda.y);
-      this.lapiz.moveTo(centro.x, centro.y);
-      this.lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
+      lapiz.moveTo(centro.x, centro.y);
+      lapiz.lineTo(puntaAlaIzquierda.x, puntaAlaIzquierda.y);
+      lapiz.moveTo(centro.x, centro.y);
+      lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
     },
     trazarVinculosDeNodoRecursivamente(
       idNodo,
@@ -280,15 +296,108 @@ export default {
       }
       return blacklist;
     },
+    debTrazarVinculos:debounce(function(){
+      this.crearImagenTodosVinculos();
+    }, 1000)
   },
   computed: {
+    esquinasCanvasTodosVinculos(){
+      var nodosRelevantes=this.todosNodos;
+
+      if (this.idNodoTarget) {
+        nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
+      }
+
+      if (nodosRelevantes.length <= 1) return {
+        x1: 0,
+        y1: 0,
+        x2: 0,
+        y2: 0,        
+      };
+
+      let bordes = {};
+      bordes.top = nodosRelevantes.reduce((acc, n) => {
+        //console.log(`Reduciendo ${n.nombre} con coords: ${n.posicion}`);
+        return n.coords.y > acc ? n.coords.y : acc;
+      }, 0);
+      bordes.bot = nodosRelevantes.reduce((acc, n) => {
+        return n.coords.y < acc ? n.coords.y : acc;
+      }, 0);
+      bordes.left = nodosRelevantes.reduce((acc, n) => {
+        return n.coords.x < acc ? n.coords.x : acc;
+      }, 0);
+      bordes.right = nodosRelevantes.reduce((acc, n) => {
+        return n.coords.x > acc ? n.coords.x : acc;
+      }, 0);
+
+      return {
+        x1: bordes.left*this.factorZoom,
+        y1: bordes.bot*this.factorZoom,
+        x2: bordes.right*this.factorZoom,
+        y2: bordes.top*this.factorZoom
+      }
+    },
+    offsetCanvasTodosVinculos(){
+      return {
+        left:  this.esquinasCanvasTodosVinculos.x1 + "px",
+        top: this.esquinasCanvasTodosVinculos.y1 + "px",
+
+        width: (this.esquinasCanvasTodosVinculos.x2-this.esquinasCanvasTodosVinculos.x1) + "px",
+        height: (this.esquinasCanvasTodosVinculos.y2-this.esquinasCanvasTodosVinculos.y1) + "px",
+      }
+    },
+    esquinasCanvasVinculosSeleccionado(){
+      var nodosRelevantes=this.todosNodos.filter(n=>n.id==this.nodoSeleccionado.id || n.vinculos.some(v=>v.idRef==this.nodoSeleccionado.id));
+
+      if (this.idNodoTarget) {
+        nodosRelevantes = nodosRelevantes.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
+      }
+
+      if (nodosRelevantes.length <= 1) return {
+        x1: 0,
+        y1: 0,
+        x2: 0,
+        y2: 0,        
+      };
+
+      let bordes = {};
+      bordes.top = nodosRelevantes.reduce((acc, n) => {
+        //console.log(`Reduciendo ${n.nombre} con coords: ${n.posicion}`);
+        return n.coords.y > acc ? n.coords.y : acc;
+      }, 0);
+      bordes.bot = nodosRelevantes.reduce((acc, n) => {
+        return n.coords.y < acc ? n.coords.y : acc;
+      }, 0);
+      bordes.left = nodosRelevantes.reduce((acc, n) => {
+        return n.coords.x < acc ? n.coords.x : acc;
+      }, 0);
+      bordes.right = nodosRelevantes.reduce((acc, n) => {
+        return n.coords.x > acc ? n.coords.x : acc;
+      }, 0);
+
+      return {
+        x1: bordes.left*this.factorZoom,
+        y1: bordes.bot*this.factorZoom,
+        x2: bordes.right*this.factorZoom,
+        y2: bordes.top*this.factorZoom
+      }
+    },
+    offsetCanvasVinculosSeleccionado(){
+      return {
+        left:  this.esquinasCanvasVinculosSeleccionado.x1 + "px",
+        top: this.esquinasCanvasVinculosSeleccionado.y1 + "px",
+
+        width: (this.esquinasCanvasVinculosSeleccionado.x2-this.esquinasCanvasVinculosSeleccionado.x1) + "px",
+        height: (this.esquinasCanvasVinculosSeleccionado.y2-this.esquinasCanvasVinculosSeleccionado.y1) + "px",
+      }
+    },
     sizeCanvasTodosVinculos(){
       var nodosRelevantes = this.todosNodos;
       if (this.idNodoTarget) {
         nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
       }
 
-      if (nodosRelevantes <= 1) return {
+      if (nodosRelevantes.length <= 1) return {
         width:"0px",
         height:"0px",
       };
@@ -350,7 +459,6 @@ export default {
   },
   watch: {
     todosNodos: function () {
-      console.log(`Cambio en todos nodos`);
       if (this.todosNodos.length < 1) return;
       this.crearImagenTodosVinculos();
       if(this.callingPosiciones)this.crearImagenPosiciones();
@@ -365,6 +473,9 @@ export default {
       console.log(`Trazando todos vínculos teniendo en cuenta el target`);
       this.crearImagenTodosVinculos();
     },
+    factorZoom(){
+      this.debTrazarVinculos();
+    }
   },
   mounted() {
     this.montado = true;
@@ -379,8 +490,7 @@ export default {
 .canvas {
   position: absolute;
 }
-#canvasVinculosSeleccionado {
-}
+
 #canvasTodosVinculos {
   z-index: 0;
 }
