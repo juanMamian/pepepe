@@ -846,6 +846,11 @@ export default {
     }
     this.$set(this.centroVistaDecimal, "x", this.usuario.atlas.centroVista.x);
     this.$set(this.centroVistaDecimal, "y", this.usuario.atlas.centroVista.y);
+
+    console.log(`Screen width: ${screen.width}`);
+    if(screen.width<600){
+      this.zoom=70;
+    }
   },
   created(){
     window.addEventListener("wheel", this.zoomVista, {passive:false});
