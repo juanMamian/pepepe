@@ -220,37 +220,50 @@ console.log(`trazando todos vínculos`);
       }
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicion) {
+      
+      var anguloVinculo = Math.atan(
+        (nodoTo.coords.y - nodoFrom.coords.y) / (nodoTo.coords.x - nodoFrom.coords.x)
+      );
+
+      if (nodoTo.coords.y - nodoFrom.coords.y < 0 && nodoTo.coords.x - nodoFrom.coords.x < 0)
+        anguloVinculo += Math.PI;
+      if (nodoTo.coords.y - nodoFrom.coords.y > 0 && nodoTo.coords.x - nodoFrom.coords.x < 0)
+        anguloVinculo += Math.PI;
+
+      const zonaNodo={
+        x: 25*Math.cos(anguloVinculo),
+        y: 25*Math.sin(anguloVinculo)
+      }
+      
       let inicio = {
-        x: (nodoFrom.coords.x*this.factorZoom) - posicion.x,
-        y: (nodoFrom.coords.y*this.factorZoom) - posicion.y,
+        x: ((nodoFrom.coords.x+zonaNodo.x)*this.factorZoom) - posicion.x,
+        y: ((nodoFrom.coords.y+zonaNodo.y)*this.factorZoom) - posicion.y,
       };
       let final = {
-        x: (nodoTo.coords.x*this.factorZoom) - posicion.x,
-        y: (nodoTo.coords.y*this.factorZoom) - posicion.y,
+        x: ((nodoTo.coords.x-zonaNodo.x)*this.factorZoom) - posicion.x,
+        y: ((nodoTo.coords.y-zonaNodo.y)*this.factorZoom) - posicion.y,
       };
+
+      
 
       lapiz.moveTo(inicio.x, inicio.y);
       lapiz.lineTo(final.x, final.y);
       //ahora la flechita
-      let centro = {
+      const centro = {
         x: (final.x + inicio.x) / 2,
         y: (final.y + inicio.y) / 2,
       };
-      let longitudAla = parseInt(7*this.factorZoom);
-      let anguloVinculo = Math.atan(
-        (final.y - inicio.y) / (final.x - inicio.x)
-      );
-      if (final.y - inicio.y < 0 && final.x - inicio.x < 0)
-        anguloVinculo += Math.PI;
-      if (final.y - inicio.y > 0 && final.x - inicio.x < 0)
-        anguloVinculo += Math.PI;
+      const longitudAla = parseInt(7*this.factorZoom);
+            
+
+      
       //anguloVinculo=anguloVinculo*180/Math.PI;
 
-      let puntaAlaIzquierda = {
+      const puntaAlaIzquierda = {
         x: centro.x + longitudAla * Math.cos(anguloVinculo - (3 * Math.PI) / 4),
         y: centro.y + longitudAla * Math.sin(anguloVinculo - (3 * Math.PI) / 4),
       };
-      let puntaAlaDerecha = {
+      const puntaAlaDerecha = {
         x: centro.x + longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4),
         y: centro.y + longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4),
       };
