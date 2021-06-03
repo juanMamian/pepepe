@@ -83,6 +83,10 @@ export default {
                   x
                   y
                 }
+                coords{
+                  x
+                  y
+                }
               }
             }
           `,
@@ -92,7 +96,6 @@ export default {
           fetchPolicy: "network-only",
         })
         .then(({ data: { busquedaAmplia } }) => {
-          console.log(`respuesta: ${JSON.stringify(busquedaAmplia)}`);
           this.resultados = busquedaAmplia;
           this.esperandoResultados=false;
           this.mostrandoLista=true;

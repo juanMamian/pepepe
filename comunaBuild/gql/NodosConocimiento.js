@@ -124,7 +124,7 @@ exports.resolvers = {
                     console.log(`No habia palabras buscadas`);
                 }
                 try {
-                    var opciones = yield Nodo_1.ModeloNodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion coordsManuales").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
+                    var opciones = yield Nodo_1.ModeloNodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion coordsManuales coords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
                 }
                 catch (error) {
                     console.log(". E: " + error);

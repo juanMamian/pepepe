@@ -68,13 +68,10 @@ export default {
   methods: {
     crearImagenPosiciones(){
       
-      console.log(`Creando imagen posiciones`);
       this.lapiz=this.$refs.canvasPosiciones.getContext("2d")
       var nodosRelevantes = this.todosNodos;
-      console.log(`Con ${nodosRelevantes.length} nodos relevantes`);
 
       if(this.nodoSeleccionado && this.nodoSeleccionado.id.length>4) nodosRelevantes=[this.nodoSeleccionado];
-      console.log(`Con ${nodosRelevantes.length} nodos relevantes`);
       if (nodosRelevantes <= 1) return;
 
       this.lapiz.canvas.width=parseInt(this.sizeCanvasTodosVinculos.width);
@@ -120,7 +117,6 @@ export default {
     },
     crearImagenTodosVinculos: function () {
       var nodosRelevantes=this.todosNodos;
-console.log(`trazando todos vínculos`);
       if (this.idNodoTarget) {
         nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
       }

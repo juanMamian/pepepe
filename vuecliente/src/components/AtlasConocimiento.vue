@@ -1,4 +1,5 @@
 <template>
+
   <div
     class="atlasConocimiento"
     @mousedown.left.exact.stop="panningVista = true"
@@ -12,7 +13,7 @@
     @mouseup.left="clickFondoAtlas"
     @dblclick.ctrl.shift.self.stop="crearNodo"
     @touchmove.prevent.stop="movimientoMobile"
-    @touchstart="iniciaMovimientoTouch"
+    @touchstart="iniciaMovimientoTouch"    
   >
     <div id="botonCallingPosiciones" v-if="usuarioSuperadministrador && usuario.username=='juanMamian'" @click.stop="callingPosiciones=!callingPosiciones" :style="[{backgroundColor:callingPosiciones?'green':'transparent'}]">
 
@@ -377,15 +378,16 @@ export default {
         });
     },
     centrarEnNodo(n) {
+      
       this.$set(
         this.centroVistaDecimal,
         "x",
-        n.coordsManuales.x - (this.$el.offsetWidth / (2*this.factorZoom))
+        n.coords.x - (this.$el.offsetWidth / (2*this.factorZoom))
       );
       this.$set(
         this.centroVistaDecimal,
         "y",
-        n.coordsManuales.y - (this.$el.offsetHeight / (2*this.factorZoom))
+        n.coords.y - (this.$el.offsetHeight / (2*this.factorZoom))
       );
       this.seleccionNodo(n);
       //this.centroVista=e;
@@ -409,7 +411,7 @@ export default {
       }
       this.todosNodos[
         this.todosNodos.findIndex((n) => n.id == idNodo)
-      ].coordsManuales = coordsManuales;
+      ].coords = coordsManuales;
       this.$apollo
         .mutate({
           mutation: gql`
