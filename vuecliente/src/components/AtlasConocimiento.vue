@@ -283,6 +283,7 @@ export default {
       return listaTotal;
     },
     clickFondoAtlas() {
+      console.log(`Click en el fondo del atlas`);
       if (!this.vistaPanned) this.idNodoSeleccionado = "-1";
       this.panningVista = false;
       this.vistaPanned = false;

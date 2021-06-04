@@ -2,20 +2,21 @@
   <div
     class="nodoConocimiento"
     :style="[estiloPosicion, estiloSize, estiloZeta]"
-    :class="{ fantasmeado: usuarioLogeado && !aprendible && !seleccionado && !callingPosiciones, escondido }"
+    :class="{ escondido }"
     @mousedown.ctrl.stop="arrastrandoNodo = true"
     @click.ctrl.capture="stopProp"
     @mouseup.left="guardarPosicion"
-    @mousemove="arrastrarNodo"
-    @mouseenter="mostrandoCuadritoDescripcion = true"
+    @mousemove="arrastrarNodo"    
     @mouseleave="
-      arrastrandoNodo = false;
-      mostrandoCuadritoDescripcion = false;
+      arrastrandoNodo = false;      
     "
     @dblclick="abrirPaginaNodo"
   >
     <img
       :src="this.serverUrl + '/api/atlas/iconos/' + esteNodo.id"
+      :class="{
+        fantasmeado: usuarioLogeado && !aprendible && !callingPosiciones,
+      }"
       alt=""
       class="iconoNodo"
       ref="iconoNodo"
@@ -25,7 +26,13 @@
       alt="Completado"
       title="Aprendizaje de este tema completado"
       v-show="nodoAprendido"
-      :style="[{width: parseInt(20*factorZoom)+'px', left: parseInt(-10*factorZoom)+'px', top: parseInt(-10*factorZoom)+'px'}]"
+      :style="[
+        {
+          width: parseInt(20 * factorZoom) + 'px',
+          left: parseInt(-10 * factorZoom) + 'px',
+          top: parseInt(-10 * factorZoom) + 'px',
+        },
+      ]"
       class="imagenAprendido"
     />
     <img
@@ -112,14 +119,23 @@
         </div>
       </template>
     </div>
-    <div id="nombre" :style="[estiloCartelNombre]" ref="nombre" :class="{ nombreSeleccionado: seleccionado, nodoStuck:esteNodo.stuck && callingPosiciones }">
-      {{ callingPosiciones?esteNodo.puntaje:esteNodo.nombre }}
+    <div
+      id="nombre"
+      :style="[estiloCartelNombre]"
+      ref="nombre"      
+      :class="{
+        nombreSeleccionado: seleccionado,
+        nodoStuck: esteNodo.stuck && callingPosiciones,
+        fantasmeado: usuarioLogeado && !aprendible && !callingPosiciones
+      }"
+    >
+      {{ callingPosiciones ? esteNodo.puntaje : esteNodo.nombre }}
     </div>
 
     <div
       class="cuadritoDescripcionNodo"
       v-if="esteNodo && esteNodo.descripcion"
-      v-show="seleccionado && !callingPosiciones"
+      v-show="seleccionado && !callingPosiciones && mostrarDescripcion"
     >
       <div class="descripcionNodo">{{ esteNodo.descripcion }}</div>
       <img
@@ -129,6 +145,7 @@
         title="Abrir este nodo"
         class="botonAbrirNodo"
       />
+      <div class="botonEquis" @click.stop="mostrarDescripcion=false" @mousedown.stop="" @mouseup.stop="" id="botonCerrarDescripcion"><div class="linea1"></div><div class="linea2"></div></div>
     </div>
   </div>
 </template>
@@ -142,27 +159,26 @@ export default {
     return {
       arrastrandoNodo: false,
       nombreEditable: false,
-      nombreEditandose: false,
+      nombreEditandose: false,      
 
-      mostrandoCuadritoDescripcion: false,
-
-      baseSize:{
-        x:50,
-        y:50,
+      baseSize: {
+        x: 50,
+        y: 50,
       },
-      
-     posicion:{
-       x:0,
-       y:0
-     },
 
-     estiloNombreBase:{
-       minWidth:20,
-       fontSize:12,
-       minHeight:10,
-       padding: 5,
-       borderRadius:4
-     }
+      posicion: {
+        x: 0,
+        y: 0,
+      },
+
+      estiloNombreBase: {
+        minWidth: 20,
+        fontSize: 12,
+        minHeight: 10,
+        padding: 5,
+        borderRadius: 4,
+      },
+      mostrarDescripcion:true,
     };
   },
   props: {
@@ -191,13 +207,13 @@ export default {
       default: false,
     },
 
-    callingPosiciones:Boolean,
-    factorZoom:Number,
+    callingPosiciones: Boolean,
+    factorZoom: Number,
   },
   computed: {
     menuCx() {
       return this.idNodoMenuCx == this.esteNodo.id ? true : false;
-    },    
+    },
     size() {
       let fSize = Object.assign({}, this.baseSize);
       if (this.seleccionado) {
@@ -214,11 +230,15 @@ export default {
         sel = true;
       }
       return sel;
-    },   
+    },
     estiloPosicion() {
       //Posicion absoluta
-      let posY = Math.round((this.posicion.y - this.size.y / 2)*this.factorZoom);
-      let posX = Math.round((this.posicion.x - this.size.x / 2)*this.factorZoom);
+      let posY = Math.round(
+        (this.posicion.y - this.size.y / 2) * this.factorZoom
+      );
+      let posX = Math.round(
+        (this.posicion.x - this.size.x / 2) * this.factorZoom
+      );
 
       //Ajustar respecto del centro de la vista
       // posY -= this.centroVista.y;
@@ -233,8 +253,8 @@ export default {
       if (this.arrastrandoNodo || this.seleccionado) {
         valorZ = 10;
       }
-      if(this.menuCx){
-        valorZ=11;
+      if (this.menuCx) {
+        valorZ = 11;
       }
       return {
         zIndex: valorZ,
@@ -242,17 +262,19 @@ export default {
     },
     estiloSize() {
       return {
-        width: (this.size.x*this.factorZoom) + "px",
-        height: (this.size.y*this.factorZoom) + "px",
+        width: this.size.x * this.factorZoom + "px",
+        height: this.size.y * this.factorZoom + "px",
       };
     },
     permisosUsuario: function () {
       return this.$store.state.usuario.permisos;
     },
     aprendible() {
-      var idsNecesarios=this.esteNodo.vinculos.filter(v=>v.rol=="target").map(v=>v.idRef);
+      var idsNecesarios = this.esteNodo.vinculos
+        .filter((v) => v.rol == "target")
+        .map((v) => v.idRef);
       return (
-        idsNecesarios.every(id=>this.idsNodosAprendidos.includes(id)) ||
+        idsNecesarios.every((id) => this.idsNodosAprendidos.includes(id)) ||
         this.idsNodosAprendidos.includes(this.esteNodo.id) ||
         !this.esteNodo.vinculos.some((v) => v.rol == "target")
       );
@@ -272,16 +294,20 @@ export default {
     nodoAprendido() {
       return this.idsNodosAprendidos.includes(this.esteNodo.id);
     },
-    estiloCartelNombre(){
+    estiloCartelNombre() {
       return {
-        minWidth: parseInt(this.estiloNombreBase.minWidth*this.factorZoom)+"px",
-        fontSize:parseInt(this.estiloNombreBase.fontSize*this.factorZoom)+"px",
-        minHeight:parseInt(this.estiloNombreBase.minHeight*this.factorZoom)+"px",
-        padding: parseInt(this.estiloNombreBase.padding*this.factorZoom)+"px",
-        borderRadius:parseInt(this.estiloNombreBase.borderRadius*this.factorZoom)+"px",
-      }
-    }
-    
+        minWidth:
+          parseInt(this.estiloNombreBase.minWidth * this.factorZoom) + "px",
+        fontSize:
+          parseInt(this.estiloNombreBase.fontSize * this.factorZoom) + "px",
+        minHeight:
+          parseInt(this.estiloNombreBase.minHeight * this.factorZoom) + "px",
+        padding:
+          parseInt(this.estiloNombreBase.padding * this.factorZoom) + "px",
+        borderRadius:
+          parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
+      };
+    },
   },
   methods: {
     toggleAprendido() {
@@ -289,17 +315,17 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $nuevoEstadoAprendido: Boolean!) {
+            mutation ($idNodo: ID!, $nuevoEstadoAprendido: Boolean!) {
               setNodoAtlasAprendidoUsuario(
                 idNodo: $idNodo
                 nuevoEstadoAprendido: $nuevoEstadoAprendido
               )
             }
           `,
-          variables:{
-            idNodo:this.esteNodo.id,
-            nuevoEstadoAprendido
-          }
+          variables: {
+            idNodo: this.esteNodo.id,
+            nuevoEstadoAprendido,
+          },
         })
         .then(({ data: { setNodoAtlasAprendidoUsuario } }) => {
           if (setNodoAtlasAprendidoUsuario) {
@@ -311,7 +337,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $nuevoEstadoObjetivo: Boolean!) {
+            mutation ($idNodo: ID!, $nuevoEstadoObjetivo: Boolean!) {
               setNodoObjetivo(
                 idNodo: $idNodo
                 nuevoEstadoObjetivo: $nuevoEstadoObjetivo
@@ -330,7 +356,7 @@ export default {
         });
     },
     abrirPaginaNodo() {
-      if(!this.aprendible)return alert("¡Aún no puedes estudiar este nodo!")
+      if (!this.aprendible) return alert("¡Aún no puedes estudiar este nodo!");
       this.$router.push("/nodoConocimiento/" + this.esteNodo.id);
     },
     copiarId(e) {
@@ -358,10 +384,10 @@ export default {
         .getElementById("contenedorNodos")
         .getBoundingClientRect();
       let nuevoTop = Math.round(
-        (e.clientY - posContenedor.top)/this.factorZoom
+        (e.clientY - posContenedor.top) / this.factorZoom
       );
       let nuevoLeft = Math.round(
-        (e.clientX - posContenedor.left)/this.factorZoom
+        (e.clientX - posContenedor.left) / this.factorZoom
       );
       this.posicion.y = nuevoTop;
       this.posicion.x = nuevoLeft;
@@ -401,18 +427,23 @@ export default {
         idNodoTo: nodoTo.id,
       });
     },
-    stopProp(e){
+    stopProp(e) {
       console.log(`Stopping`);
       e.stopPropagation();
-    }
+    },
   },
-  watch:{
-    esteNodo(){
-      this.posicion={...this.esteNodo.coords};
+  watch: {
+    esteNodo() {
+      this.posicion = { ...this.esteNodo.coords };
+    },
+    seleccionado(estado){
+      if(estado){
+        this.mostrarDescripcion=true;
+      }
     }
   },
   mounted() {
-      this.posicion={...this.esteNodo.coords};
+    this.posicion = { ...this.esteNodo.coords };
   },
 };
 </script>
@@ -446,19 +477,17 @@ export default {
 .fantasmeado {
   opacity: 0.2;
 }
-.fantasmeado:hover {
-  opacity: 1;
-}
+
 .escondido {
   visibility: hidden;
 }
-#nombre {  
+#nombre {
   position: absolute;
   top: 105%;
-  text-align: center;    
+  text-align: center;
   left: 50%;
   transform: translateX(-50%);
-  border: 1px solid rgb(5, 102, 109);  
+  border: 1px solid rgb(5, 102, 109);
 }
 
 #nombre:not(.nombreSeleccionado) {
@@ -535,9 +564,15 @@ export default {
 .imagenTarget:hover {
   opacity: 0.16;
 }
-.imagenAprendido{  
-  position: absolute;  
+.imagenAprendido {
+  position: absolute;
   background-color: rgb(33, 168, 33);
   border-radius: 50%;
+}
+#botonCerrarDescripcion{
+  left: 101%;
+  bottom: 101%;
+  width: 15px;
+  height: 15px;
 }
 </style>

@@ -441,6 +441,36 @@ input {
 .opaco {
   opacity: 0.6;
 }
+
+.botonEquis{
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  background-color: rgb(214, 115, 115);
+  border-radius: 50%;
+  position: absolute;
+}
+.botonEquis:hover{
+  background-color: rgb(196, 73, 73);
+}
+.botonEquis>.linea1{
+  position: absolute;
+  background-color: black;
+  height: 2px;
+  width: 80%;
+  left: 10%;
+  top: 50%;
+  transform: translateY(-50%) rotateZ(45deg);
+}
+.botonEquis>.linea2{
+  position: absolute;
+  background-color: black;
+  height: 80%;
+  width: 2px;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%) rotateZ(45deg);
+}
 </style>
 
 <style scoped>
