@@ -73,6 +73,9 @@
         @tengoNuevoValorAprendido="setNodoAprendidoCache($event, nodo.id)"
       />
     </div>
+    
+    <loading id="simboloDescargandoNodos" v-show="!nodosDescargados" texto="descargando nodos de conocimiento" />
+    
   </div>
 </template>
 
@@ -82,6 +85,7 @@ import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
 import Canvases from "./atlasConocimiento/Canvases.vue";
 import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
 import PanelObjetivos from "./atlasConocimiento/PanelObjetivos.vue";
+import Loading from './utilidades/Loading.vue';
 
 const QUERY_NODOS = gql`
   query {
@@ -135,6 +139,7 @@ export default {
     Canvases,
     BuscadorNodosConocimiento,
     PanelObjetivos,
+    Loading,
   },
   name: "AtlasConocimiento",
   apollo: {
@@ -147,6 +152,7 @@ export default {
         return this.callingPosiciones?5000:null
       },
       update({todosNodos}){
+        this.nodosDescargados=true;
         todosNodos.forEach(nodo=>{
           nodo.coordsManuales=nodo.coords
         })
@@ -165,6 +171,7 @@ export default {
     return {
       hovered:false,
       todosNodos: [],
+      nodosDescargados:false,
       idNodoSeleccionado: "-1",
       idNodoMenuCx: "-1",
       idsNecesariosParaTarget: [],
@@ -942,5 +949,13 @@ export default {
   top:1%;
   right:1%;
   cursor:pointer;
+}
+
+#simboloDescargandoNodos{
+  position: fixed;
+  top:50%;
+  left:50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
 }
 </style>
