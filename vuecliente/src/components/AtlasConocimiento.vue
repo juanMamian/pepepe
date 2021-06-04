@@ -29,6 +29,7 @@
       @targetSeleccionado="setNodoTargetCache"
       @nodoSeleccionado="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
       @nulificarNodoTarget="nulificarNodoTarget"
+      v-show="nodosObjetivo.length>0"
     />
     <canvases
         :todosNodos="todosNodos"
@@ -209,6 +210,7 @@ export default {
         .map((n) => n.idNodo);
     },
     nodosObjetivo() {
+      if(!this.todosNodos)return []
       return this.todosNodos.filter((n) =>
         this.idsNodosObjetivos.includes(n.id)
       );
@@ -294,6 +296,7 @@ export default {
         query: QUERY_DATOS_USUARIO_NODOS,
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
+      
       var indexN = nuevoCache.yo.atlas.datosNodos.findIndex(
         (n) => n.idNodo == idNodo
       );
@@ -305,6 +308,7 @@ export default {
           __typename: "DatoNodoUsuario",
           idNodo,
           objetivo: nuevoEstado,
+          aprendido: this.todosNodos.find(n=>n.id==idNodo).aprendido
         });
       }
       store.writeQuery({

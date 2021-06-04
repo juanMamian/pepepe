@@ -330,6 +330,7 @@ export default {
         });
     },
     abrirPaginaNodo() {
+      if(!this.aprendible)return alert("¡Aún no puedes estudiar este nodo!")
       this.$router.push("/nodoConocimiento/" + this.esteNodo.id);
     },
     copiarId(e) {
