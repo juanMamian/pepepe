@@ -125,6 +125,9 @@
       ref="nombre"      
       :class="{
         nombreSeleccionado: seleccionado,
+        nombreNodoAprendido:nodoAprendido,
+        nombreNodoOutreach:!aprendible,
+        nombreNodoAprendible:aprendible && !nodoAprendido,
         nodoStuck: esteNodo.stuck && callingPosiciones,
         fantasmeado: usuarioLogeado && !aprendible && !callingPosiciones
       }"
@@ -308,6 +311,7 @@ export default {
           parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
       };
     },
+    
   },
   methods: {
     toggleAprendido() {
@@ -487,16 +491,25 @@ export default {
   text-align: center;
   left: 50%;
   transform: translateX(-50%);
-  border: 1px solid rgb(5, 102, 109);
+  border-width: 1px;
+  border-style: solid;  
 }
 
-#nombre:not(.nombreSeleccionado) {
-  background-color: lightblue;
+.nombreNodoOutreach{
+  background-color: rgb(127, 190, 192);
+  border-color: rgb(53, 110, 112);
 }
 
-.nombreSeleccionado {
-  background-color: rgb(108, 179, 202);
+.nombreNodoAprendible{
+  background-color: rgb(221, 236, 91);
+  border-color: rgb(189, 120, 16);
 }
+
+.nombreNodoAprendido{
+  background-color: rgb(135, 199, 135);
+  border-color: rgb(24, 92, 24);
+}
+
 #nombre.nodoStuck {
   background-color: rgb(206, 94, 94);
 }
