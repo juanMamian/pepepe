@@ -446,6 +446,7 @@ export default {
         }
         
         this.lastPinchDistance=dist;
+        return
       }
 
       const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
