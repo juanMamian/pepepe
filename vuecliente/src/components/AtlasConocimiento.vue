@@ -428,24 +428,30 @@ export default {
     movimientoMobile(e) {
 
       if(this.pinching){
+        var contenedor = this.$el;
+        let posContenedor = contenedor.getBoundingClientRect();           
+        
+        const posZoom={
+          x: Math.round((posContenedor.width/2)/this.factorZoom)+this.centroVista.x,
+          y: Math.round((posContenedor.height/2)/this.factorZoom)+this.centroVista.y
+        }        
+
+        const proporciones={
+          x: (posZoom.x-this.centroVistaDecimal.x)/(posContenedor.width/this.factorZoom),
+          y: (posZoom.y-this.centroVistaDecimal.y)/(posContenedor.height/this.factorZoom),
+        }
+
         var dist = Math.hypot(
           e.touches[0].pageX - e.touches[1].pageX,
           e.touches[0].pageY - e.touches[1].pageY
           );
         var pinch=dist - this.lastPinchDistance;
-        pinch=pinch*0.5;
-        var nuevoZoom=Math.round(this.zoom+pinch);
-        if(nuevoZoom<this.minZoom){
-          this.zoom=this.minZoom;
-        }
-        else if(nuevoZoom>this.maxZoom){
-          this.zoom=this.maxZoom
-        }
-        else{
-          this.zoom=nuevoZoom;
-        }
-        
+        pinch=pinch*0.5;             
+        this.zoomVista(pinch);
         this.lastPinchDistance=dist;
+                      
+        this.$set(this.centroVistaDecimal, "x", posZoom.x-((posContenedor.width/this.factorZoom)*proporciones.x) );
+        this.$set(this.centroVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );   
         return
       }
 
@@ -830,36 +836,8 @@ export default {
       }
       return { listaCompleta, listaPorNiveles };
     },
-    zoomVista(e){
-      if(!this.hovered || !e.ctrlKey){
-        return
-      }
-      e.preventDefault();      
-      
-      var contenedor = this.$el;
-      let posContenedor = contenedor.getBoundingClientRect();
-
-      // const proporciones={
-      //   x: (posContenedor.width - (e.clientX-posContenedor.left))/posContenedor.width,
-      //   y: (posContenedor.height - (e.clientY-posContenedor.top))/posContenedor.height,
-      // }
-
-      // console.log(`Pos contenedor: ${JSON.stringify(posContenedor)}`);
-      // console.log(`posMouseScreen: ${e.clientX}, ${e.clientY}`);
-      //console.log(`Distancia mouse centro px: ${e.clientX-posContenedor.left}, ${e.clientY-posContenedor.top}`);
-      
-      const proporciones={
-        x: (e.clientX-posContenedor.left)/posContenedor.width,
-        y: (e.clientY-posContenedor.top)/posContenedor.height,
-      }
-
-      const posZoom={
-        x: Math.round((e.clientX-posContenedor.left)/this.factorZoom)+this.centroVista.x,
-        y: Math.round((e.clientY-posContenedor.top)/this.factorZoom)+this.centroVista.y
-      }        
-
-      const factorZoom=0.2;
-      var nuevoZoom=this.zoom-Math.round(e.deltaY*factorZoom);
+    zoomVista(deltaZoom){    
+      var nuevoZoom=this.zoom+deltaZoom;
       if(nuevoZoom<this.minZoom){
         this.zoom=this.minZoom;
       }
@@ -871,6 +849,29 @@ export default {
       }
 
       //Pan vista de acuerdo con la posición del mouse respecto del atlas                       
+      
+    },
+    zoomWheel(e){
+      if(!this.hovered || !e.ctrlKey){
+        return
+      }
+      e.preventDefault();      
+      
+      var contenedor = this.$el;
+      let posContenedor = contenedor.getBoundingClientRect();           
+      
+      const posZoom={
+        x: Math.round((e.clientX-posContenedor.left)/this.factorZoom)+this.centroVista.x,
+        y: Math.round((e.clientY-posContenedor.top)/this.factorZoom)+this.centroVista.y
+      }        
+
+      const proporciones={
+        x: (posZoom.x-this.centroVistaDecimal.x)/(posContenedor.width/this.factorZoom),
+        y: (posZoom.y-this.centroVistaDecimal.y)/(posContenedor.height/this.factorZoom),
+      }
+
+      const factorZoom=0.2;
+      this.zoomVista(-Math.round(e.deltaY*factorZoom), {x:posZoom.x, y: posZoom.y});
 
       this.$set(this.centroVistaDecimal, "x", posZoom.x-((posContenedor.width/this.factorZoom)*proporciones.x) );
       this.$set(this.centroVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );   
@@ -920,10 +921,10 @@ export default {
     }
   },
   created(){
-    window.addEventListener("wheel", this.zoomVista, {passive:false});
+    window.addEventListener("wheel", this.zoomWheel, {passive:false});
   },
   removed(){
-    window.removeEventListener("wheel", this.zoomVista);
+    window.removeEventListener("wheel", this.zoomWheel);
   },
   beforeRouteLeave(_, __, next) {
     console.log(
@@ -1000,7 +1001,7 @@ export default {
   padding: 10px;
   display: inline-block; 
   font-weight: bold;
-  color: rgb(59, 59, 59); 
+  color: rgb(102, 102, 102); 
 }
 #botonCallingPosiciones{
   width:20px;
