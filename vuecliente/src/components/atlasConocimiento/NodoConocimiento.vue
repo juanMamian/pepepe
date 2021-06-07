@@ -16,6 +16,7 @@
       :src="this.serverUrl + '/api/atlas/iconos/' + esteNodo.id"
       :class="{
         fantasmeado: usuarioLogeado && !aprendible && !callingPosiciones,
+        deNodoSeleccionado: seleccionado
       }"
       alt=""
       class="iconoNodo"
@@ -126,10 +127,10 @@
       :class="{
         nombreSeleccionado: seleccionado,
         nombreNodoAprendido:nodoAprendido,
-        nombreNodoOutreach:!aprendible,
+        nombreNodoOutreach:!aprendible && !callingPosiciones,
         nombreNodoAprendible:aprendible && !nodoAprendido,
-        nodoStuck: esteNodo.stuck && callingPosiciones,
-        fantasmeado: usuarioLogeado && !aprendible && !callingPosiciones
+        nodoStuck: esteNodo.stuck && callingPosiciones,        
+        deNodoSeleccionado: seleccionado
       }"
     >
       {{ callingPosiciones ? esteNodo.puntaje : esteNodo.nombre }}
@@ -481,7 +482,9 @@ export default {
 .fantasmeado {
   opacity: 0.2;
 }
-
+.fantasmeado.imgSeleccionado{
+  opacity: 0.5;
+}
 .escondido {
   visibility: hidden;
 }
@@ -498,6 +501,13 @@ export default {
 .nombreNodoOutreach{
   background-color: rgb(127, 190, 192);
   border-color: rgb(53, 110, 112);
+  opacity: 0.4;
+}
+.nombreNodoOutreach:hover{
+  opacity: 0.6;
+}
+.nombreNodoOutreach.deNodoSeleccionado{
+  opacity: 0.8;
 }
 
 .nombreNodoAprendible{
