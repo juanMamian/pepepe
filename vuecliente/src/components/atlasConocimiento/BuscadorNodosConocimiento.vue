@@ -31,6 +31,7 @@
         @click.stop="
           $emit('nodoSeleccionado', resultado);
           mostrandoInput = false;
+          mostrandoLista = false;
         "
       >
         {{ resultado.nombre }}
