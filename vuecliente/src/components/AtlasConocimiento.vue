@@ -13,10 +13,13 @@
     @mouseup.left="clickFondoAtlas"
     @dblclick.ctrl.shift.self.stop="crearNodo"
     @touchmove.prevent.stop="movimientoMobile"
-    @touchstart="iniciaMovimientoTouch"    
+    @touchstart="iniciaMovimientoTouch"
+    @touchend="finTouch" 
   >
+    <transition name="fadeOut">
+      <div v-show="showingZoomInfo" id="infoZoom">x{{factorZoom}}</div>
+    </transition>
     <div id="botonCallingPosiciones" v-if="usuarioSuperadministrador && usuario.username=='juanMamian'" @click.stop="callingPosiciones=!callingPosiciones" :style="[{backgroundColor:callingPosiciones?'green':'transparent'}]">
-
     </div>
     <buscador-nodos-conocimiento
       @nodoSeleccionado="centrarEnNodo"
@@ -86,6 +89,7 @@ import Canvases from "./atlasConocimiento/Canvases.vue";
 import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
 import PanelObjetivos from "./atlasConocimiento/PanelObjetivos.vue";
 import Loading from './utilidades/Loading.vue';
+const debounce=require("debounce");
 
 const QUERY_NODOS = gql`
   query {
@@ -186,9 +190,12 @@ export default {
         x:0,
         y:0
       },  
+      showingZoomInfo:false,
       zoom:100,
       minZoom:20,
-      maxZoom:200,      
+      maxZoom:200,  
+      pinching:false,
+      lastPinchDistance:0,    
       actualizarTrazos: 0,
       panningVista: false,
       vistaPanned: false,
@@ -405,16 +412,51 @@ export default {
       //this.centroVista=e;
     },
     iniciaMovimientoTouch(e) {
+      if(e.touches.length === 2){
+        var dist = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+          );
+        this.lastPinchDistance=dist;
+        this.pinching=true;
+        return
+      }
+
       this.ultimoTouchX = e.changedTouches[0].clientX;
       this.ultimoTouchY = e.changedTouches[0].clientY;
     },
     movimientoMobile(e) {
+
+      if(this.pinching){
+        var dist = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+          );
+        var pinch=dist - this.lastPinchDistance;
+        pinch=pinch*0.5;
+        var nuevoZoom=Math.round(this.zoom+pinch);
+        if(nuevoZoom<this.minZoom){
+          this.zoom=this.minZoom;
+        }
+        else if(nuevoZoom>this.maxZoom){
+          this.zoom=this.maxZoom
+        }
+        else{
+          this.zoom=nuevoZoom;
+        }
+        
+        this.lastPinchDistance=dist;
+      }
+
       const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
       const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
       this.ultimoTouchX = e.changedTouches[0].clientX;
       this.ultimoTouchY = e.changedTouches[0].clientY;
 
       this.desplazarVista(deltaX, deltaY);
+    },
+    finTouch(){
+      this.pinching=false;
     },
     cambiarCoordsManualesNodo(idNodo, coordsManuales) {
       if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
@@ -831,7 +873,12 @@ export default {
 
       this.$set(this.centroVistaDecimal, "x", posZoom.x-((posContenedor.width/this.factorZoom)*proporciones.x) );
       this.$set(this.centroVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );   
-    }
+    },
+    hideZoomInfo: debounce(function(){
+      this.showingZoomInfo=false;
+    }, 
+    1000
+    )
   },
   watch: {
     nodoSeleccionado: function () {
@@ -851,6 +898,11 @@ export default {
         []
       );
     },
+    zoom(){
+      this.showingZoomInfo=true;      
+      this.hideZoomInfo();
+      
+    }
   },
   mounted() {
     if (!this.usuario.atlas || !this.usuario.atlas.centroVista) {
@@ -939,7 +991,16 @@ export default {
 #panelObjetivos:hover {
   opacity: 1;
 }
-
+#infoZoom{
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px;
+  display: inline-block; 
+  font-weight: bold;
+  color: rgb(59, 59, 59); 
+}
 #botonCallingPosiciones{
   width:20px;
   height:20px;
@@ -957,5 +1018,15 @@ export default {
   left:50%;
   transform: translate(-50%, -50%);
   z-index: 100;
+}
+
+.fadeOut-leave-to{
+  opacity: 0;
+}
+.fadeOut-leave-active{
+  transition: opacity 1s;
+}
+.fadeOut-leave{
+  opacity: 1;
 }
 </style>
