@@ -1,7 +1,6 @@
 Reestructuracion no-urgente
 *verificar el manejo de contraseñas
 *Cambiar el registro de modo que se realice a través de graphql, no de la API
-*Lograr que el servidor envíe una imagen fallback cuando busque y no encuentre el ícono de un nodo
 *Crear la validacion de nombre de nodo
 *cambiar el nombre de fragmentoResponsables a fragmentoUsuarios en utilidades gql del cliente.
 *mover el componente IconoPersona a la carpeta root de componentes porque es un componente que se usa en muchos lugares.
@@ -13,7 +12,7 @@ Reestructuracion no-urgente
 *Cuando un usuario es eliminado, se daña el funcionamiento de una lista de cosas. Solucionar.
  -Responsables de proyecto y trabajos.
 *Revisar todos los sitios del cliente en donde se usó WriteQuery sin crear un nuevo cache.
-*Que al eliminar un trabajo, o proyecto, o otro componente que es dueño de uno foro, se elimine el foro
+*Que al eliminar un trabajo, o proyecto, o otro componente que es dueño de un foro, se elimine el foro
 *update adecuado después de eliminar una actividad. Actualmente simplemente hay un refresh de la página. Me parece que habrá que reconstruir el mecanismo de paginación de actividades para esto.
 *Que el último responsable de un proyecto pueda eliminarlo.
 *Loading para cuando uno elimina una respuesta

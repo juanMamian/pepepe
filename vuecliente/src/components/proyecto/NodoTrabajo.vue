@@ -66,11 +66,9 @@ const QUERY_TRABAJO = gql`
       id
       nombre
       estadoDesarrollo
-      diagramaProyecto {
-        posicion {
-          x
-          y
-        }
+      coords{
+        x
+        y
       }
       vinculos {
         idRef
@@ -88,20 +86,14 @@ export default {
       query: QUERY_TRABAJO,
       variables() {
         return {
-          idTrabajo: this.idTrabajo,
+          idTrabajo: this.basicTrabajo.id,
         };
       },
-      update({ trabajo }) {
-        var miInfo = {
-          id: trabajo.id,
-          posicion: trabajo.diagramaProyecto.posicion,
-          vinculos: trabajo.vinculos,
-        };
-        this.$emit("miInfo", miInfo);
+      update({ trabajo }) {        
         return trabajo;
       },
       skip() {
-        return !this.idTrabajo;
+        return !this.basicTrabajo;
       },
       fetchPolicy: "cache-and-network",
     },
@@ -125,7 +117,7 @@ export default {
     };
   },
   props: {
-    idTrabajo: String,
+    basicTrabajo: Object,
     idProyecto: String,
     idNodoSeleccionado: String,
     usuarioResponsableProyecto: Boolean,
@@ -192,18 +184,16 @@ export default {
                 nuevaPosicion: $nuevaPosicion
               ) {
                 id
-                diagramaProyecto {
-                  posicion {
-                    x
-                    y
-                  }
+                coords{
+                  x
+                  y
                 }
               }
             }
           `,
           variables: {
             idProyecto: this.idProyecto,
-            idTrabajo: this.idTrabajo,
+            idTrabajo: this.basicTrabajo.id,
             nuevaPosicion: this.posicion,
           },
         })
@@ -218,7 +208,7 @@ export default {
     emitirMiInfo() {
       var info = {
         id: this.esteTrabajo.id,
-        posicion: this.esteTrabajo.diagramaProyecto.posicion,
+        posicion: this.esteTrabajo.coords,
         vinculos: this.esteTrabajo.vinculos,
       };
       this.$emit("miInfo", info);
@@ -276,12 +266,12 @@ export default {
       this.$set(
         this.posicion,
         "x",
-        this.esteTrabajo.diagramaProyecto.posicion.x
+        this.esteTrabajo.coords.x
       );
       this.$set(
         this.posicion,
         "y",
-        this.esteTrabajo.diagramaProyecto.posicion.y
+        this.esteTrabajo.coords.y
       );
     },
   },

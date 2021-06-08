@@ -86,6 +86,18 @@ esquemaTrabajo.add({
             }
         }
     },
+    coords:{
+        x:{
+            type: Number,
+            required:true,
+            default:0
+        },
+        y:{
+            type: Number,
+            required:true,
+            default:0
+        }
+    },
     materiales:{
         type:[esquemaMaterial],
         default:[],
@@ -93,6 +105,6 @@ esquemaTrabajo.add({
    
 });
 
-esquemaTrabajo.index({keywords:"text"});
+esquemaTrabajo.index({keywords:"text", nombre: "text", descripcion: "text"});
 
 export const ModeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);

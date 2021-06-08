@@ -211,8 +211,7 @@
         <div id="controlesObjetivos" class="controlesZona"></div>
         <diagrama-flujo
           :idProyecto="esteProyecto.id"
-          :objetivos="esteProyecto.objetivos"
-          :idsTrabajos="esteProyecto.idsTrabajos"
+          :objetivos="esteProyecto.objetivos"          
           :usuarioResponsableProyecto="usuarioResponsableProyecto"
           :activo="idNodoAbierto == null"
           :deshabilitar="realizandoOperacionDiagrama"

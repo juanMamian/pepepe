@@ -78,25 +78,11 @@ export const fragmentoProyecto = gql`
     descripcion
     idForo
     responsables
-    posiblesResponsables
-    idsTrabajos
-    objetivos {
+    posiblesResponsables     
+    trabajos{
       id
-      nombre
-      descripcion
-      estado
-      vinculos{
-        idRef
-        tipo
-        tipoRef
-      }
-      diagramaProyecto{
-        posicion{
-          x
-          y
-        }        
-      }
-    }
+      nombre      
+    }       
   }
   
 `;

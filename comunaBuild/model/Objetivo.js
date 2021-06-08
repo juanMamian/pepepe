@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.esquemaObjetivo = void 0;
+exports.ModeloObjetivo = exports.esquemaObjetivo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const VinculosNodosProyecto_1 = require("./VinculosNodosProyecto");
 exports.esquemaObjetivo = new mongoose_1.default.Schema({
@@ -31,6 +31,9 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
         required: true,
         default: []
     },
+    idProyecto: {
+        type: String
+    },
     diagramaProyecto: {
         posicion: {
             x: {
@@ -44,5 +47,18 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
                 default: 0
             }
         }
+    },
+    coords: {
+        x: {
+            type: Number,
+            required: true,
+            default: 0
+        },
+        y: {
+            type: Number,
+            required: true,
+            default: 0
+        }
     }
 });
+exports.ModeloObjetivo = mongoose_1.default.model("Objetivo", exports.esquemaObjetivo);

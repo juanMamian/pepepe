@@ -12,29 +12,39 @@
     @mousemove="panVista"
     
   >
-    <canvas-diagrama-flujo :todosNodos="infoNodos" :style="[posicionCanvasFlechas]" :factorZoom="factorZoom" />
+    <canvas-diagrama-flujo
+        :todosNodos="todosNodos"
+        :idNodoSeleccionado="idNodoSeleccionado"
+        :idNodoTarget="idNodoTarget"
+        :idsNecesariosParaTarget="idsNecesariosParaTarget"
+        :centroVista="centroVista"
+        :callingPosiciones="callingPosiciones"
+        :factorZoom="factorZoom"
+        :style="[offsetContenedorNodos]"
+        ref="canvases"
+        v-if="todosNodos.length > 1"
+      />
     <nodo-trabajo
-      v-for="idTrabajo of idsTrabajos"
-      :key="idTrabajo"
-      :idTrabajo="idTrabajo"
+      v-for="trabajo of trabajos"
+      :key="trabajo.id"
+      :basicTrabajo="trabajo"
       :idProyecto="idProyecto"
       :usuarioResponsableProyecto="usuarioResponsableProyecto"
-      :seleccionado="idNodoSeleccionado == idTrabajo"
+      :seleccionado="idNodoSeleccionado == trabajo.id"
       :posDummy="posDummy"
-      :menuCx="idNodoClickDerecho === idTrabajo"
+      :menuCx="idNodoClickDerecho === trabajo.id"
       :idNodoSeleccionado="idNodoSeleccionado"
       :centroVista="centroVista"
       :factorZoom="Number(factorZoom.toFixed(2))"
       @click.native="
-        idNodoSeleccionado = idTrabajo;
+        idNodoSeleccionado = trabajo.id;
         tipoNodoSeleccionado = 'trabajo';
       "
-      @dblclick.native="$emit('nodoAbierto', idTrabajo)"
-      @meAbrieron="$emit('nodoAbierto', idTrabajo)"            
-      @miInfo="actualizarInfoTrabajos(idTrabajo, $event)"
+      @dblclick.native="$emit('nodoAbierto', trabajo.id)"
+      @meAbrieron="$emit('nodoAbierto', trabajo.id)"                  
       @crearRequerimento="crearRequerimento('trabajo', $event)"
       @eliminarVinculo="eliminarVinculo('trabajo', $event)"
-      @click.right.native.prevent="idNodoClickDerecho = idTrabajo"
+      @click.right.native.prevent="idNodoClickDerecho = trabajo.id"
     />
     <nodo-objetivo
       v-for="objetivo of objetivos"
@@ -74,12 +84,49 @@ import CanvasDiagramaFlujo from "./CanvasDiagramaFlujo.vue";
 import NodoObjetivo from "./NodoObjetivo.vue";
 import NodoTrabajo from "./NodoTrabajo.vue";
 
+const QUERY_TRABAJOS=gql`
+  query($centro:CoordsInput){
+    trabajosSegunCentro(centro: $centro){
+      id
+      nombre
+      coords{
+        x
+        y
+      }
+      estadoDesarrollo
+      vinculos{
+        idRef
+        tipo
+        tipoRef  
+      }
+    }
+  }
+`;
+
+const QUERY_OBJETIVOS=gql`
+  query($centro:CoordsInput){
+    objetivosSegunCentro(centro: $centro){
+      id
+      nombre
+      coords{
+        x
+        y
+      }
+      estado
+      vinculos{
+        idRef
+        tipo  
+        tipoRef      
+      }
+    }
+    
+  }
+`;
+
 export default {
   components: { NodoObjetivo, NodoTrabajo, CanvasDiagramaFlujo },
   name: "DiagramaFlujo",
-  props: {
-    idsTrabajos: Array,
-    objetivos: Array,
+  props: {    
     idProyecto: String,
     usuarioResponsableProyecto: Boolean,
     activo: Boolean,
@@ -87,6 +134,30 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  apollo:{
+    trabajos:{
+      query: QUERY_TRABAJOS,
+      variables(){
+        return {
+          centro: this.centroDescarga
+        }
+      },
+      update({trabajosSegunCentro}){
+        return trabajosSegunCentro
+      }
+    },
+    objetivos:{
+      query: QUERY_OBJETIVOS,
+      variables(){
+        return {
+          centro: this.centroDescarga
+        }
+      },
+      update({objetivosSegunCentro}){
+        return objetivosSegunCentro
+      }
+    }
   },
   data() {
     return {
@@ -100,20 +171,29 @@ export default {
       posDummy: {
         x: 300,
         y: 300,
-      },
-      infoTrabajos: [],
+      },      
       idNodoClickDerecho: null,
 
       centroVistaDecimal:{
         x:0,
         y:0
       },      
+      centroDescarga:{
+        x:0,
+        y:0
+      },
+      trabajos:[],
+      objetivos:[],
 
       hovered:false,
 
       zoom:100,
       maxZoom:200,
       minZoom:50,
+
+      callingPosiciones:false,
+      idNodoTarget:null,
+      idsNecesariosParaTarget:[]
     };
   },
   computed: {
@@ -136,10 +216,7 @@ export default {
           vinculos: objetivo.vinculos,
         };
       });
-    },
-    infoNodos() {
-      return this.infoObjetivos.concat(this.infoTrabajos);
-    },
+    },    
     posicionCanvasFlechas(){
       return {
         top: Math.round(-this.centroVista.y*this.factorZoom)+"px",
@@ -154,6 +231,22 @@ export default {
     },
     factorZoom(){
       return Number((this.zoom/100).toFixed(2));
+    },
+    centroEncuadre(){
+      var posDiagrama=this.$el.getBoundingClientRect();
+      return {
+        x: this.centroVista.x+(posDiagrama.width/2),
+        y: this.centroVista.y+(posDiagrama.height/2)
+      }
+    },
+    todosNodos(){
+      return this.trabajos.concat(this.objetivos);
+    },
+    offsetContenedorNodos(){
+      return {
+        left: -(this.centroVista.x*this.factorZoom)+"px",
+        top: -(this.centroVista.y*this.factorZoom)+"px",
+      }
     }
   },
   methods: {
@@ -207,14 +300,7 @@ export default {
       );
       this.mostrandoMenuCx=false;
       this.$emit("crearObjetivoEnPosicion", posicion);
-    },   
-    actualizarInfoTrabajos(idTrabajo, info) {
-      const indexT = this.infoTrabajos.findIndex((t) => t.id === idTrabajo);
-      if (indexT > -1) {
-        this.infoTrabajos.splice(indexT, 1);
-      }
-      this.infoTrabajos.push(info);
-    },
+    },       
     crearRequerimento(tipoNodoRequerido, { idNodoRequiere, idNodoRequerido }) {
       console.log(
         `Preparando mutación para setear que ${idNodoRequiere} requiere a ${idNodoRequerido} de tipo ${tipoNodoRequerido}`

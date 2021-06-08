@@ -26,6 +26,9 @@ export const esquemaObjetivo = new mongoose.Schema({
         required:true,
         default:[]
     },
+    idProyecto:{
+        type:String
+    },
     diagramaProyecto:{
         posicion:{
             x:{
@@ -39,8 +42,27 @@ export const esquemaObjetivo = new mongoose.Schema({
                 default:0
             }
         }
-
-    }
+    },
+    coords:{
+        x:{
+            type: Number,
+            required:true,
+            default:0
+        },
+        y:{
+            type: Number,
+            required:true,
+            default:0
+        }
+    },
+    keywords:{
+        type:String,
+    },
     
 });
+
+esquemaObjetivo.index({keywords:"text", nombre: "text", descripcion: "text"});
+
+
+export const ModeloObjetivo = mongoose.model("Objetivo", esquemaObjetivo);
 

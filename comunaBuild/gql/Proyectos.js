@@ -1320,6 +1320,19 @@ exports.resolvers = {
                 return aMateriales;
             });
         },
+        trabajos: function (parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Poblando trabajos con id proyecto: ${parent.id}`);
+                try {
+                    var trabajosProyecto = yield Trabajo_1.ModeloTrabajo.find({ idProyectoParent: parent.id }).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando trabajos del proyecto`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return trabajosProyecto;
+            });
+        }
     },
     NodoProyecto: {
         __resolveType: function (nodo) {
