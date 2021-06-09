@@ -87,10 +87,44 @@ exports.esquemaTrabajo.add({
             }
         }
     },
+    coords: {
+        x: {
+            type: Number,
+            required: true,
+            default: 0
+        },
+        y: {
+            type: Number,
+            required: true,
+            default: 0
+        }
+    },
+    angulo: {
+        type: Number,
+        default: 0,
+    },
+    stuck: {
+        type: Boolean,
+        default: true,
+    },
+    puntaje: {
+        type: Number,
+        default: 0,
+    },
+    centroMasa: {
+        x: {
+            type: Number,
+            default: 0,
+        },
+        y: {
+            type: Number,
+            default: 0
+        }
+    },
     materiales: {
         type: [esquemaMaterial],
         default: [],
     }
 });
-exports.esquemaTrabajo.index({ keywords: "text" });
+exports.esquemaTrabajo.index({ keywords: "text", nombre: "text", descripcion: "text" });
 exports.ModeloTrabajo = mongoose_1.default.model("Trabajo", exports.esquemaTrabajo);

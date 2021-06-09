@@ -10,6 +10,8 @@
     @touchstart="iniciaMovimientoTouch"
     @touchend="finTouch" 
   >
+  <div id="botonCallingPosiciones" v-if="usuarioSuperadministrador && usuario.username=='juanMamian'" @click.stop="callingPosiciones=!callingPosiciones" :style="[{backgroundColor:callingPosiciones?'green':'transparent'}]">
+    </div>
   <div id="centroVista"></div>
   <canvases-atlas-proyectos
     :style="posCuadroDescarga"
@@ -372,5 +374,16 @@ export default{
   background-color: orange;
   transform: translate(-50%, -50%);
   position: absolute;
+}
+
+#botonCallingPosiciones{
+  width:20px;
+  height:20px;
+  border-radius: 50%;
+  border:1px solid black;
+  position: absolute;
+  top:1%;
+  right:1%;
+  cursor:pointer;
 }
 </style>

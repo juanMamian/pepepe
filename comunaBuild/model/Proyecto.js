@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloProyecto = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Objetivo_1 = require("./Objetivo");
-const Trabajo_1 = require("./Trabajo");
 const esquemaProyecto = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -20,20 +19,6 @@ const esquemaProyecto = new mongoose_1.default.Schema({
         default: "Sin descripción",
         required: true,
     },
-    objetivos: {
-        type: [Objetivo_1.esquemaObjetivo],
-        required: true,
-        default: []
-    },
-    idsTrabajos: {
-        type: [String],
-        default: [],
-        required: true,
-    },
-    trabajos: {
-        type: [Trabajo_1.esquemaTrabajo],
-        default: []
-    },
     responsables: {
         type: [String],
         default: []
@@ -45,6 +30,20 @@ const esquemaProyecto = new mongoose_1.default.Schema({
     idForo: {
         type: String,
         required: true,
+    },
+    centroMasa: {
+        x: {
+            type: Number,
+            default: 0,
+        },
+        y: {
+            type: Number,
+            default: 0,
+        },
+    },
+    objetivos: {
+        type: [Objetivo_1.esquemaObjetivo],
+        default: []
     }
 });
 exports.ModeloProyecto = mongoose_1.default.model("Proyecto", esquemaProyecto);

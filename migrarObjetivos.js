@@ -45,26 +45,32 @@ const migrar = async function () {
         console.log(`*`);
         console.log(`Proyecto ${proyecto.nombre}`);
         console.log(`:`);
-        proyecto.objetivos.forEach(async (objetivo)=>{
-            console.log(`--Migrando el objetivo: ${objetivo.nombre}`);
-            var nuevo={}
-            
-            for(var campo in objetivo){
-                if(campo!="id" && campo !="_id"){
-                    nuevo[campo]=objetivo[campo];
+        if(!proyecto.objetivos){
+            console.log(`El proyecto ${proyecto.nombre} no tenía objetivos`);            
+        }
+        else{
+            proyecto.objetivos.forEach(async (objetivo)=>{
+                console.log(`--Migrando el objetivo: ${objetivo.nombre}`);
+                var nuevo={}
+                
+                for(var campo in objetivo){
+                    if(campo!="id" && campo !="_id"){
+                        nuevo[campo]=objetivo[campo];
+                    }
                 }
-            }
-            
-            nuevo.idProyecto=proyecto.id;            
-            
-            let nuevoObjetivo=new Objetivo(nuevo);
-            try {
-                await nuevoObjetivo.save();
-            } catch (error) {
-                console.log(`Error guardando el objetivo ${nuevoObjetivo.nombre} - ${nuevoObjetivo.id}.`);
-                console.log(`E: ${error}`);
-            }
-        })
+                
+                nuevo.idProyectoParent=proyecto.id;            
+                
+                let nuevoObjetivo=new Objetivo(nuevo);
+                try {
+                    await nuevoObjetivo.save();
+                } catch (error) {
+                    console.log(`Error guardando el objetivo ${nuevoObjetivo.nombre} - ${nuevoObjetivo.id}.`);
+                    console.log(`E: ${error}`);
+                }
+            })
+        }
+        
     })
 
     console.log(`FIN`);

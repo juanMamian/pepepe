@@ -26,7 +26,7 @@ export const esquemaObjetivo = new mongoose.Schema({
         required:true,
         default:[]
     },
-    idProyecto:{
+    idProyectoParent:{
         type:String
     },
     diagramaProyecto:{

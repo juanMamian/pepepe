@@ -101,6 +101,7 @@ export const resolvers = {
                 console.log(`Error buscando objetivos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+            console.log(`Enviando objetivos según centro`);
             return losObjetivos;
         }
     },

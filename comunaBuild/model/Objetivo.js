@@ -31,7 +31,7 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
         required: true,
         default: []
     },
-    idProyecto: {
+    idProyectoParent: {
         type: String
     },
     diagramaProyecto: {
@@ -59,6 +59,32 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
             required: true,
             default: 0
         }
-    }
+    },
+    angulo: {
+        type: Number,
+        default: 0,
+    },
+    stuck: {
+        type: Boolean,
+        default: true,
+    },
+    puntaje: {
+        type: Number,
+        default: 0,
+    },
+    centroMasa: {
+        x: {
+            type: Number,
+            default: 0,
+        },
+        y: {
+            type: Number,
+            default: 0
+        }
+    },
+    keywords: {
+        type: String,
+    },
 });
+exports.esquemaObjetivo.index({ keywords: "text", nombre: "text", descripcion: "text" });
 exports.ModeloObjetivo = mongoose_1.default.model("Objetivo", exports.esquemaObjetivo);

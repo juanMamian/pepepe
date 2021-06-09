@@ -936,7 +936,7 @@ export default {
   min-height: 0px;
 }
 #atlasProyectos{
-  width: 100vw;
+  
   height: 100vh;
   background-color: pink;
 }

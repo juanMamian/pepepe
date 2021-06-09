@@ -101,7 +101,6 @@ export default {
       }
       var contenedor = document.getElementById("contenedorNodos");
       let posContenedor = contenedor.getBoundingClientRect();
-      console.log(`Pos ${contenedor.id}: ${JSON.stringify(posContenedor)}`);
 
       let nuevoTop = Math.round(
         ((e.clientY - posContenedor.top)/this.factorZoom)

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { esquemaObjetivo } from "./Objetivo";
 
 const esquemaProyecto = new mongoose.Schema({
     nombre: {
@@ -24,6 +25,20 @@ const esquemaProyecto = new mongoose.Schema({
     idForo:{
         type:String,
         required:true,
+    },
+    centroMasa:{
+        x:{
+            type: Number,
+            default: 0,
+        },
+        y:{
+            type: Number,
+            default: 0,
+        },
+    },
+    objetivos:{
+        type: [esquemaObjetivo],
+        default:[]
     }
 
 });
