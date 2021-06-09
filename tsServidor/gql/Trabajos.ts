@@ -30,6 +30,10 @@ export const typeDefs = gql`
        estadoDesarrollo:String,
        materiales:[MaterialTrabajo],
        coords: Coords,
+       angulo:Float,
+       stuck:Boolean,
+       puntaje:Int,
+       centroMasa:Coords,
    }
 
    type InfoBasicaTrabajo{
@@ -42,7 +46,7 @@ export const typeDefs = gql`
        trabajo(idTrabajo: ID!):Trabajo,
        busquedaTrabajosProyectos(textoBusqueda:String!):[InfoBasicaTrabajo],
        trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo],
-       trabajosSegunCentro(centro: CoordsInput):[Trabajo],
+       trabajosSegunCentro(centro: CoordsInput, radio: Int!):[Trabajo],
        
    }
 
@@ -53,7 +57,7 @@ export const typeDefs = gql`
     editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
     addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
     removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
-    setPosicionTrabajoDiagramaProyecto(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
+    setPosicionTrabajoDiagramaProyecto(idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
     editarKeywordsTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
     setEstadoTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoEstado:String!):Trabajo,
 
@@ -167,7 +171,7 @@ export const resolvers = {
             console.log(`Enviando ${losTrabajos.length} trabajos`);
             return losTrabajos;
         },
-        trabajosSegunCentro: async function(_:any, {centro}:any, __:any){
+        trabajosSegunCentro: async function(_:any, {centro, radio}:any, __:any){
             try {
                 var losTrabajos:any=await Trabajo.find({}).exec();
             } catch (error) {
@@ -533,10 +537,23 @@ export const resolvers = {
             return elTrabajo;
 
         },
-        setPosicionTrabajoDiagramaProyecto: async function (_: any, { idProyecto, idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
+        setPosicionTrabajoDiagramaProyecto: async function (_: any, { idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
             console.log(`Guardando posicion de trabajo en el diagrama del proyecto`);
         
             let credencialesUsuario = contexto.usuario;
+
+            try {
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "Trabajo no existía";
+                }                
+            } catch (error) {
+                console.log(`error buscando el trabajo: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            const idProyecto = elTrabajo.idProyectoParent
+
             try {
                 var elProyecto: any = await Proyecto.findById(idProyecto).exec();
                 if (!elProyecto) {
@@ -554,19 +571,13 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {
-                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
-                if (!elTrabajo) {
-                    throw "Trabajo no existía";
-                }
+            try {               
                 elTrabajo.coords = nuevaPosicion;
                 await elTrabajo.save();
             } catch (error) {
                 console.log(`error guardando el trabajo modificado: ${error}`);
             }
-
             return elTrabajo;
-
         },
         async setEstadoTrabajoProyecto(_: any, { idProyecto, idTrabajo, nuevoEstado }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;

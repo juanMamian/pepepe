@@ -16,7 +16,11 @@ export const typeDefs = gql`
        keywords:String,
        idProyectoParent:ID,
        estado:String,       
-       coords: Coords
+       coords: Coords,
+       angulo:Float,
+       stuck:Boolean,
+       puntaje:Int,
+       centroMasa:Coords,
    }
 
    type InfoBasicaObjetivo{
@@ -28,7 +32,7 @@ export const typeDefs = gql`
    extend type Query{
        objetivo(idObjetivo: ID!):Objetivo,
        busquedaObjetivosProyectos(textoBusqueda:String!):[InfoBasicaObjetivo],
-       objetivosSegunCentro(centro: CoordsInput):[Objetivo],       
+       objetivosSegunCentro(centro: CoordsInput, radio:Int!):[Objetivo],       
    }   
 
    extend type Mutation{
@@ -36,7 +40,7 @@ export const typeDefs = gql`
     eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
     editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
     editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
-    setPosicionObjetivoDiagramaProyecto(idProyecto:ID!, idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
+    setPosicionObjetivoDiagramaProyecto(idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
     editarKeywordsObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoKeywords: String!):Objetivo,
     setEstadoObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoEstado:String!):Objetivo,    
    }
@@ -90,7 +94,7 @@ export const resolvers = {
             console.log(`Enviando ${losObjetivos.length} objetivos encontrados`);
             return losObjetivos;
         },
-        objetivosSegunCentro: async function(_:any, {centro}:any, __:any){
+        objetivosSegunCentro: async function(_:any, {centro, radio}:any, __:any){
             try {
                 var losObjetivos:any=await Objetivo.find({}).exec();
             } catch (error) {
@@ -329,10 +333,21 @@ export const resolvers = {
             console.log(`Keywords guardado`);
             return elObjetivo;
         },        
-        setPosicionObjetivoDiagramaProyecto: async function (_: any, { idProyecto, idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
+        setPosicionObjetivoDiagramaProyecto: async function (_: any, { idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
             console.log(`Guardando posicion de objetivo en el diagrama del proyecto`);
-        
+            
+            try {
+                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
+                if (!elObjetivo) {
+                    throw "Objetivo no existía";
+                }                
+            } catch (error) {
+                console.log(`error buscando el objetivo: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
             let credencialesUsuario = contexto.usuario;
+            const idProyecto=elObjetivo.idProyecto;
             try {
                 var elProyecto: any = await Proyecto.findById(idProyecto).exec();
                 if (!elProyecto) {
@@ -350,11 +365,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {
-                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
-                if (!elObjetivo) {
-                    throw "Objetivo no existía";
-                }
+            try {                
                 elObjetivo.coords = nuevaPosicion;
                 await elObjetivo.save();
             } catch (error) {

@@ -4,6 +4,7 @@
       id="canvasTodosVinculos"
       ref="canvasTodosVinculos"     
       class="canvas"
+      :style="[sizeCanvasVista]"
     ></canvas>
     <canvas
       id="canvasVinculosSeleccionado"
@@ -16,6 +17,7 @@
       ref="canvasPosiciones"
       class="canvas"
       v-show="callingPosiciones"
+      :style="[sizeCanvasVista]"
     >
 
     </canvas>
@@ -47,7 +49,8 @@ export default {
     idNodoSeleccionado: String,
     todosNodos: Array,
     centroVista: Object,
-    radioVista:Number,    
+    centroDescarga: Object,
+    radioDescarga:Number,    
     callingPosiciones:Boolean,
     factorZoom:Number,
   },
@@ -100,22 +103,22 @@ export default {
      this.lapiz.stroke();
 
     },
-    crearImagenTodosVinculos: function () {
+    crearImagenTodosVinculos: debounce(function () {
       var nodosRelevantes=this.todosNodos;
       if (this.idNodoTarget) {
         nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
       }
 
       if (nodosRelevantes.length <= 1) return 
-
+      console.log(`Dibujando todos vínculos con ${nodosRelevantes.length} nodos`);
       var posicionCanvas={
-        x:this.centroVista.x-this.radioVista,
-        y:this.centroVista.y-this.radioVista,
+        x:this.centroDescarga.x-this.radioDescarga,
+        y:this.centroDescarga.y-this.radioDescarga,
       }
       var lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
                         
-      lapiz.canvas.width = (this.radioVista*2);
-      lapiz.canvas.height = (this.radioVista*2);
+      lapiz.canvas.width = (this.radioDescarga*2)*this.factorZoom;
+      lapiz.canvas.height = (this.radioDescarga*2)*this.factorZoom;
       
       lapiz.lineWidth = 1;
       lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
@@ -124,7 +127,7 @@ export default {
       for (let nodo of nodosRelevantes) {
         for (let vinculo of nodo.vinculos) {
           if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) continue;
-          if (vinculo.rol == "source") {
+          if (vinculo.tipo == "requiere") {
             this.dibujarLineaEntreNodos(
               nodo,
               nodosRelevantes.find((nodo) => nodo.id == vinculo.idRef),
@@ -135,7 +138,7 @@ export default {
         }
       }
       lapiz.stroke();
-    },
+    }, 1000),
     crearImagenVinculosSeleccionado: function () {
       var nodosRelevantes = this.todosNodos;
 
@@ -210,15 +213,13 @@ export default {
       }
       
       let inicio = {
-        x: ((nodoFrom.coords.x+zonaNodo.x)*this.factorZoom) - posicion.x,
-        y: ((nodoFrom.coords.y+zonaNodo.y)*this.factorZoom) - posicion.y,
+        x: ((nodoFrom.coords.x+zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom),
+        y: ((nodoFrom.coords.y+zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom),
       };
       let final = {
-        x: ((nodoTo.coords.x-zonaNodo.x)*this.factorZoom) - posicion.x,
-        y: ((nodoTo.coords.y-zonaNodo.y)*this.factorZoom) - posicion.y,
+        x: ((nodoTo.coords.x-zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom),
+        y: ((nodoTo.coords.y-zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom),
       };
-
-      
 
       lapiz.moveTo(inicio.x, inicio.y);
       lapiz.lineTo(final.x, final.y);
@@ -336,6 +337,12 @@ export default {
     nodoSeleccionado(){
       if(!this.idNodoSeleccionado)return null;
       return this.todosNodos.find(n=>n.id==this.idNodoSeleccionado);
+    },
+    sizeCanvasVista(){
+      return {
+        width: ((this.radioDescarga*2)*this.factorZoom)+"px",
+        height: ((this.radioDescarga*2)*this.factorZoom)+"px",
+      }
     }
   },
   watch: {
@@ -360,9 +367,9 @@ export default {
   },
   mounted() {
     this.montado = true;
-    this.crearImagenTodosVinculos();
-    this.crearImagenPosiciones();
-    this.crearImagenVinculosSeleccionado();
+    // this.crearImagenTodosVinculos();
+    // this.crearImagenPosiciones();
+    // this.crearImagenVinculosSeleccionado();
   },
 };
 </script>
@@ -370,21 +377,20 @@ export default {
 <style scoped>
 .canvas {
   position: absolute;
+  pointer-events: none;
 }
 
 #canvasTodosVinculos {
   z-index: 0;
   top:0px;
   left:0px;
-  width:100%;
-  height: 100%;
+  background-color: rgba(0, 0, 255, 0.295);
 }
 
 #canvasPosiciones {
   z-index: 0;
   top:0px;
   left:0px;
-  width:100%;
-  height: 100%;
+
 }
 </style>

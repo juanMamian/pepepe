@@ -98,6 +98,28 @@ esquemaTrabajo.add({
             default:0
         }
     },
+    angulo:{
+        type: Number,
+        default:0,
+    },
+    stuck:{
+        type:Boolean,
+        default:true,        
+    },
+    puntaje:{
+        type:Number,
+        default:0,
+    },
+    centroMasa:{
+        x:{
+            type:Number,
+            default:0,
+        },
+        y:{
+            type:Number,
+            default:0
+        }
+    },
     materiales:{
         type:[esquemaMaterial],
         default:[],

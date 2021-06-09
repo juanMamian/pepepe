@@ -14,7 +14,8 @@
   <canvases-atlas-proyectos
     :style="posCuadroDescarga"
     :centroVista="centroVista"
-    :radioVista="radioVista"
+    :centroDescarga="centroDescarga"
+    :radioDescarga="radioDescarga"
     :todosNodos="todosNodos"
     :callingPosiciones="callingPosiciones"
     :factorZoom="factorZoom"
@@ -25,6 +26,7 @@
       v-for="objetivo of objetivos"
       :key="objetivo.id"
       :esteObjetivo="objetivo"
+      :callingPosiciones="callingPosiciones"
       :idNodoSeleccionado="idNodoSeleccionado"
       :menuCx="idNodoMenuCx && idNodoMenuCx==objetivo.id"
       :factorZoom="factorZoom"
@@ -37,6 +39,7 @@
       :idNodoSeleccionado="idNodoSeleccionado"
       :menuCx="idNodoMenuCx && idNodoMenuCx==trabajo.id"
       :factorZoom="factorZoom"
+      :callingPosiciones="callingPosiciones"
     />
 
   </div>
@@ -99,11 +102,17 @@ export default{
       variables(){
         return {
           centro: this.centroDescarga,
-          radio: this.radioVista
+          radio: this.radioDescarga
         }
       },
       update({trabajosSegunCentro}){
         return trabajosSegunCentro
+      },
+      pollInterval(){
+        return this.callingPosiciones?10000:null
+      },
+      skip(){
+        return !this.radioDescarga
       },
       debounce:1000,    
     },
@@ -112,11 +121,17 @@ export default{
       variables(){
         return {
           centro: this.centroDescarga,
-          radio: this.radioVista
+          radio: this.radioDescarga
         }
       },
       update({objetivosSegunCentro}){
         return objetivosSegunCentro
+      },
+      pollInterval(){
+        return this.callingPosiciones?10000:null
+      },
+      skip(){
+        return !this.radioDescarga
       },
       debounce: 1000, 
     }
@@ -131,11 +146,11 @@ export default{
         x:0,
         y:0
       },
+      radioDescarga:null,
       sizeAtlas:{
         x:0,
         y:0
       },
-
       panningVista:false,
       vistaPanned:false,
       hovered:false,
@@ -247,11 +262,8 @@ export default{
         x: posZoom.x-this.esquinaVistaDecimal.x,
         y: posZoom.y-this.esquinaVistaDecimal.y
       }   
-      console.log(`posZoom: ${JSON.stringify(posZoom)}`);
-      console.log(`Distancia esquina: ${JSON.stringify(distanciaEsquina)}`);
       const proporcionZoom=viejoZoom/this.zoom;
 
-      console.log(`Nuevo distanciaEsquina: ${(proporcionZoom*distanciaEsquina.x)}, ${posZoom.y-(proporcionZoom*distanciaEsquina.y)}`);
       
       this.$set(this.esquinaVistaDecimal, "x", posZoom.x-(proporcionZoom*distanciaEsquina.x) );
       this.$set(this.esquinaVistaDecimal, "y", posZoom.y-(proporcionZoom*distanciaEsquina.y) );            
@@ -307,10 +319,7 @@ export default{
         x:this.esquinaVista.x+(this.sizeAtlas.x/2),
         y:this.esquinaVista.y+(this.sizeAtlas.y/2),
       }
-    },
-    radioVista(){
-      return Math.ceil((Math.max(this.sizeAtlas.x, this.sizeAtlas.y)*2)/this.factorZoom);
-    },
+    },    
     posContenedores(){
       return {
         left: -(this.esquinaVista.x*this.factorZoom)+"px",
@@ -318,9 +327,11 @@ export default{
       }
     },
     posCuadroDescarga(){
+      const posx=(this.centroDescarga.x-this.radioDescarga)- this.esquinaVista.x;
+      const posy=(this.centroDescarga.y-this.radioDescarga)- this.esquinaVista.y
       return {
-        left: -(this.sizeAtlas.x*(3/2))+"px",
-        top: -(this.sizeAtlas.y*(3/2))+"px",
+        left: (posx*this.factorZoom)+"px",
+        top:  (posy*this.factorZoom)+"px",
       }
     }
   },
@@ -328,7 +339,8 @@ export default{
     var posAtlas=this.$el.getBoundingClientRect();
     console.log(`Atlas: Ancho: ${posAtlas.width}, alto: ${posAtlas.height}`);
     this.$set(this.sizeAtlas, "x", posAtlas.width);
-    this.$set(this.sizeAtlas, "y", posAtlas.height);        
+    this.$set(this.sizeAtlas, "y", posAtlas.height);   
+    this.radioDescarga=Math.ceil((Math.max(this.sizeAtlas.x, this.sizeAtlas.y)*2)/this.factorZoom);
   },
   created(){
     window.addEventListener("wheel", this.zoomWheel, {passive:false});
