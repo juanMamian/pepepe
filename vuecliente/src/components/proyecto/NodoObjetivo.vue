@@ -62,13 +62,9 @@ export default {
   name: "NodoObjetivo",
   props: {
     esteObjetivo: Object,
-    idProyecto: String,
-    usuarioResponsableProyecto: Boolean,
-    seleccionado: Boolean,
-    idNodoSeleccionado: String,
-    posDummy: Object,
-    menuCx: Boolean,
-    centroVista:Object,
+    idProyecto: String,        
+    idNodoSeleccionado: String,    
+    menuCx: Boolean,    
     factorZoom:Number,
   },
   data() {
@@ -82,7 +78,11 @@ export default {
       },
       montado: false,
       widthBase:150,
-      heightBase:100
+      heightBase:100,
+      size:{
+        x: 150,
+        y: 100
+      }
     };
   },
   methods: {
@@ -99,13 +99,15 @@ export default {
       if (this.arrastrandoNodo < this.umbralArrastreNodo) {
         return;
       }
-      var contenedor = this.$parent.$el;
+      var contenedor = document.getElementById("contenedorNodos");
       let posContenedor = contenedor.getBoundingClientRect();
+      console.log(`Pos ${contenedor.id}: ${JSON.stringify(posContenedor)}`);
+
       let nuevoTop = Math.round(
-        ((e.clientY - posContenedor.top)/this.factorZoom)+this.centroVista.y
+        ((e.clientY - posContenedor.top)/this.factorZoom)
       );
       let nuevoLeft = Math.round(
-        ((e.clientX - posContenedor.left)/this.factorZoom)+this.centroVista.x
+        ((e.clientX - posContenedor.left)/this.factorZoom)
       );
 
       const stepPosx = 25;
@@ -131,12 +133,10 @@ export default {
         .mutate({
           mutation: gql`
             mutation(
-              $idObjetivo: ID!
-              $idProyecto: ID!
+              $idObjetivo: ID!              
               $nuevaPosicion: CoordsInput
             ) {
-              setPosicionObjetivoDiagramaProyecto(
-                idProyecto: $idProyecto
+              setPosicionObjetivoDiagramaProyecto(                
                 idObjetivo: $idObjetivo
                 nuevaPosicion: $nuevaPosicion
               ) {
@@ -148,8 +148,7 @@ export default {
               }
             }
           `,
-          variables: {
-            idProyecto: this.idProyecto,
+          variables: {            
             idObjetivo: this.esteObjetivo.id,
             nuevaPosicion: this.posicion,
           },
@@ -178,8 +177,8 @@ export default {
     estiloPosicion() {
       if (this.montado) {
         return {
-          top: ((this.posicion.y -this.centroVista.y)*this.factorZoom) - this.$el.offsetHeight / 2 + "px",
-          left: ((this.posicion.x - this.centroVista.x)*this.factorZoom) - this.$el.offsetWidth / 2 + "px",
+          left: (((this.posicion.x-(this.size.x/2))*this.factorZoom) ) + "px",
+          top: (((this.posicion.y - (this.size.y/2))*this.factorZoom) ) + "px",
         };
       }
       return {
@@ -201,16 +200,18 @@ export default {
     },
     estiloSize(){
       return {
-        width: Math.round(this.widthBase*(this.factorZoom))+"px",
-        height: Math.round(this.heightBase*(this.factorZoom))+"px",
+        width: Math.round(this.size.x*(this.factorZoom))+"px",
+        height: Math.round(this.size.y*(this.factorZoom))+"px",
         fontSize:Math.round(14*this.factorZoom)+"px",
         padding:Math.round(5*this.factorZoom)+'px'
       }
+    },
+    seleccionado(){
+      return this.idNodoSeleccionado && this.idNodoSeleccionado==this.esteObjetivo.id
     }
   },
   watch: {
     esteObjetivo() {
-      console.log(`Seteando posicion from network`);
       this.$set(
         this.posicion,
         "x",
@@ -240,8 +241,7 @@ export default {
 </script>
 
 <style scoped>
-.nodoObjetivo {
-  
+.nodoObjetivo {  
   position: absolute;
   border-radius: 5px;
   border: 1px solid rgb(82, 2, 26);  

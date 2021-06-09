@@ -932,27 +932,28 @@ export default {
         this.usuario.id
       }. Centro vista: ${JSON.stringify(this.centroVista)}`
     );
-    this.$store.commit("setCentroVistaAtlas", this.centroVista);
-
-    this.$apollo
-      .mutate({
-        mutation: gql`
-          mutation($idUsuario: ID, $centroVista: CoordsInput) {
-            setCentroVista(idUsuario: $idUsuario, centroVista: $centroVista)
-          }
-        `,
-        variables: {
-          idUsuario: this.$store.state.usuario.id,
-          centroVista: this.centroVista,
-        },
-      })
-      .then(function () {
-        next();
-      })
-      .catch(function (error) {
-        console.log(`error: ${error}`);
-        next();
-      });
+    if(this.usuarioLogeado){    
+      this.$store.commit("setCentroVistaAtlas", this.centroVista);
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idUsuario: ID, $centroVista: CoordsInput) {
+              setCentroVista(idUsuario: $idUsuario, centroVista: $centroVista)
+            }
+          `,
+          variables: {
+            idUsuario: this.$store.state.usuario.id,
+            centroVista: this.centroVista,
+          },
+        })
+        .then(function () {
+          next();
+        })
+        .catch(function (error) {
+          console.log(`error: ${error}`);
+          next();
+        });
+    }
   },
   
 };

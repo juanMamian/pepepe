@@ -190,18 +190,18 @@
       </div>
 
       <div
-        id="zonaDiagramaFlujo"
+        id="zonaAtlasProyectos"
         class="zonaPrimerNivel"
-        ref="zonaDiagramaFlujo"
+        ref="zonaAtlasProyectos"
       >
         <div
           class="nombreZona"
-          @click="mostrandoDiagramaFlujo = !mostrandoDiagramaFlujo"
+          @click="mostrandoAtlasProyectos = !mostrandoAtlasProyectos"
         >
           <div
             class="trianguloBullet"
             :style="{
-              transform: mostrandoDiagramaFlujo
+              transform: mostrandoAtlasProyectos
                 ? 'rotateZ(90deg)'
                 : 'rotateZ(0deg)',
             }"
@@ -209,7 +209,8 @@
           Diagrama de flujo
         </div>
         <div id="controlesObjetivos" class="controlesZona"></div>
-        <diagrama-flujo
+        <atlas-proyectos v-if="mostrandoAtlasProyectos"/>
+        <!-- <diagrama-flujo
           :idProyecto="esteProyecto.id"
           :objetivos="esteProyecto.objetivos"          
           :usuarioResponsableProyecto="usuarioResponsableProyecto"
@@ -220,7 +221,7 @@
           @crearObjetivoEnPosicion="crearNuevoObjetivo"
           @nodoAbierto="abrirNodo"
           @click.native="idNodoAbierto = null"
-        />
+        /> -->
         <iconoObjetivo
           class="ventanaNodo"
           v-for="objetivo of esteProyecto.objetivos"
@@ -269,7 +270,7 @@ import { fragmentoProyecto } from "./utilidades/recursosGql";
 import Loading from "./utilidades/Loading.vue";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
-import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
+import AtlasProyectos from './proyecto/AtlasProyectos.vue';
 
 const QUERY_PROYECTO = gql`
   query($idProyecto: ID!) {
@@ -288,8 +289,8 @@ export default {
     IconoObjetivo,
     Loading,
     Foro,
-    IconoPersonaAutonomo,
-    DiagramaFlujo,
+    IconoPersonaAutonomo,    
+    AtlasProyectos,
   },
   name: "proyecto",
   apollo: {
@@ -337,7 +338,7 @@ export default {
 
       mostrandoDescripcion: true,
       mostrandoResponsables: true,
-      mostrandoDiagramaFlujo: false,
+      mostrandoAtlasProyectos: false,
       mostrandoForo:true,
     };
   },
@@ -792,6 +793,12 @@ export default {
       this.idNodoAbierto = idNodo;
     },
   },
+  // mounted(){
+  //   this.sizeAtlasProyectos={
+  //     width:100%
+  //     height: this.screen.height+"px"
+  //   }
+  // }
 };
 </script>
 
@@ -922,11 +929,16 @@ export default {
 .personaPosibleResponsable {
   opacity: 0.5;
 }
-#zonaDiagramaFlujo {
+#zonaAtlasProyectos {
   position: relative;
   overflow: hidden;
   user-select: none;
   min-height: 0px;
+}
+#atlasProyectos{
+  width: 100vw;
+  height: 100vh;
+  background-color: pink;
 }
 .ventanaNodo {
   width: min(350px, 90%);
