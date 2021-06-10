@@ -935,10 +935,8 @@ export default {
   user-select: none;
   min-height: 0px;
 }
-#atlasProyectos{
-  
+#atlasProyectos{  
   height: 100vh;
-  background-color: pink;
 }
 .ventanaNodo {
   width: min(350px, 90%);

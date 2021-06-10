@@ -26,7 +26,7 @@
           :class="{
             iconoCompletado: esteTrabajo.estado === 'cumplido',
           }"
-        />{{ esteTrabajo.nombre }}
+        />{{ callingPosiciones? esteTrabajo.puntaje : esteTrabajo.nombre }}
       </div>
     </div>
 
@@ -66,6 +66,7 @@ export default {
     idNodoSeleccionado: String,    
     menuCx: Boolean,    
     factorZoom:Number,
+    callingPosiciones:Boolean
   },
   data() {
     return {

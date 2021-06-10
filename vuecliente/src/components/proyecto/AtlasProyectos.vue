@@ -70,6 +70,13 @@ const QUERY_TRABAJOS=gql`
         tipo
         tipoRef  
       }
+      stuck
+      angulo
+      centroMasa{
+        x
+        y
+      }
+      puntaje
     }
   }
 `;
@@ -89,8 +96,14 @@ const QUERY_OBJETIVOS=gql`
         tipo  
         tipoRef      
       }
-    }
-    
+      stuck
+      angulo
+      centroMasa{
+        x
+        y
+      }
+      puntaje
+    }    
   }
 `;
 
@@ -111,7 +124,7 @@ export default{
         return trabajosSegunCentro
       },
       pollInterval(){
-        return this.callingPosiciones?10000:null
+        return this.callingPosiciones?5000:null
       },
       skip(){
         return !this.radioDescarga
@@ -130,7 +143,7 @@ export default{
         return objetivosSegunCentro
       },
       pollInterval(){
-        return this.callingPosiciones?10000:null
+        return this.callingPosiciones?5000:null
       },
       skip(){
         return !this.radioDescarga

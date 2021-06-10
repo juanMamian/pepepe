@@ -55,59 +55,61 @@ export default {
     factorZoom:Number,
   },
   methods: {
-    crearImagenPosiciones(){      
-      this.lapiz=this.$refs.canvasPosiciones.getContext("2d")
+    crearImagenPosiciones(){ 
+      console.log(`Creando imagen posiciones`);     
+      var lapiz=this.$refs.canvasPosiciones.getContext("2d")
       var nodosRelevantes = this.todosNodos;
 
       if(this.idNodoSeleccionado) nodosRelevantes=[this.nodoSeleccionado];
       if (nodosRelevantes <= 1) return;
-
-      this.lapiz.canvas.width=parseInt(this.sizeCanvasTodosVinculos.width);
-      this.lapiz.canvas.height=parseInt(this.sizeCanvasTodosVinculos.height);
+      console.log(`${nodosRelevantes.length} nodos relevantes`);
+      lapiz.canvas.width = (this.radioDescarga*2)*this.factorZoom;
+      lapiz.canvas.height = (this.radioDescarga*2)*this.factorZoom;
       
-      this.lapiz.clearRect(
+      lapiz.clearRect(
         0,
         0,
-        this.lapiz.canvas.width,
-        this.lapiz.canvas.height
+        lapiz.canvas.width,
+        lapiz.canvas.height
       );
 
-      this.lapiz.lineWidth=2;
-      this.lapiz.beginPath();
-
+      lapiz.lineWidth=2;
+      lapiz.beginPath();
+      
+      var posicionCanvas={
+        x:this.centroDescarga.x-this.radioDescarga,
+        y:this.centroDescarga.y-this.radioDescarga,
+      }
       nodosRelevantes.forEach(nodo=>{
-        this.lapiz.beginPath();
-        this.lapiz.strokeStyle = nodo.stuck?'red':"#9761d2";
+        lapiz.beginPath();
+        lapiz.strokeStyle = nodo.stuck?'red':"#9761d2";
 
-        this.lapiz.moveTo(nodo.coords.x -this.posicionCanvasActivo.x, nodo.coords.y-this.posicionCanvasActivo.y);
-        this.lapiz.lineTo(nodo.centroMasa.x - this.posicionCanvasActivo.x, nodo.centroMasa.y - this.posicionCanvasActivo.y);
-        this.lapiz.arc(nodo.centroMasa.x - this.posicionCanvasActivo.x, nodo.centroMasa.y - this.posicionCanvasActivo.y, 10, 0, Math.PI*2);
-        this.lapiz.stroke();     
+        lapiz.moveTo((nodo.coords.x -posicionCanvas.x)*this.factorZoom, (nodo.coords.y-posicionCanvas.y)*this.factorZoom);
+        lapiz.lineTo((nodo.centroMasa.x - posicionCanvas.x)*this.factorZoom, (nodo.centroMasa.y - posicionCanvas.y)*this.factorZoom);
+        lapiz.arc((nodo.centroMasa.x - posicionCanvas.x)*this.factorZoom, (nodo.centroMasa.y - posicionCanvas.y)*this.factorZoom, 10, 0, Math.PI*2);
+        lapiz.stroke();     
      })
 
-     this.lapiz.beginPath();    
+     lapiz.beginPath();    
      nodosRelevantes.forEach(nodo=>{
        if(!nodo.stuck){
-        this.lapiz.strokeStyle = 'blue';
-        let nodox=nodo.coords.x -this.posicionCanvasActivo.x;
-        let nodoy=nodo.coords.y-this.posicionCanvasActivo.y
-        this.lapiz.moveTo(nodox, nodoy);
+        lapiz.strokeStyle = 'blue';
+        let nodox=(nodo.coords.x - posicionCanvas.x)*this.factorZoom;
+        let nodoy=(nodo.coords.y - posicionCanvas.y)*this.factorZoom;
+        lapiz.moveTo(nodox, nodoy);
         
         let vectorx=(Math.cos(nodo.angulo)*100);
         let vectory=(Math.sin(nodo.angulo)*100);
         
-        this.lapiz.lineTo(nodox+vectorx, nodoy+vectory);
+        lapiz.lineTo(nodox+vectorx, nodoy+vectory);
        }
        
      })
-     this.lapiz.stroke();
+     lapiz.stroke();
 
     },
-    crearImagenTodosVinculos: debounce(function () {
-      var nodosRelevantes=this.todosNodos;
-      if (this.idNodoTarget) {
-        nodosRelevantes = this.todosNodos.filter(n=>this.idsNecesariosParaTarget.includes(n.id) || n.id==this.idNodoTarget);
-      }
+    crearImagenTodosVinculos() {
+      var nodosRelevantes=this.todosNodos;      
 
       if (nodosRelevantes.length <= 1) return 
       console.log(`Dibujando todos vínculos con ${nodosRelevantes.length} nodos`);
@@ -138,7 +140,7 @@ export default {
         }
       }
       lapiz.stroke();
-    }, 1000),
+    },
     crearImagenVinculosSeleccionado: function () {
       var nodosRelevantes = this.todosNodos;
 
@@ -348,7 +350,7 @@ export default {
   watch: {
     todosNodos: function () {
       if (this.todosNodos.length < 1) return;
-      this.crearImagenTodosVinculos();
+      this.debTrazarVinculos();
       if(this.callingPosiciones)this.crearImagenPosiciones();
       this.crearImagenVinculosSeleccionado();
     },
@@ -363,7 +365,13 @@ export default {
     },
     factorZoom(){
       this.debTrazarVinculos();
+    },
+    callingPosiciones(nuevo){
+      if(nuevo){
+        this.crearImagenPosiciones();
+      }
     }
+
   },
   mounted() {
     this.montado = true;
@@ -384,13 +392,13 @@ export default {
   z-index: 0;
   top:0px;
   left:0px;
-  background-color: rgba(0, 0, 255, 0.295);
 }
 
 #canvasPosiciones {
   z-index: 0;
   top:0px;
   left:0px;
+  background-color: rgba(145, 255, 0, 0.295);
 
 }
 </style>

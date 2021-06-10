@@ -29,7 +29,7 @@ db.once('open', function () {
     console.log(`¡Base de datos conectada!`);
 });
 var anchoCeldas = 250;
-var pasoBase = 10;
+var pasoBase = 30;
 const umbralDistancia = 170;
 
 //setInterval(() => posicionar(), 5000);
@@ -49,13 +49,8 @@ async function iniciar() {
         return;
     }
 
-    //Set centro masa para cada proyecto
-    var centroProyecto={}
-    todosProyectos.forEach(proyecto=>{
-
-        centroProyecto[proyecto.id]
-    });
-
+    
+    //Limpiar de nodos huerfanos
     todosNodos.forEach(nodo=>{
         var nodosHuerfanos=0;
         var indexHuerfanos=[];
@@ -66,7 +61,7 @@ async function iniciar() {
             }
         });
         if(nodosHuerfanos>0){
-            console.log(`El nodo ${nodo.nombre} tiene ${nodosHuerfanos} nodos huerfanos de ${nodo.vinculos.length}`);
+            console.log(`El nodo ${nodo.nombre} tiene ${nodosHuerfanos} vinculos huerfanos de ${nodo.vinculos.length}`);
             console.log(`Indexs: ${indexHuerfanos}`);
             indexHuerfanos=indexHuerfanos.sort((a, b)=>b-a);
             console.log(`Ordenado: ${indexHuerfanos}`);
@@ -78,30 +73,21 @@ async function iniciar() {
     })
 
     while(true){
-        await posicionar(todosNodos);
+        await setCentrosProyectos(todosProyectos, todosNodos);
+        await posicionar(todosNodos, todosProyectos);
         await sleep(5000);
     }
 
     
 }
 
-async function posicionar(todosNodos){
+async function posicionar(todosNodos, todosProyectos){
     console.log(`posicionando ${todosNodos.length} nodos`);
 
     matrizNodos = {};
 
     //Confirmar coords
-    todosNodos.forEach((nodo) => {
-
-        if (!nodo.coords.x) {
-            nodo.coords.x = nodo.coordsManuales.x;
-        }
-
-        if (!nodo.coords.y) {
-            nodo.coords.y = nodo.coordsManuales.y
-        }
-        // nodo.coords.x=nodo.coordsManuales.x;
-        // nodo.coords.y=nodo.coordsManuales.y
+    todosNodos.forEach((nodo) => {       
 
         var celda = getCelda(nodo.coords);
         celdaX = celda.x;
@@ -123,36 +109,22 @@ async function posicionar(todosNodos){
     todosNodos.forEach(nodo => {
         let vinculos = nodo.vinculos;
         if (vinculos.length > 0) {
-            let nodosVinculos = todosNodos.filter(n => vinculos.map(v => v.idRef).includes(n.id));
+            let nodosVinculos = todosNodos.filter(n => vinculos.map(v => v.idRef).includes(n.id)).concat(todosNodos.filter(n=>n.vinculos.map(v=>v.idRef).includes(nodo.id)));
             nodo.centroMasa = getCentroMasa(nodosVinculos);
         }
         else {
-            nodo.centroMasa = nodo.coords;
+            nodo.centroMasa = todosProyectos.find(p=>p.id==nodo.idProyectoParent).centroMasa;
         }
     });
 
 
     //Caminar hacia el centro de masa
     todosNodos.forEach(nodo => {
-        //if (nodo.nombre=='Combinar dos ecuaciones con dos incógnitas') {
-        if(true){
+        if (nodo.id=='60c111266aa1611e1de80bdc') {
+        //if(true){
             console.log(`[[[[[[[[[[[[[[[[${nodo.nombre}]]]]]]]]]]]]]]]]`);
             console.log(`${nodo.nombre} (${nodo.coords.x}, ${nodo.coords.y}) apunta hacia (${nodo.centroMasa.x}, ${nodo.centroMasa.y})`);            
-
         
-            // var angulo = Math.atan(disty / distx);
-            // if (disty < 0 && distx < 0) angulo += Math.PI;
-            // if (distx < 0 && disty >= 0) angulo += Math.PI;
-
-            // var deltax = paso * Math.cos(angulo);
-            // var deltay = paso * Math.sin(angulo);
-
-            // if(deltax>distx)deltax=distx;
-            // if(deltay>disty)deltay=disty;
-
-            
-            // let actualColision=checkColision(nodo.coords, matrizNodos, todosNodos, [nodo.id]);
-            // let nuevaColision=checkColision({ x: nodo.coords.x + deltax, y: nodo.coords.y + deltay }, matrizNodos, todosNodos, [nodo.id]);
             
             let {paso, angulo}=decidirMovimiento(nodo, matrizNodos, todosNodos);
             nodo.angulo=angulo;
@@ -197,6 +169,14 @@ async function posicionar(todosNodos){
             console.log(`Error guardando nodo: ${error}`);
         }
     })
+    todosProyectos.forEach(async (proyectoGuardable) => {
+        try {
+            await proyectoGuardable.save();
+        }
+        catch (error) {
+            console.log(`Error guardando proyecto: ${error}`);
+        }
+    })
 }
 
 function getCentroMasa(nodos) {
@@ -218,8 +198,7 @@ function getCentroMasa(nodos) {
 
 function checkColision(posicion, matriz, todosNodos, nodo, empujar) {
 
-    //console.log(`Checking colision de la posición ${JSON.stringify(posicion)}`);
-    
+    //console.log(`Checking colision de la posición ${JSON.stringify(posicion)}`);    
 
     var celda = getCelda(posicion);
 
@@ -329,7 +308,29 @@ function decidirMovimiento(nodo, matriz, todosNodos){
 
 function setCentrosProyectos(todosProyectos, todosNodos){
     todosProyectos.forEach(proyecto=>{
-        let nodosProyecto=todosNodos.find(n=>n.idProyecto)
+        let sumx=0;
+        let sumy=0;
+
+        let cantNodos=0;
+        let nodosProyecto=todosNodos.filter(n=>n.idProyectoParent==proyecto.id);
+        console.log(`Nodos proyecto: ${nodosProyecto.length}`);
+        nodosProyecto.forEach(nodo=>{
+            cantNodos++;
+            sumx+=Number(nodo.coords.x);
+            sumy+=Number(nodo.coords.y);
+        });
+        // console.log(`Sumx: ${sumx}`);
+        // console.log(`Cant nodos: ${cantNodos}`);
+        // console.log(`Resx: ${sumx/cantNodos}`);
+        
+        if(cantNodos>0){
+            var centroMasa={
+                x: Math.round(sumx/cantNodos),
+                y: Math.round(sumy/cantNodos)
+            }
+            proyecto.centroMasa=centroMasa;
+        }                
+        
     });
 }
 
