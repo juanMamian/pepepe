@@ -2,11 +2,13 @@
   <div
     class="nodoTrabajo"
     :class="{ seleccionado }"
-    :style="[estiloPosicion, estiloZeta, estiloSize]"
-    @mousedown.left="agarrado = true"
+    :style="[estiloPosicion, estiloZeta, estiloSize, transicion]"
+    @mousedown.left="agarrado = callingPosiciones?false:true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
   >
+    <div id="zonaArrastre" v-show="agarrado"></div>
+
     <img
       src="@/assets/iconos/maximizar.png"
       alt="abrir"
@@ -208,6 +210,17 @@ export default {
     },
     seleccionado(){
       return this.idNodoSeleccionado && this.idNodoSeleccionado==this.esteTrabajo.id
+    },
+    transicion(){
+      if(this.callingPosiciones){
+        return {
+          transition: 'left 5s, top 5s',
+          transitionTimingFunction: "linear"
+        }
+      }
+      return{
+        
+      }
     }
   },
   watch: {
@@ -303,5 +316,14 @@ export default {
 }
 .bAbrirNodo:hover {
   background-color: cadetblue;
+}
+#zonaArrastre{
+  position: absolute;
+  width: 600%;
+  height: 600%;
+  top:-200%;
+  left: -200%;
+  border-radius: 50%;
+  background-color: rgba(205, 134, 63, 0.479);
 }
 </style>

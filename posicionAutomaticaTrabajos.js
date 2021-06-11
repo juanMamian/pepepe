@@ -28,9 +28,10 @@ db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
     console.log(`¡Base de datos conectada!`);
 });
-var anchoCeldas = 250;
+var anchoCeldas = 520;
 var pasoBase = 30;
-const umbralDistancia = 170;
+const umbralDistancia = 500;
+const stepRadial= 500; // Distancia entre cada nivel concentrico
 
 //setInterval(() => posicionar(), 5000);
  iniciar();
@@ -72,8 +73,18 @@ async function iniciar() {
         }
     })
 
+
+    //Crear la lista de vinculos reales
+    todosNodos.forEach(nodo=>{
+        let nodosRequirientes=todosNodos.filter(tn=>tn.vinculos.map(v=>v.idRef).includes(nodo.id));
+        nodo.todosVinculos=nodo.vinculos.concat(nodosRequirientes.map(req=>{ return {idRef:req.id, tipo:'requerido'}  })  );
+    })    
+
+
     while(true){
-        await setCentrosProyectos(todosProyectos, todosNodos);
+        setCentrosProyectos(todosProyectos, todosNodos);
+        setPosicionPolar(todosNodos, todosProyectos);
+        setCentrosMasa(todosNodos, todosProyectos);
         await posicionar(todosNodos, todosProyectos);
         await sleep(5000);
     }
@@ -83,10 +94,7 @@ async function iniciar() {
 
 async function posicionar(todosNodos, todosProyectos){
     console.log(`posicionando ${todosNodos.length} nodos`);
-
     matrizNodos = {};
-
-    //Confirmar coords
     todosNodos.forEach((nodo) => {       
 
         var celda = getCelda(nodo.coords);
@@ -102,26 +110,12 @@ async function posicionar(todosNodos, todosProyectos){
             }
         }
         matrizNodos[celdaX][celdaY].push(nodo.id);
-    });
-
-
-    //Get centros de masa
-    todosNodos.forEach(nodo => {
-        let vinculos = nodo.vinculos;
-        if (vinculos.length > 0) {
-            let nodosVinculos = todosNodos.filter(n => vinculos.map(v => v.idRef).includes(n.id)).concat(todosNodos.filter(n=>n.vinculos.map(v=>v.idRef).includes(nodo.id)));
-            nodo.centroMasa = getCentroMasa(nodosVinculos);
-        }
-        else {
-            nodo.centroMasa = todosProyectos.find(p=>p.id==nodo.idProyectoParent).centroMasa;
-        }
-    });
-
+    });    
 
     //Caminar hacia el centro de masa
     todosNodos.forEach(nodo => {
-        if (nodo.id=='60c111266aa1611e1de80bdc') {
-        //if(true){
+        //if (nodo.id=='60c111266aa1611e1de80bdc') {
+        if(true){
             console.log(`[[[[[[[[[[[[[[[[${nodo.nombre}]]]]]]]]]]]]]]]]`);
             console.log(`${nodo.nombre} (${nodo.coords.x}, ${nodo.coords.y}) apunta hacia (${nodo.centroMasa.x}, ${nodo.centroMasa.y})`);            
         
@@ -196,6 +190,21 @@ function getCentroMasa(nodos) {
     }
 }
 
+function getDireccionPromedio(nodos){
+    if(nodos.length<1)return 0;
+    var sum=0;    
+    console.log(`Geting direccion promedio entre ${nodos.length} nodos`);
+    nodos.forEach(nodo=>{
+        let angulo=nodo.coordsPolares.direccion;
+        if(angulo>Math.PI){
+            angulo=(Math.PI-angulo);
+        };
+        sum+=angulo;
+    })
+    console.log(`Direccion promedio: ${sum/nodos.length}`);
+    return sum/nodos.length;
+}
+
 function checkColision(posicion, matriz, todosNodos, nodo, empujar) {
 
     //console.log(`Checking colision de la posición ${JSON.stringify(posicion)}`);    
@@ -205,22 +214,23 @@ function checkColision(posicion, matriz, todosNodos, nodo, empujar) {
     celdaX = celda.x;
     celdaY = celda.y;
 
-    var nodosCercanos = matriz[celdaX] && matriz[celdaX][celdaY]?matriz[celdaX][celdaY]:[];
-    nodosCercanos = nodosCercanos.concat(matriz[celdaX + anchoCeldas] && matriz[celdaX + anchoCeldas][celdaY] ? matriz[celdaX + anchoCeldas][celdaY]:[]).concat(matriz[celdaX + anchoCeldas] && matriz[celdaX + anchoCeldas][celdaY + anchoCeldas] ? matriz[celdaX + anchoCeldas][celdaY + anchoCeldas]:[]).concat(matriz[celdaX + anchoCeldas] && matriz[celdaX + anchoCeldas][celdaY - anchoCeldas] ? matriz[celdaX + anchoCeldas][celdaY - anchoCeldas]:[])
+    var idsNodosCercanos = matriz[celdaX] && matriz[celdaX][celdaY]?matriz[celdaX][celdaY]:[];
+    idsNodosCercanos = idsNodosCercanos.concat(matriz[celdaX + anchoCeldas] && matriz[celdaX + anchoCeldas][celdaY] ? matriz[celdaX + anchoCeldas][celdaY]:[]).concat(matriz[celdaX + anchoCeldas] && matriz[celdaX + anchoCeldas][celdaY + anchoCeldas] ? matriz[celdaX + anchoCeldas][celdaY + anchoCeldas]:[]).concat(matriz[celdaX + anchoCeldas] && matriz[celdaX + anchoCeldas][celdaY - anchoCeldas] ? matriz[celdaX + anchoCeldas][celdaY - anchoCeldas]:[])
        .concat(matriz[celdaX] && matriz[celdaX][celdaY+anchoCeldas] ? matriz[celdaX][celdaY+anchoCeldas]:[]).concat(matriz[celdaX] && matriz[celdaX][celdaY-anchoCeldas] ? matriz[celdaX][celdaY-anchoCeldas]:[])
        .concat(matriz[celdaX - anchoCeldas] && matriz[celdaX - anchoCeldas][celdaY] ? matriz[celdaX - anchoCeldas][celdaY]:[]).concat(matriz[celdaX - anchoCeldas] && matriz[celdaX - anchoCeldas][celdaY + anchoCeldas] ? matriz[celdaX - anchoCeldas][celdaY + anchoCeldas]:[]).concat(matriz[celdaX - anchoCeldas] && matriz[celdaX - anchoCeldas][celdaY - anchoCeldas] ? matriz[celdaX - anchoCeldas][celdaY - anchoCeldas]:[])
     
 
-    //console.log(`${nodosCercanos.length} nodos cercanos`);
-    nodosCercanos = todosNodos.filter(n => nodosCercanos.includes(n.id) && n.id!=nodo.id)
+    //console.log(`${idsNodosCercanos.length} nodos cercanos`);
+    var nodosCercanos = todosNodos.filter(n => idsNodosCercanos.includes(n.id) && n.id!=nodo.id);
+
+    //Hacer la lista de vínculos reales
+    
     var colision = 0;
     // console.log(`Colision: `);
     nodosCercanos.forEach(nodoCercano => {
-        //console.log(`Checking cercanía con ${JSON.stringify(nodoCercano)}`);
-        
+        //console.log(`Checking cercanía con ${JSON.stringify(nodoCercano)}`);        
         //console.log(`${nodoCercano.nombre}`);
-        let umbralDistanciaNodo=umbralDistancia+(Math.max(nodoCercano.vinculos.length, nodo.vinculos.length)*5);
-
+        let umbralDistanciaNodo=umbralDistancia+(Math.max(nodoCercano.todosVinculos.length, nodo.todosVinculos.length)*5);
         let distanciaNodoCercano = Math.sqrt((Math.pow(nodoCercano.coords.x - posicion.x, 2)) + (Math.pow(nodoCercano.coords.y - posicion.y, 2)));        
         let factorDivisor=1/umbralDistanciaNodo;
         let estaColision=1/(factorDivisor*distanciaNodoCercano);
@@ -243,7 +253,6 @@ function getCelda(posicion) {
 function decidirMovimiento(nodo, matriz, todosNodos){
     const distx = nodo.centroMasa.x - nodo.coords.x;
     const disty = nodo.centroMasa.y - nodo.coords.y;
-    console.log(`Puntajes: `);
     const puntajeActual=getPuntaje(nodo, nodo.coords, matriz, todosNodos, false);
     var anguloCentroMasa=0
     if (distx != 0 || disty != 0) {
@@ -261,7 +270,6 @@ function decidirMovimiento(nodo, matriz, todosNodos){
     }
     var mejorAngulo=0;
     var mejorIndex=0;
-    console.log(`Actual: ${puntajeActual}`);
     for(var i=0; i<5;i++){
         let angulo=anguloCentroMasa+(((Math.PI*2)/5)*i);
         let deltax = pasoBase * Math.cos(angulo);
@@ -278,9 +286,7 @@ function decidirMovimiento(nodo, matriz, todosNodos){
         }
 
         let puntaje=getPuntaje(nodo, nuevaPos, matriz, todosNodos, true);
-        console.log(`Angulo número ${i} - ${puntaje}`);
         if(puntaje<puntajeMinimo){
-            console.log(`-------`);
             puntajeMinimo=puntaje;
             mejorAngulo=angulo;
             mejorPaso={
@@ -293,14 +299,12 @@ function decidirMovimiento(nodo, matriz, todosNodos){
 
     if(puntajeActual<=puntajeMinimo){
         //No vale la pena moverse
-        console.log(`El puntaje actual es ${puntajeActual} vs puntaje mínimo de ${puntajeMinimo}`);
         return {
             angulo:0,
             paso:{x:0, y:0}
         }
     }
 
-    console.log(`Se caminara hacia el ángulo número ${mejorIndex} con vector (${mejorPaso.x}, ${mejorPaso.y})`);
     return {
         paso:mejorPaso, angulo:mejorAngulo
     }
@@ -329,7 +333,13 @@ function setCentrosProyectos(todosProyectos, todosNodos){
                 y: Math.round(sumy/cantNodos)
             }
             proyecto.centroMasa=centroMasa;
-        }                
+        }else{
+            proyecto.centroMasa={
+                x:0,
+                y:0
+            }
+        }         
+        console.log(`${proyecto.nombre} quedó en centro ${JSON.stringify(proyecto.centroMasa)}`);
         
     });
 }
@@ -345,14 +355,52 @@ function getPuntaje(nodo, posicion, matriz, todosNodos, empujando){
 
     var puntajeDistancia=Math.pow(distancia, 2)/147275;
     if(nodo.vinculos.length==1){
-        console.log(`***^***`);
         puntajeDistancia=distancia<=umbralDistanciaNodo ? 0 : Math.pow(distancia, 2)/47275
     }
-    console.log(`Distancia: ${distancia}`);
-    console.log(`Puntajes: Distancia: ${puntajeDistancia}, Colision: ${colision}`);
 
     puntaje=puntajeDistancia+colision;
     return puntaje;
+}
+
+function setPosicionPolar(todosNodos, todosProyectos){
+    todosNodos.forEach(nodo=>{
+        let proyecto=todosProyectos.find(p=>p.id==nodo.idProyectoParent);
+        let centroProyecto=proyecto.centroMasa;
+
+        var distx=nodo.coords.x-centroProyecto.x;
+        var disty=nodo.coords.y-centroProyecto.y;
+
+        var anguloCentroProyecto=0
+        if (distx != 0 || disty != 0) {
+            anguloCentroProyecto = Math.atan(disty / distx);
+            if (disty < 0 && distx < 0) anguloCentroProyecto += Math.PI;
+            if (distx < 0 && disty >= 0) anguloCentroProyecto += Math.PI;
+        }
+        nodo.coordsPolares={};
+        nodo.coordsPolares.radio=Math.hypot(distx, disty);
+        nodo.coordsPolares.direccion=anguloCentroProyecto
+    })
+}
+
+function setCentrosMasa(todosNodos, todosProyectos){
+    //Get centros de masa
+    todosNodos.forEach(nodo => {
+        let proyectoParent=todosProyectos.find(tp=>tp.id==nodo.idProyectoParent);
+        let centroProyecto=proyectoParent.centroMasa;
+        let todosVinculos = nodo.todosVinculos;
+        let nodosDependencias=todosNodos.filter(tn=>nodo.vinculos.map(v=>v.idRef).includes(tn.id));
+        let direccion=0;
+        if (todosVinculos.length > 0) {
+            let nodosVinculos = todosNodos.filter(n => todosVinculos.map(v => v.idRef).includes(n.id));
+            direccion=getDireccionPromedio(nodosVinculos);                        
+        }       
+        let radio=stepRadial;
+        if (nodosDependencias.length>0) radio+=Math.max(nodosDependencias.filter(nd=>nd.coordsPolares.radio))
+        nodo.centroMasa = {
+            x: centroProyecto.x + (radio*Math.cos(direccion)),
+            y: centroProyecto.y + (radio*Math.sin(direccion))
+        }
+    });
 }
 
 function sleep(ms) {

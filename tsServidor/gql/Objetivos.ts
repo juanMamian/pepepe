@@ -334,7 +334,7 @@ export const resolvers = {
             console.log(`Keywords guardado`);
             return elObjetivo;
         },        
-        setPosicionObjetivoDiagramaProyecto: async function (_: any, { idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
+        async setPosicionObjetivoDiagramaProyecto(_: any, { idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
             console.log(`Guardando posicion de objetivo en el diagrama del proyecto`);
             
             try {
@@ -348,7 +348,7 @@ export const resolvers = {
             }
 
             let credencialesUsuario = contexto.usuario;
-            const idProyecto=elObjetivo.idProyecto;
+            const idProyecto=elObjetivo.idProyectoParent;
             try {
                 var elProyecto: any = await Proyecto.findById(idProyecto).exec();
                 if (!elProyecto) {

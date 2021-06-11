@@ -29,6 +29,7 @@ export const typeDefs = gql`
         objetivos: [Objetivo],
         idForo:ID,        
         materiales:[MaterialTrabajo],
+        centroMasa:Coords,
     }
 
    union NodoProyecto=Objetivo | Trabajo
@@ -45,6 +46,7 @@ export const typeDefs = gql`
     extend type Query{
         proyectos: [Proyecto!],
         proyecto(idProyecto:ID!): Proyecto
+        proyectosSegunCentro(centro: CoordsInput, radio:Int!):[Proyecto],       
 
         listaTodosTrabajosProyectos(pagina: Int!, pagina:Int!):PaginaTrabajosProyectos,
     }
@@ -69,6 +71,16 @@ export const resolvers = {
     Query: {
         proyectos: async function (_: any, args: any, context: contextoQuery) {
             console.log(`enviando lista de todos los proyectos`);
+            try {
+                var listaP = await Proyecto.find({}).exec();
+            } catch (error) {
+                console.log(`error buscando la lista de proyectos. E: ${error}`);
+                throw new ApolloError("");
+            }
+            return listaP;
+        },
+        proyectosSegunCentro: async function (_: any, {centro, radio}: any, context: contextoQuery) {
+            console.log(`enviando lista de todos los proyectos segun centro`);
             try {
                 var listaP = await Proyecto.find({}).exec();
             } catch (error) {

@@ -10,8 +10,11 @@
     @touchstart="iniciaMovimientoTouch"
     @touchend="finTouch" 
   >
-  <div id="botonCallingPosiciones" v-if="usuarioSuperadministrador && usuario.username=='juanMamian'" @click.stop="callingPosiciones=!callingPosiciones" :style="[{backgroundColor:callingPosiciones?'green':'transparent'}]">
+  <div id="botonCallingPosiciones" v-if="usuarioSuperadministrador && usuario.username=='juanMamian'" @click.stop="callingPosiciones=!callingPosiciones" :style="[{backgroundColor:callingPosiciones?'green':'transparent'}]">    
     </div>
+  <div id="proyectoSeleccionado" v-show="idProyectoSeleccionado" @click="idProyectoSeleccionado=null">
+    {{idProyectoSeleccionado?proyectos.find(p=>p.id==idProyectoSeleccionado).nombre:''}}
+  </div>
   <div id="centroVista"></div>
   <canvases-atlas-proyectos
     :style="posCuadroDescarga"
@@ -24,6 +27,7 @@
     :idNodoSeleccionado="idNodoSeleccionado"
   />
   <div id="contenedorNodos" :style="[posContenedores]">
+    <centro-proyecto v-for="proyecto of proyectos" :key="proyecto.id" :esteProyecto="proyecto" :factorZoom="factorZoom" @click.native="idProyectoSeleccionado=proyecto.id" />
     <nodo-objetivo
       v-for="objetivo of objetivos"
       :key="objetivo.id"
@@ -32,6 +36,7 @@
       :idNodoSeleccionado="idNodoSeleccionado"
       :menuCx="idNodoMenuCx && idNodoMenuCx==objetivo.id"
       :factorZoom="factorZoom"
+      v-show="idsNodosVisibles.includes(objetivo.id)"
     />
 
     <nodo-trabajo
@@ -42,6 +47,7 @@
       :menuCx="idNodoMenuCx && idNodoMenuCx==trabajo.id"
       :factorZoom="factorZoom"
       :callingPosiciones="callingPosiciones"
+      v-show="idsNodosVisibles.includes(trabajo.id)"
     />
 
   </div>
@@ -55,11 +61,15 @@ import gql from "graphql-tag";
 import NodoObjetivo from "./NodoObjetivo.vue";
 import NodoTrabajo from "./NodoTrabajo.vue";
 import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue"
+import CentroProyecto from "./CentroProyecto.vue"
+
+
 const QUERY_TRABAJOS=gql`
   query($centro:CoordsInput, $radio:Int!){
     trabajosSegunCentro(centro: $centro, radio:$radio){
       id
       nombre
+      idProyectoParent
       coords{
         x
         y
@@ -86,6 +96,7 @@ const QUERY_OBJETIVOS=gql`
     objetivosSegunCentro(centro: $centro, radio: $radio){
       id
       nombre
+      idProyectoParent
       coords{
         x
         y
@@ -107,11 +118,44 @@ const QUERY_OBJETIVOS=gql`
   }
 `;
 
+const QUERY_PROYECTOS=gql`
+  query($centro:CoordsInput, $radio: Int!){
+    proyectosSegunCentro(centro: $centro, radio: $radio){
+      id
+      nombre
+      centroMasa{
+        x
+        y
+      }
+    }
+  }
+`
+
 
 export default{
-  components: { NodoObjetivo, CanvasesAtlasProyectos, NodoTrabajo },
+  components: { NodoObjetivo, CanvasesAtlasProyectos, NodoTrabajo, CentroProyecto },
   name:"AtlasProyectos",
   apollo:{
+    proyectos:{
+      query: QUERY_PROYECTOS,
+      variables(){
+        return {
+          centro: this.centroDescarga,
+          radio: this.radioDescarga
+        }
+      },
+      update({proyectosSegunCentro}){
+        return proyectosSegunCentro
+      },      
+      skip(){
+        return !this.radioDescarga
+      },
+      result(){
+        console.log(`Proyectos recibidos`);
+        console.log(`Estado de la query: ${JSON.stringify(this.$apollo.queries.pollInterval)}`);
+      },
+      debounce:1000,    
+    },
     trabajos:{
       query: QUERY_TRABAJOS,
       variables(){
@@ -122,10 +166,7 @@ export default{
       },
       update({trabajosSegunCentro}){
         return trabajosSegunCentro
-      },
-      pollInterval(){
-        return this.callingPosiciones?5000:null
-      },
+      },      
       skip(){
         return !this.radioDescarga
       },
@@ -141,10 +182,7 @@ export default{
       },
       update({objetivosSegunCentro}){
         return objetivosSegunCentro
-      },
-      pollInterval(){
-        return this.callingPosiciones?5000:null
-      },
+      },      
       skip(){
         return !this.radioDescarga
       },
@@ -172,6 +210,7 @@ export default{
       
       idNodoSeleccionado:null,
       idNodoMenuCx:null,
+      idProyectoSeleccionado:null,
 
       zoom:100,
       minZoom:20,
@@ -180,6 +219,7 @@ export default{
       pinching:false,
       lastPinchDistance:0,
 
+      proyectos:[],
       trabajos:[],
       objetivos:[],
 
@@ -348,6 +388,26 @@ export default{
         left: (posx*this.factorZoom)+"px",
         top:  (posy*this.factorZoom)+"px",
       }
+    },
+    idsNodosVisibles(){
+      if(!this.idProyectoSeleccionado){
+        return this.todosNodos.map(n=>n.id);
+      }
+      return this.todosNodos.filter(n=>n.idProyectoParent==this.idProyectoSeleccionado).map(n=>n.id);
+    }
+  },
+  watch:{
+    callingPosiciones(nuevo){
+      if(nuevo){
+        this.$apollo.queries.proyectos.startPolling(5000);
+        this.$apollo.queries.trabajos.startPolling(5000);
+        this.$apollo.queries.objetivos.startPolling(5000);
+      }
+      else{
+        this.$apollo.queries.proyectos.stopPolling();
+        this.$apollo.queries.trabajos.stopPolling();
+        this.$apollo.queries.objetivos.stopPolling();
+      }
     }
   },
   mounted(){
@@ -372,6 +432,16 @@ export default{
 #atlasProyectos{
   overflow: hidden;
   position: relative;
+}
+#proyectoSeleccionado{
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  padding: 10px 15px;
+  border-radius: 12px;
+  text-align: center;
+  transform: translateX(-50%);
+  background-color: rgba(221, 160, 221, 0.5);
 }
 #contenedorNodos{  
   position: relative;  
@@ -398,5 +468,6 @@ export default{
   top:1%;
   right:1%;
   cursor:pointer;
+  z-index: 100;
 }
 </style>

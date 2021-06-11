@@ -48,6 +48,7 @@ export default {
   props: {            
     idNodoSeleccionado: String,
     todosNodos: Array,
+    proyectos:Array,    
     centroVista: Object,
     centroDescarga: Object,
     radioDescarga:Number,    
