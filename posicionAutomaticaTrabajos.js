@@ -329,8 +329,8 @@ function setCentrosProyectos(todosProyectos, todosNodos){
         
         if(cantNodos>0){
             var centroMasa={
-                x: Math.round(sumx/cantNodos),
-                y: Math.round(sumy/cantNodos)
+                x: (Math.round(sumx/cantNodos)),
+                y: (Math.round(sumy/cantNodos))
             }
             proyecto.centroMasa=centroMasa;
         }else{
@@ -395,10 +395,12 @@ function setCentrosMasa(todosNodos, todosProyectos){
             direccion=getDireccionPromedio(nodosVinculos);                        
         }       
         let radio=stepRadial;
-        if (nodosDependencias.length>0) radio+=Math.max(nodosDependencias.filter(nd=>nd.coordsPolares.radio))
+        if (nodosDependencias.length>0) radio+=Math.max(...nodosDependencias.map(nd=>nd.coordsPolares.radio))
+        
+        console.log(`Se construye centro masa con ${centroProyecto.x} y radio: ${radio}, dirección: ${direccion}`);
         nodo.centroMasa = {
-            x: centroProyecto.x + (radio*Math.cos(direccion)),
-            y: centroProyecto.y + (radio*Math.sin(direccion))
+            x: Math.round(centroProyecto.x + (radio*Math.cos(direccion))),
+            y: Math.round(centroProyecto.y + (radio*Math.sin(direccion)))
         }
     });
 }
