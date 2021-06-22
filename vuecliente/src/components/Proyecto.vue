@@ -178,6 +178,7 @@
               :idPersona="idPersona"
               :key="idPersona"
               v-for="idPersona of esteProyecto.posiblesResponsables"
+              v-show="usuarioResponsableProyecto || usuario.id===idPersona"
               :seleccionado="idResponsableSeleccionado == idPersona"
               @click.native.stop="
                 idResponsableSeleccionado = idPersona;
@@ -930,7 +931,7 @@ export default {
   min-height: 0px;
 }
 .ventanaNodo {
-  width: min(350px, 90%);
+  width: min(450px, 90%);
   height: min(800px, 90%);
   left: 4%;
   top: 5%;

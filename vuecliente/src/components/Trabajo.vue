@@ -18,23 +18,62 @@
     </div>
 
     <div id="zonaResponsables" class="zonaPrimerNivel">
-      <div class="nombreZona">Responsables</div>
+      <div class="barraSuperiorZona">
+        <span class="nombreZona">Responsables</span>
+      </div>
+      
       <div id="controlesResponsables" class="controlesZona">
+        <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
         <div
           class="controlesResponsables hoverGris botonesControles"
-          v-if="usuarioLogeado == true && usuarioResponsableTrabajo == false"
-          id="botonParticipar"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
+          v-if="
+            usuarioLogeado == true && esteTrabajo.responsables.length < 1
+          "
+          id="asumirResponsable"
           @click="asumirComoResponsable"
         >
-          Participar
+          Asumir
         </div>
-
         <div
           class="controlesResponsables hoverGris botonesControles"
-          v-if="usuarioResponsableTrabajo == true"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
+          v-if="
+            usuarioLogeado &&
+            !usuarioResponsableTrabajo &&
+            !usuarioPosibleResponsableTrabajo &&
+            esteTrabajo.responsables.length > 0
+          "
+          id="botonAddResponsable"
+          @click="entrarListaPosiblesResponsables"
+        >
+          Quiero participar
+        </div>
+        <div
+          class="controlesResponsables hoverGris botonesControles"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
+          v-if="
+            usuarioLogeado == true &&
+            (usuarioResponsableTrabajo == true ||
+              usuarioPosibleResponsableTrabajo == true)
+          "
           @click="abandonarListaResponsables"
         >
           Abandonar
+        </div>
+        <div
+          class="controlesResponsables hoverGris botonesControles"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
+          v-if="
+            usuarioLogeado == true && usuarioResponsableTrabajo == true
+          "
+          v-show="
+            idResponsableSeleccionado != null &&
+            responsableSeleccionadoEstaAceptado == false
+          "
+          @click="aceptarResponsable(idResponsableSeleccionado)"
+        >
+          Aceptar participación
         </div>
       </div>
       <div id="listaResponsables">
@@ -42,42 +81,32 @@
           :idPersona="idPersona"
           :aceptado="true"
           :key="idPersona"
+          :seleccionado="idResponsableSeleccionado == idPersona"
+          @click.native.stop="
+                idResponsableSeleccionado = idPersona;                
+              "
           v-for="idPersona of esteTrabajo.responsables"
         />
-      </div>
-    </div>
 
-    <div id="zonaNodosConocimiento" class="zonaPrimerNivel" v-show="false">
-      <div class="nombreZona">Nodos de conocimiento involucrados</div>
-      <div id="controlesNodosConocimiento" class="controlesZona">
-        <div class="controlesNodosConocimiento hoverGris botonesControles">
-          Añadir
-        </div>
-        <div
-          class="controlesNodosConocimiento hoverGris botonesControles"
-          v-if="
-            idNodoSeleccionado != null &&
-            esteTrabajo.nodosConocimiento.some(
-              (n) => n.id == idNodoSeleccionado
-            )
+        <icono-persona-autonomo
+          class="personaPosibleResponsable"
+          :idPersona="idPersona"
+          :key="idPersona"
+          v-for="idPersona of esteTrabajo.posiblesResponsables"
+          v-show="usuarioResponsableTrabajo || usuario.id===idPersona"
+          :seleccionado="idResponsableSeleccionado == idPersona"
+          @click.native.stop="
+            idResponsableSeleccionado = idPersona;                
           "
-        >
-          Remover
-        </div>
-      </div>
-      <div id="listaNodosConocimiento" @click.self="idNodoSeleccionado = null">
-        <icono-nodo-conocimiento
-          :esteNodo="nodo"
-          :key="nodo.id"
-          v-for="nodo of esteTrabajo.nodosConocimiento"
-          @click.native="idNodoSeleccionado = nodo.id"
+          @dblclick.native.shift="aceptarResponsable(idPersona)"
         />
-        <buscador-nodos-conocimiento />
       </div>
-    </div>
+    </div>    
 
     <div id="zonaMateriales" ref="zonaMateriales" class="zonaPrimerNivel" @click.stop="idMaterialSeleccionado = null">
-      <div class="nombreZona">Materiales</div>
+      <div class="barraSuperiorZona">
+        <div class="nombreZona">Materiales</div>
+      </div>
       <div id="controlesMateriales" class="controlesZona">
         <div
           class="controlesMateriales botonesControles hoverGris"
@@ -88,7 +117,7 @@
         </div>
       </div>
 
-      <div id="listaMateriales" >
+      <div id="listaMateriales" v-show="esteTrabajo.materiales.length>0">
         <material-trabajo
           v-for="material of esteTrabajo.materiales"
           :key="material.id"
@@ -108,7 +137,9 @@
       class="zonaPrimerNivel"
       v-if="esteTrabajo.idForo"
     >
-      <div class="nombreZona">foro</div>
+      <div class="barraSuperiorZona">
+        <div class="nombreZona">foro</div>
+      </div>
       <foro :parent="infoAsParent" :idForo="esteTrabajo.idForo" />
     </div>
 
@@ -118,10 +149,10 @@
 
 <script>
 import gql from "graphql-tag";
-import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
 import MaterialTrabajo from "./trabajo/MaterialTrabajo.vue";
+import Loading from "./utilidades/Loading.vue";
 
 const QUERY_TRABAJO = gql`
   query($idTrabajo: ID!) {
@@ -131,6 +162,7 @@ const QUERY_TRABAJO = gql`
       descripcion
       idForo
       responsables
+      posiblesResponsables
       idProyectoParent
       materiales {
         id
@@ -146,10 +178,10 @@ const QUERY_TRABAJO = gql`
 export default {
   name: "Trabajo",
   components: {
-    BuscadorNodosConocimiento,
     Foro,
     IconoPersonaAutonomo,
     MaterialTrabajo,
+    Loading,
   },
   apollo: {
     esteTrabajo: {
@@ -171,13 +203,17 @@ export default {
     return {
       esteTrabajo: {
         responsables: [],
+        materiales: [],
       },
+      idResponsableSeleccionado:null,      
 
       idNodoSeleccionado: null,
       deshabilitado: false,
 
       idMaterialSeleccionado: null,
       creandoMaterial: false,
+
+      enviandoQueryResponsables:false,
     };
   },
   computed: {
@@ -191,12 +227,25 @@ export default {
         nombre: this.esteTrabajo.nombre,
       };
     },
+    usuarioPosibleResponsableTrabajo: function () {
+      if (!this.esteTrabajo.posiblesResponsables) return false;
+
+      if (this.esteTrabajo.posiblesResponsables.includes(this.usuario.id)) {
+        return true;
+      }
+      return false;
+    },
+    responsableSeleccionadoEstaAceptado(){
+      return this.esteTrabajo.responsables.includes(this.idResponsableSeleccionado)
+    }
   },
   methods: {
     asumirComoResponsable() {
       console.log(
         `enviando id ${this.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.idEsteProyecto}`
       );
+      this.enviandoQueryResponsables = true;
+
       this.$apollo
         .mutate({
           mutation: gql`
@@ -207,6 +256,7 @@ export default {
               ) {
                 id
                 responsables
+                posiblesResponsables
               }
             }
           `,
@@ -215,13 +265,48 @@ export default {
             idUsuario: this.$store.state.usuario.id,
           },
         })
-        .then(() => {})
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+        })
         .catch((error) => {
+          this.enviandoQueryResponsables = false;
+          console.log("error: " + error);
+        });
+    },
+    entrarListaPosiblesResponsables() {
+      console.log(
+        `Enviando peticion de entrar a la lista de posibles responsables del trabajo con id ${this.esteTrabajo.id}`
+      );
+      this.enviandoQueryResponsables = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idTrabajo: ID!, $idUsuario: ID!) {
+              addPosibleResponsableTrabajo(
+                idTrabajo: $idTrabajo
+                idUsuario: $idUsuario
+              ) {
+                id
+                posiblesResponsables
+              }
+            }
+          `,
+          variables: {
+            idTrabajo: this.esteTrabajo.id,
+            idUsuario: this.$store.state.usuario.id,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
     },
     abandonarListaResponsables() {
       console.log(`Abandonando este trabajo`);
+      this.enviandoQueryResponsables=true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -232,6 +317,7 @@ export default {
               ) {
                 id
                 responsables
+                posiblesResponsables
               }
             }
           `,
@@ -240,12 +326,46 @@ export default {
             idUsuario: this.$store.state.usuario.id,
           },
         })
-        .then(() => {})
+        .then(() => {
+          this.enviandoQueryResponsables=false;
+        })
         .catch((error) => {
+          this.enviandoQueryResponsables=false;
           console.log("error: " + error);
         });
     },
-
+    aceptarResponsable(idPosibleResponsable) {
+      console.log(
+        `aceptando como responsable al usuario ${idPosibleResponsable}`
+      );
+      this.enviandoQueryResponsables = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($idTrabajo: ID!, $idUsuario: ID!) {
+              addResponsableTrabajo(
+                idTrabajo: $idTrabajo
+                idUsuario: $idUsuario
+              ) {
+                id
+                responsables
+                posiblesResponsables
+              }
+            }
+          `,
+          variables: {
+            idTrabajo: this.esteTrabajo.id,
+            idUsuario: idPosibleResponsable,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryResponsables = false;          
+        })
+        .catch((error) => {
+          this.enviandoQueryResponsables = false;
+          console.log("error: " + error);
+        });
+    },
     crearNuevoMaterial() {
       console.log(`enviando mutacion de crear nuevo material`);
       this.creandoMaterial = true;
@@ -381,6 +501,7 @@ export default {
 }
 .barraSuperiorZona {
   display: flex;
+  background-color: cadetblue;
 }
 .nombreZona {
   font-size: 18px;
@@ -471,7 +592,9 @@ export default {
   margin-top: 5px;
   margin-bottom: 5px;
 }
-
+.personaPosibleResponsable {
+  opacity: 0.5;
+}
 #listaMateriales{
   padding: 10px 0px;
   border-radius:15px;

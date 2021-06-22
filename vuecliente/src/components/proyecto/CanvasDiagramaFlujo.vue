@@ -185,8 +185,8 @@ export default {
       return {
         x1: bordes.left*this.factorZoom,
         y1: bordes.bot*this.factorZoom,
-        x2: bordes.right*this.factorZoom,
-        y2: bordes.top*this.factorZoom
+        x2: (bordes.right+2)*this.factorZoom,
+        y2: (bordes.top+2)*this.factorZoom
       }
     },
     offsetCanvasTodosVinculos(){

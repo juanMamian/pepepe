@@ -15,14 +15,21 @@
         <div id="elPropioNombre" v-show="!editandoNombre">
           {{ esteTrabajo.nombre }}
         </div>
-        <input
+        <textarea
+          class="inputNuevoNombre"
+          :class="{letrasRojas: nuevoNombreIlegal}"
+          v-model="nuevoNombre"
+          v-show="editandoNombre"
+          @keypress.enter="guardarNuevoNombre"
+        />        
+        <!-- <input
           type="text"
           class="inputNuevoNombre"
           :class="{ letrasRojas: nuevoNombreIlegal }"
           v-model="nuevoNombre"
           v-show="editandoNombre"
           @keypress.enter="guardarNuevoNombre"
-        />
+        /> -->
         <div class="controlesLateralesZona" v-if="usuarioResponsableProyecto">
           <img
             src="@/assets/iconos/editar.png"
@@ -646,14 +653,17 @@ export default {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  padding: 3px;
+  padding: 3px;  
 }
 
-#imagenIcono:hover {
-  background-color: cadetblue;
+#imagenIcono:not(.iconoCompletado):hover {
+    background-color: rgb(162, 209, 162);
 }
 .iconoCompletado {
   background-color: rgb(44, 136, 44);
+}
+.iconoCompletado:hover {
+  background-color: rgb(95, 167, 95);
 }
 
 .zonaPrimerNivel {
@@ -663,6 +673,7 @@ export default {
 }
 .barraSuperiorZona {
   display: flex;
+  background-color: cadetblue;
 }
 .nombreZona {
   font-size: 18px;
@@ -675,9 +686,9 @@ export default {
 #nombre {
   margin-top: 15px;
   font-size: 19px;
-  padding: 5px 20px;
+  
   display: grid;
-  grid-template-columns: 1fr 5fr 1fr;
+  grid-template-columns: 70px 1fr 70px;
   margin-bottom: 15px;
 }
 
@@ -690,11 +701,12 @@ export default {
 }
 
 .inputNuevoNombre {
-  font-size: 23px;
+  font-size: 16px;
   display: block;
   margin: 10px auto;
   grid-column: 2/3;
   width: 100%;
+  resize:vertical;
 }
 #descripcion {
   font-size: 19px;
@@ -709,7 +721,7 @@ export default {
 
 #inputNuevoDescripcion {
   width: 95%;
-  font-size: 19px;
+  font-size: 16px;
   height: 70px;
   display: block;
   margin: 10px auto;

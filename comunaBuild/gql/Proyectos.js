@@ -81,6 +81,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         editarNombreTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
         editarDescripcionTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
         addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
+        addPosibleResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
         removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
         setPosicionTrabajoDiagramaProyecto(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
         editarKeywordsTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
@@ -257,8 +258,8 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
                 }
                 //Authorización
-                if (elProyecto.responsables.length > 0 && !elProyecto.responsables.includes(credencialesUsuario.id) && credencialesUsuario.permisos.includes("superadministrador")) {
-                    console.log(`Error de autenticacion. Hay ${elProyecto.responsables.length} responsable: ${elProyecto.responsables}`);
+                if (elProyecto.responsables.length > 0 && !credencialesUsuario.permisos.includes("superadministrador") && !elProyecto.responsables.includes(credencialesUsuario.id)) {
+                    console.log(`Error de autenticacion. Hay ${elProyecto.responsables.length} responsables: ${elProyecto.responsables}`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
@@ -713,9 +714,18 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Solicitud de add un usuario con id ${idUsuario} a un trabajo de id ${idTrabajo}`);
                 let credencialesUsuario = contexto.usuario;
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo)
+                        throw "Trabajo no existía";
+                }
+                catch (error) {
+                    console.log('Error buscando el trabajo . E: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
                 //Authorización
-                if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
-                    console.log(`Error de autenticacion editando nombre de proyecto`);
+                if (elTrabajo.responsables.length > 0 && !credencialesUsuario.permisos.includes("superadministrador") && !elTrabajo.responsables.includes(credencialesUsuario.id)) {
+                    console.log(`Error de autenticacion. Hay ${elTrabajo.responsables.length} responsables: ${elTrabajo.responsables}`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
@@ -729,18 +739,14 @@ exports.resolvers = {
                     console.log("Error buscando al usuario en la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                try {
-                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
-                    if (!elTrabajo)
-                        throw "Trabajo no existía";
-                }
-                catch (error) {
-                    console.log('Error buscando el trabajo . E: ' + error);
-                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
-                }
                 if (elTrabajo.responsables.includes(idUsuario)) {
                     console.log(`El usuario ya era responsable de este trabajo`);
                     throw new apollo_server_express_1.ApolloError("El usuario ya estaba incluido");
+                }
+                let indexPosibleResponsable = elTrabajo.posiblesResponsables.indexOf(idUsuario);
+                if (indexPosibleResponsable > -1) {
+                    console.log(`sacando al usuario ${idUsuario} de la lista de posibles responsables`);
+                    elTrabajo.posiblesResponsables.splice(indexPosibleResponsable, 1);
                 }
                 try {
                     const indexT = elUsuario.misTrabajos.indexOf(elTrabajo._id);
@@ -762,6 +768,52 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
+                return elTrabajo;
+            });
+        },
+        addPosibleResponsableTrabajo: function (_, { idTrabajo, idUsuario }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`añadiendo usuario ${idUsuario} a la lista de posibles responsables del trabajo ${idTrabajo}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "trabajo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el trabajo en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
+                }
+                //Authorización
+                if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
+                    console.log(`Error de autenticacion añadiendo posible responsable del trabajo`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                if (elTrabajo.posiblesResponsables.includes(idUsuario) || elTrabajo.responsables.includes(idUsuario)) {
+                    console.log(`el usuario ya estaba en la lista`);
+                    throw new apollo_server_express_1.ApolloError("El usuario ya estaba en la lista");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario) {
+                        console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
+                        throw new apollo_server_express_1.ApolloError("Error buscando al usuario en la base de datos");
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando al usuario en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    elTrabajo.posiblesResponsables.push(idUsuario);
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando datos en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Trabajo guardado`);
                 return elTrabajo;
             });
         },
@@ -794,11 +846,12 @@ exports.resolvers = {
                     console.log('Error buscando el trabajo . E: ' + error);
                     throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
                 }
-                if (!elTrabajo.responsables.includes(idUsuario)) {
-                    console.log(`El usuario no era responsable de este trabajo`);
-                    throw new apollo_server_express_1.ApolloError("El usuario no participaba de este trabajo");
+                const indexPosibleResponsable = elTrabajo.posiblesResponsables.indexOf(idUsuario);
+                if (indexPosibleResponsable > -1) {
+                    console.log(`sacando al usuario ${idUsuario} de la lista de posibles responsables`);
+                    elTrabajo.posiblesResponsables.splice(indexPosibleResponsable, 1);
                 }
-                let indexResponsable = elTrabajo.responsables.indexOf(idUsuario);
+                const indexResponsable = elTrabajo.responsables.indexOf(idUsuario);
                 if (indexResponsable > -1) {
                     console.log(`sacando al usuario ${idUsuario} de la lista de responsables`);
                     elTrabajo.responsables.splice(indexResponsable, 1);

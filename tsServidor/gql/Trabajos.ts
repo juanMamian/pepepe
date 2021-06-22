@@ -21,6 +21,7 @@ export const typeDefs = gql`
        nombre: String,
        descripcion:String,
        responsables: [String],
+       posiblesResponsables:[String],
        nodosConocimiento:[String],
        idForo:ID,
        diagramaProyecto:InfoDiagramaProyecto,
