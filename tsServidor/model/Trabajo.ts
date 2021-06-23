@@ -57,6 +57,10 @@ esquemaTrabajo.add({
         type: [String],
         default: []
     },
+    responsablesSolicitados:{
+        type: Number,
+        default: 0,
+    },
     nodosConocimiento:{
         type:[String],
         required:true,

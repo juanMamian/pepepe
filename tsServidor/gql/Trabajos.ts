@@ -22,6 +22,7 @@ export const typeDefs = gql`
        descripcion:String,
        responsables: [String],
        posiblesResponsables:[String],
+       responsablesSolicitados:Int,
        nodosConocimiento:[String],
        idForo:ID,
        diagramaProyecto:InfoDiagramaProyecto,
@@ -50,6 +51,7 @@ export const typeDefs = gql`
     editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
     editarDescripcionMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoDescripcion: String!):MaterialTrabajo,
     editarCantidadesMaterialTrabajo(idTrabajo: ID!, idMaterial:ID!, nuevoCantidadNecesaria:Int!, nuevoCantidadDisponible:Int):MaterialTrabajo,
+    setResponsablesSolicitadosTrabajo(idTrabajo:ID!, nuevoCantidadResponsablesSolicitados: Int!):Trabajo,
    }
 
 `;
@@ -369,6 +371,37 @@ export const resolvers = {
             console.log(`eliminado`);
 
             return true;
+        },
+        setResponsablesSolicitadosTrabajo: async function(_: any, { idTrabajo, nuevoCantidadResponsablesSolicitados}, contexto: contextoQuery){
+            let credencialesUsuario = contexto.usuario;
+            console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en trabajo con id ${idTrabajo}`);
+            
+            try {
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "trabajo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el trabajo en la base de datos. E: " + error);
+                throw new ApolloError("Error de conexión con la base de datos");
+            }
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !elTrabajo.responsables.includes(credencialesUsuario.id)) {
+                console.log(`Error de autenticacion editando responsables solicitados.`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            elTrabajo.responsablesSolicitados=nuevoCantidadResponsablesSolicitados;
+
+            try {
+                await elTrabajo.save();
+            } catch (error) {
+                console.log(`Error guardando el trabajo: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Retornando con ${elTrabajo.responsablesSolicitados} responsables solicitados`);
+            return elTrabajo;
         },
     }
 

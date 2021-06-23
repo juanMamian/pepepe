@@ -23,6 +23,7 @@ export const typeDefs = gql`
         descripcion:String,
         responsables: [String],
         posiblesResponsables:[String],
+        responsablesSolicitados:Int,
         personasResponsables:[PublicUsuario]
         personasPosiblesResponsables:[PublicUsuario],
         trabajos: [Trabajo],
@@ -65,6 +66,7 @@ export const typeDefs = gql`
         addResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         addPosibleResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         removeResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
+        setResponsablesSolicitadosProyecto(idProyecto:ID!, nuevoCantidadResponsablesSolicitados: Int!):Proyecto,
         
         crearTrabajoEnProyecto(idProyecto: ID!, posicion:CoordsInput):ID,
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
@@ -274,6 +276,7 @@ export const resolvers = {
 
 
             elProyecto.responsables.push(idUsuario);
+            if(elProyecto.responsablesSolicitados>0)elProyecto.responsablesSolicitados--;
             console.log(`Usuario añadido a la lista de responsables`);
 
             let indexPosibleResponsable = elProyecto.posiblesResponsables.indexOf(idUsuario);
@@ -366,6 +369,37 @@ export const resolvers = {
             console.log(`Proyecto guardado`);
             return elProyecto
 
+        },
+        setResponsablesSolicitadosProyecto: async function(_: any, { idProyecto, nuevoCantidadResponsablesSolicitados}, contexto: contextoQuery){
+            let credencialesUsuario = contexto.usuario;
+            console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en proyecto con id ${idProyecto}`);
+            
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el proyecto en la base de datos. E: " + error);
+                throw new ApolloError("Error de conexión con la base de datos");
+            }
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !elProyecto.responsables.includes(credencialesUsuario.id)) {
+                console.log(`Error de autenticacion editando responsables solicitados.`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            elProyecto.responsablesSolicitados=nuevoCantidadResponsablesSolicitados;
+
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Retornando con ${elProyecto.responsablesSolicitados} responsables solicitados`);
+            return elProyecto;
         },
         editarNombreProyecto: async function (_: any, { idProyecto, nuevoNombre }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
@@ -794,6 +828,7 @@ export const resolvers = {
                 if (indexT > -1) elUsuario.misTrabajos.splice(indexT, 1);
 
                 elTrabajo.responsables.push(idUsuario);
+                if(elTrabajo.responsablesSolicitados>0)elTrabajo.responsablesSolicitados--;
                 elUsuario.misTrabajos.push(elTrabajo._id);
                 console.log(`Usuario añadido a la lista de responsables`);
                 await elTrabajo.save();
@@ -929,6 +964,7 @@ export const resolvers = {
 
             return elTrabajo;
         },
+       
         setPosicionTrabajoDiagramaProyecto: async function (_: any, { idProyecto, idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
             console.log(`Guardando posicion de trabajo en el diagrama del proyecto`);
         

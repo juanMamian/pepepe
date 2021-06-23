@@ -122,40 +122,7 @@
           v-for="idPersona of esteTrabajo.responsables"
         />
       </div>
-    </div>
-
-    <div id="zonaNodosConocimiento" class="zonaPrimerNivel" v-show="false">
-      <div class="nombreZona">Nodos de conocimiento involucrados</div>
-      <div id="controlesNodosConocimiento" class="controlesZona">
-        <div
-          class="controlesNodosConocimiento hoverGris botonesControles"
-          v-if="usuarioResponsableProyecto == true"
-        >
-          Añadir
-        </div>
-        <div
-          class="controlesNodosConocimiento hoverGris botonesControles"
-          v-if="
-            usuarioResponsableProyecto == true &&
-            idNodoSeleccionado != null &&
-            esteTrabajo.nodosConocimiento.some(
-              (n) => n.id == idNodoSeleccionado
-            )
-          "
-        >
-          Remover
-        </div>
-      </div>
-      <div id="listaNodosConocimiento" @click.self="idNodoSeleccionado = null">
-        <icono-nodo-conocimiento
-          :esteNodo="nodo"
-          :key="nodo.id"
-          v-for="nodo of esteTrabajo.nodosConocimiento"
-          @click.native="idNodoSeleccionado = nodo.id"
-        />
-        <buscador-nodos-conocimiento />
-      </div>
-    </div>
+    </div>   
 
     <div
       id="zonaKeywords"
@@ -221,7 +188,6 @@
 
 <script>
 import gql from "graphql-tag";
-import BuscadorNodosConocimiento from "../atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
 import IconoPersonaAutonomo from "./IconoPersonaAutonomo.vue";
 
@@ -246,7 +212,6 @@ const QUERY_TRABAJO = gql`
 export default {
   name: "IconoTrabajo",
   components: {
-    BuscadorNodosConocimiento,
     Loading,
     IconoPersonaAutonomo,
   },

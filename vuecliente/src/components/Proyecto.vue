@@ -95,7 +95,10 @@
       </div>
 
       <div id="zonaResponsables" class="zonaPrimerNivel">
-        <div class="nombreZona" @click="mostrandoResponsables=!mostrandoResponsables">
+        <div
+          class="nombreZona"
+          @click="mostrandoResponsables = !mostrandoResponsables"
+        >
           <div
             class="trianguloBullet"
             :style="{
@@ -119,6 +122,19 @@
               @click="asumirComoResponsable"
             >
               Asumir
+            </div>
+            <div
+              class="controlesResponsables hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryResponsables }"
+              v-if="
+                usuarioLogeado == true &&
+                usuarioResponsableProyecto &&
+                responsablesSolicitados < 1
+              "
+              id="solicitarResponsable"
+              @click="setResponsablesSolicitados(1)"
+            >
+              Solicitar responsable
             </div>
             <div
               class="controlesResponsables hoverGris botonesControles"
@@ -178,7 +194,7 @@
               :idPersona="idPersona"
               :key="idPersona"
               v-for="idPersona of esteProyecto.posiblesResponsables"
-              v-show="usuarioResponsableProyecto || usuario.id===idPersona"
+              v-show="usuarioResponsableProyecto || usuario.id === idPersona"
               :seleccionado="idResponsableSeleccionado == idPersona"
               @click.native.stop="
                 idResponsableSeleccionado = idPersona;
@@ -186,6 +202,26 @@
               "
               @dblclick.native.shift="aceptarResponsable(idPersona)"
             />
+
+            <div
+              class="iconoResponsablesSolicitados"
+              v-show="responsablesSolicitados > 0"
+            >
+              <img
+                src="@/assets/iconos/user.png"
+                alt="Usuario solicitado"
+                class="imagenResponsablesSolicitados"
+                title="Personas adicionales solicitadas"
+              />
+
+              <input
+                type="number"
+                id="inputResponsablesSolicitados"
+                v-model="responsablesSolicitados"
+                :readonly="usuarioResponsableProyecto?false:true"
+                :style="[{backgroundColor:esteProyecto.responsablesSolicitados!=responsablesSolicitados?'orange': 'white'}]"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -246,18 +282,20 @@
         />
       </div>
       <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
-        <div class="nombreZona" @click="mostrandoForo=!mostrandoForo">
+        <div class="nombreZona" @click="mostrandoForo = !mostrandoForo">
           <div
             class="trianguloBullet"
             :style="{
-              transform: mostrandoForo
-                ? 'rotateZ(90deg)'
-                : 'rotateZ(0deg)',
+              transform: mostrandoForo ? 'rotateZ(90deg)' : 'rotateZ(0deg)',
             }"
           ></div>
           foro
         </div>
-        <foro :parent="infoAsParent" :idForo="esteProyecto.idForo" v-show="mostrandoForo" />
+        <foro
+          :parent="infoAsParent"
+          :idForo="esteProyecto.idForo"
+          v-show="mostrandoForo"
+        />
       </div>
     </template>
   </div>
@@ -272,9 +310,10 @@ import Loading from "./utilidades/Loading.vue";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
 import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
+import debounce from "debounce";
 
 const QUERY_PROYECTO = gql`
-  query($idProyecto: ID!) {
+  query ($idProyecto: ID!) {
     proyecto(idProyecto: $idProyecto) {
       ...fragProyecto
     }
@@ -304,6 +343,7 @@ export default {
       },
       update(respuesta) {
         this.loading = false;
+        this.responsablesSolicitados=respuesta.proyecto.responsablesSolicitados;
         return respuesta.proyecto;
       },
       fetchPolicy: "cache-and-network",
@@ -317,6 +357,7 @@ export default {
         responsables: [],
         posiblesResponsables: [],
       },
+      responsablesSolicitados:0,
       idResponsableSeleccionado: null,
       responsableSeleccionadoEstaAceptado: false,
       enviandoQueryResponsables: false,
@@ -340,7 +381,7 @@ export default {
       mostrandoDescripcion: true,
       mostrandoResponsables: true,
       mostrandoDiagramaFlujo: false,
-      mostrandoForo:true,
+      mostrandoForo: true,
     };
   },
   computed: {
@@ -415,7 +456,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $nuevoNombre: String!) {
+            mutation ($idProyecto: ID!, $nuevoNombre: String!) {
               editarNombreProyecto(
                 idProyecto: $idProyecto
                 nuevoNombre: $nuevoNombre
@@ -453,7 +494,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $nuevoDescripcion: String!) {
+            mutation ($idProyecto: ID!, $nuevoDescripcion: String!) {
               editarDescripcionProyecto(
                 idProyecto: $idProyecto
                 nuevoDescripcion: $nuevoDescripcion
@@ -493,7 +534,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $idUsuario: ID!) {
+            mutation ($idProyecto: ID!, $idUsuario: ID!) {
               removeResponsableProyecto(
                 idProyecto: $idProyecto
                 idUsuario: $idUsuario
@@ -516,7 +557,7 @@ export default {
           this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
-    },
+    },    
     aceptarResponsable(idPosibleResponsable) {
       console.log(
         `aceptando como responsable al usuario ${idPosibleResponsable}`
@@ -525,7 +566,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $idUsuario: ID!) {
+            mutation ($idProyecto: ID!, $idUsuario: ID!) {
               addResponsableProyecto(
                 idProyecto: $idProyecto
                 idUsuario: $idUsuario
@@ -533,6 +574,7 @@ export default {
                 id
                 responsables
                 posiblesResponsables
+                responsablesSolicitados
               }
             }
           `,
@@ -558,7 +600,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $idUsuario: ID!) {
+            mutation ($idProyecto: ID!, $idUsuario: ID!) {
               addPosibleResponsableProyecto(
                 idProyecto: $idProyecto
                 idUsuario: $idUsuario
@@ -589,7 +631,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $idUsuario: ID!) {
+            mutation ($idProyecto: ID!, $idUsuario: ID!) {
               addResponsableProyecto(
                 idProyecto: $idProyecto
                 idUsuario: $idUsuario
@@ -619,7 +661,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $posicion: CoordsInput) {
+            mutation ($idProyecto: ID!, $posicion: CoordsInput) {
               crearTrabajoEnProyecto(
                 idProyecto: $idProyecto
                 posicion: $posicion
@@ -673,7 +715,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $posicion: CoordsInput) {
+            mutation ($idProyecto: ID!, $posicion: CoordsInput) {
               crearObjetivoEnProyecto(
                 idProyecto: $idProyecto
                 posicion: $posicion
@@ -793,7 +835,47 @@ export default {
       console.log(`Abriendo nodo ${idNodo}`);
       this.idNodoAbierto = idNodo;
     },
-  },
+    debounceSetResponsablesSolicitados: debounce(function(){
+      this.setResponsablesSolicitados(parseInt(this.responsablesSolicitados));
+    }, 2000),    
+    setResponsablesSolicitados(cantidad) {
+      if (cantidad < 0) cantidad = 0;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idProyecto: ID!
+              $nuevoCantidadResponsablesSolicitados: Int!
+            ) {
+              setResponsablesSolicitadosProyecto(
+                idProyecto: $idProyecto
+                nuevoCantidadResponsablesSolicitados: $nuevoCantidadResponsablesSolicitados
+              ) {
+                id
+                responsablesSolicitados
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.esteProyecto.id,
+            nuevoCantidadResponsablesSolicitados: cantidad,
+          },
+        })
+        .then(() => {          
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+        });
+    },
+  },  
+  watch:{
+    responsablesSolicitados(nuevo){
+      if(nuevo===this.esteProyecto.responsablesSolicitados)return;
+      console.log(`Cambio en responsables solicitados`);
+      this.debounceSetResponsablesSolicitados();
+    }
+  }
 };
 </script>
 
@@ -870,7 +952,7 @@ export default {
 .bGuardar:hover {
   background-color: rgb(209, 209, 209);
 }
-#zonaResponsables {  
+#zonaResponsables {
   align-items: center;
 }
 .zonaPrimerNivel {
@@ -907,7 +989,7 @@ export default {
   font-size: 18px;
   background-color: teal;
   padding: 3px 5px;
-  cursor:pointer;
+  cursor: pointer;
 }
 #listaResponsables {
   display: flex;
@@ -923,6 +1005,21 @@ export default {
 }
 .personaPosibleResponsable {
   opacity: 0.5;
+}
+.iconoResponsablesSolicitados {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+#inputResponsablesSolicitados {
+  height: 20px;
+  width: 40px;
+  margin: 5px auto;
+  display: block;
+}
+.imagenResponsablesSolicitados {
+  width: 100%;
+  height: 100%;
 }
 #zonaDiagramaFlujo {
   position: relative;

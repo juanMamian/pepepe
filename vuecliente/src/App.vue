@@ -344,10 +344,10 @@ export default {
       let datosU = parseJwt(token);
       let secsActual = parseInt(Date.now() / 1000);
 
-      if (secsActual < datosU.exp) {
+      if (secsActual < datosU.exp || !datosU.exp) {
         this.$store.commit("logearse", token);
       } else {
-        console.log(`Token expirado`);
+        console.log(`Token expirado: exp: ${datosU.exp}`);
         this.$store.commit("deslogearse");
       }
     }

@@ -40,6 +40,10 @@ const esquemaProyecto = new mongoose.Schema({
         type: [String],
         default: []
     },
+    responsablesSolicitados:{
+        type: Number, 
+        default:0,
+    },
     idForo:{
         type:String,
         required:true,

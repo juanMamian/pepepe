@@ -124,7 +124,7 @@ router.post("/login", async (req: Request, res: Response) => {
             permisos: elUsuario.permisos,
             username: elUsuario.username
         }
-        let token = jwt.sign(datosToken, process.env.JWT_SECRET, { expiresIn: "6h" });
+        let token = jwt.sign(datosToken, process.env.JWT_SECRET,);
         let respuesta = {
             username: elUsuario.username,
             permisos: elUsuario.permisos,

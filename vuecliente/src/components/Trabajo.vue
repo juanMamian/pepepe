@@ -21,15 +21,13 @@
       <div class="barraSuperiorZona">
         <span class="nombreZona">Responsables</span>
       </div>
-      
+
       <div id="controlesResponsables" class="controlesZona">
         <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
         <div
           class="controlesResponsables hoverGris botonesControles"
           :class="{ deshabilitado: enviandoQueryResponsables }"
-          v-if="
-            usuarioLogeado == true && esteTrabajo.responsables.length < 1
-          "
+          v-if="usuarioLogeado == true && esteTrabajo.responsables.length < 1"
           id="asumirResponsable"
           @click="asumirComoResponsable"
         >
@@ -64,9 +62,7 @@
         <div
           class="controlesResponsables hoverGris botonesControles"
           :class="{ deshabilitado: enviandoQueryResponsables }"
-          v-if="
-            usuarioLogeado == true && usuarioResponsableTrabajo == true
-          "
+          v-if="usuarioLogeado == true && usuarioResponsableTrabajo == true"
           v-show="
             idResponsableSeleccionado != null &&
             responsableSeleccionadoEstaAceptado == false
@@ -75,6 +71,19 @@
         >
           Aceptar participación
         </div>
+        <div
+          class="controlesResponsables hoverGris botonesControles"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
+          v-if="
+            usuarioLogeado == true &&
+            usuarioResponsableTrabajo &&
+            responsablesSolicitados < 1
+          "
+          id="solicitarResponsable"
+          @click="setResponsablesSolicitados(1)"
+        >
+          Solicitar apoyo
+        </div>
       </div>
       <div id="listaResponsables">
         <icono-persona-autonomo
@@ -82,9 +91,7 @@
           :aceptado="true"
           :key="idPersona"
           :seleccionado="idResponsableSeleccionado == idPersona"
-          @click.native.stop="
-                idResponsableSeleccionado = idPersona;                
-              "
+          @click.native.stop="idResponsableSeleccionado = idPersona"
           v-for="idPersona of esteTrabajo.responsables"
         />
 
@@ -93,17 +100,48 @@
           :idPersona="idPersona"
           :key="idPersona"
           v-for="idPersona of esteTrabajo.posiblesResponsables"
-          v-show="usuarioResponsableTrabajo || usuario.id===idPersona"
+          v-show="usuarioResponsableTrabajo || usuario.id === idPersona"
           :seleccionado="idResponsableSeleccionado == idPersona"
-          @click.native.stop="
-            idResponsableSeleccionado = idPersona;                
-          "
+          @click.native.stop="idResponsableSeleccionado = idPersona"
           @dblclick.native.shift="aceptarResponsable(idPersona)"
         />
-      </div>
-    </div>    
 
-    <div id="zonaMateriales" ref="zonaMateriales" class="zonaPrimerNivel" @click.stop="idMaterialSeleccionado = null">
+        <div
+          class="iconoResponsablesSolicitados"
+          v-show="responsablesSolicitados > 0"
+        >
+          <img
+            src="@/assets/iconos/user.png"
+            alt="Usuario solicitado"
+            class="imagenResponsablesSolicitados"
+            title="Personas adicionales solicitadas"
+          />
+
+          <input
+            type="number"
+            id="inputResponsablesSolicitados"
+            v-model="responsablesSolicitados"
+            :readonly="usuarioResponsableTrabajo ? false : true"
+            :style="[
+              {
+                backgroundColor:
+                  esteTrabajo.responsablesSolicitados !=
+                  responsablesSolicitados
+                    ? 'orange'
+                    : 'white',
+              },
+            ]"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="zonaMateriales"
+      ref="zonaMateriales"
+      class="zonaPrimerNivel"
+      @click.stop="idMaterialSeleccionado = null"
+    >
       <div class="barraSuperiorZona">
         <div class="nombreZona">Materiales</div>
       </div>
@@ -117,7 +155,7 @@
         </div>
       </div>
 
-      <div id="listaMateriales" v-show="esteTrabajo.materiales.length>0">
+      <div id="listaMateriales" v-show="esteTrabajo.materiales.length > 0">
         <material-trabajo
           v-for="material of esteTrabajo.materiales"
           :key="material.id"
@@ -153,9 +191,10 @@ import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
 import MaterialTrabajo from "./trabajo/MaterialTrabajo.vue";
 import Loading from "./utilidades/Loading.vue";
+import debounce from "debounce"
 
 const QUERY_TRABAJO = gql`
-  query($idTrabajo: ID!) {
+  query ($idTrabajo: ID!) {
     trabajo(idTrabajo: $idTrabajo) {
       id
       nombre
@@ -163,6 +202,7 @@ const QUERY_TRABAJO = gql`
       idForo
       responsables
       posiblesResponsables
+      responsablesSolicitados
       idProyectoParent
       materiales {
         id
@@ -192,6 +232,7 @@ export default {
         };
       },
       update({ trabajo }) {
+        this.responsablesSolicitados=trabajo.responsablesSolicitados;
         return trabajo;
       },
       skip() {
@@ -205,7 +246,8 @@ export default {
         responsables: [],
         materiales: [],
       },
-      idResponsableSeleccionado:null,      
+      responsablesSolicitados:0,
+      idResponsableSeleccionado: null,
 
       idNodoSeleccionado: null,
       deshabilitado: false,
@@ -213,7 +255,7 @@ export default {
       idMaterialSeleccionado: null,
       creandoMaterial: false,
 
-      enviandoQueryResponsables:false,
+      enviandoQueryResponsables: false,
     };
   },
   computed: {
@@ -235,9 +277,11 @@ export default {
       }
       return false;
     },
-    responsableSeleccionadoEstaAceptado(){
-      return this.esteTrabajo.responsables.includes(this.idResponsableSeleccionado)
-    }
+    responsableSeleccionadoEstaAceptado() {
+      return this.esteTrabajo.responsables.includes(
+        this.idResponsableSeleccionado
+      );
+    },
   },
   methods: {
     asumirComoResponsable() {
@@ -249,7 +293,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idTrabajo: ID!, $idUsuario: ID!) {
+            mutation ($idTrabajo: ID!, $idUsuario: ID!) {
               addResponsableTrabajo(
                 idTrabajo: $idTrabajo
                 idUsuario: $idUsuario
@@ -281,7 +325,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idTrabajo: ID!, $idUsuario: ID!) {
+            mutation ($idTrabajo: ID!, $idUsuario: ID!) {
               addPosibleResponsableTrabajo(
                 idTrabajo: $idTrabajo
                 idUsuario: $idUsuario
@@ -306,11 +350,11 @@ export default {
     },
     abandonarListaResponsables() {
       console.log(`Abandonando este trabajo`);
-      this.enviandoQueryResponsables=true;
+      this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idTrabajo: ID!, $idUsuario: ID!) {
+            mutation ($idTrabajo: ID!, $idUsuario: ID!) {
               removeResponsableTrabajo(
                 idTrabajo: $idTrabajo
                 idUsuario: $idUsuario
@@ -327,10 +371,10 @@ export default {
           },
         })
         .then(() => {
-          this.enviandoQueryResponsables=false;
+          this.enviandoQueryResponsables = false;
         })
         .catch((error) => {
-          this.enviandoQueryResponsables=false;
+          this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
     },
@@ -342,7 +386,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idTrabajo: ID!, $idUsuario: ID!) {
+            mutation ($idTrabajo: ID!, $idUsuario: ID!) {
               addResponsableTrabajo(
                 idTrabajo: $idTrabajo
                 idUsuario: $idUsuario
@@ -350,6 +394,7 @@ export default {
                 id
                 responsables
                 posiblesResponsables
+                responsablesSolicitados
               }
             }
           `,
@@ -359,7 +404,7 @@ export default {
           },
         })
         .then(() => {
-          this.enviandoQueryResponsables = false;          
+          this.enviandoQueryResponsables = false;
         })
         .catch((error) => {
           this.enviandoQueryResponsables = false;
@@ -372,7 +417,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idProyecto: ID!, $idTrabajo: ID!) {
+            mutation ($idProyecto: ID!, $idTrabajo: ID!) {
               crearMaterialEnTrabajoDeProyecto(
                 idProyecto: $idProyecto
                 idTrabajo: $idTrabajo
@@ -457,7 +502,46 @@ export default {
         data: nuevoCache,
       });
     },
+    debounceSetResponsablesSolicitados: debounce(function(){
+      this.setResponsablesSolicitados(parseInt(this.responsablesSolicitados));
+    }, 2000),    
+    setResponsablesSolicitados(cantidad) {
+      if (cantidad < 0) cantidad = 0;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idTrabajo: ID!
+              $nuevoCantidadResponsablesSolicitados: Int!
+            ) {
+              setResponsablesSolicitadosTrabajo(
+                idTrabajo: $idTrabajo
+                nuevoCantidadResponsablesSolicitados: $nuevoCantidadResponsablesSolicitados
+              ) {
+                id
+                responsablesSolicitados
+              }
+            }
+          `,
+          variables: {
+            idTrabajo: this.esteTrabajo.id,
+            nuevoCantidadResponsablesSolicitados: cantidad,
+          },
+        })
+        .then(() => {          
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+        });
+    },    
   },
+  watch:{
+    responsablesSolicitados(nuevo){
+      if(nuevo===this.esteTrabajo.responsablesSolicitados)return;
+      console.log(`Cambio en responsables solicitados`);
+      this.debounceSetResponsablesSolicitados();
+    }
+  }
 };
 </script>
 
@@ -595,9 +679,24 @@ export default {
 .personaPosibleResponsable {
   opacity: 0.5;
 }
-#listaMateriales{
+.iconoResponsablesSolicitados {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+#inputResponsablesSolicitados {
+  height: 20px;
+  width: 40px;
+  margin: 5px auto;
+  display: block;
+}
+.imagenResponsablesSolicitados {
+  width: 100%;
+  height: 100%;
+}
+#listaMateriales {
   padding: 10px 0px;
-  border-radius:15px;
+  border-radius: 15px;
   border: 2px solid cadetblue;
 }
 </style>

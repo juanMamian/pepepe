@@ -79,6 +79,7 @@ export const fragmentoProyecto = gql`
     idForo
     responsables
     posiblesResponsables
+    responsablesSolicitados
     idsTrabajos
     objetivos {
       id
