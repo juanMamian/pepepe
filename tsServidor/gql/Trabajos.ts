@@ -42,7 +42,8 @@ export const typeDefs = gql`
    extend type Query{
        trabajo(idTrabajo: ID!):Trabajo,
        busquedaTrabajosProyectos(textoBusqueda:String!):[InfoBasicaTrabajo],
-       trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo]
+       trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo],
+       trabajosSegunCentro(centro: CoordsInput!, radio: Int!):[Trabajo],
    }
 
    extend type Mutation{
@@ -155,6 +156,15 @@ export const resolvers = {
             }
 
             console.log(`Enviando ${losTrabajos.length} trabajos`);
+            return losTrabajos;
+        },
+        trabajosSegunCentro: async function(_:any, {centro, radio}:any, __:any){
+            try {
+                var losTrabajos:any=await Trabajo.find({}).exec();
+            } catch (error) {
+                console.log(`Error buscando trabajos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
             return losTrabajos;
         }
     },
