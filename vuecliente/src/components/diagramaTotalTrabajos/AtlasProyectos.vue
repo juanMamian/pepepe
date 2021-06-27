@@ -19,17 +19,7 @@
         { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
       ]"
     ></div>
-    <div
-      id="proyectoSeleccionado"
-      v-show="idProyectoSeleccionado"
-      @click="idProyectoSeleccionado = null"
-    >
-      {{
-        idProyectoSeleccionado
-          ? proyectos.find((p) => p.id == idProyectoSeleccionado).nombre
-          : ""
-      }}
-    </div>
+
     <div id="centroVista"></div>
     <canvases-atlas-proyectos
       :style="posCuadroDescarga"
@@ -40,19 +30,8 @@
       :callingPosiciones="callingPosiciones"
       :factorZoom="factorZoom"
       :idNodoSeleccionado="idNodoSeleccionado"
-      :idProyectoSeleccionado="idProyectoSeleccionado"
-      :nodosDeProyectoSeleccionado="nodosDeProyectoSeleccionado"
     />
     <div id="contenedorNodos" :style="[posContenedores]">
-      <centro-proyecto
-        v-for="proyecto of proyectos"
-        :key="proyecto.id"
-        :esteProyecto="proyecto"
-        :factorZoom="factorZoom"
-        @click.native="idProyectoSeleccionado = proyecto.id"
-        :class="{centroProyectoSeleccionado: idProyectoSeleccionado==proyecto.id}"
-        v-show="!idProyectoSeleccionado || idProyectoSeleccionado==proyecto.id"
-      />
       <nodo-objetivo
         v-for="objetivo of objetivos"
         :key="objetivo.id"
@@ -83,10 +62,9 @@ import gql from "graphql-tag";
 import NodoObjetivo from "./NodoObjetivo.vue";
 import NodoTrabajo from "./NodoTrabajo.vue";
 import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue";
-import CentroProyecto from "./CentroProyecto.vue";
 
 const QUERY_TRABAJOS = gql`
-  query ($centro: CoordsInput, $radio: Int!) {
+  query ($centro: CoordsInput!, $radio: Int!) {
     trabajosSegunCentro(centro: $centro, radio: $radio) {
       id
       nombre
@@ -113,7 +91,7 @@ const QUERY_TRABAJOS = gql`
 `;
 
 const QUERY_OBJETIVOS = gql`
-  query ($centro: CoordsInput, $radio: Int!) {
+  query ($centro: CoordsInput!, $radio: Int!) {
     objetivosSegunCentro(centro: $centro, radio: $radio) {
       id
       nombre
@@ -139,52 +117,14 @@ const QUERY_OBJETIVOS = gql`
   }
 `;
 
-const QUERY_PROYECTOS = gql`
-  query ($centro: CoordsInput, $radio: Int!) {
-    proyectosSegunCentro(centro: $centro, radio: $radio) {
-      id
-      nombre
-      centroMasa {
-        x
-        y
-      }
-    }
-  }
-`;
-
 export default {
   components: {
     NodoObjetivo,
     CanvasesAtlasProyectos,
     NodoTrabajo,
-    CentroProyecto,
   },
   name: "AtlasProyectos",
   apollo: {
-    proyectos: {
-      query: QUERY_PROYECTOS,
-      variables() {
-        return {
-          centro: this.centroDescarga,
-          radio: this.radioDescarga,
-        };
-      },
-      update({ proyectosSegunCentro }) {
-        return proyectosSegunCentro;
-      },
-      skip() {
-        return !this.radioDescarga;
-      },
-      result() {
-        console.log(`Proyectos recibidos`);
-        console.log(
-          `Estado de la query: ${JSON.stringify(
-            this.$apollo.queries.pollInterval
-          )}`
-        );
-      },
-      debounce: 1000,
-    },
     trabajos: {
       query: QUERY_TRABAJOS,
       variables() {
@@ -241,7 +181,6 @@ export default {
 
       idNodoSeleccionado: null,
       idNodoMenuCx: null,
-      idProyectoSeleccionado: null,
 
       zoom: 100,
       minZoom: 20,
@@ -453,16 +392,9 @@ export default {
       };
     },
     idsNodosVisibles() {
-      if (!this.idProyectoSeleccionado) {
-        return this.todosNodos.map((n) => n.id);
-      }
-      return this.todosNodos
-        .filter((n) => n.idProyectoParent == this.idProyectoSeleccionado)
-        .map((n) => n.id);
+      return this.todosNodos.map((n) => n.id);
     },
-    nodosDeProyectoSeleccionado(){
-      return this.todosNodos.filter(n=>n.idProyectoParent==this.idProyectoSeleccionado)
-    }
+    
   },
   watch: {
     callingPosiciones(nuevo) {

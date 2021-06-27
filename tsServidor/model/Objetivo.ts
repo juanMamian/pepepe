@@ -9,6 +9,18 @@ export const esquemaObjetivo = new mongoose.Schema({
         max: 1024,
         default: "nuevo objetivo"
     },
+    responsables:{
+        type: [String],
+        default: []
+    },
+    posiblesResponsables: {
+        type: [String],
+        default: []
+    },
+    responsablesSolicitados:{
+        type: Number,
+        default: 0,
+    },
     descripcion: {
         type: String,
         default:"Sin descripcion",
@@ -26,6 +38,12 @@ export const esquemaObjetivo = new mongoose.Schema({
         required:true,
         default:[]
     },
+    idNodoParent:{
+        type:String
+    },
+    keywords:{
+        type:String,
+    },
     diagramaProyecto:{
         posicion:{
             x:{
@@ -39,8 +57,47 @@ export const esquemaObjetivo = new mongoose.Schema({
                 default:0
             }
         }
-
-    }
+    },
+    coords:{
+        x:{
+            type: Number,
+            required:true,
+            default:0
+        },
+        y:{
+            type: Number,
+            required:true,
+            default:0
+        }
+    },
+    angulo:{
+        type: Number,
+        default:0,
+    },
+    stuck:{
+        type:Boolean,
+        default:true,        
+    },
+    puntaje:{
+        type:Number,
+        default:0,
+    },
+    centroMasa:{
+        x:{
+            type:Number,
+            default:0,
+        },
+        y:{
+            type:Number,
+            default:0
+        }
+    },
+    
     
 });
+
+esquemaObjetivo.index({keywords:"text", nombre: "text", descripcion: "text"});
+
+
+export const ModeloObjetivo = mongoose.model("Objetivo", esquemaObjetivo);
 

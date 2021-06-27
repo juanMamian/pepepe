@@ -32,11 +32,11 @@ export const typeDefs = gql`
    extend type Query{
        objetivo(idObjetivo: ID!):Objetivo,
        busquedaObjetivosProyectos(textoBusqueda:String!):[InfoBasicaObjetivo],
-       objetivosSegunCentro(centro: CoordsInput, radio:Int!):[Objetivo],       
+       objetivosSegunCentro(centro: CoordsInput!, radio:Int!):[Objetivo],       
    }   
 
    extend type Mutation{
-    crearObjetivoEnProyecto(idProyecto: ID!, posicion:CoordsInput):ID,
+    crearObjetivo(posicion:CoordsInput):Objetivo,
     eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
     editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
     editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
@@ -107,23 +107,12 @@ export const resolvers = {
     },
 
     Mutation:{
-        async crearObjetivoEnProyecto(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
-            console.log(`Peticion de crear un nuevo objetivo en el proyecto con id ${idProyecto}`);
-
-            try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
-                }
-            }
-            catch (error) {
-                console.log("Proyecto no encontrado. E: " + error);
-                throw new ApolloError("Error conectandose con la base de datos");
-            }
+        async crearObjetivo(_: any, {posicion}: any, contexto: contextoQuery) {
+            console.log(`Peticion de crear un nuevo objetivo`);           
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+            if (!credencialesUsuario.id || credencialesUsuario.id.length<2) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -132,7 +121,7 @@ export const resolvers = {
             try {
                 var nuevoForo: any = await Foro.create({
                     acceso: "privado",
-                    miembros: [],
+                    miembros: [credencialesUsuario.id],
                 });
                 var idNuevoForo = nuevoForo._id;
                 await nuevoForo.save();
@@ -140,28 +129,16 @@ export const resolvers = {
                 console.log(`Error creando el nuevo foro. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            console.log(`Nuevo foro creado`);
-            
+            console.log(`Nuevo foro creado`);            
 
             try {
-                var nuevoObjetivo: any = await new Objetivo({ idProyectoParent: idProyecto, idForo: idNuevoForo, diagramaProyecto: { posicion } });
-                var idNuevoObjetivo = nuevoObjetivo._id;
+                var nuevoObjetivo: any = await new Objetivo({idForo: idNuevoForo, diagramaProyecto: { posicion } });                
                 await nuevoObjetivo.save();
             } catch (error) {
                 console.log(`Error creando el nuevo objetivo. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-
-
-            try {
-                elProyecto.idsObjetivos.push(idNuevoObjetivo);
-                await elProyecto.save();
-            }
-            catch (error) {
-                console.log("Error guardando el objetivo creado en el proyecto. E: " + error);
-                throw new ApolloError("Error introduciendo el objetivo en el proyecto");
-            }
-            return idNuevoObjetivo;
+            return nuevoObjetivo;
         },
         async eliminarObjetivoDeProyecto(_: any, { idObjetivo, idProyecto }: any, contexto: contextoQuery) {
             console.log(`peticion de eliminar un objetivo con id ${idObjetivo} de un proyecto con id ${idProyecto}`);

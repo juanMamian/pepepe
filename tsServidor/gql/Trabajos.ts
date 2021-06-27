@@ -30,7 +30,13 @@ export const typeDefs = gql`
        keywords:String,
        idProyectoParent:ID,
        estadoDesarrollo:String,
-       materiales:[MaterialTrabajo]
+       materiales:[MaterialTrabajo],
+       estado:String,       
+       coords: Coords,
+       angulo:Float,
+       stuck:Boolean,
+       puntaje:Int,
+       centroMasa:Coords,
    }
 
    type InfoBasicaTrabajo{
@@ -170,6 +176,7 @@ export const resolvers = {
     },
 
     Mutation:{
+        
         async crearMaterialEnTrabajoDeProyecto(_: any, { idProyecto, idTrabajo }: any, contexto: contextoQuery) {
             console.log(`Peticion de crear un nuevo material en el trabajo con id ${idTrabajo}`);            
 

@@ -53,16 +53,14 @@ export default {
     centroDescarga: Object,
     radioDescarga:Number,    
     callingPosiciones:Boolean,
-    factorZoom:Number,
-    idProyectoSeleccionado:String,
-    nodosDeProyectoSeleccionado:Array,
+    factorZoom:Number,    
+    
   },
   methods: {
     crearImagenPosiciones(){ 
       console.log(`Creando imagen posiciones`);     
       var lapiz=this.$refs.canvasPosiciones.getContext("2d")
-      var nodosRelevantes = this.todosNodos;
-      if(this.idProyectoSeleccionado)nodosRelevantes=this.nodosDeProyectoSeleccionado;
+      var nodosRelevantes = this.todosNodos;      
 
       if(this.idNodoSeleccionado) nodosRelevantes=[this.nodoSeleccionado];
       if (nodosRelevantes <= 1) return;
@@ -113,8 +111,7 @@ export default {
 
     },
     crearImagenTodosVinculos() {
-      var nodosRelevantes=this.todosNodos;      
-      if(this.idProyectoSeleccionado)nodosRelevantes=this.nodosDeProyectoSeleccionado;
+      var nodosRelevantes=this.todosNodos;            
 
       if (nodosRelevantes.length <= 1) return 
       console.log(`Dibujando todos vínculos con ${nodosRelevantes.length} nodos`);
@@ -358,13 +355,7 @@ export default {
       this.debTrazarVinculos();
       if(this.callingPosiciones)this.crearImagenPosiciones();
       this.crearImagenVinculosSeleccionado();
-    },
-    idProyectoSeleccionado: function () {
-      if (this.todosNodos.length < 1) return;
-      this.debTrazarVinculos();
-      if(this.callingPosiciones)this.crearImagenPosiciones();
-      this.crearImagenVinculosSeleccionado();
-    },
+    },   
     nodoSeleccionado: function () {
       if(!this.callingPosiciones)this.crearImagenVinculosSeleccionado();
       if(this.callingPosiciones)this.crearImagenPosiciones();

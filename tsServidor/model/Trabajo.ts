@@ -66,7 +66,7 @@ esquemaTrabajo.add({
         required:true,
         default:[]
     },
-    idProyectoParent:{
+    idNodoParent:{
         type:String,
     },
     idForo:{
@@ -97,7 +97,41 @@ esquemaTrabajo.add({
     materiales:{
         type:[esquemaMaterial],
         default:[],
-    }
+    },
+    coords:{
+        x:{
+            type: Number,
+            required:true,
+            default:0
+        },
+        y:{
+            type: Number,
+            required:true,
+            default:0
+        }
+    },
+    angulo:{
+        type: Number,
+        default:0,
+    },
+    stuck:{
+        type:Boolean,
+        default:true,        
+    },
+    puntaje:{
+        type:Number,
+        default:0,
+    },
+    centroMasa:{
+        x:{
+            type:Number,
+            default:0,
+        },
+        y:{
+            type:Number,
+            default:0
+        }
+    },
    
 });
 
