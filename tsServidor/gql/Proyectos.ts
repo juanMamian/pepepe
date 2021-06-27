@@ -11,10 +11,49 @@ export const typeDefs = gql`
         posicion:Coords
     }
 
+    type PeticionBienProyecto{
+        id: ID,
+        idBeneficiario:String,
+        cantidadSolicitada: Float,
+        cantidadAsignada: Float
+    }
+
+    type PeticionServicioProyecto{
+        id: ID,
+        idBeneficiario:String,        
+    }
+    
+
     type VinculoNodoProyecto{
         idRef:ID,
         tipo:String,
         tipoRef:String,
+    }
+
+    type ServicioProyecto{
+        id: ID,
+        nombre: String,
+        descripcion: String,      
+        listaPeticiones: [PeticionServicioProyecto]                  
+    }
+
+    input InputPeticionBienProyecto{
+        id:ID,
+        idBeneficiario: ID,
+        cantidadSolicitada:Float,
+        cantidadAsignada:Float,
+    }
+
+    type BienProyecto{
+        id: ID,
+        nombre: String,
+        descripcion: String,
+        unidad: String,
+        cantidad: Float,
+        fechaCierre: Date,
+        fechaReparticion: Date,
+        instruccionesRecibir:String,
+        listaPeticiones: [PeticionBienProyecto]
     }
 
     type Proyecto{
@@ -26,6 +65,8 @@ export const typeDefs = gql`
         responsablesSolicitados:Int,
         personasResponsables:[PublicUsuario]
         personasPosiblesResponsables:[PublicUsuario],
+        bienes:[BienProyecto],
+        servicios:[ServicioProyecto],
         trabajos: [Trabajo],
         objetivos: [Objetivo],
         idForo:ID,
@@ -85,6 +126,15 @@ export const typeDefs = gql`
         editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
         setPosicionObjetivoDiagramaProyecto(idProyecto:ID!, idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
         setEstadoObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoEstado:String!):Objetivo,
+
+        crearBienRepartirVacioProyecto(idProyecto: ID!):BienProyecto,
+        setNombreBienProyecto(idProyecto: ID!, idBien: ID!, nuevoNombre: String!):BienProyecto,
+        setUnidadBienProyecto(idProyecto: ID!, idBien: ID!, nuevoUnidad: String!):BienProyecto,
+        setCantidadBienProyecto(idProyecto: ID!, idBien: ID!, nuevoCantidad: Float!):BienProyecto,
+        setFechaCierreBienProyecto(idProyecto: ID!, idBien: ID!, nuevoFechaCierre: Date!):BienProyecto,
+        setFechaReparticionBienProyecto(idProyecto: ID!, idBien: ID!, nuevoFechaReparticion: Date!):BienProyecto,
+        eliminarBienProyecto(idProyecto: ID!, idBien: ID!):Boolean,
+        addPeticionBienProyecto(idProyecto: ID!, idBien: ID!, peticion: InputPeticionBienProyecto!):PeticionBienProyecto,
 
         crearRequerimentoEntreNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
         desvincularNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
@@ -1277,6 +1327,291 @@ export const resolvers = {
             }
             console.log(`Estado guardado`);
             return elObjetivo;
+        },
+
+        crearBienRepartirVacioProyecto: async function(_:any, {idProyecto}, contexto: contextoQuery){
+            console.log(`Solicitud de crear nuevo bien para repartir vacío en el proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var nuevoBien = elProyecto.bienes.create();
+
+            elProyecto.bienes.push(nuevoBien);
+
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto con un nuevo bien`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return nuevoBien;
+        },
+        setNombreBienProyecto: async function(_:any, {idProyecto, idBien, nuevoNombre}, contexto: contextoQuery){
+            const charProhibidosNombreBien = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+            if(charProhibidosNombreBien.test(nuevoNombre)){
+                throw new UserInputError("El nuevo nombre contiene caracteres no permitidos");
+            }
+
+            console.log(`Solicitud de set nombre para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var elBien = elProyecto.bienes.id(idBien);
+            elBien.nombre=nuevoNombre;
+            
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto con un nuevo bien`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elBien;
+        },
+        setUnidadBienProyecto: async function(_:any, {idProyecto, idBien, nuevoUnidad}, contexto: contextoQuery){
+            const charProhibidosUnidadBien = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+            if(charProhibidosUnidadBien.test(nuevoUnidad)){
+                throw new UserInputError("La nuevo unidad contiene caracteres no permitidos");
+            }
+
+            console.log(`Solicitud de set unidad para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var elBien = elProyecto.bienes.id(idBien);
+            elBien.unidad=nuevoUnidad;
+            
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto con un nuevo bien`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elBien;
+        },
+        setCantidadBienProyecto: async function(_:any, {idProyecto, idBien, nuevoCantidad}, contexto: contextoQuery){
+           
+            console.log(`Solicitud de set cantidad para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var elBien = elProyecto.bienes.id(idBien);
+            elBien.cantidad=nuevoCantidad;
+            
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto con un nuevo bien`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elBien;
+        },
+        setFechaCierreBienProyecto: async function(_:any, {idProyecto, idBien, nuevoFechaCierre}, contexto: contextoQuery){
+           
+            console.log(`Solicitud de set fechaCierre para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var elBien = elProyecto.bienes.id(idBien);
+            elBien.fechaCierre=nuevoFechaCierre;
+            
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto con un nuevo bien`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elBien;
+        },
+        setFechaReparticionBienProyecto: async function(_:any, {idProyecto, idBien, nuevoFechaReparticion}, contexto: contextoQuery){
+           
+            console.log(`Solicitud de set fechaReparticion para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var elBien = elProyecto.bienes.id(idBien);
+            elBien.fechaReparticion=nuevoFechaReparticion;
+            
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto con un nuevo bien`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elBien;
+        },
+        eliminarBienProyecto: async function(_:any, {idProyecto, idBien}, contexto: contextoQuery){
+           
+            console.log(`Solicitud de eliminar un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            let permisosEspeciales = ["superadministrador"];
+            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de proyecto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var indexElBien = elProyecto.bienes.findIndex(b=>b.id==idBien);
+            if(indexElBien>-1){
+                elProyecto.bienes.splice(indexElBien, 1);
+            }   
+            else{
+                console.log(`El bien no existía`);
+                throw new UserInputError("El bien a eliminar no existía en el proyecto")
+            }
+            
+            
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto tras eliminar un bien`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return true;
+        },
+
+        addPeticionBienProyecto: async function(_:any, {idProyecto, idBien, peticion}, contexto: contextoQuery){
+            console.log(`Solicitud de crear una peticion para el bien con id ${idBien} con info ${peticion}`);
+            try {
+                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                if (!elProyecto) {
+                    throw "proyecto no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el proyecto. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var elBien = elProyecto.bienes.id(idBien);            
+            if(!elBien){
+                console.log(`El bien no existía`);
+                throw new UserInputError("El bien no existía en el proyecto")
+            }
+
+            var indexPeticion=elBien.listaPeticiones.findIndex(p=>p.idBeneficiario==peticion.idBeneficiario);
+            if(indexPeticion>-1){
+                
+                elBien.listaPeticiones.splice(indexPeticion, 1);
+            }
+            var laPeticion = elBien.listaPeticiones.create(peticion);
+            if(peticion.cantidadSolicitada>0){        
+                elBien.listaPeticiones.push(laPeticion);
+            }
+
+            try {
+                await elProyecto.save();
+            } catch (error) {
+                console.log(`Error guardando el proyecto con una nueva peticion en un bien`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return laPeticion;
         },
 
         crearRequerimentoEntreNodosProyecto: async function (_: any, { idProyecto, idNodoRequiere, idNodoRequerido, tipoNodoRequiere, tipoNodoRequerido }, contexto: contextoQuery) {

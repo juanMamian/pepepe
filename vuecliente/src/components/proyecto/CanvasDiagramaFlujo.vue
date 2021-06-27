@@ -99,7 +99,6 @@ export default {
       }
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicionCanvas) {
-      console.log(`trazando con posicion canvas: ${JSON.stringify(posicionCanvas)}`);
       let inicio = {
         x: (nodoFrom.posicion.x*this.factorZoom)-posicionCanvas.x,
         y: (nodoFrom.posicion.y*this.factorZoom)-posicionCanvas.y,
@@ -167,7 +166,6 @@ export default {
       };
 
       let bordes = {};
-      console.log(`Calculando esquinas con ${nodosRelevantes.length} nodos`);
       bordes.top = nodosRelevantes.reduce((acc, n) => {
         //console.log(`Reduciendo ${n.nombre} con coords: ${n.posicion}`);
         return n.posicion.y > acc ? n.posicion.y : acc;

@@ -70,6 +70,35 @@ fragment fragActividad on ActividadGrupoEstudiantil {
 ${fragmentoDesarrollo}
 `;
 
+export const fragmentoBienProyecto = gql`
+  fragment fragBienProyecto on BienProyecto{
+    id
+      nombre
+      descripcion
+      unidad
+      cantidad
+      fechaCierre
+      fechaReparticion
+      instruccionesRecibir
+      listaPeticiones{
+        idBeneficiario
+        cantidadSolicitada
+        cantidadAsignada
+      }
+  }
+`
+
+export const fragmentoServicioProyecto = gql`
+fragment fragServicioProyecto on ServicioProyecto{
+  id
+  nombre
+  descripcion
+  listaPeticiones{
+    idBeneficiario
+  }
+}
+`
+
 
 export const fragmentoProyecto = gql`
   fragment fragProyecto on Proyecto{
@@ -80,6 +109,12 @@ export const fragmentoProyecto = gql`
     responsables
     posiblesResponsables
     responsablesSolicitados
+    bienes{
+      ...fragBienProyecto
+    }
+    servicios{
+      ...fragServicioProyecto
+    }
     idsTrabajos
     objetivos {
       id
@@ -99,7 +134,8 @@ export const fragmentoProyecto = gql`
       }
     }
   }
-  
+  ${fragmentoBienProyecto}
+  ${fragmentoServicioProyecto}
 `;
 
 const fragmentoQuote =gql`

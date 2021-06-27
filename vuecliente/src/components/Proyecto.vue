@@ -43,19 +43,21 @@
         />
       </div>
       <div id="zonaDescripcion" class="zonaPrimerNivel">
-        <div
-          class="nombreZona"
-          @click="mostrandoDescripcion = !mostrandoDescripcion"
-        >
+        <div class="barraSuperiorZona">
           <div
-            class="trianguloBullet"
-            :style="{
-              transform: mostrandoDescripcion
-                ? 'rotateZ(90deg)'
-                : 'rotateZ(0deg)',
-            }"
-          ></div>
-          Descripcion
+            class="nombreZona"
+            @click="mostrandoDescripcion = !mostrandoDescripcion"
+          >
+            <div
+              class="trianguloBullet"
+              :style="{
+                transform: mostrandoDescripcion
+                  ? 'rotateZ(90deg)'
+                  : 'rotateZ(0deg)',
+              }"
+            ></div>
+            Descripcion
+          </div>
         </div>
         <div v-show="mostrandoDescripcion">
           <div class="controlesZona" v-if="usuarioResponsableProyecto">
@@ -95,20 +97,23 @@
       </div>
 
       <div id="zonaResponsables" class="zonaPrimerNivel">
-        <div
-          class="nombreZona"
-          @click="mostrandoResponsables = !mostrandoResponsables"
-        >
+        <div class="barraSuperiorZona">
           <div
-            class="trianguloBullet"
-            :style="{
-              transform: mostrandoResponsables
-                ? 'rotateZ(90deg)'
-                : 'rotateZ(0deg)',
-            }"
-          ></div>
-          Responsables
+            class="nombreZona"
+            @click="mostrandoResponsables = !mostrandoResponsables"
+          >
+            <div
+              class="trianguloBullet"
+              :style="{
+                transform: mostrandoResponsables
+                  ? 'rotateZ(90deg)'
+                  : 'rotateZ(0deg)',
+              }"
+            ></div>
+            Responsables
+          </div>
         </div>
+
         <div v-show="mostrandoResponsables">
           <div id="controlesResponsables" class="controlesZona">
             <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
@@ -218,10 +223,87 @@
                 type="number"
                 id="inputResponsablesSolicitados"
                 v-model="responsablesSolicitados"
-                :readonly="usuarioResponsableProyecto?false:true"
-                :style="[{backgroundColor:esteProyecto.responsablesSolicitados!=responsablesSolicitados?'orange': 'white'}]"
+                :readonly="usuarioResponsableProyecto ? false : true"
+                :style="[
+                  {
+                    backgroundColor:
+                      esteProyecto.responsablesSolicitados !=
+                      responsablesSolicitados
+                        ? 'orange'
+                        : 'white',
+                  },
+                ]"
               />
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="zonaBienesServicios" class="zonaPrimerNivel">
+        <div class="barraSuperiorZona">
+          <div
+            class="nombreZona"
+            @click="mostrandoBienesServicios = !mostrandoBienesServicios"
+          >
+            <div
+              class="trianguloBullet"
+              :style="{
+                transform: mostrandoBienesServicios
+                  ? 'rotateZ(90deg)'
+                  : 'rotateZ(0deg)',
+              }"
+            ></div>
+            Bienes y servicios
+          </div>
+        </div>
+        <div v-show="mostrandoBienesServicios">
+          <div id="controlesBienesServicios" class="controlesZona">
+            <loading
+              v-show="enviandoQueryBienesServicios"
+              texto="Esperando..."
+            />
+            <div
+              class="controlesResponsables hoverGris botonesControles"              
+              v-if="usuarioLogeado && usuarioResponsableProyecto"
+              id="botonAdministrarBienesServicios"
+              @click="administrandoBienesServicios=!administrandoBienesServicios"
+            >
+              {{administrandoBienesServicios?'Vista normal':'Vista administrador'}}
+            </div>
+            <div
+              class="controlesResponsables hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryBienesServicios }"
+              v-if="usuarioLogeado && usuarioResponsableProyecto && administrandoBienesServicios"
+              id="botonCrearProductoRepartir"
+              @click="crearProductoRepartir"
+            >
+              Crear producto para repartir
+            </div>
+            
+          </div>
+
+          <div
+            id="listaBienesServicios"
+            v-show="
+              esteProyecto.bienes.length > 0 ||
+              esteProyecto.servicios.length > 0
+            "
+          >
+            <bien-repartir-admin
+              :idProyecto="esteProyecto.id"
+              :esteBien="bien"
+              v-for="bien of esteProyecto.bienes"
+              :key="bien.id"
+              v-show="administrandoBienesServicios"
+              @meElimine="eliminarBienDeCache(bien.id)"
+            />
+
+            <bien-ofrecido v-for="bien of esteProyecto.bienes" :key="'bienOfrecido'+bien.id"
+            :esteBien="bien" :idProyecto="esteProyecto.id"
+            v-show="!administrandoBienesServicios"
+            @nuevaPeticionCreada="addPeticionBienCache($event, bien.id)"
+
+            />
           </div>
         </div>
       </div>
@@ -231,19 +313,21 @@
         class="zonaPrimerNivel"
         ref="zonaDiagramaFlujo"
       >
-        <div
-          class="nombreZona"
-          @click="mostrandoDiagramaFlujo = !mostrandoDiagramaFlujo"
-        >
+        <div class="barraSuperiorZona">
           <div
-            class="trianguloBullet"
-            :style="{
-              transform: mostrandoDiagramaFlujo
-                ? 'rotateZ(90deg)'
-                : 'rotateZ(0deg)',
-            }"
-          ></div>
-          Diagrama de flujo
+            class="nombreZona"
+            @click="mostrandoDiagramaFlujo = !mostrandoDiagramaFlujo"
+          >
+            <div
+              class="trianguloBullet"
+              :style="{
+                transform: mostrandoDiagramaFlujo
+                  ? 'rotateZ(90deg)'
+                  : 'rotateZ(0deg)',
+              }"
+            ></div>
+            Diagrama de flujo
+          </div>
         </div>
         <div id="controlesObjetivos" class="controlesZona"></div>
         <diagrama-flujo
@@ -282,14 +366,16 @@
         />
       </div>
       <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
-        <div class="nombreZona" @click="mostrandoForo = !mostrandoForo">
-          <div
-            class="trianguloBullet"
-            :style="{
-              transform: mostrandoForo ? 'rotateZ(90deg)' : 'rotateZ(0deg)',
-            }"
-          ></div>
-          foro
+        <div class="barraSuperiorZona">
+          <div class="nombreZona" @click="mostrandoForo = !mostrandoForo">
+            <div
+              class="trianguloBullet"
+              :style="{
+                transform: mostrandoForo ? 'rotateZ(90deg)' : 'rotateZ(0deg)',
+              }"
+            ></div>
+            foro
+          </div>
         </div>
         <foro
           :parent="infoAsParent"
@@ -305,12 +391,17 @@
 import gql from "graphql-tag";
 import IconoTrabajo from "./proyecto/IconoTrabajo.vue";
 import IconoObjetivo from "./proyecto/IconoObjetivo.vue";
-import { fragmentoProyecto } from "./utilidades/recursosGql";
+import {
+  fragmentoBienProyecto,
+  fragmentoProyecto,
+} from "./utilidades/recursosGql";
 import Loading from "./utilidades/Loading.vue";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
 import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
 import debounce from "debounce";
+import BienRepartirAdmin from "./proyecto/BienRepartirAdmin.vue";
+import BienOfrecido from "./proyecto/BienOfrecido.vue";
 
 const QUERY_PROYECTO = gql`
   query ($idProyecto: ID!) {
@@ -331,6 +422,8 @@ export default {
     Foro,
     IconoPersonaAutonomo,
     DiagramaFlujo,
+    BienRepartirAdmin,
+    BienOfrecido,
   },
   name: "proyecto",
   apollo: {
@@ -343,7 +436,8 @@ export default {
       },
       update(respuesta) {
         this.loading = false;
-        this.responsablesSolicitados=respuesta.proyecto.responsablesSolicitados;
+        this.responsablesSolicitados =
+          respuesta.proyecto.responsablesSolicitados;
         return respuesta.proyecto;
       },
       fetchPolicy: "cache-and-network",
@@ -356,11 +450,12 @@ export default {
       esteProyecto: {
         responsables: [],
         posiblesResponsables: [],
+        bienes: [],
+        servicios: [],
       },
-      responsablesSolicitados:0,
+      responsablesSolicitados: 0,
       idResponsableSeleccionado: null,
       responsableSeleccionadoEstaAceptado: false,
-      enviandoQueryResponsables: false,
 
       creandoTrabajo: false,
       creandoObjetivo: false,
@@ -375,6 +470,8 @@ export default {
       nuevoDescripcion: "Nueva descripcion",
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
+      enviandoQueryResponsables: false,
+      enviandoQueryBienesServicios: false,
 
       idNodoAbierto: null,
 
@@ -382,6 +479,8 @@ export default {
       mostrandoResponsables: true,
       mostrandoDiagramaFlujo: false,
       mostrandoForo: true,
+      mostrandoBienesServicios: false,
+      administrandoBienesServicios:false,
     };
   },
   computed: {
@@ -557,7 +656,7 @@ export default {
           this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
-    },    
+    },
     aceptarResponsable(idPosibleResponsable) {
       console.log(
         `aceptando como responsable al usuario ${idPosibleResponsable}`
@@ -676,7 +775,7 @@ export default {
             console.log(`respuesta: ${JSON.stringify(crearTrabajoEnProyecto)}`);
             const idNuevoTrabajo = crearTrabajoEnProyecto;
             try {
-              let cache = store.readQuery({
+              const cache = store.readQuery({
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
               });
@@ -750,12 +849,12 @@ export default {
             );
             const nuevoObjetivo = crearObjetivoEnProyecto;
             try {
-              let cache = store.readQuery({
+              const cache = store.readQuery({
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
               });
 
-              let nuevoCache = JSON.parse(JSON.stringify(cache));
+              var nuevoCache = JSON.parse(JSON.stringify(cache));
               nuevoCache.proyecto.objetivos.push(nuevoObjetivo);
 
               store.writeQuery({
@@ -779,15 +878,64 @@ export default {
           console.log(`error: ${error}`);
         });
     },
+    crearProductoRepartir() {
+      console.log(`Creando producto para repartir...`);
+      this.enviandoQueryBienesServicios = true;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idProyecto: ID!) {
+              crearBienRepartirVacioProyecto(idProyecto: $idProyecto) {
+                ...fragBienProyecto
+              }
+            }
+            ${fragmentoBienProyecto}
+          `,
+          variables: {
+            idProyecto: this.esteProyecto.id,
+          },
+        })
+        .then(({ data: { crearBienRepartirVacioProyecto } }) => {
+          this.enviandoQueryBienesServicios = false;
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_PROYECTO,
+            variables: {
+              idProyecto: this.esteProyecto.id,
+            },
+          });
+          const iBien = cache.proyecto.bienes.findIndex(
+            (b) => b.id == crearBienRepartirVacioProyecto.id
+          );
+          if (iBien > -1) {
+            console.log(`El bien ya estaba en caché`);
+          } else {
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+            nuevoCache.proyecto.bienes.push(crearBienRepartirVacioProyecto);
+            store.writeQuery({
+              query: QUERY_PROYECTO,
+              variables: {
+                idProyecto: this.esteProyecto.id,
+              },
+              data: nuevoCache,
+            });
+          }
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoQueryBienesServicios = false;
+        });
+    },
     eliminarTrabajoDeCache(idTrabajo) {
-      let store = this.$apollo.provider.defaultClient;
-      let cache = store.readQuery({
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
         query: QUERY_PROYECTO,
         variables: {
           idProyecto: this.esteProyecto.id,
         },
       });
-      let nuevoCache = JSON.parse(JSON.stringify(cache));
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
       let indexT = nuevoCache.proyecto.idsTrabajos.indexOf(idTrabajo);
       if (indexT > -1) {
         nuevoCache.proyecto.idsTrabajos.splice(indexT, 1);
@@ -803,14 +951,14 @@ export default {
       });
     },
     eliminarObjetivoDeCache(idObjetivo) {
-      let store = this.$apollo.provider.defaultClient;
-      let cache = store.readQuery({
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
         query: QUERY_PROYECTO,
         variables: {
           idProyecto: this.esteProyecto.id,
         },
       });
-      let nuevoCache = JSON.parse(JSON.stringify(cache));
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
       let indexT = nuevoCache.proyecto.objetivos.findIndex(
         (t) => t.id == idObjetivo
       );
@@ -818,6 +966,60 @@ export default {
         nuevoCache.proyecto.objetivos.splice(indexT, 1);
       } else {
         console.log(`El objetivo no existía en el proyecto`);
+      }
+      store.writeQuery({
+        query: QUERY_PROYECTO,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+        data: nuevoCache,
+      });
+    },
+    eliminarBienDeCache(idBien) {
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_PROYECTO,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      let indexB = nuevoCache.proyecto.bienes.findIndex((b) => b.id == idBien);
+      if (indexB > -1) {
+        nuevoCache.proyecto.bienes.splice(indexB, 1);
+      } else {
+        console.log(`El bien no existía en el proyecto`);
+      }
+      store.writeQuery({
+        query: QUERY_PROYECTO,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+        data: nuevoCache,
+      });
+    },
+    addPeticionBienCache(nuevaPeticion, idBien){
+      console.log(`Introduciendo la peticion ${JSON.stringify(nuevaPeticion)} en el cache para el bien ${idBien}`);
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_PROYECTO,
+        variables: {
+          idProyecto: this.esteProyecto.id,
+        },
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      var elBien=nuevoCache.proyecto.bienes.find(b=>b.id==idBien)
+      if(!elBien){
+        console.log(`Tratando de introducir una nueva peticion en un bien que no estaba en el caché`);
+        return
+      }    
+
+      const indexP = elBien.listaPeticiones.findIndex((b) => b.idBeneficiario == nuevaPeticion.idBeneficiario);
+      if (indexP > -1) {        
+        elBien.listaPeticiones.splice(indexP, 1);
+      } 
+      if(nuevaPeticion.cantidadSolicitada>0){
+        elBien.listaPeticiones.push(nuevaPeticion);
       }
       store.writeQuery({
         query: QUERY_PROYECTO,
@@ -835,9 +1037,9 @@ export default {
       console.log(`Abriendo nodo ${idNodo}`);
       this.idNodoAbierto = idNodo;
     },
-    debounceSetResponsablesSolicitados: debounce(function(){
+    debounceSetResponsablesSolicitados: debounce(function () {
       this.setResponsablesSolicitados(parseInt(this.responsablesSolicitados));
-    }, 2000),    
+    }, 2000),
     setResponsablesSolicitados(cantidad) {
       if (cantidad < 0) cantidad = 0;
 
@@ -862,20 +1064,19 @@ export default {
             nuevoCantidadResponsablesSolicitados: cantidad,
           },
         })
-        .then(() => {          
-        })
+        .then(() => {})
         .catch((error) => {
           console.log(`Error: ${error}`);
         });
     },
-  },  
-  watch:{
-    responsablesSolicitados(nuevo){
-      if(nuevo===this.esteProyecto.responsablesSolicitados)return;
+  },
+  watch: {
+    responsablesSolicitados(nuevo) {
+      if (nuevo === this.esteProyecto.responsablesSolicitados) return;
       console.log(`Cambio en responsables solicitados`);
       this.debounceSetResponsablesSolicitados();
-    }
-  }
+    },
+  },  
 };
 </script>
 
@@ -985,9 +1186,12 @@ export default {
   padding: 3px 5px;
   cursor: pointer;
 }
+.barraSuperiorZona {
+  display: flex;
+  background-color: teal;
+}
 .nombreZona {
   font-size: 18px;
-  background-color: teal;
   padding: 3px 5px;
   cursor: pointer;
 }

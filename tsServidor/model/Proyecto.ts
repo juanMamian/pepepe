@@ -1,9 +1,75 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import {esquemaObjetivo} from "./Objetivo"
 import {esquemaTrabajo} from "./Trabajo"
 
+const esquemaPeticionBien=new mongoose.Schema({
+    idBeneficiario:{
+        type:String,
+        required:true,
+    },
+    cantidadSolicitada:{
+        type:String,
+        required:true,
+    },
+    cantidadAsignada:{
+        type:Number,
+    }
+});
 
+const esquemaPeticionServicio=new mongoose.Schema({
+    idBeneficiario:{
+        type:String,
+        required:true,
+    },   
+})
 
+const esquemaBien = new mongoose.Schema({
+    nombre:{
+        type:String,
+        default: "Nuevo bien",
+    },
+    descripcion:{
+        type:String,        
+    },
+    unidad:{
+        type: String,     
+        required: true,   
+        default:"unidades",
+    },
+    cantidad:{
+        type:Number,
+        default: 0,
+    },
+    fechaCierre:{
+        type: Date,
+        default: Date.now
+    },
+    fechaReparticion:{
+        type: Date,
+        default: Date.now
+    },
+    instruccionesRecibir:{
+        type:String
+    },
+    listaPeticiones:{
+        type: [esquemaPeticionBien],
+        default:[],
+    }
+
+});
+const esquemaServicio = new mongoose.Schema({
+    nombre:{
+        type:String,
+        default: "Nuevo bien",
+    },
+    descripcion:{
+        type:String,        
+    },    
+    listaPeticiones:{
+        type: [esquemaPeticionServicio],
+        default:[]
+    }
+});
 
 const esquemaProyecto = new mongoose.Schema({
     nombre: {
@@ -47,6 +113,14 @@ const esquemaProyecto = new mongoose.Schema({
     idForo:{
         type:String,
         required:true,
+    },
+    bienes:{
+        type:[esquemaBien],
+        default:[]
+    },
+    servicios:{
+        type: [esquemaServicio],
+        default: []
     }
 
 });
