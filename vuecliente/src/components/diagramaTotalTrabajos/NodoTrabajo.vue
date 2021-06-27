@@ -3,10 +3,12 @@
     class="nodoTrabajo"
     :class="{ seleccionado }"
     :style="[estiloPosicion, estiloZeta, estiloSize]"
-    @mousedown.left="agarrado = true"
+    @mousedown.left="agarrado = callingPosiciones?false:true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
   >
+    <div id="zonaArrastre" v-show="agarrado"></div>
+
     <img
       src="@/assets/iconos/maximizar.png"
       alt="abrir"
@@ -15,20 +17,18 @@
       v-show="seleccionado"
       @click.left.stop="$emit('meAbrieron')"
     />
-
     <div class="zonaNombre">
-      <div id="nombre">
+      <div id="nombre" draggable="false">
         <img
-          src="@/assets/iconos/iconoTrabajo.png"
+          src="@/assets/iconos/estrella.png"
           alt=""
           class="iconoTrabajo"
           draggable="false"
           :style="{width: Math.round(17*factorZoom)+'px'}"
           :class="{
-            iconoCompletado: esteTrabajo.estadoDesarrollo === 'completado',
+            iconoCompletado: esteTrabajo.estado === 'cumplido',
           }"
-        />
-        {{ esteTrabajo.nombre }}
+        />{{ callingPosiciones? esteTrabajo.puntaje : esteTrabajo.nombre }}
       </div>
     </div>
 
@@ -60,57 +60,18 @@
 
 <script>
 import gql from "graphql-tag";
-const QUERY_TRABAJO = gql`
-  query($idTrabajo: ID!) {
-    trabajo(idTrabajo: $idTrabajo) {
-      id
-      nombre
-      estadoDesarrollo
-      diagramaProyecto {
-        posicion {
-          x
-          y
-        }
-      }
-      vinculos {
-        idRef
-        tipo
-        tipoRef
-      }
-    }
-  }
-`;
-
 export default {
   name: "NodoTrabajo",
-  apollo: {
-    esteTrabajo: {
-      query: QUERY_TRABAJO,
-      variables() {
-        return {
-          idTrabajo: this.idTrabajo,
-        };
-      },
-      update({ trabajo }) {
-        var miInfo = {
-          id: trabajo.id,
-          posicion: trabajo.diagramaProyecto.posicion,
-          vinculos: trabajo.vinculos,
-        };
-        this.$emit("miInfo", miInfo);
-        return trabajo;
-      },
-      skip() {
-        return !this.idTrabajo;
-      },
-      fetchPolicy: "cache-and-network",
-    },
+  props: {
+    esteTrabajo: Object,
+    idProyecto: String,        
+    idNodoSeleccionado: String,    
+    menuCx: Boolean,    
+    factorZoom:Number,
+    callingPosiciones:Boolean
   },
   data() {
     return {
-      esteTrabajo: {
-        vinculos: [],
-      },
       agarrado: false,
       arrastrandoNodo: 0,
       umbralArrastreNodo: 10,
@@ -119,21 +80,13 @@ export default {
         y: 0,
       },
       montado: false,
-
       widthBase:150,
       heightBase:100,
+      size:{
+        x: 150,
+        y: 100
+      }
     };
-  },
-  props: {
-    idTrabajo: String,
-    idProyecto: String,
-    idNodoSeleccionado: String,
-    usuarioResponsableProyecto: Boolean,
-    seleccionado: Boolean,
-    posDummy: Object,
-    menuCx: Boolean,
-    centroVista:Object,
-    factorZoom:Number,
   },
   methods: {
     arrastrarNodo(e) {
@@ -149,13 +102,14 @@ export default {
       if (this.arrastrandoNodo < this.umbralArrastreNodo) {
         return;
       }
-      var contenedor = this.$parent.$el;
+      var contenedor = document.getElementById("contenedorNodos");
       let posContenedor = contenedor.getBoundingClientRect();
+
       let nuevoTop = Math.round(
-        ((e.clientY - posContenedor.top)/this.factorZoom)+this.centroVista.y
+        ((e.clientY - posContenedor.top)/this.factorZoom)
       );
       let nuevoLeft = Math.round(
-        ((e.clientX - posContenedor.left)/this.factorZoom)+this.centroVista.x
+        ((e.clientX - posContenedor.left)/this.factorZoom)
       );
 
       const stepPosx = 25;
@@ -164,11 +118,10 @@ export default {
       nuevoLeft = nuevoLeft-(nuevoLeft%stepPosx);
       nuevoTop = nuevoTop - (nuevoTop%stepPosy);
 
-
       this.$set(this.posicion, "x", nuevoLeft);
       this.$set(this.posicion, "y", nuevoTop);
 
-     
+      
     },
     guardarPosicion() {
       if (this.arrastrandoNodo < this.umbralArrastreNodo) {
@@ -182,46 +135,32 @@ export default {
         .mutate({
           mutation: gql`
             mutation(
-              $idTrabajo: ID!
-              $idProyecto: ID!
+              $idTrabajo: ID!              
               $nuevaPosicion: CoordsInput
             ) {
-              setPosicionTrabajoDiagramaProyecto(
-                idProyecto: $idProyecto
+              setPosicionTrabajoDiagramaProyecto(                
                 idTrabajo: $idTrabajo
                 nuevaPosicion: $nuevaPosicion
               ) {
                 id
-                diagramaProyecto {
-                  posicion {
-                    x
-                    y
-                  }
+                coords{
+                  x
+                  y
                 }
               }
             }
           `,
-          variables: {
-            idProyecto: this.idProyecto,
-            idTrabajo: this.idTrabajo,
+          variables: {            
+            idTrabajo: this.esteTrabajo.id,
             nuevaPosicion: this.posicion,
           },
         })
         .then(() => {
           console.log(`Posición guardada`);
-          this.emitirMiInfo();
         })
         .catch((error) => {
           console.log(`Error. E: ${error}`);
         });
-    },
-    emitirMiInfo() {
-      var info = {
-        id: this.esteTrabajo.id,
-        posicion: this.esteTrabajo.diagramaProyecto.posicion,
-        vinculos: this.esteTrabajo.vinculos,
-      };
-      this.$emit("miInfo", info);
     },
     crearRequerimento(idNodoRequiere, idNodoRequerido) {
       console.log(
@@ -240,8 +179,8 @@ export default {
     estiloPosicion() {
       if (this.montado) {
         return {
-          top: ((this.posicion.y -this.centroVista.y)*this.factorZoom) - this.$el.offsetHeight / 2 + "px",
-          left: ((this.posicion.x - this.centroVista.x)*this.factorZoom) - this.$el.offsetWidth / 2 + "px",
+          left: (((this.posicion.x-(this.size.x/2))*this.factorZoom) ) + "px",
+          top: (((this.posicion.y - (this.size.y/2))*this.factorZoom) ) + "px",
         };
       }
       return {
@@ -251,8 +190,7 @@ export default {
     },
     estiloZeta() {
       let valorZ = 0;
-
-      if (this.arrastrandoNodo == true || this.seleccionado == true) {
+      if (this.arrastrandoNodo > this.umbralArrastreNodo || this.seleccionado) {
         valorZ = 100;
       }
       if (this.menuCx) {
@@ -264,29 +202,42 @@ export default {
     },
     estiloSize(){
       return {
-        width: Math.round(this.widthBase*(this.factorZoom))+"px",
-        height: Math.round(this.heightBase*(this.factorZoom))+"px",
+        width: Math.round(this.size.x*(this.factorZoom))+"px",
+        height: Math.round(this.size.y*(this.factorZoom))+"px",
         fontSize:Math.round(14*this.factorZoom)+"px",
         padding:Math.round(5*this.factorZoom)+'px'
       }
-    }
+    },
+    seleccionado(){
+      return this.idNodoSeleccionado && this.idNodoSeleccionado==this.esteTrabajo.id
+    },  
   },
   watch: {
     esteTrabajo() {
       this.$set(
         this.posicion,
         "x",
-        this.esteTrabajo.diagramaProyecto.posicion.x
+        this.esteTrabajo.coords.x
       );
       this.$set(
         this.posicion,
         "y",
-        this.esteTrabajo.diagramaProyecto.posicion.y
+        this.esteTrabajo.coords.y
       );
     },
   },
   mounted() {
     this.montado = true;
+    this.$set(
+      this.posicion,
+      "x",
+      this.esteTrabajo.coords.x
+    );
+    this.$set(
+      this.posicion,
+      "y",
+      this.esteTrabajo.coords.y
+    );
   },
 };
 </script>
@@ -354,5 +305,14 @@ export default {
 }
 .bAbrirNodo:hover {
   background-color: cadetblue;
+}
+#zonaArrastre{
+  position: absolute;
+  width: 600%;
+  height: 600%;
+  top:-200%;
+  left: -200%;
+  border-radius: 50%;
+  background-color: rgba(205, 134, 63, 0.479);
 }
 </style>
