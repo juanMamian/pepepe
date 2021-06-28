@@ -92,7 +92,12 @@ export const esquemaObjetivo = new mongoose.Schema({
             default:0
         }
     },
-    
+    nivel:{
+        type: Number,
+    },
+    turnoNivel:{
+        type: Number,
+    }
     
 });
 

@@ -353,12 +353,12 @@ export default {
     todosNodos: function () {
       if (this.todosNodos.length < 1) return;
       this.debTrazarVinculos();
-      if(this.callingPosiciones)this.crearImagenPosiciones();
+      //if(this.callingPosiciones)this.crearImagenPosiciones();
       this.crearImagenVinculosSeleccionado();
     },   
     nodoSeleccionado: function () {
       if(!this.callingPosiciones)this.crearImagenVinculosSeleccionado();
-      if(this.callingPosiciones)this.crearImagenPosiciones();
+      //if(this.callingPosiciones)this.crearImagenPosiciones();
 
     },
     idNodoTarget() {
@@ -368,11 +368,11 @@ export default {
     factorZoom(){
       this.debTrazarVinculos();
     },
-    callingPosiciones(nuevo){
-      if(nuevo){
-        this.crearImagenPosiciones();
-      }
-    }
+    // callingPosiciones(nuevo){
+    //   if(nuevo){
+    //     this.crearImagenPosiciones();
+    //   }
+    // }
 
   },
   mounted() {
@@ -396,7 +396,7 @@ export default {
   z-index: 0;
   top:0px;
   left:0px;
-  background-color: rgba(255, 127, 80, 0.247);
+  background-color: rgb(231, 175, 154);
 
 }
 

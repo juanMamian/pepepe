@@ -21,10 +21,49 @@ exports.typeDefs = apollo_server_express_1.gql `
         posicion:Coords
     }
 
+    type PeticionBienProyecto{
+        id: ID,
+        idBeneficiario:String,
+        cantidadSolicitada: Float,
+        cantidadAsignada: Float
+    }
+
+    type PeticionServicioProyecto{
+        id: ID,
+        idBeneficiario:String,        
+    }
+    
+
     type VinculoNodoProyecto{
         idRef:ID,
         tipo:String,
         tipoRef:String,
+    }
+
+    type ServicioProyecto{
+        id: ID,
+        nombre: String,
+        descripcion: String,      
+        listaPeticiones: [PeticionServicioProyecto]                  
+    }
+
+    input InputPeticionBienProyecto{
+        id:ID,
+        idBeneficiario: ID,
+        cantidadSolicitada:Float,
+        cantidadAsignada:Float,
+    }
+
+    type BienProyecto{
+        id: ID,
+        nombre: String,
+        descripcion: String,
+        unidad: String,
+        cantidad: Float,
+        fechaCierre: Date,
+        fechaReparticion: Date,
+        instruccionesRecibir:String,
+        listaPeticiones: [PeticionBienProyecto]
     }
 
     type Proyecto{
@@ -33,22 +72,17 @@ exports.typeDefs = apollo_server_express_1.gql `
         descripcion:String,
         responsables: [String],
         posiblesResponsables:[String],
+        responsablesSolicitados:Int,
         personasResponsables:[PublicUsuario]
         personasPosiblesResponsables:[PublicUsuario],
+        bienes:[BienProyecto],
+        servicios:[ServicioProyecto],
         trabajos: [Trabajo],
         objetivos: [Objetivo],
         idForo:ID,
         idsTrabajos:[ID],
         materiales:[MaterialTrabajo],
-    }
-    type Objetivo{
-       id: ID,
-       nombre: String,
-       descripcion:String,
-       diagramaProyecto:InfoDiagramaProyecto,
-       vinculos:[VinculoNodoProyecto],
-       estado:String,
-   }
+    }    
 
    union NodoProyecto=Objetivo | Trabajo
 
@@ -75,6 +109,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         addResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         addPosibleResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
         removeResponsableProyecto(idProyecto:ID!, idUsuario:ID!):Proyecto,
+        setResponsablesSolicitadosProyecto(idProyecto:ID!, nuevoCantidadResponsablesSolicitados: Int!):Proyecto,
         
         crearTrabajoEnProyecto(idProyecto: ID!, posicion:CoordsInput):ID,
         eliminarTrabajoDeProyecto(idTrabajo:ID!, idProyecto:ID!):Boolean,
@@ -87,12 +122,14 @@ exports.typeDefs = apollo_server_express_1.gql `
         editarKeywordsTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
         setEstadoTrabajoProyecto(idProyecto:ID!, idTrabajo:ID!, nuevoEstado:String!):Trabajo,
 
-        crearObjetivoEnProyecto(idProyecto: ID!, posicion:CoordsInput):Objetivo,
-        eliminarObjetivoDeProyecto(idObjetivo:ID!, idProyecto:ID!):Boolean,
-        editarNombreObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
-        editarDescripcionObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
-        setPosicionObjetivoDiagramaProyecto(idProyecto:ID!, idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
-        setEstadoObjetivoProyecto(idProyecto:ID!, idObjetivo:ID!, nuevoEstado:String!):Objetivo,
+        crearBienRepartirVacioProyecto(idProyecto: ID!):BienProyecto,
+        setNombreBienProyecto(idProyecto: ID!, idBien: ID!, nuevoNombre: String!):BienProyecto,
+        setUnidadBienProyecto(idProyecto: ID!, idBien: ID!, nuevoUnidad: String!):BienProyecto,
+        setCantidadBienProyecto(idProyecto: ID!, idBien: ID!, nuevoCantidad: Float!):BienProyecto,
+        setFechaCierreBienProyecto(idProyecto: ID!, idBien: ID!, nuevoFechaCierre: Date!):BienProyecto,
+        setFechaReparticionBienProyecto(idProyecto: ID!, idBien: ID!, nuevoFechaReparticion: Date!):BienProyecto,
+        eliminarBienProyecto(idProyecto: ID!, idBien: ID!):Boolean,
+        addPeticionBienProyecto(idProyecto: ID!, idBien: ID!, peticion: InputPeticionBienProyecto!):PeticionBienProyecto,
 
         crearRequerimentoEntreNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
         desvincularNodosProyecto(idProyecto:ID!, idNodoRequiere:ID!, idNodoRequerido:ID!, tipoNodoRequiere:String!, tipoNodoRequerido:String!):RespuestaNodoProyecto,
@@ -278,6 +315,8 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("El usuario ya estaba incluido");
                 }
                 elProyecto.responsables.push(idUsuario);
+                if (elProyecto.responsablesSolicitados > 0)
+                    elProyecto.responsablesSolicitados--;
                 console.log(`Usuario añadido a la lista de responsables`);
                 let indexPosibleResponsable = elProyecto.posiblesResponsables.indexOf(idUsuario);
                 if (indexPosibleResponsable > -1) {
@@ -357,6 +396,36 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 console.log(`Proyecto guardado`);
+                return elProyecto;
+            });
+        },
+        setResponsablesSolicitadosProyecto: function (_, { idProyecto, nuevoCantidadResponsablesSolicitados }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en proyecto con id ${idProyecto}`);
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el proyecto en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
+                }
+                if (!credencialesUsuario.permisos.includes("superadministrador") && !elProyecto.responsables.includes(credencialesUsuario.id)) {
+                    console.log(`Error de autenticacion editando responsables solicitados.`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                elProyecto.responsablesSolicitados = nuevoCantidadResponsablesSolicitados;
+                try {
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el proyecto: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Retornando con ${elProyecto.responsablesSolicitados} responsables solicitados`);
                 return elProyecto;
             });
         },
@@ -753,6 +822,8 @@ exports.resolvers = {
                     if (indexT > -1)
                         elUsuario.misTrabajos.splice(indexT, 1);
                     elTrabajo.responsables.push(idUsuario);
+                    if (elTrabajo.responsablesSolicitados > 0)
+                        elTrabajo.responsablesSolicitados--;
                     elUsuario.misTrabajos.push(elTrabajo._id);
                     console.log(`Usuario añadido a la lista de responsables`);
                     yield elTrabajo.save();
@@ -947,196 +1018,9 @@ exports.resolvers = {
                 return elTrabajo;
             });
         },
-        crearObjetivoEnProyecto(_, { idProyecto, posicion }, contexto) {
+        crearBienRepartirVacioProyecto: function (_, { idProyecto }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Peticion de crear un nuevo objetivo en el proyecto con id ${idProyecto}`);
-                try {
-                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
-                    if (!elProyecto) {
-                        throw "proyecto no encontrado";
-                    }
-                }
-                catch (error) {
-                    console.log("Proyecto no encontrado. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error conectandose con la base de datos");
-                }
-                //Authorización
-                let credencialesUsuario = contexto.usuario;
-                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                    console.log(`Error de autenticacion editando nombre de proyecto`);
-                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
-                }
-                try {
-                    var nuevoObjetivo = elProyecto.objetivos.create({ diagramaProyecto: { posicion } });
-                    elProyecto.objetivos.push(nuevoObjetivo);
-                    yield elProyecto.save();
-                }
-                catch (error) {
-                    console.log("Error guardando el objetivo creado en el proyecto. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error introduciendo el objetivo en el proyecto");
-                }
-                console.log(`Enviando nuevo objetivo: ${nuevoObjetivo}`);
-                return nuevoObjetivo;
-            });
-        },
-        eliminarObjetivoDeProyecto(_, { idObjetivo, idProyecto }, contexto) {
-            return __awaiter(this, void 0, void 0, function* () {
-                console.log(`peticion de eliminar un objetivo con id ${idObjetivo} de un proyecto con id ${idProyecto}`);
-                let credencialesUsuario = contexto.usuario;
-                try {
-                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
-                    if (!elProyecto) {
-                        throw "proyecto no encontrado";
-                    }
-                }
-                catch (error) {
-                    console.log("Error buscando el proyecto en la base de datos. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                }
-                //Authorización
-                let permisosEspeciales = ["superadministrador"];
-                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                    console.log(`Error de autenticacion editando nombre de proyecto`);
-                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
-                }
-                try {
-                    yield Proyecto_1.ModeloProyecto.findByIdAndUpdate(idProyecto, { $pull: { objetivos: { "_id": idObjetivo } } });
-                }
-                catch (error) {
-                    console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error introduciendo el trabajo en el proyecto");
-                }
-                console.log(`eliminado`);
-                return true;
-            });
-        },
-        editarNombreObjetivoProyecto(_, { idProyecto, idObjetivo, nuevoNombre }, contexto) {
-            return __awaiter(this, void 0, void 0, function* () {
-                console.log(`cambiando el nombre del objetivo con id ${idObjetivo} del proyecto con id ${idProyecto}`);
-                const charProhibidosNombreObjetivo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
-                nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
-                if (charProhibidosNombreObjetivo.test(nuevoNombre)) {
-                    throw new apollo_server_express_1.ApolloError("Nombre ilegal");
-                }
-                nuevoNombre = nuevoNombre.trim();
-                try {
-                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
-                    if (!elProyecto) {
-                        throw "proyecto no encontrado";
-                    }
-                }
-                catch (error) {
-                    console.log("Error buscando el proyecto. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Erro en la conexión con la base de datos");
-                }
-                //Authorización
-                let credencialesUsuario = contexto.usuario;
-                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                    console.log(`Error de autenticacion editando nombre de proyecto`);
-                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
-                }
-                try {
-                    var elObjetivo = elProyecto.objetivos.id(idObjetivo);
-                    if (!elObjetivo) {
-                        console.log(`Objetivo no encontrado en el proyecto`);
-                        throw "No existía el objetivo";
-                    }
-                    elObjetivo.nombre = nuevoNombre;
-                }
-                catch (error) {
-                    console.log("Error cambiando el nombre en la base de datos. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error guardando el nombre en la base de datos");
-                }
-                try {
-                    yield elProyecto.save();
-                }
-                catch (error) {
-                    console.log("Error guardando el objetivo creado en el proyecto. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error introduciendo el objetivo en el proyecto");
-                }
-                console.log(`Nombre cambiado`);
-                return elObjetivo;
-            });
-        },
-        editarDescripcionObjetivoProyecto(_, { idProyecto, idObjetivo, nuevoDescripcion }, contexto) {
-            return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||`);
-                console.log(`Solicitud de set descripcion de objetivo con id ${idObjetivo} del proyecto con id ${idProyecto}`);
-                let credencialesUsuario = contexto.usuario;
-                try {
-                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
-                    if (!elProyecto) {
-                        throw "proyecto no encontrado";
-                    }
-                }
-                catch (error) {
-                    console.log(`error buscando el proyecto. E: ` + error);
-                }
-                //Authorización
-                let permisosEspeciales = ["superadministrador"];
-                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                    console.log(`Error de autenticacion editando Descripcion de proyecto`);
-                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
-                }
-                const charProhibidosDescripcionObjetivo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
-                if (charProhibidosDescripcionObjetivo.test(nuevoDescripcion)) {
-                    throw new apollo_server_express_1.ApolloError("Descripcion ilegal");
-                }
-                nuevoDescripcion = nuevoDescripcion.trim();
-                let elObjetivo = elProyecto.objetivos.id(idObjetivo);
-                if (!elObjetivo) {
-                    console.log(`No existía el objetivo`);
-                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                }
-                elObjetivo.descripcion = nuevoDescripcion;
-                try {
-                    console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
-                    yield elProyecto.save();
-                }
-                catch (error) {
-                    console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
-                    throw new apollo_server_express_1.ApolloError("Error guardando información en la base de datos");
-                }
-                console.log(`Descripcion guardado`);
-                return elObjetivo;
-            });
-        },
-        setPosicionObjetivoDiagramaProyecto: function (_, { idProyecto, idObjetivo, nuevaPosicion }, contexto) {
-            return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Guardando posicion de objetivo en el diagrama del proyecto`);
-                let credencialesUsuario = contexto.usuario;
-                try {
-                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
-                    if (!elProyecto) {
-                        throw "proyecto no encontrado";
-                    }
-                }
-                catch (error) {
-                    console.log(`error buscando el proyecto. E: ` + error);
-                }
-                //Authorización
-                let permisosEspeciales = ["superadministrador"];
-                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                    console.log(`Error de autenticacion editando Descripcion de proyecto`);
-                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
-                }
-                try {
-                    var elObjetivo = elProyecto.objetivos.id(idObjetivo);
-                    if (!elObjetivo) {
-                        throw "Objetivo no existía";
-                    }
-                    elObjetivo.diagramaProyecto.posicion = nuevaPosicion;
-                    yield elProyecto.save();
-                }
-                catch (error) {
-                    console.log(`error guardando el objetivo modificado: ${error}`);
-                }
-                return elObjetivo;
-            });
-        },
-        setEstadoObjetivoProyecto: function (_, { idProyecto, idObjetivo, nuevoEstado }, contexto) {
-            return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Solicitud de set estado de objetivo con id ${idObjetivo} del proyecto con id ${idProyecto} a ${nuevoEstado}`);
+                console.log(`Solicitud de crear nuevo bien para repartir vacío en el proyecto con id ${idProyecto}`);
                 let credencialesUsuario = contexto.usuario;
                 try {
                     var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
@@ -1148,28 +1032,257 @@ exports.resolvers = {
                     console.log(`error buscando el proyecto. E: ` + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                //Authorización
                 let permisosEspeciales = ["superadministrador"];
                 if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                     console.log(`Error de autenticacion editando Estado de proyecto`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
-                let elObjetivo = elProyecto.objetivos.id(idObjetivo);
-                if (!elObjetivo) {
-                    console.log(`No existía el objetivo`);
-                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                }
-                elObjetivo.estado = nuevoEstado;
+                var nuevoBien = elProyecto.bienes.create();
+                elProyecto.bienes.push(nuevoBien);
                 try {
-                    console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
                     yield elProyecto.save();
                 }
                 catch (error) {
-                    console.log(`error guardando el proyecto con coordenadas manuales: ${error}`);
-                    throw new apollo_server_express_1.ApolloError("Error guardando información en la base de datos");
+                    console.log(`Error guardando el proyecto con un nuevo bien`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Estado guardado`);
-                return elObjetivo;
+                return nuevoBien;
+            });
+        },
+        setNombreBienProyecto: function (_, { idProyecto, idBien, nuevoNombre }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const charProhibidosNombreBien = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+                if (charProhibidosNombreBien.test(nuevoNombre)) {
+                    throw new apollo_server_express_1.UserInputError("El nuevo nombre contiene caracteres no permitidos");
+                }
+                console.log(`Solicitud de set nombre para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Estado de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elBien = elProyecto.bienes.id(idBien);
+                elBien.nombre = nuevoNombre;
+                try {
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el proyecto con un nuevo bien`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elBien;
+            });
+        },
+        setUnidadBienProyecto: function (_, { idProyecto, idBien, nuevoUnidad }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const charProhibidosUnidadBien = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+                if (charProhibidosUnidadBien.test(nuevoUnidad)) {
+                    throw new apollo_server_express_1.UserInputError("La nuevo unidad contiene caracteres no permitidos");
+                }
+                console.log(`Solicitud de set unidad para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Estado de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elBien = elProyecto.bienes.id(idBien);
+                elBien.unidad = nuevoUnidad;
+                try {
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el proyecto con un nuevo bien`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elBien;
+            });
+        },
+        setCantidadBienProyecto: function (_, { idProyecto, idBien, nuevoCantidad }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de set cantidad para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Estado de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elBien = elProyecto.bienes.id(idBien);
+                elBien.cantidad = nuevoCantidad;
+                try {
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el proyecto con un nuevo bien`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elBien;
+            });
+        },
+        setFechaCierreBienProyecto: function (_, { idProyecto, idBien, nuevoFechaCierre }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de set fechaCierre para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Estado de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elBien = elProyecto.bienes.id(idBien);
+                elBien.fechaCierre = nuevoFechaCierre;
+                try {
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el proyecto con un nuevo bien`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elBien;
+            });
+        },
+        setFechaReparticionBienProyecto: function (_, { idProyecto, idBien, nuevoFechaReparticion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de set fechaReparticion para un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Estado de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elBien = elProyecto.bienes.id(idBien);
+                elBien.fechaReparticion = nuevoFechaReparticion;
+                try {
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el proyecto con un nuevo bien`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elBien;
+            });
+        },
+        eliminarBienProyecto: function (_, { idProyecto, idBien }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de eliminar un bien con id ${idBien} en un proyecto con id ${idProyecto}`);
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                let permisosEspeciales = ["superadministrador"];
+                if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando Estado de proyecto`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var indexElBien = elProyecto.bienes.findIndex(b => b.id == idBien);
+                if (indexElBien > -1) {
+                    elProyecto.bienes.splice(indexElBien, 1);
+                }
+                else {
+                    console.log(`El bien no existía`);
+                    throw new apollo_server_express_1.UserInputError("El bien a eliminar no existía en el proyecto");
+                }
+                try {
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el proyecto tras eliminar un bien`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
+            });
+        },
+        addPeticionBienProyecto: function (_, { idProyecto, idBien, peticion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de crear una peticion para el bien con id ${idBien} con info ${peticion}`);
+                try {
+                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idProyecto).exec();
+                    if (!elProyecto) {
+                        throw "proyecto no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`error buscando el proyecto. E: ` + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                var elBien = elProyecto.bienes.id(idBien);
+                if (!elBien) {
+                    console.log(`El bien no existía`);
+                    throw new apollo_server_express_1.UserInputError("El bien no existía en el proyecto");
+                }
+                var indexPeticion = elBien.listaPeticiones.findIndex(p => p.idBeneficiario == peticion.idBeneficiario);
+                if (indexPeticion > -1) {
+                    elBien.listaPeticiones.splice(indexPeticion, 1);
+                }
+                var laPeticion = elBien.listaPeticiones.create(peticion);
+                if (peticion.cantidadSolicitada > 0) {
+                    elBien.listaPeticiones.push(laPeticion);
+                }
+                try {
+                    yield elProyecto.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el proyecto con una nueva peticion en un bien`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return laPeticion;
             });
         },
         crearRequerimentoEntreNodosProyecto: function (_, { idProyecto, idNodoRequiere, idNodoRequerido, tipoNodoRequiere, tipoNodoRequerido }, contexto) {

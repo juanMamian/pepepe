@@ -135,6 +135,12 @@ esquemaTrabajo.add({
             default:0
         }
     },
+    nivel:{
+        type: Number,
+    },
+    turnoNivel:{
+        type: Number,
+    }
    
 });
 

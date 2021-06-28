@@ -55,6 +55,31 @@
         v-show="idsNodosVisibles.includes(trabajo.id)"
         @click.native="idNodoSeleccionado = trabajo.id"
       />
+
+      <div
+        id="indicadorCentroDescarga"
+        :style="[
+          {
+            left: centroDescarga.x * factorZoom + 'px',
+            top: centroDescarga.y * factorZoom + 'px',
+            width: 20*factorZoom+'px',
+            height: 20*factorZoom+'px'
+          },
+        ]"
+        v-show="usuario.username == 'juanMamian'"
+      ></div>
+      <div
+        id="indicadorCentroVista"
+        :style="[
+          {
+            left: centroVista.x * factorZoom + 'px',
+            top: centroVista.y * factorZoom + 'px',
+            width: 20*factorZoom+'px',
+            height: 20*factorZoom+'px'
+          },
+        ]"
+        v-show="usuario.username == 'juanMamian'"
+      ></div>
     </div>
 
     <ventanita-objetivo
@@ -69,6 +94,14 @@
       :key="trabajoSeleccionado.id"
       :esteTrabajo="trabajoSeleccionado"
     />
+
+    <loading
+      id="loadingNodos"
+      v-show="
+        $apollo.queries.trabajos.loading || $apollo.queries.objetivos.loading
+      "
+      texto="Descargando información..."
+    />
   </div>
 </template>
 
@@ -79,6 +112,7 @@ import NodoTrabajo from "./NodoTrabajo.vue";
 import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue";
 import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
+import Loading from "../utilidades/Loading.vue";
 
 const QUERY_TRABAJOS = gql`
   query ($centro: CoordsInput!, $radio: Int!) {
@@ -103,6 +137,8 @@ const QUERY_TRABAJOS = gql`
         y
       }
       puntaje
+      nivel
+      turnoNivel
     }
   }
 `;
@@ -131,6 +167,8 @@ const QUERY_OBJETIVOS = gql`
         y
       }
       puntaje
+      nivel
+      turnoNivel
     }
   }
 `;
@@ -142,6 +180,7 @@ export default {
     NodoTrabajo,
     VentanitaObjetivo,
     VentanitaTrabajo,
+    Loading,
   },
   name: "AtlasProyectos",
   apollo: {
@@ -181,8 +220,8 @@ export default {
   data() {
     return {
       esquinaVistaDecimal: {
-        x: 0,
-        y: 0,
+        x: -500,
+        y: -500,
       },
       centroDescarga: {
         x: 0,
@@ -391,8 +430,8 @@ export default {
     },
     centroVista() {
       return {
-        x: this.esquinaVista.x + this.sizeAtlas.x / 2,
-        y: this.esquinaVista.y + this.sizeAtlas.y / 2,
+        x: this.esquinaVista.x + (this.sizeAtlas.x/this.factorZoom) / 2,
+        y: this.esquinaVista.y + (this.sizeAtlas.y/this.factorZoom) / 2,
       };
     },
     posContenedores() {
@@ -424,27 +463,29 @@ export default {
     },
   },
   watch: {
-    callingPosiciones(nuevo) {
-      if (nuevo) {
-        this.$apollo.queries.proyectos.startPolling(5000);
-        this.$apollo.queries.trabajos.startPolling(5000);
-        this.$apollo.queries.objetivos.startPolling(5000);
-      } else {
-        this.$apollo.queries.proyectos.stopPolling();
-        this.$apollo.queries.trabajos.stopPolling();
-        this.$apollo.queries.objetivos.stopPolling();
-      }
-    },
+    // callingPosiciones(nuevo) {
+    //   if (nuevo) {
+    //     this.$apollo.queries.proyectos.startPolling(5000);
+    //     this.$apollo.queries.trabajos.startPolling(5000);
+    //     this.$apollo.queries.objetivos.startPolling(5000);
+    //   } else {
+    //     this.$apollo.queries.proyectos.stopPolling();
+    //     this.$apollo.queries.trabajos.stopPolling();
+    //     this.$apollo.queries.objetivos.stopPolling();
+    //   }
+    // },
     centroVista(actual) {
       const distanciaCentroDescarga = Math.hypot(
         this.centroDescarga.x - actual.x,
         this.centroDescarga.y - actual.y
       );
+      // console.log(`Distancia centro descarga: ${distanciaCentroDescarga}`);
       if (
         this.radioDescarga - distanciaCentroDescarga <
-        this.sizeAtlas.diagonal / 2
+        (this.sizeAtlas.diagonal/this.factorZoom) / 2
       ) {
         //Hora de actualizar nodos
+        console.log(`Reubicando centro descarga`);
         this.radioDescarga = Math.ceil(
           (Math.max(this.sizeAtlas.x, this.sizeAtlas.y) * 2) / this.factorZoom
         );
@@ -524,6 +565,29 @@ export default {
   position: absolute;
   top: 50px;
   left: 50px;
-  z-index:2;
+  z-index: 2;
+}
+#loadingNodos {
+  position: absolute;
+  bottom: 1%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+#indicadorCentroDescarga {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  background-color: red;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+
+}
+#indicadorCentroVista {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  background-color: rgb(0, 60, 255);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
 }
 </style>

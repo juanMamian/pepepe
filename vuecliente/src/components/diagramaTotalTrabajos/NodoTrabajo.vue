@@ -28,7 +28,7 @@
           :class="{
             iconoCompletado: esteTrabajo.estado === 'cumplido',
           }"
-        />{{ callingPosiciones? esteTrabajo.puntaje : esteTrabajo.nombre }}
+        />{{ callingPosiciones? esteTrabajo.nivel+', '+esteTrabajo.turnoNivel : esteTrabajo.nombre }}
       </div>
     </div>
 

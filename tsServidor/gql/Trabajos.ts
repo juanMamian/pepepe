@@ -38,6 +38,8 @@ export const typeDefs = gql`
        stuck:Boolean,
        puntaje:Int,
        centroMasa:Coords,
+       nivel: Int,
+       turnoNivel:Float,
    }
 
    type InfoBasicaTrabajo{

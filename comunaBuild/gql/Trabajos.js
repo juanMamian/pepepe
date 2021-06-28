@@ -32,6 +32,8 @@ exports.typeDefs = apollo_server_express_1.gql `
        descripcion:String,
        responsables: [String],
        posiblesResponsables:[String],
+       responsablesSolicitados:Int,
+       idObjetivoParent:String,
        nodosConocimiento:[String],
        idForo:ID,
        diagramaProyecto:InfoDiagramaProyecto,
@@ -39,7 +41,13 @@ exports.typeDefs = apollo_server_express_1.gql `
        keywords:String,
        idProyectoParent:ID,
        estadoDesarrollo:String,
-       materiales:[MaterialTrabajo]
+       materiales:[MaterialTrabajo],
+       estado:String,       
+       coords: Coords,
+       angulo:Float,
+       stuck:Boolean,
+       puntaje:Int,
+       centroMasa:Coords,
    }
 
    type InfoBasicaTrabajo{
@@ -51,7 +59,8 @@ exports.typeDefs = apollo_server_express_1.gql `
    extend type Query{
        trabajo(idTrabajo: ID!):Trabajo,
        busquedaTrabajosProyectos(textoBusqueda:String!):[InfoBasicaTrabajo],
-       trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo]
+       trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo],
+       trabajosSegunCentro(centro: CoordsInput!, radio: Int!):[Trabajo],
    }
 
    extend type Mutation{
@@ -60,6 +69,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
     editarDescripcionMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoDescripcion: String!):MaterialTrabajo,
     editarCantidadesMaterialTrabajo(idTrabajo: ID!, idMaterial:ID!, nuevoCantidadNecesaria:Int!, nuevoCantidadDisponible:Int):MaterialTrabajo,
+    setResponsablesSolicitadosTrabajo(idTrabajo:ID!, nuevoCantidadResponsablesSolicitados: Int!):Trabajo,
    }
 
 `;
@@ -165,6 +175,18 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`Enviando ${losTrabajos.length} trabajos`);
+                return losTrabajos;
+            });
+        },
+        trabajosSegunCentro: function (_, { centro, radio }, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    var losTrabajos = yield Trabajo_1.ModeloTrabajo.find({}).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando trabajos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
                 return losTrabajos;
             });
         }
@@ -365,6 +387,36 @@ exports.resolvers = {
                 }
                 console.log(`eliminado`);
                 return true;
+            });
+        },
+        setResponsablesSolicitadosTrabajo: function (_, { idTrabajo, nuevoCantidadResponsablesSolicitados }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en trabajo con id ${idTrabajo}`);
+                try {
+                    var elTrabajo = yield Trabajo_1.ModeloTrabajo.findById(idTrabajo).exec();
+                    if (!elTrabajo) {
+                        throw "trabajo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el trabajo en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
+                }
+                if (!credencialesUsuario.permisos.includes("superadministrador") && !elTrabajo.responsables.includes(credencialesUsuario.id)) {
+                    console.log(`Error de autenticacion editando responsables solicitados.`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                elTrabajo.responsablesSolicitados = nuevoCantidadResponsablesSolicitados;
+                try {
+                    yield elTrabajo.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el trabajo: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Retornando con ${elTrabajo.responsablesSolicitados} responsables solicitados`);
+                return elTrabajo;
             });
         },
     }

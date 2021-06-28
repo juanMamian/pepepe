@@ -9,6 +9,7 @@ const NodosConocimiento_1 = require("./NodosConocimiento");
 const Usuarios_1 = require("./Usuarios");
 const Proyectos_1 = require("./Proyectos");
 const Trabajos_1 = require("./Trabajos");
+const Objetivos_1 = require("./Objetivos");
 const GruposEstudiantiles_1 = require("./GruposEstudiantiles");
 const Foros_1 = require("./Foros");
 const Libro_1 = require("./cuentos/Libro");
@@ -34,8 +35,8 @@ const globalTypeDefs = gql `
         y:Int
     }
 `;
-const typeDefs = [globalTypeDefs, NodosConocimiento_1.typeDefs, Usuarios_1.typeDefs, Proyectos_1.typeDefs, Trabajos_1.typeDefs, GruposEstudiantiles_1.typeDefs, Foros_1.typeDefs, Libro_1.typeDefs];
-const resolvers = merge_1.default({}, NodosConocimiento_1.resolvers, Usuarios_1.resolvers, Proyectos_1.resolvers, Trabajos_1.resolvers, GruposEstudiantiles_1.resolvers, Foros_1.resolvers, Libro_1.resolvers);
+const typeDefs = [globalTypeDefs, NodosConocimiento_1.typeDefs, Usuarios_1.typeDefs, Proyectos_1.typeDefs, Trabajos_1.typeDefs, Objetivos_1.typeDefs, GruposEstudiantiles_1.typeDefs, Foros_1.typeDefs, Libro_1.typeDefs];
+const resolvers = merge_1.default({}, NodosConocimiento_1.resolvers, Usuarios_1.resolvers, Proyectos_1.resolvers, Trabajos_1.resolvers, Objetivos_1.resolvers, GruposEstudiantiles_1.resolvers, Foros_1.resolvers, Libro_1.resolvers);
 exports.esquema = apollo_server_express_1.makeExecutableSchema({
     typeDefs,
     resolvers

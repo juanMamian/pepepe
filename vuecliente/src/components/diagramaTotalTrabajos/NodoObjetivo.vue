@@ -29,7 +29,7 @@
           :class="{
             iconoCompletado: esteObjetivo.estado === 'cumplido',
           }"
-        />{{ callingPosiciones? esteObjetivo.puntaje : esteObjetivo.nombre }}
+        />{{ callingPosiciones? esteObjetivo.nivel+', '+esteObjetivo.turnoNivel : esteObjetivo.nombre }}
       </div>
     </div>
 

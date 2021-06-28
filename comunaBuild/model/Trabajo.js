@@ -58,12 +58,19 @@ exports.esquemaTrabajo.add({
         type: [String],
         default: []
     },
+    responsablesSolicitados: {
+        type: Number,
+        default: 0,
+    },
+    idObjetivoParent: {
+        type: String,
+    },
     nodosConocimiento: {
         type: [String],
         required: true,
         default: []
     },
-    idProyectoParent: {
+    idNodoParent: {
         type: String,
     },
     idForo: {
@@ -94,6 +101,46 @@ exports.esquemaTrabajo.add({
     materiales: {
         type: [esquemaMaterial],
         default: [],
+    },
+    coords: {
+        x: {
+            type: Number,
+            required: true,
+            default: 0
+        },
+        y: {
+            type: Number,
+            required: true,
+            default: 0
+        }
+    },
+    angulo: {
+        type: Number,
+        default: 0,
+    },
+    stuck: {
+        type: Boolean,
+        default: true,
+    },
+    puntaje: {
+        type: Number,
+        default: 0,
+    },
+    centroMasa: {
+        x: {
+            type: Number,
+            default: 0,
+        },
+        y: {
+            type: Number,
+            default: 0
+        }
+    },
+    nivel: {
+        type: Number,
+    },
+    turnoNivel: {
+        type: Number,
     }
 });
 exports.esquemaTrabajo.index({ keywords: "text" });
