@@ -1,5 +1,5 @@
 <template>
-  <div class="iconoTrabajo">
+  <div class="ventanitaTrabajo">
     <img
       src="@/assets/iconos/iconoTrabajo.png"
       alt=""
@@ -15,21 +15,14 @@
         <div id="elPropioNombre" v-show="!editandoNombre">
           {{ esteTrabajo.nombre }}
         </div>
-        <textarea
-          class="inputNuevoNombre"
-          :class="{letrasRojas: nuevoNombreIlegal}"
-          v-model="nuevoNombre"
-          v-show="editandoNombre"
-          @keypress.enter="guardarNuevoNombre"
-        />        
-        <!-- <input
+        <input
           type="text"
           class="inputNuevoNombre"
           :class="{ letrasRojas: nuevoNombreIlegal }"
           v-model="nuevoNombre"
           v-show="editandoNombre"
           @keypress.enter="guardarNuevoNombre"
-        /> -->
+        />
         <div class="controlesLateralesZona" v-if="usuarioResponsableProyecto">
           <img
             src="@/assets/iconos/editar.png"
@@ -122,7 +115,40 @@
           v-for="idPersona of esteTrabajo.responsables"
         />
       </div>
-    </div>   
+    </div>
+
+    <div id="zonaNodosConocimiento" class="zonaPrimerNivel" v-show="false">
+      <div class="nombreZona">Nodos de conocimiento involucrados</div>
+      <div id="controlesNodosConocimiento" class="controlesZona">
+        <div
+          class="controlesNodosConocimiento hoverGris botonesControles"
+          v-if="usuarioResponsableProyecto == true"
+        >
+          Añadir
+        </div>
+        <div
+          class="controlesNodosConocimiento hoverGris botonesControles"
+          v-if="
+            usuarioResponsableProyecto == true &&
+            idNodoSeleccionado != null &&
+            esteTrabajo.nodosConocimiento.some(
+              (n) => n.id == idNodoSeleccionado
+            )
+          "
+        >
+          Remover
+        </div>
+      </div>
+      <div id="listaNodosConocimiento" @click.self="idNodoSeleccionado = null">
+        <icono-nodo-conocimiento
+          :esteNodo="nodo"
+          :key="nodo.id"
+          v-for="nodo of esteTrabajo.nodosConocimiento"
+          @click.native="idNodoSeleccionado = nodo.id"
+        />
+        <buscador-nodos-conocimiento />
+      </div>
+    </div>
 
     <div
       id="zonaKeywords"
@@ -170,7 +196,7 @@
      <img
         src="@/assets/iconos/abrirLink.png"
         class="botonIr"
-        @click="navegarAlTrabajo"
+        @click.stop="navegarAlTrabajo"
         title="Abrir la página de este trabajo"
       />
 
@@ -188,6 +214,7 @@
 
 <script>
 import gql from "graphql-tag";
+import BuscadorNodosConocimiento from "../atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
 import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
 
@@ -195,48 +222,16 @@ const charProhibidosNombreTrabajo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionTrabajo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 const charProhibidosKeywordsTrabajo = /[^ a-zA-Zñ,]/;
 
-const QUERY_TRABAJO = gql`
-  query($idTrabajo: ID!) {
-    trabajo(idTrabajo: $idTrabajo) {
-      id
-      nombre
-      descripcion
-      responsables
-      keywords
-      idProyectoParent
-      estadoDesarrollo
-    }
-  }
-`;
 
 export default {
-  name: "IconoTrabajo",
+  name: "VentanitaTrabajo",
   components: {
+    BuscadorNodosConocimiento,
     Loading,
     IconoPersonaAutonomo,
-  },
-  apollo: {
-    esteTrabajo: {
-      query: QUERY_TRABAJO,
-      variables() {
-        return {
-          idTrabajo: this.idTrabajo,
-        };
-      },
-      update({ trabajo }) {
-        if (!trabajo.keywords) trabajo.keywords = "";
-        return trabajo;
-      },
-      skip() {
-        return !this.idTrabajo;
-      },
-    },
-  },
+  },  
   data() {
-    return {
-      esteTrabajo: {
-        responsables: [],
-      },
+    return {      
 
       idNodoSeleccionado: null,
       deshabilitado: false,
@@ -264,6 +259,7 @@ export default {
       defaul: false,
     },
     idTrabajo: String,
+    esteTrabajo:Object
   },
   computed: {
     usuarioResponsableTrabajo: function () {
@@ -577,7 +573,7 @@ export default {
 </script>
 
 <style scoped>
-.iconoTrabajo {
+.ventanitaTrabajo {
   border: 2px solid #0b8794;
   border-radius: 5px;
   min-height: 50px;
@@ -587,7 +583,7 @@ export default {
   background-color: rgb(230, 247, 247);
 }
 
-.iconoTrabajo:not(.seleccionado) {
+.ventanitaTrabajo:not(.seleccionado) {
   cursor: pointer;
 }
 
@@ -618,17 +614,14 @@ export default {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  padding: 3px;  
+  padding: 3px;
 }
 
-#imagenIcono:not(.iconoCompletado):hover {
-    background-color: rgb(162, 209, 162);
+#imagenIcono:hover {
+  background-color: cadetblue;
 }
 .iconoCompletado {
   background-color: rgb(44, 136, 44);
-}
-.iconoCompletado:hover {
-  background-color: rgb(95, 167, 95);
 }
 
 .zonaPrimerNivel {
@@ -638,7 +631,6 @@ export default {
 }
 .barraSuperiorZona {
   display: flex;
-  background-color: cadetblue;
 }
 .nombreZona {
   font-size: 18px;
@@ -651,9 +643,9 @@ export default {
 #nombre {
   margin-top: 15px;
   font-size: 19px;
-  
+  padding: 5px 20px;
   display: grid;
-  grid-template-columns: 70px 1fr 70px;
+  grid-template-columns: 1fr 5fr 1fr;
   margin-bottom: 15px;
 }
 
@@ -666,12 +658,11 @@ export default {
 }
 
 .inputNuevoNombre {
-  font-size: 16px;
+  font-size: 23px;
   display: block;
   margin: 10px auto;
   grid-column: 2/3;
   width: 100%;
-  resize:vertical;
 }
 #descripcion {
   font-size: 19px;
@@ -686,7 +677,7 @@ export default {
 
 #inputNuevoDescripcion {
   width: 95%;
-  font-size: 16px;
+  font-size: 19px;
   height: 70px;
   display: block;
   margin: 10px auto;

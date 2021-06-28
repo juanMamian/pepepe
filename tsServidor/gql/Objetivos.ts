@@ -11,6 +11,9 @@ export const typeDefs = gql`
    type Objetivo{
        id: ID,
        nombre: String,
+       responsables: [String],
+       posiblesResponsables:[String],
+       responsablesSolicitados:Int,
        descripcion:String,       
        vinculos:[VinculoNodoProyecto],
        keywords:String,

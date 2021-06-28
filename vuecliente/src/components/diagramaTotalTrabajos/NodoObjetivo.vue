@@ -38,7 +38,7 @@
         v-if="
           idNodoSeleccionado != null &&
           idNodoSeleccionado != esteObjetivo.id &&
-          (usuarioSuperadministrador == true || usuarioResponsableProyecto)
+          (usuarioSuperadministrador == true || usuarioResponsableObjetivo)
         "
       >
         <div class="seccionMenuCx">El elemento seleccionado...</div>
@@ -96,7 +96,7 @@ export default {
     arrastrarNodo(e) {
       if (
         !this.agarrado ||
-        (this.usuarioResponsableProyecto === false &&
+        (this.usuarioResponsableObjetivo === false &&
           this.usuarioSuperadministrador === false)
       ) {
         return;
@@ -215,6 +215,10 @@ export default {
     seleccionado(){
       return this.idNodoSeleccionado && this.idNodoSeleccionado==this.esteObjetivo.id
     },
+    usuarioResponsableObjetivo(){
+      if(!this.usuario || !this.usuario.id)return false;
+      return this.esteObjetivo.responsables.includes(this.usuario.id)
+    }
     
   },
   watch: {
@@ -311,11 +315,12 @@ export default {
 }
 #zonaArrastre{
   position: absolute;
-  width: 600%;
-  height: 600%;
-  top:-200%;
-  left: -200%;
+  width: 300px;
+  height: 300px;
+  top:50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  background-color: rgba(205, 134, 63, 0.479);
+  
 }
 </style>

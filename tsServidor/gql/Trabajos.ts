@@ -23,6 +23,7 @@ export const typeDefs = gql`
        responsables: [String],
        posiblesResponsables:[String],
        responsablesSolicitados:Int,
+       idObjetivoParent:String,
        nodosConocimiento:[String],
        idForo:ID,
        diagramaProyecto:InfoDiagramaProyecto,

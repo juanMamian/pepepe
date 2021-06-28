@@ -397,7 +397,7 @@ import {
 } from "./utilidades/recursosGql";
 import Loading from "./utilidades/Loading.vue";
 import Foro from "./Foro.vue";
-import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
+import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
 import debounce from "debounce";
 import BienRepartirAdmin from "./proyecto/BienRepartirAdmin.vue";

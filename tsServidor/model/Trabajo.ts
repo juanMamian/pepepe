@@ -61,6 +61,9 @@ esquemaTrabajo.add({
         type: Number,
         default: 0,
     },
+    idObjetivoParent:{
+        type:String,
+    },
     nodosConocimiento:{
         type:[String],
         required:true,
@@ -68,7 +71,7 @@ esquemaTrabajo.add({
     },
     idNodoParent:{
         type:String,
-    },
+    },    
     idForo:{
         type:String,        
     },

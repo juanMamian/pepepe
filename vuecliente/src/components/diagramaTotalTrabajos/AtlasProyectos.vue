@@ -1,6 +1,6 @@
 <template>
   <div
-    id="atlasProyectos"
+    class="atlasProyectos"
     @mousedown.left.exact.self.stop="panningVista = true"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
@@ -41,6 +41,7 @@
         :menuCx="idNodoMenuCx && idNodoMenuCx == objetivo.id"
         :factorZoom="factorZoom"
         v-show="idsNodosVisibles.includes(objetivo.id)"
+        @click.native="idNodoSeleccionado = objetivo.id"
       />
 
       <nodo-trabajo
@@ -52,8 +53,22 @@
         :factorZoom="factorZoom"
         :callingPosiciones="callingPosiciones"
         v-show="idsNodosVisibles.includes(trabajo.id)"
+        @click.native="idNodoSeleccionado = trabajo.id"
       />
     </div>
+
+    <ventanita-objetivo
+      v-if="idNodoSeleccionado && objetivoSeleccionado"
+      class="ventanitaNodo"
+      :key="objetivoSeleccionado.id"
+      :esteObjetivo="objetivoSeleccionado"
+    />
+    <ventanita-trabajo
+      v-if="idNodoSeleccionado && trabajoSeleccionado"
+      class="ventanitaNodo"
+      :key="trabajoSeleccionado.id"
+      :esteTrabajo="trabajoSeleccionado"
+    />
   </div>
 </template>
 
@@ -62,6 +77,8 @@ import gql from "graphql-tag";
 import NodoObjetivo from "./NodoObjetivo.vue";
 import NodoTrabajo from "./NodoTrabajo.vue";
 import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue";
+import VentanitaObjetivo from "./VentanitaObjetivo.vue";
+import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 
 const QUERY_TRABAJOS = gql`
   query ($centro: CoordsInput!, $radio: Int!) {
@@ -95,6 +112,7 @@ const QUERY_OBJETIVOS = gql`
     objetivosSegunCentro(centro: $centro, radio: $radio) {
       id
       nombre
+      responsables
       idProyectoParent
       coords {
         x
@@ -122,6 +140,8 @@ export default {
     NodoObjetivo,
     CanvasesAtlasProyectos,
     NodoTrabajo,
+    VentanitaObjetivo,
+    VentanitaTrabajo,
   },
   name: "AtlasProyectos",
   apollo: {
@@ -394,7 +414,14 @@ export default {
     idsNodosVisibles() {
       return this.todosNodos.map((n) => n.id);
     },
-    
+    objetivoSeleccionado() {
+      if (!this.idNodoSeleccionado) return null;
+      return this.objetivos.find((o) => o.id == this.idNodoSeleccionado);
+    },
+    trabajoSeleccionado() {
+      if (!this.idNodoSeleccionado) return null;
+      return this.trabajos.find((t) => t.id == this.idNodoSeleccionado);
+    },
   },
   watch: {
     callingPosiciones(nuevo) {
@@ -451,7 +478,7 @@ export default {
 </script>
 
 <style scoped>
-#atlasProyectos {
+.atlasProyectos {
   overflow: hidden;
   position: relative;
 }
@@ -467,6 +494,7 @@ export default {
 }
 #contenedorNodos {
   position: relative;
+  z-index: 1;
 }
 #canvasesAtlasProyectos {
   position: relative;
@@ -490,5 +518,12 @@ export default {
   right: 1%;
   cursor: pointer;
   z-index: 100;
+}
+.ventanitaNodo {
+  width: min(400px, 90%);
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  z-index:2;
 }
 </style>

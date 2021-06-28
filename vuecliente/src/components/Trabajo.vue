@@ -188,7 +188,7 @@
 <script>
 import gql from "graphql-tag";
 import Foro from "./Foro.vue";
-import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
+import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import MaterialTrabajo from "./trabajo/MaterialTrabajo.vue";
 import Loading from "./utilidades/Loading.vue";
 import debounce from "debounce"

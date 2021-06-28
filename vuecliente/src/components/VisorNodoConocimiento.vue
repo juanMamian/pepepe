@@ -398,7 +398,7 @@
 <script>
 import gql from "graphql-tag";
 import Loading from "./utilidades/Loading.vue";
-import IconoPersonaAutonomo from "./proyecto/IconoPersonaAutonomo.vue";
+import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import Foro from "./Foro.vue";
 import axios from "axios";
 
