@@ -60,57 +60,11 @@
 
 <script>
 import gql from "graphql-tag";
-const QUERY_TRABAJO = gql`
-  query($idTrabajo: ID!) {
-    trabajo(idTrabajo: $idTrabajo) {
-      id
-      nombre
-      estadoDesarrollo
-      diagramaProyecto {
-        posicion {
-          x
-          y
-        }
-      }
-      vinculos {
-        idRef
-        tipo
-        tipoRef
-      }
-    }
-  }
-`;
 
 export default {
-  name: "NodoTrabajo",
-  apollo: {
-    esteTrabajo: {
-      query: QUERY_TRABAJO,
-      variables() {
-        return {
-          idTrabajo: this.idTrabajo,
-        };
-      },
-      update({ trabajo }) {
-        var miInfo = {
-          id: trabajo.id,
-          posicion: trabajo.diagramaProyecto.posicion,
-          vinculos: trabajo.vinculos,
-        };
-        this.$emit("miInfo", miInfo);
-        return trabajo;
-      },
-      skip() {
-        return !this.idTrabajo;
-      },
-      fetchPolicy: "cache-and-network",
-    },
-  },
+  name: "NodoTrabajo",  
   data() {
-    return {
-      esteTrabajo: {
-        vinculos: [],
-      },
+    return {     
       agarrado: false,
       arrastrandoNodo: 0,
       umbralArrastreNodo: 10,
@@ -125,7 +79,7 @@ export default {
     };
   },
   props: {
-    idTrabajo: String,
+    esteTrabajo: Object,
     idProyecto: String,
     idNodoSeleccionado: String,
     usuarioResponsableProyecto: Boolean,
@@ -186,24 +140,22 @@ export default {
               $idProyecto: ID!
               $nuevaPosicion: CoordsInput
             ) {
-              setPosicionTrabajoDiagramaProyecto(
+              setPosicionTrabajoProyecto(
                 idProyecto: $idProyecto
                 idTrabajo: $idTrabajo
                 nuevaPosicion: $nuevaPosicion
               ) {
                 id
-                diagramaProyecto {
-                  posicion {
-                    x
-                    y
-                  }
+                coords {                  
+                  x
+                  y                  
                 }
               }
             }
           `,
           variables: {
             idProyecto: this.idProyecto,
-            idTrabajo: this.idTrabajo,
+            idTrabajo: this.esteTrabajo.id,
             nuevaPosicion: this.posicion,
           },
         })
@@ -218,7 +170,7 @@ export default {
     emitirMiInfo() {
       var info = {
         id: this.esteTrabajo.id,
-        posicion: this.esteTrabajo.diagramaProyecto.posicion,
+        posicion: this.esteTrabajo.coords,
         vinculos: this.esteTrabajo.vinculos,
       };
       this.$emit("miInfo", info);
@@ -276,17 +228,27 @@ export default {
       this.$set(
         this.posicion,
         "x",
-        this.esteTrabajo.diagramaProyecto.posicion.x
+        this.esteTrabajo.coords.x
       );
       this.$set(
         this.posicion,
         "y",
-        this.esteTrabajo.diagramaProyecto.posicion.y
+        this.esteTrabajo.coords.y
       );
     },
   },
   mounted() {
     this.montado = true;
+    this.$set(
+        this.posicion,
+        "x",
+        this.esteTrabajo.coords.x
+      );
+      this.$set(
+        this.posicion,
+        "y",
+        this.esteTrabajo.coords.y
+      );
   },
 };
 </script>

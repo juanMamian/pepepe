@@ -12,29 +12,30 @@
     @mousemove="panVista"
     
   >
-    <canvas-diagrama-flujo :todosNodos="infoNodos" :style="[posicionCanvasFlechas]" :factorZoom="factorZoom" />
+    <canvas-diagrama-flujo :todosNodos="todosNodos" :style="[posicionCanvasFlechas]" :factorZoom="factorZoom" />
+    <div id="contenedorNodos">
     <nodo-trabajo
-      v-for="idTrabajo of idsTrabajos"
-      :key="idTrabajo"
-      :idTrabajo="idTrabajo"
+      v-for="trabajo of trabajos"
+      :key="trabajo.id"      
+      :esteTrabajo="trabajo"
       :idProyecto="idProyecto"
       :usuarioResponsableProyecto="usuarioResponsableProyecto"
-      :seleccionado="idNodoSeleccionado == idTrabajo"
+      :seleccionado="idNodoSeleccionado == trabajo.id"
       :posDummy="posDummy"
-      :menuCx="idNodoClickDerecho === idTrabajo"
+      :menuCx="idNodoClickDerecho === trabajo.id"
       :idNodoSeleccionado="idNodoSeleccionado"
       :centroVista="centroVista"
       :factorZoom="Number(factorZoom.toFixed(2))"
       @click.native="
-        idNodoSeleccionado = idTrabajo;
+        idNodoSeleccionado = trabajo.id;
         tipoNodoSeleccionado = 'trabajo';
       "
-      @dblclick.native="$emit('nodoAbierto', idTrabajo)"
-      @meAbrieron="$emit('nodoAbierto', idTrabajo)"            
-      @miInfo="actualizarInfoTrabajos(idTrabajo, $event)"
+      @dblclick.native="idNodoPaVentanita=trabajo.id"
+      @meAbrieron="$emit('nodoAbierto', trabajo.id)"            
+      @miInfo="actualizarInfoTrabajos(trabajo.id, $event)"
       @crearRequerimento="crearRequerimento('trabajo', $event)"
       @eliminarVinculo="eliminarVinculo('trabajo', $event)"
-      @click.right.native.prevent="idNodoClickDerecho = idTrabajo"
+      @click.right.native.prevent="idNodoClickDerecho = trabajo.id"
     />
     <nodo-objetivo
       v-for="objetivo of objetivos"
@@ -52,12 +53,30 @@
         idNodoSeleccionado = objetivo.id;
         tipoNodoSeleccionado = 'objetivo';
       "      
-      @dblclick.native="$emit('nodoAbierto', objetivo.id)"
+      @dblclick.native="idNodoPaVentanita=objetivo.id"
       @meAbrieron="$emit('nodoAbierto', objetivo.id)"      
       @crearRequerimento="crearRequerimento('objetivo', $event)"
       @eliminarVinculo="eliminarVinculo('objetivo', $event)"
       @click.right.native.prevent.stop="idNodoClickDerecho = objetivo.id"
-    />        
+    />       
+    </div>
+
+    <ventanita-objetivo
+      v-if="idNodoPaVentanita && objetivoEnVentanita"
+      class="ventanitaNodo"
+      :usuarioResponsableProyecto="usuarioResponsableProyecto"
+      :key="'ventanita'+objetivoEnVentanita.id"
+      :esteObjetivo="objetivoEnVentanita"
+      :idProyecto="idProyecto"
+    />
+    <ventanita-trabajo
+      v-if="idNodoPaVentanita && trabajoEnVentanita"
+      class="ventanitaNodo"
+      :usuarioResponsableProyecto="usuarioResponsableProyecto"
+      :key="'ventanita'+trabajoEnVentanita.id"
+      :esteTrabajo="trabajoEnVentanita"
+      :idProyecto="idProyecto"
+    />
 
     <div id="menuCx" :style="posMenuCx" v-show="mostrandoMenuCx">
       <div class="itemMenuCx" @click="crearTrabajoAqui">Crear trabajo aquí</div>
@@ -73,12 +92,14 @@ import gql from "graphql-tag";
 import CanvasDiagramaFlujo from "./CanvasDiagramaFlujo.vue";
 import NodoObjetivo from "./NodoObjetivo.vue";
 import NodoTrabajo from "./NodoTrabajo.vue";
+import VentanitaObjetivo from "./VentanitaObjetivo.vue"
+import VentanitaTrabajo from "./VentanitaTrabajo.vue"
 
 export default {
-  components: { NodoObjetivo, NodoTrabajo, CanvasDiagramaFlujo },
+  components: { NodoObjetivo, NodoTrabajo, CanvasDiagramaFlujo, VentanitaObjetivo, VentanitaTrabajo },
   name: "DiagramaFlujo",
   props: {
-    idsTrabajos: Array,
+    trabajos: Array,
     objetivos: Array,
     idProyecto: String,
     usuarioResponsableProyecto: Boolean,
@@ -96,6 +117,7 @@ export default {
       },
       mostrandoMenuCx: false,
       idNodoSeleccionado: null,
+      idNodoPaVentanita:null,
       tipoNodoSeleccionado: null,
       posDummy: {
         x: 300,
@@ -132,14 +154,11 @@ export default {
       return this.objetivos.map((objetivo) => {
         return {
           id: objetivo.id,
-          posicion: objetivo.diagramaProyecto.posicion,
+          posicion: objetivo.coords,
           vinculos: objetivo.vinculos,
         };
       });
-    },
-    infoNodos() {
-      return this.infoObjetivos.concat(this.infoTrabajos);
-    },
+    },    
     posicionCanvasFlechas(){
       return {
         top: Math.round(-this.centroVista.y*this.factorZoom)+"px",
@@ -154,7 +173,21 @@ export default {
     },
     factorZoom(){
       return Number((this.zoom/100).toFixed(2));
-    }
+    },
+    todosNodos(){
+      return this.objetivos.concat(this.trabajos);
+    },
+    objetivoEnVentanita() {
+      if (!this.idNodoPaVentanita) return null;
+      return this.objetivos.find((o) => o.id == this.idNodoPaVentanita);
+    },
+    trabajoEnVentanita() {
+      if (!this.idNodoPaVentanita) return null;
+      return this.trabajos.find((t) => t.id == this.idNodoPaVentanita);
+    },
+    nodoSeleccionado() {
+      return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
+    },
   },
   methods: {
     abrirMenuCx(e) {
@@ -238,7 +271,7 @@ export default {
                 tipoNodoRequerido: $tipoNodoRequerido
               ) {
                 nodo {
-                  ... on Objetivo {
+                  ... on ObjetivoDeProyecto {
                     id
                     vinculos {
                       idRef
@@ -246,7 +279,7 @@ export default {
                       tipo
                     }
                   }
-                  ... on Trabajo {
+                  ... on TrabajoDeProyecto {
                     id
                     vinculos {
                       idRef
@@ -300,7 +333,7 @@ export default {
                 tipoNodoRequerido: $tipoNodoRequerido
               ) {
                 nodo {
-                  ... on Objetivo {
+                  ... on ObjetivoDeProyecto {
                     id
                     vinculos {
                       idRef
@@ -308,7 +341,7 @@ export default {
                       tipo
                     }
                   }
-                  ... on Trabajo {
+                  ... on TrabajoDeProyecto {
                     id
                     vinculos {
                       idRef
@@ -351,6 +384,7 @@ export default {
     mouseUpFondo(){
       if(!this.vistaPanned){    
         this.idNodoSeleccionado = null;
+        this.idNodoPaVentanita=null;
         this.mostrandoMenuCx = false;
         this.idNodoClickDerecho = null;
       }
@@ -425,6 +459,7 @@ export default {
   overflow: scroll;
   background-color: rgb(225, 229, 241);
   overflow: hidden;
+  z-index: 0;
 }
 #canvasDiagramaFlujo {
   position: absolute;
@@ -454,5 +489,17 @@ export default {
 }
 .itemMenuCx:hover {
   background-color: rgb(141, 158, 158);
+}
+
+#contenedorNodos{
+  z-index: 0;
+}
+
+.ventanitaNodo {
+  width: min(400px, 90%);
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  z-index: 1000;
 }
 </style>

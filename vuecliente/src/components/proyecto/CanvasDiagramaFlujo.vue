@@ -38,6 +38,7 @@ export default {
   },
   methods: {
     crearImagenTodosVinculos: function () {
+      console.log(`Creando imagen todos vínculos`);
       if (this.todosNodos.length <= 1) return;
       var lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
       //Calcular el tamaño del diagrama      
@@ -100,12 +101,12 @@ export default {
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicionCanvas) {
       let inicio = {
-        x: (nodoFrom.posicion.x*this.factorZoom)-posicionCanvas.x,
-        y: (nodoFrom.posicion.y*this.factorZoom)-posicionCanvas.y,
+        x: (nodoFrom.coords.x*this.factorZoom)-posicionCanvas.x,
+        y: (nodoFrom.coords.y*this.factorZoom)-posicionCanvas.y,
       };
       let final = {
-        x: (nodoTo.posicion.x*this.factorZoom)-posicionCanvas.x,
-        y: (nodoTo.posicion.y*this.factorZoom)-posicionCanvas.y,
+        x: (nodoTo.coords.x*this.factorZoom)-posicionCanvas.x,
+        y: (nodoTo.coords.y*this.factorZoom)-posicionCanvas.y,
       };
 
       const distanciaVertical=final.y-inicio.y;
@@ -168,16 +169,16 @@ export default {
       let bordes = {};
       bordes.top = nodosRelevantes.reduce((acc, n) => {
         //console.log(`Reduciendo ${n.nombre} con coords: ${n.posicion}`);
-        return n.posicion.y > acc ? n.posicion.y : acc;
+        return n.coords.y > acc ? n.coords.y : acc;
       }, 0);
       bordes.bot = nodosRelevantes.reduce((acc, n) => {
-        return n.posicion.y < acc ? n.posicion.y : acc;
+        return n.coords.y < acc ? n.coords.y : acc;
       }, 0);
       bordes.left = nodosRelevantes.reduce((acc, n) => {
-        return n.posicion.x < acc ? n.posicion.x : acc;
+        return n.coords.x < acc ? n.coords.x : acc;
       }, 0);
       bordes.right = nodosRelevantes.reduce((acc, n) => {
-        return n.posicion.x > acc ? n.posicion.x : acc;
+        return n.coords.x > acc ? n.coords.x : acc;
       }, 0);
 
       return {

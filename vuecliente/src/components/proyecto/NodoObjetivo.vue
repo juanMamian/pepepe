@@ -135,17 +135,15 @@ export default {
               $idProyecto: ID!
               $nuevaPosicion: CoordsInput
             ) {
-              setPosicionObjetivoDiagramaProyecto(
+              setPosicionObjetivoProyecto(
                 idProyecto: $idProyecto
                 idObjetivo: $idObjetivo
                 nuevaPosicion: $nuevaPosicion
               ) {
                 id
-                diagramaProyecto {
-                  posicion {
-                    x
-                    y
-                  }
+                coords{
+                  x
+                  y                  
                 }
               }
             }
@@ -216,12 +214,12 @@ export default {
       this.$set(
         this.posicion,
         "x",
-        this.esteObjetivo.diagramaProyecto.posicion.x
+        this.esteObjetivo.coords.x
       );
       this.$set(
         this.posicion,
         "y",
-        this.esteObjetivo.diagramaProyecto.posicion.y
+        this.esteObjetivo.coords.y
       );
     },
   },
@@ -230,12 +228,12 @@ export default {
     this.$set(
       this.posicion,
       "x",
-      this.esteObjetivo.diagramaProyecto.posicion.x
+      this.esteObjetivo.coords.x
     );
     this.$set(
       this.posicion,
       "y",
-      this.esteObjetivo.diagramaProyecto.posicion.y
+      this.esteObjetivo.coords.y
     );
   },
 };

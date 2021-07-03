@@ -1,6 +1,137 @@
 import mongoose, { Schema } from "mongoose";
-import {esquemaObjetivo} from "./Objetivo"
-import {esquemaTrabajo} from "./Trabajo"
+
+const esquemaVinculosNodosProyecto=new mongoose.Schema({
+    idRef: {
+        type: String,
+        required: true,
+    },
+    tipo: {
+        type: String,
+        required: true,
+        enum: ["requiere"]
+    },
+    tipoRef: {
+        type: String,
+        required: true,
+        enum: ["trabajo", "objetivo"]
+    }
+})
+
+const esquemaTrabajoDeProyecto= new mongoose.Schema({
+    nombre: {
+        type: String,
+        required: true,
+        min: 3,
+        max: 600,
+        default:"Nuevo trabajo"
+    },
+    descripcion: {
+        type: String,
+        max: 10000,
+        default:"Sin descripcion",
+        required:true
+    },
+    estadoDesarrollo:{
+        type:String,
+        required:true,
+        default:"noCompletado",
+        enum:["noCompletado", "completado"]
+    },
+    responsables:{
+        type: [String],
+        default: []
+    },    
+    posiblesResponsables: {
+        type: [String],
+        default: []
+    },
+    responsablesSolicitados:{
+        type: Number,
+        default: 0,
+    },
+    idObjetivoParent:{
+        type:String,
+    },
+    nodosConocimiento:{
+        type:[String],
+        required:true,
+        default:[]
+    },    
+    vinculos:{
+        type:[esquemaVinculosNodosProyecto],
+        required:true,
+        default:[]
+    },
+    keywords:{
+        type:String,
+    },     
+    coords:{
+        x:{
+            type: Number,
+            required:true,
+            default:0
+        },
+        y:{
+            type: Number,
+            required:true,
+            default:0
+        }
+    },   
+});
+
+const esquemaObjetivoDeProyecto = new mongoose.Schema({
+    nombre: {
+        type: String,
+        required: true,
+        min: 3,
+        max: 1024,
+        default: "nuevo objetivo"
+    },
+    responsables:{
+        type: [String],
+        default: []
+    },
+    posiblesResponsables: {
+        type: [String],
+        default: []
+    },
+    responsablesSolicitados:{
+        type: Number,
+        default: 0,
+    },
+    descripcion: {
+        type: String,
+        default:"Sin descripcion",
+        required:true,
+        max:2000
+    },   
+    estadoDesarrollo:{
+        type:String,
+        required:true,
+        default:"noCompletado",
+        enum:["noCompletado", "completado"]
+    },
+    vinculos:{
+        type:[esquemaVinculosNodosProyecto],
+        required:true,
+        default:[]
+    },    
+    keywords:{
+        type:String,
+    },  
+    coords:{
+        x:{
+            type: Number,
+            required:true,
+            default:0
+        },
+        y:{
+            type: Number,
+            required:true,
+            default:0
+        }
+    },   
+})
 
 const esquemaPeticionBien=new mongoose.Schema({
     idBeneficiario:{
@@ -85,17 +216,12 @@ const esquemaProyecto = new mongoose.Schema({
         required:true,
     },
     objetivos: {
-        type: [esquemaObjetivo],
+        type: [esquemaObjetivoDeProyecto],
         required:true,
         default:[]
-    },
-    idsTrabajos:{
-        type:[String],
-        default:[],
-        required: true,
-    },
+    },    
     trabajos: {
-        type: [esquemaTrabajo],
+        type: [esquemaTrabajoDeProyecto],
         default: []
     },
     responsables: {
@@ -109,6 +235,10 @@ const esquemaProyecto = new mongoose.Schema({
     responsablesSolicitados:{
         type: Number, 
         default:0,
+    },
+    participantes:{
+        type: [String],
+        default: []
     },
     idForo:{
         type:String,

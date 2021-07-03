@@ -2,7 +2,7 @@
   <div
     class="nodoTrabajo"
     :class="{ seleccionado }"
-    :style="[estiloPosicion, estiloZeta, estiloSize]"
+    :style="[estiloPosicion, estiloZeta, estiloSize, {transition: callingPosiciones?'left 5s': ''}]"
     @mousedown.left="agarrado = callingPosiciones?false:true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
@@ -28,7 +28,7 @@
           :class="{
             iconoCompletado: esteTrabajo.estado === 'cumplido',
           }"
-        />{{ callingPosiciones? esteTrabajo.nivel+', '+esteTrabajo.turnoNivel : esteTrabajo.nombre }}
+        />{{ callingPosiciones? esteTrabajo.puntaje.toFixed(2) : esteTrabajo.nombre }}
       </div>
     </div>
 
@@ -255,6 +255,7 @@ export default {
   border: 1px solid rgb(0, 94, 94);  
   background-color: rgb(230, 247, 247);
   cursor: pointer;
+  transition-timing-function: linear;
   
 }
 .seleccionado {

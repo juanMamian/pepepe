@@ -98,7 +98,41 @@ fragment fragServicioProyecto on ServicioProyecto{
   }
 }
 `
+export const fragmentoTrabajoProyecto = gql`
+  fragment fragTrabajoProyecto on TrabajoDeProyecto{
+    id
+      nombre
+      descripcion
+      estadoDesarrollo
+      vinculos{
+        idRef
+        tipo
+        tipoRef
+      }
+      coords{
+        x
+        y
+      }
+  }
+`;
 
+export const fragmentoObjetivoProyecto = gql`
+  fragment fragObjetivoProyecto on ObjetivoDeProyecto{
+    id
+    nombre
+    descripcion
+    estadoDesarrollo
+    vinculos{
+      idRef
+      tipo
+      tipoRef
+    }
+    coords{
+      x
+      y
+    }
+  }
+`;
 
 export const fragmentoProyecto = gql`
   fragment fragProyecto on Proyecto{
@@ -107,35 +141,17 @@ export const fragmentoProyecto = gql`
     descripcion
     idForo
     responsables
-    posiblesResponsables
-    responsablesSolicitados
-    bienes{
-      ...fragBienProyecto
-    }
-    servicios{
-      ...fragServicioProyecto
-    }
-    idsTrabajos
+    participantes
+    posiblesResponsables    
     objetivos {
-      id
-      nombre
-      descripcion
-      estado
-      vinculos{
-        idRef
-        tipo
-        tipoRef
-      }
-      diagramaProyecto{
-        posicion{
-          x
-          y
-        }        
-      }
+      ...fragObjetivoProyecto
     }
-  }
-  ${fragmentoBienProyecto}
-  ${fragmentoServicioProyecto}
+    trabajos {
+      ...fragTrabajoProyecto
+    }
+  }  
+  ${fragmentoTrabajoProyecto}
+  ${fragmentoObjetivoProyecto}
 `;
 
 const fragmentoQuote =gql`

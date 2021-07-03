@@ -353,12 +353,12 @@ export default {
     todosNodos: function () {
       if (this.todosNodos.length < 1) return;
       this.debTrazarVinculos();
-      //if(this.callingPosiciones)this.crearImagenPosiciones();
+      if(this.callingPosiciones)this.crearImagenPosiciones();
       this.crearImagenVinculosSeleccionado();
     },   
     nodoSeleccionado: function () {
       if(!this.callingPosiciones)this.crearImagenVinculosSeleccionado();
-      //if(this.callingPosiciones)this.crearImagenPosiciones();
+      if(this.callingPosiciones)this.crearImagenPosiciones();
 
     },
     idNodoTarget() {
@@ -396,7 +396,6 @@ export default {
   z-index: 0;
   top:0px;
   left:0px;
-  background-color: rgb(231, 175, 154);
 
 }
 

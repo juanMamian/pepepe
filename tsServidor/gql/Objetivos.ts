@@ -22,7 +22,7 @@ export const typeDefs = gql`
        coords: Coords,
        angulo:Float,
        stuck:Boolean,
-       puntaje:Int,
+       puntaje:Float,
        centroMasa:Coords,
        nivel: Int,
        turnoNivel:Float,

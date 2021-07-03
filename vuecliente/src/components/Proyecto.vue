@@ -110,7 +110,7 @@
                   : 'rotateZ(0deg)',
               }"
             ></div>
-            Responsables
+            {{esteProyecto.responsables.length===1?'Coordinador': 'Coordinadores'}}
           </div>
         </div>
 
@@ -239,6 +239,67 @@
         </div>
       </div>
 
+      <div id="zonaParticipantes" class="zonaPrimerNivel">
+        <div class="barraSuperiorZona">
+          <div
+            class="nombreZona"
+            @click="mostrandoParticipantes = !mostrandoParticipantes"
+          >
+            <div
+              class="trianguloBullet"
+              :style="{
+                transform: mostrandoParticipantes
+                  ? 'rotateZ(90deg)'
+                  : 'rotateZ(0deg)',
+              }"
+            ></div>
+            {{esteProyecto.participantes.length===1?'Participante': 'Participantes'}}
+          </div>
+        </div>
+
+        <div v-show="mostrandoParticipantes">
+          <div id="controlesParticipantes" class="controlesZona">
+            <loading v-show="enviandoQueryParticipantes" texto="Esperando..." />            
+            <div
+              class="controlesParticipantes hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryParticipantes }"
+              v-if="
+                usuarioLogeado == true &&
+                !usuarioParticipanteProyecto &&
+                !usuarioResponsableProyecto               
+              "              
+              @click="entrarListaParticipantes()"
+            >
+              Participar
+            </div>
+            <div
+              class="controlesParticipantes hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryParticipantes }"
+              v-if="
+                usuarioLogeado == true &&
+                usuarioParticipanteProyecto                
+              "              
+              @click="abandonarListaParticipantes()"
+            >
+              Abandonar
+            </div>            
+          </div>
+          <div id="listaParticipantes">
+            <icono-persona-autonomo
+              :idPersona="idPersona"
+              :key="'participante'+idPersona"
+              v-for="idPersona of esteProyecto.participantes"
+              :seleccionado="idParticipanteSeleccionado == idPersona"
+              @click.native.stop="
+                idParticipanteSeleccionado = idPersona;
+                participanteSeleccionadoEstaAceptado = true;
+              "
+            />            
+          </div>
+        </div>
+      </div>
+
+<!-- 
       <div id="zonaBienesServicios" class="zonaPrimerNivel">
         <div class="barraSuperiorZona">
           <div
@@ -306,7 +367,7 @@
             />
           </div>
         </div>
-      </div>
+      </div> -->
 
       <div
         id="zonaDiagramaFlujo"
@@ -333,7 +394,7 @@
         <diagrama-flujo
           :idProyecto="esteProyecto.id"
           :objetivos="esteProyecto.objetivos"
-          :idsTrabajos="esteProyecto.idsTrabajos"
+          :trabajos="esteProyecto.trabajos"
           :usuarioResponsableProyecto="usuarioResponsableProyecto"
           :activo="idNodoAbierto == null"
           :deshabilitar="realizandoOperacionDiagrama"
@@ -343,27 +404,7 @@
           @nodoAbierto="abrirNodo"
           @click.native="idNodoAbierto = null"
         />
-        <iconoObjetivo
-          class="ventanaNodo"
-          v-for="objetivo of esteProyecto.objetivos"
-          :key="objetivo.id"
-          :idProyecto="esteProyecto.id"
-          :esteObjetivo="objetivo"
-          v-show="idNodoAbierto == objetivo.id"
-          :usuarioResponsableProyecto="usuarioResponsableProyecto"
-          @meElimine="eliminarObjetivoDeCache(objetivo.id)"
-        />
-
-        <iconoTrabajo
-          class="ventanaNodo"
-          v-for="idTrabajo of esteProyecto.idsTrabajos"
-          v-show="idNodoAbierto == idTrabajo"
-          :key="idTrabajo"
-          :idTrabajo="idTrabajo"
-          :idProyecto="esteProyecto.id"
-          :usuarioResponsableProyecto="usuarioResponsableProyecto"
-          @meElimine="eliminarTrabajoDeCache(idTrabajo)"
-        />
+        
       </div>
       <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
         <div class="barraSuperiorZona">
@@ -380,6 +421,7 @@
         <foro
           :parent="infoAsParent"
           :idForo="esteProyecto.idForo"
+          v-if="usuarioResponsableProyecto || usuarioParticipanteProyecto"
           v-show="mostrandoForo"
         />
       </div>
@@ -389,19 +431,21 @@
 
 <script>
 import gql from "graphql-tag";
-import IconoTrabajo from "./proyecto/IconoTrabajo.vue";
-import IconoObjetivo from "./proyecto/IconoObjetivo.vue";
 import {
-  fragmentoBienProyecto,
+  fragmentoObjetivoProyecto,
+  // fragmentoBienProyecto,
   fragmentoProyecto,
+  // fragmentoObjetivoProyecto,
+  fragmentoTrabajoProyecto
 } from "./utilidades/recursosGql";
 import Loading from "./utilidades/Loading.vue";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
 import debounce from "debounce";
-import BienRepartirAdmin from "./proyecto/BienRepartirAdmin.vue";
-import BienOfrecido from "./proyecto/BienOfrecido.vue";
+// import BienRepartirAdmin from "./proyecto/BienRepartirAdmin.vue";
+// import BienOfrecido from "./proyecto/BienOfrecido.vue";
+
 
 const QUERY_PROYECTO = gql`
   query ($idProyecto: ID!) {
@@ -415,15 +459,13 @@ const charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionProyecto = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
-  components: {
-    IconoTrabajo,
-    IconoObjetivo,
+  components: {    
     Loading,
     Foro,
     IconoPersonaAutonomo,
     DiagramaFlujo,
-    BienRepartirAdmin,
-    BienOfrecido,
+    // BienRepartirAdmin,
+    // BienOfrecido,
   },
   name: "proyecto",
   apollo: {
@@ -448,13 +490,15 @@ export default {
       loading: true,
 
       esteProyecto: {
-        responsables: [],
+        responsables: [],      
         posiblesResponsables: [],
-        bienes: [],
-        servicios: [],
+        participantes: [],
+        trabajos:[],
+        objetivos:[],        
       },
       responsablesSolicitados: 0,
       idResponsableSeleccionado: null,
+      idParticipanteSeleccionado:null,
       responsableSeleccionadoEstaAceptado: false,
 
       creandoTrabajo: false,
@@ -472,11 +516,13 @@ export default {
       enviandoNuevoDescripcion: false,
       enviandoQueryResponsables: false,
       enviandoQueryBienesServicios: false,
+      enviandoQueryParticipantes:false,
 
       idNodoAbierto: null,
 
       mostrandoDescripcion: true,
       mostrandoResponsables: true,
+      mostrandoParticipantes:true,
       mostrandoDiagramaFlujo: false,
       mostrandoForo: true,
       mostrandoBienesServicios: false,
@@ -489,6 +535,16 @@ export default {
 
       if (
         this.esteProyecto.responsables.includes(this.$store.state.usuario.id)
+      ) {
+        return true;
+      }
+      return false;
+    },
+    usuarioParticipanteProyecto: function () {
+      if (!this.esteProyecto.participantes) return false;
+
+      if (
+        this.esteProyecto.participantes.includes(this.$store.state.usuario.id)
       ) {
         return true;
       }
@@ -753,6 +809,66 @@ export default {
           this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
+    },   
+    entrarListaParticipantes() {
+      console.log(
+        `Enviando peticion de entrar a la lista de participantes del proyecto con id ${this.esteProyecto.id}`
+      );
+      this.enviandoQueryParticipantes = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idProyecto: ID!, $idUsuario: ID!) {
+              addParticipanteProyecto(
+                idProyecto: $idProyecto
+                idUsuario: $idUsuario
+              ) {
+                id
+                participantes
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.esteProyecto.id,
+            idUsuario: this.$store.state.usuario.id,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryParticipantes = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryParticipantes = false;
+          console.log("error: " + error);
+        });
+    }, 
+    abandonarListaParticipantes() {
+      console.log(`Abandonando la participación en este proyecto`);
+      this.enviandoQueryParticipantes = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idProyecto: ID!, $idUsuario: ID!) {
+              removeParticipanteProyecto(
+                idProyecto: $idProyecto
+                idUsuario: $idUsuario
+              ) {
+                id
+                participantes                
+              }
+            }
+          `,
+          variables: {
+            idProyecto: this.esteProyecto.id,
+            idUsuario: this.usuario.id,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryParticipantes = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryParticipantes = false;
+          console.log("error: " + error);
+        });
     },
     crearNuevoTrabajo(posicion) {
       console.log(`enviando mutacion de crear nuevo trabajo`);
@@ -764,8 +880,11 @@ export default {
               crearTrabajoEnProyecto(
                 idProyecto: $idProyecto
                 posicion: $posicion
-              )
+              ){
+                ...fragTrabajoProyecto
+              }
             }
+            ${fragmentoTrabajoProyecto}
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
@@ -773,17 +892,17 @@ export default {
           },
           update: (store, { data: { crearTrabajoEnProyecto } }) => {
             console.log(`respuesta: ${JSON.stringify(crearTrabajoEnProyecto)}`);
-            const idNuevoTrabajo = crearTrabajoEnProyecto;
+            const nuevoTrabajo = crearTrabajoEnProyecto;
             try {
               const cache = store.readQuery({
                 query: QUERY_PROYECTO,
                 variables: { idProyecto: this.esteProyecto.id },
               });
               console.log(
-                `Trabajos en cache: ${cache.proyecto.idsTrabajos.length}`
+                `Trabajos en cache: ${cache.proyecto.trabajos.length}`
               );
               const nuevoCache = JSON.parse(JSON.stringify(cache));
-              nuevoCache.proyecto.idsTrabajos.push(idNuevoTrabajo);
+              nuevoCache.proyecto.trabajos.push(nuevoTrabajo);
 
               store.writeQuery({
                 query: QUERY_PROYECTO,
@@ -792,7 +911,7 @@ export default {
               });
               console.log(`cache actualizado`);
               console.log(
-                `Trabajos en cache: ${nuevoCache.proyecto.idsTrabajos.length}`
+                `Trabajos en cache: ${nuevoCache.proyecto.trabajos.length}`
               );
             } catch (error) {
               console.log(`Error actualizando cache: ${error}`);
@@ -819,23 +938,10 @@ export default {
                 idProyecto: $idProyecto
                 posicion: $posicion
               ) {
-                id
-                nombre
-                descripcion
-                estado
-                vinculos {
-                  idRef
-                  tipoRef
-                  tipo
-                }
-                diagramaProyecto {
-                  posicion {
-                    x
-                    y
-                  }
-                }
+                ...fragObjetivoProyecto
               }
             }
+            ${fragmentoObjetivoProyecto}
           `,
           variables: {
             idProyecto: this.esteProyecto.id,
@@ -878,55 +984,55 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    crearProductoRepartir() {
-      console.log(`Creando producto para repartir...`);
-      this.enviandoQueryBienesServicios = true;
+    // crearProductoRepartir() {
+    //   console.log(`Creando producto para repartir...`);
+    //   this.enviandoQueryBienesServicios = true;
 
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idProyecto: ID!) {
-              crearBienRepartirVacioProyecto(idProyecto: $idProyecto) {
-                ...fragBienProyecto
-              }
-            }
-            ${fragmentoBienProyecto}
-          `,
-          variables: {
-            idProyecto: this.esteProyecto.id,
-          },
-        })
-        .then(({ data: { crearBienRepartirVacioProyecto } }) => {
-          this.enviandoQueryBienesServicios = false;
-          const store = this.$apollo.provider.defaultClient;
-          const cache = store.readQuery({
-            query: QUERY_PROYECTO,
-            variables: {
-              idProyecto: this.esteProyecto.id,
-            },
-          });
-          const iBien = cache.proyecto.bienes.findIndex(
-            (b) => b.id == crearBienRepartirVacioProyecto.id
-          );
-          if (iBien > -1) {
-            console.log(`El bien ya estaba en caché`);
-          } else {
-            var nuevoCache = JSON.parse(JSON.stringify(cache));
-            nuevoCache.proyecto.bienes.push(crearBienRepartirVacioProyecto);
-            store.writeQuery({
-              query: QUERY_PROYECTO,
-              variables: {
-                idProyecto: this.esteProyecto.id,
-              },
-              data: nuevoCache,
-            });
-          }
-        })
-        .catch((error) => {
-          console.log(`Error: ${error}`);
-          this.enviandoQueryBienesServicios = false;
-        });
-    },
+    //   this.$apollo
+    //     .mutate({
+    //       mutation: gql`
+    //         mutation ($idProyecto: ID!) {
+    //           crearBienRepartirVacioProyecto(idProyecto: $idProyecto) {
+    //             ...fragBienProyecto
+    //           }
+    //         }
+    //         ${fragmentoBienProyecto}
+    //       `,
+    //       variables: {
+    //         idProyecto: this.esteProyecto.id,
+    //       },
+    //     })
+    //     .then(({ data: { crearBienRepartirVacioProyecto } }) => {
+    //       this.enviandoQueryBienesServicios = false;
+    //       const store = this.$apollo.provider.defaultClient;
+    //       const cache = store.readQuery({
+    //         query: QUERY_PROYECTO,
+    //         variables: {
+    //           idProyecto: this.esteProyecto.id,
+    //         },
+    //       });
+    //       const iBien = cache.proyecto.bienes.findIndex(
+    //         (b) => b.id == crearBienRepartirVacioProyecto.id
+    //       );
+    //       if (iBien > -1) {
+    //         console.log(`El bien ya estaba en caché`);
+    //       } else {
+    //         var nuevoCache = JSON.parse(JSON.stringify(cache));
+    //         nuevoCache.proyecto.bienes.push(crearBienRepartirVacioProyecto);
+    //         store.writeQuery({
+    //           query: QUERY_PROYECTO,
+    //           variables: {
+    //             idProyecto: this.esteProyecto.id,
+    //           },
+    //           data: nuevoCache,
+    //         });
+    //       }
+    //     })
+    //     .catch((error) => {
+    //       console.log(`Error: ${error}`);
+    //       this.enviandoQueryBienesServicios = false;
+    //     });
+    // },
     eliminarTrabajoDeCache(idTrabajo) {
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
@@ -936,7 +1042,7 @@ export default {
         },
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
-      let indexT = nuevoCache.proyecto.idsTrabajos.indexOf(idTrabajo);
+      let indexT = nuevoCache.proyecto.trabajos.indexOf(idTrabajo);
       if (indexT > -1) {
         nuevoCache.proyecto.idsTrabajos.splice(indexT, 1);
       } else {
@@ -975,60 +1081,60 @@ export default {
         data: nuevoCache,
       });
     },
-    eliminarBienDeCache(idBien) {
-      const store = this.$apollo.provider.defaultClient;
-      const cache = store.readQuery({
-        query: QUERY_PROYECTO,
-        variables: {
-          idProyecto: this.esteProyecto.id,
-        },
-      });
-      var nuevoCache = JSON.parse(JSON.stringify(cache));
-      let indexB = nuevoCache.proyecto.bienes.findIndex((b) => b.id == idBien);
-      if (indexB > -1) {
-        nuevoCache.proyecto.bienes.splice(indexB, 1);
-      } else {
-        console.log(`El bien no existía en el proyecto`);
-      }
-      store.writeQuery({
-        query: QUERY_PROYECTO,
-        variables: {
-          idProyecto: this.esteProyecto.id,
-        },
-        data: nuevoCache,
-      });
-    },
-    addPeticionBienCache(nuevaPeticion, idBien){
-      console.log(`Introduciendo la peticion ${JSON.stringify(nuevaPeticion)} en el cache para el bien ${idBien}`);
-      const store = this.$apollo.provider.defaultClient;
-      const cache = store.readQuery({
-        query: QUERY_PROYECTO,
-        variables: {
-          idProyecto: this.esteProyecto.id,
-        },
-      });
-      var nuevoCache = JSON.parse(JSON.stringify(cache));
-      var elBien=nuevoCache.proyecto.bienes.find(b=>b.id==idBien)
-      if(!elBien){
-        console.log(`Tratando de introducir una nueva peticion en un bien que no estaba en el caché`);
-        return
-      }    
+    // eliminarBienDeCache(idBien) {
+    //   const store = this.$apollo.provider.defaultClient;
+    //   const cache = store.readQuery({
+    //     query: QUERY_PROYECTO,
+    //     variables: {
+    //       idProyecto: this.esteProyecto.id,
+    //     },
+    //   });
+    //   var nuevoCache = JSON.parse(JSON.stringify(cache));
+    //   let indexB = nuevoCache.proyecto.bienes.findIndex((b) => b.id == idBien);
+    //   if (indexB > -1) {
+    //     nuevoCache.proyecto.bienes.splice(indexB, 1);
+    //   } else {
+    //     console.log(`El bien no existía en el proyecto`);
+    //   }
+    //   store.writeQuery({
+    //     query: QUERY_PROYECTO,
+    //     variables: {
+    //       idProyecto: this.esteProyecto.id,
+    //     },
+    //     data: nuevoCache,
+    //   });
+    // },
+    // addPeticionBienCache(nuevaPeticion, idBien){
+    //   console.log(`Introduciendo la peticion ${JSON.stringify(nuevaPeticion)} en el cache para el bien ${idBien}`);
+    //   const store = this.$apollo.provider.defaultClient;
+    //   const cache = store.readQuery({
+    //     query: QUERY_PROYECTO,
+    //     variables: {
+    //       idProyecto: this.esteProyecto.id,
+    //     },
+    //   });
+    //   var nuevoCache = JSON.parse(JSON.stringify(cache));
+    //   var elBien=nuevoCache.proyecto.bienes.find(b=>b.id==idBien)
+    //   if(!elBien){
+    //     console.log(`Tratando de introducir una nueva peticion en un bien que no estaba en el caché`);
+    //     return
+    //   }    
 
-      const indexP = elBien.listaPeticiones.findIndex((b) => b.idBeneficiario == nuevaPeticion.idBeneficiario);
-      if (indexP > -1) {        
-        elBien.listaPeticiones.splice(indexP, 1);
-      } 
-      if(nuevaPeticion.cantidadSolicitada>0){
-        elBien.listaPeticiones.push(nuevaPeticion);
-      }
-      store.writeQuery({
-        query: QUERY_PROYECTO,
-        variables: {
-          idProyecto: this.esteProyecto.id,
-        },
-        data: nuevoCache,
-      });
-    },
+    //   const indexP = elBien.listaPeticiones.findIndex((b) => b.idBeneficiario == nuevaPeticion.idBeneficiario);
+    //   if (indexP > -1) {        
+    //     elBien.listaPeticiones.splice(indexP, 1);
+    //   } 
+    //   if(nuevaPeticion.cantidadSolicitada>0){
+    //     elBien.listaPeticiones.push(nuevaPeticion);
+    //   }
+    //   store.writeQuery({
+    //     query: QUERY_PROYECTO,
+    //     variables: {
+    //       idProyecto: this.esteProyecto.id,
+    //     },
+    //     data: nuevoCache,
+    //   });
+    // },
     navegarAlForo() {
       console.log(`Navegando al foro de este proyecto`);
       this.$refs.zonaForo.scrollIntoView();

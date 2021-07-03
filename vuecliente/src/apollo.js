@@ -6,14 +6,16 @@ import { typeDefs, resolvers} from "./apolloStore/Schema"
 import {split} from "apollo-link"
 import {WebSocketLink} from "apollo-link-ws"
 import {getMainDefinition} from "apollo-utilities"
- import {setContext} from "apollo-link-context"
+import {setContext} from "apollo-link-context"
 import Vue from 'vue'
 import { onError } from '@apollo/client/link/error'
-
+import possibleTypes from "../possibleTypes.json"
 
 Vue.use(VueApollo);
 
-const cache= new InMemoryCache();
+const cache= new InMemoryCache({
+  possibleTypes
+});
 
 
 let getToken = ()=> localStorage.getItem('token');

@@ -42,6 +42,14 @@
         :factorZoom="factorZoom"
         v-show="idsNodosVisibles.includes(objetivo.id)"
         @click.native="idNodoSeleccionado = objetivo.id"
+        @dblclick.native="idNodoPaVentanita = trabajo.id"
+        :class="{
+          transparentoso:
+            idNodoSeleccionado &&
+            idNodoSeleccionado != objetivo.id &&
+            !idsNodosRequeridosSeleccionado.includes(objetivo.id) &&
+            !idsNodosRequierenSeleccionado.includes(objetivo.id),
+        }"
       />
 
       <nodo-trabajo
@@ -52,8 +60,16 @@
         :menuCx="idNodoMenuCx && idNodoMenuCx == trabajo.id"
         :factorZoom="factorZoom"
         :callingPosiciones="callingPosiciones"
+        :class="{
+          transparentoso:
+            idNodoSeleccionado &&
+            idNodoSeleccionado != trabajo.id &&
+            !idsNodosRequeridosSeleccionado.includes(trabajo.id) &&
+            !idsNodosRequierenSeleccionado.includes(trabajo.id),
+        }"
         v-show="idsNodosVisibles.includes(trabajo.id)"
         @click.native="idNodoSeleccionado = trabajo.id"
+        @dblclick.native="idNodoPaVentanita = trabajo.id"
       />
 
       <div
@@ -62,8 +78,8 @@
           {
             left: centroDescarga.x * factorZoom + 'px',
             top: centroDescarga.y * factorZoom + 'px',
-            width: 20*factorZoom+'px',
-            height: 20*factorZoom+'px'
+            width: 20 * factorZoom + 'px',
+            height: 20 * factorZoom + 'px',
           },
         ]"
         v-show="usuario.username == 'juanMamian'"
@@ -74,8 +90,8 @@
           {
             left: centroVista.x * factorZoom + 'px',
             top: centroVista.y * factorZoom + 'px',
-            width: 20*factorZoom+'px',
-            height: 20*factorZoom+'px'
+            width: 20 * factorZoom + 'px',
+            height: 20 * factorZoom + 'px',
           },
         ]"
         v-show="usuario.username == 'juanMamian'"
@@ -83,23 +99,21 @@
     </div>
 
     <ventanita-objetivo
-      v-if="idNodoSeleccionado && objetivoSeleccionado"
+      v-if="idNodoPaVentanita && objetivoEnVentanita && !callingPosiciones"
       class="ventanitaNodo"
-      :key="objetivoSeleccionado.id"
-      :esteObjetivo="objetivoSeleccionado"
+      :key="objetivoEnVentanita.id"
+      :esteObjetivo="objetivoEnVentanita"
     />
     <ventanita-trabajo
-      v-if="idNodoSeleccionado && trabajoSeleccionado"
+      v-if="idNodoPaVentanita && trabajoEnVentanita && !callingPosiciones"
       class="ventanitaNodo"
-      :key="trabajoSeleccionado.id"
-      :esteTrabajo="trabajoSeleccionado"
+      :key="trabajoEnVentanita.id"
+      :esteTrabajo="trabajoEnVentanita"
     />
 
     <loading
       id="loadingNodos"
-      v-show="
-        $apollo.queries.trabajos.loading || $apollo.queries.objetivos.loading
-      "
+      v-show="$apollo.queries.todosNodos.loading"
       texto="Descargando información..."
     />
   </div>
@@ -114,61 +128,114 @@ import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 import Loading from "../utilidades/Loading.vue";
 
-const QUERY_TRABAJOS = gql`
-  query ($centro: CoordsInput!, $radio: Int!) {
-    trabajosSegunCentro(centro: $centro, radio: $radio) {
-      id
-      nombre
-      idProyectoParent
-      coords {
-        x
-        y
-      }
-      estadoDesarrollo
-      vinculos {
-        idRef
-        tipo
-        tipoRef
-      }
-      stuck
-      angulo
-      centroMasa {
-        x
-        y
-      }
-      puntaje
-      nivel
-      turnoNivel
-    }
-  }
-`;
+// const fragmentoTrabajos = gql`
+//   fragment fragTrabajo on Trabajo {
+//     id
+//     nombre
+//     idProyectoParent
+//     coords {
+//       x
+//       y
+//     }
+//     estadoDesarrollo
+//     vinculos {
+//       idRef
+//       tipo
+//       tipoRef
+//     }
+//     stuck
+//     angulo
+//     centroMasa {
+//       x
+//       y
+//     }
+//     puntaje
+//     nivel
+//     turnoNivel
+//   }
+// `;
 
-const QUERY_OBJETIVOS = gql`
+// const fragmentoObjetivos = gql`
+//   fragment fragObjetivo on Objetivo {
+//     id
+//     nombre
+//     responsables
+//     idProyectoParent
+//     coords {
+//       x
+//       y
+//     }
+//     estado
+//     vinculos {
+//       idRef
+//       tipo
+//       tipoRef
+//     }
+//     stuck
+//     angulo
+//     centroMasa {
+//       x
+//       y
+//     }
+//     puntaje
+//     nivel
+//     turnoNivel
+//   }
+// `;
+
+const QUERY_TODOS_NODOS = gql`
   query ($centro: CoordsInput!, $radio: Int!) {
-    objetivosSegunCentro(centro: $centro, radio: $radio) {
-      id
-      nombre
-      responsables
-      idProyectoParent
-      coords {
-        x
-        y
+    nodosTrabajosSegunCentro(centro: $centro, radio: $radio) {
+      __typename
+      ... on Trabajo {
+        id
+        nombre
+        idProyectoParent
+        coords {
+          x
+          y
+        }
+        estadoDesarrollo
+        vinculos {
+          idRef
+          tipo
+          tipoRef
+        }
+        stuck
+        angulo
+        centroMasa {
+          x
+          y
+        }
+        puntaje
+        nivel
+        turnoNivel
       }
-      estado
-      vinculos {
-        idRef
-        tipo
-        tipoRef
+      ... on Objetivo {
+        id
+        nombre
+        responsables
+        idProyectoParent
+        coords {
+          x
+          y
+        }
+        estado
+        vinculos {
+          idRef
+          tipo
+          tipoRef
+        }
+        stuck
+        angulo
+        centroMasa {
+          x
+          y
+        }
+        puntaje
+        nivel
+        turnoNivel
       }
-      stuck
-      angulo
-      centroMasa {
-        x
-        y
-      }
-      puntaje
-      nivel
-      turnoNivel
     }
   }
 `;
@@ -184,37 +251,52 @@ export default {
   },
   name: "AtlasProyectos",
   apollo: {
-    trabajos: {
-      query: QUERY_TRABAJOS,
+    // trabajos: {
+    //   query: QUERY_TRABAJOS,
+    //   variables() {
+    //     return {
+    //       centro: this.centroDescarga,
+    //       radio: this.radioDescarga,
+    //     };
+    //   },
+    //   update({ trabajosSegunCentro }) {
+    //     return trabajosSegunCentro;
+    //   },
+    //   skip() {
+    //     return !this.radioDescarga;
+    //   },
+    //   debounce: 1000,
+    // },
+    // objetivos: {
+    //   query: QUERY_OBJETIVOS,
+    //   variables() {
+    //     return {
+    //       centro: this.centroDescarga,
+    //       radio: this.radioDescarga,
+    //     };
+    //   },
+    //   update({ objetivosSegunCentro }) {
+    //     return objetivosSegunCentro;
+    //   },
+    //   skip() {
+    //     return !this.radioDescarga;
+    //   },
+    //   debounce: 1000,
+    // },
+    todosNodos: {
+      query: QUERY_TODOS_NODOS,
       variables() {
         return {
           centro: this.centroDescarga,
           radio: this.radioDescarga,
         };
       },
-      update({ trabajosSegunCentro }) {
-        return trabajosSegunCentro;
+      update({ nodosTrabajosSegunCentro }) {
+        nodosTrabajosSegunCentro;
       },
       skip() {
         return !this.radioDescarga;
       },
-      debounce: 1000,
-    },
-    objetivos: {
-      query: QUERY_OBJETIVOS,
-      variables() {
-        return {
-          centro: this.centroDescarga,
-          radio: this.radioDescarga,
-        };
-      },
-      update({ objetivosSegunCentro }) {
-        return objetivosSegunCentro;
-      },
-      skip() {
-        return !this.radioDescarga;
-      },
-      debounce: 1000,
     },
   },
   data() {
@@ -239,6 +321,7 @@ export default {
       hovered: false,
 
       idNodoSeleccionado: null,
+      idNodoPaVentanita: null,
       idNodoMenuCx: null,
 
       zoom: 100,
@@ -248,9 +331,10 @@ export default {
       pinching: false,
       lastPinchDistance: 0,
 
-      proyectos: [],
-      trabajos: [],
-      objetivos: [],
+      // proyectos: [],
+      // trabajos: [],
+      // objetivos: [],
+      todosNodos: [],
 
       callingPosiciones: false,
     };
@@ -425,13 +509,10 @@ export default {
         y: Math.round(this.esquinaVistaDecimal.y),
       };
     },
-    todosNodos() {
-      return this.trabajos.concat(this.objetivos);
-    },
     centroVista() {
       return {
-        x: this.esquinaVista.x + (this.sizeAtlas.x/this.factorZoom) / 2,
-        y: this.esquinaVista.y + (this.sizeAtlas.y/this.factorZoom) / 2,
+        x: this.esquinaVista.x + this.sizeAtlas.x / this.factorZoom / 2,
+        y: this.esquinaVista.y + this.sizeAtlas.y / this.factorZoom / 2,
       };
     },
     posContenedores() {
@@ -461,19 +542,60 @@ export default {
       if (!this.idNodoSeleccionado) return null;
       return this.trabajos.find((t) => t.id == this.idNodoSeleccionado);
     },
+    objetivoEnVentanita() {
+      if (!this.idNodoPaVentanita) return null;
+      return this.objetivos.find((o) => o.id == this.idNodoPaVentanita);
+    },
+    trabajoEnVentanita() {
+      if (!this.idNodoPaVentanita) return null;
+      return this.trabajos.find((t) => t.id == this.idNodoPaVentanita);
+    },
+    nodoSeleccionado() {
+      return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
+    },
+    nodosRequierenSeleccionado() {
+      if (!this.idNodoSeleccionado) return [];
+      return this.todosNodos.filter((n) =>
+        n.vinculos
+          .filter((v) => v.tipo == "requiere")
+          .map((v) => v.idRef)
+          .includes(this.idNodoSeleccionado)
+      );
+    },
+    nodosRequeridosSeleccionado() {
+      if (!this.idNodoSeleccionado) return [];
+      const idsRequeridos = this.nodoSeleccionado.vinculos
+        .filter((v) => v.tipo == "requiere")
+        .map((v) => v.idRef);
+      return this.todosNodos.filter((n) => idsRequeridos.includes(n.id));
+    },
+    idsNodosRequierenSeleccionado() {
+      return this.nodosRequierenSeleccionado.map((n) => n.id);
+    },
+    idsNodosRequeridosSeleccionado() {
+      return this.nodosRequeridosSeleccionado.map((n) => n.id);
+    },
+    trabajos() {
+      return this.todosNodos.filter((n) => n.__typedef === "Trabajo");
+    },
+    objetivos() {
+      return this.todosNodos.filter((n) => n.__typedef === "Objetivo");
+    },
   },
   watch: {
-    // callingPosiciones(nuevo) {
-    //   if (nuevo) {
-    //     this.$apollo.queries.proyectos.startPolling(5000);
-    //     this.$apollo.queries.trabajos.startPolling(5000);
-    //     this.$apollo.queries.objetivos.startPolling(5000);
-    //   } else {
-    //     this.$apollo.queries.proyectos.stopPolling();
-    //     this.$apollo.queries.trabajos.stopPolling();
-    //     this.$apollo.queries.objetivos.stopPolling();
-    //   }
-    // },
+    callingPosiciones(nuevo) {
+      if (nuevo) {
+        // this.$apollo.queries.proyectos.startPolling(5000);
+        // this.$apollo.queries.trabajos.startPolling(5000);
+        // this.$apollo.queries.objetivos.startPolling(5000);
+        this.$apollo.queries.todosNodos.startPolling(5000);
+      } else {
+        // this.$apollo.queries.proyectos.stopPolling();
+        // this.$apollo.queries.trabajos.stopPolling();
+        // this.$apollo.queries.objetivos.stopPolling();
+        this.$apollo.queries.todosNodos.stopPolling();
+      }
+    },
     centroVista(actual) {
       const distanciaCentroDescarga = Math.hypot(
         this.centroDescarga.x - actual.x,
@@ -482,7 +604,7 @@ export default {
       // console.log(`Distancia centro descarga: ${distanciaCentroDescarga}`);
       if (
         this.radioDescarga - distanciaCentroDescarga <
-        (this.sizeAtlas.diagonal/this.factorZoom) / 2
+        this.sizeAtlas.diagonal / this.factorZoom / 2
       ) {
         //Hora de actualizar nodos
         console.log(`Reubicando centro descarga`);
@@ -491,6 +613,11 @@ export default {
         );
         this.$set(this.centroDescarga, "x", Math.round(this.centroVista.x));
         this.$set(this.centroDescarga, "y", Math.round(this.centroVista.y));
+      }
+    },
+    idNodoSeleccionado(nuevo) {
+      if (!nuevo) {
+        this.idNodoPaVentanita = null;
       }
     },
   },
@@ -580,7 +707,6 @@ export default {
   background-color: red;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-
 }
 #indicadorCentroVista {
   width: 50px;
@@ -589,5 +715,8 @@ export default {
   background-color: rgb(0, 60, 255);
   transform: translate(-50%, -50%);
   border-radius: 50%;
+}
+.transparentoso {
+  opacity: 0.2;
 }
 </style>
