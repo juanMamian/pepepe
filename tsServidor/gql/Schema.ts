@@ -3,6 +3,8 @@ import { typeDefs as tdNodos, resolvers as rNodos } from "./NodosConocimiento"
 import { typeDefs as tdUsuarios, resolvers as rUsuarios } from "./Usuarios"
 import { typeDefs as tdProyectos, resolvers as rProyectos } from "./Proyectos"
 import { typeDefs as tdTrabajos, resolvers as rTrabajos } from "./Trabajos"
+import { typeDefs as tdEventos, resolvers as rEventos } from "./Eventos"
+
 // import { typeDefs as tdObjetivos, resolvers as rObjetivos } from "./Objetivos"
 import { typeDefs as tdGruposEstudiantiles, resolvers as rGruposEstudiantiles } from "./GruposEstudiantiles"
 import { typeDefs as tdForos, resolvers as rForos } from "./Foros"
@@ -34,8 +36,8 @@ const globalTypeDefs = gql`
     }
 `;
 
-const typeDefs = [globalTypeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos,  tdGruposEstudiantiles, tdForos, tdCuentos];
-const resolvers = merge({}, rNodos, rUsuarios, rProyectos, rTrabajos, rGruposEstudiantiles, rForos, rCuentos);
+const typeDefs = [globalTypeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos, tdEventos,  tdGruposEstudiantiles, tdForos, tdCuentos];
+const resolvers = merge({}, rNodos, rUsuarios, rProyectos, rTrabajos, rEventos, rGruposEstudiantiles, rForos, rCuentos);
 
 export const esquema = makeExecutableSchema({
     typeDefs,

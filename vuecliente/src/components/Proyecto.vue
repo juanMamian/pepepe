@@ -299,6 +299,34 @@
         </div>
       </div>
 
+      <div id="zonaEventos" class="zonaPrimerNivel">
+        <div class="barraSuperiorZona">
+          <div
+            class="nombreZona"
+            @click="mostrandoEventos = !mostrandoEventos"
+          >
+            <div
+              class="trianguloBullet"
+              :style="{
+                transform: mostrandoEventos
+                  ? 'rotateZ(90deg)'
+                  : 'rotateZ(0deg)',
+              }"
+            ></div>
+            Eventos
+          </div>
+        </div>
+        <div v-show="mostrandoEventos">
+          <div id="controlesEventos" class="controlesZona">
+                               
+          </div>  
+
+          <calendario :configCalendario="{tipo:'club', id: esteProyecto.id}" />    
+        </div>
+        
+
+      </div>
+
 <!-- 
       <div id="zonaBienesServicios" class="zonaPrimerNivel">
         <div class="barraSuperiorZona">
@@ -443,6 +471,7 @@ import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
 import debounce from "debounce";
+import Calendario from "./utilidades/Calendario.vue"
 // import BienRepartirAdmin from "./proyecto/BienRepartirAdmin.vue";
 // import BienOfrecido from "./proyecto/BienOfrecido.vue";
 
@@ -464,6 +493,7 @@ export default {
     Foro,
     IconoPersonaAutonomo,
     DiagramaFlujo,
+    Calendario
     // BienRepartirAdmin,
     // BienOfrecido,
   },
@@ -517,16 +547,20 @@ export default {
       enviandoQueryResponsables: false,
       enviandoQueryBienesServicios: false,
       enviandoQueryParticipantes:false,
+      enviandoQueryEventos:false,
 
       idNodoAbierto: null,
 
       mostrandoDescripcion: true,
       mostrandoResponsables: true,
       mostrandoParticipantes:true,
+      mostrandoEventos:true,
       mostrandoDiagramaFlujo: false,
       mostrandoForo: true,
       mostrandoBienesServicios: false,
       administrandoBienesServicios:false,
+
+
     };
   },
   computed: {
@@ -595,6 +629,7 @@ export default {
     realizandoOperacionDiagrama() {
       return this.creandoTrabajo || this.creandoObjetivo;
     },
+    
   },
   methods: {
     guardarNuevoNombre() {

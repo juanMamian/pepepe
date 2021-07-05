@@ -1,5 +1,16 @@
 import gql from "graphql-tag"
 
+export const fragmentoEvento = gql`
+  fragment fragEvento on EventoCalendario{
+    id
+    nombre
+    descripcion
+    horarioInicio
+    horarioFinal
+    responsables  
+  }
+`;
+
 export const fragmentoResponsables = gql`
 fragment fragResponsables on PublicUsuario {
   id
