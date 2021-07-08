@@ -1,5 +1,13 @@
 <template>
-  <div class="calendario">
+  <div
+    class="calendario"
+    @mouseup.left="
+      idEventoSeleccionado = null;
+      idEventoAbierto = null;
+    "
+    @mouseenter="hoveringCalendario = true"
+    @mouseleave="hoveringCalendario = false"
+  >
     <div id="controles">
       <div
         class="control"
@@ -9,7 +17,11 @@
         {{ seleccionandoPlaceNuevoEvento ? "Cancelar" : "Crear evento" }}
       </div>
     </div>
-    <div id="eventoSeleccionado" v-if="eventoSeleccionado"></div>
+    <ventana-evento-calendario
+      v-if="eventoAbierto"
+      :key="idEventoAbierto"
+      :esteEvento="eventoAbierto"
+    />
     <div id="graficoDias">
       <div id="filaTiempo">
         <div
@@ -28,6 +40,52 @@
             ]"
           >
             {{ hora }}
+          </div>
+
+          <div
+            id="marcaTiempoInicialEvento"
+            v-show="tiempoInicioMarcado"
+            :style="[
+              {
+                left:
+                  ((tiempoInicioMarcado - minutoInicial) * widthHoraPx) / 60 +
+                  'px',
+              },
+            ]"
+          >
+            {{
+              tiempoInicioMarcado % 60 > 0
+                ? tiempoInicioMarcado % 60
+                : tiempoInicioMarcado / 60
+            }}
+            <div
+              class="lineaReferencia"
+              v-if="montado"
+              :style="[{ height: $el.offsetHeight + 'px' }]"
+            ></div>
+          </div>
+
+          <div
+            id="marcaTiempoFinalEvento"
+            v-show="tiempoFinalMarcado"
+            :style="[
+              {
+                left:
+                  ((tiempoFinalMarcado - minutoInicial) * widthHoraPx) / 60 +
+                  'px',
+              },
+            ]"
+          >
+            {{
+              tiempoFinalMarcado % 60 > 0
+                ? tiempoFinalMarcado % 60
+                : tiempoFinalMarcado / 60
+            }}
+            <div
+              class="lineaReferencia"
+              v-if="montado"
+              :style="[{ height: $el.offsetHeight + 'px' }]"
+            ></div>
           </div>
 
           <div
@@ -78,9 +136,11 @@
         v-for="dia of diasVisibles"
         :key="'dia' + dia.date"
       >
-        <div class="diaSemana">{{ numsDiasSemana[dia.diaSemana] }}</div>
-        <div class="diaMes">
-          <div class="numeroDiaMes">{{ dia.diaMes }}</div>
+        <div class="zonaInfoDia" :class="{ diaHoy: dia.hoy }">
+          <div class="diaMes">
+            <div class="numeroDiaMes">{{ dia.diaMes }}</div>
+          </div>
+          <div class="diaSemana">{{ numsDiasSemana[dia.diaSemana] }}</div>
         </div>
         <div
           class="zonaEventos"
@@ -95,11 +155,21 @@
           <evento-calendario
             v-for="evento of getEventosDia(dia)"
             :key="evento.id"
+            ref="eventos"
             :esteEvento="evento"
+            :idEventoAbierto="idEventoAbierto"
             :primerMinutoMediaHora="primerMinutoMediaHora"
             :minutoInicial="minutoInicial"
-            :dateDia="dia.milis"
-            :widthHoraPx="widthHoraPx"                        
+            :milisDia="dia.milis"
+            :widthHoraPx="widthHoraPx"
+            :seleccionado="idEventoSeleccionado === evento.id"
+            @mouseup.native.left.stop="idEventoSeleccionado = evento.id"
+            @meElimine="eliminarEventoDeCache"
+            @dblclick.native="idEventoAbierto = evento.id"
+            @marcarInicio="tiempoInicioMarcado = $event"
+            @marcarFinal="tiempoFinalMarcado = $event"
+            @desmarcarInicio="tiempoInicioMarcado = null"
+            @desmarcarFinal="tiempoFinalMarcado = null"
           />
         </div>
       </div>
@@ -111,6 +181,7 @@
 import gql from "graphql-tag";
 import EventoCalendario from "./EventoCalendario.vue";
 import { fragmentoEvento } from "./recursosGql";
+import VentanaEventoCalendario from "./VentanaEventoCalendario.vue";
 
 const QUERY_EVENTOS_PROPIOS = gql`
   query ($origen: String!, $idOrigen: ID!) {
@@ -122,7 +193,7 @@ const QUERY_EVENTOS_PROPIOS = gql`
 `;
 
 export default {
-  components: { EventoCalendario },
+  components: { EventoCalendario, VentanaEventoCalendario },
   name: "Calendario",
   apollo: {
     eventosPropios: {
@@ -142,12 +213,13 @@ export default {
     configCalendario: Object,
   },
   data() {
-    const dateHoy=new Date(Date.now());
+    const dateHoy = new Date(Date.now());
     dateHoy.setHours(0);
     dateHoy.setMinutes(0);
     dateHoy.setSeconds(0);
-    console.log(`Fecha hoy: ${dateHoy}`);
+    
     return {
+      hoveringCalendario: false,
       eventosPropios: [],
       numsDiasSemana: [
         "Domingo",
@@ -166,14 +238,16 @@ export default {
       seleccionandoPlaceNuevoEvento: false,
       minutoInicialFantasmaNuevoEvento: 0,
       duracionFantasmaNuevoEvento: 60,
+      tiempoInicioMarcado: null,
+      tiempoFinalMarcado: null,
 
-      eventoSeleccionado: null,
+      idEventoSeleccionado: null,
+      idEventoAbierto: null,
     };
   },
   computed: {
     diasVisibles() {
       var fechas = [];
-      console.log(`Dia central ${this.diaCentral}`);
       for (var i = -5; i <= 5; i++) {
         let iteracionFecha = this.diaCentral + i * 86400000;
         fechas.push(iteracionFecha);
@@ -182,7 +256,6 @@ export default {
       var fechasEnriquecidas = fechas.map((f) => {
         let laDate = new Date(f);
         var esHoy = false;
-        console.log(`Comparando ${laDate} con ${dateHoy}`);
         if (
           dateHoy.getMonth() === laDate.getMonth() &&
           dateHoy.getDate() === laDate.getDate() &&
@@ -210,7 +283,7 @@ export default {
       var arrayHoras = [];
       for (var i = 0; i <= horasQueCaben; i++) {
         let estaHora = primeraHora + i;
-        if (estaHora < 24) arrayHoras.push(estaHora);
+        if (estaHora <= 24) arrayHoras.push(estaHora);
       }
       return arrayHoras;
     },
@@ -256,27 +329,45 @@ export default {
 
       return resultado;
     },
-    eventosPropiosConDia(){
-        return this.eventosPropios.map(evento=>{
-            const fechaEvento=new Date(evento.horarioInicio)
-            const dia=fechaEvento.getDate();
-            const mes=fechaEvento.getMonth();
-            const año=fechaEvento.getFullYear();
-            evento.dia=dia;
-            evento.mes=mes;
-            evento.año=año;
-            return evento;
-        }) 
+    eventosPropiosConDia() {
+      return this.eventosPropios.map((evento) => {
+        const fechaEvento = new Date(evento.horarioInicio);
+        const dia = fechaEvento.getDate();
+        const mes = fechaEvento.getMonth();
+        const año = fechaEvento.getFullYear();
+        evento.dia = dia;
+        evento.mes = mes;
+        evento.año = año;
+        return evento;
+      });
+    },
+    eventoSeleccionado() {
+      if (!this.idEventoSeleccionado) return null;
 
-    }
+      return this.eventosPropios.find(
+        (e) => e.id === this.idEventoSeleccionado
+      );
+    },
+    todosEventos() {
+      return this.eventosPropios;
+    },
+    eventoAbierto() {
+      if (!this.idEventoAbierto) return null;
+      return this.todosEventos.find((e) => e.id === this.idEventoAbierto);
+    },
+    
   },
   methods: {
     crearNuevoEventoEnHorario(dia) {
       if (!this.seleccionandoPlaceNuevoEvento) return;
-      const horarioI=new Date(dia.milis + (this.minutoInicialFantasmaNuevoEvento * 60000));
-      const dateDia=new Date(dia.milis);
+      const horarioI = new Date(
+        dia.milis + this.minutoInicialFantasmaNuevoEvento * 60000
+      );
+      const dateDia = new Date(dia.milis);
       console.log(`Creando con horario de inicio: ${horarioI.getHours()}h`);
-      console.log(`Minuto inicial fantasma: ${this.minutoInicialFantasmaNuevoEvento}`);
+      console.log(
+        `Minuto inicial fantasma: ${this.minutoInicialFantasmaNuevoEvento}`
+      );
       console.log(`dateDia: ${dateDia}`);
       this.$apollo
         .mutate({
@@ -302,13 +393,41 @@ export default {
             origen: this.configCalendario.tipo,
             idOrigen: this.configCalendario.id,
             horarioInicio:
-              dia.milis + (this.minutoInicialFantasmaNuevoEvento * 60000),
+              dia.milis + this.minutoInicialFantasmaNuevoEvento * 60000,
             horarioFinal:
-              dia.milis + (this.minutoFinalFantasmaNuevoEvento * 60000),
+              dia.milis + this.minutoFinalFantasmaNuevoEvento * 60000,
           },
         })
-        .then(() => {
+        .then(({ data: { crearEventoCalendario } }) => {
           this.seleccionandoPlaceNuevoEvento = false;
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_EVENTOS_PROPIOS,
+            variables: {
+              origen: this.configCalendario.tipo,
+              idOrigen: this.configCalendario.id,
+            },
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          let indexE = nuevoCache.eventosSegunOrigen.findIndex(
+            (e) => e.id == crearEventoCalendario.id
+          );
+          if (indexE > -1) {
+            console.log(`El evento ya estaba en caché`);
+          } else {
+            nuevoCache.eventosSegunOrigen.push(crearEventoCalendario);
+            store.writeQuery({
+              query: QUERY_EVENTOS_PROPIOS,
+              variables: {
+                origen: this.configCalendario.tipo,
+                idOrigen: this.configCalendario.id,
+              },
+              data: nuevoCache,
+            });
+            this.$nextTick(() => {
+              this.idEventoSeleccionado = crearEventoCalendario.id;
+            });
+          }
         })
         .catch((error) => {
           console.log(`Error. E: ${error}`);
@@ -319,6 +438,8 @@ export default {
       if (!this.moviendoTiempos) return;
 
       this.minutoInicial -= e.movementX;
+      if (this.minutoInicial < 0) this.minutoInicial = 0;
+      if (this.minutoInicial > 1380) this.minutoInicial = 1380;
     },
     setMinutoInicialFantasmaNuevoEvento(e) {
       if (!this.seleccionandoPlaceNuevoEvento) return;
@@ -333,21 +454,81 @@ export default {
       this.minutoInicialFantasmaNuevoEvento =
         this.primerMinutoMediaHora + mediasHoras * 30;
     },
-    getEventosDia(dia){
-        return this.eventosPropios.filter(e=>{
-            const minutosEvento=Math.floor(Date.parse(e.horarioInicio)/(1000*60*60*24));
-            const minutosDia=Math.floor(dia.milis/(1000*60*60*24));
-            if(minutosEvento===minutosDia){
-                return true;
-            }
-            else{
-                return false;
-            }
-        })
-    }
+    getEventosDia(dia) {
+      return this.eventosPropios.filter((e) => {
+        const dateEvento = new Date(e.horarioInicio);
+        const dateDia = dia.date;
+        if (
+          dateEvento.getFullYear() === dateDia.getFullYear() &&
+          dateEvento.getMonth() === dateDia.getMonth() &&
+          dateEvento.getDate() === dateDia.getDate()
+        ) {
+          return true;
+        } else {
+          return false;
+        }
+      });
+    },
+    eliminarEventoDeCache(idEvento) {
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_EVENTOS_PROPIOS,
+        variables: {
+          origen: this.configCalendario.tipo,
+          idOrigen: this.configCalendario.id,
+        },
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      var eventos = nuevoCache.eventosSegunOrigen;
+
+      const indexE = eventos.findIndex((e) => e.id === idEvento);
+      if (indexE > -1) {
+        eventos.splice(indexE, 1);
+        store.writeQuery({
+          query: QUERY_EVENTOS_PROPIOS,
+          variables: {
+            origen: this.configCalendario.tipo,
+            idOrigen: this.configCalendario.id,
+          },
+          data: nuevoCache,
+        });
+      } else {
+        console.log(`El evento no estaba en cache`);
+      }
+    },
+    moverDias(e) {
+      if (!this.hoveringCalendario) return;
+      e.preventDefault();
+      const deltaTiempos=30;
+
+      if (e.deltaY > 0) {
+        if (e.shiftKey) {
+          this.minutoInicial += deltaTiempos;
+          if (this.minutoInicial < 0) this.minutoInicial = 0;
+          if (this.minutoInicial > 1380) this.minutoInicial = 1380;
+        }
+        else{
+          this.diaCentral += 86400000;
+        }
+      }
+      if (e.deltaY < 0) {
+        if (e.shiftKey) {
+          this.minutoInicial -= deltaTiempos;
+          if (this.minutoInicial < 0) this.minutoInicial = 0;
+          if (this.minutoInicial > 1380) this.minutoInicial = 1380;
+        }
+        else{
+          this.diaCentral -= 86400000;
+        }
+      }
+    },
   },
   mounted() {
     this.montado = true;
+    window.addEventListener("wheel", this.moverDias, { passive: false });
+  },
+  beforeDestroy() {
+    window.removeEventListener("wheel", this.moverDias, { passive: false });
   },
 };
 </script>
@@ -355,6 +536,15 @@ export default {
 <style scoped>
 .calendario {
   overflow: hidden;
+}
+.ventanaEventoCalendario {
+  width: min(400px, 90%);
+  min-height: 100px;
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
 }
 #controles {
   display: flex;
@@ -371,7 +561,7 @@ export default {
   z-index: 1;
 }
 #contenedorMarcas {
-  margin-left: 135px;
+  margin-left: 137px;
   height: 40px;
   position: relative;
   cursor: pointer;
@@ -393,7 +583,26 @@ export default {
   transform: translateX(-50%);
   z-index: 1;
 }
+
 #marcaTiempoFinalNuevoEvento {
+  position: absolute;
+  top: 10px;
+  user-select: none;
+  color: rgb(36, 123, 126);
+  font-size: 13px;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+#marcaTiempoInicialEvento {
+  position: absolute;
+  top: 10px;
+  user-select: none;
+  color: rgb(36, 123, 126);
+  font-size: 13px;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+#marcaTiempoFinalEvento {
   position: absolute;
   top: 10px;
   user-select: none;
@@ -413,8 +622,14 @@ export default {
 .filaDia {
   display: flex;
   min-height: 50px;
-  z-index: 0;
   border-bottom: 1px solid rgb(146, 146, 146);
+  position: relative;
+}
+
+.zonaInfoDia {
+  display: flex;
+  background-color: rgb(255, 255, 225);
+  z-index: 1;
 }
 .diaHoy {
   background-color: cadetblue;
@@ -422,6 +637,7 @@ export default {
 .diaSemana {
   min-width: 100px;
   width: 100px;
+  margin-left: 10px;
 }
 .diaMes {
   min-width: 25px;
@@ -429,7 +645,7 @@ export default {
   height: 25px;
   border-radius: 50%;
   background-color: chocolate;
-  margin-left: 10px;
+  margin-left: 2px;
   position: relative;
 }
 .numeroDiaMes {
@@ -443,7 +659,6 @@ export default {
   background-color: rgb(250, 223, 214);
   width: 100%;
   position: relative;
-  overflow: hidden;
 }
 .zonaEventos:not(:hover) > .fantasmaNuevoEvento {
   display: none;
@@ -457,7 +672,7 @@ export default {
   height: 30px;
   pointer-events: none;
 }
-.eventoCalendario{
-    position: absolute
+.eventoCalendario {
+  position: absolute;
 }
 </style>

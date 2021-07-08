@@ -1,6 +1,7 @@
 import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
 import { ModeloProyecto as Proyecto } from "../model/Proyecto";
 import { ModeloTrabajo as Trabajo } from "../model/Trabajo";
+import { ModeloEvento as Evento } from "../model/Evento";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloForo as Foro } from "../model/Foros/Foro"
@@ -367,6 +368,31 @@ export const resolvers = {
                 elProyecto.participantes.splice(indexParticipante, 1);
             }
 
+            //Añadir como participante en todos los eventos de este proyecto
+
+            try {
+                var eventosProyecto:any = await Evento.find({idOrigen: elProyecto.id}).exec();
+            } catch (error) {
+                console.log(`Error descargando los eventos del proyecto: ${error}`);                
+            }
+
+            eventosProyecto.forEach(async function(e){
+                let indexU=e.participantes.indexOf(idUsuario);
+                if(indexU>-1){
+                    e.participantes.splice(indexU, 1);
+                }
+                e.participantes.push(idUsuario);
+
+                try {
+                    await e.save();
+                } catch (error) {
+                    console.log(`Error guardando el evento con el nuevo participante: ${error}`);                    
+                }
+            })
+
+
+            //Guardar proyecto
+
             try {
                 await elProyecto.save();
             }
@@ -432,6 +458,29 @@ export const resolvers = {
                 console.log(`sacando al usuario ${idUsuario} de la lista de responsables`);
                 elProyecto.responsables.splice(indexResponsable, 1);
             }
+            
+            //Retirar como participante en todos los eventos de este proyecto
+
+            try {
+                var eventosProyecto:any = await Evento.find({idOrigen: elProyecto.id}).exec();
+            } catch (error) {
+                console.log(`Error descargando los eventos del proyecto: ${error}`);                
+            }
+
+            eventosProyecto.forEach(async function(e){
+                let indexU=e.participantes.indexOf(idUsuario);
+                if(indexU>-1){
+                    e.participantes.splice(indexU, 1);
+                }
+
+                try {
+                    await e.save();
+                } catch (error) {
+                    console.log(`Error guardando el evento con el nuevo participante: ${error}`);                    
+                }
+            });
+
+            //Guardar el proyecto
 
             try {
                 await elProyecto.save();
@@ -494,7 +543,31 @@ export const resolvers = {
             }
 
             elProyecto.participantes.push(idUsuario);            
-            console.log(`Usuario añadido a la lista de participantes`);            
+            console.log(`Usuario añadido a la lista de participantes`);
+            
+            //Añadir como participante en todos los eventos de este proyecto
+
+            try {
+                var eventosProyecto:any = await Evento.find({idOrigen: elProyecto.id}).exec();
+            } catch (error) {
+                console.log(`Error descargando los eventos del proyecto: ${error}`);                
+            }
+
+            eventosProyecto.forEach(async function(e){
+                let indexU=e.participantes.indexOf(idUsuario);
+                if(indexU>-1){
+                    e.participantes.splice(indexU, 1);
+                }
+                e.participantes.push(idUsuario);
+
+                try {
+                    await e.save();
+                } catch (error) {
+                    console.log(`Error guardando el evento con el nuevo participante: ${error}`);                    
+                }
+            })
+
+            //Guardar proyecto
 
             try {
                 await elProyecto.save();
@@ -555,6 +628,29 @@ export const resolvers = {
                 console.log(`sacando al usuario ${idUsuario} de la lista de participantes`);
                 elProyecto.participantes.splice(indexParticipante, 1);
             }
+
+            //Retirar como participante en todos los eventos de este proyecto
+
+            try {
+                var eventosProyecto:any = await Evento.find({idOrigen: elProyecto.id}).exec();
+            } catch (error) {
+                console.log(`Error descargando los eventos del proyecto: ${error}`);                
+            }
+
+            eventosProyecto.forEach(async function(e){
+                let indexU=e.participantes.indexOf(idUsuario);
+                if(indexU>-1){
+                    e.participantes.splice(indexU, 1);
+                }
+
+                try {
+                    await e.save();
+                } catch (error) {
+                    console.log(`Error guardando el evento con el nuevo participante: ${error}`);                    
+                }
+            });
+
+            //Guardando el proyecto
 
             try {
                 await elProyecto.save();
@@ -1629,7 +1725,6 @@ export const resolvers = {
     },
     Proyecto: {
         personasResponsables: async function (parent: any, _: any, __: any) {
-
             if (!parent.responsables) {
                 return [];
             }

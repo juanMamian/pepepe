@@ -544,6 +544,7 @@ export default {
       nuevoDescripcion: "Nueva descripcion",
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
+      
       enviandoQueryResponsables: false,
       enviandoQueryBienesServicios: false,
       enviandoQueryParticipantes:false,
@@ -1279,7 +1280,6 @@ export default {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-
   cursor: pointer;
 }
 .bEditar:hover {

@@ -6,7 +6,7 @@ export const esquemaEvento = new mongoose.Schema({
         required: true,
         min: 3,
         max: 1024,
-        default: "nuevo objetivo"
+        default: "Nuevo evento"
     },    
     responsables:{
         type: [String],
@@ -15,6 +15,10 @@ export const esquemaEvento = new mongoose.Schema({
     posiblesResponsables: {
         type: [String],
         default: []
+    },
+    participantes:{
+        type:[String],
+        default:[]
     },
     responsablesSolicitados:{
         type: Number,
