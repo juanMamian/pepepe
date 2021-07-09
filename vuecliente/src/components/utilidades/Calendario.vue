@@ -30,6 +30,8 @@
           @mouseup.left="moviendoTiempos = false"
           @mouseleave="moviendoTiempos = false"
           @mousemove="moverTiempos"
+          @touchstart="iniciaMovimientoTouch"
+          @touchmove="moverTiemposTouch"
         >
           <div
             class="marcaTiempo"
@@ -241,6 +243,9 @@ export default {
       tiempoInicioMarcado: null,
       tiempoFinalMarcado: null,
 
+      ultimoTouchX:0,
+      ultimoTouchY:0,
+
       idEventoSeleccionado: null,
       idEventoAbierto: null,
     };
@@ -441,6 +446,23 @@ export default {
       if (this.minutoInicial < 0) this.minutoInicial = 0;
       if (this.minutoInicial > 1380) this.minutoInicial = 1380;
     },
+    iniciaMovimientoTouch(e) {      
+      this.ultimoTouchX = e.changedTouches[0].clientX;
+      this.ultimoTouchY = e.changedTouches[0].clientY;
+    },
+    moverTiemposTouch(e) {
+      e.preventDefault();
+      const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
+      // const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
+      this.ultimoTouchX = e.changedTouches[0].clientX;
+      this.ultimoTouchY = e.changedTouches[0].clientY;
+      
+      this.minutoInicial -= deltaX;
+      
+      if (this.minutoInicial < 0) this.minutoInicial = 0;
+      if (this.minutoInicial > 1380) this.minutoInicial = 1380;
+    },
+    
     setMinutoInicialFantasmaNuevoEvento(e) {
       if (!this.seleccionandoPlaceNuevoEvento) return;
       var zonaEventos = e.target;
@@ -498,6 +520,8 @@ export default {
     },
     moverDias(e) {
       if (!this.hoveringCalendario) return;
+
+      if(!e.ctrlKey && !e.shiftKey)return
       e.preventDefault();
       const deltaTiempos=30;
 
@@ -507,7 +531,7 @@ export default {
           if (this.minutoInicial < 0) this.minutoInicial = 0;
           if (this.minutoInicial > 1380) this.minutoInicial = 1380;
         }
-        else{
+        else if(e.ctrlKey){
           this.diaCentral += 86400000;
         }
       }
@@ -517,7 +541,7 @@ export default {
           if (this.minutoInicial < 0) this.minutoInicial = 0;
           if (this.minutoInicial > 1380) this.minutoInicial = 1380;
         }
-        else{
+        else if (e.ctrlKey){
           this.diaCentral -= 86400000;
         }
       }
