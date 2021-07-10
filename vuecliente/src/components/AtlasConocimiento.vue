@@ -187,8 +187,8 @@ export default {
       },
 
       centroVistaDecimal:{
-        x:0,
-        y:0
+        x:218,
+        y:39
       },  
       showingZoomInfo:false,
       zoom:100,
@@ -907,11 +907,11 @@ export default {
     }
   },
   mounted() {
-    if (!this.usuario.atlas || !this.usuario.atlas.centroVista) {
-      console.log(`No había info de centro vista en la store. Descargando`);
-      this.descargarCentroVista();
-      return;
-    }
+    // if (!this.usuario.atlas || !this.usuario.atlas.centroVista) {
+    //   console.log(`No había info de centro vista en la store. Descargando`);
+    //   this.descargarCentroVista();
+    //   return;
+    // }
     this.$set(this.centroVistaDecimal, "x", this.usuario.atlas.centroVista.x);
     this.$set(this.centroVistaDecimal, "y", this.usuario.atlas.centroVista.y);
 
@@ -926,34 +926,34 @@ export default {
   removed(){
     window.removeEventListener("wheel", this.zoomWheel);
   },
-  beforeRouteLeave(_, __, next) {
-    console.log(
-      `enviando nuevo centroVista para el usuario ${
-        this.usuario.id
-      }. Centro vista: ${JSON.stringify(this.centroVista)}`
-    );
-    this.$store.commit("setCentroVistaAtlas", this.centroVista);
+  // beforeRouteLeave(_, __, next) {
+  //   console.log(
+  //     `enviando nuevo centroVista para el usuario ${
+  //       this.usuario.id
+  //     }. Centro vista: ${JSON.stringify(this.centroVista)}`
+  //   );
+  //   this.$store.commit("setCentroVistaAtlas", this.centroVista);
 
-    this.$apollo
-      .mutate({
-        mutation: gql`
-          mutation($idUsuario: ID, $centroVista: CoordsInput) {
-            setCentroVista(idUsuario: $idUsuario, centroVista: $centroVista)
-          }
-        `,
-        variables: {
-          idUsuario: this.$store.state.usuario.id,
-          centroVista: this.centroVista,
-        },
-      })
-      .then(function () {
-        next();
-      })
-      .catch(function (error) {
-        console.log(`error: ${error}`);
-        next();
-      });
-  },
+  //   this.$apollo
+  //     .mutate({
+  //       mutation: gql`
+  //         mutation($idUsuario: ID, $centroVista: CoordsInput) {
+  //           setCentroVista(idUsuario: $idUsuario, centroVista: $centroVista)
+  //         }
+  //       `,
+  //       variables: {
+  //         idUsuario: this.$store.state.usuario.id,
+  //         centroVista: this.centroVista,
+  //       },
+  //     })
+  //     .then(function () {
+  //       next();
+  //     })
+  //     .catch(function (error) {
+  //       console.log(`error: ${error}`);
+  //       next();
+  //     });
+  // },
   
 };
 </script>

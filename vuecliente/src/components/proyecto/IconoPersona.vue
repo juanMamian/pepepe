@@ -14,7 +14,7 @@
       {{ estaPersona.nombres }}
     </div>
     <div id="menuCxPersona" v-show="menuContextual">
-      <div class="botonMenuCx" @click.stop="copiarId">{{ estaPersona.id }}</div>
+      <div class="botonMenuCx" @click="copiarId">{{ estaPersona.id }}</div>
       <div class="botonMenuCx" v-if="usuarioSuperadministrador">{{ estaPersona.username }}</div>
       <div
         class="infoMenuCx"
@@ -23,7 +23,7 @@
       >
         {{ permiso }}
       </div>
-      <input type="text" v-model="nuevoPermiso" placeholder="Nuevo permiso" />
+      <input type="text" v-model="nuevoPermiso" @click.stop="" placeholder="Nuevo permiso" />
       <div class="botonMenuCx" @click.stop="addPermisos">Dar permiso</div>
       <div
         class="botonMenuCx"

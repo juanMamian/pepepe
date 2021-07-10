@@ -616,7 +616,7 @@ input {
 
 @media only screen and (min-width: 768px) {
   #app {
-    grid-template-rows: 45px 1fr 5px;
+    grid-template-rows: 55px 1fr 5px;
   }
   #botonDesplegarNav {
     display: none;
