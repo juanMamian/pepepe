@@ -20,6 +20,7 @@ import BuscadorTrabajos from "./components/BuscadorTrabajos"
 import TodosMateriales from "./components/TodosMateriales"
 import ForosGenerales from "./components/ForosGenerales"
 import AtlasProyectos from "./components/diagramaTotalTrabajos/AtlasProyectos"
+import CalendarioPersonal from "./components/CalendarioPersonal"
 
 Vue.use(Router);
 
@@ -52,6 +53,7 @@ const routes = [
             }
         }
     },
+    { path: "/calendarioPersonal", component: CalendarioPersonal },
     { path: "/atlasProyectos", component: AtlasProyectos },
     { path: "/trabajos", component: BuscadorTrabajos },
     { path: "/foros", component: ForosGenerales },

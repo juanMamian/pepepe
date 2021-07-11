@@ -21,6 +21,7 @@ Reestructuracion no-urgente
 *Reparar la publicación de una nueva respuesta en actividades estudiantiles: Puede hacerse sin necesidad de la variable "Nuebo desarrollo", seleccionando el desarrollo en el que se publicará usando la información "infoEstudiante"
 *Revisar minimos y maximos en campos string de la base de datos
 *Debouncear el guardado de posicion de trabajos y objetivos en el diagrama de flujo de los proyectos
+*Revisar que en todos los casos es que se descarga nodoConocimiento de la base de datos, seleccionar los campos para no traer el icono de cada nodo, que es pesado.
 
 Funcionalidad urgente
 

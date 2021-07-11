@@ -912,8 +912,8 @@ export default {
     //   this.descargarCentroVista();
     //   return;
     // }
-    this.$set(this.centroVistaDecimal, "x", this.usuario.atlas.centroVista.x);
-    this.$set(this.centroVistaDecimal, "y", this.usuario.atlas.centroVista.y);
+    // this.$set(this.centroVistaDecimal, "x", this.usuario.atlas.centroVista.x);
+    // this.$set(this.centroVistaDecimal, "y", this.usuario.atlas.centroVista.y);
 
     console.log(`Screen width: ${screen.width}`);
     if(screen.width<600){

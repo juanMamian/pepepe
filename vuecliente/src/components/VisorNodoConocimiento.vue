@@ -294,6 +294,16 @@
             >
               Aceptar como experto
             </div>
+            <div
+              class="controlesExpertos hoverGris botonesControles"
+              :class="{ deshabilitado: enviandoQueryExpertos }"
+              v-if="
+                (usuarioLogeado == true && usuarioExperto == true)
+              "              
+              @click="ofrecerClase()"
+            >
+              Ofrezco una clase
+            </div>
           </div>
           <div id="listaExpertos">
             <icono-persona-autonomo
@@ -305,7 +315,11 @@
                 idExpertoSeleccionado = idPersona;
                 expertoSeleccionadoEstaAceptado = true;
               "
-            />
+            >
+              <template v-slot:alertas>
+                <img v-show="esteNodo.clases.some(c=>c.idExperto===idPersona)" src="@/assets/iconos/clase.png" alt="Clase" class="iconoExpertoConClase" style="width: 20px">
+              </template>
+            </icono-persona-autonomo>
 
             <icono-persona-autonomo
               class="personaPosibleExperto"
@@ -321,6 +335,13 @@
               @dblclick.native.shift="aceptarExperto(idPersona)"
             />
           </div>
+
+          <div id="zonaClases">
+            <div id="listaClases">
+              <clase-nodo @meElimine="eliminarClaseCache(clase.id)" :usuarioExperto="usuarioExperto" :idNodo="esteNodo.id" v-for="clase of esteNodo.clases" :key="clase.id" :estaClase="clase" />
+            </div>              
+          </div>
+          
         </div>
 
         <div
@@ -402,6 +423,7 @@ import Loading from "./utilidades/Loading.vue";
 import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import Foro from "./Foro.vue";
 import axios from "axios";
+import ClaseNodo from './visorNodoConocimiento/ClaseNodo.vue';
 
 const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
@@ -414,6 +436,13 @@ const QUERY_NODO = gql`
       nombre
       id
       descripcion
+      clases{
+        id
+        nombre
+        idExperto
+        descripcion
+        interesados
+      }
       keywords
       expertos
       posiblesExpertos
@@ -438,7 +467,7 @@ const QUERY_NODO = gql`
 `;
 
 export default {
-  components: { Loading, IconoPersonaAutonomo, Foro },
+  components: { Loading, IconoPersonaAutonomo, Foro, ClaseNodo },
   name: "VisorNodoConocimiento",
   apollo: {
     esteNodo: {
@@ -467,6 +496,7 @@ export default {
         expertos: [],
         posiblesExpertos: [],
         secciones: [],
+        clases:[]
       },
       seccionesBasicas: [
         {
@@ -1203,6 +1233,74 @@ export default {
         console.log(`Error moviendo sección`);
       })
 
+    },
+    ofrecerClase(){
+      console.log(`Ofreciendo clase`);
+      if(!this.usuario || !this.usuario.id)return;
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idNodo:ID!, $idExperto: ID!){
+            crearClaseNodoConocimiento(idNodo:$idNodo, idExperto: $idExperto){
+              id
+              nombre
+              idExperto
+              descripcion
+              interesados
+            }
+          }
+        `,
+        variables:{
+          idNodo: this.esteNodo.id,
+          idExperto: this.usuario.id,
+        }
+      }).then(({data:{crearClaseNodoConocimiento}})=>{
+        const store=this.$apollo.provider.defaultClient;
+        const cache=store.readQuery({
+          query: QUERY_NODO,
+          variables:{
+            idNodo: this.$route.params.idNodo
+          }
+        });
+
+        var nuevoCache=JSON.parse(JSON.stringify(cache));
+        const indexC=nuevoCache.nodo.clases.findIndex(c=>c.id===crearClaseNodoConocimiento.id);
+        if(indexC>-1){
+          nuevoCache.nodo.clases.splice(indexC,1);
+        }
+        nuevoCache.nodo.clases.push(crearClaseNodoConocimiento);
+        store.writeQuery({
+          query: QUERY_NODO,
+          variables:{
+            idNodo: this.$route.params.idNodo
+          },
+          data: nuevoCache
+        })
+      })
+    },
+    eliminarClaseCache(idClase){
+      const store=this.$apollo.provider.defaultClient;
+        const cache=store.readQuery({
+          query: QUERY_NODO,
+          variables:{
+            idNodo: this.$route.params.idNodo
+          }
+        });
+
+        var nuevoCache=JSON.parse(JSON.stringify(cache));
+        const indexC=nuevoCache.nodo.clases.findIndex(c=>c.id===idClase);
+        if(indexC>-1){
+          nuevoCache.nodo.clases.splice(indexC,1);
+        }
+        else{
+          console.log(`La clase que se iba a eliminar no estaba en el caché`);
+        }
+        store.writeQuery({
+          query: QUERY_NODO,
+          variables:{
+            idNodo: this.$route.params.idNodo
+          },
+          data: nuevoCache
+        })
     }
   },
 };
@@ -1404,6 +1502,11 @@ export default {
 }
 .personaPosibleExperto {
   opacity: 0.5;
+}
+.iconoExpertoConClase{
+  border-radius: 50%;
+  background-color: chocolate;
+  
 }
 .nombreForo {
   padding: 5px 10px;

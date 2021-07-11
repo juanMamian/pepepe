@@ -27,7 +27,7 @@ export const esquemaObjetivo = new mongoose.Schema({
         required:true,
         max:2000
     },   
-    estado:{
+    estadoDesarrollo:{
         type:String,
         required:true,
         default:"noCumplido",

@@ -19,7 +19,7 @@ export const typeDefs = gql`
        vinculos:[VinculoNodoProyecto],
        keywords:String,
        idProyectoParent:ID,
-       estado:String,       
+       estadoDesarrollo:String,       
        coords: Coords,
        angulo:Float,
        stuck:Boolean,
@@ -1768,6 +1768,7 @@ export const resolvers = {
 
     NodoDeTrabajos:{
         __resolveType(nodo: any){
+            console.log("Resolviendo tipo de nodo con tipoNodo "+nodo.tipoNodo)
             if(nodo.tipoNodo==="trabajo"){
                 return "Trabajo"
             }

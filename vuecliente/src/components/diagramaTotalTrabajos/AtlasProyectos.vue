@@ -191,6 +191,7 @@ const QUERY_TODOS_NODOS = gql`
         id
         nombre
         idProyectoParent
+        responsables
         coords {
           x
           y
@@ -220,7 +221,7 @@ const QUERY_TODOS_NODOS = gql`
           x
           y
         }
-        estado
+        estadoDesarrollo
         vinculos {
           idRef
           tipo
@@ -292,7 +293,7 @@ export default {
         };
       },
       update({ nodosTrabajosSegunCentro }) {
-        nodosTrabajosSegunCentro;
+        return nodosTrabajosSegunCentro;
       },
       skip() {
         return !this.radioDescarga;
@@ -576,10 +577,10 @@ export default {
       return this.nodosRequeridosSeleccionado.map((n) => n.id);
     },
     trabajos() {
-      return this.todosNodos.filter((n) => n.__typedef === "Trabajo");
+      return this.todosNodos.filter((n) => n.__typename === "Trabajo");
     },
     objetivos() {
-      return this.todosNodos.filter((n) => n.__typedef === "Objetivo");
+      return this.todosNodos.filter((n) => n.__typename === "Objetivo");
     },
   },
   watch: {

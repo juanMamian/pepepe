@@ -1,5 +1,17 @@
 import mongoose from "mongoose";
 
+const esquemaClase = new mongoose.Schema({
+    idExperto: String,
+    interesados: [String],
+    nombre: {
+        type: String,
+        default: "Nombre"
+    },
+    descripion:{
+        type:String,
+        default:""
+    },
+})
 
 var esquemaNodo = new mongoose.Schema({
     nombre: {
@@ -61,6 +73,10 @@ var esquemaNodo = new mongoose.Schema({
         type: [String],
         required:true,
         default: []
+    },
+    clases:{
+        type: [esquemaClase],
+        default:[],
     },
     posiblesExpertos: {
         type: [String],

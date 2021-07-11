@@ -21,6 +21,7 @@ export const typeDefs = gql`
     extend type Query{
         evento(idEvento:ID!):EventoCalendario,
         eventosSegunOrigen(origen:String!, idOrigen:ID!):[EventoCalendario],
+        eventosUsuario(idUsuario:ID!):[EventoCalendario,]
     }
 
     extend type Mutation{
@@ -53,6 +54,25 @@ export const resolvers = {
             console.log(`Solicitud de eventos de un ${origen} con id ${idOrigen}`);
             try {
                 var losEventos: any = await Evento.find({idOrigen}).exec();
+                
+            } catch (error) {
+                console.log(`error buscando eventos. E: ${error}`);
+                throw new ApolloError("");
+            }
+            console.log(`Enviando ${losEventos.length} eventos`);
+            return losEventos;
+        },
+        async eventosUsuario(_: any, { idUsuario }: any, contexto: contextoQuery){
+            let credencialesUsuario = contexto.usuario;
+            console.log(`Solicitud de eventosCalendario del usuario ${idUsuario}`);
+            var permisosEspeciales=["superadministrador"];
+            if(credencialesUsuario.id!=idUsuario && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+                console.log(`No autorizado`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var losEventos: any = await Evento.find({participantes: idUsuario}).exec();
                 
             } catch (error) {
                 console.log(`error buscando eventos. E: ${error}`);

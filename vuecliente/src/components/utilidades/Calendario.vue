@@ -185,7 +185,7 @@ import EventoCalendario from "./EventoCalendario.vue";
 import { fragmentoEvento } from "./recursosGql";
 import VentanaEventoCalendario from "./VentanaEventoCalendario.vue";
 
-const QUERY_EVENTOS_PROPIOS = gql`
+const QUERY_EVENTOS_ORIGEN = gql`
   query ($origen: String!, $idOrigen: ID!) {
     eventosSegunOrigen(origen: $origen, idOrigen: $idOrigen) {
       ...fragEvento
@@ -193,13 +193,20 @@ const QUERY_EVENTOS_PROPIOS = gql`
   }
   ${fragmentoEvento}
 `;
-
+const QUERY_EVENTOS_USUARIO = gql`
+  query ($idUsuario:ID!) {
+    eventosUsuario(idUsuario:$idUsuario) {
+      ...fragEvento
+    }
+  }
+  ${fragmentoEvento}
+`;
 export default {
   components: { EventoCalendario, VentanaEventoCalendario },
   name: "Calendario",
   apollo: {
-    eventosPropios: {
-      query: QUERY_EVENTOS_PROPIOS,
+    eventosOrigen: {
+      query: QUERY_EVENTOS_ORIGEN,
       variables() {
         return {
           origen: this.configCalendario.tipo,
@@ -209,7 +216,26 @@ export default {
       update(respuesta) {
         return respuesta.eventosSegunOrigen;
       },
+      skip(){
+        const origenes=["club"];
+        if(!this.configCalendario || !this.configCalendario.tipo)return true;
+        return !origenes.includes(this.configCalendario.tipo);
+      }
     },
+    eventosUsuario:{
+      query: QUERY_EVENTOS_USUARIO,
+      variables(){
+        console.log(`Preparando query eventosUsuario con idUsuario ${this.usuario.id}`);
+        return{
+          idUsuario: this.usuario.id
+        }
+      },
+      skip(){
+        var decision=(!this.usuario || !this.usuario.id);
+        
+        return decision;
+      }
+    }
   },
   props: {
     configCalendario: Object,
@@ -222,7 +248,8 @@ export default {
     
     return {
       hoveringCalendario: false,
-      eventosPropios: [],
+      eventosOrigen: [],
+      eventosUsuario:[],
       numsDiasSemana: [
         "Domingo",
         "Lunes",
@@ -334,8 +361,8 @@ export default {
 
       return resultado;
     },
-    eventosPropiosConDia() {
-      return this.eventosPropios.map((evento) => {
+    eventosOrigenConDia() {
+      return this.eventosOrigen.map((evento) => {
         const fechaEvento = new Date(evento.horarioInicio);
         const dia = fechaEvento.getDate();
         const mes = fechaEvento.getMonth();
@@ -349,12 +376,12 @@ export default {
     eventoSeleccionado() {
       if (!this.idEventoSeleccionado) return null;
 
-      return this.eventosPropios.find(
+      return this.eventosOrigen.find(
         (e) => e.id === this.idEventoSeleccionado
       );
     },
     todosEventos() {
-      return this.eventosPropios;
+      return this.eventosOrigen.concat(this.eventosUsuario);
     },
     eventoAbierto() {
       if (!this.idEventoAbierto) return null;
@@ -407,7 +434,7 @@ export default {
           this.seleccionandoPlaceNuevoEvento = false;
           const store = this.$apollo.provider.defaultClient;
           const cache = store.readQuery({
-            query: QUERY_EVENTOS_PROPIOS,
+            query: QUERY_EVENTOS_ORIGEN,
             variables: {
               origen: this.configCalendario.tipo,
               idOrigen: this.configCalendario.id,
@@ -422,7 +449,7 @@ export default {
           } else {
             nuevoCache.eventosSegunOrigen.push(crearEventoCalendario);
             store.writeQuery({
-              query: QUERY_EVENTOS_PROPIOS,
+              query: QUERY_EVENTOS_ORIGEN,
               variables: {
                 origen: this.configCalendario.tipo,
                 idOrigen: this.configCalendario.id,
@@ -477,7 +504,7 @@ export default {
         this.primerMinutoMediaHora + mediasHoras * 30;
     },
     getEventosDia(dia) {
-      return this.eventosPropios.filter((e) => {
+      return this.todosEventos.filter((e) => {
         const dateEvento = new Date(e.horarioInicio);
         const dateDia = dia.date;
         if (
@@ -494,7 +521,7 @@ export default {
     eliminarEventoDeCache(idEvento) {
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
-        query: QUERY_EVENTOS_PROPIOS,
+        query: QUERY_EVENTOS_ORIGEN,
         variables: {
           origen: this.configCalendario.tipo,
           idOrigen: this.configCalendario.id,
@@ -507,7 +534,7 @@ export default {
       if (indexE > -1) {
         eventos.splice(indexE, 1);
         store.writeQuery({
-          query: QUERY_EVENTOS_PROPIOS,
+          query: QUERY_EVENTOS_ORIGEN,
           variables: {
             origen: this.configCalendario.tipo,
             idOrigen: this.configCalendario.id,
@@ -560,6 +587,7 @@ export default {
 <style scoped>
 .calendario {
   overflow: hidden;
+  position:relative
 }
 .ventanaEventoCalendario {
   width: min(400px, 90%);

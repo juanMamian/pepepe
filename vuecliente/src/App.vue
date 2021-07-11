@@ -36,8 +36,8 @@
               Clubs
             </div>
           </router-link>
-          <div id="enlacesHijosProyectos" class="contenedorHijos">
-            <!-- <router-link to="/trabajos" v-if="usuarioLogeado == true">
+          <!-- <div id="enlacesHijosProyectos" class="contenedorHijos">
+            <router-link to="/trabajos" v-if="usuarioLogeado == true">
               <div
                 class="botonNavHijo botonNav hoverNegro botonNavHijo"
                 id="navTrabajos"
@@ -52,8 +52,8 @@
               >
                 Materiales
               </div>
-            </router-link> -->
-          </div>
+            </router-link>
+          </div> -->
         </div>
 
         <div id="bloqueHerramientas" class="bloqueBotones">
@@ -150,6 +150,9 @@
               <router-link to="/miperfil">
                 <div class="botonesLogeado hoverNegro" id="Perfil">Perfil</div>
               </router-link>
+              <router-link to="/calendarioPersonal">
+                <div class="botonesLogeado hoverNegro" id="botonCalendarioPersonal">Mi calendario</div>
+              </router-link>
               <div
                 class="botonesLogeado hoverNegro"
                 id="desconexion"
@@ -157,6 +160,7 @@
               >
                 Desconexion
               </div>
+              
             </div>
           </div>
         </template>
