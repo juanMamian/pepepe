@@ -14,7 +14,7 @@
         id="botonCrearEvento"
         @click="seleccionandoPlaceNuevoEvento = !seleccionandoPlaceNuevoEvento"
       >
-        {{ seleccionandoPlaceNuevoEvento ? "Cancelar" : "Crear evento" }}
+        {{ seleccionandoPlaceNuevoEvento ? "Cancelar" : configCalendario.tipo==='claseNodoConocimiento'? 'Programar clase' : "Crear evento" }}
       </div>
     </div>
     <ventana-evento-calendario
@@ -147,7 +147,7 @@
         <div
           class="zonaEventos"
           @mousemove="setMinutoInicialFantasmaNuevoEvento"
-          @click="crearNuevoEventoEnHorario(dia)"
+          @click="configCalendario.tipo==='claseNodoConocimiento'? crearClaseNodoConocimiento(dia) : crearNuevoEventoEnHorario(dia)"
         >
           <div
             class="fantasmaNuevoEvento"
@@ -165,6 +165,7 @@
             :milisDia="dia.milis"
             :widthHoraPx="widthHoraPx"
             :seleccionado="idEventoSeleccionado === evento.id"
+            :nivel="evento.idOrigen===configCalendario.id?'primario':'secundario'"
             @mouseup.native.left.stop="idEventoSeleccionado = evento.id"
             @meElimine="eliminarEventoDeCache"
             @dblclick.native="idEventoAbierto = evento.id"
@@ -201,6 +202,14 @@ const QUERY_EVENTOS_USUARIO = gql`
   }
   ${fragmentoEvento}
 `;
+const QUERY_EVENTOS_CRUCE_CLUB = gql`
+  query ($idClub:ID!) {
+    eventosCruceNuevoEventoClub(idClub:$idClub) {
+      ...fragEvento
+    }
+  }
+  ${fragmentoEvento}
+`;
 export default {
   components: { EventoCalendario, VentanaEventoCalendario },
   name: "Calendario",
@@ -217,7 +226,7 @@ export default {
         return respuesta.eventosSegunOrigen;
       },
       skip(){
-        const origenes=["club"];
+        const origenes=["club", "claseNodoConocimiento"];
         if(!this.configCalendario || !this.configCalendario.tipo)return true;
         return !origenes.includes(this.configCalendario.tipo);
       }
@@ -231,14 +240,31 @@ export default {
         }
       },
       skip(){
-        var decision=(!this.usuario || !this.usuario.id);
+        var decision=(!this.usuario || !this.usuario.id || this.configCalendario.tipo!='personal');
         
         return decision;
+      }
+    },
+    eventosCruceClub:{
+      query: QUERY_EVENTOS_CRUCE_CLUB,
+      variables(){
+        return {
+          idClub: this.configCalendario.id,
+        }
+      },
+      update(data){
+        return data.eventosCruceNuevoEventoClub
+      },
+      skip(){
+        var decision=this.configCalendario.tipo!="club";
+        console.log(`Skipenado ecentosCruceClub: ${decision}`);
+        return decision
       }
     }
   },
   props: {
     configCalendario: Object,
+    
   },
   data() {
     const dateHoy = new Date(Date.now());
@@ -250,6 +276,7 @@ export default {
       hoveringCalendario: false,
       eventosOrigen: [],
       eventosUsuario:[],
+      eventosCruceClub:[],
       numsDiasSemana: [
         "Domingo",
         "Lunes",
@@ -386,7 +413,14 @@ export default {
     eventoAbierto() {
       if (!this.idEventoAbierto) return null;
       return this.todosEventos.find((e) => e.id === this.idEventoAbierto);
-    },
+    },   
+    eventoscruce(){
+      if(this.configCalendario.tipo==='club'){
+        return this.eventosCruceClub;
+      }
+
+      return []
+    }
     
   },
   methods: {
@@ -396,7 +430,7 @@ export default {
         dia.milis + this.minutoInicialFantasmaNuevoEvento * 60000
       );
       const dateDia = new Date(dia.milis);
-      console.log(`Creando con horario de inicio: ${horarioI.getHours()}h`);
+      console.log(`Creando evento con horario de inicio: ${horarioI.getHours()}h`);
       console.log(
         `Minuto inicial fantasma: ${this.minutoInicialFantasmaNuevoEvento}`
       );
@@ -408,13 +442,13 @@ export default {
               $origen: String!
               $idOrigen: ID!
               $horarioInicio: Date!
-              $horarioFinal: Date!
+              $horarioFinal: Date!              
             ) {
               crearEventoCalendario(
                 origen: $origen
                 idOrigen: $idOrigen
                 horarioInicio: $horarioInicio
-                horarioFinal: $horarioFinal
+                horarioFinal: $horarioFinal                
               ) {
                 ...fragEvento
               }
@@ -427,7 +461,7 @@ export default {
             horarioInicio:
               dia.milis + this.minutoInicialFantasmaNuevoEvento * 60000,
             horarioFinal:
-              dia.milis + this.minutoFinalFantasmaNuevoEvento * 60000,
+              dia.milis + this.minutoFinalFantasmaNuevoEvento * 60000,            
           },
         })
         .then(({ data: { crearEventoCalendario } }) => {
@@ -458,6 +492,84 @@ export default {
             });
             this.$nextTick(() => {
               this.idEventoSeleccionado = crearEventoCalendario.id;
+            });
+          }
+        })
+        .catch((error) => {
+          console.log(`Error. E: ${error}`);
+          this.seleccionandoPlaceNuevoEvento = false;
+        });
+    },
+    crearClaseNodoConocimiento(dia) {
+      if (!this.seleccionandoPlaceNuevoEvento) return;
+      console.log(`1`);
+      console.log(`Creando clase ${this.configCalendario.laClase.nombre}`);
+      console.log(`2`);
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idNodo: ID!
+              $idClase: ID!
+              $horarioInicio: Date!
+              $horarioFinal: Date!
+              $nombre:String!,
+              $descripcion:String
+            ) {
+              crearClaseNodoConocimientoCalendario(
+                idNodo: $idNodo,
+                idClase: $idClase,
+                horarioInicio:$horarioInicio,
+                horarioFinal: $horarioFinal,
+                nombre: $nombre, 
+                descripcion: $descripcion
+              ) {
+                ...fragEvento
+              }
+            }
+            ${fragmentoEvento}
+          `,
+          variables: {
+            idNodo: this.configCalendario.idNodo,
+            idClase: this.configCalendario.laClase.id,
+            horarioInicio:
+              dia.milis + this.minutoInicialFantasmaNuevoEvento * 60000,
+            horarioFinal:
+              dia.milis + this.minutoFinalFantasmaNuevoEvento * 60000,
+            datosEvento: this.posibleEventoNuevo,
+            nombre: this.configCalendario.laClase.nombre,
+            descripcion: this.configCalendario.laClase.descripcion || "Descripción",
+          },
+        })
+        .then(({ data: { crearClaseNodoConocimientoCalendario } }) => {
+          this.seleccionandoPlaceNuevoEvento = false;
+          const store = this.$apollo.provider.defaultClient;
+         
+          const cache = store.readQuery({
+            query: QUERY_EVENTOS_ORIGEN,
+            variables: {
+              origen: this.configCalendario.tipo,
+              idOrigen:this.configCalendario.id
+            },
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          let indexE = nuevoCache.eventosSegunOrigen.findIndex(
+            (e) => e.id == crearClaseNodoConocimientoCalendario.id
+          );
+          if (indexE > -1) {
+            console.log(`El evento ya estaba en caché`);
+          } else {
+            nuevoCache.eventosSegunOrigen.push(crearClaseNodoConocimientoCalendario);
+            store.writeQuery({
+              query: QUERY_EVENTOS_ORIGEN,
+              variables: {
+                origen: this.configCalendario.tipo,
+                idOrigen:this.configCalendario.id
+              },
+              data: nuevoCache,
+            });
+            this.$nextTick(() => {
+              this.idEventoSeleccionado = crearClaseNodoConocimientoCalendario.id;
             });
           }
         })
@@ -520,28 +632,37 @@ export default {
     },
     eliminarEventoDeCache(idEvento) {
       const store = this.$apollo.provider.defaultClient;
-      const cache = store.readQuery({
+      var nuevoCache=null;
+      var eventos=null;
+      console.log(`Eliminando de cache el evento ${idEvento}`);
+      if(this.configCalendario.tipo==='club' || this.configCalendario.tipo==='claseNodoConocimiento'){
+        const cache = store.readQuery({
         query: QUERY_EVENTOS_ORIGEN,
-        variables: {
-          origen: this.configCalendario.tipo,
-          idOrigen: this.configCalendario.id,
-        },
-      });
-      var nuevoCache = JSON.parse(JSON.stringify(cache));
-      var eventos = nuevoCache.eventosSegunOrigen;
-
-      const indexE = eventos.findIndex((e) => e.id === idEvento);
-      if (indexE > -1) {
-        eventos.splice(indexE, 1);
-        store.writeQuery({
-          query: QUERY_EVENTOS_ORIGEN,
           variables: {
             origen: this.configCalendario.tipo,
             idOrigen: this.configCalendario.id,
           },
-          data: nuevoCache,
         });
-      } else {
+        nuevoCache = JSON.parse(JSON.stringify(cache));
+        eventos = nuevoCache.eventosSegunOrigen;
+      }
+         
+      const indexE = eventos.findIndex((e) => e.id === idEvento);
+      if (indexE > -1) {
+        console.log(`Evento en posicion ${indexE}`);
+        eventos.splice(indexE, 1);
+        if(this.configCalendario.tipo==='club' || this.configCalendario.tipo==='claseNodoConocimiento'){
+          store.writeQuery({
+            query: QUERY_EVENTOS_ORIGEN,
+            variables: {
+              origen: this.configCalendario.tipo,
+              idOrigen: this.configCalendario.id,
+            },
+            data: nuevoCache,
+         });
+        }                
+      } 
+      else {
         console.log(`El evento no estaba en cache`);
       }
     },
@@ -726,5 +847,8 @@ export default {
 }
 .eventoCalendario {
   position: absolute;
+}
+.eventoPrimario{
+  background: cornflowerblue;
 }
 </style>

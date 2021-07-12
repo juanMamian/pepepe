@@ -203,7 +203,6 @@ export const resolvers = {
             return { numPaginas, pagina, respuestas: lasRespuestas };
         },
         async conversacionesPaginaForo(_: any, { idForo, pagina }, __: any) {
-            console.log(`Solicitud de conversaciones de foro ${idForo} para la página ${pagina}`);
             try {
                 var elForo: any = await Foro.findById(idForo).exec();
                 if (!elForo) {

@@ -1,19 +1,24 @@
 <template>
   <div class="claseNodo">
-      <div id="nombre">
-          {{estaClase.nombre}}
+      <div id="filaPrincipal">
+        <div id="nombre">
+            {{estaClase.nombre}}
+        </div>
+        <div id="controles">
+            <img src="@/assets/iconos/schedule.png" alt="Programar" :title="programandoClase?'Cancelar': 'Programar clase'" v-show="usuarioExpertoClase" id="botonProgramar" @click.stop="programandoClase=!programandoClase">
+            <img @click.stop="toggleInteresarse" :title="usuarioInteresado?'Ya no me interesa':'Me interesa'" :class="{deshabilitado: enviandoQueryInteres, interesado: usuarioInteresado}" src="@/assets/iconos/raiseHand.png" class="control" id="botonInteresarse" v-show="!usuarioExpertoClase" style="width:30px"/>
+            <div id="botonEliminar" @click="eliminarse" class="botonEquis" v-show="usuarioExpertoClase"><div class="linea1"></div><div class="linea2"></div></div>
+        </div>
       </div>
-      <div id="controles">
-          <img src="@/assets/iconos/schedule.png" alt="Programar" v-show="usuarioExpertoClase" id="botonProgramar">
-          <img @click.stop="toggleInteresarse" :class="{deshabilitado: enviandoQueryInteres, interesado: usuarioInteresado}" src="@/assets/iconos/raiseHand.png" class="control" id="botonInteresarse" v-show="!usuarioExpertoClase" style="width:30px"/>
-          <div id="botonEliminar" @click="eliminarse" class="botonEquis" v-show="usuarioExpertoClase"><div class="linea1"></div><div class="linea2"></div></div>
-      </div>
+      <calendario v-show="programandoClase" :configCalendario="{tipo: 'claseNodoConocimiento', id: estaClase.id , idNodo: idNodo, laClase: estaClase}"/>
   </div>
 </template>
 
 <script>
 import gql from 'graphql-tag'
+import Calendario from '../utilidades/Calendario.vue'
 export default {
+  components: { Calendario },
     name: "ClaseNodo",
     props:{
         estaClase:Object,
@@ -23,6 +28,7 @@ export default {
     data(){
         return {
             enviandoQueryInteres:false,
+            programandoClase:false,
         }
     },
     methods:{
@@ -104,7 +110,7 @@ export default {
                 console.log(`Error: ${error}`);
                 this.enviandoQueryInteres=false;
             })
-        }
+        },        
     },
     computed:{
         usuarioInteresado(){
@@ -116,13 +122,17 @@ export default {
             if(!this.usuario || !this.usuario.id)return false
 
             return this.estaClase.idExperto===this.usuario.id;
-        }
+        },
+        
     }
 }
 </script>
 
 <style scoped>
     .claseNodo{
+        
+    }
+    #filaPrincipal{
         display: flex;
         background-color:tomato;
     }

@@ -41,7 +41,11 @@ export const esquemaEvento = new mongoose.Schema({
     },
     idOrigen:{
         type:String
+    },
+    idNodo:{
+        type:String
     }
+    
 });
 
 export const ModeloEvento= mongoose.model("Evento", esquemaEvento);

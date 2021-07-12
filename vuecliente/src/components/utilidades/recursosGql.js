@@ -9,6 +9,8 @@ export const fragmentoEvento = gql`
     horarioFinal
     responsables  
     participantes
+    origen
+    idOrigen    
   }
 `;
 

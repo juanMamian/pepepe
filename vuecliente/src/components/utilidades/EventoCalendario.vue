@@ -2,7 +2,7 @@
   <div
     class="eventoCalendario"
     :style="[offset]"
-    :class="{ seleccionado, inmovible: enviandoQueryTotal || enviandoTiempos }"
+    :class="{ seleccionado, inmovible: enviandoQueryTotal || enviandoTiempos, primario: nivel==='primario', secundario:nivel==='secundario' }"
     @mousedown.left="grabbing = usuarioResponsableEvento ? true : false"
     @mousemove="desplazar"
     @mouseup.left.capture="
@@ -59,6 +59,7 @@ export default {
     milisDia: Number,
     seleccionado: Boolean,
     idEventoAbierto: String,
+    nivel:String,
   },
   data() {
     return {
@@ -306,11 +307,7 @@ export default {
       return this.actualMinutosFinal - this.actualMinutosInicio;
     },
     offset() {
-      const color =
-        this.minutosInicioDesplazado != this.actualMinutosInicio ||
-        this.minutosFinalDesplazado != this.actualMinutosFinal
-          ? "#89b2fb"
-          : "cornflowerblue";
+      
       return {
         width:
           ((this.minutosFinalDesplazado - this.minutosInicioDesplazado) *
@@ -320,8 +317,7 @@ export default {
         left:
           (this.minutosInicioDesplazado - this.minutoInicial) *
             (this.widthHoraPx / 60) +
-          "px",
-        backgroundColor: color,
+          "px",        
       };
     },
     actualMinutosInicio() {
@@ -394,7 +390,7 @@ export default {
 
 <style scoped>
 .eventoCalendario {
-  background-color: cornflowerblue;
+  
   min-height: 20px;
   height: 100%;
   min-width: 10px;
@@ -407,6 +403,12 @@ export default {
 /* .seleccionado {
   border: 1px dotted purple;
 } */
+.primario{
+  background-color: cornflowerblue;
+}
+.secundario{
+  background-color:darkorange  ;
+}
 #nombre {
   margin: 3px 5px;
   font-size: 12px;
