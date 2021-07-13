@@ -1,5 +1,6 @@
 <template>
   <div class="calendarioPersonal">
+    <br>
       <div id="titulo">Mi Calendario</div>
       <calendario :configCalendario="{tipo:'personal'}"/>
   </div>

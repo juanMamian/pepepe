@@ -331,7 +331,7 @@
                 idExpertoSeleccionado = idPersona;
                 expertoSeleccionadoEstaAceptado = false;
               "
-              v-show="usuarioExperto"
+              v-show="usuarioExperto || (usuario && usuario.id && usuario.id===idPersona)"
               @dblclick.native.shift="aceptarExperto(idPersona)"
             />
           </div>

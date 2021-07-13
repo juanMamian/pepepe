@@ -1,5 +1,9 @@
 <template>
   <div class="ventanaEventoCalendario" @click.stop="" @mouseup.left.stop="">
+    <div id="zonaConfirmarAsistencia">
+      <img src="@/assets/iconos/join.png" @click.stop="toggleAsistencia" class="botonConfirmacionAsistencia" :class="{asistenciaConfirmada: usuarioParticipanteEvento, deshabilitado: enviandoQueryAsistencia}" id="botonConfirmarAsistencia" :title="usuarioParticipanteEvento?'Cancelar asistencia':'Confirmar asistencia'"/>
+      
+    </div>
     <div id="zonaNombre" class="zonaPrimerNivel">
       <div class="controlesZona" v-show="usuarioResponsableEvento">
         <img
@@ -100,6 +104,8 @@ export default {
       nuevoDescripcion: "Nueva descripcion",
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
+
+      enviandoQueryAsistencia:false,
     };
   },
   methods: {
@@ -189,6 +195,31 @@ export default {
       this.editandoDescripcion = !this.editandoDescripcion;
       this.nuevoDescripcion = this.esteEvento.descripcion;
     },
+    toggleAsistencia(){
+      if(!this.usuario || !this.usuario.id)return
+      this.enviandoQueryAsistencia=true;
+      console.log(`Toggling asistencia`);
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idEvento: ID!, $idUsuario:ID!, $nuevoAsistencia:Boolean!){
+            setAsistenciaUsuarioEventoCalendario(idEvento: $idEvento, idUsuario: $idUsuario, nuevoAsistencia: $nuevoAsistencia){
+              id
+              participantes
+            }
+          }
+        `,
+        variables:{
+          idEvento: this.esteEvento.id,
+          idUsuario: this.usuario.id,
+          nuevoAsistencia: this.usuarioParticipanteEvento?false:true,
+        }
+      }).then(()=>{
+        this.enviandoQueryAsistencia=false;
+      }).catch((error)=>{
+        console.log(`Error toggling asistencia: ${error}`);
+        this.enviandoQueryAsistencia=false;
+      })
+    }
   },
   computed: {
     usuarioResponsableEvento() {
@@ -213,6 +244,13 @@ export default {
       }
       return false;
     },
+    usuarioParticipanteEvento(){
+      if(!this.usuario || !this.usuario.id){
+        return false;
+      }
+
+      return this.esteEvento.participantes.includes(this.usuario.id)
+    }
   },
 };
 </script>
@@ -221,7 +259,29 @@ export default {
 .ventanaEventoCalendario {
   background-color: rgb(127, 202, 202);
 }
+#zonaConfirmarAsistencia{
+  position: absolute;
+  left:100%;
+  top: 5%;
+  
+  border-radius: 20px;
+}
+.botonConfirmacionAsistencia{
+  width: 30px;  
+  border-radius: 50%;
+  cursor:pointer;
+  border: 1px solid black;
+}
+.botonConfirmacionAsistencia.asistenciaConfirmada{
+  background-color: rgb(68, 184, 68);
+}
+.botonConfirmacionAsistencia:not(.asistenciaConfirmada):hover{
+  background-color: rgba(68, 184, 68, 0.514);
+}
+.botonConfirmacionAsistencia.asistenciaConfirmada:hover{
+    background-color: rgba(68, 184, 68, 0.452);
 
+}
 .zonaPrimerNivel {
   border: 2px solid black;
   position: relative;

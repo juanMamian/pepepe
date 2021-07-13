@@ -27,6 +27,7 @@ export const typeDefs = gql`
         eventosSegunOrigen(origen:String!, idOrigen:ID!):[EventoCalendario],
         eventosUsuario(idUsuario:ID!):[EventoCalendario],
         eventosCruceNuevoEventoClub(idClub: ID!):[EventoCalendario],
+        eventosCruceNuevaClaseNodoConocimiento(idClase: ID!, idNodo: ID!):[EventoCalendario],
     }
 
     extend type Mutation{
@@ -36,6 +37,8 @@ export const typeDefs = gql`
         setHorariosEvento(idEvento: ID!, nuevoHorarioInicio: Date!, nuevoHorarioFinal: Date!):EventoCalendario,
         editarNombreEventoCalendario(idEvento: ID!, nuevoNombre: String!):EventoCalendario,        
         editarDescripcionEventoCalendario(idEvento: ID!, nuevoDescripcion: String!):EventoCalendario,
+
+        setAsistenciaUsuarioEventoCalendario(idEvento:ID!, idUsuario: ID!, nuevoAsistencia:Boolean!):EventoCalendario
 
     }
 `;
@@ -79,14 +82,41 @@ export const resolvers = {
             }
 
             try {
-                var losEventos: any = await Evento.find({participantes: idUsuario}).exec();
-                
+                var losEventos: any = await Evento.find({participantes: idUsuario}).exec();                                
             } catch (error) {
                 console.log(`error buscando eventos. E: ${error}`);
-                throw new ApolloError("");
+                throw new ApolloError("Error conectando con la base de datos");
             }
-            console.log(`Enviando ${losEventos.length} eventos`);
-            return losEventos;
+
+            //Buscar clases en las que está interesado el usuario.
+
+            try {
+                var losNodosInteresantes:any=await Nodo.find({"clases.interesados": idUsuario}).exec();
+            } catch (error) {
+                console.log(`Error buscando nodos con clases de interés para el usuario`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`El usuario está interesado en clases de los nodos: ${losNodosInteresantes.map(n=>n.nombre)}`);
+
+            var idsClasesInteresantes:Array<string>=[];
+            losNodosInteresantes.forEach(nodo=>{
+                let clasesInteresantes=nodo.clases.filter(c=>c.interesados.includes(idUsuario));
+                idsClasesInteresantes=idsClasesInteresantes.concat(clasesInteresantes.map(c=>c.id));                
+            });
+
+            console.log(`El usuario está interesado en las clases: ${idsClasesInteresantes}`);
+
+            try {
+                var losEventosClases: any = await Evento.find({idOrigen: {$in:idsClasesInteresantes}}).exec();
+            } catch (error) {
+                console.log(`error buscando eventos de clases interesantes para el usuario. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var todosEventos=losEventos.concat(losEventosClases);
+
+            console.log(`Enviando ${todosEventos.length} eventos`);
+            return todosEventos;
         },
         async eventosCruceNuevoEventoClub(_: any, { idClub }: any, contexto: contextoQuery) {
             console.log(`Solicitud de eventos que se cruzarían con un nuevo evento del club ${idClub}`);
@@ -107,7 +137,10 @@ export const resolvers = {
                 console.log(`El usuario que solicita ya era parte de los relevantes`);
             }
             else{
-                usuariosRelevantes.push(credencialesUsuario.id);
+                const todosMiembrosProyecto=elProyecto.responsables.concat(elProyecto.participantes);
+                if(todosMiembrosProyecto.includes(credencialesUsuario.id)){
+                    usuariosRelevantes.push(credencialesUsuario.id);
+                }
             }
 
             try {
@@ -118,7 +151,45 @@ export const resolvers = {
                 
             }
             return losEventosCruce;
+        },
+        async eventosCruceNuevaClaseNodoConocimiento(_: any, { idClase, idNodo }: any, contexto: contextoQuery) {
+            console.log(`Solicitud de eventos que se cruzarían con un nuevo evento de la clase ${idClase}`);
+            let credencialesUsuario = contexto.usuario;
+
+            try {
+                var elNodo:any=await Nodo.findById(idNodo).exec();                    
+                if(!elNodo)throw "Proyecto parent no encontrado";
+            } catch (error) {
+                console.log(`Error buscando el nodo parent. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos")
+            }
+
+            var laClase=elNodo.clases.id(idClase);
+            if(!laClase){
+                console.log(`Error buscando la clase para buscar sus cruces`);
+                throw new UserInputError("Datos incorrectos");
+            }
+
+            var usuariosRelevantes=laClase.interesados;
+
+            const indexU=usuariosRelevantes.indexOf(credencialesUsuario.id)
+            if(indexU>-1){
+                console.log(`El usuario que solicita ya era parte de los relevantes`);
+            }
+            else{
+                usuariosRelevantes.push(credencialesUsuario.id);
+            }
+
+            try {
+                var losEventosCruce:any=await Evento.find({participantes: {$in: usuariosRelevantes}, idOrigen : {$ne: idClase}}).exec();                
+            } catch (error) {
+                console.log(`Error buscando los eventos cruce: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+                
+            }
+            return losEventosCruce;
         }
+
     },
 
     Mutation:{
@@ -407,6 +478,46 @@ export const resolvers = {
             console.log(`Descripcion guardado`);
             return resEvento;
         },
+
+        setAsistenciaUsuarioEventoCalendario: async function (_: any, { idEvento, idUsuario, nuevoAsistencia }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+
+            //Autorizacion
+            const permisosEspeciales=["superadministrador"];
+
+            if(credencialesUsuario.id!=idUsuario && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+                console.log(`Error de autenticación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elEvento: any = await Evento.findById(idEvento).exec();
+                if (!elEvento) {
+                    throw "evento no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando el evento. E: ` + error);
+            }
+
+            const indexU=elEvento.participantes.indexOf(idUsuario);
+            if(indexU>-1 && !nuevoAsistencia){
+                elEvento.participantes.splice(indexU, 1);
+            }
+            else if(indexU === -1 && nuevoAsistencia){
+                elEvento.participantes.push(idUsuario);
+            }
+            
+            try {
+                await elEvento.save();
+            } catch (error) {
+                console.log(`Error guardando el evento tras set asistencia de usuario ${idUsuario} a ${nuevoAsistencia}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elEvento;
+
+        }
     },
 
     EventoCalendario:{

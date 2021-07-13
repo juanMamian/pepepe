@@ -12,6 +12,7 @@
       <div
         class="control"
         id="botonCrearEvento"
+        v-show="configCalendario.tipo!='personal'"
         @click="seleccionandoPlaceNuevoEvento = !seleccionandoPlaceNuevoEvento"
       >
         {{ seleccionandoPlaceNuevoEvento ? "Cancelar" : configCalendario.tipo==='claseNodoConocimiento'? 'Programar clase' : "Crear evento" }}
@@ -174,6 +175,8 @@
             @desmarcarInicio="tiempoInicioMarcado = null"
             @desmarcarFinal="tiempoFinalMarcado = null"
           />
+
+          <evento-calendario-cruzado :esteEvento="evento" v-for="evento of getEventosCruzadosDia(dia)" :key="'eventoCruzado'+evento.id" :idEventoAbierto="idEventoAbierto" :minutoInicial="minutoInicial" :widthHoraPx="widthHoraPx"/>
         </div>
       </div>
     </div>
@@ -185,6 +188,7 @@ import gql from "graphql-tag";
 import EventoCalendario from "./EventoCalendario.vue";
 import { fragmentoEvento } from "./recursosGql";
 import VentanaEventoCalendario from "./VentanaEventoCalendario.vue";
+import EventoCalendarioCruzado from './EventoCalendarioCruzado.vue';
 
 const QUERY_EVENTOS_ORIGEN = gql`
   query ($origen: String!, $idOrigen: ID!) {
@@ -210,8 +214,16 @@ const QUERY_EVENTOS_CRUCE_CLUB = gql`
   }
   ${fragmentoEvento}
 `;
+const QUERY_EVENTOS_CRUCE_CLASE_NODO_CONOCIMIENTO = gql`
+  query ($idClase:ID!, $idNodo:ID!) {
+    eventosCruceNuevaClaseNodoConocimiento(idClase:$idClase, idNodo: $idNodo) {
+      ...fragEvento
+    }
+  }
+  ${fragmentoEvento}
+`;
 export default {
-  components: { EventoCalendario, VentanaEventoCalendario },
+  components: { EventoCalendario, VentanaEventoCalendario, EventoCalendarioCruzado },
   name: "Calendario",
   apollo: {
     eventosOrigen: {
@@ -229,7 +241,8 @@ export default {
         const origenes=["club", "claseNodoConocimiento"];
         if(!this.configCalendario || !this.configCalendario.tipo)return true;
         return !origenes.includes(this.configCalendario.tipo);
-      }
+      },
+      fetchPolicy:'network-only'
     },
     eventosUsuario:{
       query: QUERY_EVENTOS_USUARIO,
@@ -243,7 +256,8 @@ export default {
         var decision=(!this.usuario || !this.usuario.id || this.configCalendario.tipo!='personal');
         
         return decision;
-      }
+      },
+      fetchPolicy:'network-only'
     },
     eventosCruceClub:{
       query: QUERY_EVENTOS_CRUCE_CLUB,
@@ -257,9 +271,26 @@ export default {
       },
       skip(){
         var decision=this.configCalendario.tipo!="club";
-        console.log(`Skipenado ecentosCruceClub: ${decision}`);
         return decision
-      }
+      },
+      fetchPolicy:'network-only'
+    },
+    eventosCruceClaseNodoConocimiento:{
+      query: QUERY_EVENTOS_CRUCE_CLASE_NODO_CONOCIMIENTO,
+      variables(){
+        return {
+          idClase:this.configCalendario.id,
+          idNodo:this.configCalendario.idNodo
+        }
+      },
+      update(data){
+        return data.eventosCruceNuevaClaseNodoConocimiento
+      },
+      skip(){
+        var decision=this.configCalendario.tipo!="claseNodoConocimiento";
+        return decision
+      },
+      fetchPolicy:'network-only'
     }
   },
   props: {
@@ -414,9 +445,12 @@ export default {
       if (!this.idEventoAbierto) return null;
       return this.todosEventos.find((e) => e.id === this.idEventoAbierto);
     },   
-    eventoscruce(){
-      if(this.configCalendario.tipo==='club'){
+    eventosCruzados(){
+      if(this.configCalendario.tipo==='club' ){
         return this.eventosCruceClub;
+      }
+      else if(this.configCalendario.tipo==='claseNodoConocimiento'){
+        return this.eventosCruceClaseNodoConocimiento;
       }
 
       return []
@@ -630,6 +664,21 @@ export default {
         }
       });
     },
+    getEventosCruzadosDia(dia) {
+      return this.eventosCruzados.filter((e) => {
+        const dateEvento = new Date(e.horarioInicio);
+        const dateDia = dia.date;
+        if (
+          dateEvento.getFullYear() === dateDia.getFullYear() &&
+          dateEvento.getMonth() === dateDia.getMonth() &&
+          dateEvento.getDate() === dateDia.getDate()
+        ) {
+          return true;
+        } else {
+          return false;
+        }
+      });
+    },
     eliminarEventoDeCache(idEvento) {
       const store = this.$apollo.provider.defaultClient;
       var nuevoCache=null;
@@ -694,6 +743,7 @@ export default {
         }
       }
     },
+        
   },
   mounted() {
     this.montado = true;

@@ -2,7 +2,7 @@
   <div
     class="eventoCalendario"
     :style="[offset]"
-    :class="{ seleccionado, inmovible: enviandoQueryTotal || enviandoTiempos, primario: nivel==='primario', secundario:nivel==='secundario' }"
+    :class="{ seleccionado, inmovible: enviandoQueryTotal || enviandoTiempos, primario: nivel==='primario', secundario:nivel==='secundario', participando: usuarioParticipanteEvento }"
     @mousedown.left="grabbing = usuarioResponsableEvento ? true : false"
     @mousemove="desplazar"
     @mouseup.left.capture="
@@ -338,6 +338,13 @@ export default {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteEvento.responsables.includes(this.usuario.id);
     },
+    usuarioParticipanteEvento(){
+      if(!this.usuario || !this.usuario.id){
+        return false;
+      }
+
+      return this.esteEvento.participantes.includes(this.usuario.id)
+    }
   },
   watch: {
     esteEvento() {
@@ -389,12 +396,17 @@ export default {
 </script>
 
 <style scoped>
-.eventoCalendario {
-  
+.eventoCalendario {  
   min-height: 20px;
   height: 100%;
   min-width: 10px;
   cursor: pointer;
+}
+.eventoCalendario:not(.participando){
+  opacity: 0.5;
+}
+.participando{
+  
 }
 .inmovible {
   background-color: rgb(76, 99, 100);
@@ -410,9 +422,16 @@ export default {
   background-color:darkorange  ;
 }
 #nombre {
-  margin: 3px 5px;
+  padding: 3px;
   font-size: 12px;
   user-select: none;
+  width:100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+#nombre:hover{
+  overflow: visible;
 }
 #botonEliminarEvento {
   right: -24px;

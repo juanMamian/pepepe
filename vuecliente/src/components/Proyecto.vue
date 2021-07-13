@@ -199,7 +199,7 @@
               :idPersona="idPersona"
               :key="idPersona"
               v-for="idPersona of esteProyecto.posiblesResponsables"
-              v-show="usuarioResponsableProyecto || usuario.id === idPersona"
+              v-show="usuarioResponsableProyecto || (usuario && usuario.id && usuario.id === idPersona)"
               :seleccionado="idResponsableSeleccionado == idPersona"
               @click.native.stop="
                 idResponsableSeleccionado = idPersona;
@@ -321,7 +321,7 @@
                                
           </div>  
 
-          <calendario :configCalendario="{tipo:'club', id: esteProyecto.id}" />    
+          <calendario :configCalendario="{tipo:'club', id: esteProyecto.id}" :key="'calendario'+versionCalendario"/>    
         </div>
         
 
@@ -561,6 +561,7 @@ export default {
       mostrandoBienesServicios: false,
       administrandoBienesServicios:false,
 
+      versionCalendario:0,
 
     };
   },
@@ -743,6 +744,7 @@ export default {
         })
         .then(() => {
           this.enviandoQueryResponsables = false;
+          this.versionCalendario++;
         })
         .catch((error) => {
           this.enviandoQueryResponsables = false;
@@ -777,6 +779,7 @@ export default {
         .then(() => {
           this.enviandoQueryResponsables = false;
           this.responsableSeleccionadoEstaAceptado = true;
+          this.versionCalendario++;
         })
         .catch((error) => {
           this.enviandoQueryResponsables = false;
@@ -840,6 +843,7 @@ export default {
         })
         .then(() => {
           this.enviandoQueryResponsables = false;
+          this.versionCalendario++;
         })
         .catch((error) => {
           this.enviandoQueryResponsables = false;
@@ -871,6 +875,7 @@ export default {
         })
         .then(() => {
           this.enviandoQueryParticipantes = false;
+          this.versionCalendario++;
         })
         .catch((error) => {
           this.enviandoQueryParticipantes = false;
@@ -900,6 +905,7 @@ export default {
         })
         .then(() => {
           this.enviandoQueryParticipantes = false;
+          this.versionCalendario++;
         })
         .catch((error) => {
           this.enviandoQueryParticipantes = false;
