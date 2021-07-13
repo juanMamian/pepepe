@@ -792,7 +792,7 @@ export default {
   z-index: 1;
 }
 #contenedorMarcas {
-  margin-left: 137px;
+  margin-left: 86px;
   height: 40px;
   position: relative;
   cursor: pointer;
@@ -925,6 +925,9 @@ export default {
 }
 .numeroDiaMes{
   font-size:13px;
+}
+#contenedorMarcas{
+  margin-left: 137px;
 }
 }
 </style>
