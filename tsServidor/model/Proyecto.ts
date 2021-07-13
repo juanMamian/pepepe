@@ -208,7 +208,7 @@ const esquemaProyecto = new mongoose.Schema({
         min: 2,
         max: 1024,
         required: true,
-        default: "Nuevo proyecto"
+        default: "Nuevo grupo"
     },
     descripcion: {
         type: String,
