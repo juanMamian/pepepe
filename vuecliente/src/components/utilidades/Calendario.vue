@@ -306,7 +306,7 @@ export default {
     dateHoy.setSeconds(0);
     
     return {
-      crandoEvento:false,
+      enviandoQueryCrearEvento:false,
 
       hoveringCalendario: false,
       eventosOrigen: [],
@@ -866,14 +866,15 @@ export default {
   background-color: cadetblue;
 }
 .diaSemana {
-  min-width: 100px;
-  width: 100px;
-  margin-left: 10px;
+  min-width: 60px;
+  width: 60px;
+  margin-left: 6px;
+  font-size: 12px;
 }
 .diaMes {
-  min-width: 25px;
-  width: 25px;
-  height: 25px;
+  min-width: 18px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background-color: chocolate;
   margin-left: 2px;
@@ -884,7 +885,7 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 13px;
+  font-size: 9px;
 }
 .zonaEventos {
   background-color: rgb(250, 223, 214);
@@ -908,5 +909,22 @@ export default {
 }
 .eventoPrimario{
   background: cornflowerblue;
+}
+@media only screen and (min-width: 768px) {
+  .diaSemana {
+  min-width: 100px;
+  width: 100px;
+  margin-left: 10px;
+  font-size: 16px;
+}
+.diaMes {
+  min-width: 25px;
+  width: 25px;
+  height: 25px;  
+  margin-left: 2px;  
+}
+.numeroDiaMes{
+  font-size:13px;
+}
 }
 </style>

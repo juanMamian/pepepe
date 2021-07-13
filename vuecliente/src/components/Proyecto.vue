@@ -512,7 +512,7 @@ export default {
           respuesta.proyecto.responsablesSolicitados;
         return respuesta.proyecto;
       },
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
     },
   },
   data() {
