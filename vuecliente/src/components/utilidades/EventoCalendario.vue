@@ -21,7 +21,7 @@
       @mousedown.left.stop=""
       @click.stop="eliminarse"
       v-if="usuarioResponsableEvento"
-      v-show="seleccionado && !grabbing && !grabbingMinutosInicio && !grabbingMinutosFinal"
+      v-show="seleccionado && nivel==='primario' && !grabbing && !grabbingMinutosInicio && !grabbingMinutosFinal"
     >
       <div class="linea1"></div>
       <div class="linea2"></div>

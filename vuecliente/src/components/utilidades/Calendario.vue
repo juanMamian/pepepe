@@ -147,6 +147,7 @@
         </div>
         <div
           class="zonaEventos"
+          v-if="eventosCruzados"
           @mousemove="setMinutoInicialFantasmaNuevoEvento"
           @click="configCalendario.tipo==='claseNodoConocimiento'? crearClaseNodoConocimiento(dia) : crearNuevoEventoEnHorario(dia)"
         >
