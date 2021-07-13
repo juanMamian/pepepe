@@ -1,6 +1,6 @@
 <template>
   <div id="proyectos">
-    <center><h3>Clubs</h3></center>
+    <center><h3>Grupos</h3></center>
     <div id="controles" v-show="!loading">
       <div
         v-if="usuarioLogeado"
@@ -8,7 +8,7 @@
         class="controles hoverGris"
         @click="crearNuevoProyecto"
       >
-        Crear nuevo club
+        Crear nuevo grupo
       </div>
       <div
         v-if="
@@ -19,11 +19,11 @@
         class="controles hoverGris"
         @click="eliminarProyecto(idProyectoSeleccionado)"
       >
-        Eliminar club
+        Eliminar grupo
       </div>
     </div>
     <div id="listaProyectos" @click.self="idProyectoSeleccionado=null">
-      <loading texto="Cargando lista de proyectos..." v-show="loading"/>
+      <loading texto="Cargando lista de grupos..." v-show="loading"/>
       <icono-proyecto
         v-for="proyecto of proyectos"
         :key="proyecto.id"
@@ -99,7 +99,7 @@ export default {
       });
     },
     eliminarProyecto(idProyecto){
-      if(!confirm("¿Confirmar la eliminación de un club? (Esta acción no se puede deshacer)"))return
+      if(!confirm("¿Confirmar la eliminación del grupo? (Esta acción no se puede deshacer)"))return
       console.log(`Eliminando proyecto ${idProyecto}`);
       this.$apollo.mutate({
         mutation:gql`

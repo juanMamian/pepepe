@@ -1,6 +1,6 @@
 <template>
   <div class="proyecto">
-    <loading texto="Cargando proyecto..." v-show="loading" />
+    <loading texto="Cargando grupo..." v-show="loading" />
     <template v-if="!loading">
       <div id="zonaNombre" class="zonaPrimerNivel">
         <div class="controlesZona" v-show="usuarioResponsableProyecto">

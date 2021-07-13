@@ -30,7 +30,7 @@
       class="agarraderoTiempo"
       id="agarraderoInicio"
       v-if="usuarioResponsableEvento"
-      v-show="seleccionado"
+      v-show="seleccionado && nivel==='primario'"
       :style="[{ backgroundColor: grabbingMinutosInicio ? 'red' : '#9c4471' }]"
       @mousedown.left.stop="grabbingMinutosInicio = true"
     ></div>
@@ -38,7 +38,7 @@
       class="agarraderoTiempo"
       id="agarraderoFinal"
       v-if="usuarioResponsableEvento"
-      v-show="seleccionado"
+      v-show="seleccionado && nivel==='primario'"
       :style="[{ backgroundColor: grabbingMinutosFinal ? 'red' : '#9c4471' }]"
       @mousedown.left.stop="grabbingMinutosFinal = true"
     ></div>

@@ -1,6 +1,7 @@
 <template>
   <div
     class="calendario"
+    :class="{deshabilitado: enviandoQueryCrearEvento}"
     @mouseup.left="
       idEventoSeleccionado = null;
       idEventoAbierto = null;
@@ -305,6 +306,8 @@ export default {
     dateHoy.setSeconds(0);
     
     return {
+      crandoEvento:false,
+
       hoveringCalendario: false,
       eventosOrigen: [],
       eventosUsuario:[],
@@ -470,6 +473,7 @@ export default {
         `Minuto inicial fantasma: ${this.minutoInicialFantasmaNuevoEvento}`
       );
       console.log(`dateDia: ${dateDia}`);
+      this.enviandoQueryCrearEvento=true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -501,6 +505,8 @@ export default {
         })
         .then(({ data: { crearEventoCalendario } }) => {
           this.seleccionandoPlaceNuevoEvento = false;
+          this.enviandoQueryCrearEvento=false;
+
           const store = this.$apollo.provider.defaultClient;
           const cache = store.readQuery({
             query: QUERY_EVENTOS_ORIGEN,
@@ -533,6 +539,7 @@ export default {
         .catch((error) => {
           console.log(`Error. E: ${error}`);
           this.seleccionandoPlaceNuevoEvento = false;
+          this.enviandoQueryCrearEvento=false;
         });
     },
     crearClaseNodoConocimiento(dia) {

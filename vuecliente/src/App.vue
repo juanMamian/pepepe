@@ -33,7 +33,7 @@
         <div id="bloqueProyectos" class="bloqueBotones">
           <router-link to="/proyectos" v-if="usuarioLogeado == true">
             <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
-              Clubs
+              Grupos
             </div>
           </router-link>
           <!-- <div id="enlacesHijosProyectos" class="contenedorHijos">
