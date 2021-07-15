@@ -8,13 +8,16 @@
     "
     @mouseenter="hoveringCalendario = true"
     @mouseleave="hoveringCalendario = false"
+    @touchstart="inicioTouch"
+    @touchmove="movimientoTouch"
+    @touchend="endTouch"
   >
     <div id="controles">
       <div
         class="control"
         id="botonCrearEvento"
         v-show="configCalendario.tipo!='personal'"
-        @click="seleccionandoPlaceNuevoEvento = !seleccionandoPlaceNuevoEvento"
+        @click="seleccionandoPlaceNuevoEvento = !seleccionandoPlaceNuevoEvento; minutoInicialFantasmaNuevoEvento=null"
       >
         {{ seleccionandoPlaceNuevoEvento ? "Cancelar" : configCalendario.tipo==='claseNodoConocimiento'? 'Programar clase' : "Crear evento" }}
       </div>
@@ -27,13 +30,10 @@
     <div id="graficoDias">
       <div id="filaTiempo">
         <div
-          id="contenedorMarcas"
+          id="contenedorMarcas"          
           @mousedown.left="moviendoTiempos = true"
           @mouseup.left="moviendoTiempos = false"
-          @mouseleave="moviendoTiempos = false"
-          @mousemove="moverTiempos"
-          @touchstart="iniciaMovimientoTouch"
-          @touchmove="moverTiemposTouch"
+          @mouseleave="moviendoTiempos = false"         
         >
           <div
             class="marcaTiempo"
@@ -94,7 +94,7 @@
 
           <div
             id="marcaTiempoInicialNuevoEvento"
-            v-show="seleccionandoPlaceNuevoEvento"
+            v-show="seleccionandoPlaceNuevoEvento && minutoInicialFantasmaNuevoEvento!=null"
             :style="[
               {
                 left:
@@ -114,7 +114,7 @@
           </div>
           <div
             id="marcaTiempoFinalNuevoEvento"
-            v-show="seleccionandoPlaceNuevoEvento"
+            v-show="seleccionandoPlaceNuevoEvento && minutoFinalFantasmaNuevoEvento !=null"
             :style="[
               {
                 left:
@@ -325,21 +325,33 @@ export default {
       minutoInicial: 480,
       montado: false,
       moviendoTiempos: false,
-      widthHoraPx: 100,
+      
       seleccionandoPlaceNuevoEvento: false,
-      minutoInicialFantasmaNuevoEvento: 0,
+      minutoInicialFantasmaNuevoEvento: null,
       duracionFantasmaNuevoEvento: 60,
       tiempoInicioMarcado: null,
       tiempoFinalMarcado: null,
 
       ultimoTouchX:0,
       ultimoTouchY:0,
+      lastPinchDistance:0,
+      pinching:false,      
 
       idEventoSeleccionado: null,
       idEventoAbierto: null,
+
+      zoom:100,
+      maxZoom:140,
+      minZoom:35,
     };
   },
   computed: {
+    factorZoom(){
+      return Number((this.zoom/100).toFixed(2));
+    },
+    widthHoraPx(){
+      return Math.round(100*this.factorZoom);
+    },
     diasVisibles() {
       var fechas = [];
       for (var i = -5; i <= 5; i++) {
@@ -409,6 +421,7 @@ export default {
       return resultado;
     },
     minutoFinalFantasmaNuevoEvento() {
+      if(this.minutoInicialFantasmaNuevoEvento==null)return null;
       return (
         this.minutoInicialFantasmaNuevoEvento + this.duracionFantasmaNuevoEvento
       );
@@ -462,6 +475,19 @@ export default {
     
   },
   methods: {
+    setMinutoInicialFantasmaNuevoEvento(e) {
+      if (!this.seleccionandoPlaceNuevoEvento) return;
+      var zonaEventos = e.target;
+      const posParent = zonaEventos.getBoundingClientRect();
+      const leftMouse = e.clientX - posParent.left;
+      const leftPropio = leftMouse - this.widthHoraPx / 2;
+      const minutosLeftMouse = Math.round((leftPropio * 60) / this.widthHoraPx);
+      const deltaMinutos =
+        minutosLeftMouse + this.minutoInicial - this.primerMinutoMediaHora;
+      const mediasHoras = Math.round(deltaMinutos / 30);
+      this.minutoInicialFantasmaNuevoEvento =
+        this.primerMinutoMediaHora + mediasHoras * 30;
+    },
     crearNuevoEventoEnHorario(dia) {
       if (!this.seleccionandoPlaceNuevoEvento) return;
       const horarioI = new Date(
@@ -626,37 +652,8 @@ export default {
       this.minutoInicial -= e.movementX;
       if (this.minutoInicial < 0) this.minutoInicial = 0;
       if (this.minutoInicial > 1380) this.minutoInicial = 1380;
-    },
-    iniciaMovimientoTouch(e) {      
-      this.ultimoTouchX = e.changedTouches[0].clientX;
-      this.ultimoTouchY = e.changedTouches[0].clientY;
-    },
-    moverTiemposTouch(e) {
-      e.preventDefault();
-      const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
-      // const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
-      this.ultimoTouchX = e.changedTouches[0].clientX;
-      this.ultimoTouchY = e.changedTouches[0].clientY;
-      
-      this.minutoInicial -= deltaX;
-      
-      if (this.minutoInicial < 0) this.minutoInicial = 0;
-      if (this.minutoInicial > 1380) this.minutoInicial = 1380;
-    },
+    },        
     
-    setMinutoInicialFantasmaNuevoEvento(e) {
-      if (!this.seleccionandoPlaceNuevoEvento) return;
-      var zonaEventos = e.target;
-      const posParent = zonaEventos.getBoundingClientRect();
-      const leftMouse = e.clientX - posParent.left;
-      const leftPropio = leftMouse - this.widthHoraPx / 2;
-      const minutosLeftMouse = Math.round((leftPropio * 60) / this.widthHoraPx);
-      const deltaMinutos =
-        minutosLeftMouse + this.minutoInicial - this.primerMinutoMediaHora;
-      const mediasHoras = Math.round(deltaMinutos / 30);
-      this.minutoInicialFantasmaNuevoEvento =
-        this.primerMinutoMediaHora + mediasHoras * 30;
-    },
     getEventosDia(dia) {
       return this.todosEventos.filter((e) => {
         const dateEvento = new Date(e.horarioInicio);
@@ -751,6 +748,88 @@ export default {
         }
       }
     },
+
+    inicioTouch(e){
+      if(e.touches.length === 2){
+        var dist = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+          );
+        this.lastPinchDistance=dist;
+        this.pinching=true;
+        return
+      }
+
+      this.ultimoTouchX = e.changedTouches[0].clientX;
+      this.ultimoTouchY = e.changedTouches[0].clientY;
+    },
+    movimientoTouch(e){
+      if(this.pinching){
+        console.log(`Pinching`);
+        // var contenedor = this.$el;
+        // const posContenedor = contenedor.getBoundingClientRect();
+
+        const anchoFecha=parseInt(document.getElementById("contenedorMarcas").offsetLeft);
+        console.log(`El ancho de la fecha es: ${anchoFecha}`);
+        
+        const pinchPos={
+          x: (e.touches[0].pageX + e.touches[1].pageX)/2,
+        };
+
+        if(pinchPos.x<anchoFecha)return;
+        
+        const minutosPinch=this.minutoInicial+(pinchPos.x*60/this.widthHoraPx);                
+
+        var dist = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+          );
+        var pinch=dist - this.lastPinchDistance;
+        pinch=pinch*0.5;   
+        e.preventDefault();
+                  
+        this.zoomVista(Math.round(pinch), minutosPinch);
+        this.lastPinchDistance=dist;
+      
+        return;
+      }
+
+      const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
+      const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
+      this.ultimoTouchX = e.changedTouches[0].clientX;
+      this.ultimoTouchY = e.changedTouches[0].clientY;
+      if(Math.abs(deltaX)>Math.abs(deltaY)){
+        e.preventDefault();
+        this.minutoInicial-=Math.round(deltaX/this.factorZoom);
+        if (this.minutoInicial < 0) this.minutoInicial = 0;
+        if (this.minutoInicial > 1380) this.minutoInicial = 1380;
+      }
+
+
+    },
+    endTouch(){
+      this.pinching=false
+    },
+    zoomVista(zoom, minutosTarget){
+      if(minutosTarget<this.minutoInicial)minutosTarget=this.minutoInicial;
+      if(minutosTarget>1440)minutosTarget=1440;
+
+      const posTargetPixeles={
+        x: (minutosTarget-this.minutoInicial)*this.widthHoraPx/60,
+      }
+      
+      var nuevoZoom=this.zoom+zoom
+      if(nuevoZoom>this.maxZoom)nuevoZoom=this.maxZoom;
+      if(nuevoZoom<this.minZoom)nuevoZoom=this.minZoom;
+      this.zoom=nuevoZoom;
+
+      this.$nextTick(()=>{
+        const nuevoMinutoInicial=minutosTarget - (posTargetPixeles.x*60/this.widthHoraPx);
+        this.minutoInicial=Math.round(nuevoMinutoInicial);
+        if (this.minutoInicial < 0) this.minutoInicial = 0;
+        if (this.minutoInicial > 1380) this.minutoInicial = 1380;
+      })
+    }
         
   },
   mounted() {
