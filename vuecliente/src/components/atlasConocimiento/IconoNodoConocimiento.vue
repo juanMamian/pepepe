@@ -12,7 +12,7 @@
       class="iconoNodo"
       ref="iconoNodo"
     />
-    <div id="nombre" ref="nombre">
+    <div id="nombre" ref="nombre" :class="{seleccionado}">
       {{ esteNodo.nombre }}
     </div>
   </div>
@@ -26,13 +26,24 @@ export default {
   },
   props:{
       esteNodo:Object,
-      esTarget:Boolean
+      esTarget:Boolean,
+      seleccionado:Boolean
   }
 };
 </script>
 
 <style scoped>
-
+.iconoNodoConocimiento {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-size: 100% 100%;
+  cursor: pointer;  
+  position: relative;
+  pointer-events: all;
+  background-color: rgba(128, 128, 128, 0.349);
+}
 .iconoNodo {
   position: absolute;
   top: 0px;
@@ -46,22 +57,14 @@ export default {
   border-radius: 50%;
   user-select: none;
 }
-.iconoNodoConocimiento {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-size: 100% 100%;
-  cursor: pointer;  
-  position: relative;
-  pointer-events: all;
-  background-color: rgba(128, 128, 128, 0.349);
-}
+
 #nombre {
-  font-size: 12px;
+  font-size: 11px;
   position: absolute;
   top: 105%;
   min-height: 10px;
   min-width: 20px;
+  max-width: 280%;
   text-align: center;
   /* width: 160%; */
   padding: 5px;
@@ -70,11 +73,11 @@ export default {
   border: 1px solid rgb(5, 102, 109);
   border-radius: 3px;
 }
-#nombre:not(.nombreSeleccionado){
-  background-color: lightblue;
+#nombre:not(.seleccionado){
+  background-color: rgba(173, 216, 230, 0.719);
 
 }
-.nombreSeleccionado{
+#nombre.seleccionado{
   background-color: rgb(108, 179, 202);
 }
 #menuContextual {
