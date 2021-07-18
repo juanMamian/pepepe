@@ -69,6 +69,7 @@
           "
         >
           {{ seccion.texto }}
+          <img src="@/assets/iconos/clase.png" alt="Clases" title="Hay clases ofrecidas acerca de este tema" v-show="seccion.nombre==='expertos' && esteNodo.clases && esteNodo.clases.length>0" class="anuncioSelectorSeccion">
           <div class="controlesSeccion" :class="{deshabilitado: seccion.editandose}" v-if="usuarioSuperadministrador || usuarioAdministradorAtlas || usuarioExperto">            
             <div class="bControlesSeccion" @click.stop="moverSeccion(seccion.id, 'bajar')">
               <div class="bSubirBajar"></div>
@@ -446,6 +447,9 @@ const QUERY_NODO = gql`
       keywords
       expertos
       posiblesExpertos
+      clases{
+        id
+      }
       idForoPublico
       idForoExpertos
       secciones {
@@ -1369,6 +1373,16 @@ export default {
   width: 100%;
   height: 100%;
 }
+.anuncioSelectorSeccion{
+  width: 20px;
+  height: 20px;
+  position:absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  background-color: rgba(255, 99, 71, 0.384);
+  border-radius: 50%;
+}
 .selectorSeccion {
   padding: 15px;
   font-size: 23px;
@@ -1378,6 +1392,14 @@ export default {
 .selectorSeccion:hover {
   background-color: bisque;
 }
+.selectorSeccion:hover>.anuncioSelectorSeccion {
+  display: block;
+  background-color: tomato;
+}
+.selectorSeleccionado {
+  background-color: bisque;
+}
+
 .selectorSeccion:not(.selectorSeccionBasica):hover > .controlesSeccion {
   display: block;
 }
@@ -1406,9 +1428,7 @@ export default {
 .bSubir{
   top: -6px;
 }
-.selectorSeleccionado {
-  background-color: bisque;
-}
+
 .controlesSeccion{
   display: none;
   position: absolute;
