@@ -15,6 +15,11 @@
     <div id="barraConjuntos">
       <div
         class="selectorConjunto"
+        :class="{ seleccionado: conjunto.id === idConjuntoSeleccionado }"
+        @click="
+          idConjuntoSeleccionado = conjunto.id;
+          idNodoSeleccionado = null;
+        "
         v-for="conjunto of conjuntos"
         :key="'selectorConjunto' + conjunto.id"
       >
@@ -38,8 +43,9 @@
         alt="Rastrear"
         title="Rastrear nodo"
         class="controlListaNodos"
-        :class="{deshabilitado: enviandoQueryTarget}"
+        :class="{ deshabilitado: enviandoQueryTarget }"
         id="botonRastrearNodo"
+        v-show="idConjuntoSeleccionado != 1"
         @click.stop="toggleNodoTarget(idNodoSeleccionado)"
       />
     </div>
@@ -55,17 +61,46 @@
         v-show="conjuntoSeleccionado"
         :key="nodo.id"
         :seleccionado="nodo.id === idNodoSeleccionado"
-        :esTarget="idNodoTarget===nodo.id"
+        :esTarget="idNodoTarget === nodo.id"
         @click.native.stop="idNodoSeleccionado = nodo.id"
         @dblclick.native.stop="$emit('centrarEnNodo', nodo.id)"
       />
+    </div>
+    <div
+      id="listaClasesNodo"
+      v-show="conjuntoSeleccionado.nombre === 'nodosConClaseDictada'"
+    >
+      <div
+        class="infoClase"
+        v-for="clase of clasesDictadasUsuario"
+        :key="'infoClase' + clase.id"
+        @click.stop="$emit('centrarEnNodo', clase.idNodoParent)"
+      >
+        <img
+          src="@/assets/iconos/nodoConocimientoDefault.png"
+          alt="Abrir nodo"
+          title="Abrir el nodo de conocimiento"
+          @click.stop="abrirPaginaNodo(clase.idNodoParent)"
+          class="iconoAbrirNodo"
+        />
+        <div class="nombreClase">{{ clase.nombre }}</div>
+        <div class="infoInteresados">
+          <div class="cantidadInteresados">{{ clase.interesados.length }}</div>
+          <img
+            src="@/assets/iconos/raiseHand.png"
+            alt="Interesados"
+            class="iconoInteresados"
+            title="Estudiantes interesados en esta clase"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import IconoNodoConocimiento from "./IconoNodoConocimiento.vue";
-import gql from "graphql-tag"
+import gql from "graphql-tag";
 
 export default {
   components: { IconoNodoConocimiento },
@@ -81,18 +116,18 @@ export default {
       idConjuntoSeleccionado: 0,
       idNodoSeleccionado: null,
 
-      enviandoQueryTarget:false,
+      enviandoQueryTarget: false,
     };
   },
-  methods:{
-      toggleNodoTarget(idNodo) {
+  methods: {
+    toggleNodoTarget(idNodo) {
       if (!idNodo) return;
       if (this.idNodoTarget == idNodo) {
         this.nulificarNodoTarget();
         return;
       }
-    
-    this.enviandoQueryTarget=true;
+
+      this.enviandoQueryTarget = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -105,19 +140,19 @@ export default {
           },
         })
         .then(({ data: { setNodoAtlasTarget } }) => {
-    this.enviandoQueryTarget=false;
+          this.enviandoQueryTarget = false;
 
           if (setNodoAtlasTarget) {
             this.$emit("targetSeleccionado", idNodo);
           }
-        }).catch((error)=>{
-        this.enviandoQueryTarget=false;    
-            console.log(`Error: ${error}`);
         })
-        
+        .catch((error) => {
+          this.enviandoQueryTarget = false;
+          console.log(`Error: ${error}`);
+        });
     },
     nulificarNodoTarget() {
-    this.enviandoQueryTarget=true;
+      this.enviandoQueryTarget = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -127,12 +162,17 @@ export default {
           `,
         })
         .then(() => {
-    this.enviandoQueryTarget=false;
+          this.enviandoQueryTarget = false;
           this.$emit("targetSeleccionado", null);
-        }).catch((error)=>{
-    this.enviandoQueryTarget=false;
-            console.log(`Error: ${error}`);
         })
+        .catch((error) => {
+          this.enviandoQueryTarget = false;
+          console.log(`Error: ${error}`);
+        });
+    },
+    abrirPaginaNodo(idNodo) {
+      if (!idNodo) return;
+      this.$router.push("/nodoConocimiento/" + idNodo);
     },
   },
   computed: {
@@ -161,6 +201,30 @@ export default {
         this.idsNodosObjetivos.includes(n.id)
       );
     },
+    nodosClasesDictadasUsuario() {
+      if (!this.usuario || !this.usuario.id) return [];
+      return this.todosNodos.filter((n) =>
+        n.clases.some((c) => c.idExperto === this.usuario.id)
+      );
+    },
+    clasesDictadasUsuario() {
+      if (!this.usuario || !this.usuario.id) return;
+      var clasesDictadas = [];
+      this.nodosClasesDictadasUsuario.forEach((nodo) => {
+        console.log(`Buscando mis clases en el nodo ${nodo.nombre}`);
+        clasesDictadas = clasesDictadas.concat(
+          nodo.clases
+            .filter((c) => c.idExperto === this.usuario.id)
+            .map((c) => {
+              return {
+                ...c,
+                idNodoParent: nodo.id,
+              };
+            })
+        );
+      });
+      return clasesDictadas;
+    },
     conjuntos() {
       return [
         {
@@ -169,13 +233,22 @@ export default {
           id: 0,
           nodos: this.nodosObjetivo,
         },
+        {
+          nombre: "nodosConClaseDictada",
+          titulo: "Mis clases",
+          id: 1,
+          nodos: [],
+        },
       ];
     },
     conjuntoSeleccionado() {
       if (this.idConjuntoSeleccionado === null) return null;
       return this.conjuntos.find((c) => c.id === this.idConjuntoSeleccionado);
     },
-    
+    nodoSeleccionado() {
+      if (!this.idNodoSeleccionado) return null;
+      return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
+    },
   },
 };
 </script>
@@ -189,7 +262,7 @@ export default {
   min-height: 100px;
   max-height: 80%;
   background-color: whitesmoke;
-  max-width: min(80%, 500px);
+  width: min(80%, 650px);
 }
 #grabber {
   width: 30px;
@@ -204,11 +277,13 @@ export default {
 }
 .selectorConjunto {
   cursor: pointer;
-  background-color: cadetblue;
+  background-color: rgba(95, 158, 160, 0.637);
   padding: 3px 5px;
   font-style: italic;
 }
-
+.selectorConjunto.seleccionado {
+  background-color: cadetblue;
+}
 #controlesListaNodos {
   display: flex;
   width: 100%;
@@ -238,5 +313,42 @@ export default {
 .iconoNodoConocimiento {
   margin: 0px 40px;
   margin-bottom: 90px;
+}
+#listaClasesNodo {
+  width: 100%;
+}
+.infoClase {
+  display: flex;
+  min-height: 40px;
+  padding: 2px 5px;
+}
+.infoClase:hover {
+  background-color: rgba(95, 158, 160, 0.452);
+}
+.iconoAbrirNodo {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+.infoInteresados {
+  margin-left: auto;
+  position: relative;
+}
+.cantidadInteresados {
+  position: absolute;
+  top: 25%;
+  left: 65%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+}
+.iconoInteresados {
+  width: 27px;
+  height: 27px;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  border: 1px solid chocolate;
+  background-color: rgba(210, 105, 30, 0.438);
 }
 </style>
