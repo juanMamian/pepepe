@@ -2,14 +2,21 @@
   <div
     class="eventoCalendario"
     :style="[offset]"
-    :class="{ seleccionado, inmovible: enviandoQueryTotal || enviandoTiempos, primario: nivel==='primario', secundario:nivel==='secundario', participando: usuarioParticipanteEvento }"
+    :class="{
+      seleccionado,
+      inmovible: enviandoQueryTotal || enviandoTiempos,
+      primario: nivel === 'primario',
+      secundario: nivel === 'secundario',
+      participando: usuarioParticipanteEvento,
+    }"
     @mousedown.left="grabbing = usuarioResponsableEvento ? true : false"
     @mousemove="desplazar"
     @mouseup.left.capture="
       grabDesplazamiento = 0;
       grabbing = false;
-      soltarTodo($event);
+      soltarTodo();
     "
+    @touchend="grabbingMinutosFinalMobile=false; grabbingMinutosInicioMobile=false"    
   >
     <div id="nombre">
       {{ esteEvento.nombre }}
@@ -21,7 +28,13 @@
       @mousedown.left.stop=""
       @click.stop="eliminarse"
       v-if="usuarioResponsableEvento"
-      v-show="seleccionado && nivel==='primario' && !grabbing && !grabbingMinutosInicio && !grabbingMinutosFinal"
+      v-show="
+        seleccionado &&
+        nivel === 'primario' &&
+        !grabbing &&
+        !grabbingMinutosInicio &&
+        !grabbingMinutosFinal
+      "
     >
       <div class="linea1"></div>
       <div class="linea2"></div>
@@ -30,25 +43,60 @@
       class="agarraderoTiempo"
       id="agarraderoInicio"
       v-if="usuarioResponsableEvento"
-      v-show="seleccionado && nivel==='primario'"
+      v-show="seleccionado && nivel === 'primario'"
       :style="[{ backgroundColor: grabbingMinutosInicio ? 'red' : '#9c4471' }]"
       @mousedown.left.stop="grabbingMinutosInicio = true"
-    ></div>
+      @touchstart.stop="setAgarraderoTiempoMobile('inicio')"
+    >
+      <div
+        class="bloqueMovedorTiempoMobile"
+        v-show="agarraderoTiempoSelectedMobile === 'inicio'"
+        :class="{ deshabilitado: enviandoTiempos }"
+        @dblclick.stop=""
+      >
+        <div
+          class="movedorTiempoAdelante movedorTiempo"
+          @click.stop="minutosInicioDesplazadoTentativo += 5"
+        ></div>
+        <div
+          class="movedorTiempoAtras movedorTiempo"
+          @click.stop="minutosInicioDesplazadoTentativo -= 5"
+        ></div>
+      </div>
+    </div>
     <div
       class="agarraderoTiempo"
       id="agarraderoFinal"
       v-if="usuarioResponsableEvento"
-      v-show="seleccionado && nivel==='primario'"
+      v-show="seleccionado && nivel === 'primario'"
       :style="[{ backgroundColor: grabbingMinutosFinal ? 'red' : '#9c4471' }]"
       @mousedown.left.stop="grabbingMinutosFinal = true"
-    ></div>
+      @click.stop=""
+      @touchstart.stop="setAgarraderoTiempoMobile('final')"
+    >
+      <div
+        class="bloqueMovedorTiempoMobile"
+        v-show="agarraderoTiempoSelectedMobile === 'final'"
+        :class="{ deshabilitado: enviandoTiempos }"
+        @dblclick.stop=""
+      >
+        <div
+          class="movedorTiempoAdelante movedorTiempo"
+          @click.stop="minutosFinalDesplazadoTentativo += 5"
+        ></div>
+        <div
+          class="movedorTiempoAtras movedorTiempo"
+          @click.stop="minutosFinalDesplazadoTentativo -= 5"
+        ></div>
+      </div>
+    </div>
     <div id="zonaArrastre" v-show="grabbing"></div>
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
-
+const debounce = require("debounce");
 export default {
   name: "EventoCalendario",
   props: {
@@ -59,7 +107,7 @@ export default {
     milisDia: Number,
     seleccionado: Boolean,
     idEventoAbierto: String,
-    nivel:String,
+    nivel: String,
   },
   data() {
     return {
@@ -67,10 +115,16 @@ export default {
       grabDesplazamiento: 0,
       grabbingMinutosInicio: false,
       grabbingMinutosFinal: false,
+      grabbingMinutosInicioMobile: false,
+      grabbingMinutosFinalMobile: false,
       minutosInicioDesplazadoTentativo: 0,
       minutosFinalDesplazadoTentativo: 0,
+
       enviandoTiempos: false,
       enviandoQueryTotal: false,
+
+      agarraderoTiempoSelectedMobile: null,
+      ultimoTouchX: 0,
     };
   },
   methods: {
@@ -134,19 +188,30 @@ export default {
     },
     modificarMinutos(e) {
       if (this.enviandoTiempos || this.enviandoQueryTotal) return;
-
       const parent = this.$el.closest(".zonaEventos");
       const posParent = parent.getBoundingClientRect();
-      const leftMouse = e.clientX - posParent.left;
-      const minutosMouse = (leftMouse * 60) / this.widthHoraPx;
 
-      if (this.grabbingMinutosInicio) {
-        this.minutosInicioDesplazadoTentativo =
-          this.minutoInicial + minutosMouse;
+      var leftEvent=0;
+      // if (this.grabbingMinutosInicioMobile || this.grabbingMinutosFinalMobile) {
+      //   leftEvent = e.changedTouches[0].clientX-posParent.left;        
+      // }
+      // else 
+      if(this.grabbingMinutosInicio || this.grabbingMinutosFinal){
+        leftEvent = e.clientX - posParent.left;
       }
-      if (this.grabbingMinutosFinal) {
+      else{
+        return;
+      }
+  
+      const minutosEvent = (leftEvent * 60) / this.widthHoraPx;
+
+      if (this.grabbingMinutosInicio || this.grabbingMinutosInicioMobile) {
+        this.minutosInicioDesplazadoTentativo =
+          this.minutoInicial + minutosEvent;
+      }
+      if (this.grabbingMinutosFinal || this.grabbingMinutosFinalMobile) {
         this.minutosFinalDesplazadoTentativo =
-          this.minutoInicial + minutosMouse;
+          this.minutoInicial + minutosEvent;
       }
     },
     resetVariablesEditarTiempos() {
@@ -159,6 +224,8 @@ export default {
         this.minutosFinalDesplazado === this.actualMinutosFinal
       )
         return;
+
+      if (this.enviandoTiempos) return;
       console.log(`Guardando nuevos tiempos`);
       if (e) e.stopPropagation();
       this.enviandoTiempos = true;
@@ -199,6 +266,9 @@ export default {
           this.enviandoTiempos = false;
         });
     },
+    debGuardarTiempos: debounce(function () {
+      this.guardarTiempos();
+    }, 3000),
     eliminarse() {
       console.log(`Eliminando`);
       if (
@@ -261,6 +331,7 @@ export default {
       }
     },
     soltarTodo(e) {
+      console.log(`Soltando todo`);
       this.grabbingMinutosInicio = false;
       this.grabbingMinutosFinal = false;
       this.$emit("desmarcarInicio");
@@ -270,8 +341,17 @@ export default {
         this.minutosInicioDesplazado != this.actualMinutosInicio ||
         this.minutosFinalDesplazado != this.actualMinutosFinal
       ) {
-        this.guardarTiempos(e);
+        if (this.agarraderoTiempoSelectedMobile === null) {
+          console.log(`Guardando tiempos directamente`);
+          this.guardarTiempos(e);
+        } else {
+          console.log(`Debounce guardar tiempos`);
+          this.debGuardarTiempos();
+        }
       }
+    },
+    setAgarraderoTiempoMobile(agarradero) {
+      this.agarraderoTiempoSelectedMobile=agarradero;
     },
   },
   computed: {
@@ -307,7 +387,6 @@ export default {
       return this.actualMinutosFinal - this.actualMinutosInicio;
     },
     offset() {
-      
       return {
         width:
           ((this.minutosFinalDesplazado - this.minutosInicioDesplazado) *
@@ -317,7 +396,7 @@ export default {
         left:
           (this.minutosInicioDesplazado - this.minutoInicial) *
             (this.widthHoraPx / 60) +
-          "px",        
+          "px",
       };
     },
     actualMinutosInicio() {
@@ -338,19 +417,20 @@ export default {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteEvento.responsables.includes(this.usuario.id);
     },
-    usuarioParticipanteEvento(){
-      if(!this.usuario || !this.usuario.id){
+    usuarioParticipanteEvento() {
+      if (!this.usuario || !this.usuario.id) {
         return false;
       }
 
-      return this.esteEvento.participantes.includes(this.usuario.id)
-    }
+      return this.esteEvento.participantes.includes(this.usuario.id);
+    },
   },
   watch: {
     esteEvento() {
       this.resetVariablesEditarTiempos();
     },
     seleccionado(nuevo) {
+      this.agarraderoTiempoSelectedMobile = null;
       if (nuevo) {
         window.addEventListener("keydown", this.teclaPresionada);
         document
@@ -366,13 +446,26 @@ export default {
         document
           .getElementById("graficoDias")
           .removeEventListener("mousemove", this.modificarMinutos);
+        document
+          .getElementById("graficoDias")
+          .removeEventListener("mouseup", this.soltarTodo);
       }
     },
     deltaTiempoInicio() {
-      if(this.grabbingMinutosInicio || this.grabbing)this.$emit("marcarInicio", this.minutosInicioDesplazado);
+      if (
+        this.grabbingMinutosInicio ||
+        this.grabbing ||
+        this.agarraderoTiempoSelectedMobile != null
+      )
+        this.$emit("marcarInicio", this.minutosInicioDesplazado);
     },
     deltaTiempoFinal() {
-      if(this.grabbingMinutosFinal || this.grabbing)this.$emit("marcarFinal", this.minutosFinalDesplazado);
+      if (
+        this.grabbingMinutosFinal ||
+        this.grabbing ||
+        this.agarraderoTiempoSelectedMobile != null
+      )
+        this.$emit("marcarFinal", this.minutosFinalDesplazado);
     },
   },
   mounted() {
@@ -396,17 +489,16 @@ export default {
 </script>
 
 <style scoped>
-.eventoCalendario {  
+.eventoCalendario {
   min-height: 20px;
   height: 100%;
   min-width: 10px;
   cursor: pointer;
 }
-.eventoCalendario:not(.participando){
+.eventoCalendario:not(.participando) {
   opacity: 0.5;
 }
-.participando{
-  
+.participando {
 }
 .inmovible {
   background-color: rgb(76, 99, 100);
@@ -415,22 +507,22 @@ export default {
 /* .seleccionado {
   border: 1px dotted purple;
 } */
-.primario{
+.primario {
   background-color: cornflowerblue;
 }
-.secundario{
-  background-color:darkorange  ;
+.secundario {
+  background-color: darkorange;
 }
 #nombre {
   padding: 3px;
   font-size: 12px;
   user-select: none;
-  width:100%;
+  width: 100%;
   height: 100%;
   overflow: hidden;
   box-sizing: border-box;
 }
-#nombre:hover{
+#nombre:hover {
   overflow: visible;
 }
 #botonEliminarEvento {
@@ -454,6 +546,34 @@ export default {
 }
 #agarraderoFinal {
   right: 0%;
+}
+.bloqueMovedorTiempoMobile {
+  position: absolute;
+  bottom: 0%;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 100px;
+  width: 200px;
+}
+.movedorTiempo {
+  position: absolute;
+  cursor: pointer;
+  bottom: 0%;
+}
+.movedorTiempoAdelante {
+  width: 1px;
+  height: 1px;
+  border: 10px solid transparent;
+  border-left-color: black;
+  right: 65px;
+}
+.movedorTiempoAtras {
+  width: 1px;
+  height: 1px;
+  border: 10px solid transparent;
+  border-left-color: black;
+  left: 65px;
+  transform: rotateZ(180deg);
 }
 #zonaArrastre {
   position: absolute;

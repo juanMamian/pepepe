@@ -793,6 +793,7 @@ export default {
       
         return;
       }
+      
 
       const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
       const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
@@ -848,7 +849,7 @@ export default {
   position:relative
 }
 .ventanaEventoCalendario {
-  width: min(400px, 90%);
+  width: min(400px, 80%);
   min-height: 100px;
   position: absolute;
   top: 5%;
