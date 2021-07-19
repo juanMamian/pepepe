@@ -333,9 +333,7 @@ export default {
     soltarTodo(e) {
       console.log(`Soltando todo`);
       this.grabbingMinutosInicio = false;
-      this.grabbingMinutosFinal = false;
-      this.$emit("desmarcarInicio");
-      this.$emit("desmarcarFinal");
+      this.grabbingMinutosFinal = false;      
 
       if (
         this.minutosInicioDesplazado != this.actualMinutosInicio ||
@@ -433,6 +431,9 @@ export default {
       this.agarraderoTiempoSelectedMobile = null;
       if (nuevo) {
         window.addEventListener("keydown", this.teclaPresionada);
+        this.$emit("marcarInicio", this.minutosInicioDesplazado);
+        this.$emit("marcarFinal", this.minutosFinalDesplazado);
+
         document
           .getElementById("graficoDias")
           .addEventListener("mouseup", this.soltarTodo);
@@ -441,6 +442,8 @@ export default {
           .addEventListener("mousemove", this.modificarMinutos);
       } else {
         this.soltarTodo();
+        this.$emit("desmarcarInicio");
+        this.$emit("desmarcarFinal");
         window.removeEventListener("keydown", this.teclaPresionada);
         window.removeEventListener("mouseup", this.soltarTodo);
         document
