@@ -173,7 +173,7 @@ export default {
         });
     },
     desplazar(e) {
-      if (!this.grabbing || this.enviandoTiempos) return;
+      if (!this.grabbing || this.enviandoTiempos || this.nivel!='primario') return;
       this.grabDesplazamiento++;
       if (this.grabDesplazamiento < 8) return;
       const parent = this.$el.closest(".zonaEventos");
@@ -331,7 +331,6 @@ export default {
       }
     },
     soltarTodo(e) {
-      console.log(`Soltando todo`);
       this.grabbingMinutosInicio = false;
       this.grabbingMinutosFinal = false;      
 
