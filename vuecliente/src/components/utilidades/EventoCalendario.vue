@@ -16,8 +16,18 @@
       grabbing = false;
       soltarTodo();
     "
-    @touchend="grabbingMinutosFinalMobile=false; grabbingMinutosInicioMobile=false"    
+    @touchend="
+      grabbingMinutosFinalMobile = false;
+      grabbingMinutosInicioMobile = false;
+    "
   >
+    <img
+      src="@/assets/iconos/maximizar.png"
+      alt="Maximizar"
+      id="botonAbrirEvento"
+      v-show="seleccionado"
+      @mousedown.left.stop="$emit('abrirEsteEvento')"
+    />
     <div id="nombre">
       {{ esteEvento.nombre }}
     </div>
@@ -173,7 +183,8 @@ export default {
         });
     },
     desplazar(e) {
-      if (!this.grabbing || this.enviandoTiempos || this.nivel!='primario') return;
+      if (!this.grabbing || this.enviandoTiempos || this.nivel != "primario")
+        return;
       this.grabDesplazamiento++;
       if (this.grabDesplazamiento < 8) return;
       const parent = this.$el.closest(".zonaEventos");
@@ -191,18 +202,17 @@ export default {
       const parent = this.$el.closest(".zonaEventos");
       const posParent = parent.getBoundingClientRect();
 
-      var leftEvent=0;
+      var leftEvent = 0;
       // if (this.grabbingMinutosInicioMobile || this.grabbingMinutosFinalMobile) {
-      //   leftEvent = e.changedTouches[0].clientX-posParent.left;        
+      //   leftEvent = e.changedTouches[0].clientX-posParent.left;
       // }
-      // else 
-      if(this.grabbingMinutosInicio || this.grabbingMinutosFinal){
+      // else
+      if (this.grabbingMinutosInicio || this.grabbingMinutosFinal) {
         leftEvent = e.clientX - posParent.left;
-      }
-      else{
+      } else {
         return;
       }
-  
+
       const minutosEvent = (leftEvent * 60) / this.widthHoraPx;
 
       if (this.grabbingMinutosInicio || this.grabbingMinutosInicioMobile) {
@@ -332,7 +342,7 @@ export default {
     },
     soltarTodo(e) {
       this.grabbingMinutosInicio = false;
-      this.grabbingMinutosFinal = false;      
+      this.grabbingMinutosFinal = false;
 
       if (
         this.minutosInicioDesplazado != this.actualMinutosInicio ||
@@ -348,7 +358,7 @@ export default {
       }
     },
     setAgarraderoTiempoMobile(agarradero) {
-      this.agarraderoTiempoSelectedMobile=agarradero;
+      this.agarraderoTiempoSelectedMobile = agarradero;
     },
   },
   computed: {
@@ -514,6 +524,16 @@ export default {
 }
 .secundario {
   background-color: darkorange;
+}
+#botonAbrirEvento {
+  position: absolute;
+  bottom: 105%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 25px;
+  cursor: pointer;
+  border: 1px solid black;
+  border-radius: 50%;
 }
 #nombre {
   padding: 3px;

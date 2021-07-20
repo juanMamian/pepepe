@@ -614,8 +614,10 @@ export const resolvers = {
 
             //Authorización
 
-            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
-                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
+            const primerExpertoAsumiendo=elNodo.expertos.length===0 && credencialesUsuario.id===idUsuario;
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador") && !primerExpertoAsumiendo) {
+                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador o cuando es el primer experto. Primer experto: ${primerExpertoAsumiendo}`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -912,13 +914,6 @@ export const resolvers = {
 
         crearNuevaSeccionNodoConocimiento: async function (_: any, { idNodo, nombreNuevaSeccion }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
-            
-            //Authorización
-
-            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
-                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
-                throw new AuthenticationError("No autorizado");
-            }
 
             try {
                 var elNodo:any=await Nodo.findById(idNodo).exec();
@@ -929,6 +924,14 @@ export const resolvers = {
                 console.log(`Error buscando el nodo`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+            //Authorización
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador") && !elNodo.expertos.includes(credencialesUsuario.id) ) {
+                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador o un experto`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            
 
             const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
             if (charProhibidosNombreNuevaSeccion.test(nombreNuevaSeccion) || nombreNuevaSeccion.length>30) {
@@ -955,14 +958,6 @@ export const resolvers = {
         },
         eliminarSeccionNodoConocimiento:async function(_:any, {idNodo, idSeccion}:any, contexto: contextoQuery){
             let credencialesUsuario = contexto.usuario;
-            
-            //Authorización
-
-            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
-                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
-                throw new AuthenticationError("No autorizado");
-            }
-
             try {
                 var elNodo:any=await Nodo.findById(idNodo).exec();
                 if(!elNodo){
@@ -972,6 +967,14 @@ export const resolvers = {
                 console.log(`Error buscando el nodo`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+            //Authorización
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador") && !elNodo.expertos.includes(credencialesUsuario.id)) {
+                console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            
 
             var laSeccion = elNodo.secciones.id(idSeccion);
             if(!laSeccion){

@@ -250,6 +250,11 @@ export default {
       return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
   },
+  watch:{
+    abierto(){
+      this.idNodoSeleccionado=null;
+    }
+  }
 };
 </script>
 

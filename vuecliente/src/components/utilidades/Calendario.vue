@@ -1,7 +1,7 @@
 <template>
   <div
     class="calendario"
-    :class="{deshabilitado: enviandoQueryCrearEvento}"
+    :class="{ deshabilitado: enviandoQueryCrearEvento }"
     @mouseup.left="
       idEventoSeleccionado = null;
       idEventoAbierto = null;
@@ -16,10 +16,19 @@
       <div
         class="control"
         id="botonCrearEvento"
-        v-show="configCalendario.tipo!='personal'"
-        @click="seleccionandoPlaceNuevoEvento = !seleccionandoPlaceNuevoEvento; minutoInicialFantasmaNuevoEvento=null"
+        v-show="configCalendario.tipo != 'personal'"
+        @click="
+          seleccionandoPlaceNuevoEvento = !seleccionandoPlaceNuevoEvento;
+          minutoInicialFantasmaNuevoEvento = null;
+        "
       >
-        {{ seleccionandoPlaceNuevoEvento ? "Cancelar" : configCalendario.tipo==='claseNodoConocimiento'? 'Programar clase' : "Crear evento" }}
+        {{
+          seleccionandoPlaceNuevoEvento
+            ? "Cancelar"
+            : configCalendario.tipo === "claseNodoConocimiento"
+            ? "Programar clase"
+            : "Crear evento"
+        }}
       </div>
     </div>
     <ventana-evento-calendario
@@ -30,10 +39,10 @@
     <div id="graficoDias">
       <div id="filaTiempo">
         <div
-          id="contenedorMarcas"          
+          id="contenedorMarcas"
           @mousedown.left="moviendoTiempos = true"
           @mouseup.left="moviendoTiempos = false"
-          @mouseleave="moviendoTiempos = false"         
+          @mouseleave="moviendoTiempos = false"
         >
           <div
             class="marcaTiempo"
@@ -94,7 +103,10 @@
 
           <div
             id="marcaTiempoInicialNuevoEvento"
-            v-show="seleccionandoPlaceNuevoEvento && minutoInicialFantasmaNuevoEvento!=null"
+            v-show="
+              seleccionandoPlaceNuevoEvento &&
+              minutoInicialFantasmaNuevoEvento != null
+            "
             :style="[
               {
                 left:
@@ -114,7 +126,10 @@
           </div>
           <div
             id="marcaTiempoFinalNuevoEvento"
-            v-show="seleccionandoPlaceNuevoEvento && minutoFinalFantasmaNuevoEvento !=null"
+            v-show="
+              seleccionandoPlaceNuevoEvento &&
+              minutoFinalFantasmaNuevoEvento != null
+            "
             :style="[
               {
                 left:
@@ -150,7 +165,11 @@
           class="zonaEventos"
           v-if="eventosCruzados"
           @mousemove="setMinutoInicialFantasmaNuevoEvento"
-          @click="configCalendario.tipo==='claseNodoConocimiento'? crearClaseNodoConocimiento(dia) : crearNuevoEventoEnHorario(dia)"
+          @click="
+            configCalendario.tipo === 'claseNodoConocimiento'
+              ? crearClaseNodoConocimiento(dia)
+              : crearNuevoEventoEnHorario(dia)
+          "
         >
           <div
             class="fantasmaNuevoEvento"
@@ -168,7 +187,11 @@
             :milisDia="dia.milis"
             :widthHoraPx="widthHoraPx"
             :seleccionado="idEventoSeleccionado === evento.id"
-            :nivel="evento.idOrigen===configCalendario.id?'primario':'secundario'"
+            :nivel="
+              evento.idOrigen === configCalendario.id
+                ? 'primario'
+                : 'secundario'
+            "
             @mouseup.native.left.stop="idEventoSeleccionado = evento.id"
             @meElimine="eliminarEventoDeCache"
             @dblclick.native="idEventoAbierto = evento.id"
@@ -176,9 +199,21 @@
             @marcarFinal="tiempoFinalMarcado = $event"
             @desmarcarInicio="tiempoInicioMarcado = null"
             @desmarcarFinal="tiempoFinalMarcado = null"
+            @abrirEsteEvento="idEventoAbierto = evento.id"
           />
 
-          <evento-calendario-cruzado :esteEvento="evento" v-for="evento of getEventosCruzadosDia(dia)" :key="'eventoCruzado'+evento.id" :idEventoAbierto="idEventoAbierto" :minutoInicial="minutoInicial" :widthHoraPx="widthHoraPx"/>
+          <evento-calendario-cruzado
+            :esteEvento="evento"
+            v-for="evento of getEventosCruzadosDia(dia)"
+            :key="'eventoCruzado' + evento.id"
+            :idEventoAbierto="idEventoAbierto"
+            :minutoInicial="minutoInicial"
+            :widthHoraPx="widthHoraPx"
+            :seleccionado="idEventoSeleccionado === evento.id"
+            @mouseup.native.left.stop="idEventoSeleccionado = evento.id"
+            @dblclick.native="idEventoAbierto = evento.id"
+            @abrirEsteEvento="idEventoAbierto = evento.id"
+          />
         </div>
       </div>
     </div>
@@ -190,7 +225,7 @@ import gql from "graphql-tag";
 import EventoCalendario from "./EventoCalendario.vue";
 import { fragmentoEvento } from "./recursosGql";
 import VentanaEventoCalendario from "./VentanaEventoCalendario.vue";
-import EventoCalendarioCruzado from './EventoCalendarioCruzado.vue';
+import EventoCalendarioCruzado from "./EventoCalendarioCruzado.vue";
 
 const QUERY_EVENTOS_ORIGEN = gql`
   query ($origen: String!, $idOrigen: ID!) {
@@ -201,31 +236,35 @@ const QUERY_EVENTOS_ORIGEN = gql`
   ${fragmentoEvento}
 `;
 const QUERY_EVENTOS_USUARIO = gql`
-  query ($idUsuario:ID!) {
-    eventosUsuario(idUsuario:$idUsuario) {
+  query ($idUsuario: ID!) {
+    eventosUsuario(idUsuario: $idUsuario) {
       ...fragEvento
     }
   }
   ${fragmentoEvento}
 `;
 const QUERY_EVENTOS_CRUCE_CLUB = gql`
-  query ($idClub:ID!) {
-    eventosCruceNuevoEventoClub(idClub:$idClub) {
+  query ($idClub: ID!) {
+    eventosCruceNuevoEventoClub(idClub: $idClub) {
       ...fragEvento
     }
   }
   ${fragmentoEvento}
 `;
 const QUERY_EVENTOS_CRUCE_CLASE_NODO_CONOCIMIENTO = gql`
-  query ($idClase:ID!, $idNodo:ID!) {
-    eventosCruceNuevaClaseNodoConocimiento(idClase:$idClase, idNodo: $idNodo) {
+  query ($idClase: ID!, $idNodo: ID!) {
+    eventosCruceNuevaClaseNodoConocimiento(idClase: $idClase, idNodo: $idNodo) {
       ...fragEvento
     }
   }
   ${fragmentoEvento}
 `;
 export default {
-  components: { EventoCalendario, VentanaEventoCalendario, EventoCalendarioCruzado },
+  components: {
+    EventoCalendario,
+    VentanaEventoCalendario,
+    EventoCalendarioCruzado,
+  },
   name: "Calendario",
   apollo: {
     eventosOrigen: {
@@ -239,79 +278,83 @@ export default {
       update(respuesta) {
         return respuesta.eventosSegunOrigen;
       },
-      skip(){
-        const origenes=["club", "claseNodoConocimiento"];
-        if(!this.configCalendario || !this.configCalendario.tipo)return true;
+      skip() {
+        const origenes = ["club", "claseNodoConocimiento"];
+        if (!this.configCalendario || !this.configCalendario.tipo) return true;
         return !origenes.includes(this.configCalendario.tipo);
       },
-      fetchPolicy:'network-only'
+      fetchPolicy: "network-only",
     },
-    eventosUsuario:{
+    eventosUsuario: {
       query: QUERY_EVENTOS_USUARIO,
-      variables(){
-        console.log(`Preparando query eventosUsuario con idUsuario ${this.usuario.id}`);
-        return{
-          idUsuario: this.usuario.id
-        }
+      variables() {
+        console.log(
+          `Preparando query eventosUsuario con idUsuario ${this.usuario.id}`
+        );
+        return {
+          idUsuario: this.usuario.id,
+        };
       },
-      skip(){
-        var decision=(!this.usuario || !this.usuario.id || this.configCalendario.tipo!='personal');
-        
+      skip() {
+        var decision =
+          !this.usuario ||
+          !this.usuario.id ||
+          this.configCalendario.tipo != "personal";
+
         return decision;
       },
-      fetchPolicy:'network-only'
+      fetchPolicy: "network-only",
     },
-    eventosCruceClub:{
+    eventosCruceClub: {
       query: QUERY_EVENTOS_CRUCE_CLUB,
-      variables(){
+      variables() {
         return {
           idClub: this.configCalendario.id,
-        }
+        };
       },
-      update(data){
-        return data.eventosCruceNuevoEventoClub
+      update(data) {
+        return data.eventosCruceNuevoEventoClub;
       },
-      skip(){
-        var decision=this.configCalendario.tipo!="club";
-        return decision
+      skip() {
+        var decision = this.configCalendario.tipo != "club";
+        return decision;
       },
-      fetchPolicy:'network-only'
+      fetchPolicy: "network-only",
     },
-    eventosCruceClaseNodoConocimiento:{
+    eventosCruceClaseNodoConocimiento: {
       query: QUERY_EVENTOS_CRUCE_CLASE_NODO_CONOCIMIENTO,
-      variables(){
+      variables() {
         return {
-          idClase:this.configCalendario.id,
-          idNodo:this.configCalendario.idNodo
-        }
+          idClase: this.configCalendario.id,
+          idNodo: this.configCalendario.idNodo,
+        };
       },
-      update(data){
-        return data.eventosCruceNuevaClaseNodoConocimiento
+      update(data) {
+        return data.eventosCruceNuevaClaseNodoConocimiento;
       },
-      skip(){
-        var decision=this.configCalendario.tipo!="claseNodoConocimiento";
-        return decision
+      skip() {
+        var decision = this.configCalendario.tipo != "claseNodoConocimiento";
+        return decision;
       },
-      fetchPolicy:'network-only'
-    }
+      fetchPolicy: "network-only",
+    },
   },
   props: {
     configCalendario: Object,
-    
   },
   data() {
     const dateHoy = new Date(Date.now());
     dateHoy.setHours(0);
     dateHoy.setMinutes(0);
     dateHoy.setSeconds(0);
-    
+
     return {
-      enviandoQueryCrearEvento:false,
+      enviandoQueryCrearEvento: false,
 
       hoveringCalendario: false,
       eventosOrigen: [],
-      eventosUsuario:[],
-      eventosCruceClub:[],
+      eventosUsuario: [],
+      eventosCruceClub: [],
       numsDiasSemana: [
         "Domingo",
         "Lunes",
@@ -325,32 +368,32 @@ export default {
       minutoInicial: 480,
       montado: false,
       moviendoTiempos: false,
-      
+
       seleccionandoPlaceNuevoEvento: false,
       minutoInicialFantasmaNuevoEvento: null,
       duracionFantasmaNuevoEvento: 60,
       tiempoInicioMarcado: null,
       tiempoFinalMarcado: null,
 
-      ultimoTouchX:0,
-      ultimoTouchY:0,
-      lastPinchDistance:0,
-      pinching:false,      
+      ultimoTouchX: 0,
+      ultimoTouchY: 0,
+      lastPinchDistance: 0,
+      pinching: false,
 
       idEventoSeleccionado: null,
       idEventoAbierto: null,
 
-      zoom:100,
-      maxZoom:140,
-      minZoom:35,
+      zoom: 100,
+      maxZoom: 140,
+      minZoom: 35,
     };
   },
   computed: {
-    factorZoom(){
-      return Number((this.zoom/100).toFixed(2));
+    factorZoom() {
+      return Number((this.zoom / 100).toFixed(2));
     },
-    widthHoraPx(){
-      return Math.round(100*this.factorZoom);
+    widthHoraPx() {
+      return Math.round(100 * this.factorZoom);
     },
     diasVisibles() {
       var fechas = [];
@@ -421,7 +464,7 @@ export default {
       return resultado;
     },
     minutoFinalFantasmaNuevoEvento() {
-      if(this.minutoInicialFantasmaNuevoEvento==null)return null;
+      if (this.minutoInicialFantasmaNuevoEvento == null) return null;
       return (
         this.minutoInicialFantasmaNuevoEvento + this.duracionFantasmaNuevoEvento
       );
@@ -451,28 +494,24 @@ export default {
     eventoSeleccionado() {
       if (!this.idEventoSeleccionado) return null;
 
-      return this.eventosOrigen.find(
-        (e) => e.id === this.idEventoSeleccionado
-      );
+      return this.eventosOrigen.find((e) => e.id === this.idEventoSeleccionado);
     },
     todosEventos() {
       return this.eventosOrigen.concat(this.eventosUsuario);
     },
     eventoAbierto() {
       if (!this.idEventoAbierto) return null;
-      return this.todosEventos.find((e) => e.id === this.idEventoAbierto);
-    },   
-    eventosCruzados(){
-      if(this.configCalendario.tipo==='club' ){
+      return this.todosEventos.concat(this.eventosCruzados).find((e) => e.id === this.idEventoAbierto);
+    },
+    eventosCruzados() {
+      if (this.configCalendario.tipo === "club") {
         return this.eventosCruceClub;
-      }
-      else if(this.configCalendario.tipo==='claseNodoConocimiento'){
+      } else if (this.configCalendario.tipo === "claseNodoConocimiento") {
         return this.eventosCruceClaseNodoConocimiento;
       }
 
-      return []
-    }
-    
+      return [];
+    },
   },
   methods: {
     setMinutoInicialFantasmaNuevoEvento(e) {
@@ -494,12 +533,14 @@ export default {
         dia.milis + this.minutoInicialFantasmaNuevoEvento * 60000
       );
       const dateDia = new Date(dia.milis);
-      console.log(`Creando evento con horario de inicio: ${horarioI.getHours()}h`);
+      console.log(
+        `Creando evento con horario de inicio: ${horarioI.getHours()}h`
+      );
       console.log(
         `Minuto inicial fantasma: ${this.minutoInicialFantasmaNuevoEvento}`
       );
       console.log(`dateDia: ${dateDia}`);
-      this.enviandoQueryCrearEvento=true;
+      this.enviandoQueryCrearEvento = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -507,13 +548,13 @@ export default {
               $origen: String!
               $idOrigen: ID!
               $horarioInicio: Date!
-              $horarioFinal: Date!              
+              $horarioFinal: Date!
             ) {
-              crearEventoCalendario(
+              crearEventoProyectoCalendario(
                 origen: $origen
                 idOrigen: $idOrigen
                 horarioInicio: $horarioInicio
-                horarioFinal: $horarioFinal                
+                horarioFinal: $horarioFinal
               ) {
                 ...fragEvento
               }
@@ -526,12 +567,12 @@ export default {
             horarioInicio:
               dia.milis + this.minutoInicialFantasmaNuevoEvento * 60000,
             horarioFinal:
-              dia.milis + this.minutoFinalFantasmaNuevoEvento * 60000,            
+              dia.milis + this.minutoFinalFantasmaNuevoEvento * 60000,
           },
         })
         .then(({ data: { crearEventoCalendario } }) => {
           this.seleccionandoPlaceNuevoEvento = false;
-          this.enviandoQueryCrearEvento=false;
+          this.enviandoQueryCrearEvento = false;
 
           const store = this.$apollo.provider.defaultClient;
           const cache = store.readQuery({
@@ -565,7 +606,7 @@ export default {
         .catch((error) => {
           console.log(`Error. E: ${error}`);
           this.seleccionandoPlaceNuevoEvento = false;
-          this.enviandoQueryCrearEvento=false;
+          this.enviandoQueryCrearEvento = false;
         });
     },
     crearClaseNodoConocimiento(dia) {
@@ -581,15 +622,15 @@ export default {
               $idClase: ID!
               $horarioInicio: Date!
               $horarioFinal: Date!
-              $nombre:String!,
-              $descripcion:String
+              $nombre: String!
+              $descripcion: String
             ) {
               crearClaseNodoConocimientoCalendario(
-                idNodo: $idNodo,
-                idClase: $idClase,
-                horarioInicio:$horarioInicio,
-                horarioFinal: $horarioFinal,
-                nombre: $nombre, 
+                idNodo: $idNodo
+                idClase: $idClase
+                horarioInicio: $horarioInicio
+                horarioFinal: $horarioFinal
+                nombre: $nombre
                 descripcion: $descripcion
               ) {
                 ...fragEvento
@@ -606,18 +647,19 @@ export default {
               dia.milis + this.minutoFinalFantasmaNuevoEvento * 60000,
             datosEvento: this.posibleEventoNuevo,
             nombre: this.configCalendario.laClase.nombre,
-            descripcion: this.configCalendario.laClase.descripcion || "Descripción",
+            descripcion:
+              this.configCalendario.laClase.descripcion || "Descripción",
           },
         })
         .then(({ data: { crearClaseNodoConocimientoCalendario } }) => {
           this.seleccionandoPlaceNuevoEvento = false;
           const store = this.$apollo.provider.defaultClient;
-         
+
           const cache = store.readQuery({
             query: QUERY_EVENTOS_ORIGEN,
             variables: {
               origen: this.configCalendario.tipo,
-              idOrigen:this.configCalendario.id
+              idOrigen: this.configCalendario.id,
             },
           });
           var nuevoCache = JSON.parse(JSON.stringify(cache));
@@ -627,17 +669,20 @@ export default {
           if (indexE > -1) {
             console.log(`El evento ya estaba en caché`);
           } else {
-            nuevoCache.eventosSegunOrigen.push(crearClaseNodoConocimientoCalendario);
+            nuevoCache.eventosSegunOrigen.push(
+              crearClaseNodoConocimientoCalendario
+            );
             store.writeQuery({
               query: QUERY_EVENTOS_ORIGEN,
               variables: {
                 origen: this.configCalendario.tipo,
-                idOrigen:this.configCalendario.id
+                idOrigen: this.configCalendario.id,
               },
               data: nuevoCache,
             });
             this.$nextTick(() => {
-              this.idEventoSeleccionado = crearClaseNodoConocimientoCalendario.id;
+              this.idEventoSeleccionado =
+                crearClaseNodoConocimientoCalendario.id;
             });
           }
         })
@@ -652,8 +697,8 @@ export default {
       this.minutoInicial -= e.movementX;
       if (this.minutoInicial < 0) this.minutoInicial = 0;
       if (this.minutoInicial > 1380) this.minutoInicial = 1380;
-    },        
-    
+    },
+
     getEventosDia(dia) {
       return this.todosEventos.filter((e) => {
         const dateEvento = new Date(e.horarioInicio);
@@ -686,12 +731,15 @@ export default {
     },
     eliminarEventoDeCache(idEvento) {
       const store = this.$apollo.provider.defaultClient;
-      var nuevoCache=null;
-      var eventos=null;
+      var nuevoCache = null;
+      var eventos = null;
       console.log(`Eliminando de cache el evento ${idEvento}`);
-      if(this.configCalendario.tipo==='club' || this.configCalendario.tipo==='claseNodoConocimiento'){
+      if (
+        this.configCalendario.tipo === "club" ||
+        this.configCalendario.tipo === "claseNodoConocimiento"
+      ) {
         const cache = store.readQuery({
-        query: QUERY_EVENTOS_ORIGEN,
+          query: QUERY_EVENTOS_ORIGEN,
           variables: {
             origen: this.configCalendario.tipo,
             idOrigen: this.configCalendario.id,
@@ -700,12 +748,15 @@ export default {
         nuevoCache = JSON.parse(JSON.stringify(cache));
         eventos = nuevoCache.eventosSegunOrigen;
       }
-         
+
       const indexE = eventos.findIndex((e) => e.id === idEvento);
       if (indexE > -1) {
         console.log(`Evento en posicion ${indexE}`);
         eventos.splice(indexE, 1);
-        if(this.configCalendario.tipo==='club' || this.configCalendario.tipo==='claseNodoConocimiento'){
+        if (
+          this.configCalendario.tipo === "club" ||
+          this.configCalendario.tipo === "claseNodoConocimiento"
+        ) {
           store.writeQuery({
             query: QUERY_EVENTOS_ORIGEN,
             variables: {
@@ -713,27 +764,25 @@ export default {
               idOrigen: this.configCalendario.id,
             },
             data: nuevoCache,
-         });
-        }                
-      } 
-      else {
+          });
+        }
+      } else {
         console.log(`El evento no estaba en cache`);
       }
     },
     moverDias(e) {
       if (!this.hoveringCalendario) return;
 
-      if(!e.ctrlKey && !e.shiftKey)return
+      if (!e.ctrlKey && !e.shiftKey) return;
       e.preventDefault();
-      const deltaTiempos=30;
+      const deltaTiempos = 30;
 
       if (e.deltaY > 0) {
         if (e.shiftKey) {
           this.minutoInicial += deltaTiempos;
           if (this.minutoInicial < 0) this.minutoInicial = 0;
           if (this.minutoInicial > 1380) this.minutoInicial = 1380;
-        }
-        else if(e.ctrlKey){
+        } else if (e.ctrlKey) {
           this.diaCentral += 86400000;
         }
       }
@@ -742,96 +791,96 @@ export default {
           this.minutoInicial -= deltaTiempos;
           if (this.minutoInicial < 0) this.minutoInicial = 0;
           if (this.minutoInicial > 1380) this.minutoInicial = 1380;
-        }
-        else if (e.ctrlKey){
+        } else if (e.ctrlKey) {
           this.diaCentral -= 86400000;
         }
       }
     },
 
-    inicioTouch(e){
-      if(e.touches.length === 2){
+    inicioTouch(e) {
+      if (e.touches.length === 2) {
         var dist = Math.hypot(
           e.touches[0].pageX - e.touches[1].pageX,
           e.touches[0].pageY - e.touches[1].pageY
-          );
-        this.lastPinchDistance=dist;
-        this.pinching=true;
-        return
+        );
+        this.lastPinchDistance = dist;
+        this.pinching = true;
+        return;
       }
 
       this.ultimoTouchX = e.changedTouches[0].clientX;
       this.ultimoTouchY = e.changedTouches[0].clientY;
     },
-    movimientoTouch(e){
-      if(this.pinching){
+    movimientoTouch(e) {
+      if (this.pinching) {
         console.log(`Pinching`);
         // var contenedor = this.$el;
         // const posContenedor = contenedor.getBoundingClientRect();
 
-        const anchoFecha=parseInt(document.getElementById("contenedorMarcas").offsetLeft);
+        const anchoFecha = parseInt(
+          document.getElementById("contenedorMarcas").offsetLeft
+        );
         console.log(`El ancho de la fecha es: ${anchoFecha}`);
-        
-        const pinchPos={
-          x: (e.touches[0].pageX + e.touches[1].pageX)/2,
+
+        const pinchPos = {
+          x: (e.touches[0].pageX + e.touches[1].pageX) / 2,
         };
 
-        if(pinchPos.x<anchoFecha)return;
-        
-        const minutosPinch=this.minutoInicial+(pinchPos.x*60/this.widthHoraPx);                
+        if (pinchPos.x < anchoFecha) return;
+
+        const minutosPinch =
+          this.minutoInicial + (pinchPos.x * 60) / this.widthHoraPx;
 
         var dist = Math.hypot(
           e.touches[0].pageX - e.touches[1].pageX,
           e.touches[0].pageY - e.touches[1].pageY
-          );
-        var pinch=dist - this.lastPinchDistance;
-        pinch=pinch*0.5;   
+        );
+        var pinch = dist - this.lastPinchDistance;
+        pinch = pinch * 0.5;
         e.preventDefault();
-                  
+
         this.zoomVista(Math.round(pinch), minutosPinch);
-        this.lastPinchDistance=dist;
-      
+        this.lastPinchDistance = dist;
+
         return;
       }
-      
 
       const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
       const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
       this.ultimoTouchX = e.changedTouches[0].clientX;
       this.ultimoTouchY = e.changedTouches[0].clientY;
-      if(Math.abs(deltaX)>Math.abs(deltaY)){
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
         e.preventDefault();
-        this.minutoInicial-=Math.round(deltaX/this.factorZoom);
+        this.minutoInicial -= Math.round(deltaX / this.factorZoom);
         if (this.minutoInicial < 0) this.minutoInicial = 0;
         if (this.minutoInicial > 1380) this.minutoInicial = 1380;
       }
-
-
     },
-    endTouch(){
-      this.pinching=false
+    endTouch() {
+      this.pinching = false;
     },
-    zoomVista(zoom, minutosTarget){
-      if(minutosTarget<this.minutoInicial)minutosTarget=this.minutoInicial;
-      if(minutosTarget>1440)minutosTarget=1440;
+    zoomVista(zoom, minutosTarget) {
+      if (minutosTarget < this.minutoInicial)
+        minutosTarget = this.minutoInicial;
+      if (minutosTarget > 1440) minutosTarget = 1440;
 
-      const posTargetPixeles={
-        x: (minutosTarget-this.minutoInicial)*this.widthHoraPx/60,
-      }
-      
-      var nuevoZoom=this.zoom+zoom
-      if(nuevoZoom>this.maxZoom)nuevoZoom=this.maxZoom;
-      if(nuevoZoom<this.minZoom)nuevoZoom=this.minZoom;
-      this.zoom=nuevoZoom;
+      const posTargetPixeles = {
+        x: ((minutosTarget - this.minutoInicial) * this.widthHoraPx) / 60,
+      };
 
-      this.$nextTick(()=>{
-        const nuevoMinutoInicial=minutosTarget - (posTargetPixeles.x*60/this.widthHoraPx);
-        this.minutoInicial=Math.round(nuevoMinutoInicial);
+      var nuevoZoom = this.zoom + zoom;
+      if (nuevoZoom > this.maxZoom) nuevoZoom = this.maxZoom;
+      if (nuevoZoom < this.minZoom) nuevoZoom = this.minZoom;
+      this.zoom = nuevoZoom;
+
+      this.$nextTick(() => {
+        const nuevoMinutoInicial =
+          minutosTarget - (posTargetPixeles.x * 60) / this.widthHoraPx;
+        this.minutoInicial = Math.round(nuevoMinutoInicial);
         if (this.minutoInicial < 0) this.minutoInicial = 0;
         if (this.minutoInicial > 1380) this.minutoInicial = 1380;
-      })
-    }
-        
+      });
+    },
   },
   mounted() {
     this.montado = true;
@@ -846,7 +895,7 @@ export default {
 <style scoped>
 .calendario {
   overflow: hidden;
-  position:relative
+  position: relative;
 }
 .ventanaEventoCalendario {
   width: min(400px, 80%);
@@ -987,27 +1036,27 @@ export default {
 .eventoCalendario {
   position: absolute;
 }
-.eventoPrimario{
+.eventoPrimario {
   background: cornflowerblue;
 }
 @media only screen and (min-width: 768px) {
   .diaSemana {
-  min-width: 100px;
-  width: 100px;
-  margin-left: 10px;
-  font-size: 16px;
-}
-.diaMes {
-  min-width: 25px;
-  width: 25px;
-  height: 25px;  
-  margin-left: 2px;  
-}
-.numeroDiaMes{
-  font-size:13px;
-}
-#contenedorMarcas{
-  margin-left: 137px;
-}
+    min-width: 100px;
+    width: 100px;
+    margin-left: 10px;
+    font-size: 16px;
+  }
+  .diaMes {
+    min-width: 25px;
+    width: 25px;
+    height: 25px;
+    margin-left: 2px;
+  }
+  .numeroDiaMes {
+    font-size: 13px;
+  }
+  #contenedorMarcas {
+    margin-left: 137px;
+  }
 }
 </style>

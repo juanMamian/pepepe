@@ -25,7 +25,7 @@
     <div id="listaProyectos" @click.self="idProyectoSeleccionado=null">
       <loading texto="Cargando lista de grupos..." v-show="loading"/>
       <icono-proyecto
-        v-for="proyecto of proyectos"
+        v-for="proyecto of proyectosOrdenadosSegunUsuario"
         :key="proyecto.id"
         :esteProyecto="proyecto"
         :seleccionado="idProyectoSeleccionado == proyecto.id"
@@ -137,6 +137,16 @@ export default {
   computed:{
     username:function(){
       return this.$store.state.usuario.username;
+    },
+    proyectosOrdenadosSegunUsuario(){
+      if(!this.usuario || !this.usuario.id)return this.proyectos;
+
+      return [...this.proyectos].sort((a, b)=>{
+        var resp=0;
+        if(a.responsables.includes(this.usuario.id))resp--;
+        if(b.responsables.includes(this.usuario.id))resp++;
+        return resp;
+      })
     }
   }
 

@@ -58,7 +58,8 @@
           :class="{
             selectorSeleccionado: seccion.id == idSeccionSeleccionada,
             selectorSeccionBasica: seccion.seccionBasica,
-            seccionFuncional:seccion.seccionBasica && seccion.id!='seccionBasica1'
+            seccionFuncional:
+              seccion.seccionBasica && seccion.id != 'seccionBasica1',
           }"
           :key="seccion.id"
           @click="idSeccionSeleccionada = seccion.id"
@@ -69,20 +70,54 @@
           "
         >
           {{ seccion.texto }}
-          <img src="@/assets/iconos/clase.png" alt="Clases" title="Hay clases ofrecidas acerca de este tema" v-show="seccion.nombre==='expertos' && esteNodo.clases && esteNodo.clases.length>0" class="anuncioSelectorSeccion">
-          <div class="controlesSeccion" :class="{deshabilitado: seccion.editandose}" v-if="usuarioSuperadministrador || usuarioAdministradorAtlas || usuarioExperto">            
-            <div class="bControlesSeccion" @click.stop="moverSeccion(seccion.id, 'bajar')">
+          <img
+            src="@/assets/iconos/clase.png"
+            alt="Clases"
+            title="Hay clases ofrecidas acerca de este tema"
+            v-show="
+              seccion.nombre === 'expertos' &&
+              esteNodo.clases &&
+              esteNodo.clases.length > 0
+            "
+            class="anuncioSelectorSeccion"
+          />
+          <div
+            class="controlesSeccion"
+            :class="{ deshabilitado: seccion.editandose }"
+            v-if="
+              usuarioSuperadministrador ||
+              usuarioAdministradorAtlas ||
+              usuarioExperto
+            "
+          >
+            <div
+              class="bControlesSeccion"
+              @click.stop="moverSeccion(seccion.id, 'bajar')"
+            >
               <div class="bSubirBajar"></div>
             </div>
-            <div class="bControlesSeccion" @click.stop="moverSeccion(seccion.id, 'subir')">
-              <div class="bSubirBajar bSubir" style="transform: rotateZ(180deg); transform-origin: center center"></div>
+            <div
+              class="bControlesSeccion"
+              @click.stop="moverSeccion(seccion.id, 'subir')"
+            >
+              <div
+                class="bSubirBajar bSubir"
+                style="
+                  transform: rotateZ(180deg);
+                  transform-origin: center center;
+                "
+              ></div>
             </div>
             <img
               src="@/assets/iconos/delete.png"
               alt="Eliminar"
               title="Eliminar esta seccion"
               class="bEliminarSeccion bControlesSeccion"
-              v-if="usuarioSuperadministrador"
+              v-if="
+                usuarioSuperadministrador ||
+                usuarioAdministradorAtlas ||
+                usuarioExperto
+              "
               @click="eliminarSeccion(seccion.id)"
             />
           </div>
@@ -90,7 +125,11 @@
         <div
           id="bAddSeccion"
           class="botonZonaCrearSeccion"
-          v-if="usuarioSuperadministrador"
+          v-if="
+            usuarioSuperadministrador ||
+            usuarioAdministradorAtlas ||
+            usuarioExperto
+          "
           @click="
             creandoNuevaSeccion = !creandoNuevaSeccion;
             nombreNuevaSeccion = null;
@@ -100,7 +139,11 @@
         </div>
         <div
           id="creadorSeccion"
-          v-if="usuarioSuperadministrador"
+          v-if="
+            usuarioSuperadministrador ||
+            usuarioAdministradorAtlas ||
+            usuarioExperto
+          "
           v-show="creandoNuevaSeccion"
         >
           <input
@@ -251,9 +294,10 @@
               :class="{ deshabilitado: enviandoQueryExpertos }"
               v-if="
                 usuarioLogeado == true &&
+                !usuarioExperto &&
                 (usuarioSuperadministrador == true ||
-                  usuarioAdministradorAtlas == true) &&
-                !usuarioExperto
+                  usuarioAdministradorAtlas == true ||
+                  esteNodo.expertos.length == 0)
               "
               id="asumirExperto"
               @click="asumirComoExperto"
@@ -263,7 +307,12 @@
             <div
               class="controlesExpertos hoverGris botonesControles"
               :class="{ deshabilitado: enviandoQueryExpertos }"
-              v-if="usuarioLogeado && !usuarioExperto && !usuarioPosibleExperto"
+              v-if="
+                usuarioLogeado &&
+                !usuarioExperto &&
+                !usuarioPosibleExperto &&
+                esteNodo.expertos.length > 0
+              "
               id="botonAddExperto"
               @click="entrarListaPosiblesExpertos"
             >
@@ -298,9 +347,7 @@
             <div
               class="controlesExpertos hoverGris botonesControles"
               :class="{ deshabilitado: enviandoQueryExpertos }"
-              v-if="
-                (usuarioLogeado == true && usuarioExperto == true)
-              "              
+              v-if="usuarioLogeado == true && usuarioExperto == true"
               @click="ofrecerClase()"
             >
               Ofrezco una clase
@@ -318,7 +365,15 @@
               "
             >
               <template v-slot:alertas>
-                <img v-show="esteNodo.clases.some(c=>c.idExperto===idPersona)" src="@/assets/iconos/clase.png" alt="Clase" class="iconoExpertoConClase" style="width: 20px">
+                <img
+                  v-show="
+                    esteNodo.clases.some((c) => c.idExperto === idPersona)
+                  "
+                  src="@/assets/iconos/clase.png"
+                  alt="Clase"
+                  class="iconoExpertoConClase"
+                  style="width: 20px"
+                />
               </template>
             </icono-persona-autonomo>
 
@@ -332,17 +387,26 @@
                 idExpertoSeleccionado = idPersona;
                 expertoSeleccionadoEstaAceptado = false;
               "
-              v-show="usuarioExperto || (usuario && usuario.id && usuario.id===idPersona)"
+              v-show="
+                usuarioExperto ||
+                (usuario && usuario.id && usuario.id === idPersona)
+              "
               @dblclick.native.shift="aceptarExperto(idPersona)"
             />
           </div>
 
           <div id="zonaClases">
             <div id="listaClases">
-              <clase-nodo @meElimine="eliminarClaseCache(clase.id)" :usuarioExperto="usuarioExperto" :idNodo="esteNodo.id" v-for="clase of esteNodo.clases" :key="clase.id" :estaClase="clase" />
-            </div>              
+              <clase-nodo
+                @meElimine="eliminarClaseCache(clase.id)"
+                :usuarioExperto="usuarioExperto"
+                :idNodo="esteNodo.id"
+                v-for="clase of esteNodo.clases"
+                :key="clase.id"
+                :estaClase="clase"
+              />
+            </div>
           </div>
-          
         </div>
 
         <div
@@ -424,7 +488,7 @@ import Loading from "./utilidades/Loading.vue";
 import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import Foro from "./Foro.vue";
 import axios from "axios";
-import ClaseNodo from './visorNodoConocimiento/ClaseNodo.vue';
+import ClaseNodo from "./visorNodoConocimiento/ClaseNodo.vue";
 
 const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
@@ -432,12 +496,12 @@ const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosKeywordsNodo = /[^ a-zA-Z0-9]/;
 
 const QUERY_NODO = gql`
-  query($idNodo: ID!) {
+  query ($idNodo: ID!) {
     nodo(idNodo: $idNodo) {
       nombre
       id
       descripcion
-      clases{
+      clases {
         id
         nombre
         idExperto
@@ -447,7 +511,7 @@ const QUERY_NODO = gql`
       keywords
       expertos
       posiblesExpertos
-      clases{
+      clases {
         id
       }
       idForoPublico
@@ -484,7 +548,7 @@ export default {
       update({ nodo }) {
         nodo.secciones.forEach((seccion) => {
           seccion.subiendoArchivo = false;
-          seccion.editandose = false;          
+          seccion.editandose = false;
           seccion.texto = seccion.nombre;
           seccion.archivos.forEach((archivo) => {
             archivo.enviandoInfo = false;
@@ -500,7 +564,7 @@ export default {
         expertos: [],
         posiblesExpertos: [],
         secciones: [],
-        clases:[]
+        clases: [],
       },
       seccionesBasicas: [
         {
@@ -679,7 +743,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $nuevoDescripcion: String!) {
+            mutation ($idNodo: ID!, $nuevoDescripcion: String!) {
               editarDescripcionNodoConocimiento(
                 idNodo: $idNodo
                 nuevoDescripcion: $nuevoDescripcion
@@ -717,7 +781,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $nuevoKeywords: String!) {
+            mutation ($idNodo: ID!, $nuevoKeywords: String!) {
               editarKeywordsNodoConocimiento(
                 idNodo: $idNodo
                 nuevoKeywords: $nuevoKeywords
@@ -747,7 +811,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $idUsuario: ID!) {
+            mutation ($idNodo: ID!, $idUsuario: ID!) {
               removeExpertoNodo(idNodo: $idNodo, idUsuario: $idUsuario) {
                 id
                 expertos
@@ -774,7 +838,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $idUsuario: ID!) {
+            mutation ($idNodo: ID!, $idUsuario: ID!) {
               addExpertoNodo(idNodo: $idNodo, idUsuario: $idUsuario) {
                 id
                 expertos
@@ -804,7 +868,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $idUsuario: ID!) {
+            mutation ($idNodo: ID!, $idUsuario: ID!) {
               addPosibleExpertoNodo(idNodo: $idNodo, idUsuario: $idUsuario) {
                 id
                 posiblesExpertos
@@ -832,7 +896,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $idUsuario: ID!) {
+            mutation ($idNodo: ID!, $idUsuario: ID!) {
               addExpertoNodo(idNodo: $idNodo, idUsuario: $idUsuario) {
                 id
                 expertos
@@ -867,7 +931,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $nuevoNombre: String!) {
+            mutation ($idNodo: ID!, $nuevoNombre: String!) {
               editarNombreNodo(idNodo: $idNodo, nuevoNombre: $nuevoNombre) {
                 modificados {
                   id
@@ -949,7 +1013,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $idSeccion: ID!, $nombreArchivo: String!) {
+            mutation ($idNodo: ID!, $idSeccion: ID!, $nombreArchivo: String!) {
               eliminarArchivoSeccionNodo(
                 idNodo: $idNodo
                 idSeccion: $idSeccion
@@ -1020,7 +1084,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $idSeccion: ID!, $nombreArchivo: String!) {
+            mutation ($idNodo: ID!, $idSeccion: ID!, $nombreArchivo: String!) {
               marcarPrimarioArchivoSeccionNodo(
                 idNodo: $idNodo
                 idSeccion: $idSeccion
@@ -1083,7 +1147,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $nombreNuevaSeccion: String!) {
+            mutation ($idNodo: ID!, $nombreNuevaSeccion: String!) {
               crearNuevaSeccionNodoConocimiento(
                 idNodo: $idNodo
                 nombreNuevaSeccion: $nombreNuevaSeccion
@@ -1138,14 +1202,14 @@ export default {
       ) {
         return;
       }
-      var laSeccion=this.esteNodo.secciones.find(s=>s.id==idSeccion)
-      laSeccion.editandose=true;
+      var laSeccion = this.esteNodo.secciones.find((s) => s.id == idSeccion);
+      laSeccion.editandose = true;
       console.log(`Enviando mutación de eliminar seccion ${idSeccion}`);
       const dis = this;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idNodo: ID!, $idSeccion: ID!) {
+            mutation ($idNodo: ID!, $idSeccion: ID!) {
               eliminarSeccionNodoConocimiento(
                 idNodo: $idNodo
                 idSeccion: $idSeccion
@@ -1159,7 +1223,7 @@ export default {
         })
         .then(({ data: { eliminarSeccionNodoConocimiento } }) => {
           console.log(`resultado: ${eliminarSeccionNodoConocimiento}`);
-          laSeccion.editandose=false;
+          laSeccion.editandose = false;
           if (eliminarSeccionNodoConocimiento) {
             let store = dis.$apollo.provider.defaultClient;
             const cache = store.readQuery({
@@ -1186,126 +1250,149 @@ export default {
           }
         })
         .catch((error) => {
-          laSeccion.editandose=false;
+          laSeccion.editandose = false;
           console.log(`Error: E: ${error}`);
         });
     },
-    moverSeccion(idSeccion, movimiento){
-      const index=this.esteNodo.secciones.findIndex(s=>s.id==idSeccion);
-      if(index<0 || (movimiento=='subir' && index==0) || (movimiento=='bajar' && index==(this.esteNodo.secciones.length-1))) return
-      
-      var laSeccion=this.esteNodo.secciones.find(s=>s.id==idSeccion)
-      
+    moverSeccion(idSeccion, movimiento) {
+      const index = this.esteNodo.secciones.findIndex((s) => s.id == idSeccion);
+      if (
+        index < 0 ||
+        (movimiento == "subir" && index == 0) ||
+        (movimiento == "bajar" && index == this.esteNodo.secciones.length - 1)
+      )
+        return;
+
+      var laSeccion = this.esteNodo.secciones.find((s) => s.id == idSeccion);
+
       this.$set(laSeccion, "editandose", true);
-      
-      var mov=0;
-      if(movimiento=="subir")mov=-1;
-      if(movimiento=="bajar")mov=1;
 
-      this.$apollo.mutate({
-        mutation:gql`
-          mutation($idNodo: ID!, $idSeccion:ID!, $movimiento: Int!){
-            moverSeccionNodoConocimiento(idNodo:$idNodo, idSeccion:$idSeccion, movimiento:$movimiento)
-          }
-        `,
-        variables:{
-          idNodo: this.esteNodo.id,
-          idSeccion,
-          movimiento: mov
-        }
-      }).then(({data:{moverSeccionNodoConocimiento}})=>{
-          laSeccion.editandose=false;
-        if(moverSeccionNodoConocimiento){
-          const store=this.$apollo.provider.defaultClient;
-          const cache=store.readQuery({
-            query:QUERY_NODO,
-            variables: {idNodo:this.esteNodo.id}
-          });
-          var nuevoCache=JSON.parse(JSON.stringify(cache));
-          const indexS=nuevoCache.nodo.secciones.findIndex(s=>s.id==idSeccion);
-          if(indexS>-1){
-            nuevoCache.nodo.secciones.splice(indexS+mov, 0, nuevoCache.nodo.secciones.splice(indexS, 1)[0]);
-            store.writeQuery({
-              query:QUERY_NODO,
-              variables:{idNodo:this.esteNodo.id},
-              data:nuevoCache
-            })
-          }
-        }
-      }).catch(()=>{
-        laSeccion.editandose=false;
-        console.log(`Error moviendo sección`);
-      })
+      var mov = 0;
+      if (movimiento == "subir") mov = -1;
+      if (movimiento == "bajar") mov = 1;
 
-    },
-    ofrecerClase(){
-      console.log(`Ofreciendo clase`);
-      if(!this.usuario || !this.usuario.id)return;
-      this.$apollo.mutate({
-        mutation:gql`
-          mutation($idNodo:ID!, $idExperto: ID!){
-            crearClaseNodoConocimiento(idNodo:$idNodo, idExperto: $idExperto){
-              id
-              nombre
-              idExperto
-              descripcion
-              interesados
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $idSeccion: ID!, $movimiento: Int!) {
+              moverSeccionNodoConocimiento(
+                idNodo: $idNodo
+                idSeccion: $idSeccion
+                movimiento: $movimiento
+              )
+            }
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            idSeccion,
+            movimiento: mov,
+          },
+        })
+        .then(({ data: { moverSeccionNodoConocimiento } }) => {
+          laSeccion.editandose = false;
+          if (moverSeccionNodoConocimiento) {
+            const store = this.$apollo.provider.defaultClient;
+            const cache = store.readQuery({
+              query: QUERY_NODO,
+              variables: { idNodo: this.esteNodo.id },
+            });
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+            const indexS = nuevoCache.nodo.secciones.findIndex(
+              (s) => s.id == idSeccion
+            );
+            if (indexS > -1) {
+              nuevoCache.nodo.secciones.splice(
+                indexS + mov,
+                0,
+                nuevoCache.nodo.secciones.splice(indexS, 1)[0]
+              );
+              store.writeQuery({
+                query: QUERY_NODO,
+                variables: { idNodo: this.esteNodo.id },
+                data: nuevoCache,
+              });
             }
           }
-        `,
-        variables:{
-          idNodo: this.esteNodo.id,
-          idExperto: this.usuario.id,
-        }
-      }).then(({data:{crearClaseNodoConocimiento}})=>{
-        const store=this.$apollo.provider.defaultClient;
-        const cache=store.readQuery({
-          query: QUERY_NODO,
-          variables:{
-            idNodo: this.$route.params.idNodo
-          }
-        });
-
-        var nuevoCache=JSON.parse(JSON.stringify(cache));
-        const indexC=nuevoCache.nodo.clases.findIndex(c=>c.id===crearClaseNodoConocimiento.id);
-        if(indexC>-1){
-          nuevoCache.nodo.clases.splice(indexC,1);
-        }
-        nuevoCache.nodo.clases.push(crearClaseNodoConocimiento);
-        store.writeQuery({
-          query: QUERY_NODO,
-          variables:{
-            idNodo: this.$route.params.idNodo
-          },
-          data: nuevoCache
         })
-      })
+        .catch(() => {
+          laSeccion.editandose = false;
+          console.log(`Error moviendo sección`);
+        });
     },
-    eliminarClaseCache(idClase){
-      const store=this.$apollo.provider.defaultClient;
-        const cache=store.readQuery({
-          query: QUERY_NODO,
-          variables:{
-            idNodo: this.$route.params.idNodo
-          }
-        });
-
-        var nuevoCache=JSON.parse(JSON.stringify(cache));
-        const indexC=nuevoCache.nodo.clases.findIndex(c=>c.id===idClase);
-        if(indexC>-1){
-          nuevoCache.nodo.clases.splice(indexC,1);
-        }
-        else{
-          console.log(`La clase que se iba a eliminar no estaba en el caché`);
-        }
-        store.writeQuery({
-          query: QUERY_NODO,
-          variables:{
-            idNodo: this.$route.params.idNodo
+    ofrecerClase() {
+      console.log(`Ofreciendo clase`);
+      if (!this.usuario || !this.usuario.id) return;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $idExperto: ID!) {
+              crearClaseNodoConocimiento(
+                idNodo: $idNodo
+                idExperto: $idExperto
+              ) {
+                id
+                nombre
+                idExperto
+                descripcion
+                interesados
+              }
+            }
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            idExperto: this.usuario.id,
           },
-          data: nuevoCache
         })
-    }
+        .then(({ data: { crearClaseNodoConocimiento } }) => {
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_NODO,
+            variables: {
+              idNodo: this.$route.params.idNodo,
+            },
+          });
+
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          const indexC = nuevoCache.nodo.clases.findIndex(
+            (c) => c.id === crearClaseNodoConocimiento.id
+          );
+          if (indexC > -1) {
+            nuevoCache.nodo.clases.splice(indexC, 1);
+          }
+          nuevoCache.nodo.clases.push(crearClaseNodoConocimiento);
+          store.writeQuery({
+            query: QUERY_NODO,
+            variables: {
+              idNodo: this.$route.params.idNodo,
+            },
+            data: nuevoCache,
+          });
+        });
+    },
+    eliminarClaseCache(idClase) {
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_NODO,
+        variables: {
+          idNodo: this.$route.params.idNodo,
+        },
+      });
+
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      const indexC = nuevoCache.nodo.clases.findIndex((c) => c.id === idClase);
+      if (indexC > -1) {
+        nuevoCache.nodo.clases.splice(indexC, 1);
+      } else {
+        console.log(`La clase que se iba a eliminar no estaba en el caché`);
+      }
+      store.writeQuery({
+        query: QUERY_NODO,
+        variables: {
+          idNodo: this.$route.params.idNodo,
+        },
+        data: nuevoCache,
+      });
+    },
   },
 };
 </script>
@@ -1373,10 +1460,10 @@ export default {
   width: 100%;
   height: 100%;
 }
-.anuncioSelectorSeccion{
+.anuncioSelectorSeccion {
   width: 20px;
   height: 20px;
-  position:absolute;
+  position: absolute;
   top: 50%;
   right: 10px;
   transform: translateY(-50%);
@@ -1387,12 +1474,12 @@ export default {
   padding: 15px;
   font-size: 23px;
   cursor: pointer;
-  position:relative;
+  position: relative;
 }
 .selectorSeccion:hover {
   background-color: bisque;
 }
-.selectorSeccion:hover>.anuncioSelectorSeccion {
+.selectorSeccion:hover > .anuncioSelectorSeccion {
   display: block;
   background-color: tomato;
 }
@@ -1403,37 +1490,37 @@ export default {
 .selectorSeccion:not(.selectorSeccionBasica):hover > .controlesSeccion {
   display: block;
 }
-.bControlesSeccion{
+.bControlesSeccion {
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  cursor:pointer;
+  cursor: pointer;
   display: inline-block;
   margin-right: 5px;
   position: relative;
 }
-.bControlesSeccion:hover{
+.bControlesSeccion:hover {
   background-color: gray;
 }
-.bSubirBajar{
+.bSubirBajar {
   border: 10px solid transparent;
   border-top: 10px solid black;
   width: 1px;
   height: 1px;
   border-radius: 0%;
-  position:relative;
-  top:7px;
-  left:2px
+  position: relative;
+  top: 7px;
+  left: 2px;
 }
-.bSubir{
+.bSubir {
   top: -6px;
 }
 
-.controlesSeccion{
+.controlesSeccion {
   display: none;
   position: absolute;
-  top:0%;
-  right:0%;
+  top: 0%;
+  right: 0%;
 }
 .botonZonaCrearSeccion {
   cursor: pointer;
@@ -1523,10 +1610,9 @@ export default {
 .personaPosibleExperto {
   opacity: 0.5;
 }
-.iconoExpertoConClase{
+.iconoExpertoConClase {
   border-radius: 50%;
   background-color: chocolate;
-  
 }
 .nombreForo {
   padding: 5px 10px;
@@ -1537,10 +1623,9 @@ export default {
 }
 .barraControlesContenidosExternos {
   position: absolute;
-  transform: translateY(-100%);
-  top: 0%;
-  left: 0%;
-  width: 100%;
+  bottom: 100%;
+  right: 0%;
+  width: 20%;
   display: flex;
   flex-direction: row-reverse;
   opacity: 0.5;
@@ -1624,9 +1709,8 @@ export default {
     width: 100%;
     height: 100%;
   }
-  .seccionFuncional{
+  .seccionFuncional {
     font-size: 14px;
-    
   }
 }
 </style>

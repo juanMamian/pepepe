@@ -1347,6 +1347,11 @@ export default {
   padding: 10px 20px;
   padding-bottom: 65px;
 }
+#listaParticipantes {
+  display: flex;
+  padding: 10px 20px;
+  padding-bottom: 65px;
+}
 .iconoPersonaAutonomo {
   margin-right: 20px;
   margin-left: 15px;

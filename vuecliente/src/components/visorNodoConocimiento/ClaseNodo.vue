@@ -1,6 +1,6 @@
 <template>
   <div class="claseNodo">
-      <div id="filaPrincipal">
+      <div id="filaPrincipal" :class="{interesado: usuarioInteresado}">
         <div id="nombre">
             {{estaClase.nombre}}
         </div>
@@ -134,7 +134,10 @@ export default {
     }
     #filaPrincipal{
         display: flex;
-        background-color:tomato;
+        background-color:rgba(255, 99, 71, 0.363);
+    }
+    #filaPrincipal.interesado{
+        background-color: tomato;
     }
     #controles{
         margin-left: auto;

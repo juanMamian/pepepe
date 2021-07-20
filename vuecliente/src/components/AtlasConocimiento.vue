@@ -31,7 +31,6 @@
       ref="buscadorNodos"
       :cerrarBusqueda="cerrarBusqueda"
     />
-  
 
     <panel-conjuntos-nodos
       ref="panelConjuntosNodos"
@@ -107,7 +106,7 @@ const QUERY_NODOS = gql`
       id
       nombre
       descripcion
-      clases{
+      clases {
         id
         nombre
         idExperto
@@ -271,7 +270,7 @@ export default {
         : false;
     },
     idNodoTarget() {
-      if(!this.yo || !this.yo.atlas)return null;
+      if (!this.yo || !this.yo.atlas) return null;
       return this.yo.atlas.idNodoTarget;
     },
     idsNodosAprendidos() {
@@ -343,7 +342,7 @@ export default {
           __typename: "DatoNodoUsuario",
           idNodo,
           objetivo: nuevoEstado,
-          aprendido: this.todosNodos.find((n) => n.id == idNodo).aprendido,
+          aprendido: false,
         });
       }
       store.writeQuery({
@@ -392,7 +391,7 @@ export default {
         data: nuevoCache,
       });
     },
-    
+
     centrarEnNodo(n) {
       this.$set(
         this.centroVistaDecimal,
@@ -597,6 +596,12 @@ export default {
                 nombre
                 descripcion
                 id
+                clases {
+                  id
+                  nombre
+                  idExperto
+                  interesados
+                }
                 coordsManuales {
                   x
                   y
@@ -623,22 +628,26 @@ export default {
           variables: {
             infoNodo,
           },
-          update(store, { data: { crearNodo } }) {
-            const cache = store.readQuery({
-              query: QUERY_NODOS,
-            });
-            //console.log(`Cache: ${JSON.stringify(cache)}`);
-            var nuevoCache = JSON.parse(JSON.stringify(cache));
-            let losNodos = nuevoCache.todosNodos;
+        })
+        .then(({ data: { crearNodo } }) => {
+          console.log(`Creado ${crearNodo.id}`);
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_NODOS,
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          var losNodos = nuevoCache.todosNodos;
+          const indexN = losNodos.findIndex((n) => n.id === crearNodo.id);
+          if (indexN > -1) {
+            console.log(`El nodo ya estaba en caché`);
+          } else {
             losNodos.push(crearNodo);
             store.writeQuery({
               query: QUERY_NODOS,
               data: nuevoCache,
             });
-          },
-        })
-        .then(({ data: { crearNodo } }) => {
-          console.log(`Creado ${crearNodo.id}`);
+          }
+
           //this.$router.push("/nodoConocimiento/"+crearNodo.id);
         })
         .catch((error) => {

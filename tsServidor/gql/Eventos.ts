@@ -31,7 +31,7 @@ export const typeDefs = gql`
     }
 
     extend type Mutation{
-        crearEventoCalendario(origen: String!, idOrigen:ID!, horarioInicio:Date!, horarioFinal: Date!):EventoCalendario,
+        crearEventoProyectoCalendario(origen: String!, idOrigen:ID!, horarioInicio:Date!, horarioFinal: Date!):EventoCalendario,
         crearClaseNodoConocimientoCalendario(idNodo:ID!, idClase: ID!, horarioInicio:Date!, horarioFinal: Date!, nombre: String!, descripcion: String):EventoCalendario,
         eliminarEventoCalendario(idEvento:ID!):Boolean,
         setHorariosEvento(idEvento: ID!, nuevoHorarioInicio: Date!, nuevoHorarioFinal: Date!):EventoCalendario,
@@ -193,11 +193,11 @@ export const resolvers = {
     },
 
     Mutation:{
-        async crearEventoCalendario(_: any, { origen, idOrigen, horarioInicio, horarioFinal }: any, contexto: contextoQuery){
+        async crearEventoProyectoCalendario(_: any, { origen, idOrigen, horarioInicio, horarioFinal }: any, contexto: contextoQuery){
             let credencialesUsuario = contexto.usuario;
 
             var idsAutorizados=[];
-            var participantesEvento=[];
+            var participantesEvento:Array<string>=[];
             if(origen==="club"){
                 try {
                     var elProyecto:any=await Proyecto.findById(idOrigen).exec();                    
@@ -207,7 +207,12 @@ export const resolvers = {
                     throw new ApolloError("Error conectando con la base de datos")
                 }
                 idsAutorizados=elProyecto.responsables;
-                participantesEvento=participantesEvento.concat(elProyecto.responsables).concat(elProyecto.participantes);
+                participantesEvento=elProyecto.participantes;
+                const indexU=participantesEvento.indexOf(credencialesUsuario.id);
+
+                if(indexU==-1){
+                    participantesEvento.push(credencialesUsuario.id);
+                }
             }
             
             //Autorización
