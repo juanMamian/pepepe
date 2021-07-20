@@ -289,6 +289,8 @@ export default {
         return;
 
       this.enviandoQueryTotal = true;
+      this.$emit("desmarcarInicio");
+      this.$emit("desmarcarFinal");
       this.$apollo
         .mutate({
           mutation: gql`

@@ -1,19 +1,21 @@
 <template>
   <div
     class="iconoPersonaAutonomo"
-    :class="{ yo: soyYo, seleccionado: seleccionado }"
+    :class="{ yo: soyYo }"
   >
     <img
       class="fotografia"
       :src="this.serverUrl + '/api/usuarios/fotografias/' + idPersona"
+      :style="[offsetFoto]"
       v-show="fotografiaEnabled"
       @load="fotografiaEnabled = true"
-      alt=""
+      alt="Usuario"
+
     />
     <div id="contenedorAlertas">
       <slot name="alertas"></slot>
     </div>
-    <div class="nombres" :class="{ nombreSeleccionado: seleccionado }">
+    <div class="nombres" :class="{ nombreSeleccionado: seleccionado }" :style="[{fontSize: basicFontSizeNombre*factor+'px'}]">
       {{ estaPersona.nombres }}
     </div>
     <div id="menuCxPersona" v-show="menuContextual">
@@ -74,12 +76,19 @@ export default {
       nuevoPermiso: null,
       mounted: false,
       fotografiaEnabled: false,
+
+      basicWidthFoto:70,
+      basicFontSizeNombre:15,
     };
   },
   props: {
     idPersona: String,
     seleccionado: Boolean,
     menuContextual: Boolean,
+    factorEscala:{
+      type: String,
+      default: "1"
+    },
     opcionesMenuCx: {
       type: Array,
     },
@@ -91,6 +100,16 @@ export default {
       }
       return false;
     },
+    offsetFoto(){
+
+      return {
+        width: this.basicWidthFoto*this.factor+"px",
+        height: this.basicWidthFoto*this.factor+"px"
+      }
+    },
+    factor(){
+      return Number(this.factorEscala)
+    }
   },
   methods: {
     addPermisos() {
@@ -148,31 +167,19 @@ export default {
   position: relative;
   border-radius: 50%;
   user-select: none;
-  width: 70px;
-  height: 70px;
-  border: 1px solid transparent;
-}
-.iconoPersonaAutonomo:hover {
-  border-color: purple;
 }
 
+
 .fotografia {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  position: absolute;
+   
+  border-radius: 50%;  
   pointer-events: none;
 }
-.seleccionado {
-  border-color: purple;
-}
+
 #contenedorAlertas {
   position: absolute;
   top: 0;
   right: 0;
-}
-.yo {
-  border: 1px solid purple;
 }
 
 .nombres {
@@ -189,7 +196,7 @@ export default {
     0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
 .nombreSeleccionado {
-  background-color: rgb(241, 175, 147);
+  background-color: rgb(241, 116, 63);
 }
 
 .botonMenuCx {

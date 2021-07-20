@@ -1,5 +1,10 @@
 <template>
   <div class="ventanaEventoCalendario" @click.stop="" @mouseup.left.stop="">
+    <div id="zonaParent" v-if="infoEvento">
+      <div id="nombreParent">
+        {{infoEvento.tipoParent}}: {{infoEvento.nombreParent}}
+      </div>
+    </div>
     <div id="zonaConfirmarAsistencia">
       <img src="@/assets/iconos/join.png" @click.stop="toggleAsistencia" class="botonConfirmacionAsistencia" :class="{asistenciaConfirmada: usuarioParticipanteEvento, deshabilitado: enviandoQueryAsistencia}" id="botonConfirmarAsistencia" :title="usuarioParticipanteEvento?'Cancelar asistencia':'Confirmar asistencia'"/>
       
@@ -79,18 +84,74 @@
             v-show="editandoDescripcion"
           />
           <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />        
-      </div>
+    </div>
+
+    <div id="zonaParticipantes" class="zonaPrimerNivel">
+      <div class="barraSuperiorZona">
+          <div
+            class="nombreZona"            
+          >            
+            Participantes
+          </div>
+        </div>
+        <div id="listaParticipantes" @click="idParticipanteSeleccionado=null">            
+            <icono-persona-autonomo
+              :idPersona="idPersona"
+              factorEscala=0.7
+              :key="'participante'+idPersona"
+              v-for="idPersona of esteEvento.participantes"
+              :seleccionado="idParticipanteSeleccionado == idPersona"
+              @click.native.stop="
+                idParticipanteSeleccionado = idPersona;
+                participanteSeleccionadoEstaAceptado = true;
+              "
+            />            
+          </div>
+    </div>
   </div>
 </template>
 
 <script>
 import gql from 'graphql-tag';
 import Loading from './Loading.vue';
+import iconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue"
 const charProhibidosNombreEvento = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionEvento = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
+const QUERY_INFO_EVENTO=gql`
+  query($idEvento:ID!){
+    infoAdicionalEvento(idEvento:$idEvento){
+      id
+      participantes{
+        id
+        nombres
+        apellidos
+      }
+      nombreParent
+      tipoParent
+    }
+  }
+
+`;
+
 export default {
-  components: { Loading },
+  components: { Loading, iconoPersonaAutonomo },
+  apollo:{
+    infoEvento:{
+      query: QUERY_INFO_EVENTO,
+      variables(){
+        return {
+          idEvento: this.esteEvento.id
+        }
+      },
+      update(data){
+        return data.infoAdicionalEvento
+      },
+      skip(){
+        return (!this.esteEvento || !this.esteEvento.id)
+      }
+    }
+  },
   name: "VentanaEventoCalendario",
   props: {
     esteEvento: Object,
@@ -106,6 +167,8 @@ export default {
       enviandoNuevoDescripcion: false,
 
       enviandoQueryAsistencia:false,
+
+      idParticipanteSeleccionado:null,
     };
   },
   methods: {
@@ -259,6 +322,14 @@ export default {
 .ventanaEventoCalendario {
   background-color: rgb(127, 202, 202);
 }
+#zonaParent{
+  padding: 5px;
+}
+#nombreParent{
+  font-size: 12px;
+  font-style: italic;
+  color: gray;
+}
 #zonaConfirmarAsistencia{
   position: absolute;
   left:100%;
@@ -293,8 +364,8 @@ export default {
   flex-direction: row-reverse;
 }
 .bEditar {
-  width: 30px;
-  height: 30px;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
   cursor: pointer;
 }
@@ -310,14 +381,14 @@ export default {
 
 #nombre {
   margin-top: 15px;
-  font-size: 23px;
+  font-size: 18px;
   font-weight: bolder;
   text-align: center;
   margin-bottom: 15px;
 }
 
 #descripcion {
-  font-size: 19px;
+  font-size: 14px;
   width: 95%;
   margin: 10px auto;
   padding: 10px;
@@ -340,5 +411,15 @@ export default {
   display: block;
   margin: 10px auto;
   resize: vertical;
+}
+
+#listaParticipantes {
+  display: flex;
+  padding: 10px 20px;
+  padding-bottom: 65px;
+  max-height: 500px;
+}
+.iconoPersonaAutonomo{
+  margin: 0px 10px;
 }
 </style>

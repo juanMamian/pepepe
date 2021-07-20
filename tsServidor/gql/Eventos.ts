@@ -3,10 +3,18 @@ import { contextoQuery } from "./tsObjetos"
 import { ModeloEvento as Evento } from "../model/Evento";
 import { ModeloProyecto as Proyecto } from "../model/Proyecto";
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
+import { ModeloUsuario as Usuario } from "../model/Usuario";
 
 
 export const typeDefs = gql`
     
+    type InfoEventoCalendario{
+        id:ID,
+        tipoParent:String,
+        nombreParent:String,
+        participantes:PublicUsuario
+    }
+
     type EventoCalendario{
         id: ID,
         nombre: String,
@@ -28,6 +36,7 @@ export const typeDefs = gql`
         eventosUsuario(idUsuario:ID!):[EventoCalendario],
         eventosCruceNuevoEventoClub(idClub: ID!):[EventoCalendario],
         eventosCruceNuevaClaseNodoConocimiento(idClase: ID!, idNodo: ID!):[EventoCalendario],
+        infoAdicionalEvento(idEvento:ID!):InfoEventoCalendario
     }
 
     extend type Mutation{
@@ -57,14 +66,14 @@ export const resolvers = {
                 console.log(`error buscando un evento. E: ${error}`);
                 throw new ApolloError("");
             }
-            
+
             return elEvento;
         },
-        async eventosSegunOrigen(_: any, { origen, idOrigen }: any, context: contextoQuery){
+        async eventosSegunOrigen(_: any, { origen, idOrigen }: any, context: contextoQuery) {
             console.log(`Solicitud de eventos de un ${origen} con id ${idOrigen}`);
             try {
-                var losEventos: any = await Evento.find({idOrigen}).exec();
-                
+                var losEventos: any = await Evento.find({ idOrigen }).exec();
+
             } catch (error) {
                 console.log(`error buscando eventos. E: ${error}`);
                 throw new ApolloError("");
@@ -72,17 +81,17 @@ export const resolvers = {
             console.log(`Enviando ${losEventos.length} eventos`);
             return losEventos;
         },
-        async eventosUsuario(_: any, { idUsuario }: any, contexto: contextoQuery){
+        async eventosUsuario(_: any, { idUsuario }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             console.log(`Solicitud de eventosCalendario del usuario ${idUsuario}`);
-            var permisosEspeciales=["superadministrador"];
-            if(credencialesUsuario.id!=idUsuario && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+            var permisosEspeciales = ["superadministrador"];
+            if (credencialesUsuario.id != idUsuario && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
                 console.log(`No autorizado`);
                 throw new AuthenticationError("No autorizado");
             }
 
             try {
-                var losEventos: any = await Evento.find({participantes: idUsuario}).exec();                                
+                var losEventos: any = await Evento.find({ participantes: idUsuario }).exec();
             } catch (error) {
                 console.log(`error buscando eventos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -91,29 +100,29 @@ export const resolvers = {
             //Buscar clases en las que está interesado el usuario.
 
             try {
-                var losNodosInteresantes:any=await Nodo.find({"clases.interesados": idUsuario}).exec();
+                var losNodosInteresantes: any = await Nodo.find({ "clases.interesados": idUsuario }).exec();
             } catch (error) {
                 console.log(`Error buscando nodos con clases de interés para el usuario`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            console.log(`El usuario está interesado en clases de los nodos: ${losNodosInteresantes.map(n=>n.nombre)}`);
+            console.log(`El usuario está interesado en clases de los nodos: ${losNodosInteresantes.map(n => n.nombre)}`);
 
-            var idsClasesInteresantes:Array<string>=[];
-            losNodosInteresantes.forEach(nodo=>{
-                let clasesInteresantes=nodo.clases.filter(c=>c.interesados.includes(idUsuario));
-                idsClasesInteresantes=idsClasesInteresantes.concat(clasesInteresantes.map(c=>c.id));                
+            var idsClasesInteresantes: Array<string> = [];
+            losNodosInteresantes.forEach(nodo => {
+                let clasesInteresantes = nodo.clases.filter(c => c.interesados.includes(idUsuario));
+                idsClasesInteresantes = idsClasesInteresantes.concat(clasesInteresantes.map(c => c.id));
             });
 
             console.log(`El usuario está interesado en las clases: ${idsClasesInteresantes}`);
 
             try {
-                var losEventosClases: any = await Evento.find({idOrigen: {$in:idsClasesInteresantes}}).exec();
+                var losEventosClases: any = await Evento.find({ idOrigen: { $in: idsClasesInteresantes } }).exec();
             } catch (error) {
                 console.log(`error buscando eventos de clases interesantes para el usuario. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var todosEventos=losEventos.concat(losEventosClases);
+            var todosEventos = losEventos.concat(losEventosClases);
 
             console.log(`Enviando ${todosEventos.length} eventos`);
             return todosEventos;
@@ -123,32 +132,32 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto:any=await Proyecto.findById(idClub).exec();                    
-                if(!elProyecto)throw "Proyecto parent no encontrado";
+                var elProyecto: any = await Proyecto.findById(idClub).exec();
+                if (!elProyecto) throw "Proyecto parent no encontrado";
             } catch (error) {
                 console.log(`Error buscando el club parent. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos")
             }
 
-            var usuariosRelevantes=elProyecto.participantes;
+            var usuariosRelevantes = elProyecto.participantes;
 
-            const indexU=usuariosRelevantes.indexOf(credencialesUsuario.id)
-            if(indexU>-1){
+            const indexU = usuariosRelevantes.indexOf(credencialesUsuario.id)
+            if (indexU > -1) {
                 console.log(`El usuario que solicita ya era parte de los relevantes`);
             }
-            else{
-                const todosMiembrosProyecto=elProyecto.responsables.concat(elProyecto.participantes);
-                if(todosMiembrosProyecto.includes(credencialesUsuario.id)){
+            else {
+                const todosMiembrosProyecto = elProyecto.responsables.concat(elProyecto.participantes);
+                if (todosMiembrosProyecto.includes(credencialesUsuario.id)) {
                     usuariosRelevantes.push(credencialesUsuario.id);
                 }
             }
 
             try {
-                var losEventosCruce:any=await Evento.find({participantes: {$in: usuariosRelevantes}, idOrigen : {$ne: idClub}}).exec();                
+                var losEventosCruce: any = await Evento.find({ participantes: { $in: usuariosRelevantes }, idOrigen: { $ne: idClub } }).exec();
             } catch (error) {
                 console.log(`Error buscando los eventos cruce: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
-                
+
             }
             return losEventosCruce;
         },
@@ -157,82 +166,146 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elNodo:any=await Nodo.findById(idNodo).exec();                    
-                if(!elNodo)throw "Proyecto parent no encontrado";
+                var elNodo: any = await Nodo.findById(idNodo).exec();
+                if (!elNodo) throw "Proyecto parent no encontrado";
             } catch (error) {
                 console.log(`Error buscando el nodo parent. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos")
             }
 
-            var laClase=elNodo.clases.id(idClase);
-            if(!laClase){
+            var laClase = elNodo.clases.id(idClase);
+            if (!laClase) {
                 console.log(`Error buscando la clase para buscar sus cruces`);
                 throw new UserInputError("Datos incorrectos");
             }
 
-            var usuariosRelevantes=laClase.interesados;
+            var usuariosRelevantes = laClase.interesados;
 
-            const indexU=usuariosRelevantes.indexOf(credencialesUsuario.id)
-            if(indexU>-1){
+            const indexU = usuariosRelevantes.indexOf(credencialesUsuario.id)
+            if (indexU > -1) {
                 console.log(`El usuario que solicita ya era parte de los relevantes`);
             }
-            else{
+            else {
                 usuariosRelevantes.push(credencialesUsuario.id);
             }
+            console.log(`Buscando cruces con eventos que incluyen a los usuariosRelevantes: ${usuariosRelevantes}`);
 
             try {
-                var losEventosCruce:any=await Evento.find({participantes: {$in: usuariosRelevantes}, idOrigen : {$ne: idClase}}).exec();                
+                var losEventosCruce: any = await Evento.find({ participantes: { $in: usuariosRelevantes }, idOrigen: { $ne: idClase } }).exec();
             } catch (error) {
                 console.log(`Error buscando los eventos cruce: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
-                
+
             }
             return losEventosCruce;
-        }
+        },
+        infoAdicionalEvento: async function (_: any, { idEvento }: any, context: contextoQuery) {
+
+            try {
+                var elEvento: any = await Evento.findById(idEvento).exec();
+                if (!elEvento) {
+                    throw "Evento no existía"
+                }
+            } catch (error) {
+                console.log(`error buscando un evento. E: ${error}`);
+                throw new ApolloError("");
+            }
+            var infoEvento:any=null;
+            if (elEvento.origen === 'club') {
+                try {
+                    var elParent: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                } catch (error) {
+                    console.log(`Error buscando el proyecto parent del evento`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                try {
+                    console.log(`Buscando los ${elEvento.participantes.length} participantes del evento`);
+                    var losParticipantes:any=await Usuario.find({'_id':{$in:elEvento.participantes}}).exec();
+                    console.log(`Encontrados ${losParticipantes.length} participantes del evento ${elEvento.nombre}`);
+                } catch (error) {
+                    console.log(`Error buscando los participantes del evento ${idEvento}: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                infoEvento={
+                    id:elEvento.id,
+                    nombreParent: elParent.nombre,
+                    tipoParent:"Grupo",
+                    participantes: losParticipantes
+                }
+            }
+            else if (elEvento.origen === 'claseNodoConocimiento') {
+                try {
+                    var elParent: any = await Nodo.findById(elEvento.idNodo).exec();
+                } catch (error) {
+                    console.log(`Error buscando el nodoConocimiento parent del evento`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                try {
+                    console.log(`Buscando los ${elEvento.participantes.length} participantes del evento`);
+                    var losParticipantes:any=await Usuario.find({id:{$in:elEvento.participantes}}).exec();
+                    console.log(`Encontrados ${losParticipantes.length} participantes del evento ${elEvento.nombre}`);
+                } catch (error) {
+                    console.log(`Error buscando los participantes del evento ${idEvento}: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                infoEvento={
+                    id:elEvento.id,
+                    nombreParent: elParent.nombre,
+                    tipoParent:"Clase",
+                    participantes: losParticipantes
+                }
+            }
+            
+            return infoEvento;
+        },
 
     },
 
-    Mutation:{
-        async crearEventoProyectoCalendario(_: any, { origen, idOrigen, horarioInicio, horarioFinal }: any, contexto: contextoQuery){
+    Mutation: {
+        async crearEventoProyectoCalendario(_: any, { origen, idOrigen, horarioInicio, horarioFinal }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
 
-            var idsAutorizados=[];
-            var participantesEvento:Array<string>=[];
-            if(origen==="club"){
+            var idsAutorizados = [];
+            var participantesEvento: Array<string> = [];
+            if (origen === "club") {
                 try {
-                    var elProyecto:any=await Proyecto.findById(idOrigen).exec();                    
-                    if(!elProyecto)throw "Proyecto parent no encontrado";
+                    var elProyecto: any = await Proyecto.findById(idOrigen).exec();
+                    if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos")
                 }
-                idsAutorizados=elProyecto.responsables;
-                participantesEvento=elProyecto.participantes;
-                const indexU=participantesEvento.indexOf(credencialesUsuario.id);
+                idsAutorizados = elProyecto.responsables;
+                participantesEvento = elProyecto.participantes;
+                const indexU = participantesEvento.indexOf(credencialesUsuario.id);
 
-                if(indexU==-1){
+                if (indexU == -1) {
                     participantesEvento.push(credencialesUsuario.id);
                 }
             }
 
             console.log(`Creando evento con participantes: ${participantesEvento}`);
-            
-            //Autorización
-            const permisosEspeciales=["superadministrador"];
 
-            if(!idsAutorizados.some(id=>id===credencialesUsuario.id) && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+            //Autorización
+            const permisosEspeciales = ["superadministrador"];
+
+            if (!idsAutorizados.some(id => id === credencialesUsuario.id) && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
 
             console.log(`Creando un evento que va desde ${horarioInicio} hasta ${horarioFinal}`);
 
-            if(horarioFinal<=(horarioInicio+600000)){
+            if (horarioFinal <= (horarioInicio + 600000)) {
                 throw new UserInputError("Datos de tiempo inválidos");
             }
 
             try {
-                var nuevoEvento= new Evento({origen, idOrigen, horarioInicio, horarioFinal, participantes: participantesEvento});
+                var nuevoEvento = new Evento({ origen, idOrigen, horarioInicio, horarioFinal, participantes: participantesEvento });
                 await nuevoEvento.save();
             } catch (error) {
                 console.log(`Error creando el nuevo evento. E: ${error}`);
@@ -240,24 +313,24 @@ export const resolvers = {
             }
             return nuevoEvento
         },
-        async crearClaseNodoConocimientoCalendario(_: any, { idNodo, idClase, horarioInicio, horarioFinal, nombre, descripcion }: any, contexto: contextoQuery){
+        async crearClaseNodoConocimientoCalendario(_: any, { idNodo, idClase, horarioInicio, horarioFinal, nombre, descripcion }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
 
-            var idsAutorizados:Array<string>=[];
+            var idsAutorizados: Array<string> = [];
 
             try {
-                var elNodo:any=await Nodo.findById(idNodo).exec();                    
-                if(!elNodo)throw "NodoConocimiento parent no encontrado";
-                idsAutorizados=elNodo.expertos;
+                var elNodo: any = await Nodo.findById(idNodo).exec();
+                if (!elNodo) throw "NodoConocimiento parent no encontrado";
+                idsAutorizados = elNodo.expertos;
             } catch (error) {
                 console.log(`Error buscando el nodoConocimiento parent. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos")
             }
 
             //Autorización
-            const permisosEspeciales=["superadministrador"];
+            const permisosEspeciales = ["superadministrador"];
 
-            if(!idsAutorizados.some(id=>id===credencialesUsuario.id) && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+            if (!idsAutorizados.some(id => id === credencialesUsuario.id) && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -267,22 +340,22 @@ export const resolvers = {
                 throw new UserInputError("Nombre ilegal");
             }
 
-            const laClase=elNodo.clases.find(c=>c.id===idClase);
-            
-            if(!laClase){
+            const laClase = elNodo.clases.find(c => c.id === idClase);
+
+            if (!laClase) {
                 console.log(`Error. La clase para la cual se crearía un evento no existía:`);
                 throw new UserInputError("Datos de clase inválidos para crear el evento");
-            }                        
-            var participantesEvento=[laClase.idExperto];                                   
+            }
+            var participantesEvento = [laClase.idExperto];
 
             console.log(`Creando una clase que va desde ${horarioInicio} hasta ${horarioFinal}`);
 
-            if(horarioFinal<=(horarioInicio+600000)){
+            if (horarioFinal <= (horarioInicio + 600000)) {
                 throw new UserInputError("Datos de tiempo inválidos");
             }
 
             try {
-                var nuevoEvento= new Evento({origen: 'claseNodoConocimiento', idOrigen:idClase, idNodo, horarioInicio, horarioFinal, participantes: participantesEvento, descripcion, nombre});
+                var nuevoEvento = new Evento({ origen: 'claseNodoConocimiento', idOrigen: idClase, idNodo, horarioInicio, horarioFinal, participantes: participantesEvento, descripcion, nombre });
                 await nuevoEvento.save();
             } catch (error) {
                 console.log(`Error creando el nuevo evento. E: ${error}`);
@@ -290,33 +363,33 @@ export const resolvers = {
             }
             return nuevoEvento
         },
-        async eliminarEventoCalendario(_: any, { idEvento }: any, contexto: contextoQuery){
+        async eliminarEventoCalendario(_: any, { idEvento }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             console.log(`Solicitud de eliminar un evento con id ${idEvento}`);
             try {
-                var elEvento:any=await Evento.findById(idEvento).exec();
-                if(!elEvento)throw "Evento no encontrado"
+                var elEvento: any = await Evento.findById(idEvento).exec();
+                if (!elEvento) throw "Evento no encontrado"
             } catch (error) {
                 console.log(`Error buscando el evento: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var idsAutorizados=[];
-            if(elEvento.origen==="club"){
+            var idsAutorizados = [];
+            if (elEvento.origen === "club") {
                 try {
-                    var elProyecto:any=await Proyecto.findById(elEvento.idOrigen).exec();                    
-                    if(!elProyecto)throw "Proyecto parent no encontrado";
+                    var elProyecto: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos")
                 }
-                idsAutorizados=elProyecto.responsables                
+                idsAutorizados = elProyecto.responsables
             }
 
             //Autorización
-            const permisosEspeciales=["superadministrador"];
+            const permisosEspeciales = ["superadministrador"];
 
-            if(!idsAutorizados.some(id=>id===credencialesUsuario.id) && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+            if (!idsAutorizados.some(id => id === credencialesUsuario.id) && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -331,50 +404,50 @@ export const resolvers = {
 
             return true;
         },
-        async setHorariosEvento(_: any, { idEvento, nuevoHorarioInicio, nuevoHorarioFinal}: any, contexto: contextoQuery){
+        async setHorariosEvento(_: any, { idEvento, nuevoHorarioInicio, nuevoHorarioFinal }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             console.log(`Solicitud de set tiempos de un evento en ${nuevoHorarioInicio} - ${nuevoHorarioFinal}`);
             try {
-                var elEvento:any=await Evento.findById(idEvento).exec();
-                if(!elEvento)throw "Evento no encontrado"
+                var elEvento: any = await Evento.findById(idEvento).exec();
+                if (!elEvento) throw "Evento no encontrado"
             } catch (error) {
                 console.log(`Error buscando el evento: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var idsAutorizados=[];
-            if(elEvento.origen==="club"){
+            var idsAutorizados = [];
+            if (elEvento.origen === "club") {
                 try {
-                    var elProyecto:any=await Proyecto.findById(elEvento.idOrigen).exec();                    
-                    if(!elProyecto)throw "Proyecto parent no encontrado";
+                    var elProyecto: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos")
                 }
-                idsAutorizados=elProyecto.responsables                
+                idsAutorizados = elProyecto.responsables
             }
 
             //Autorización
-            const permisosEspeciales=["superadministrador"];
+            const permisosEspeciales = ["superadministrador"];
 
-            if(!idsAutorizados.some(id=>id===credencialesUsuario.id) && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+            if (!idsAutorizados.some(id => id === credencialesUsuario.id) && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
-            
-            var dateInicio=new Date(nuevoHorarioInicio);
-            var dateFinal= new Date(nuevoHorarioFinal);            
 
-            const duracionMinima=300000; //5 minutos
-            const duracion=dateFinal.getTime()-dateInicio.getTime();
-            if(duracion<duracionMinima){
-                console.log(`Ajustando a duracion mínima de ${duracionMinima/60} minutos`);
-                dateFinal=new Date(dateInicio.getTime()+duracionMinima);
+            var dateInicio = new Date(nuevoHorarioInicio);
+            var dateFinal = new Date(nuevoHorarioFinal);
+
+            const duracionMinima = 300000; //5 minutos
+            const duracion = dateFinal.getTime() - dateInicio.getTime();
+            if (duracion < duracionMinima) {
+                console.log(`Ajustando a duracion mínima de ${duracionMinima / 60} minutos`);
+                dateFinal = new Date(dateInicio.getTime() + duracionMinima);
             }
 
             try {
-                elEvento.horarioInicio=nuevoHorarioInicio;
-                elEvento.horarioFinal=dateFinal;
+                elEvento.horarioInicio = nuevoHorarioInicio;
+                elEvento.horarioFinal = dateFinal;
                 await elEvento.save();
             } catch (error) {
                 console.log(`Error guardando el nuevo horario de inicio: ${error}`);
@@ -395,22 +468,22 @@ export const resolvers = {
                 console.log(`error buscando el evento. E: ` + error);
             }
 
-            var idsAutorizados=[];
-            if(elEvento.origen==="club"){
+            var idsAutorizados = [];
+            if (elEvento.origen === "club") {
                 try {
-                    var elProyecto:any=await Proyecto.findById(elEvento.idOrigen).exec();                    
-                    if(!elProyecto)throw "Proyecto parent no encontrado";
+                    var elProyecto: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos")
                 }
-                idsAutorizados=elProyecto.responsables                
+                idsAutorizados = elProyecto.responsables
             }
 
             //Autorización
-            const permisosEspeciales=["superadministrador"];
+            const permisosEspeciales = ["superadministrador"];
 
-            if(!idsAutorizados.some(id=>id===credencialesUsuario.id) && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+            if (!idsAutorizados.some(id => id === credencialesUsuario.id) && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -447,22 +520,22 @@ export const resolvers = {
                 console.log(`error buscando el evento. E: ` + error);
             }
 
-            var idsAutorizados=[];
-            if(elEvento.origen==="club"){
+            var idsAutorizados = [];
+            if (elEvento.origen === "club") {
                 try {
-                    var elProyecto:any=await Proyecto.findById(elEvento.idOrigen).exec();                    
-                    if(!elProyecto)throw "Proyecto parent no encontrado";
+                    var elProyecto: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos")
                 }
-                idsAutorizados=elProyecto.responsables                
+                idsAutorizados = elProyecto.responsables
             }
 
             //Autorización
-            const permisosEspeciales=["superadministrador"];
+            const permisosEspeciales = ["superadministrador"];
 
-            if(!idsAutorizados.some(id=>id===credencialesUsuario.id) && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+            if (!idsAutorizados.some(id => id === credencialesUsuario.id) && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -490,9 +563,9 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             //Autorizacion
-            const permisosEspeciales=["superadministrador"];
+            const permisosEspeciales = ["superadministrador"];
 
-            if(credencialesUsuario.id!=idUsuario && !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+            if (credencialesUsuario.id != idUsuario && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -507,14 +580,14 @@ export const resolvers = {
                 console.log(`error buscando el evento. E: ` + error);
             }
 
-            const indexU=elEvento.participantes.indexOf(idUsuario);
-            if(indexU>-1 && !nuevoAsistencia){
+            const indexU = elEvento.participantes.indexOf(idUsuario);
+            if (indexU > -1 && !nuevoAsistencia) {
                 elEvento.participantes.splice(indexU, 1);
             }
-            else if(indexU === -1 && nuevoAsistencia){
+            else if (indexU === -1 && nuevoAsistencia) {
                 elEvento.participantes.push(idUsuario);
             }
-            
+
             try {
                 await elEvento.save();
             } catch (error) {
@@ -527,37 +600,32 @@ export const resolvers = {
         }
     },
 
-    EventoCalendario:{
-        async responsables(parent: any, _:any, __:any){
-            var responsables:Array<string>=[];
-            console.log(`Buscandole responsables a un evento que tiene idOrigen: ${parent.idOrigen}`);
-            if(parent.origen==="club"){
+    EventoCalendario: {
+        async responsables(parent: any, _: any, __: any) {
+            var responsables: Array<string> = [];
+            if (parent.origen === "club") {
                 try {
-                    var elProyecto:any=await Proyecto.findById(parent.idOrigen).exec();                    
-                    if(!elProyecto)throw "Proyecto parent no encontrado buscando responsables de un evento";
-                    console.log(`Recogiendo los responsables del proyecto ${elProyecto.nombre}. Son ${elProyecto.responsables}`);
-                    responsables=elProyecto.responsables;
+                    var elProyecto: any = await Proyecto.findById(parent.idOrigen).exec();
+                    if (!elProyecto) throw "Proyecto parent no encontrado buscando responsables de un evento";
+                    responsables = elProyecto.responsables;
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos")
                 }
 
             }
-            else if(parent.origen==='claseNodoConocimiento'){
-                console.log(`El parent del parent es un NodoConocimiento con id ${parent.idNodo}`);
+            else if (parent.origen === 'claseNodoConocimiento') {
 
                 try {
-                    var elNodo:any=await Nodo.findById(parent.idNodo).exec();                    
-                    if(!elNodo)throw "Nodo parent no encontrado buscando responsables de un evento";
-                    var laClase=elNodo.clases.find(c=>c.id===parent.idOrigen);
-                    console.log(`Recogiendo los responsables de la clase ${laClase.nombre}. Son ${laClase.idExperto}`);
-                    responsables=[laClase.idExperto];
+                    var elNodo: any = await Nodo.findById(parent.idNodo).exec();
+                    if (!elNodo) throw "Nodo parent no encontrado buscando responsables de un evento";
+                    var laClase = elNodo.clases.find(c => c.id === parent.idOrigen);
+                    responsables = [laClase.idExperto];
                 } catch (error) {
                     console.log(`Error buscando el nodo parent. E: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos")
                 }
             }
-            console.log(`Enviando: ${responsables}`);
             return responsables;
         }
     }
