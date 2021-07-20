@@ -214,6 +214,8 @@ export const resolvers = {
                     participantesEvento.push(credencialesUsuario.id);
                 }
             }
+
+            console.log(`Creando evento con participantes: ${participantesEvento}`);
             
             //Autorización
             const permisosEspeciales=["superadministrador"];

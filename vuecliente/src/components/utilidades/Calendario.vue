@@ -570,7 +570,7 @@ export default {
               dia.milis + this.minutoFinalFantasmaNuevoEvento * 60000,
           },
         })
-        .then(({ data: { crearEventoCalendario } }) => {
+        .then(({ data: { crearEventoProyectoCalendario } }) => {
           this.seleccionandoPlaceNuevoEvento = false;
           this.enviandoQueryCrearEvento = false;
 
@@ -584,12 +584,12 @@ export default {
           });
           var nuevoCache = JSON.parse(JSON.stringify(cache));
           let indexE = nuevoCache.eventosSegunOrigen.findIndex(
-            (e) => e.id == crearEventoCalendario.id
+            (e) => e.id == crearEventoProyectoCalendario.id
           );
           if (indexE > -1) {
             console.log(`El evento ya estaba en caché`);
           } else {
-            nuevoCache.eventosSegunOrigen.push(crearEventoCalendario);
+            nuevoCache.eventosSegunOrigen.push(crearEventoProyectoCalendario);
             store.writeQuery({
               query: QUERY_EVENTOS_ORIGEN,
               variables: {
@@ -599,7 +599,7 @@ export default {
               data: nuevoCache,
             });
             this.$nextTick(() => {
-              this.idEventoSeleccionado = crearEventoCalendario.id;
+              this.idEventoSeleccionado = crearEventoProyectoCalendario.id;
             });
           }
         })
