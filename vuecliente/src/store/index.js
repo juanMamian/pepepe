@@ -22,6 +22,9 @@ export default new Vuex.Store({
             id: null,
             atlas:{
                 centroVista:null,
+                configuracion:{
+                    modo: 'estudiante'
+                }
             },
             foros:[]
         },
