@@ -5,6 +5,8 @@ import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloForo as Foro } from "../model/Foros/Foro"
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
 import { EsquemaVinculosNodosProyecto } from "../model/VinculosNodosProyecto";
+import { ModeloEvento as Evento } from "../model/Evento";
+
 
 /*
 interface NodoConocimiento{
@@ -1122,6 +1124,14 @@ export const resolvers = {
                 console.log(`Error: No existía la clase ${idClase} en el nodo ${idNodo}`);
                 throw new UserInputError("La clase no existía en este nodo");
             }            
+
+            //Eliminar los eventos de esta clase
+            console.log(`Eliminando eventos con idOrigen: ${idClase}`);
+            try {
+                await Evento.deleteMany({idOrigen:idClase}).exec();
+            } catch (error) {
+                console.log(`Error buscando eventos con idOrigen: ${idClase} para eliminarlos`);
+            }
 
             try {
                 await elNodo.save();

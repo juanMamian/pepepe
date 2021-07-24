@@ -581,6 +581,7 @@ export default {
   transform: translateX(-50%);
   height: 100px;
   width: 200px;
+  z-index: 1;
 }
 .movedorTiempo {
   position: absolute;

@@ -259,7 +259,6 @@ export const resolvers = {
             console.log(`Enviando pagina ${pagina} de trabajos`);
             return { hayMas, infoTrabajos: losTrabajos }
         },
-
     },
 
     Mutation: {
@@ -842,6 +841,13 @@ export const resolvers = {
             if (!esUltimoResponsable && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de proyecto`);
                 throw new AuthenticationError("No autorizado");
+            }
+
+            console.log(`Eliminando eventos con idOrigen: ${idProyecto}`);
+            try {
+                await Evento.deleteMany({idOrigen:idProyecto}).exec();
+            } catch (error) {
+                console.log(`Error buscando eventos con idOrigen: ${idProyecto} para eliminarlos`);
             }
 
             try {
