@@ -898,13 +898,13 @@ export default {
   position: relative;
 }
 .ventanaEventoCalendario {
-  width: min(400px, 80%);
+  width: min(500px, 80%);
   min-height: 100px;
   position: absolute;
   top: 5%;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10;
+  z-index: 100;
 }
 #controles {
   display: flex;

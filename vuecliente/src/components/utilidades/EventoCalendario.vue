@@ -512,6 +512,9 @@ export default {
 .eventoCalendario:not(.participando) {
   opacity: 0.5;
 }
+.eventoCalendario.seleccionado{
+  z-index: 10;
+}
 .participando {
 }
 .inmovible {

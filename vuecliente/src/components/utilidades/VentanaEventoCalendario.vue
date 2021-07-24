@@ -418,8 +418,12 @@ export default {
   padding: 10px 20px;
   padding-bottom: 65px;
   max-height: 500px;
+  flex-wrap: wrap;
+  padding-bottom: 30px;
+  overflow-y: scroll;
 }
 .iconoPersonaAutonomo{
   margin: 0px 10px;
+  margin-bottom: 40px;
 }
 </style>

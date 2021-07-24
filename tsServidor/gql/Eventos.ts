@@ -619,7 +619,11 @@ export const resolvers = {
                 try {
                     var elNodo: any = await Nodo.findById(parent.idNodo).exec();
                     if (!elNodo) throw "Nodo parent no encontrado buscando responsables de un evento";
+                    console.log(`clases del nodo: ${elNodo.clases}`);
                     var laClase = elNodo.clases.find(c => c.id === parent.idOrigen);
+                    console.log(`Error buscando la clase con id ${parent.idOrigen} en el nodo ${elNodo.nombre} para el evento ${parent.id}`);
+                    if(!laClase)throw new ApolloError("Error conectando con la base de datos");
+                    console.log(`Buscando el responsable de la clase: ${laClase.nombre}`);
                     responsables = [laClase.idExperto];
                 } catch (error) {
                     console.log(`Error buscando el nodo parent. E: ${error}`);
