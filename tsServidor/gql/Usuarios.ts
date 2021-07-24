@@ -17,8 +17,13 @@ interface InterfacePayloadNuevaNotificacion {
     nuevaNotificacion: any
 }
 
+
 export const typeDefs = gql`
     scalar Date
+
+    type ConfiguracionAtlas{
+        modo:String
+    }
 
     type MinimoCausante{
         id:ID,
@@ -49,7 +54,8 @@ export const typeDefs = gql`
     type infoAtlas{
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
-        idNodoTarget:ID
+        idNodoTarget:ID,
+        configuracion: ConfiguracionAtlas
     }
 
     enum relacionUsuarioConocimiento{
@@ -131,7 +137,8 @@ export const typeDefs = gql`
         setNodoObjetivo(idNodo:ID!, nuevoEstadoObjetivo:Boolean):Boolean
         setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):Boolean        
         setNodoAtlasTarget(idNodo:ID!):Boolean,
-        nulificarNodoTargetUsuarioAtlas:Boolean
+        nulificarNodoTargetUsuarioAtlas:Boolean,
+        setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 
     }
     extend type Subscription{
@@ -461,7 +468,7 @@ export const resolvers = {
                 throw new ApolloError("");
             }
             
-        },        
+        },  
         nulificarNodoTargetUsuarioAtlas: async function (_: any, __: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             if(!credencialesUsuario||!credencialesUsuario.id){
@@ -479,6 +486,27 @@ export const resolvers = {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
+            
+        },
+        setModoUsuarioAtlas: async function (_: any, { idUsuario, nuevoModo}: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            if(!credencialesUsuario||!credencialesUsuario.id){
+                throw new AuthenticationError("No autenticado");
+            }
+
+            console.log(`Seting modo ${nuevoModo} para el usuario ${idUsuario}`);            
+
+            try {
+                var elUsuario:any= await Usuario.findById(idUsuario).exec();
+                elUsuario.atlas.configuracion.modo=nuevoModo;                
+                await elUsuario.save();
+            
+            } catch (error) {
+                console.log(`error guardando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+            
+            return elUsuario;
             
         },
     },

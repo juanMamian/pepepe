@@ -40,6 +40,7 @@
       @targetSeleccionado="setNodoTargetCache"
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
     />
+    <panel-configuracion-atlas ref="panelConfiguracionAtlas" :yo="yo"/>
     <canvases
       :todosNodos="todosNodos"
       :nodoSeleccionado="nodoSeleccionado"
@@ -58,6 +59,7 @@
         :todosNodos="todosNodos"
         :idNodoMenuCx="idNodoMenuCx"
         :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
+        :yo="yo"
         :key="nodo.id"
         v-for="nodo of todosNodos"
         :esteNodo="nodo"
@@ -98,6 +100,7 @@ import Canvases from "./atlasConocimiento/Canvases.vue";
 import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Loading from "./utilidades/Loading.vue";
 import PanelConjuntosNodos from "./atlasConocimiento/PanelConjuntosNodos.vue";
+import PanelConfiguracionAtlas from './atlasConocimiento/PanelConfiguracionAtlas.vue';
 const debounce = require("debounce");
 
 const QUERY_NODOS = gql`
@@ -106,6 +109,7 @@ const QUERY_NODOS = gql`
       id
       nombre
       descripcion
+      expertos
       clases {
         id
         nombre
@@ -146,6 +150,9 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
           objetivo
           aprendido
         }
+        configuracion{
+          modo
+        }
         idNodoTarget
       }
     }
@@ -159,6 +166,7 @@ export default {
     BuscadorNodosConocimiento,
     Loading,
     PanelConjuntosNodos,
+    PanelConfiguracionAtlas,
   },
   name: "AtlasConocimiento",
   apollo: {
@@ -198,6 +206,9 @@ export default {
       yo: {
         atlas: {
           datosNodos: [],
+          configuracion:{
+            modo:'estudiante'
+          }
         },
       },
 
@@ -292,7 +303,7 @@ export default {
         left: -(this.centroVista.x * this.factorZoom) + "px",
         top: -(this.centroVista.y * this.factorZoom) + "px",
       };
-    },
+    },   
   },
   methods: {
     encontrarNodosNecesariosDeNodo(idNodo, listaTotal) {
@@ -320,6 +331,8 @@ export default {
       this.panningVista = false;
       this.vistaPanned = false;
       this.$refs.panelConjuntosNodos.abierto = false;
+      this.$refs.panelConfiguracionAtlas.abierto = false;
+
     },
     setEstadoObjetivoNodoCache(nuevoEstado, idNodo) {
       console.log(

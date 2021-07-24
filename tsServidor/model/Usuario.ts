@@ -144,6 +144,13 @@ const esquemaUsuario = new mongoose.Schema({
             ],
             default:[]
         },
+        configuracion:{
+            modo:{
+                type:String,
+                default: 'estudiante',
+                enum:['estudiante', 'experto']
+            }
+        },
         idNodoTarget:String,
     },
     notificaciones: {

@@ -15,7 +15,7 @@
     <img
       :src="this.serverUrl + '/api/atlas/iconos/' + esteNodo.id"
       :class="{
-        fantasmeado: usuarioLogeado && !aprendible && !callingPosiciones,
+        fantasmeado: usuarioLogeado && !aprendible && yo.atlas.configuracion.modo==='estudiante' && !callingPosiciones,
         deNodoSeleccionado: seleccionado
       }"
       alt=""
@@ -26,7 +26,7 @@
       src="@/assets/iconos/success.png"
       alt="Completado"
       title="Aprendizaje de este tema completado"
-      v-show="nodoAprendido"
+      v-show="nodoAprendido && yo.atlas.configuracion.modo==='estudiante'"
       :style="[
         {
           width: parseInt(20 * factorZoom) + 'px',
@@ -126,9 +126,10 @@
       ref="nombre"      
       :class="{
         nombreSeleccionado: seleccionado,
-        nombreNodoAprendido:nodoAprendido,
-        nombreNodoOutreach:!aprendible && !callingPosiciones,
-        nombreNodoAprendible:aprendible && !nodoAprendido,
+        nombreNodoAprendido:nodoAprendido && yo.atlas.configuracion.modo==='estudiante',
+        nombreNodoOutreach:!aprendible && !callingPosiciones && yo.atlas.configuracion.modo==='estudiante',
+        nombreNodoAprendible:aprendible && !nodoAprendido && yo.atlas.configuracion.modo==='estudiante',
+        nombreNodoExperto:usuarioExpertoNodo && yo.atlas.configuracion.modo==='experto',        
         nodoStuck: esteNodo.stuck && callingPosiciones,        
         deNodoSeleccionado: seleccionado
       }"
@@ -192,7 +193,7 @@ export default {
     },
     esNodoObjetivo: Boolean,
     esTarget: Boolean,
-
+    yo: Object,
     escondido: Boolean,
     centroVista: Object,
     idNodoMenuCx: String,
@@ -312,6 +313,10 @@ export default {
           parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
       };
     },
+    usuarioExpertoNodo(){
+      if(!this.usuario || !this.usuario.id)return false
+      return this.esteNodo.expertos.includes(this.usuario.id);
+    }
     
   },
   methods: {
@@ -361,7 +366,7 @@ export default {
         });
     },
     abrirPaginaNodo() {
-      if (!this.aprendible && !this.usuarioSuperadministrador) return alert("¡Aún no puedes estudiar este nodo!");
+      if (!this.aprendible && !this.usuarioSuperadministrador && this.yo.atlas.configuracion.modo==='estudiante') return alert("¡Aún no puedes estudiar este nodo!");
       this.$router.push("/nodoConocimiento/" + this.esteNodo.id);
     },
     copiarId(e) {
@@ -522,6 +527,9 @@ export default {
 
 #nombre.nodoStuck {
   background-color: rgb(206, 94, 94);
+}
+.nombreNodoExperto{
+  background-color: rgb(150, 101, 150);
 }
 #menuContextual {
   position: absolute;

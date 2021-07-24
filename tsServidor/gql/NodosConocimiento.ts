@@ -183,7 +183,7 @@ export const resolvers = {
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             try {
-                var todosNodos = await Nodo.find({}, "nombre descripcion vinculos coordsManuales coords centroMasa stuck angulo puntaje coordx coordy ubicado clases").exec();
+                var todosNodos = await Nodo.find({}, "nombre descripcion expertos vinculos coordsManuales coords centroMasa stuck angulo puntaje coordx coordy ubicado clases").exec();
                 console.log(`encontrados ${todosNodos.length} nodos`);
             }
             catch (error) {
