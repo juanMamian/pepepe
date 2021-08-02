@@ -1,7 +1,14 @@
 <template>
   <div
     class="calendario"
-    :class="{ deshabilitado: enviandoQueryCrearEvento }"
+    :class="{
+      deshabilitado:
+        enviandoQueryCrearEvento ||
+        $apollo.queries.eventosOrigen.loading ||
+        $apollo.queries.eventosUsuario.loading ||
+        $apollo.queries.eventosCruceClub.loading ||
+        $apollo.queries.eventosCruceClaseNodoConocimiento.loading,
+    }"
     @mouseup.left="
       idEventoSeleccionado = null;
       idEventoAbierto = null;
@@ -12,6 +19,14 @@
     @touchmove="movimientoTouch"
     @touchend="endTouch"
   >
+    <loading
+      id="avisoLoadingCalendario"
+      texto="Cargando información..."
+      v-show="$apollo.queries.eventosOrigen.loading ||
+        $apollo.queries.eventosUsuario.loading ||
+        $apollo.queries.eventosCruceClub.loading ||
+        $apollo.queries.eventosCruceClaseNodoConocimiento.loading"
+    />
     <div id="controles">
       <div
         class="control"
@@ -226,6 +241,7 @@ import EventoCalendario from "./EventoCalendario.vue";
 import { fragmentoEvento } from "./recursosGql";
 import VentanaEventoCalendario from "./VentanaEventoCalendario.vue";
 import EventoCalendarioCruzado from "./EventoCalendarioCruzado.vue";
+import Loading from "./Loading.vue";
 
 const QUERY_EVENTOS_ORIGEN = gql`
   query ($origen: String!, $idOrigen: ID!) {
@@ -264,6 +280,7 @@ export default {
     EventoCalendario,
     VentanaEventoCalendario,
     EventoCalendarioCruzado,
+    Loading,
   },
   name: "Calendario",
   apollo: {
@@ -501,7 +518,9 @@ export default {
     },
     eventoAbierto() {
       if (!this.idEventoAbierto) return null;
-      return this.todosEventos.concat(this.eventosCruzados).find((e) => e.id === this.idEventoAbierto);
+      return this.todosEventos
+        .concat(this.eventosCruzados)
+        .find((e) => e.id === this.idEventoAbierto);
     },
     eventosCruzados() {
       if (this.configCalendario.tipo === "club") {
@@ -896,6 +915,13 @@ export default {
 .calendario {
   overflow: hidden;
   position: relative;
+}
+#avisoLoadingCalendario{
+  position:absolute;
+  top:50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
 }
 .ventanaEventoCalendario {
   width: min(500px, 80%);

@@ -10,14 +10,17 @@
     "
     @mousemove="panVista($event)"
     @mouseup.left="clickFondoAtlas"
-    @dblclick.ctrl.shift.self.stop="crearNodo"
     @touchmove.prevent.stop="movimientoMobile"
     @touchstart="iniciaMovimientoTouch"
     @touchend="finTouch"
+    @contextmenu.self.exact.prevent="abrirMenuContextual"
   >
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
+    <div id="menuContextual" :style="[offsetMenuContextual]" v-show="mostrandoMenuContextual">
+      <div class="botonMenuContextual" id="botonCrearNuevoNodo" @click="crearNodoEnMenuContextual">Crear Nodo de conocimiento</div>
+    </div>
     <div
       id="botonCallingPosiciones"
       v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
@@ -74,7 +77,7 @@
           idNodoTarget != nodo.id
         "
         :callingPosiciones="callingPosiciones"
-        @click.right.native.stop.prevent="idNodoMenuCx = nodo.id"
+        @click.right.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
         @click.native.stop="seleccionNodo(nodo)"
         @creacionVinculo="crearVinculo"
         @eliminacionVinculo="eliminarVinculo"
@@ -238,6 +241,12 @@ export default {
       cerrarBusqueda: 0,
 
       callingPosiciones: false,
+
+      mostrandoMenuContextual:false,
+      offsetMenuContextual:{
+        top: '0px',
+        left: '0px'
+      }
     };
   },
   computed: {
@@ -306,6 +315,40 @@ export default {
     },   
   },
   methods: {
+    abrirMenuContextual(e){
+            
+      let posCalendario = this.$el.getBoundingClientRect();
+    
+      let topClick = Math.round(
+        (e.pageY - posCalendario.top)
+      );
+      let leftClick = Math.round(
+        (e.pageX - posCalendario.left)
+      );
+
+      this.$set(this.offsetMenuContextual, 'top', topClick+'px');
+      this.$set(this.offsetMenuContextual, 'left', leftClick+'px');
+      this.mostrandoMenuContextual=true;
+      //this.crearNodo({x: leftClick, y: topClick});
+    },
+    crearNodoEnMenuContextual(){
+
+      let posContenedor = document
+        .getElementById("contenedorNodos")
+        .getBoundingClientRect();
+
+      console.log(`Offset menú cx: ${this.offsetMenuContextual.top}`);
+      console.log(`Offset menú cx: ${parseInt(this.offsetMenuContextual.top)}`);
+
+      var posicionNuevoNodo={
+        x:parseInt((parseInt(this.offsetMenuContextual.left)-posContenedor.left)/this.factorZoom),
+        y:parseInt((parseInt(this.offsetMenuContextual.top)-posContenedor.top)/this.factorZoom)
+      }
+
+      console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
+
+      this.crearNodo(posicionNuevoNodo);
+    },
     encontrarNodosNecesariosDeNodo(idNodo, listaTotal) {
       const elNodo = this.todosNodos.find((n) => n.id == idNodo);
       if (!elNodo) {
@@ -332,7 +375,7 @@ export default {
       this.vistaPanned = false;
       this.$refs.panelConjuntosNodos.abierto = false;
       this.$refs.panelConfiguracionAtlas.abierto = false;
-
+      this.mostrandoMenuContextual=false;
     },
     setEstadoObjetivoNodoCache(nuevoEstado, idNodo) {
       console.log(
@@ -573,34 +616,24 @@ export default {
           console.log(`quitando el objeto del array. ${data}`);
         });
     },
-    crearNodo(e) {
+    crearNodo(posicion) {
       if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
         console.log(`Error usuario no autorizado`);
         return;
       }
       console.log(`enviando una mutación de crear nodo`);
 
-      let posContenedor = document
-        .getElementById("contenedorNodos")
-        .getBoundingClientRect();
-      let nuevoTop = Math.round(
-        (e.clientY - posContenedor.top) / this.factorZoom
-      );
-      let nuevoLeft = Math.round(
-        (e.clientX - posContenedor.left) / this.factorZoom
-      );
-
       let infoNodo = {
         coordsManuales: {
-          x: nuevoLeft,
-          y: nuevoTop,
+          x: posicion.x,
+          y: posicion.y,
         },
         coords: {
-          x: nuevoLeft,
-          y: nuevoTop,
+          x: posicion.x,
+          y: posicion.y,
         },
       };
-      console.log(`en las coordenadas: ${nuevoLeft}, ${nuevoTop} `);
+      console.log(`en las coordenadas: ${posicion.x}, ${posicion.y} `);
       this.$apollo
         .mutate({
           mutation: gql`
@@ -609,6 +642,7 @@ export default {
                 nombre
                 descripcion
                 id
+                expertos
                 clases {
                   id
                   nombre
@@ -1010,6 +1044,20 @@ export default {
   position: relative;
   overflow: hidden;
 }
+#menuContextual{
+  position: absolute;
+  background-color: gray;
+}
+.botonMenuContextual{
+  font-size: 12px;
+  color: rgb(221, 221, 221);
+  cursor:pointer;
+  padding: 10px;
+}
+.botonMenuContextual:hover{
+  background-color: rgb(68, 68, 68);
+}
+
 #canvases {
   position: absolute;
   pointer-events: none;

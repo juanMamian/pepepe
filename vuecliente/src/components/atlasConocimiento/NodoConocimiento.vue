@@ -12,6 +12,7 @@
     "
     @dblclick="abrirPaginaNodo"
   >
+    <div id="zonaArrastre" v-show="arrastrandoNodo"></div>
     <img
       :src="this.serverUrl + '/api/atlas/iconos/' + esteNodo.id"
       :class="{
@@ -480,6 +481,12 @@ export default {
   position: absolute;
   pointer-events: all;
   background-color: rgba(128, 128, 128, 0.349);
+}
+#zonaArrastre{
+  width: 500px;
+  height: 500px;
+  position: absolute;
+  transform: translate(-50%, -50%);
 }
 .seleccionado {
   z-index: 10;

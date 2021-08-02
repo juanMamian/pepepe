@@ -1346,11 +1346,14 @@ export default {
   display: flex;
   padding: 10px 20px;
   padding-bottom: 65px;
+  flex-wrap: wrap;
+
 }
 #listaParticipantes {
   display: flex;
   padding: 10px 20px;
   padding-bottom: 65px;
+  flex-wrap: wrap;
 }
 .iconoPersonaAutonomo {
   margin-right: 20px;

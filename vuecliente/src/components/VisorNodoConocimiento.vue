@@ -28,7 +28,8 @@
             @click="guardarNuevoNombre"
           />
         </div>
-        <p id="nombre" v-show="!editandoNombre">{{ esteNodo.nombre }}</p>
+        <p id="nombre" v-show="!editandoNombre && !$apollo.queries.esteNodo.loading">{{ esteNodo.nombre }}</p>
+        <loading id="loadingInfoNodo" texto="Cargando información..." v-show="$apollo.queries.esteNodo.loading"/>
         <input
           type="text"
           id="inputNuevoNombre"
@@ -1414,6 +1415,9 @@ export default {
   background-color: burlywood;
   height: 100px;
   width: 100%;
+}
+#loadingInfoNodo{
+  margin: 10px auto;
 }
 #nombre {
   font-size: 23px;
