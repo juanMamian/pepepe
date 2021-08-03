@@ -1047,6 +1047,7 @@ export default {
 #menuContextual{
   position: absolute;
   background-color: gray;
+  z-index: 100;
 }
 .botonMenuContextual{
   font-size: 12px;
@@ -1078,6 +1079,9 @@ export default {
   z-index: 1;
 }
 #panelConjuntosNodos {
+  z-index: 100;
+}
+#panelConfiguracionAtlas{
   z-index: 100;
 }
 #panelObjetivos {
