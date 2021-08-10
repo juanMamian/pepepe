@@ -3,7 +3,7 @@
     class="atlasProyectos"
     @mousedown.left.exact.self.stop="panningVista = true"
     @mouseenter="hovered = true"
-    @mouseleave="hovered = false"    
+    @mouseleave="hovered = false"
     @click.right.self.exact.prevent="abrirMenuContextual"
     @mousemove="panVista"
     @mouseup.left="clickFondoAtlas"
@@ -20,8 +20,26 @@
       ]"
     ></div>
 
-    <div id="menuContextual" v-show="mostrandoMenuContextual" :style="[offsetMenuContextual]">
-      <div class="botonMenuContextual" id="botonCrearObjetivo">Crear objetivo</div>
+    <div
+      id="menuContextual"
+      v-if="usuario && usuario.id"
+      v-show="mostrandoMenuContextual"
+      :style="[offsetMenuContextual]"
+    >
+      <div
+        class="botonMenuContextual"
+        id="botonCrearObjetivo"
+        @click="crearNodoEnMenuContextual('objetivo')"
+      >
+        Crear objetivo
+      </div>
+      <div
+        class="botonMenuContextual"
+        id="botonCrearObjetivo"
+        @click="crearNodoEnMenuContextual('trabajo')"
+      >
+        Crear trabajo
+      </div>
     </div>
 
     <div id="centroVista"></div>
@@ -46,7 +64,7 @@
         :factorZoom="factorZoom"
         v-show="idsNodosVisibles.includes(objetivo.id)"
         @click.native="idNodoSeleccionado = objetivo.id"
-        @click.native.right.exact.stop.prevent="idNodoMenuCx=objetivo.id"
+        @click.native.right.exact.stop.prevent="idNodoMenuCx = objetivo.id"
         @dblclick.native="idNodoPaVentanita = objetivo.id"
         :class="{
           transparentoso:
@@ -75,7 +93,7 @@
         }"
         v-show="idsNodosVisibles.includes(trabajo.id)"
         @click.native="idNodoSeleccionado = trabajo.id"
-        @click.native.right.exact.stop.prevent="idNodoMenuCx=trabajo.id"
+        @click.native.right.exact.stop.prevent="idNodoMenuCx = trabajo.id"
         @dblclick.native="idNodoPaVentanita = trabajo.id"
         @eliminar="eliminarNodo(trabajo.id, 'trabajo')"
       />
@@ -299,8 +317,8 @@ export default {
       variables() {
         return {
           centro: {
-            x:this.centroDescarga.x,
-            y:this.centroDescarga.y
+            x: this.centroDescarga.x,
+            y: this.centroDescarga.y,
           },
           radio: this.radioDescarga,
         };
@@ -315,10 +333,10 @@ export default {
   },
   data() {
     return {
-      mostrandoMenuContextual:false,
-      posMenuContextual:{
+      mostrandoMenuContextual: false,
+      posMenuContextual: {
         top: 0,
-        left: 0
+        left: 0,
       },
 
       esquinaVistaDecimal: {
@@ -355,25 +373,21 @@ export default {
       // trabajos: [],
       // objetivos: [],
       todosNodos: [],
-      enviandoQueryNodos:false,
+      enviandoQueryNodos: false,
 
       callingPosiciones: false,
     };
   },
   methods: {
-    abrirMenuContextual(e){
+    abrirMenuContextual(e) {
       let posAtlas = this.$el.getBoundingClientRect();
 
-      let topClick = Math.round(
-        (e.pageY - posAtlas.top)
-      );
-      let leftClick = Math.round(
-        (e.pageX - posAtlas.left)
-      );
+      let topClick = Math.round(e.pageY - posAtlas.top);
+      let leftClick = Math.round(e.pageX - posAtlas.left);
 
-      this.$set(this.posMenuContextual, 'y', topClick);
-      this.$set(this.posMenuContextual, 'x', leftClick);
-      this.mostrandoMenuContextual=true;
+      this.$set(this.posMenuContextual, "y", topClick);
+      this.$set(this.posMenuContextual, "x", leftClick);
+      this.mostrandoMenuContextual = true;
     },
     desplazarVista(deltaX, deltaY) {
       this.$set(
@@ -402,8 +416,9 @@ export default {
       if (!this.vistaPanned) this.idNodoSeleccionado = null;
       this.panningVista = false;
       this.vistaPanned = false;
-      this.mostrandoMenuContextual=false;
-      this.idNodoMenuCx=null;
+      this.mostrandoMenuContextual = false;
+      this.idNodoMenuCx = null;
+      this.idNodoPaVentanita=null;
     },
     movimientoMobile(e) {
       if (this.pinching) {
@@ -535,11 +550,11 @@ export default {
       // this.$set(this.esquinaVistaDecimal, "x", posZoom.x-((posContenedor.width/this.factorZoom)*proporciones.x) );
       // this.$set(this.esquinaVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );
     },
-    eliminarNodo(idNodo, tipo){     
+    eliminarNodo(idNodo, tipo) {
       if (!confirm("¿Seguro de que quieres eliminar este elemento?")) return;
       console.log(`enviando mutacion de eliminar nodo`);
-      this.enviandoQueryNodos=true;
-      const dis=this;
+      this.enviandoQueryNodos = true;
+      const dis = this;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -549,7 +564,7 @@ export default {
           `,
           variables: {
             idNodo,
-            tipo
+            tipo,
           },
           update(store, { data: { eliminarNodoDeTrabajos } }) {
             if (!eliminarNodoDeTrabajos) {
@@ -558,13 +573,13 @@ export default {
             }
             const cache = store.readQuery({
               query: QUERY_TODOS_NODOS,
-              variables:{
+              variables: {
                 centro: {
-                  x:dis.centroDescarga.x,
-                  y:dis.centroDescarga.y
+                  x: dis.centroDescarga.x,
+                  y: dis.centroDescarga.y,
                 },
                 radio: dis.radioDescarga,
-              }
+              },
             });
             var nuevoCache = JSON.parse(JSON.stringify(cache));
             const indexN = nuevoCache.nodosTrabajosSegunCentro.findIndex(
@@ -574,10 +589,10 @@ export default {
               nuevoCache.nodosTrabajosSegunCentro.splice(indexN, 1);
               store.writeQuery({
                 query: QUERY_TODOS_NODOS,
-                variables:{
+                variables: {
                   centro: {
-                    x:dis.centroDescarga.x,
-                    y:dis.centroDescarga.y
+                    x: dis.centroDescarga.x,
+                    y: dis.centroDescarga.y,
                   },
                   radio: dis.radioDescarga,
                 },
@@ -589,22 +604,165 @@ export default {
           },
         })
         .then(() => {
-          dis.enviandoQueryNodos=false;
-          if(dis.idNodoSeleccionado===idNodo){
-            dis.idNodoSeleccionado=null;
+          dis.enviandoQueryNodos = false;
+          if (dis.idNodoSeleccionado === idNodo) {
+            dis.idNodoSeleccionado = null;
           }
-        }).catch((error)=>{
-          console.log(`Error: ${error}`);
-          dis.enviandoQueryNodos=false;          
         })
-    }
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          dis.enviandoQueryNodos = false;
+        });
+    },
+    crearNodoEnMenuContextual(tipo) {
+      let posContenedor = document
+        .getElementById("contenedorNodos")
+        .getBoundingClientRect();
+
+      var posicionNuevoNodo = {
+        x: parseInt(
+          (parseInt(this.posMenuContextual.x) - posContenedor.left) /
+            this.factorZoom
+        ),
+        y: parseInt(
+          (parseInt(this.posMenuContextual.y) - posContenedor.top) /
+            this.factorZoom
+        ),
+      };
+
+      console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
+
+      this.crearNodo(posicionNuevoNodo, tipo);
+    },
+    crearNodo(posicion, tipo) {
+      if (!this.usuario || !this.usuario.id) {
+        console.log(`Error usuario no logeado`);
+        return;
+      }
+      console.log(`enviando una mutación de crear nodo`);
+
+      let infoNodo = {
+        coords: {
+          x: posicion.x,
+          y: posicion.y,
+        },
+        tipo,
+      };
+      console.log(`en las coordenadas: ${posicion.x}, ${posicion.y}`);
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($infoNodo: NodoSolidaridadInput!) {
+              crearNodoSolidaridad(infoNodo: $infoNodo) {
+                __typename
+                ... on Trabajo {
+                  id
+                  nombre
+                  idProyectoParent
+                  responsables
+                  coords {
+                    x
+                    y
+                  }
+                  estadoDesarrollo
+                  vinculos {
+                    idRef
+                    tipo
+                    tipoRef
+                  }
+                  stuck
+                  angulo
+                  centroMasa {
+                    x
+                    y
+                  }
+                  puntaje
+                  nivel
+                  turnoNivel
+                  peso
+                }
+                ... on Objetivo {
+                  id
+                  nombre
+                  responsables
+                  idProyectoParent
+                  coords {
+                    x
+                    y
+                  }
+                  estadoDesarrollo
+                  vinculos {
+                    idRef
+                    tipo
+                    tipoRef
+                  }
+                  stuck
+                  angulo
+                  centroMasa {
+                    x
+                    y
+                  }
+                  puntaje
+                  nivel
+                  turnoNivel
+                  peso
+                }
+              }
+            }
+          `,
+          variables: {
+            infoNodo,
+          },
+        })
+        .then(({ data: { crearNodoSolidaridad } }) => {
+          console.log(`Creado ${crearNodoSolidaridad.id}`);
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_TODOS_NODOS,
+            variables: {
+              centro: {
+                x: this.centroDescarga.x,
+                y: this.centroDescarga.y,
+              },
+              radio: this.radioDescarga,
+            },
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          var losNodos = nuevoCache.nodosTrabajosSegunCentro;
+          const indexN = losNodos.findIndex(
+            (n) => n.id === crearNodoSolidaridad.id
+          );
+          if (indexN > -1) {
+            console.log(`El nodo ya estaba en caché`);
+          } else {
+            losNodos.push(crearNodoSolidaridad);
+            store.writeQuery({
+              query: QUERY_TODOS_NODOS,
+              variables: {
+                centro: {
+                  x: this.centroDescarga.x,
+                  y: this.centroDescarga.y,
+                },
+                radio: this.radioDescarga,
+              },
+              data: nuevoCache,
+            });
+          }
+          this.idNodoPaVentanita=crearNodoSolidaridad.id;
+
+          //this.$router.push("/nodoConocimiento/"+crearNodoSolidaridad.id);
+        })
+        .catch((error) => {
+          console.log(`Error. E: ${error}`);
+        });
+    },
   },
   computed: {
-    offsetMenuContextual(){
+    offsetMenuContextual() {
       return {
-        top: this.posMenuContextual.y+'px',
-        left: this.posMenuContextual.x+'px',
-      }
+        top: this.posMenuContextual.y + "px",
+        left: this.posMenuContextual.x + "px",
+      };
     },
     factorZoom() {
       return Number((this.zoom / 100).toFixed(2));
@@ -656,7 +814,7 @@ export default {
       if (!this.idNodoPaVentanita) return null;
       return this.trabajos.find((t) => t.id == this.idNodoPaVentanita);
     },
-    nodoSeleccionado() {      
+    nodoSeleccionado() {
       return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
     nodosRequierenSeleccionado() {
@@ -756,16 +914,16 @@ export default {
   overflow: hidden;
   position: relative;
 }
-#menuContextual{
+#menuContextual {
   position: absolute;
   background-color: rgb(173, 173, 173);
 }
-.botonMenuContextual{
+.botonMenuContextual {
   padding: 5px 10px;
-  cursor:pointer;
+  cursor: pointer;
 }
-.botonMenuContextual:hover{
-  background-color: gray
+.botonMenuContextual:hover {
+  background-color: gray;
 }
 #contenedorNodos {
   position: relative;

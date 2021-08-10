@@ -1,5 +1,22 @@
 import mongoose from "mongoose";
-import {EsquemaVinculosNodosProyecto} from "./VinculosNodosProyecto";
+
+const EsquemaVinculosNodos = new mongoose.Schema(
+    {
+        idRef: {
+            type: String,
+            required: true,
+        },
+        tipo: {
+            type: String,
+            required: true,
+            enum: ["requiere"]
+        },
+        tipoRef: {
+            type: String,
+            required: true,
+            enum: ["trabajo", "objetivo"]
+        }
+    });
 
 const esquemaMaterial= new mongoose.Schema({
     nombre:{
@@ -70,11 +87,11 @@ esquemaTrabajo.add({
         idNodo: String,
         tipo:String,
     }, 
-    idForo:{
+    idForoResponsables:{
         type:String,        
     },
     vinculos:{
-        type:[EsquemaVinculosNodosProyecto],
+        type:[EsquemaVinculosNodos],
         required:true,
         default:[]
     },

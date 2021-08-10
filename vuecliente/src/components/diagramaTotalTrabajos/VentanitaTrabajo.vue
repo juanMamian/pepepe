@@ -201,13 +201,7 @@
       />
 
     <div id="controlesTrabajo">     
-      <div
-        class="controlesTrabajo hoverGris bEliminar"
-        @click="eliminarse"
-        v-if="usuarioResponsableProyecto == true"
-      >
-        Eliminar
-      </div>
+      
     </div>
   </div>
 </template>
@@ -497,37 +491,7 @@ export default {
           console.log("error: " + error);
         });
     },
-    eliminarse() {
-      console.log(`Trabajo eliminandose`);
-      if (!confirm("¿Seguro de eliminar este trabajo?")) {
-        return;
-      }
-      this.deshabilitado = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idProyecto: ID!, $idTrabajo: ID!) {
-              eliminarTrabajoDeProyecto(
-                idProyecto: $idProyecto
-                idTrabajo: $idTrabajo
-              )
-            }
-          `,
-          variables: {
-            idProyecto: this.esteTrabajo.idProyectoParent,
-            idTrabajo: this.esteTrabajo.id,
-          },
-        })
-        .then(({ data: { eliminarTrabajoDeProyecto } }) => {
-          this.deshabilitado = false;
-          console.log(`Resultado: ${eliminarTrabajoDeProyecto}`);
-          this.$emit("meElimine");
-        })
-        .catch((error) => {
-          this.deshabilitado = false;
-          console.log(`Error. E: ${error}`);
-        });
-    },
+   
     navegarAlTrabajo() {
       this.$router.push("/trabajo/" + this.idTrabajo);
     },

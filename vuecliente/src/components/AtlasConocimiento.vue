@@ -18,8 +18,18 @@
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
-    <div id="menuContextual" :style="[offsetMenuContextual]" v-show="mostrandoMenuContextual">
-      <div class="botonMenuContextual" id="botonCrearNuevoNodo" @click="crearNodoEnMenuContextual">Crear Nodo de conocimiento</div>
+    <div
+      id="menuContextual"
+      :style="[offsetMenuContextual]"
+      v-show="mostrandoMenuContextual"
+    >
+      <div
+        class="botonMenuContextual"
+        id="botonCrearNuevoNodo"
+        @click="crearNodoEnMenuContextual"
+      >
+        Crear Nodo de conocimiento
+      </div>
     </div>
     <div
       id="botonCallingPosiciones"
@@ -43,7 +53,7 @@
       @targetSeleccionado="setNodoTargetCache"
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
     />
-    <panel-configuracion-atlas ref="panelConfiguracionAtlas" :yo="yo"/>
+    <panel-configuracion-atlas ref="panelConfiguracionAtlas" :yo="yo" />
     <canvases
       :todosNodos="todosNodos"
       :nodoSeleccionado="nodoSeleccionado"
@@ -103,7 +113,7 @@ import Canvases from "./atlasConocimiento/Canvases.vue";
 import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
 import Loading from "./utilidades/Loading.vue";
 import PanelConjuntosNodos from "./atlasConocimiento/PanelConjuntosNodos.vue";
-import PanelConfiguracionAtlas from './atlasConocimiento/PanelConfiguracionAtlas.vue';
+import PanelConfiguracionAtlas from "./atlasConocimiento/PanelConfiguracionAtlas.vue";
 const debounce = require("debounce");
 
 const QUERY_NODOS = gql`
@@ -153,7 +163,7 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
           objetivo
           aprendido
         }
-        configuracion{
+        configuracion {
           modo
         }
         idNodoTarget
@@ -209,9 +219,9 @@ export default {
       yo: {
         atlas: {
           datosNodos: [],
-          configuracion:{
-            modo:'estudiante'
-          }
+          configuracion: {
+            modo: "estudiante",
+          },
         },
       },
 
@@ -242,11 +252,11 @@ export default {
 
       callingPosiciones: false,
 
-      mostrandoMenuContextual:false,
-      offsetMenuContextual:{
-        top: '0px',
-        left: '0px'
-      }
+      mostrandoMenuContextual: false,
+      offsetMenuContextual: {
+        top: "0px",
+        left: "0px",
+      },
     };
   },
   computed: {
@@ -312,27 +322,21 @@ export default {
         left: -(this.centroVista.x * this.factorZoom) + "px",
         top: -(this.centroVista.y * this.factorZoom) + "px",
       };
-    },   
+    },
   },
   methods: {
-    abrirMenuContextual(e){
-            
+    abrirMenuContextual(e) {
       let posCalendario = this.$el.getBoundingClientRect();
-    
-      let topClick = Math.round(
-        (e.pageY - posCalendario.top)
-      );
-      let leftClick = Math.round(
-        (e.pageX - posCalendario.left)
-      );
 
-      this.$set(this.offsetMenuContextual, 'top', topClick+'px');
-      this.$set(this.offsetMenuContextual, 'left', leftClick+'px');
-      this.mostrandoMenuContextual=true;
+      let topClick = Math.round(e.pageY - posCalendario.top);
+      let leftClick = Math.round(e.pageX - posCalendario.left);
+
+      this.$set(this.offsetMenuContextual, "top", topClick + "px");
+      this.$set(this.offsetMenuContextual, "left", leftClick + "px");
+      this.mostrandoMenuContextual = true;
       //this.crearNodo({x: leftClick, y: topClick});
     },
-    crearNodoEnMenuContextual(){
-
+    crearNodoEnMenuContextual() {
       let posContenedor = document
         .getElementById("contenedorNodos")
         .getBoundingClientRect();
@@ -340,10 +344,16 @@ export default {
       console.log(`Offset menú cx: ${this.offsetMenuContextual.top}`);
       console.log(`Offset menú cx: ${parseInt(this.offsetMenuContextual.top)}`);
 
-      var posicionNuevoNodo={
-        x:parseInt((parseInt(this.offsetMenuContextual.left)-posContenedor.left)/this.factorZoom),
-        y:parseInt((parseInt(this.offsetMenuContextual.top)-posContenedor.top)/this.factorZoom)
-      }
+      var posicionNuevoNodo = {
+        x: parseInt(
+          (parseInt(this.offsetMenuContextual.left) - posContenedor.left) /
+            this.factorZoom
+        ),
+        y: parseInt(
+          (parseInt(this.offsetMenuContextual.top) - posContenedor.top) /
+            this.factorZoom
+        ),
+      };
 
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
 
@@ -375,7 +385,7 @@ export default {
       this.vistaPanned = false;
       this.$refs.panelConjuntosNodos.abierto = false;
       this.$refs.panelConfiguracionAtlas.abierto = false;
-      this.mostrandoMenuContextual=false;
+      this.mostrandoMenuContextual = false;
     },
     setEstadoObjetivoNodoCache(nuevoEstado, idNodo) {
       console.log(
@@ -1044,18 +1054,18 @@ export default {
   position: relative;
   overflow: hidden;
 }
-#menuContextual{
+#menuContextual {
   position: absolute;
   background-color: gray;
   z-index: 100;
 }
-.botonMenuContextual{
+.botonMenuContextual {
   font-size: 12px;
   color: rgb(221, 221, 221);
-  cursor:pointer;
+  cursor: pointer;
   padding: 10px;
 }
-.botonMenuContextual:hover{
+.botonMenuContextual:hover {
   background-color: rgb(68, 68, 68);
 }
 
@@ -1081,7 +1091,7 @@ export default {
 #panelConjuntosNodos {
   z-index: 100;
 }
-#panelConfiguracionAtlas{
+#panelConfiguracionAtlas {
   z-index: 100;
 }
 #panelObjetivos {

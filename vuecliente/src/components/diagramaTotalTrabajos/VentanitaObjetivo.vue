@@ -87,13 +87,7 @@
       <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
     <div id="controlesObjetivo">
-      <div
-        class="controlesObjetivo hoverGris bEliminar"
-        @click="eliminarse"
-        v-show="usuarioResponsableProyecto || usuarioSuperadministrador"
-      >
-        Eliminar
-      </div>
+     
     </div>
   </div>
 </template>
@@ -247,38 +241,7 @@ export default {
         this.$refs.descripcion.offsetHeight + "px";
       this.editandoDescripcion = !this.editandoDescripcion;
       this.nuevoDescripcion = this.esteObjetivo.descripcion;
-    },
-    eliminarse() {
-      console.log(`Objetivo eliminandose`);
-      if (!confirm("¿Seguro de eliminar este objetivo?")) {
-        return;
-      }
-      this.deshabilitado = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation($idProyecto: ID!, $idObjetivo: ID!) {
-              eliminarObjetivoDeProyecto(
-                idProyecto: $idProyecto
-                idObjetivo: $idObjetivo
-              )
-            }
-          `,
-          variables: {
-            idProyecto: this.idProyecto,
-            idObjetivo: this.esteObjetivo.id,
-          },
-        })
-        .then(({ data: { eliminarObjetivoDeProyecto } }) => {
-          this.deshabilitado = false;
-          console.log(`Resultado: ${eliminarObjetivoDeProyecto}`);
-          this.$emit("meElimine");
-        })
-        .catch((error) => {
-          this.deshabilitado = false;
-          console.log(`Error. E: ${error}`);
-        });
-    },
+    },    
     toggleEstadoObjetivo(){
       var nuevoEstado="noCumplido";
       if(this.esteObjetivo.estado==="noCumplido"){

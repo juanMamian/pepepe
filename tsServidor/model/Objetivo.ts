@@ -105,7 +105,10 @@ export const esquemaObjetivo = new mongoose.Schema({
     peso:{
         type:Number,
         default:0
-    }
+    },
+    idForoResponsables:{
+        type:String,        
+    },
     
 });
 

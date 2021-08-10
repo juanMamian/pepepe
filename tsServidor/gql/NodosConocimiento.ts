@@ -297,15 +297,31 @@ export const resolvers = {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
                 throw new AuthenticationError("No autorizado");
             }
+
+            try {
+                var elNodo:any=await Nodo.findById(idNodo);
+                if(!elNodo)throw "Nodo a eliminar no encontrado"
+            } catch (error) {
+                throw new ApolloError("Error buscando el nodo a eliminar");
+            }   
+
             try {
                 await Nodo.deleteOne({ _id: idNodo }).exec();
             } catch (error) {
                 console.log(`error eliminando nodo`);
             }
             console.log(`nodo ${idNodo} eliminado`);
+
+            //Eliminar foros del nodo
+            
+            try {
+                await Foro.findByIdAndDelete(elNodo.idForoPublico).exec();
+                await Foro.findByIdAndDelete(elNodo.idForoExpertos).exec();
+            } catch (error) {
+                console.log(`Error buscando los foros para ser eliminados`);
+            }
+
             return idNodo;
-
-
 
         },
         async crearNodo(_: any, { infoNodo }: any, contexto: contextoQuery) {
