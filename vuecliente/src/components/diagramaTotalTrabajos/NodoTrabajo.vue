@@ -38,7 +38,7 @@
         v-if="
           idNodoSeleccionado != null &&
           idNodoSeleccionado != esteTrabajo.id &&
-          (usuarioSuperadministrador == true || usuarioResponsableObjetivoParent)
+          (usuarioSuperadministrador == true || usuarioAdministrador)
         "
       >
         <div class="seccionMenuCx">El elemento seleccionado...</div>
@@ -94,8 +94,8 @@ export default {
       widthBase:150,
       heightBase:100,
       size:{
-        x: 100,
-        y: 100
+        x: 60,
+        y: 60
       }
     };
   },
@@ -103,7 +103,7 @@ export default {
     arrastrarNodo(e) {
       if (
         !this.agarrado ||
-        (this.usuarioResponsableObjetivoParent === false &&
+        (this.usuarioAdministrador === false &&
           this.usuarioSuperadministrador === false)
       ) {
         return;
@@ -186,7 +186,7 @@ export default {
       this.$emit("eliminarVinculo", { idNodoRequiere, idNodoRequerido });
     },
     eliminarse(){      
-      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorElemento) {
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministrador) {
         console.log(`No autorizado`);
         return;
       }
@@ -229,13 +229,10 @@ export default {
     seleccionado(){
       return this.idNodoSeleccionado && this.idNodoSeleccionado==this.esteTrabajo.id
     },  
-    usuarioResponsableObjetivoParent(){
-      if(!this.esteTrabajo.idObjetivoParent)return false;
-
-      return false;
-    },
-    usuarioAdministradorElemento(){
-      return true;
+    
+    usuarioAdministrador() {
+      if (!this.usuario || !this.usuario.id) return false;
+      return this.esteTrabajo.administradores.includes(this.usuario.id);
     },
     estiloCartelNombre() {
       return {

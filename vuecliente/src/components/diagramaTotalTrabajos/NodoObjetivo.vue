@@ -19,18 +19,9 @@
       v-show="seleccionado"
       @click.left.stop="$emit('meAbrieron')"
     />
-    <div id="zonaNombre" :style="[estiloCartelNombre]">
+    <div id="zonaNombre" :style="[estiloCartelNombre, colorCartelNombre]">
       <div id="nombre" draggable="false">
-        <img
-          src="@/assets/iconos/estrella.png"
-          alt=""
-          class="iconoObjetivo"
-          draggable="false"
-          :style="{width: Math.round(17*factorZoom)+'px'}"
-          :class="{
-            iconoCompletado: esteObjetivo.estadoDesarrollo === 'completado',
-          }"
-        />{{ callingPosiciones? esteObjetivo.peso.toFixed(2) : esteObjetivo.nombre }}
+        {{ callingPosiciones? esteObjetivo.peso.toFixed(2) : esteObjetivo.nombre }}
       </div>
     </div>
 
@@ -39,7 +30,7 @@
         v-if="
           idNodoSeleccionado != null &&
           idNodoSeleccionado != esteObjetivo.id &&
-          (usuarioSuperadministrador == true || usuarioResponsableObjetivo)
+          (usuarioSuperadministrador == true || usuarioAdministrador)
         "
       >
         <div class="seccionMenuCx">El elemento seleccionado...</div>
@@ -89,8 +80,8 @@ export default {
       widthBase:150,
       heightBase:100,
       size:{
-        x: 100,
-        y: 100
+        x: 60,
+        y: 60
       },
 
       estiloNombreBase: {
@@ -189,15 +180,13 @@ export default {
       this.$emit("eliminarVinculo", { idNodoRequiere, idNodoRequerido });
     },
     eliminarse(){      
-      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorElemento) {
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministrador) {
         console.log(`No autorizado`);
         return;
       }
       this.$emit("eliminar");    
     },
-    usuarioAdministradorElemento(){
-      return true;
-    }
+    
   },
   computed: {
     estiloPosicion() {
@@ -251,8 +240,20 @@ export default {
           parseInt(this.estiloNombreBase.padding * this.factorZoom) + "px",
         borderRadius:
           parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
-        backgroundColor:'white'
       };
+    },
+    colorCartelNombre(){
+      var color='white';
+      if(this.usuarioAdministrador){
+        color='#916ab5';
+      }
+      return {
+        backgroundColor: color
+      }
+    },
+    usuarioAdministrador() {
+      if (!this.usuario || !this.usuario.id) return false;
+      return this.esteObjetivo.administradores.includes(this.usuario.id);
     },
   },
   watch: {

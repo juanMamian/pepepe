@@ -216,11 +216,13 @@ const QUERY_TODOS_NODOS = gql`
       ... on Trabajo {
         id
         nombre
-        idProyectoParent
+        descripcion
         responsables
         posiblesResponsables
         responsablesSolicitados
         administradores
+        keywords
+
         coords {
           x
           y
@@ -245,11 +247,12 @@ const QUERY_TODOS_NODOS = gql`
       ... on Objetivo {
         id
         nombre
+        descripcion
         responsables
         posiblesResponsables
         responsablesSolicitados
         administradores
-        idProyectoParent
+        keywords
         coords {
           x
           y
@@ -368,7 +371,7 @@ export default {
       idNodoPaVentanita: null,
       idNodoMenuCx: null,
 
-      zoom: 100,
+      zoom: 80,
       minZoom: 20,
       maxZoom: 200,
 
@@ -664,11 +667,12 @@ export default {
                 ... on Trabajo {
                   id
                   nombre
-                  idProyectoParent
+                  descripcion
                   responsables
                   posiblesResponsables
                   responsablesSolicitados
                   administradores
+                  keywords
                   coords {
                     x
                     y
@@ -693,11 +697,12 @@ export default {
                 ... on Objetivo {
                   id
                   nombre
+                  descripcion
                   responsables
                   posiblesResponsables
                   responsablesSolicitados
                   administradores
-                  idProyectoParent
+                  keywords
                   coords {
                     x
                     y

@@ -13,15 +13,25 @@
         <div id="elPropioNombre" v-show="!editandoNombre">
           {{ esteObjetivo.nombre }}
         </div>
-        <input
+        <textarea
+          :class="{ letrasRojas: nuevoNombreIlegal }"
+          class="inputNuevoNombre"
+          cols="30"
+          rows="2"
+          v-model="nuevoNombre"
+          v-show="editandoNombre"
+          @keypress.enter.prevent="guardarNuevoNombre"
+        >
+        </textarea>
+        <!-- <input
           type="text"
           class="inputNuevoNombre"
           :class="{ letrasRojas: nuevoNombreIlegal }"
           v-model="nuevoNombre"
           v-show="editandoNombre"
           @keypress.enter="guardarNuevoNombre"
-        />
-        <div class="controlesLateralesZona" v-if="usuarioResponsableObjetivo">
+        /> -->
+        <div class="controlesLateralesZona" :class="{deshabilitado: enviandoNuevoNombre}" v-if="usuarioAdministradorObjetivo">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -47,23 +57,40 @@
         alt=""
         id="imagenIcono"
         :class="{
-          iconoCompletado: esteObjetivo.estado === 'cumplido',
+          iconoCompletado: esteObjetivo.estadoDesarrollo === 'completado',
           deshabilitado: togglingEstado,
         }"
-        @click="usuarioResponsableObjetivo ? toggleEstadoObjetivo() : null"
+        @click="usuarioAdministradorObjetivo ? toggleEstadoObjetivo() : null"
       />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
-      <div class="barraSuperiorZona">
-        <span class="nombreZona">Descripcion</span>
-        <div class="controlesZona" v-show="usuarioResponsableObjetivo">
+      <div
+        class="barraSuperiorZona"
+        @click="mostrandoDescripcion = !mostrandoDescripcion"
+      >
+        <div class="nombreZona">
+          <div
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoDescripcion
+                ? 'rotateZ(90deg)'
+                : 'rotateZ(0deg)',
+            }"
+          ></div>
+          Descripción
+        </div>
+        <div
+          class="controlesZona"
+          v-show="usuarioAdministradorObjetivo && mostrandoDescripcion"
+          :class="{deshabilitado: enviandoNuevoDescripcion}"
+        >
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
             id="bEditarDescripcion"
             class="bEditar"
             title="Editar descripcion del objetivo"
-            v-show="usuarioResponsableObjetivo"
+            v-show="usuarioAdministradorObjetivo"
             @click.stop="toggleEditandoDescripcion"
           />
           <img
@@ -79,27 +106,28 @@
           />
         </div>
       </div>
+      <div v-show="mostrandoDescripcion">
+        <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
+          {{ esteObjetivo.descripcion }}
+        </div>
 
-      <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
-        {{ esteObjetivo.descripcion }}
+        <textarea
+          id="inputNuevoDescripcion"
+          ref="inputNuevoDescripcion"
+          :class="{ letrasRojas: nuevoDescripcionIlegal }"
+          v-model="nuevoDescripcion"
+          v-show="editandoDescripcion"
+        />
+        <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
       </div>
-
-      <textarea
-        id="inputNuevoDescripcion"
-        ref="inputNuevoDescripcion"
-        :class="{ letrasRojas: nuevoDescripcionIlegal }"
-        v-model="nuevoDescripcion"
-        v-show="editandoDescripcion"
-      />
-      <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
 
     <div id="zonaResponsables" class="zonaPrimerNivel">
-      <div class="barraSuperiorZona">
-        <div
-          class="nombreZona"
-          @click="mostrandoResponsables = !mostrandoResponsables"
-        >
+      <div
+        class="barraSuperiorZona"
+        @click="mostrandoResponsables = !mostrandoResponsables"
+      >
+        <div class="nombreZona">
           <div
             class="trianguloBullet"
             :style="{
@@ -113,7 +141,7 @@
       </div>
 
       <div v-show="mostrandoResponsables">
-        <div id="controlesResponsables" class="controlesZona">
+        <div id="controlesResponsables" class="controlesZona" :class="{deshabilitado:enviandoQueryResponsables}">
           <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
           <div
             class="controlesResponsables hoverGris botonesControles"
@@ -238,6 +266,73 @@
       </div>
     </div>
 
+    <div id="zonaKeywords" class="zonaPrimerNivel">
+      <div
+        class="barraSuperiorZona"
+        @click="mostrandoKeywords = !mostrandoKeywords"
+      >
+        <div class="nombreZona">
+          <div
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoKeywords
+                ? 'rotateZ(90deg)'
+                : 'rotateZ(0deg)',
+            }"
+          ></div>
+          Palabras clave
+        </div>
+        <div
+          class="controlesZona"
+          v-show="usuarioAdministradorObjetivo && mostrandoKeywords"
+          :class="{deshabilitado: enviandoNuevoKeywords}"
+        >
+          <img
+            src="@/assets/iconos/editar.png"
+            alt="Editar"
+            id="bEditarKeywords"
+            class="bEditar"
+            title="Editar keywords del objetivo"
+            v-show="usuarioAdministradorObjetivo"
+            @click.stop="toggleEditandoKeywords"
+          />
+          <img
+            src="@/assets/iconos/guardar.png"
+            alt="Guardar"
+            title="guardar"
+            class="bGuardar"
+            id="bGuardarNuevoKeywords"
+            v-show="
+              editandoKeywords == true && nuevoKeywordsIlegal == false
+            "
+            @click.stop="guardarNuevoKeywords"
+          />
+        </div>
+      </div>
+      <div v-show="mostrandoKeywords">
+        <div id="keywords" ref="keywords" v-show="!editandoKeywords">
+          {{ esteObjetivo.keywords }}
+        </div>
+
+        <textarea
+          id="inputNuevoKeywords"
+          ref="inputNuevoKeywords"
+          :class="{ letrasRojas: nuevoKeywordsIlegal }"
+          v-model="nuevoKeywords"
+          v-show="editandoKeywords"
+          @keypress.enter.stop.prevent="guardarNuevoKeywords"
+        />
+        <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
+      </div>
+    </div>
+
+    <img
+      src="@/assets/iconos/abrirLink.png"
+      class="botonIr"
+      @click.stop="navegarAlObjetivo"
+      title="Abrir la página de este trabajo"
+    />
+
     <div id="controlesObjetivo"></div>
   </div>
 </template>
@@ -250,6 +345,7 @@ import debounce from "debounce";
 
 const charProhibidosNombreObjetivo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionObjetivo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+const charProhibidosKeywords = /[^ a-zA-Z0-9]/;
 
 export default {
   name: "VentanitaObjetivo",
@@ -262,9 +358,15 @@ export default {
       editandoNombre: false,
       enviandoNuevoNombre: false,
 
+      mostrandoDescripcion: true,
       nuevoDescripcion: "Nueva descripcion",
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
+
+      mostrandoKeywords:false,
+      nuevoKeywords: null,
+      editandoKeywords: false,
+      enviandoNuevoKeywords: false,
 
       togglingEstado: false,
 
@@ -292,7 +394,7 @@ export default {
       return false;
     },
     nuevoDescripcionIlegal() {
-      if (this.nuevoDescripcion.length < 1) {
+      if (!this.nuevoDescripcion || this.nuevoDescripcion.length < 1) {
         return true;
       }
       if (charProhibidosDescripcionObjetivo.test(this.nuevoDescripcion)) {
@@ -300,9 +402,22 @@ export default {
       }
       return false;
     },
+    nuevoKeywordsIlegal() {
+      if (!this.nuevoKeywords || this.nuevoKeywords.length < 1) {
+        return true;
+      }
+      if (charProhibidosKeywords.test(this.nuevoKeywords)) {
+        return true;
+      }
+      return false;
+    },
     usuarioResponsableObjetivo() {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteObjetivo.responsables.includes(this.usuario.id);
+    },
+    usuarioAdministradorObjetivo() {
+      if (!this.usuario || !this.usuario.id) return false;
+      return this.esteObjetivo.administradores.includes(this.usuario.id);
     },
     usuarioPosibleResponsableObjetivo: function () {
       if (!this.esteObjetivo.posiblesResponsables) return false;
@@ -367,7 +482,7 @@ export default {
         .mutate({
           mutation: gql`
             mutation ($idObjetivo: ID!, $nuevoDescripcion: String!) {
-              editarDescripcionObjetivoObjetivo(
+              editarDescripcionObjetivo(
                 idObjetivo: $idObjetivo
                 nuevoDescripcion: $nuevoDescripcion
               ) {
@@ -377,7 +492,7 @@ export default {
             }
           `,
           variables: {
-            idObjetivo: this.idObjetivo,
+            idObjetivo: this.esteObjetivo.id,
             nuevoDescripcion: this.nuevoDescripcion,
           },
         })
@@ -390,6 +505,44 @@ export default {
           console.log(`Error. E :${error}`);
         });
     },
+    guardarNuevoKeywords() {
+      if (this.nuevoKeywordsIlegal) {
+        console.log(`Keywords ilegal`);
+        return;
+      }
+      if (this.nuevoKeywords == this.esteObjetivo.keywords) {
+        this.editandoKeywords = false;
+        return;
+      }
+      console.log(`guardando nuevo keywords`);
+      this.enviandoNuevoKeywords = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idObjetivo: ID!, $nuevoKeywords: String!) {
+              editarKeywordsObjetivo(
+                idObjetivo: $idObjetivo
+                nuevoKeywords: $nuevoKeywords
+              ) {
+                id
+                keywords
+              }
+            }
+          `,
+          variables: {
+            idObjetivo: this.esteObjetivo.id,
+            nuevoKeywords: this.nuevoKeywords,
+          },
+        })
+        .then(() => {
+          this.enviandoNuevoKeywords = false;
+          this.editandoKeywords = false;
+        })
+        .catch(({ graphQLErrors }) => {
+          this.enviandoNuevoKeywords = false;
+          console.log(`Error. E :${graphQLErrors}`);
+        });
+    },
     toggleEditandoNombre() {
       this.editandoNombre = !this.editandoNombre;
       this.nuevoNombre = this.esteObjetivo.nombre;
@@ -400,10 +553,16 @@ export default {
       this.editandoDescripcion = !this.editandoDescripcion;
       this.nuevoDescripcion = this.esteObjetivo.descripcion;
     },
+    toggleEditandoKeywords() {
+      this.$refs.inputNuevoKeywords.style.height =
+        this.$refs.keywords.offsetHeight + "px";
+      this.editandoKeywords = !this.editandoKeywords;
+      this.nuevoKeywords = this.esteObjetivo.keywords;
+    },
     toggleEstadoObjetivo() {
-      var nuevoEstado = "noCumplido";
-      if (this.esteObjetivo.estado === "noCumplido") {
-        nuevoEstado = "cumplido";
+      var nuevoEstado = "noCompletado";
+      if (this.esteObjetivo.estadoDesarrollo === "noCompletado") {
+        nuevoEstado = "completado";
       }
       this.togglingEstado = true;
 
@@ -416,12 +575,12 @@ export default {
                 nuevoEstado: $nuevoEstado
               ) {
                 id
-                estado
+                estadoDesarrollo
               }
             }
           `,
           variables: {
-            idObjetivo: this.idObjetivo,
+            idObjetivo: this.esteObjetivo.id,
             nuevoEstado,
           },
         })
@@ -479,6 +638,7 @@ export default {
                 id
                 responsables
                 posiblesResponsables
+                administradores
               }
             }
           `,
@@ -512,6 +672,7 @@ export default {
                 responsables
                 posiblesResponsables
                 responsablesSolicitados
+                administradores
               }
             }
           `,
@@ -546,6 +707,7 @@ export default {
                 id
                 responsables
                 posiblesResponsables
+                administradores
               }
             }
           `,
@@ -568,7 +730,7 @@ export default {
     }, 2000),
     setResponsablesSolicitados(cantidad) {
       if (cantidad < 0) cantidad = 0;
-
+      this.enviandoQueryResponsables=true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -590,17 +752,29 @@ export default {
             nuevoCantidadResponsablesSolicitados: cantidad,
           },
         })
-        .then(() => {})
+        .then(({data:{setResponsablesSolicitadosObjetivo}}) => {
+          this.responsablesSolicitados=setResponsablesSolicitadosObjetivo.responsablesSolicitados;
+          this.enviandoQueryResponsables=false;
+        })
         .catch((error) => {
           console.log(`Error: ${error}`);
+          this.enviandoQueryResponsables=false;
         });
+    },
+    navegarAlObjetivo() {
+      this.$router.push("/objetivo/" + this.esteObjetivo.id);
     },
   },
   watch: {
     responsablesSolicitados(nuevo) {
       if (nuevo === this.esteObjetivo.responsablesSolicitados) return;
       console.log(`Cambio en responsables solicitados`);
-      this.debounceSetResponsablesSolicitados();
+      if(nuevo<1){        
+        this.setResponsablesSolicitados(parseInt(nuevo));
+      }
+      else{
+        this.debounceSetResponsablesSolicitados();
+      }
     },
   },
   mounted() {
@@ -620,15 +794,15 @@ export default {
   padding-bottom: 10px;
   background-color: rgb(231, 182, 182);
 }
-.ventanitaObjetivo:not(.seleccionado) {
-  cursor: pointer;
-}
 
 .seleccionado {
   box-shadow: 2px 2px 2px 2px rgb(54, 54, 54);
   padding-bottom: 25px;
 }
-
+.botonesControles {
+  padding: 3px 5px;
+  cursor: pointer;
+}
 #controlesObjetivo {
   position: absolute;
   bottom: 0px;
@@ -650,14 +824,14 @@ export default {
   width: 30px;
   height: 30px;
   border-radius: 50%;
+  cursor:pointer;
+
 }
 
-#imagenIcono:hover {
-  background-color: cadetblue;
-}
 .iconoCompletado {
   background-color: rgb(44, 136, 44);
 }
+
 
 .zonaPrimerNivel {
   position: relative;
@@ -666,15 +840,16 @@ export default {
 .barraSuperiorZona {
   display: flex;
   background-color: teal;
+  cursor: pointer;
 }
 .nombreZona {
   font-size: 18px;
-  padding: 5px 20px;
+  padding: 5px 5px;
 }
 #nombre {
   margin-top: 15px;
   font-size: 19px;
-  padding: 5px 20px;
+  padding: 5px 5px;
   display: grid;
   grid-template-columns: 1fr 5fr 1fr;
   margin-bottom: 15px;
@@ -689,11 +864,13 @@ export default {
 }
 
 .inputNuevoNombre {
-  font-size: 23px;
+  font-size: 16px;
   display: block;
   margin: 10px auto;
   grid-column: 2/3;
   width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
 }
 #descripcion {
   font-size: 19px;
@@ -781,13 +958,46 @@ export default {
   width: 100%;
   height: 100%;
 }
+#keywords {
+  border: 1px solid rgb(0, 0, 44);
+  background-color: #fdeedb;
+  border-radius: 10px;
+  margin: 5px auto;
+  width: min(600px, 90%);
+  font-size: 19px;
+  padding: 10px;
+  min-height: 100px;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+#inputNuevoKeywords {
+  width: min(600px, 90%);
+  font-size: 19px;
+  height: 70px;
+  display: block;
+  margin: 5px auto;
+  resize: vertical;
+}
+.botonIr {
+  cursor: pointer;
+  z-index: 10;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  padding: 5px;
+  margin: 6px auto;
+  display: block;
+  background-color: rgb(201, 136, 90);
+}
+.botonIr:hover {
+  background-color: rgb(207, 113, 46);
+}
 .trianguloBullet {
   border: 10px solid transparent;
   border-left: 10px solid black;
   display: inline-block;
-  margin-right: 10px;
-  margin-left: 10px;
-  transform-origin: left center;
+
+  transform-origin: 25% 70%;
   transition: transform 0.2s;
 }
 </style>

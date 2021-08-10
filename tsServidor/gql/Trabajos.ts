@@ -106,30 +106,31 @@ export const typeDefs = gql`
     editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
     editarDescripcionMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoDescripcion: String!):MaterialTrabajo,
     editarCantidadesMaterialTrabajo(idTrabajo: ID!, idMaterial:ID!, nuevoCantidadNecesaria:Int!, nuevoCantidadDisponible:Int):MaterialTrabajo,
-    setResponsablesSolicitadosTrabajo(idTrabajo:ID!, nuevoCantidadResponsablesSolicitados: Int!):Trabajo,
 
     crearObjetivo(posicion:CoordsInput):Objetivo,
     eliminarObjetivo(idObjetivo:ID!, idProyecto:ID!):Boolean,
-    editarNombreObjetivo(idProyecto:ID!, idObjetivo:ID!, nuevoNombre: String!):Objetivo,
-    editarDescripcionObjetivo(idProyecto:ID!, idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
-    setPosicionObjetivoDiagrama(idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
-    editarKeywordsObjetivo(idProyecto:ID!, idObjetivo:ID!, nuevoKeywords: String!):Objetivo,
+    editarNombreObjetivo(idObjetivo:ID!, nuevoNombre: String!):Objetivo,
+    editarDescripcionObjetivo(idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
+    editarKeywordsObjetivo(idObjetivo:ID!, nuevoKeywords: String!):Objetivo,
     addResponsableObjetivo(idObjetivo:ID!,idUsuario:ID!):Objetivo,
     addPosibleResponsableObjetivo(idObjetivo:ID!, idUsuario:ID!):Objetivo,
     removeResponsableObjetivo(idObjetivo:ID!, idUsuario:ID!):Objetivo,
-    setEstadoObjetivo(idProyecto:ID!, idObjetivo:ID!, nuevoEstado:String!):Objetivo,    
+    setEstadoObjetivo(idObjetivo:ID!, nuevoEstado:String!):Objetivo,    
     setResponsablesSolicitadosObjetivo(idObjetivo:ID!, nuevoCantidadResponsablesSolicitados: Int!):Objetivo,
+    setPosicionObjetivoDiagrama(idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
+
 
     crearTrabajo(idProyecto: ID!, posicion:CoordsInput):ID,
     eliminarTrabajo(idTrabajo:ID!, idProyecto:ID!):Boolean,
-    editarNombreTrabajo(idProyecto:ID!, idTrabajo:ID!, nuevoNombre: String!):Trabajo,
-    editarDescripcionTrabajo(idProyecto:ID!, idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
+    editarNombreTrabajo(idTrabajo:ID!, nuevoNombre: String!):Trabajo,
+    editarDescripcionTrabajo(idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
+    editarKeywordsTrabajo(idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
     addResponsableTrabajo(idTrabajo:ID!,idUsuario:ID!):Trabajo,
     addPosibleResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
     removeResponsableTrabajo(idTrabajo:ID!, idUsuario:ID!):Trabajo,
+    setEstadoTrabajo(idTrabajo:ID!, nuevoEstado:String!):Trabajo,    
+    setResponsablesSolicitadosTrabajo(idTrabajo:ID!, nuevoCantidadResponsablesSolicitados: Int!):Trabajo,
     setPosicionTrabajo(idProyecto:ID!, idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
-    editarKeywordsTrabajo(idProyecto:ID!, idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
-    setEstadoTrabajo(idProyecto:ID!, idTrabajo:ID!, nuevoEstado:String!):Trabajo,
 
     eliminarNodoDeTrabajos(idNodo:ID!, tipo: String!):Boolean,
     crearNodoSolidaridad(infoNodo:NodoSolidaridadInput!):NodoDeTrabajos,
@@ -552,9 +553,9 @@ export const resolvers = {
 
             return true;
         },
-        async editarNombreObjetivo(_: any, { idProyecto, idObjetivo, nuevoNombre }, contexto: contextoQuery) {
+        async editarNombreObjetivo(_: any, { idObjetivo, nuevoNombre }, contexto: contextoQuery) {
 
-            console.log(`cambiando el nombre del objetivo con id ${idObjetivo} del proyecto con id ${idProyecto}`);
+            console.log(`cambiando el nombre del objetivo con id ${idObjetivo}`);
             const charProhibidosNombreObjetivo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
@@ -565,28 +566,47 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
+                if (!elObjetivo) {
+                    throw "Objetivo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Error buscando el proyecto. E: " + error);
+                console.log("Error buscando el objetivo. E: " + error);
                 throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            var administradores:Array<string>=[];
+
+            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+                administradores = elObjetivo.responsables;
+            }
+            else{
+                try {
+                    var elNodoParent:any=null;
+                    if(elObjetivo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    }
+                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    }
+                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
             }
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de objetivo`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {
-                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
-                if (!elObjetivo) {
-                    throw "No existía el objetivo";
-                }
+            try {                
                 elObjetivo.nombre = nuevoNombre;
                 await elObjetivo.save();
             }
@@ -598,23 +618,46 @@ export const resolvers = {
             console.log(`Nombre cambiado`);
             return elObjetivo;
         },
-        async editarDescripcionObjetivo(_: any, { idProyecto, idObjetivo, nuevoDescripcion }, contexto: contextoQuery) {
-            let credencialesUsuario = contexto.usuario;
+        async editarDescripcionObjetivo(_: any, { idObjetivo, nuevoDescripcion }, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
+
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
+                if (!elObjetivo) {
+                    throw "Objetivo no encontrado"
                 }
             }
             catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                console.log("Error buscando el objetivo. E: " + error);
+                throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            var administradores:Array<string>=[];
+
+            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+                administradores = elObjetivo.responsables;
+            }
+            else{
+                try {
+                    var elNodoParent:any=null;
+                    if(elObjetivo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    }
+                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    }
+                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
             }
 
             //Authorización
-            let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Descripcion de proyecto`);
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de objetivo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -626,12 +669,7 @@ export const resolvers = {
 
             nuevoDescripcion = nuevoDescripcion.trim();
 
-
-            try {
-                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
-                if (!elObjetivo) {
-                    throw "Objetivo no existía";
-                }
+            try {                
                 elObjetivo.descripcion = nuevoDescripcion;
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
                 await elObjetivo.save();
@@ -646,19 +684,42 @@ export const resolvers = {
         async editarKeywordsObjetivo(_: any, { idProyecto, idObjetivo, nuevoKeywords }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
+                if (!elObjetivo) {
+                    throw "Objetivo no encontrado"
                 }
             }
             catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
+                console.log("Error buscando el objetivo. E: " + error);
+                throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            var administradores:Array<string>=[];
+
+            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+                administradores = elObjetivo.responsables;
+            }
+            else{
+                try {
+                    var elNodoParent:any=null;
+                    if(elObjetivo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    }
+                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    }
+                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
             }
 
             //Authorización
-            let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Keywords de proyecto`);
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de objetivo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -670,12 +731,7 @@ export const resolvers = {
 
             nuevoKeywords = nuevoKeywords.trim();
 
-
-            try {
-                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
-                if (!elObjetivo) {
-                    throw "Objetivo no existía";
-                }
+            try {                
                 elObjetivo.keywords = nuevoKeywords;
                 console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
                 await elObjetivo.save();
@@ -867,6 +923,92 @@ export const resolvers = {
             }
 
             return elObjetivo;
+        },        
+        async setEstadoObjetivo(_: any, { idObjetivo, nuevoEstado }, contexto: contextoQuery) {
+            
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
+                if (!elObjetivo) {
+                    throw "Objetivo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el objetivo. E: " + error);
+                throw new ApolloError("Error en la conexión con la base de datos");
+            }
+
+            var administradores:Array<string>=[];
+
+            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+                administradores = elObjetivo.responsables;
+            }
+            else{
+                try {
+                    var elNodoParent:any=null;
+                    if(elObjetivo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    }
+                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    }
+                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
+            }
+
+            //Authorización
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de objetivo`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {               
+                elObjetivo.estadoDesarrollo = nuevoEstado;
+                console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
+                await elObjetivo.save();
+            } catch (error) {
+                console.log(`error guardando el objetivo modificado: ${error}`);
+                throw new ApolloError("Error guardando información en la base de datos");
+
+            }
+            console.log(`Estado guardado`);
+            return elObjetivo;
+        },
+        setResponsablesSolicitadosObjetivo: async function(_: any, { idObjetivo, nuevoCantidadResponsablesSolicitados}, contexto: contextoQuery){
+            let credencialesUsuario = contexto.usuario;
+            console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en objetivo con id ${idObjetivo}`);
+            
+            try {
+                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
+                if (!elObjetivo) {
+                    throw "objetivo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el objetivo en la base de datos. E: " + error);
+                throw new ApolloError("Error de conexión con la base de datos");
+            }
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !elObjetivo.responsables.includes(credencialesUsuario.id)) {
+                console.log(`Error de autenticacion editando responsables solicitados.`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            elObjetivo.responsablesSolicitados=nuevoCantidadResponsablesSolicitados;
+
+            try {
+                await elObjetivo.save();
+            } catch (error) {
+                console.log(`Error guardando el objetivo: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Retornando con ${elObjetivo.responsablesSolicitados} responsables solicitados`);
+            return elObjetivo;
         },
         async setPosicionObjetivoDiagrama(_: any, { idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
             console.log(`Guardando posicion de objetivo en el diagrama del proyecto`);
@@ -909,73 +1051,6 @@ export const resolvers = {
 
             return elObjetivo;
 
-        },
-        async setEstadoObjetivo(_: any, { idProyecto, idObjetivo, nuevoEstado }, contexto: contextoQuery) {
-            let credencialesUsuario = contexto.usuario;
-            try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
-                }
-            }
-            catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-
-            //Authorización
-            let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Estado de proyecto`);
-                throw new AuthenticationError("No autorizado");
-            }
-
-            try {
-                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
-                if (!elObjetivo) {
-                    throw "Objetivo no existía";
-                }
-                elObjetivo.estado = nuevoEstado;
-                console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
-                await elObjetivo.save();
-            } catch (error) {
-                console.log(`error guardando el objetivo modificado: ${error}`);
-                throw new ApolloError("Error guardando información en la base de datos");
-
-            }
-            console.log(`Estado guardado`);
-            return elObjetivo;
-        },
-        setResponsablesSolicitadosObjetivo: async function(_: any, { idObjetivo, nuevoCantidadResponsablesSolicitados}, contexto: contextoQuery){
-            let credencialesUsuario = contexto.usuario;
-            console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en objetivo con id ${idObjetivo}`);
-            
-            try {
-                var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
-                if (!elObjetivo) {
-                    throw "objetivo no encontrado"
-                }
-            }
-            catch (error) {
-                console.log("Error buscando el objetivo en la base de datos. E: " + error);
-                throw new ApolloError("Error de conexión con la base de datos");
-            }
-
-            if (!credencialesUsuario.permisos.includes("superadministrador") && !elObjetivo.responsables.includes(credencialesUsuario.id)) {
-                console.log(`Error de autenticacion editando responsables solicitados.`);
-                throw new AuthenticationError("No autorizado");
-            }
-
-            elObjetivo.responsablesSolicitados=nuevoCantidadResponsablesSolicitados;
-
-            try {
-                await elObjetivo.save();
-            } catch (error) {
-                console.log(`Error guardando el objetivo: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-            console.log(`Retornando con ${elObjetivo.responsablesSolicitados} responsables solicitados`);
-            return elObjetivo;
         },
 
         async crearTrabajo(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
@@ -1072,9 +1147,9 @@ export const resolvers = {
 
             return true;
         },
-        async editarNombreTrabajo(_: any, { idProyecto, idTrabajo, nuevoNombre }, contexto: contextoQuery) {
+        async editarNombreTrabajo(_: any, { idTrabajo, nuevoNombre }, contexto: contextoQuery) {
 
-            console.log(`cambiando el nombre del trabajo con id ${idTrabajo} del proyecto con id ${idProyecto}`);
+            console.log(`cambiando el nombre del trabajo con id ${idTrabajo}`);
             const charProhibidosNombreTrabajo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
@@ -1085,28 +1160,47 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "Trabajo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Error buscando el proyecto. E: " + error);
+                console.log("Error buscando el trabajo. E: " + error);
                 throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            var administradores:Array<string>=[];
+
+            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+                administradores = elTrabajo.responsables;
+            }
+            else{
+                try {
+                    var elNodoParent:any=null;
+                    if(elTrabajo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    }
+                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    }
+                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
             }
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de trabajo`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {
-                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
-                if (!elTrabajo) {
-                    throw "No existía el trabajo";
-                }
+            try {                
                 elTrabajo.nombre = nuevoNombre;
                 await elTrabajo.save();
             }
@@ -1118,23 +1212,46 @@ export const resolvers = {
             console.log(`Nombre cambiado`);
             return elTrabajo;
         },
-        async editarDescripcionTrabajo(_: any, { idProyecto, idTrabajo, nuevoDescripcion }, contexto: contextoQuery) {
-            let credencialesUsuario = contexto.usuario;
+        async editarDescripcionTrabajo(_: any, { idTrabajo, nuevoDescripcion }, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
+
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "Trabajo no encontrado"
                 }
             }
             catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                console.log("Error buscando el trabajo. E: " + error);
+                throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            var administradores:Array<string>=[];
+
+            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+                administradores = elTrabajo.responsables;
+            }
+            else{
+                try {
+                    var elNodoParent:any=null;
+                    if(elTrabajo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    }
+                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    }
+                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
             }
 
             //Authorización
-            let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Descripcion de proyecto`);
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de trabajo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -1146,12 +1263,7 @@ export const resolvers = {
 
             nuevoDescripcion = nuevoDescripcion.trim();
 
-
-            try {
-                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
-                if (!elTrabajo) {
-                    throw "Trabajo no existía";
-                }
+            try {                
                 elTrabajo.descripcion = nuevoDescripcion;
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
                 await elTrabajo.save();
@@ -1166,19 +1278,42 @@ export const resolvers = {
         async editarKeywordsTrabajo(_: any, { idProyecto, idTrabajo, nuevoKeywords }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "Trabajo no encontrado"
                 }
             }
             catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
+                console.log("Error buscando el trabajo. E: " + error);
+                throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            var administradores:Array<string>=[];
+
+            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+                administradores = elTrabajo.responsables;
+            }
+            else{
+                try {
+                    var elNodoParent:any=null;
+                    if(elTrabajo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    }
+                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    }
+                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
             }
 
             //Authorización
-            let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Keywords de proyecto`);
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de trabajo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -1190,12 +1325,7 @@ export const resolvers = {
 
             nuevoKeywords = nuevoKeywords.trim();
 
-
-            try {
-                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
-                if (!elTrabajo) {
-                    throw "Trabajo no existía";
-                }
+            try {                
                 elTrabajo.keywords = nuevoKeywords;
                 console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
                 await elTrabajo.save();
@@ -1233,7 +1363,7 @@ export const resolvers = {
             catch (error) {
                 console.log("Error buscando al usuario en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
-            }
+            }            
 
             if (elTrabajo.responsables.includes(idUsuario)) {
                 console.log(`El usuario ya era responsable de este trabajo`);
@@ -1245,14 +1375,16 @@ export const resolvers = {
                 console.log(`sacando al usuario ${idUsuario} de la lista de posibles responsables`);
                 elTrabajo.posiblesResponsables.splice(indexPosibleResponsable, 1);
             }
+            else{
+                if(elTrabajo.responsables.length>0){
+                    console.log(`Error. Se intentaba add como responsable un usuario que no estaba en la lista de posibles responsables.`);
+                    throw new UserInputError("El usuario no estaba en la lista de espera para responsables.")
+                }                
+            }
 
-            try {
-                const indexT = elUsuario.misTrabajos.indexOf(elTrabajo._id);
-                if (indexT > -1) elUsuario.misTrabajos.splice(indexT, 1);
-
+            try {                
                 elTrabajo.responsables.push(idUsuario);
-                if (elTrabajo.responsablesSolicitados > 0) elTrabajo.responsablesSolicitados--;
-                elUsuario.misTrabajos.push(elTrabajo._id);
+                if (elTrabajo.responsablesSolicitados > 0) elTrabajo.responsablesSolicitados--;                
                 console.log(`Usuario añadido a la lista de responsables`);
                 await elTrabajo.save();
             }
@@ -1367,8 +1499,7 @@ export const resolvers = {
             console.log(`Usuario retirado de la lista de responsables`);
 
             try {
-                const indexT = elUsuario.misTrabajos.indexOf(elTrabajo._id);
-                if (indexT > -1) elUsuario.misTrabajos.splice(indexT, 1);
+                
 
                 await elTrabajo.save();
                 await elUsuario.save();
@@ -1385,6 +1516,92 @@ export const resolvers = {
                 console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
 
+            return elTrabajo;
+        },        
+        async setEstadoTrabajo(_: any, { idTrabajo, nuevoEstado }, contexto: contextoQuery) {
+            
+            let credencialesUsuario = contexto.usuario;
+            try {
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "Trabajo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el trabajo. E: " + error);
+                throw new ApolloError("Error en la conexión con la base de datos");
+            }
+
+            var administradores:Array<string>=[];
+
+            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+                administradores = elTrabajo.responsables;
+            }
+            else{
+                try {
+                    var elNodoParent:any=null;
+                    if(elTrabajo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    }
+                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
+                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    }
+                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
+            }
+
+            //Authorización
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de trabajo`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {               
+                elTrabajo.estadoDesarrollo = nuevoEstado;
+                console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
+                await elTrabajo.save();
+            } catch (error) {
+                console.log(`error guardando el trabajo modificado: ${error}`);
+                throw new ApolloError("Error guardando información en la base de datos");
+
+            }
+            console.log(`Estado guardado`);
+            return elTrabajo;
+        },
+        setResponsablesSolicitadosTrabajo: async function(_: any, { idTrabajo, nuevoCantidadResponsablesSolicitados}, contexto: contextoQuery){
+            let credencialesUsuario = contexto.usuario;
+            console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en trabajo con id ${idTrabajo}`);
+            
+            try {
+                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
+                if (!elTrabajo) {
+                    throw "trabajo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el trabajo en la base de datos. E: " + error);
+                throw new ApolloError("Error de conexión con la base de datos");
+            }
+
+            if (!credencialesUsuario.permisos.includes("superadministrador") && !elTrabajo.responsables.includes(credencialesUsuario.id)) {
+                console.log(`Error de autenticacion editando responsables solicitados.`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            elTrabajo.responsablesSolicitados=nuevoCantidadResponsablesSolicitados;
+
+            try {
+                await elTrabajo.save();
+            } catch (error) {
+                console.log(`Error guardando el trabajo: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Retornando con ${elTrabajo.responsablesSolicitados} responsables solicitados`);
             return elTrabajo;
         },
         setPosicionTrabajo: async function (_: any, { idProyecto, idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
@@ -1421,42 +1638,6 @@ export const resolvers = {
 
             return elTrabajo;
 
-        },
-        async setEstadoTrabajo(_: any, { idProyecto, idTrabajo, nuevoEstado }, contexto: contextoQuery) {
-            let credencialesUsuario = contexto.usuario;
-            try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
-                }
-            }
-            catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-
-            //Authorización
-            let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Estado de proyecto`);
-                throw new AuthenticationError("No autorizado");
-            }
-
-            try {
-                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
-                if (!elTrabajo) {
-                    throw "Trabajo no existía";
-                }
-                elTrabajo.estadoDesarrollo = nuevoEstado;
-                console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
-                await elTrabajo.save();
-            } catch (error) {
-                console.log(`error guardando el trabajo modificado: ${error}`);
-                throw new ApolloError("Error guardando información en la base de datos");
-
-            }
-            console.log(`Estado guardado`);
-            return elTrabajo;
         },
 
         async crearObjetivoEnProyecto(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
@@ -2117,37 +2298,7 @@ export const resolvers = {
 
             return true;
         },
-        setResponsablesSolicitadosTrabajo: async function (_: any, { idTrabajo, nuevoCantidadResponsablesSolicitados }, contexto: contextoQuery) {
-            let credencialesUsuario = contexto.usuario;
-            console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en trabajo con id ${idTrabajo}`);
-
-            try {
-                var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
-                if (!elTrabajo) {
-                    throw "trabajo no encontrado"
-                }
-            }
-            catch (error) {
-                console.log("Error buscando el trabajo en la base de datos. E: " + error);
-                throw new ApolloError("Error de conexión con la base de datos");
-            }
-
-            if (!credencialesUsuario.permisos.includes("superadministrador") && !elTrabajo.responsables.includes(credencialesUsuario.id)) {
-                console.log(`Error de autenticacion editando responsables solicitados.`);
-                throw new AuthenticationError("No autorizado");
-            }
-
-            elTrabajo.responsablesSolicitados = nuevoCantidadResponsablesSolicitados;
-
-            try {
-                await elTrabajo.save();
-            } catch (error) {
-                console.log(`Error guardando el trabajo: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-            console.log(`Retornando con ${elTrabajo.responsablesSolicitados} responsables solicitados`);
-            return elTrabajo;
-        },
+      
     },
 
     NodoDeTrabajos: {
