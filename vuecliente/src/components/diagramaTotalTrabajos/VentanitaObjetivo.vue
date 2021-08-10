@@ -1,5 +1,5 @@
 <template>
-  <div class="ventanitaObjetivo" :class="{ seleccionado }">
+  <div class="ventanitaObjetivo" :class="{ seleccionado }" @mouseup.left.stop="">
     <div
       id="zonaNombre"
       :class="{ bordeAbajo: seleccionado }"

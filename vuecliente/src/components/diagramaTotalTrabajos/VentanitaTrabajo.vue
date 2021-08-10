@@ -1,5 +1,5 @@
 <template>
-  <div class="ventanitaTrabajo">
+  <div class="ventanitaTrabajo" @mouseup.left.stop="">
     <img
       src="@/assets/iconos/iconoTrabajo.png"
       alt=""

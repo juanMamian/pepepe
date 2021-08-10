@@ -31,8 +31,10 @@ exports.typeDefs = apollo_server_express_1.gql `
        coords: Coords,
        angulo:Float,
        stuck:Boolean,
-       puntaje:Int,
+       puntaje:Float,
        centroMasa:Coords,
+       nivel: Int,
+       turnoNivel:Float,
    }
 
    type InfoBasicaObjetivo{

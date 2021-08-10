@@ -30,17 +30,21 @@ export const esquemaObjetivo = new mongoose.Schema({
     estadoDesarrollo:{
         type:String,
         required:true,
-        default:"noCumplido",
-        enum:["noCumplido", "cumplido"],
+        default:"noCompletado",
+        enum:["noCompletado", "completado"],
     },
     vinculos:{
         type:[EsquemaVinculosNodosProyecto],
         required:true,
         default:[]
     },
-    idNodoParent:{
-        type:String
-    },
+    nodoParent:{
+        type:{
+            idNodo: String,
+            tipo:String,
+        },        
+        
+    }, 
     keywords:{
         type:String,
     },
@@ -97,6 +101,10 @@ export const esquemaObjetivo = new mongoose.Schema({
     },
     turnoNivel:{
         type: Number,
+    },
+    peso:{
+        type:Number,
+        default:0
     }
     
 });

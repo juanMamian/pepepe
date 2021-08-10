@@ -27,9 +27,9 @@
           draggable="false"
           :style="{width: Math.round(17*factorZoom)+'px'}"
           :class="{
-            iconoCompletado: esteObjetivo.estado === 'cumplido',
+            iconoCompletado: esteObjetivo.estadoDesarrollo === 'completado',
           }"
-        />{{ callingPosiciones? esteObjetivo.puntaje.toFixed(2) : esteObjetivo.nombre }}
+        />{{ callingPosiciones? esteObjetivo.peso.toFixed(2) : esteObjetivo.nombre }}
       </div>
     </div>
 
@@ -55,6 +55,9 @@
           Desconectar
         </div>
       </template>
+      <div class="botonMenuCx" @click="eliminarse">
+        Eliminar
+      </div>
     </div>
   </div>
 </template>
@@ -177,7 +180,17 @@ export default {
         `Se fijara que ${idNodoRequiere} ya no requiere a ${idNodoRequerido}`
       );
       this.$emit("eliminarVinculo", { idNodoRequiere, idNodoRequerido });
-    },    
+    },
+    eliminarse(){      
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorElemento) {
+        console.log(`No autorizado`);
+        return;
+      }
+      this.$emit("eliminar");    
+    },
+    usuarioAdministradorElemento(){
+      return true;
+    }
   },
   computed: {
     estiloPosicion() {
@@ -278,8 +291,8 @@ export default {
 }
 #menuContextual {
   position: absolute;
-  top: 110%;
-  left: 110%;
+  top: 68%;
+  left: 68%;
   min-width: 140px;
   z-index: 10;
   background-color: rgb(177, 177, 159);

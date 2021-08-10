@@ -141,6 +141,10 @@ exports.esquemaTrabajo.add({
     },
     turnoNivel: {
         type: Number,
+    },
+    peso: {
+        type: Number,
+        default: 0
     }
 });
 exports.esquemaTrabajo.index({ keywords: "text" });

@@ -5,6 +5,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloNodo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
+const esquemaClase = new mongoose_1.default.Schema({
+    idExperto: String,
+    interesados: [String],
+    nombre: {
+        type: String,
+        default: "Nombre"
+    },
+    descripion: {
+        type: String,
+        default: ""
+    },
+});
 var esquemaNodo = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -65,6 +77,10 @@ var esquemaNodo = new mongoose_1.default.Schema({
         type: [String],
         required: true,
         default: []
+    },
+    clases: {
+        type: [esquemaClase],
+        default: [],
     },
     posiblesExpertos: {
         type: [String],

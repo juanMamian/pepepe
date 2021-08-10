@@ -17,6 +17,10 @@ const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil"
 exports.typeDefs = apollo_server_express_1.gql `
     scalar Date
 
+    type ConfiguracionAtlas{
+        modo:String
+    }
+
     type MinimoCausante{
         id:ID,
         tipo:String,
@@ -46,7 +50,8 @@ exports.typeDefs = apollo_server_express_1.gql `
     type infoAtlas{
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
-        idNodoTarget:ID
+        idNodoTarget:ID,
+        configuracion: ConfiguracionAtlas
     }
 
     enum relacionUsuarioConocimiento{
@@ -128,7 +133,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         setNodoObjetivo(idNodo:ID!, nuevoEstadoObjetivo:Boolean):Boolean
         setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):Boolean        
         setNodoAtlasTarget(idNodo:ID!):Boolean,
-        nulificarNodoTargetUsuarioAtlas:Boolean
+        nulificarNodoTargetUsuarioAtlas:Boolean,
+        setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 
     }
     extend type Subscription{
@@ -473,6 +479,25 @@ exports.resolvers = {
                     console.log(`error guardando usuario en la base de datos: ${error}`);
                     throw new apollo_server_express_1.ApolloError("");
                 }
+            });
+        },
+        setModoUsuarioAtlas: function (_, { idUsuario, nuevoModo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario || !credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No autenticado");
+                }
+                console.log(`Seting modo ${nuevoModo} para el usuario ${idUsuario}`);
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    elUsuario.atlas.configuracion.modo = nuevoModo;
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`error guardando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+                return elUsuario;
             });
         },
     },

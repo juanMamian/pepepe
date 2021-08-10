@@ -32,11 +32,11 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
         required: true,
         max: 2000
     },
-    estado: {
+    estadoDesarrollo: {
         type: String,
         required: true,
-        default: "noCumplido",
-        enum: ["noCumplido", "cumplido"],
+        default: "noCompletado",
+        enum: ["noCompletado", "completado"],
     },
     vinculos: {
         type: [VinculosNodosProyecto_1.EsquemaVinculosNodosProyecto],
@@ -102,6 +102,10 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
     },
     turnoNivel: {
         type: Number,
+    },
+    peso: {
+        type: Number,
+        default: 0
     }
 });
 exports.esquemaObjetivo.index({ keywords: "text", nombre: "text", descripcion: "text" });

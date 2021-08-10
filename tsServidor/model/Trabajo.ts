@@ -60,18 +60,16 @@ esquemaTrabajo.add({
     responsablesSolicitados:{
         type: Number,
         default: 0,
-    },
-    idObjetivoParent:{
-        type:String,
-    },
+    },    
     nodosConocimiento:{
         type:[String],
         required:true,
         default:[]
     },
-    idNodoParent:{
-        type:String,
-    },    
+    nodoParent:{
+        idNodo: String,
+        tipo:String,
+    }, 
     idForo:{
         type:String,        
     },
@@ -140,6 +138,10 @@ esquemaTrabajo.add({
     },
     turnoNivel:{
         type: Number,
+    },
+    peso:{
+        type:Number,
+        default:0
     }
    
 });

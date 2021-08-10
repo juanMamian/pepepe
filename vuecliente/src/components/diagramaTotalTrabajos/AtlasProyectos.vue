@@ -3,8 +3,8 @@
     class="atlasProyectos"
     @mousedown.left.exact.self.stop="panningVista = true"
     @mouseenter="hovered = true"
-    @mouseleave="hovered = false"
-    @click="idNodoMenuCx = null"
+    @mouseleave="hovered = false"    
+    @click.right.self.exact.prevent="abrirMenuContextual"
     @mousemove="panVista"
     @mouseup.left="clickFondoAtlas"
     @touchmove.prevent.stop="movimientoMobile"
@@ -19,6 +19,10 @@
         { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
       ]"
     ></div>
+
+    <div id="menuContextual" v-show="mostrandoMenuContextual" :style="[offsetMenuContextual]">
+      <div class="botonMenuContextual" id="botonCrearObjetivo">Crear objetivo</div>
+    </div>
 
     <div id="centroVista"></div>
     <canvases-atlas-proyectos
@@ -42,7 +46,8 @@
         :factorZoom="factorZoom"
         v-show="idsNodosVisibles.includes(objetivo.id)"
         @click.native="idNodoSeleccionado = objetivo.id"
-        @dblclick.native="idNodoPaVentanita = trabajo.id"
+        @click.native.right.exact.stop.prevent="idNodoMenuCx=objetivo.id"
+        @dblclick.native="idNodoPaVentanita = objetivo.id"
         :class="{
           transparentoso:
             idNodoSeleccionado &&
@@ -50,6 +55,7 @@
             !idsNodosRequeridosSeleccionado.includes(objetivo.id) &&
             !idsNodosRequierenSeleccionado.includes(objetivo.id),
         }"
+        @eliminar="eliminarNodo(objetivo.id, 'objetivo')"
       />
 
       <nodo-trabajo
@@ -69,7 +75,9 @@
         }"
         v-show="idsNodosVisibles.includes(trabajo.id)"
         @click.native="idNodoSeleccionado = trabajo.id"
+        @click.native.right.exact.stop.prevent="idNodoMenuCx=trabajo.id"
         @dblclick.native="idNodoPaVentanita = trabajo.id"
+        @eliminar="eliminarNodo(trabajo.id, 'trabajo')"
       />
 
       <div
@@ -211,6 +219,7 @@ const QUERY_TODOS_NODOS = gql`
         puntaje
         nivel
         turnoNivel
+        peso
       }
       ... on Objetivo {
         id
@@ -236,6 +245,7 @@ const QUERY_TODOS_NODOS = gql`
         puntaje
         nivel
         turnoNivel
+        peso
       }
     }
   }
@@ -288,7 +298,10 @@ export default {
       query: QUERY_TODOS_NODOS,
       variables() {
         return {
-          centro: this.centroDescarga,
+          centro: {
+            x:this.centroDescarga.x,
+            y:this.centroDescarga.y
+          },
           radio: this.radioDescarga,
         };
       },
@@ -302,6 +315,12 @@ export default {
   },
   data() {
     return {
+      mostrandoMenuContextual:false,
+      posMenuContextual:{
+        top: 0,
+        left: 0
+      },
+
       esquinaVistaDecimal: {
         x: -500,
         y: -500,
@@ -336,11 +355,26 @@ export default {
       // trabajos: [],
       // objetivos: [],
       todosNodos: [],
+      enviandoQueryNodos:false,
 
       callingPosiciones: false,
     };
   },
   methods: {
+    abrirMenuContextual(e){
+      let posAtlas = this.$el.getBoundingClientRect();
+
+      let topClick = Math.round(
+        (e.pageY - posAtlas.top)
+      );
+      let leftClick = Math.round(
+        (e.pageX - posAtlas.left)
+      );
+
+      this.$set(this.posMenuContextual, 'y', topClick);
+      this.$set(this.posMenuContextual, 'x', leftClick);
+      this.mostrandoMenuContextual=true;
+    },
     desplazarVista(deltaX, deltaY) {
       this.$set(
         this.esquinaVistaDecimal,
@@ -368,6 +402,8 @@ export default {
       if (!this.vistaPanned) this.idNodoSeleccionado = null;
       this.panningVista = false;
       this.vistaPanned = false;
+      this.mostrandoMenuContextual=false;
+      this.idNodoMenuCx=null;
     },
     movimientoMobile(e) {
       if (this.pinching) {
@@ -499,8 +535,77 @@ export default {
       // this.$set(this.esquinaVistaDecimal, "x", posZoom.x-((posContenedor.width/this.factorZoom)*proporciones.x) );
       // this.$set(this.esquinaVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );
     },
+    eliminarNodo(idNodo, tipo){     
+      if (!confirm("¿Seguro de que quieres eliminar este elemento?")) return;
+      console.log(`enviando mutacion de eliminar nodo`);
+      this.enviandoQueryNodos=true;
+      const dis=this;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $tipo: String!) {
+              eliminarNodoDeTrabajos(idNodo: $idNodo, tipo: $tipo)
+            }
+          `,
+          variables: {
+            idNodo,
+            tipo
+          },
+          update(store, { data: { eliminarNodoDeTrabajos } }) {
+            if (!eliminarNodoDeTrabajos) {
+              console.log(`Nodo no fue eliminado`);
+              return;
+            }
+            const cache = store.readQuery({
+              query: QUERY_TODOS_NODOS,
+              variables:{
+                centro: {
+                  x:dis.centroDescarga.x,
+                  y:dis.centroDescarga.y
+                },
+                radio: dis.radioDescarga,
+              }
+            });
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+            const indexN = nuevoCache.nodosTrabajosSegunCentro.findIndex(
+              (n) => n.id == idNodo
+            );
+            if (indexN > -1) {
+              nuevoCache.nodosTrabajosSegunCentro.splice(indexN, 1);
+              store.writeQuery({
+                query: QUERY_TODOS_NODOS,
+                variables:{
+                  centro: {
+                    x:dis.centroDescarga.x,
+                    y:dis.centroDescarga.y
+                  },
+                  radio: dis.radioDescarga,
+                },
+                data: nuevoCache,
+              });
+            } else {
+              console.log(`El nodo no estaba presente`);
+            }
+          },
+        })
+        .then(() => {
+          dis.enviandoQueryNodos=false;
+          if(dis.idNodoSeleccionado===idNodo){
+            dis.idNodoSeleccionado=null;
+          }
+        }).catch((error)=>{
+          console.log(`Error: ${error}`);
+          dis.enviandoQueryNodos=false;          
+        })
+    }
   },
   computed: {
+    offsetMenuContextual(){
+      return {
+        top: this.posMenuContextual.y+'px',
+        left: this.posMenuContextual.x+'px',
+      }
+    },
     factorZoom() {
       return Number((this.zoom / 100).toFixed(2));
     },
@@ -551,7 +656,7 @@ export default {
       if (!this.idNodoPaVentanita) return null;
       return this.trabajos.find((t) => t.id == this.idNodoPaVentanita);
     },
-    nodoSeleccionado() {
+    nodoSeleccionado() {      
       return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
     nodosRequierenSeleccionado() {
@@ -564,7 +669,7 @@ export default {
       );
     },
     nodosRequeridosSeleccionado() {
-      if (!this.idNodoSeleccionado) return [];
+      if (!this.idNodoSeleccionado || !this.nodoSeleccionado) return [];
       const idsRequeridos = this.nodoSeleccionado.vinculos
         .filter((v) => v.tipo == "requiere")
         .map((v) => v.idRef);
@@ -651,20 +756,22 @@ export default {
   overflow: hidden;
   position: relative;
 }
-#proyectoSeleccionado {
+#menuContextual{
   position: absolute;
-  top: 2%;
-  left: 50%;
-  padding: 10px 15px;
-  border-radius: 12px;
-  text-align: center;
-  transform: translateX(-50%);
-  background-color: rgba(221, 160, 221, 0.5);
+  background-color: rgb(173, 173, 173);
+}
+.botonMenuContextual{
+  padding: 5px 10px;
+  cursor:pointer;
+}
+.botonMenuContextual:hover{
+  background-color: gray
 }
 #contenedorNodos {
   position: relative;
   z-index: 1;
 }
+
 #canvasesAtlasProyectos {
   position: relative;
 }

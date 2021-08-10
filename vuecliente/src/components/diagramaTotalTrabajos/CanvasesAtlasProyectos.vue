@@ -4,6 +4,7 @@
       id="canvasTodosVinculos"
       ref="canvasTodosVinculos"     
       class="canvas"
+      v-show="mostrandoTodosVinculos"
       :style="[sizeCanvasVista]"
     ></canvas>
     <canvas
@@ -43,6 +44,7 @@ export default {
         x: 0,
         y: 0,
       },
+      mostrandoTodosVinculos:true,
     };
   },
   props: {            
@@ -142,6 +144,7 @@ export default {
         }
       }
       lapiz.stroke();
+      this.mostrandoTodosVinculos=true;
     },
     crearImagenVinculosSeleccionado: function () {
       var nodosRelevantes = this.todosNodos;
@@ -288,7 +291,7 @@ export default {
       }
       return blacklist;
     },
-    debTrazarVinculos:debounce(function(){
+    debTrazarVinculos:debounce(function(){      
       this.crearImagenTodosVinculos();
     }, 1000)
   },
@@ -350,8 +353,10 @@ export default {
     }
   },
   watch: {
-    todosNodos: function () {
+    todosNodos () {
       if (this.todosNodos.length < 1) return;
+      this.mostrandoTodosVinculos=false;
+
       this.debTrazarVinculos();
       if(this.callingPosiciones)this.crearImagenPosiciones();
       this.crearImagenVinculosSeleccionado();
@@ -366,8 +371,17 @@ export default {
       this.crearImagenTodosVinculos();
     },
     factorZoom(){
+      this.mostrandoTodosVinculos=false;
+
       this.debTrazarVinculos();
     },
+    centroDescarga:{
+      handler:function(){
+        console.log(`Ocultando todos vínculos`);
+        this.mostrandoTodosVinculos=false;
+      },
+      deep:true      
+    }
     // callingPosiciones(nuevo){
     //   if(nuevo){
     //     this.crearImagenPosiciones();

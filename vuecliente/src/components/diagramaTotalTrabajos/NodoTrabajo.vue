@@ -5,7 +5,7 @@
     :style="[estiloPosicion, estiloZeta, estiloSize, {transition: callingPosiciones?'left 5s': ''}]"
     @mousedown.left="agarrado = callingPosiciones?false:true"
     @mouseup.left="guardarPosicion"
-    @mousemove="arrastrarNodo"
+    @mousemove="arrastrarNodo"    
   >
     <div id="zonaArrastre" v-show="agarrado"></div>
 
@@ -26,13 +26,13 @@
           draggable="false"
           :style="{width: Math.round(17*factorZoom)+'px'}"
           :class="{
-            iconoCompletado: esteTrabajo.estado === 'cumplido',
+            iconoCompletado: esteTrabajo.estadoDesarrollo === 'completado',
           }"
-        />{{ callingPosiciones? esteTrabajo.puntaje.toFixed(2) : esteTrabajo.nombre }}
+        />{{ callingPosiciones? esteTrabajo.peso.toFixed(2) : esteTrabajo.nombre }}
       </div>
     </div>
 
-    <div id="menuContextual" v-show="menuCx">
+    <div id="menuContextual" v-show="menuCx">      
       <template
         v-if="
           idNodoSeleccionado != null &&
@@ -54,6 +54,9 @@
           Desconectar
         </div>
       </template>
+      <div class="botonMenuCx" @click="eliminarse">
+        Eliminar
+      </div>
     </div>
   </div>
 </template>
@@ -72,6 +75,7 @@ export default {
   },
   data() {
     return {
+      
       agarrado: false,
       arrastrandoNodo: 0,
       umbralArrastreNodo: 10,
@@ -174,6 +178,13 @@ export default {
       );
       this.$emit("eliminarVinculo", { idNodoRequiere, idNodoRequerido });
     },
+    eliminarse(){      
+      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorElemento) {
+        console.log(`No autorizado`);
+        return;
+      }
+      this.$emit("eliminar");    
+    }
   },
   computed: {
     estiloPosicion() {
@@ -215,6 +226,9 @@ export default {
       if(!this.esteTrabajo.idObjetivoParent)return false;
 
       return false;
+    },
+    usuarioAdministradorElemento(){
+      return true;
     }
   },
   watch: {
@@ -276,8 +290,8 @@ export default {
 }
 #menuContextual {
   position: absolute;
-  top: 110%;
-  left: 110%;
+  top: 68%;
+  left: 68%;
   min-width: 140px;
   z-index: 10;
   background-color: rgb(177, 177, 159);

@@ -217,7 +217,6 @@ exports.resolvers = {
         },
         conversacionesPaginaForo(_, { idForo, pagina }, __) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Solicitud de conversaciones de foro ${idForo} para la página ${pagina}`);
                 try {
                     var elForo = yield Foro_1.ModeloForo.findById(idForo).exec();
                     if (!elForo) {
