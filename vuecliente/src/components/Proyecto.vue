@@ -110,7 +110,11 @@
                   : 'rotateZ(0deg)',
               }"
             ></div>
-            {{esteProyecto.responsables.length===1?'Coordinador': 'Coordinadores'}}
+            {{
+              esteProyecto.responsables.length === 1
+                ? "Coordinador"
+                : "Coordinadores"
+            }}
           </div>
         </div>
 
@@ -199,7 +203,10 @@
               :idPersona="idPersona"
               :key="idPersona"
               v-for="idPersona of esteProyecto.posiblesResponsables"
-              v-show="usuarioResponsableProyecto || (usuario && usuario.id && usuario.id === idPersona)"
+              v-show="
+                usuarioResponsableProyecto ||
+                (usuario && usuario.id && usuario.id === idPersona)
+              "
               :seleccionado="idResponsableSeleccionado == idPersona"
               @click.native.stop="
                 idResponsableSeleccionado = idPersona;
@@ -253,21 +260,25 @@
                   : 'rotateZ(0deg)',
               }"
             ></div>
-            {{esteProyecto.participantes.length===1?'Participante': 'Participantes'}}
+            {{
+              esteProyecto.participantes.length === 1
+                ? "Participante"
+                : "Participantes"
+            }}
           </div>
         </div>
 
         <div v-show="mostrandoParticipantes">
           <div id="controlesParticipantes" class="controlesZona">
-            <loading v-show="enviandoQueryParticipantes" texto="Esperando..." />            
+            <loading v-show="enviandoQueryParticipantes" texto="Esperando..." />
             <div
               class="controlesParticipantes hoverGris botonesControles"
               :class="{ deshabilitado: enviandoQueryParticipantes }"
               v-if="
                 usuarioLogeado == true &&
                 !usuarioParticipanteProyecto &&
-                !usuarioResponsableProyecto               
-              "              
+                !usuarioResponsableProyecto
+              "
               @click="entrarListaParticipantes()"
             >
               Participar
@@ -275,36 +286,30 @@
             <div
               class="controlesParticipantes hoverGris botonesControles"
               :class="{ deshabilitado: enviandoQueryParticipantes }"
-              v-if="
-                usuarioLogeado == true &&
-                usuarioParticipanteProyecto                
-              "              
+              v-if="usuarioLogeado == true && usuarioParticipanteProyecto"
               @click="abandonarListaParticipantes()"
             >
               Abandonar
-            </div>            
+            </div>
           </div>
           <div id="listaParticipantes">
             <icono-persona-autonomo
               :idPersona="idPersona"
-              :key="'participante'+idPersona"
+              :key="'participante' + idPersona"
               v-for="idPersona of esteProyecto.participantes"
               :seleccionado="idParticipanteSeleccionado == idPersona"
               @click.native.stop="
                 idParticipanteSeleccionado = idPersona;
                 participanteSeleccionadoEstaAceptado = true;
               "
-            />            
+            />
           </div>
         </div>
       </div>
 
       <div id="zonaEventos" class="zonaPrimerNivel">
         <div class="barraSuperiorZona">
-          <div
-            class="nombreZona"
-            @click="mostrandoEventos = !mostrandoEventos"
-          >
+          <div class="nombreZona" @click="mostrandoEventos = !mostrandoEventos">
             <div
               class="trianguloBullet"
               :style="{
@@ -317,17 +322,16 @@
           </div>
         </div>
         <div v-show="mostrandoEventos">
-          <div id="controlesEventos" class="controlesZona">
-                               
-          </div>  
+          <div id="controlesEventos" class="controlesZona"></div>
 
-          <calendario :configCalendario="{tipo:'club', id: esteProyecto.id}" :key="'calendario'+versionCalendario"/>    
+          <calendario
+            :configCalendario="{ tipo: 'club', id: esteProyecto.id }"
+            :key="'calendario' + versionCalendario"
+          />
         </div>
-        
-
       </div>
 
-<!-- 
+      <!-- 
       <div id="zonaBienesServicios" class="zonaPrimerNivel">
         <div class="barraSuperiorZona">
           <div
@@ -432,7 +436,6 @@
           @nodoAbierto="abrirNodo"
           @click.native="idNodoAbierto = null"
         />
-        
       </div>
       <div id="zonaForo" ref="zonaForo" class="zonaPrimerNivel">
         <div class="barraSuperiorZona">
@@ -464,17 +467,16 @@ import {
   // fragmentoBienProyecto,
   fragmentoProyecto,
   // fragmentoObjetivoProyecto,
-  fragmentoTrabajoProyecto
+  fragmentoTrabajoProyecto,
 } from "./utilidades/recursosGql";
 import Loading from "./utilidades/Loading.vue";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
 import debounce from "debounce";
-import Calendario from "./utilidades/Calendario.vue"
+import Calendario from "./utilidades/Calendario.vue";
 // import BienRepartirAdmin from "./proyecto/BienRepartirAdmin.vue";
 // import BienOfrecido from "./proyecto/BienOfrecido.vue";
-
 
 const QUERY_PROYECTO = gql`
   query ($idProyecto: ID!) {
@@ -488,12 +490,12 @@ const charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionProyecto = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
-  components: {    
+  components: {
     Loading,
     Foro,
     IconoPersonaAutonomo,
     DiagramaFlujo,
-    Calendario
+    Calendario,
     // BienRepartirAdmin,
     // BienOfrecido,
   },
@@ -520,15 +522,15 @@ export default {
       loading: true,
 
       esteProyecto: {
-        responsables: [],      
+        responsables: [],
         posiblesResponsables: [],
         participantes: [],
-        trabajos:[],
-        objetivos:[],        
+        trabajos: [],
+        objetivos: [],
       },
       responsablesSolicitados: 0,
       idResponsableSeleccionado: null,
-      idParticipanteSeleccionado:null,
+      idParticipanteSeleccionado: null,
       responsableSeleccionadoEstaAceptado: false,
 
       creandoTrabajo: false,
@@ -544,25 +546,24 @@ export default {
       nuevoDescripcion: "Nueva descripcion",
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
-      
+
       enviandoQueryResponsables: false,
       enviandoQueryBienesServicios: false,
-      enviandoQueryParticipantes:false,
-      enviandoQueryEventos:false,
+      enviandoQueryParticipantes: false,
+      enviandoQueryEventos: false,
 
       idNodoAbierto: null,
 
       mostrandoDescripcion: true,
       mostrandoResponsables: true,
-      mostrandoParticipantes:true,
-      mostrandoEventos:true,
+      mostrandoParticipantes: true,
+      mostrandoEventos: true,
       mostrandoDiagramaFlujo: false,
       mostrandoForo: true,
       mostrandoBienesServicios: false,
-      administrandoBienesServicios:false,
+      administrandoBienesServicios: false,
 
-      versionCalendario:0,
-
+      versionCalendario: 0,
     };
   },
   computed: {
@@ -631,7 +632,6 @@ export default {
     realizandoOperacionDiagrama() {
       return this.creandoTrabajo || this.creandoObjetivo;
     },
-    
   },
   methods: {
     guardarNuevoNombre() {
@@ -849,7 +849,7 @@ export default {
           this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
-    },   
+    },
     entrarListaParticipantes() {
       console.log(
         `Enviando peticion de entrar a la lista de participantes del proyecto con id ${this.esteProyecto.id}`
@@ -881,7 +881,7 @@ export default {
           this.enviandoQueryParticipantes = false;
           console.log("error: " + error);
         });
-    }, 
+    },
     abandonarListaParticipantes() {
       console.log(`Abandonando la participación en este proyecto`);
       this.enviandoQueryParticipantes = true;
@@ -894,7 +894,7 @@ export default {
                 idUsuario: $idUsuario
               ) {
                 id
-                participantes                
+                participantes
               }
             }
           `,
@@ -922,7 +922,7 @@ export default {
               crearTrabajoEnProyecto(
                 idProyecto: $idProyecto
                 posicion: $posicion
-              ){
+              ) {
                 ...fragTrabajoProyecto
               }
             }
@@ -1160,12 +1160,12 @@ export default {
     //   if(!elBien){
     //     console.log(`Tratando de introducir una nueva peticion en un bien que no estaba en el caché`);
     //     return
-    //   }    
+    //   }
 
     //   const indexP = elBien.listaPeticiones.findIndex((b) => b.idBeneficiario == nuevaPeticion.idBeneficiario);
-    //   if (indexP > -1) {        
+    //   if (indexP > -1) {
     //     elBien.listaPeticiones.splice(indexP, 1);
-    //   } 
+    //   }
     //   if(nuevaPeticion.cantidadSolicitada>0){
     //     elBien.listaPeticiones.push(nuevaPeticion);
     //   }
@@ -1224,7 +1224,7 @@ export default {
       console.log(`Cambio en responsables solicitados`);
       this.debounceSetResponsablesSolicitados();
     },
-  },  
+  },
 };
 </script>
 
@@ -1347,7 +1347,6 @@ export default {
   padding: 10px 20px;
   padding-bottom: 65px;
   flex-wrap: wrap;
-
 }
 #listaParticipantes {
   display: flex;

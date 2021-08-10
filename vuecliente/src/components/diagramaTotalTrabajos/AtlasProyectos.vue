@@ -218,6 +218,9 @@ const QUERY_TODOS_NODOS = gql`
         nombre
         idProyectoParent
         responsables
+        posiblesResponsables
+        responsablesSolicitados
+        administradores
         coords {
           x
           y
@@ -243,6 +246,9 @@ const QUERY_TODOS_NODOS = gql`
         id
         nombre
         responsables
+        posiblesResponsables
+        responsablesSolicitados
+        administradores
         idProyectoParent
         coords {
           x
@@ -418,7 +424,7 @@ export default {
       this.vistaPanned = false;
       this.mostrandoMenuContextual = false;
       this.idNodoMenuCx = null;
-      this.idNodoPaVentanita=null;
+      this.idNodoPaVentanita = null;
     },
     movimientoMobile(e) {
       if (this.pinching) {
@@ -660,6 +666,9 @@ export default {
                   nombre
                   idProyectoParent
                   responsables
+                  posiblesResponsables
+                  responsablesSolicitados
+                  administradores
                   coords {
                     x
                     y
@@ -685,6 +694,9 @@ export default {
                   id
                   nombre
                   responsables
+                  posiblesResponsables
+                  responsablesSolicitados
+                  administradores
                   idProyectoParent
                   coords {
                     x
@@ -748,7 +760,7 @@ export default {
               data: nuevoCache,
             });
           }
-          this.idNodoPaVentanita=crearNodoSolidaridad.id;
+          this.idNodoPaVentanita = crearNodoSolidaridad.id;
 
           //this.$router.push("/nodoConocimiento/"+crearNodoSolidaridad.id);
         })

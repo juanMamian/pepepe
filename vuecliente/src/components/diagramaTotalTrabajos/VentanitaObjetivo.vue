@@ -1,5 +1,9 @@
 <template>
-  <div class="ventanitaObjetivo" :class="{ seleccionado }" @mouseup.left.stop="">
+  <div
+    class="ventanitaObjetivo"
+    :class="{ seleccionado }"
+    @mouseup.left.stop=""
+  >
     <div
       id="zonaNombre"
       :class="{ bordeAbajo: seleccionado }"
@@ -17,7 +21,7 @@
           v-show="editandoNombre"
           @keypress.enter="guardarNuevoNombre"
         />
-        <div class="controlesLateralesZona" v-if="usuarioResponsableProyecto">
+        <div class="controlesLateralesZona" v-if="usuarioResponsableObjetivo">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -42,21 +46,24 @@
         src="@/assets/iconos/estrella.png"
         alt=""
         id="imagenIcono"
-        :class="{ iconoCompletado: esteObjetivo.estado === 'cumplido', deshabilitado:togglingEstado }"
-        @click="usuarioResponsableProyecto? toggleEstadoObjetivo():null"
+        :class="{
+          iconoCompletado: esteObjetivo.estado === 'cumplido',
+          deshabilitado: togglingEstado,
+        }"
+        @click="usuarioResponsableObjetivo ? toggleEstadoObjetivo() : null"
       />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
         <span class="nombreZona">Descripcion</span>
-        <div class="controlesZona" v-show="usuarioResponsableProyecto">
+        <div class="controlesZona" v-show="usuarioResponsableObjetivo">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
             id="bEditarDescripcion"
             class="bEditar"
             title="Editar descripcion del objetivo"
-            v-show="usuarioResponsableProyecto"
+            v-show="usuarioResponsableObjetivo"
             @click.stop="toggleEditandoDescripcion"
           />
           <img
@@ -86,22 +93,167 @@
       />
       <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
-    <div id="controlesObjetivo">
-     
+
+    <div id="zonaResponsables" class="zonaPrimerNivel">
+      <div class="barraSuperiorZona">
+        <div
+          class="nombreZona"
+          @click="mostrandoResponsables = !mostrandoResponsables"
+        >
+          <div
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoResponsables
+                ? 'rotateZ(90deg)'
+                : 'rotateZ(0deg)',
+            }"
+          ></div>
+          Responsable{{ esteObjetivo.responsables.length === 1 ? "" : "s" }}
+        </div>
+      </div>
+
+      <div v-show="mostrandoResponsables">
+        <div id="controlesResponsables" class="controlesZona">
+          <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="
+              usuarioLogeado == true && esteObjetivo.responsables.length < 1
+            "
+            id="asumirResponsable"
+            @click="asumirComoResponsable"
+          >
+            Asumir
+          </div>
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="
+              usuarioLogeado == true &&
+              usuarioResponsableObjetivo &&
+              responsablesSolicitados < 1
+            "
+            id="solicitarResponsable"
+            @click="setResponsablesSolicitados(1)"
+          >
+            Solicitar responsable
+          </div>
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="
+              usuarioLogeado &&
+              !usuarioResponsableObjetivo &&
+              !usuarioPosibleResponsableObjetivo &&
+              esteObjetivo.responsables.length > 0
+            "
+            id="botonAddResponsable"
+            @click="entrarListaPosiblesResponsables"
+          >
+            Quiero hacerme responsable
+          </div>
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="
+              usuarioLogeado == true &&
+              (usuarioResponsableObjetivo == true ||
+                usuarioPosibleResponsableObjetivo == true)
+            "
+            @click="abandonarListaResponsables"
+          >
+            Abandonar
+          </div>
+          <div
+            class="controlesResponsables hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryResponsables }"
+            v-if="usuarioLogeado == true && usuarioResponsableObjetivo == true"
+            v-show="
+              idResponsableSeleccionado != null &&
+              responsableSeleccionadoEstaAceptado == false
+            "
+            @click="aceptarResponsable(idResponsableSeleccionado)"
+          >
+            Aceptar como responsable
+          </div>
+        </div>
+        <div id="listaResponsables">
+          <icono-persona-autonomo
+            :idPersona="idPersona"
+            :key="idPersona"
+            v-for="idPersona of esteObjetivo.responsables"
+            :seleccionado="idResponsableSeleccionado == idPersona"
+            @click.native.stop="
+              idResponsableSeleccionado = idPersona;
+              responsableSeleccionadoEstaAceptado = true;
+            "
+          />
+
+          <icono-persona-autonomo
+            class="personaPosibleResponsable"
+            :idPersona="idPersona"
+            :key="idPersona"
+            v-for="idPersona of esteObjetivo.posiblesResponsables"
+            v-show="
+              usuarioResponsableObjetivo ||
+              (usuario && usuario.id && usuario.id === idPersona)
+            "
+            :seleccionado="idResponsableSeleccionado == idPersona"
+            @click.native.stop="
+              idResponsableSeleccionado = idPersona;
+              responsableSeleccionadoEstaAceptado = false;
+            "
+            @dblclick.native.shift="aceptarResponsable(idPersona)"
+          />
+
+          <div
+            class="iconoResponsablesSolicitados"
+            v-show="responsablesSolicitados > 0"
+          >
+            <img
+              src="@/assets/iconos/user.png"
+              alt="Usuario solicitado"
+              class="imagenResponsablesSolicitados"
+              title="Personas adicionales solicitadas"
+            />
+
+            <input
+              type="number"
+              id="inputResponsablesSolicitados"
+              v-model="responsablesSolicitados"
+              :readonly="usuarioResponsableObjetivo ? false : true"
+              :style="[
+                {
+                  backgroundColor:
+                    esteObjetivo.responsablesSolicitados !=
+                    responsablesSolicitados
+                      ? 'orange'
+                      : 'white',
+                },
+              ]"
+            />
+          </div>
+        </div>
+      </div>
     </div>
+
+    <div id="controlesObjetivo"></div>
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
+import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
+import debounce from "debounce";
 
 const charProhibidosNombreObjetivo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionObjetivo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
   name: "VentanitaObjetivo",
-  components: { Loading },
+  components: { Loading, IconoPersonaAutonomo },
   data() {
     return {
       deshabilitado: false,
@@ -114,14 +266,20 @@ export default {
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
 
-      togglingEstado:false,
+      togglingEstado: false,
+
+      mostrandoResponsables: false,
+      responsablesSolicitados: 0,
+      idPosibleResponsableSeleccionado: null,
+      idResponsableSeleccionado: null,
+      responsableSeleccionadoEstaAceptado: false,
+      enviandoQueryResponsables: false,
     };
   },
   props: {
-    idProyecto: String,
+    idObjetivo: String,
     esteObjetivo: Object,
     seleccionado: Boolean,
-    usuarioResponsableProyecto: Boolean,
   },
   computed: {
     nuevoNombreIlegal() {
@@ -142,6 +300,18 @@ export default {
       }
       return false;
     },
+    usuarioResponsableObjetivo() {
+      if (!this.usuario || !this.usuario.id) return false;
+      return this.esteObjetivo.responsables.includes(this.usuario.id);
+    },
+    usuarioPosibleResponsableObjetivo: function () {
+      if (!this.esteObjetivo.posiblesResponsables) return false;
+
+      if (this.esteObjetivo.posiblesResponsables.includes(this.usuario.id)) {
+        return true;
+      }
+      return false;
+    },
   },
   methods: {
     guardarNuevoNombre() {
@@ -158,13 +328,8 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation(
-              $idProyecto: ID!
-              $idObjetivo: ID!
-              $nuevoNombre: String!
-            ) {
-              editarNombreObjetivoProyecto(
-                idProyecto: $idProyecto
+            mutation ($idObjetivo: ID!, $nuevoNombre: String!) {
+              editarNombreObjetivo(
                 idObjetivo: $idObjetivo
                 nuevoNombre: $nuevoNombre
               ) {
@@ -175,7 +340,6 @@ export default {
           `,
           variables: {
             idObjetivo: this.esteObjetivo.id,
-            idProyecto: this.idProyecto,
             nuevoNombre: this.nuevoNombre,
           },
         })
@@ -202,13 +366,8 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation(
-              $idProyecto: ID!
-              $idObjetivo: ID!
-              $nuevoDescripcion: String!
-            ) {
-              editarDescripcionObjetivoProyecto(
-                idProyecto: $idProyecto
+            mutation ($idObjetivo: ID!, $nuevoDescripcion: String!) {
+              editarDescripcionObjetivoObjetivo(
                 idObjetivo: $idObjetivo
                 nuevoDescripcion: $nuevoDescripcion
               ) {
@@ -218,8 +377,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.idProyecto,
-            idObjetivo: this.esteObjetivo.id,
+            idObjetivo: this.idObjetivo,
             nuevoDescripcion: this.nuevoDescripcion,
           },
         })
@@ -241,49 +399,224 @@ export default {
         this.$refs.descripcion.offsetHeight + "px";
       this.editandoDescripcion = !this.editandoDescripcion;
       this.nuevoDescripcion = this.esteObjetivo.descripcion;
-    },    
-    toggleEstadoObjetivo(){
-      var nuevoEstado="noCumplido";
-      if(this.esteObjetivo.estado==="noCumplido"){
-        nuevoEstado="cumplido";
+    },
+    toggleEstadoObjetivo() {
+      var nuevoEstado = "noCumplido";
+      if (this.esteObjetivo.estado === "noCumplido") {
+        nuevoEstado = "cumplido";
       }
+      this.togglingEstado = true;
 
-      this.togglingEstado=true;
-
-      this.$apollo.mutate({
-        mutation:gql`
-          mutation($idProyecto:ID!, $idObjetivo:ID!, $nuevoEstado:String!){
-            setEstadoObjetivoProyecto(idProyecto:$idProyecto, idObjetivo:$idObjetivo, nuevoEstado:$nuevoEstado){
-              id
-              estado
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idObjetivo: ID!, $nuevoEstado: String!) {
+              setEstadoObjetivo(
+                idObjetivo: $idObjetivo
+                nuevoEstado: $nuevoEstado
+              ) {
+                id
+                estado
+              }
             }
-          }
-        `,
-        variables:{
-          idProyecto:this.idProyecto,
-          idObjetivo:this.esteObjetivo.id,
-          nuevoEstado,
-        }
-      }).then(()=>{
-      this.togglingEstado=false;
-        console.log(`toggled`);
-      }).catch((error)=>{
-        this.togglingEstado=false;
-        console.log(`Error: E:${error}`);
-      })
-    }
+          `,
+          variables: {
+            idObjetivo: this.idObjetivo,
+            nuevoEstado,
+          },
+        })
+        .then(() => {
+          this.togglingEstado = false;
+          console.log(`toggled`);
+        })
+        .catch((error) => {
+          this.togglingEstado = false;
+          console.log(`Error: E:${error}`);
+        });
+    },
+    entrarListaPosiblesResponsables() {
+      console.log(
+        `Enviando peticion de entrar a la lista de posibles responsables del objetivo con id ${this.esteObjetivo.id}`
+      );
+      this.enviandoQueryResponsables = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idObjetivo: ID!, $idUsuario: ID!) {
+              addPosibleResponsableObjetivo(
+                idObjetivo: $idObjetivo
+                idUsuario: $idUsuario
+              ) {
+                id
+                posiblesResponsables
+              }
+            }
+          `,
+          variables: {
+            idObjetivo: this.esteObjetivo.id,
+            idUsuario: this.usuario.id,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryResponsables = false;
+          console.log("error: " + error);
+        });
+    },
+    abandonarListaResponsables() {
+      console.log(`Abandonando la responsabilidad en este objetivo`);
+      this.enviandoQueryResponsables = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idObjetivo: ID!, $idUsuario: ID!) {
+              removeResponsableObjetivo(
+                idObjetivo: $idObjetivo
+                idUsuario: $idUsuario
+              ) {
+                id
+                responsables
+                posiblesResponsables
+              }
+            }
+          `,
+          variables: {
+            idObjetivo: this.esteObjetivo.id,
+            idUsuario: this.usuario.id,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryResponsables = false;
+          console.log("error: " + error);
+        });
+    },
+    aceptarResponsable(idPosibleResponsable) {
+      console.log(
+        `aceptando como responsable al usuario ${idPosibleResponsable}`
+      );
+      this.enviandoQueryResponsables = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idObjetivo: ID!, $idUsuario: ID!) {
+              addResponsableObjetivo(
+                idObjetivo: $idObjetivo
+                idUsuario: $idUsuario
+              ) {
+                id
+                responsables
+                posiblesResponsables
+                responsablesSolicitados
+              }
+            }
+          `,
+          variables: {
+            idObjetivo: this.esteObjetivo.id,
+            idUsuario: idPosibleResponsable,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+          this.responsableSeleccionadoEstaAceptado = true;
+          this.versionCalendario++;
+        })
+        .catch((error) => {
+          this.enviandoQueryResponsables = false;
+          console.log("error: " + error);
+        });
+    },
+    asumirComoResponsable() {
+      console.log(
+        `enviando id ${this.$store.state.usuario.id} para la lista de responsables del objetivo con id ${this.esteObjetivo.id}`
+      );
+      this.enviandoQueryResponsables = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idObjetivo: ID!, $idUsuario: ID!) {
+              addResponsableObjetivo(
+                idObjetivo: $idObjetivo
+                idUsuario: $idUsuario
+              ) {
+                id
+                responsables
+                posiblesResponsables
+              }
+            }
+          `,
+          variables: {
+            idObjetivo: this.esteObjetivo.id,
+            idUsuario: this.$store.state.usuario.id,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+          this.versionCalendario++;
+        })
+        .catch((error) => {
+          this.enviandoQueryResponsables = false;
+          console.log("error: " + error);
+        });
+    },
+    debounceSetResponsablesSolicitados: debounce(function () {
+      this.setResponsablesSolicitados(parseInt(this.responsablesSolicitados));
+    }, 2000),
+    setResponsablesSolicitados(cantidad) {
+      if (cantidad < 0) cantidad = 0;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idObjetivo: ID!
+              $nuevoCantidadResponsablesSolicitados: Int!
+            ) {
+              setResponsablesSolicitadosObjetivo(
+                idObjetivo: $idObjetivo
+                nuevoCantidadResponsablesSolicitados: $nuevoCantidadResponsablesSolicitados
+              ) {
+                id
+                responsablesSolicitados
+              }
+            }
+          `,
+          variables: {
+            idObjetivo: this.esteObjetivo.id,
+            nuevoCantidadResponsablesSolicitados: cantidad,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+        });
+    },
+  },
+  watch: {
+    responsablesSolicitados(nuevo) {
+      if (nuevo === this.esteObjetivo.responsablesSolicitados) return;
+      console.log(`Cambio en responsables solicitados`);
+      this.debounceSetResponsablesSolicitados();
+    },
+  },
+  mounted() {
+    this.responsablesSolicitados = this.esteObjetivo.responsablesSolicitados;
   },
 };
 </script>
 
 <style scoped>
 .ventanitaObjetivo {
-  border: 2px solid #b4b4bd;
+  border: 2px solid #585858;
   border-radius: 5px;
   min-height: 10px;
 
   position: relative;
-  padding: 5px 10px;
+  padding: 5px 0px;
   padding-bottom: 10px;
   background-color: rgb(231, 182, 182);
 }
@@ -332,6 +665,7 @@ export default {
 }
 .barraSuperiorZona {
   display: flex;
+  background-color: teal;
 }
 .nombreZona {
   font-size: 18px;
@@ -414,5 +748,46 @@ export default {
   display: flex;
   font-size: 13px;
   flex-direction: row-reverse;
+}
+
+#listaResponsables {
+  display: flex;
+  padding: 10px 20px;
+  padding-bottom: 65px;
+  flex-wrap: wrap;
+}
+.iconoPersonaAutonomo {
+  margin-right: 20px;
+  margin-left: 15px;
+  vertical-align: middle;
+  margin-top: 5px;
+  margin-bottom: 55px;
+}
+.personaPosibleResponsable {
+  opacity: 0.5;
+}
+.iconoResponsablesSolicitados {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+#inputResponsablesSolicitados {
+  height: 20px;
+  width: 40px;
+  margin: 5px auto;
+  display: block;
+}
+.imagenResponsablesSolicitados {
+  width: 100%;
+  height: 100%;
+}
+.trianguloBullet {
+  border: 10px solid transparent;
+  border-left: 10px solid black;
+  display: inline-block;
+  margin-right: 10px;
+  margin-left: 10px;
+  transform-origin: left center;
+  transition: transform 0.2s;
 }
 </style>
