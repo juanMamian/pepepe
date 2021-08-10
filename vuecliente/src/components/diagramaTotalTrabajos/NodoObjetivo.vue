@@ -8,8 +8,9 @@
     @mousemove="arrastrarNodo"
   >
     <div id="zonaArrastre" v-show="agarrado">
-
     </div>
+    <img src="@/assets/iconos/iconoObjetivo.png" alt="Objetivo" id="iconoFondo">
+
     <img
       src="@/assets/iconos/maximizar.png"
       alt="abrir"
@@ -18,7 +19,7 @@
       v-show="seleccionado"
       @click.left.stop="$emit('meAbrieron')"
     />
-    <div class="zonaNombre">
+    <div id="zonaNombre" :style="[estiloCartelNombre]">
       <div id="nombre" draggable="false">
         <img
           src="@/assets/iconos/estrella.png"
@@ -88,11 +89,17 @@ export default {
       widthBase:150,
       heightBase:100,
       size:{
-        x: 150,
+        x: 100,
         y: 100
       },
 
-      
+      estiloNombreBase: {
+        minWidth: 80,
+        fontSize: 12,
+        minHeight: 15,
+        padding: 10,
+        borderRadius: 10,
+      },
     };
   },
   methods: {
@@ -231,8 +238,22 @@ export default {
     usuarioResponsableObjetivo(){
       if(!this.usuario || !this.usuario.id)return false;
       return this.esteObjetivo.responsables.includes(this.usuario.id)
-    }
-    
+    },
+    estiloCartelNombre() {
+      return {
+        minWidth:
+          parseInt(this.estiloNombreBase.minWidth * this.factorZoom) + "px",
+        fontSize:
+          parseInt(this.estiloNombreBase.fontSize * this.factorZoom) + "px",
+        minHeight:
+          parseInt(this.estiloNombreBase.minHeight * this.factorZoom) + "px",
+        padding:
+          parseInt(this.estiloNombreBase.padding * this.factorZoom) + "px",
+        borderRadius:
+          parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
+        backgroundColor:'white'
+      };
+    },
   },
   watch: {
     esteObjetivo() {
@@ -268,15 +289,32 @@ export default {
 <style scoped>
 .nodoObjetivo {  
   position: absolute;
-  border-radius: 5px;
+  border-radius: 50%;
   border: 1px solid rgb(82, 2, 26);  
   background-color: rgb(238, 117, 117);
   cursor: pointer;
   transition-timing-function: linear;
 }
+#iconoFondo{
+  position:absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  height: 50%;
+  user-select: none;
+  pointer-events: none;
+}
 .seleccionado {
   border-width: 2px;
   border-color: purple;
+}
+#zonaNombre{
+  position: absolute;
+  top:103%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid black;
 }
 #nombre {  
   user-select: none;
