@@ -97,7 +97,7 @@ export default {
     arrastrarNodo(e) {
       if (
         !this.agarrado ||
-        (this.usuarioResponsableObjetivo === false &&
+        (this.usuarioAdministrador === false &&
           this.usuarioSuperadministrador === false)
       ) {
         return;
@@ -133,6 +133,11 @@ export default {
         this.agarrado = false;
         return;
       }
+      if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
+        this.agarrado = false;
+        return;
+      }
+
       this.arrastrandoNodo = 0;
       this.agarrado = false;
 
@@ -143,7 +148,7 @@ export default {
               $idObjetivo: ID!              
               $nuevaPosicion: CoordsInput
             ) {
-              setPosicionObjetivoDiagramaProyecto(                
+              setPosicionObjetivo(                
                 idObjetivo: $idObjetivo
                 nuevaPosicion: $nuevaPosicion
               ) {

@@ -139,6 +139,10 @@ export default {
         this.agarrado = false;
         return;
       }
+      if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
+        this.agarrado = false;
+        return;
+      }
       this.arrastrandoNodo = 0;
       this.agarrado = false;
 
@@ -149,7 +153,7 @@ export default {
               $idTrabajo: ID!              
               $nuevaPosicion: CoordsInput
             ) {
-              setPosicionTrabajoDiagramaProyecto(                
+              setPosicionTrabajo(                
                 idTrabajo: $idTrabajo
                 nuevaPosicion: $nuevaPosicion
               ) {
