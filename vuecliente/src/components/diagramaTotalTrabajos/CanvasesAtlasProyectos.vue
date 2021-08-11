@@ -135,8 +135,8 @@ export default {
           if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) continue;
           if (vinculo.tipo == "requiere") {
             this.dibujarLineaEntreNodos(
-              nodo,
               nodosRelevantes.find((nodo) => nodo.id == vinculo.idRef),
+              nodo,
               lapiz,
               posicionCanvas
             );
@@ -215,8 +215,8 @@ export default {
         anguloVinculo += Math.PI;
 
       const zonaNodo={
-        x: 25*Math.cos(anguloVinculo),
-        y: 25*Math.sin(anguloVinculo)
+        x: 20*Math.cos(anguloVinculo),
+        y: 20*Math.sin(anguloVinculo)
       }
       
       let inicio = {

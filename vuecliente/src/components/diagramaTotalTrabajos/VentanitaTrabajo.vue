@@ -31,7 +31,7 @@
           v-show="editandoNombre"
           @keypress.enter="guardarNuevoNombre"
         /> -->
-        <div class="controlesLateralesZona" :class="{deshabilitado: enviandoNuevoNombre}" v-if="usuarioAdministradorTrabajo">
+        <div class="controlesLateralesZona" :class="{deshabilitado: enviandoNuevoNombre}" v-if="usuarioAdministrador">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -60,7 +60,7 @@
           iconoCompletado: esteTrabajo.estadoDesarrollo === 'completado',
           deshabilitado: togglingEstado,
         }"
-        @click="usuarioAdministradorTrabajo ? toggleEstadoTrabajo() : null"
+        @click="usuarioAdministrador ? toggleEstadoTrabajo() : null"
       />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
@@ -81,7 +81,7 @@
         </div>
         <div
           class="controlesZona"
-          v-show="usuarioAdministradorTrabajo && mostrandoDescripcion"
+          v-show="usuarioAdministrador && mostrandoDescripcion"
           :class="{deshabilitado: enviandoNuevoDescripcion}"
         >
           <img
@@ -90,7 +90,7 @@
             id="bEditarDescripcion"
             class="bEditar"
             title="Editar descripcion del trabajo"
-            v-show="usuarioAdministradorTrabajo"
+            v-show="usuarioAdministrador"
             @click.stop="toggleEditandoDescripcion"
           />
           <img
@@ -266,7 +266,7 @@
       </div>
     </div>
 
-    <div id="zonaKeywords" class="zonaPrimerNivel">
+    <div id="zonaKeywords" class="zonaPrimerNivel" v-show="usuarioAdministrador">
       <div
         class="barraSuperiorZona"
         @click="mostrandoKeywords = !mostrandoKeywords"
@@ -284,7 +284,7 @@
         </div>
         <div
           class="controlesZona"
-          v-show="usuarioAdministradorTrabajo && mostrandoKeywords"
+          v-show="usuarioAdministrador && mostrandoKeywords"
           :class="{deshabilitado: enviandoNuevoKeywords}"
         >
           <img
@@ -293,7 +293,7 @@
             id="bEditarKeywords"
             class="bEditar"
             title="Editar keywords del trabajo"
-            v-show="usuarioAdministradorTrabajo"
+            v-show="usuarioAdministrador"
             @click.stop="toggleEditandoKeywords"
           />
           <img
@@ -415,7 +415,7 @@ export default {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteTrabajo.responsables.includes(this.usuario.id);
     },
-    usuarioAdministradorTrabajo() {
+    usuarioAdministrador() {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteTrabajo.administradores.includes(this.usuario.id);
     },

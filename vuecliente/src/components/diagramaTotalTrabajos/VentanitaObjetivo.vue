@@ -31,7 +31,7 @@
           v-show="editandoNombre"
           @keypress.enter="guardarNuevoNombre"
         /> -->
-        <div class="controlesLateralesZona" :class="{deshabilitado: enviandoNuevoNombre}" v-if="usuarioAdministradorObjetivo">
+        <div class="controlesLateralesZona" :class="{deshabilitado: enviandoNuevoNombre}" v-if="usuarioAdministrador">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -60,7 +60,7 @@
           iconoCompletado: esteObjetivo.estadoDesarrollo === 'completado',
           deshabilitado: togglingEstado,
         }"
-        @click="usuarioAdministradorObjetivo ? toggleEstadoObjetivo() : null"
+        @click="usuarioAdministrador ? toggleEstadoObjetivo() : null"
       />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
@@ -81,7 +81,7 @@
         </div>
         <div
           class="controlesZona"
-          v-show="usuarioAdministradorObjetivo && mostrandoDescripcion"
+          v-show="usuarioAdministrador && mostrandoDescripcion"
           :class="{deshabilitado: enviandoNuevoDescripcion}"
         >
           <img
@@ -90,7 +90,7 @@
             id="bEditarDescripcion"
             class="bEditar"
             title="Editar descripcion del objetivo"
-            v-show="usuarioAdministradorObjetivo"
+            v-show="usuarioAdministrador"
             @click.stop="toggleEditandoDescripcion"
           />
           <img
@@ -266,7 +266,7 @@
       </div>
     </div>
 
-    <div id="zonaKeywords" class="zonaPrimerNivel">
+    <div id="zonaKeywords" class="zonaPrimerNivel" v-show="usuarioAdministrador">
       <div
         class="barraSuperiorZona"
         @click="mostrandoKeywords = !mostrandoKeywords"
@@ -284,7 +284,7 @@
         </div>
         <div
           class="controlesZona"
-          v-show="usuarioAdministradorObjetivo && mostrandoKeywords"
+          v-show="usuarioAdministrador && mostrandoKeywords"
           :class="{deshabilitado: enviandoNuevoKeywords}"
         >
           <img
@@ -293,7 +293,7 @@
             id="bEditarKeywords"
             class="bEditar"
             title="Editar keywords del objetivo"
-            v-show="usuarioAdministradorObjetivo"
+            v-show="usuarioAdministrador"
             @click.stop="toggleEditandoKeywords"
           />
           <img
@@ -415,7 +415,7 @@ export default {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteObjetivo.responsables.includes(this.usuario.id);
     },
-    usuarioAdministradorObjetivo() {
+    usuarioAdministrador() {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteObjetivo.administradores.includes(this.usuario.id);
     },

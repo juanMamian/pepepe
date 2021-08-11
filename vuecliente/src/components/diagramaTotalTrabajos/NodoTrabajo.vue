@@ -17,7 +17,7 @@
       v-show="seleccionado"
       @click.left.stop="$emit('meAbrieron')"
     />
-    <div id="zonaNombre" :style="[estiloCartelNombre]">
+    <div id="zonaNombre" :style="[estiloCartelNombre, colorCartelNombre]">
       <div id="nombre" draggable="false">
         <!-- <img
           src="@/assets/iconos/estrella.png"
@@ -94,8 +94,8 @@ export default {
       widthBase:150,
       heightBase:100,
       size:{
-        x: 60,
-        y: 60
+        x: 40,
+        y: 40
       }
     };
   },
@@ -233,7 +233,10 @@ export default {
     seleccionado(){
       return this.idNodoSeleccionado && this.idNodoSeleccionado==this.esteTrabajo.id
     },  
-    
+    usuarioResponsable(){
+      if(!this.usuario || !this.usuario.id)return false;
+      return this.esteTrabajo.responsables.includes(this.usuario.id)
+    },
     usuarioAdministrador() {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteTrabajo.administradores.includes(this.usuario.id);
@@ -249,9 +252,21 @@ export default {
         padding:
           parseInt(this.estiloNombreBase.padding * this.factorZoom) + "px",
         borderRadius:
-          parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
-        backgroundColor:'white'
+          parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",        
       };
+    },
+    colorCartelNombre(){
+      var color='white';
+      
+      if(this.usuarioAdministrador){        
+        color='rgb(217, 136, 87)';
+      }
+      if(this.usuarioResponsable){        
+        color='rgb(166 137 193)';
+      }
+      return {
+        backgroundColor: color
+      }
     },
   },
   watch: {

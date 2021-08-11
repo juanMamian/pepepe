@@ -80,8 +80,8 @@ export default {
       widthBase:150,
       heightBase:100,
       size:{
-        x: 60,
-        y: 60
+        x: 40,
+        y: 40
       },
 
       estiloNombreBase: {
@@ -229,7 +229,7 @@ export default {
     seleccionado(){
       return this.idNodoSeleccionado && this.idNodoSeleccionado==this.esteObjetivo.id
     },
-    usuarioResponsableObjetivo(){
+    usuarioResponsable(){
       if(!this.usuario || !this.usuario.id)return false;
       return this.esteObjetivo.responsables.includes(this.usuario.id)
     },
@@ -249,8 +249,12 @@ export default {
     },
     colorCartelNombre(){
       var color='white';
-      if(this.usuarioAdministrador){
-        color='#916ab5';
+      
+      if(this.usuarioAdministrador){        
+        color='rgb(217, 136, 87)';
+      }
+      if(this.usuarioResponsable){        
+        color='rgb(166 137 193)';
       }
       return {
         backgroundColor: color

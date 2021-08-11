@@ -134,6 +134,7 @@ export const typeDefs = gql`
 
     eliminarNodoDeTrabajos(idNodo:ID!, tipo: String!):Boolean,
     crearNodoSolidaridad(infoNodo:NodoSolidaridadInput!):NodoDeTrabajos,
+    crearNodoSolidaridadRequerido(infoNodo:NodoSolidaridadInput!, idNodoRequiriente: ID!):[NodoDeTrabajos],
     
    }
 
@@ -477,9 +478,95 @@ export const resolvers = {
                 }
                 throw new ApolloError("Error guardando en base de datos");
             }
-            console.log(`nuevo nodo de solidaridad creado: ${nuevoNodo} `);
+            console.log(`nuevo nodo de solidaridad creado`);
             nuevoNodo.tipoNodo=infoNodo.tipo;
             return nuevoNodo
+        },
+        async crearNodoSolidaridadRequerido(_: any, { infoNodo, idNodoRequiriente }: any, contexto: contextoQuery) {
+            console.log(`Query de crear un nodo de solidaridad de tipo ${infoNodo.tipo} en la posicion ${infoNodo.coords} con requiriente ${idNodoRequiriente}`);
+            let credencialesUsuario = contexto.usuario;
+
+            if (!credencialesUsuario || !credencialesUsuario.id) {
+                throw new AuthenticationError("Usuario no logeado");
+            }           
+
+            try {
+                var nuevoForoResponsables: any = await Foro.create({
+                    acceso: "privado",
+                    miembros: [],
+                });
+                var idForoResponsables = nuevoForoResponsables._id;
+                await nuevoForoResponsables.save();
+            } catch (error) {
+                console.log(`Error creando el nuevo foro de responsables. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Nuevo foro de responsables creado`);
+
+            try {
+                var nuevoNodo: any = null;
+                if (infoNodo.tipo === 'trabajo')
+                    nuevoNodo = new Trabajo({
+                        ...infoNodo,
+                        idForoResponsables,                        
+                    });
+                else if (infoNodo.tipo === 'objetivo') {
+                    nuevoNodo = new Objetivo({
+                        ...infoNodo,
+                        idForoResponsables
+                    });
+                }                
+                else{
+                    throw "Tipo "+infoNodo.tipo+" no reconocido";
+                }
+
+                try {
+                    var tipoRequiriente='trabajo';
+                    var nodoRequiriente:any=await Trabajo.findById(idNodoRequiriente).exec();
+                    if(!nodoRequiriente){
+                        tipoRequiriente='objetivo';
+                        nodoRequiriente=await Objetivo.findById(idNodoRequiriente).exec();
+                        if(!nodoRequiriente){
+                            throw "Nodo requiriente no encontrado en la base de datos"
+                        }
+                    }                    
+                    var nuevoVinculo=nodoRequiriente.vinculos.create({
+                        tipo:'requiere',
+                        idRef:nuevoNodo.id,
+                        tipoRef:infoNodo.tipo
+                    })
+
+                    if(!nodoRequiriente.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes('superadministrador')){
+                        console.log(`El usuario no podía crear este nodo requerido por no ser ni responsable ni superadministrador`);
+                        throw new AuthenticationError("No autorizado");
+                    }
+
+                    nodoRequiriente.vinculos.push(nuevoVinculo);
+                    console.log(`Guardando vínculo en el nodo requiriente ${nodoRequiriente}`);
+                    await nodoRequiriente.save();
+                    nodoRequiriente.tipoNodo=tipoRequiriente;
+                } catch (error) {
+                    console.log(`Error buscando el nodo requiriente: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                nuevoNodo.nodoParent={
+                    idNodo:idNodoRequiriente,
+                    tipo:tipoRequiriente
+                }
+                await nuevoNodo.save();
+                nuevoNodo.tipoNodo=infoNodo.tipo;
+            } catch (error) {
+                console.log(`error guardando el nuevo nodo en la base de datos. E: ${error}`);
+                try {
+                    await Foro.findByIdAndDelete(nuevoForoResponsables.id).exec();
+                } catch (error) {
+                    console.log(`Error eliminando el foro de responsables: ${error}`);
+                }
+                throw new ApolloError("Error guardando en base de datos");
+            }
+            console.log(`nuevo nodo de solidaridad creado:`);
+            nuevoNodo.tipoNodo=infoNodo.tipo;
+            return [nuevoNodo, nodoRequiriente]
         },
 
         async crearObjetivo(_: any, { posicion }: any, contexto: contextoQuery) {
@@ -1193,8 +1280,8 @@ export const resolvers = {
                     if(elTrabajo.nodoParent.tipo==='trabajo'){
                         elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
                     if(!elNodoParent)throw "Nodo parent no encontrado"
                 } catch (error) {
@@ -1249,8 +1336,8 @@ export const resolvers = {
                     if(elTrabajo.nodoParent.tipo==='trabajo'){
                         elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
                     if(!elNodoParent)throw "Nodo parent no encontrado"
                 } catch (error) {
@@ -1311,8 +1398,8 @@ export const resolvers = {
                     if(elTrabajo.nodoParent.tipo==='trabajo'){
                         elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
                     if(!elNodoParent)throw "Nodo parent no encontrado"
                 } catch (error) {
@@ -1555,8 +1642,8 @@ export const resolvers = {
                     if(elTrabajo.nodoParent.tipo==='trabajo'){
                         elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
                     if(!elNodoParent)throw "Nodo parent no encontrado"
                 } catch (error) {
@@ -1628,7 +1715,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error buscando el trabajo. E: " + error);
-                throw new ApolloError("Erro en la conexión con la base de datos");
+                throw new ApolloError("Error en la conexión con la base de datos");
             }
 
             var administradores:Array<string>=[];
@@ -1642,8 +1729,8 @@ export const resolvers = {
                     if(elTrabajo.nodoParent.tipo==='trabajo'){
                         elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
+                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
                     if(!elNodoParent)throw "Nodo parent no encontrado"
                 } catch (error) {

@@ -25,20 +25,23 @@
       v-if="usuario && usuario.id"
       v-show="mostrandoMenuContextual"
       :style="[offsetMenuContextual]"
+      :class="{deshabilitado:enviandoQueryNodos}"
     >
       <div
         class="botonMenuContextual"
         id="botonCrearObjetivo"
-        @click="crearNodoEnMenuContextual('objetivo')"
+        @mouseup.left.stop=""
+        @click.stop="crearNodoEnMenuContextual('objetivo')"
       >
-        Crear objetivo
+        Crear objetivo {{idNodoSeleccionado!=null && nodoSeleccionado!=null && (nodoSeleccionado.responsables.includes(usuario.id) || usuarioSuperadministrador)?'conectado':''}}
       </div>
       <div
         class="botonMenuContextual"
         id="botonCrearObjetivo"
-        @click="crearNodoEnMenuContextual('trabajo')"
+        @click.stop="crearNodoEnMenuContextual('trabajo')"
+        @mouseup.left.stop=""
       >
-        Crear trabajo
+        Crear trabajo {{idNodoSeleccionado!=null && nodoSeleccionado!=null && (nodoSeleccionado.responsables.includes(usuario.id) || usuarioSuperadministrador)?'conectado':''}}
       </div>
     </div>
 
@@ -640,8 +643,13 @@ export default {
       };
 
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
+      if(this.nodoSeleccionado && (this.nodoSeleccionado.responsables.includes(this.usuario.id) || this.usuarioSuperadministrador)){
+        this.crearNodoConectado(posicionNuevoNodo, tipo, this.idNodoSeleccionado);
+      }
+      else{
+        this.crearNodo(posicionNuevoNodo, tipo);
 
-      this.crearNodo(posicionNuevoNodo, tipo);
+      }
     },
     crearNodo(posicion, tipo) {
       if (!this.usuario || !this.usuario.id) {
@@ -649,6 +657,7 @@ export default {
         return;
       }
       console.log(`enviando una mutación de crear nodo`);
+      this.enviandoQueryNodos=true;
 
       let infoNodo = {
         coords: {
@@ -766,10 +775,148 @@ export default {
             });
           }
           this.idNodoPaVentanita = crearNodoSolidaridad.id;
+          this.enviandoQueryNodos=false;
+          this.mostrandoMenuContextual=false;
+          //this.$router.push("/nodoConocimiento/"+crearNodoSolidaridad.id);
+        })
+        .catch((error) => {
+          this.enviandoQueryNodos=false;
+          console.log(`Error. E: ${error}`);
+        });
+    },
+    crearNodoConectado(posicion, tipo, idNodoRequiriente) {
+      if (!this.usuario || !this.usuario.id) {
+        console.log(`Error usuario no logeado`);
+        return;
+      }
+      console.log(`enviando una mutación de crear nodo`);
+
+      this.enviandoQueryNodos=true;
+      let infoNodo = {
+        coords: {
+          x: posicion.x,
+          y: posicion.y,
+        },
+        tipo,
+      };
+      console.log(`en las coordenadas: ${posicion.x}, ${posicion.y}`);
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($infoNodo: NodoSolidaridadInput!, $idNodoRequiriente:ID!) {
+              crearNodoSolidaridadRequerido(infoNodo: $infoNodo, idNodoRequiriente:$idNodoRequiriente) {
+                __typename
+                ... on Trabajo {
+                  id
+                  nombre
+                  descripcion
+                  responsables
+                  posiblesResponsables
+                  responsablesSolicitados
+                  administradores
+                  keywords
+                  coords {
+                    x
+                    y
+                  }
+                  estadoDesarrollo
+                  vinculos {
+                    idRef
+                    tipo
+                    tipoRef
+                  }
+                  stuck
+                  angulo
+                  centroMasa {
+                    x
+                    y
+                  }
+                  puntaje
+                  nivel
+                  turnoNivel
+                  peso
+                }
+                ... on Objetivo {
+                  id
+                  nombre
+                  descripcion
+                  responsables
+                  posiblesResponsables
+                  responsablesSolicitados
+                  administradores
+                  keywords
+                  coords {
+                    x
+                    y
+                  }
+                  estadoDesarrollo
+                  vinculos {
+                    idRef
+                    tipo
+                    tipoRef
+                  }
+                  stuck
+                  angulo
+                  centroMasa {
+                    x
+                    y
+                  }
+                  puntaje
+                  nivel
+                  turnoNivel
+                  peso
+                }
+              }
+            }
+          `,
+          variables: {
+            infoNodo,
+            idNodoRequiriente
+          },
+        })
+        .then(({ data: { crearNodoSolidaridadRequerido } }) => {
+          const nuevoNodo=crearNodoSolidaridadRequerido[0];
+          console.log(`Creado ${nuevoNodo.id}`);
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_TODOS_NODOS,
+            variables: {
+              centro: {
+                x: this.centroDescarga.x,
+                y: this.centroDescarga.y,
+              },
+              radio: this.radioDescarga,
+            },
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          var losNodos = nuevoCache.nodosTrabajosSegunCentro;
+          const indexN = losNodos.findIndex(
+            (n) => n.id === nuevoNodo.id
+          );
+          if (indexN > -1) {
+            console.log(`El nodo ya estaba en caché`);
+          } else {
+            losNodos.push(nuevoNodo);
+            store.writeQuery({
+              query: QUERY_TODOS_NODOS,
+              variables: {
+                centro: {
+                  x: this.centroDescarga.x,
+                  y: this.centroDescarga.y,
+                },
+                radio: this.radioDescarga,
+              },
+              data: nuevoCache,
+            });
+          }
+          this.idNodoPaVentanita = nuevoNodo.id;
+          this.enviandoQueryNodos=false;
+          this.mostrandoMenuContextual=false;
 
           //this.$router.push("/nodoConocimiento/"+crearNodoSolidaridad.id);
         })
         .catch((error) => {
+          this.enviandoQueryNodos=false;
           console.log(`Error. E: ${error}`);
         });
     },
