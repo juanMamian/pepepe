@@ -20,7 +20,6 @@
       v-show="callingPosiciones"
       :style="[sizeCanvasVista]"
     >
-
     </canvas>
   </div>
 </template>
@@ -45,6 +44,11 @@ export default {
         y: 0,
       },
       mostrandoTodosVinculos:true,
+
+      // sizeCanvasVista:{
+      //   width: '0px',
+      //   height: '0px'
+      // }
     };
   },
   props: {            
@@ -123,8 +127,11 @@ export default {
       }
       var lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
                         
-      lapiz.canvas.width = (this.radioDescarga*2)*this.factorZoom;
-      lapiz.canvas.height = (this.radioDescarga*2)*this.factorZoom;
+      lapiz.canvas.width = Math.round((this.radioDescarga*2)*this.factorZoom);
+      lapiz.canvas.height = Math.round((this.radioDescarga*2)*this.factorZoom);
+
+      // this.$set(this.sizeCanvasVista, 'width', lapiz.canvas.width+'px');
+      // this.$set(this.sizeCanvasVista, 'height', lapiz.canvas.height+'px');
       
       lapiz.lineWidth = 1;
       lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
@@ -215,39 +222,36 @@ export default {
         anguloVinculo += Math.PI;
 
       const zonaNodo={
-        x: 20*Math.cos(anguloVinculo),
-        y: 20*Math.sin(anguloVinculo)
+        x: Math.round(20*Math.cos(anguloVinculo)),
+        y: Math.round(20*Math.sin(anguloVinculo))
       }
       
       let inicio = {
-        x: ((nodoFrom.coords.x+zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom),
-        y: ((nodoFrom.coords.y+zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom),
+        x: Math.round(((nodoFrom.coords.x+zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom)),
+        y: Math.round(((nodoFrom.coords.y+zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom)),
       };
       let final = {
-        x: ((nodoTo.coords.x-zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom),
-        y: ((nodoTo.coords.y-zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom),
+        x: Math.round(((nodoTo.coords.x-zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom)),
+        y: Math.round(((nodoTo.coords.y-zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom)),
       };
-
+      console.log(`Trazando desde ${JSON.stringify(inicio)} hasta ${JSON.stringify(final)}`);
       lapiz.moveTo(inicio.x, inicio.y);
       lapiz.lineTo(final.x, final.y);
       //ahora la flechita
       const centro = {
-        x: (final.x + inicio.x) / 2,
-        y: (final.y + inicio.y) / 2,
+        x: Math.round((final.x + inicio.x) / 2),
+        y: Math.round((final.y + inicio.y) / 2),
       };
-      const longitudAla = parseInt(7*this.factorZoom);
-            
-
-      
-      //anguloVinculo=anguloVinculo*180/Math.PI;
+      const longitudAla = Math.round(7*this.factorZoom);
+                        
 
       const puntaAlaIzquierda = {
-        x: centro.x + longitudAla * Math.cos(anguloVinculo - (3 * Math.PI) / 4),
-        y: centro.y + longitudAla * Math.sin(anguloVinculo - (3 * Math.PI) / 4),
+        x: Math.round(centro.x + longitudAla * Math.cos(anguloVinculo - (3 * Math.PI) / 4)),
+        y: Math.round(centro.y + longitudAla * Math.sin(anguloVinculo - (3 * Math.PI) / 4)),
       };
       const puntaAlaDerecha = {
-        x: centro.x + longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4),
-        y: centro.y + longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4),
+        x: Math.round(centro.x + longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4)),
+        y: Math.round(centro.y + longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4)),
       };
       lapiz.moveTo(centro.x, centro.y);
       lapiz.lineTo(puntaAlaIzquierda.x, puntaAlaIzquierda.y);
@@ -347,8 +351,8 @@ export default {
     },
     sizeCanvasVista(){
       return {
-        width: ((this.radioDescarga*2)*this.factorZoom)+"px",
-        height: ((this.radioDescarga*2)*this.factorZoom)+"px",
+        width: Math.round((this.radioDescarga*2)*this.factorZoom)+"px",
+        height: Math.round((this.radioDescarga*2)*this.factorZoom)+"px",
       }
     }
   },
@@ -370,9 +374,7 @@ export default {
       console.log(`Trazando todos vínculos teniendo en cuenta el target`);
       this.crearImagenTodosVinculos();
     },
-    factorZoom(){
-      this.mostrandoTodosVinculos=false;
-
+    factorZoom(){      
       this.debTrazarVinculos();
     },
     centroDescarga:{
