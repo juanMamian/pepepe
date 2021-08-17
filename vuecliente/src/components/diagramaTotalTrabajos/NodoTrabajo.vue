@@ -2,13 +2,24 @@
   <div
     class="nodoTrabajo"
     :class="{ seleccionado }"
-    :style="[estiloPosicion, estiloZeta, estiloSize, {transition: callingPosiciones?'left 5s': ''}]"
-    @mousedown.left="agarrado = callingPosiciones?false:true"
+    :style="[
+      estiloPosicion,
+      estiloZeta,
+      estiloSize,
+      { transition: callingPosiciones ? 'left 5s' : '' },
+      estiloColor,
+    ]"
+    @mousedown.left="agarrado = callingPosiciones ? false : true"
     @mouseup.left="guardarPosicion"
-    @mousemove="arrastrarNodo"    
+    @mousemove="arrastrarNodo"
   >
     <div id="zonaArrastre" v-show="agarrado"></div>
-    <img src="@/assets/iconos/iconoTrabajo.png" alt="Trabajo" id="iconoFondo">
+    <img
+      src="@/assets/iconos/iconoTrabajo.png"
+      :class="{ transparentoso }"
+      alt="Trabajo"
+      id="iconoFondo"
+    />
     <img
       src="@/assets/iconos/maximizar.png"
       alt="abrir"
@@ -17,7 +28,11 @@
       v-show="seleccionado"
       @click.left.stop="$emit('meAbrieron')"
     />
-    <div id="zonaNombre" :style="[estiloCartelNombre, colorCartelNombre]">
+    <div
+      id="zonaNombre"
+      :style="[estiloCartelNombre, colorCartelNombre]"
+      :class="{ transparentoso }"
+    >
       <div id="nombre" draggable="false">
         <!-- <img
           src="@/assets/iconos/estrella.png"
@@ -29,33 +44,53 @@
             iconoCompletado: esteTrabajo.estadoDesarrollo === 'completado',
           }"
         /> -->
-        {{ callingPosiciones? esteTrabajo.peso.toFixed(2) : esteTrabajo.nombre }}
+        {{
+          callingPosiciones ? esteTrabajo.peso.toFixed(2) : esteTrabajo.nombre
+        }}
       </div>
     </div>
 
-    <div id="menuContextual" v-show="menuCx">      
+    <div id="menuContextual" v-show="menuCx">
       <template
         v-if="
-          idNodoSeleccionado != null &&
-          idNodoSeleccionado != esteTrabajo.id &&
-          (usuarioSuperadministrador == true || usuarioAdministrador)
+          idNodoSeleccionado != null && idNodoSeleccionado != esteTrabajo.id
         "
       >
         <div class="seccionMenuCx">El elemento seleccionado...</div>
         <div
           class="botonMenuCx"
+          v-show="usuarioResponsableNodoSeleccionado"
+          @mouseup.stop=""
+          @mousedown.stop=""
           @click.stop="crearRequerimento(idNodoSeleccionado, esteTrabajo.id)"
         >
           Requiere este elemento
         </div>
         <div
           class="botonMenuCx"
+          @mouseup.stop=""
+          @mousedown.stop=""
           @click.stop="eliminarVinculo(idNodoSeleccionado, esteTrabajo.id)"
+          v-show="requeridoPorSeleccionado"
+          :class="{
+            deshabilitado: !usuarioResponsableNodoSeleccionado,              
+          }"
         >
           Desconectar
         </div>
       </template>
-      <div class="botonMenuCx" @click="eliminarse">
+      <div
+        class="botonMenuCx"
+        v-show="usuarioSuperadministrador || usuarioAdministrador"
+        :class="{
+          deshabilitado:
+            (autoadministrado &&
+            esteTrabajo.administradores.length > 1 &&
+            !usuarioSuperadministrador) ||
+            (!usuarioResponsable && esteTrabajo.responsables.length>0),
+        }"
+        @click="eliminarse"
+      >
         Eliminar
       </div>
     </div>
@@ -68,11 +103,15 @@ export default {
   name: "NodoTrabajo",
   props: {
     esteTrabajo: Object,
-    idProyecto: String,        
-    idNodoSeleccionado: String,    
-    menuCx: Boolean,    
-    factorZoom:Number,
-    callingPosiciones:Boolean
+    idProyecto: String,
+    idNodoSeleccionado: String,
+    nodoSeleccionado: Object,
+    menuCx: Boolean,
+    factorZoom: Number,
+    callingPosiciones: Boolean,
+    transparentoso: Boolean,
+    usuarioAdministradorNodoSeleccionado: Boolean,
+    usuarioResponsableNodoSeleccionado: Boolean,
   },
   data() {
     return {
@@ -91,12 +130,12 @@ export default {
         y: 0,
       },
       montado: false,
-      widthBase:150,
-      heightBase:100,
-      size:{
+      widthBase: 150,
+      heightBase: 100,
+      size: {
         x: 40,
-        y: 40
-      }
+        y: 40,
+      },
     };
   },
   methods: {
@@ -117,29 +156,27 @@ export default {
       let posContenedor = contenedor.getBoundingClientRect();
 
       let nuevoTop = Math.round(
-        ((e.clientY - posContenedor.top)/this.factorZoom)
+        (e.clientY - posContenedor.top) / this.factorZoom
       );
       let nuevoLeft = Math.round(
-        ((e.clientX - posContenedor.left)/this.factorZoom)
+        (e.clientX - posContenedor.left) / this.factorZoom
       );
 
       const stepPosx = 25;
-      const stepPosy = 15;      
+      const stepPosy = 15;
 
-      nuevoLeft = nuevoLeft-(nuevoLeft%stepPosx);
-      nuevoTop = nuevoTop - (nuevoTop%stepPosy);
+      nuevoLeft = nuevoLeft - (nuevoLeft % stepPosx);
+      nuevoTop = nuevoTop - (nuevoTop % stepPosy);
 
       this.$set(this.posicion, "x", nuevoLeft);
       this.$set(this.posicion, "y", nuevoTop);
-
-      
     },
     guardarPosicion() {
       if (this.arrastrandoNodo < this.umbralArrastreNodo) {
         this.agarrado = false;
         return;
       }
-      if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
+      if (!this.usuarioAdministrador && !this.usuarioSuperadministrador) {
         this.agarrado = false;
         return;
       }
@@ -149,23 +186,20 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation(
-              $idTrabajo: ID!              
-              $nuevaPosicion: CoordsInput
-            ) {
-              setPosicionTrabajo(                
+            mutation ($idTrabajo: ID!, $nuevaPosicion: CoordsInput) {
+              setPosicionTrabajo(
                 idTrabajo: $idTrabajo
                 nuevaPosicion: $nuevaPosicion
               ) {
                 id
-                coords{
+                coords {
                   x
                   y
                 }
               }
             }
           `,
-          variables: {            
+          variables: {
             idTrabajo: this.esteTrabajo.id,
             nuevaPosicion: this.posicion,
           },
@@ -177,32 +211,110 @@ export default {
           console.log(`Error. E: ${error}`);
         });
     },
-    crearRequerimento(idNodoRequiere, idNodoRequerido) {
+    crearRequerimento(idNodoRequiriente, idNodoRequerido) {
       console.log(
-        `Se fijara que ${idNodoRequiere} requiere a ${idNodoRequerido}`
+        `Se fijara que ${idNodoRequiriente} requiere a ${idNodoRequerido}`
       );
-      this.$emit("crearRequerimento", { idNodoRequiere, idNodoRequerido });
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idNodoRequiriente:ID!, $idNodoRequerido:ID!){
+            crearRequerimentoEntreNodosSolidaridad(idNodoRequiriente:$idNodoRequiriente, idNodoRequerido:$idNodoRequerido){
+              __typename
+              ... on Trabajo {
+                id
+                vinculos {
+                  idRef
+                  tipo
+                  tipoRef
+                }
+                administradores
+                nodoParent{
+                  idNodo
+                  tipo
+                }
+              }
+              ... on Objetivo {
+                id
+                vinculos {
+                  idRef
+                  tipo
+                  tipoRef
+                }
+                administradores
+                nodoParent{
+                  idNodo
+                  tipo
+                }
+              }
+            }
+          }
+        `,
+        variables:{
+          idNodoRequiriente,
+          idNodoRequerido
+        }
+      })
     },
-    eliminarVinculo(idNodoRequiere, idNodoRequerido) {
-      console.log(
-        `Se fijara que ${idNodoRequiere} ya no requiere a ${idNodoRequerido}`
-      );
-      this.$emit("eliminarVinculo", { idNodoRequiere, idNodoRequerido });
+    eliminarVinculo(idUnNodo, idOtroNodo) {
+      console.log(`Se desconectará el nodo ${idUnNodo} del nodo ${idOtroNodo}`);
+
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation ($idUnNodo: ID!, $idOtroNodo: ID!) {
+            desvincularNodosSolidaridad(
+              idUnNodo: $idUnNodo
+              idOtroNodo: $idOtroNodo
+            ) {
+              __typename
+              ... on Trabajo {
+                id
+                vinculos {
+                  idRef
+                  tipo
+                  tipoRef
+                }
+                administradores
+                nodoParent{
+                  idNodo
+                  tipo
+                }
+              }
+              ... on Objetivo {
+                id
+                vinculos {
+                  idRef
+                  tipo
+                  tipoRef
+                }
+                administradores
+                nodoParent{
+                  idNodo
+                  tipo
+                }
+              }
+            }
+          }
+        `,
+        variables:{
+          idUnNodo,
+          idOtroNodo
+        }
+      });
     },
-    eliminarse(){      
+    eliminarse() {
       if (!this.usuarioSuperadministrador && !this.usuarioAdministrador) {
         console.log(`No autorizado`);
         return;
       }
-      this.$emit("eliminar");    
-    }
+      this.$emit("eliminar");
+    },
   },
   computed: {
     estiloPosicion() {
       if (this.montado) {
         return {
-          left: (((this.posicion.x-(this.size.x/2))*this.factorZoom) ) + "px",
-          top: (((this.posicion.y - (this.size.y/2))*this.factorZoom) ) + "px",
+          left: (this.posicion.x - this.size.x / 2) * this.factorZoom + "px",
+          top: (this.posicion.y - this.size.y / 2) * this.factorZoom + "px",
         };
       }
       return {
@@ -222,20 +334,23 @@ export default {
         zIndex: valorZ,
       };
     },
-    estiloSize(){
+    estiloSize() {
       return {
-        width: Math.round(this.size.x*(this.factorZoom))+"px",
-        height: Math.round(this.size.y*(this.factorZoom))+"px",
-        fontSize:Math.round(14*this.factorZoom)+"px",
-        padding:Math.round(5*this.factorZoom)+'px'
-      }
+        width: Math.round(this.size.x * this.factorZoom) + "px",
+        height: Math.round(this.size.y * this.factorZoom) + "px",
+        fontSize: Math.round(14 * this.factorZoom) + "px",
+        padding: Math.round(5 * this.factorZoom) + "px",
+      };
     },
-    seleccionado(){
-      return this.idNodoSeleccionado && this.idNodoSeleccionado==this.esteTrabajo.id
-    },  
-    usuarioResponsable(){
-      if(!this.usuario || !this.usuario.id)return false;
-      return this.esteTrabajo.responsables.includes(this.usuario.id)
+    seleccionado() {
+      return (
+        this.idNodoSeleccionado &&
+        this.idNodoSeleccionado == this.esteTrabajo.id
+      );
+    },
+    usuarioResponsable() {
+      if (!this.usuario || !this.usuario.id) return false;
+      return this.esteTrabajo.responsables.includes(this.usuario.id);
     },
     usuarioAdministrador() {
       if (!this.usuario || !this.usuario.id) return false;
@@ -252,65 +367,100 @@ export default {
         padding:
           parseInt(this.estiloNombreBase.padding * this.factorZoom) + "px",
         borderRadius:
-          parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",        
+          parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
       };
     },
-    colorCartelNombre(){
-      var color='white';
-      
-      if(this.usuarioAdministrador){        
-        color='rgb(217, 136, 87)';
+    administradoPorSeleccionado(){
+      if(!this.nodoSeleccionado)return false;
+
+      return this.esteTrabajo.nodoParent && this.esteTrabajo.nodoParent.idNodo===this.nodoSeleccionado.id;
+    },
+    colorCartelNombre() {
+      var color = "white";
+
+      if (this.administradoPorSeleccionado) {
+        color = "rgb(224 169 135)";
       }
-      if(this.usuarioResponsable){        
-        color='rgb(166 137 193)';
+      if (this.usuarioResponsable) {
+        color = "rgb(166 137 193)";
       }
       return {
-        backgroundColor: color
-      }
+        backgroundColor: color,
+      };
     },
+    autoadministrado() {
+      return (
+        !this.esteTrabajo.nodoParent || !this.esteTrabajo.nodoParent.idNodo
+      );
+    },
+    conectadoAlSeleccionado() {
+      if (!this.nodoSeleccionado) return false;
+      if (
+        this.esteTrabajo.vinculos.some(
+          (v) => v.idRef === this.idNodoSeleccionado
+        )
+      ) {
+        return true;
+      }
+
+      if (
+        this.nodoSeleccionado.vinculos.some(
+          (v) => v.idRef === this.esteTrabajo.id
+        )
+      ) {
+        return true;
+      }
+
+      return false;
+    },
+    requeridoPorSeleccionado() {
+      if (!this.nodoSeleccionado) return false;      
+      if (
+        this.nodoSeleccionado.vinculos.some(
+          (v) => v.idRef === this.esteTrabajo.id
+        )
+      ) {
+        return true;
+      }
+
+      return false;
+    },
+    huerfano(){
+      return this.esteTrabajo.responsables.length===0 && this.esteTrabajo.administradores.length===0
+    },
+    estiloColor(){
+      var elColor='rgba(105, 199, 199, 0.9)';
+      if(this.seleccionado){
+        elColor='rgb(193 72 139)';
+      }
+      return {
+        backgroundColor: elColor
+      }
+    }
   },
   watch: {
     esteTrabajo() {
-      this.$set(
-        this.posicion,
-        "x",
-        this.esteTrabajo.coords.x
-      );
-      this.$set(
-        this.posicion,
-        "y",
-        this.esteTrabajo.coords.y
-      );
+      this.$set(this.posicion, "x", this.esteTrabajo.coords.x);
+      this.$set(this.posicion, "y", this.esteTrabajo.coords.y);
     },
   },
   mounted() {
     this.montado = true;
-    this.$set(
-      this.posicion,
-      "x",
-      this.esteTrabajo.coords.x
-    );
-    this.$set(
-      this.posicion,
-      "y",
-      this.esteTrabajo.coords.y
-    );
+    this.$set(this.posicion, "x", this.esteTrabajo.coords.x);
+    this.$set(this.posicion, "y", this.esteTrabajo.coords.y);
   },
 };
 </script>
 
 <style scoped>
 .nodoTrabajo {
-  
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgb(0, 94, 94);  
-  background-color: rgb(230, 247, 247);
   cursor: pointer;
-  transition-timing-function: linear;  
+  transition-timing-function: linear;
 }
-#iconoFondo{
-  position:absolute;
+#iconoFondo {
+  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -323,19 +473,17 @@ export default {
   border-width: 2px;
   border-color: purple;
 }
-#zonaNombre{
+#zonaNombre {
   position: absolute;
-  top:103%;
+  top: 103%;
   left: 50%;
   transform: translateX(-50%);
   border: 1px solid black;
 }
-#nombre {  
+#nombre {
   user-select: none;
-  
 }
 .iconoTrabajo {
- 
   border-radius: 50%;
   padding: 3px;
 }
@@ -380,13 +528,16 @@ export default {
 .bAbrirNodo:hover {
   background-color: cadetblue;
 }
-#zonaArrastre{
+#zonaArrastre {
   position: absolute;
   width: 300px;
   height: 300px;
-  top:50%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
+}
+.transparentoso {
+  opacity: 0.2;
 }
 </style>

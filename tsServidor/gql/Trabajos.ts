@@ -14,6 +14,10 @@ export const typeDefs = gql`
         coords:CoordsInput,
         vinculos:[vinculoInput]
     }
+    type InfoNodoSolidaridad{
+        idNodo: ID
+        tipo: String
+    }
     type Objetivo{
        id: ID,       
        nombre: String,
@@ -24,7 +28,7 @@ export const typeDefs = gql`
        descripcion:String,       
        vinculos:[VinculoNodoProyecto],
        keywords:String,
-       idProyectoParent:ID,
+       nodoParent:InfoNodoSolidaridad
        estadoDesarrollo:String,       
        coords: Coords,
        angulo:Float,
@@ -59,13 +63,12 @@ export const typeDefs = gql`
        posiblesResponsables:[String],
        administradores:[String],
        responsablesSolicitados:Int,
-       idObjetivoParent:String,
+       nodoParent:InfoNodoSolidaridad
        nodosConocimiento:[String],
        idForoResponsables:ID,
        diagramaProyecto:InfoDiagramaProyecto,
        vinculos:[VinculoNodoProyecto],
-       keywords:String,
-       idProyectoParent:ID,
+       keywords:String,       
        estadoDesarrollo:String,
        materiales:[MaterialTrabajo],
        estado:String,       
@@ -135,7 +138,8 @@ export const typeDefs = gql`
     eliminarNodoDeTrabajos(idNodo:ID!, tipo: String!):Boolean,
     crearNodoSolidaridad(infoNodo:NodoSolidaridadInput!):NodoDeTrabajos,
     crearNodoSolidaridadRequerido(infoNodo:NodoSolidaridadInput!, idNodoRequiriente: ID!):[NodoDeTrabajos],
-    
+    desvincularNodosSolidaridad(idUnNodo:ID!, idOtroNodo:ID!):[NodoDeTrabajos],
+    crearRequerimentoEntreNodosSolidaridad(idNodoRequiriente:ID!, idNodoRequerido:ID!):[NodoDeTrabajos],
    }
 
 `;
@@ -350,33 +354,31 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            //Authorización
-            let permisosEspeciales = ["superadministrador"];
-            var responsables: Array<string> = [];
-            if (!elNodo.nodoParent || !elNodo.nodoParent.tipo || !elNodo.nodoParent.idNodo) {
-                responsables = elNodo.responsables;
+            var administradoresElNodo:Array<string>=[];
+            if (!elNodo.nodoParent || !elNodo.nodoParent.idNodo || !elNodo.nodoParent.tipo) {
+                administradoresElNodo= elNodo.responsables;
             }
             else {
-                console.log(`Info nodoParent: ${elNodo.nodoParent}`);
                 try {
-                    var elNodoParent: any = null;
+                    var elNodoParent: any = null;                    
                     if (elNodo.nodoParent.tipo === 'trabajo') {
-                        elNodoParent = await Trabajo.findById(elNodo.nodoParent.idNodo);
+                        elNodoParent = await Trabajo.findById(elNodo.nodoParent.idNodo)
                     }
                     else if (elNodo.nodoParent.tipo === 'objetivo') {
-                        elNodoParent = await Objetivo.findById(elNodo.nodoParent.idNodo);
+                        elNodoParent = await Objetivo.findById(elNodo.nodoParent.idNodo)
                     }
-                    if (!elNodoParent) {
-                        throw "Error buscando el nodo parent de tipo " + elNodo.nodoParent.tipo;
-                    }
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
-                    console.log(`Error buscando el nodo parent: ${error}`);
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
                 }
-                responsables = elNodoParent.responsables;
+                administradoresElNodo= elNodoParent.responsables;
             }
 
+            //Authorización
+            let permisosEspeciales = ["superadministrador"];            
 
-            if (!responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+            if (!administradoresElNodo.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion eliminando nodo de tipo ${tipo}`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -424,7 +426,7 @@ export const resolvers = {
 
             //Eliminar foro
             try {
-                await Foro.findByIdAndDelete(elNodo.idForoResponsables);                
+                await Foro.findByIdAndDelete(elNodo.idForoResponsables);
             } catch (error) {
                 console.log(`Error buscando los foros para ser eliminados`);
             }
@@ -465,8 +467,8 @@ export const resolvers = {
                         idForoResponsables
                     });
                 }
-                else{
-                    throw "Tipo "+infoNodo.tipo+" no reconocido";
+                else {
+                    throw "Tipo " + infoNodo.tipo + " no reconocido";
                 }
                 await nuevoNodo.save();
             } catch (error) {
@@ -479,7 +481,7 @@ export const resolvers = {
                 throw new ApolloError("Error guardando en base de datos");
             }
             console.log(`nuevo nodo de solidaridad creado`);
-            nuevoNodo.tipoNodo=infoNodo.tipo;
+            nuevoNodo.tipoNodo = infoNodo.tipo;
             return nuevoNodo
         },
         async crearNodoSolidaridadRequerido(_: any, { infoNodo, idNodoRequiriente }: any, contexto: contextoQuery) {
@@ -488,7 +490,7 @@ export const resolvers = {
 
             if (!credencialesUsuario || !credencialesUsuario.id) {
                 throw new AuthenticationError("Usuario no logeado");
-            }           
+            }
 
             try {
                 var nuevoForoResponsables: any = await Foro.create({
@@ -508,53 +510,53 @@ export const resolvers = {
                 if (infoNodo.tipo === 'trabajo')
                     nuevoNodo = new Trabajo({
                         ...infoNodo,
-                        idForoResponsables,                        
+                        idForoResponsables,
                     });
                 else if (infoNodo.tipo === 'objetivo') {
                     nuevoNodo = new Objetivo({
                         ...infoNodo,
                         idForoResponsables
                     });
-                }                
-                else{
-                    throw "Tipo "+infoNodo.tipo+" no reconocido";
+                }
+                else {
+                    throw "Tipo " + infoNodo.tipo + " no reconocido";
                 }
 
                 try {
-                    var tipoRequiriente='trabajo';
-                    var nodoRequiriente:any=await Trabajo.findById(idNodoRequiriente).exec();
-                    if(!nodoRequiriente){
-                        tipoRequiriente='objetivo';
-                        nodoRequiriente=await Objetivo.findById(idNodoRequiriente).exec();
-                        if(!nodoRequiriente){
+                    var tipoRequiriente = 'trabajo';
+                    var nodoRequiriente: any = await Trabajo.findById(idNodoRequiriente).exec();
+                    if (!nodoRequiriente) {
+                        tipoRequiriente = 'objetivo';
+                        nodoRequiriente = await Objetivo.findById(idNodoRequiriente).exec();
+                        if (!nodoRequiriente) {
                             throw "Nodo requiriente no encontrado en la base de datos"
                         }
-                    }                    
-                    var nuevoVinculo=nodoRequiriente.vinculos.create({
-                        tipo:'requiere',
-                        idRef:nuevoNodo.id,
-                        tipoRef:infoNodo.tipo
+                    }
+                    var nuevoVinculo = nodoRequiriente.vinculos.create({
+                        tipo: 'requiere',
+                        idRef: nuevoNodo.id,
+                        tipoRef: infoNodo.tipo
                     })
 
-                    if(!nodoRequiriente.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes('superadministrador')){
+                    if (!nodoRequiriente.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes('superadministrador')) {
                         console.log(`El usuario no podía crear este nodo requerido por no ser ni responsable ni superadministrador`);
                         throw new AuthenticationError("No autorizado");
                     }
 
                     nodoRequiriente.vinculos.push(nuevoVinculo);
-                    console.log(`Guardando vínculo en el nodo requiriente ${nodoRequiriente}`);
+                    console.log(`Guardando vínculo en el nodo requiriente ${nodoRequiriente.nombre}`);
                     await nodoRequiriente.save();
-                    nodoRequiriente.tipoNodo=tipoRequiriente;
+                    nodoRequiriente.tipoNodo = tipoRequiriente;
                 } catch (error) {
                     console.log(`Error buscando el nodo requiriente: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos");
                 }
-                nuevoNodo.nodoParent={
-                    idNodo:idNodoRequiriente,
-                    tipo:tipoRequiriente
+                nuevoNodo.nodoParent = {
+                    idNodo: idNodoRequiriente,
+                    tipo: tipoRequiriente
                 }
                 await nuevoNodo.save();
-                nuevoNodo.tipoNodo=infoNodo.tipo;
+                nuevoNodo.tipoNodo = infoNodo.tipo;
             } catch (error) {
                 console.log(`error guardando el nuevo nodo en la base de datos. E: ${error}`);
                 try {
@@ -565,8 +567,198 @@ export const resolvers = {
                 throw new ApolloError("Error guardando en base de datos");
             }
             console.log(`nuevo nodo de solidaridad creado:`);
-            nuevoNodo.tipoNodo=infoNodo.tipo;
+            nuevoNodo.tipoNodo = infoNodo.tipo;
             return [nuevoNodo, nodoRequiriente]
+        },
+        async desvincularNodosSolidaridad(_: any, { idUnNodo, idOtroNodo }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+
+            console.log(`Query de desvincular los nodos: ${idUnNodo}, ${idOtroNodo}`);
+
+            try {
+                var tipoUnNodo='trabajo'
+                var unNodo: any = await Trabajo.findById(idUnNodo).exec();
+                if (!unNodo) {          
+                    tipoUnNodo='objetivo';
+                    unNodo = await Objetivo.findById(idUnNodo).exec();                    
+                }
+                if (!unNodo) throw "Primer nodo no encontrado"
+
+                var tipoOtroNodo='trabajo';
+                var otroNodo: any = await Trabajo.findById(idOtroNodo).exec();
+                if (!otroNodo) {
+                tipoOtroNodo='objetivo';
+                    otroNodo = await Objetivo.findById(idOtroNodo).exec();
+                }
+                if (!unNodo) throw "Primer nodo no encontrado"
+            } catch (error) {
+                console.log(`Error buscando los nodos a desvincular: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }                       
+            const permisosEspeciales = ["superadministrador"];
+
+            var indexUnV=unNodo.vinculos.findIndex(v=>v.idRef===idOtroNodo);
+            if(indexUnV>-1){
+                if(unNodo.responsables.includes(credencialesUsuario.id) || permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+                    unNodo.vinculos.splice(indexUnV, 1);
+                }
+                else{
+                    console.log(`Fallo al eliminar el vinculo de ${idUnNodo} requiriendo ${idOtroNodo}`);
+                    throw new AuthenticationError("No autorizado");
+                }
+            }
+
+            var indexOtroV=otroNodo.vinculos.findIndex(v=>v.idRef===idUnNodo);
+            if(indexOtroV>-1){
+                if(otroNodo.responsables.includes(credencialesUsuario.id) || permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+                    otroNodo.vinculos.splice(indexOtroV, 1);
+                }
+                else{
+                    console.log(`Fallo al eliminar el vinculo de ${idOtroNodo} requiriendo ${idUnNodo}`);
+                    throw new AuthenticationError("No autorizado");
+                }
+            }
+
+            //Al quedar desvinculados ya no puede haber una relación de administrador:
+
+            if(unNodo.nodoParent && unNodo.nodoParent.idNodo===idOtroNodo){
+                unNodo.nodoParent={};
+            }
+            if(otroNodo.nodoParent && otroNodo.nodoParent.idNodo===idUnNodo){
+                otroNodo.nodoParent={};
+            }
+
+            try {
+                await unNodo.save();
+                await otroNodo.save();
+            } catch (error) {
+                console.log(`Error guardando los nodos después de la desvinculación: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Desvinculados`);
+            unNodo.tipoNodo=tipoUnNodo;
+            otroNodo.tipoNodo=tipoOtroNodo;
+            return [unNodo, otroNodo];
+
+        },
+        async crearRequerimentoEntreNodosSolidaridad(_: any, { idNodoRequiriente, idNodoRequerido }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+
+            console.log(`Query de set que nodo ${idNodoRequiriente} requiere al nodo ${idNodoRequerido}`);
+
+            try {
+                var tipoNodoRequiriente='trabajo'
+                var nodoRequiriente: any = await Trabajo.findById(idNodoRequiriente).exec();
+                if (!nodoRequiriente) {          
+                    tipoNodoRequiriente='objetivo';
+                    nodoRequiriente = await Objetivo.findById(idNodoRequiriente).exec();                    
+                }
+                if (!nodoRequiriente) throw "Nodo requiriente no encontrado"
+
+                var tipoNodoRequerido='trabajo';
+                var nodoRequerido: any = await Trabajo.findById(idNodoRequerido).exec();
+                if (!nodoRequerido) {
+                tipoNodoRequerido='objetivo';
+                    nodoRequerido = await Objetivo.findById(idNodoRequerido).exec();
+                }
+                if (!nodoRequerido) throw "Nodo requerido no encontrado"
+            } catch (error) {
+                console.log(`Error buscando los nodos a desvincular: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            //Administradores de nodoRequiriente
+
+            var administradoresNodoRequiriente:Array<string>=[];
+            if (!nodoRequiriente.nodoParent || !nodoRequiriente.nodoParent.idNodo || !nodoRequiriente.nodoParent.tipo) {
+                administradoresNodoRequiriente= nodoRequiriente.responsables;
+            }
+            else {
+                try {
+                    var elNodoParent: any = null;                    
+                    if (nodoRequiriente.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(nodoRequiriente.nodoParent.idNodo)
+                    }
+                    else if (nodoRequiriente.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(nodoRequiriente.nodoParent.idNodo)
+                    }
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                administradoresNodoRequiriente= elNodoParent.responsables;
+            }
+
+            //Administradores de nodoRequerido
+
+            var administradoresNodoRequerido:Array<string>=[];
+            if (!nodoRequerido.nodoParent || !nodoRequerido.nodoParent.idNodo || !nodoRequerido.nodoParent.tipo) {
+                administradoresNodoRequerido= nodoRequerido.responsables;
+            }
+            else {
+                try {
+                    var elNodoParent: any = null;
+                    if (nodoRequerido.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(nodoRequerido.nodoParent.idNodo)
+                    }
+                    else if (nodoRequerido.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(nodoRequerido.nodoParent.idNodo)
+                    }
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                administradoresNodoRequerido= elNodoParent.responsables;
+            }
+
+
+            const permisosEspeciales = ["superadministrador"];
+            if (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !nodoRequiriente.responsables.includes(credencialesUsuario.id) && !administradoresNodoRequiriente.includes(credencialesUsuario.id)) {
+                console.log(`Fallo en autenticación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var indexV=nodoRequiriente.vinculos.findIndex(v=>v.idRef===idNodoRequerido);
+            if(indexV>-1){
+                nodoRequiriente.vinculos.splice(indexV, 1);
+            }
+
+            var nuevoVinculo=nodoRequiriente.vinculos.create({
+                idRef:idNodoRequerido,
+                tipo:"requiere",
+                tipoRef:tipoNodoRequerido
+            })
+
+            nodoRequiriente.vinculos.push(nuevoVinculo);
+
+            var indexOtroV=nodoRequerido.vinculos.findIndex(v=>v.idRef===idNodoRequiriente);
+            if(indexOtroV>-1){
+                nodoRequerido.vinculos.splice(indexOtroV, 1);
+            }
+
+            //Si el nodo requerido estaba huérfano, entonces lo toma bajo su control
+
+            if((!nodoRequerido.responsables || nodoRequerido.responsables.length<1) && (!nodoRequerido.nodoParent || !nodoRequerido.nodoParent.idNodo)){
+                console.log(`El nodo requerido estaba huérfano. Tomando bajo el control del nodo requiriente.`);
+                nodoRequerido.nodoParent={
+                    idNodo:idNodoRequiriente,
+                    tipo: tipoNodoRequiriente
+                }
+            }            
+
+            try {
+                await nodoRequiriente.save();
+                await nodoRequerido.save();
+            } catch (error) {
+                console.log(`Error guardando los nodos después de la vinculación: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Vinculados`);
+            nodoRequiriente.tipoNodo=tipoNodoRequiriente;
+            nodoRequerido.tipoNodo=tipoNodoRequerido;
+            return [nodoRequiriente, nodoRequerido];
+
         },
 
         async crearObjetivo(_: any, { posicion }: any, contexto: contextoQuery) {
@@ -663,21 +855,21 @@ export const resolvers = {
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+            if (!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo) {
                 administradores = elObjetivo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elObjetivo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elObjetivo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    else if (elObjetivo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -693,7 +885,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {                
+            try {
                 elObjetivo.nombre = nuevoNombre;
                 await elObjetivo.save();
             }
@@ -719,21 +911,21 @@ export const resolvers = {
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+            if (!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo) {
                 administradores = elObjetivo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elObjetivo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elObjetivo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    else if (elObjetivo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -756,7 +948,7 @@ export const resolvers = {
 
             nuevoDescripcion = nuevoDescripcion.trim();
 
-            try {                
+            try {
                 elObjetivo.descripcion = nuevoDescripcion;
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
                 await elObjetivo.save();
@@ -781,21 +973,21 @@ export const resolvers = {
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+            if (!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo) {
                 administradores = elObjetivo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elObjetivo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elObjetivo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    else if (elObjetivo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -818,7 +1010,7 @@ export const resolvers = {
 
             nuevoKeywords = nuevoKeywords.trim();
 
-            try {                
+            try {
                 elObjetivo.keywords = nuevoKeywords;
                 console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
                 await elObjetivo.save();
@@ -856,7 +1048,7 @@ export const resolvers = {
             catch (error) {
                 console.log("Error buscando al usuario en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
-            }            
+            }
 
             if (elObjetivo.responsables.includes(idUsuario)) {
                 console.log(`El usuario ya era responsable de este objetivo`);
@@ -868,16 +1060,16 @@ export const resolvers = {
                 console.log(`sacando al usuario ${idUsuario} de la lista de posibles responsables`);
                 elObjetivo.posiblesResponsables.splice(indexPosibleResponsable, 1);
             }
-            else{
-                if(elObjetivo.responsables.length>0){
+            else {
+                if (elObjetivo.responsables.length > 0) {
                     console.log(`Error. Se intentaba add como responsable un usuario que no estaba en la lista de posibles responsables.`);
                     throw new UserInputError("El usuario no estaba en la lista de espera para responsables.")
-                }                
+                }
             }
 
-            try {                
+            try {
                 elObjetivo.responsables.push(idUsuario);
-                if (elObjetivo.responsablesSolicitados > 0) elObjetivo.responsablesSolicitados--;                
+                if (elObjetivo.responsablesSolicitados > 0) elObjetivo.responsablesSolicitados--;
                 console.log(`Usuario añadido a la lista de responsables`);
                 await elObjetivo.save();
             }
@@ -992,7 +1184,7 @@ export const resolvers = {
             console.log(`Usuario retirado de la lista de responsables`);
 
             try {
-                
+
 
                 await elObjetivo.save();
                 await elUsuario.save();
@@ -1010,9 +1202,9 @@ export const resolvers = {
             }
 
             return elObjetivo;
-        },        
+        },
         async setEstadoObjetivo(_: any, { idObjetivo, nuevoEstado }, contexto: contextoQuery) {
-            
+
             let credencialesUsuario = contexto.usuario;
             try {
                 var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
@@ -1025,21 +1217,21 @@ export const resolvers = {
                 throw new ApolloError("Error en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+            if (!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo) {
                 administradores = elObjetivo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elObjetivo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elObjetivo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    else if (elObjetivo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -1054,7 +1246,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {               
+            try {
                 elObjetivo.estadoDesarrollo = nuevoEstado;
                 console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
                 await elObjetivo.save();
@@ -1066,10 +1258,10 @@ export const resolvers = {
             console.log(`Estado guardado`);
             return elObjetivo;
         },
-        setResponsablesSolicitadosObjetivo: async function(_: any, { idObjetivo, nuevoCantidadResponsablesSolicitados}, contexto: contextoQuery){
+        setResponsablesSolicitadosObjetivo: async function (_: any, { idObjetivo, nuevoCantidadResponsablesSolicitados }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en objetivo con id ${idObjetivo}`);
-            
+
             try {
                 var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
                 if (!elObjetivo) {
@@ -1086,7 +1278,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            elObjetivo.responsablesSolicitados=nuevoCantidadResponsablesSolicitados;
+            elObjetivo.responsablesSolicitados = nuevoCantidadResponsablesSolicitados;
 
             try {
                 await elObjetivo.save();
@@ -1112,21 +1304,21 @@ export const resolvers = {
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo){
+            if (!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo) {
                 administradores = elObjetivo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elObjetivo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elObjetivo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elObjetivo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    else if(elObjetivo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elObjetivo.nodoParent.idNodo)
+                    else if (elObjetivo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elObjetivo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -1269,21 +1461,21 @@ export const resolvers = {
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+            if (!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo) {
                 administradores = elTrabajo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elTrabajo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
+                    else if (elTrabajo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -1299,7 +1491,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {                
+            try {
                 elTrabajo.nombre = nuevoNombre;
                 await elTrabajo.save();
             }
@@ -1325,21 +1517,21 @@ export const resolvers = {
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+            if (!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo) {
                 administradores = elTrabajo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elTrabajo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
+                    else if (elTrabajo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -1362,7 +1554,7 @@ export const resolvers = {
 
             nuevoDescripcion = nuevoDescripcion.trim();
 
-            try {                
+            try {
                 elTrabajo.descripcion = nuevoDescripcion;
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
                 await elTrabajo.save();
@@ -1387,21 +1579,21 @@ export const resolvers = {
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+            if (!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo) {
                 administradores = elTrabajo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elTrabajo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
+                    else if (elTrabajo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -1424,7 +1616,7 @@ export const resolvers = {
 
             nuevoKeywords = nuevoKeywords.trim();
 
-            try {                
+            try {
                 elTrabajo.keywords = nuevoKeywords;
                 console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
                 await elTrabajo.save();
@@ -1462,7 +1654,7 @@ export const resolvers = {
             catch (error) {
                 console.log("Error buscando al usuario en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
-            }            
+            }
 
             if (elTrabajo.responsables.includes(idUsuario)) {
                 console.log(`El usuario ya era responsable de este trabajo`);
@@ -1474,16 +1666,16 @@ export const resolvers = {
                 console.log(`sacando al usuario ${idUsuario} de la lista de posibles responsables`);
                 elTrabajo.posiblesResponsables.splice(indexPosibleResponsable, 1);
             }
-            else{
-                if(elTrabajo.responsables.length>0){
+            else {
+                if (elTrabajo.responsables.length > 0) {
                     console.log(`Error. Se intentaba add como responsable un usuario que no estaba en la lista de posibles responsables.`);
                     throw new UserInputError("El usuario no estaba en la lista de espera para responsables.")
-                }                
+                }
             }
 
-            try {                
+            try {
                 elTrabajo.responsables.push(idUsuario);
-                if (elTrabajo.responsablesSolicitados > 0) elTrabajo.responsablesSolicitados--;                
+                if (elTrabajo.responsablesSolicitados > 0) elTrabajo.responsablesSolicitados--;
                 console.log(`Usuario añadido a la lista de responsables`);
                 await elTrabajo.save();
             }
@@ -1598,7 +1790,7 @@ export const resolvers = {
             console.log(`Usuario retirado de la lista de responsables`);
 
             try {
-                
+
 
                 await elTrabajo.save();
                 await elUsuario.save();
@@ -1616,9 +1808,9 @@ export const resolvers = {
             }
 
             return elTrabajo;
-        },        
+        },
         async setEstadoTrabajo(_: any, { idTrabajo, nuevoEstado }, contexto: contextoQuery) {
-            
+
             let credencialesUsuario = contexto.usuario;
             try {
                 var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
@@ -1631,21 +1823,21 @@ export const resolvers = {
                 throw new ApolloError("Error en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+            if (!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo) {
                 administradores = elTrabajo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elTrabajo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
+                    else if (elTrabajo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -1660,7 +1852,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            try {               
+            try {
                 elTrabajo.estadoDesarrollo = nuevoEstado;
                 console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
                 await elTrabajo.save();
@@ -1672,10 +1864,10 @@ export const resolvers = {
             console.log(`Estado guardado`);
             return elTrabajo;
         },
-        setResponsablesSolicitadosTrabajo: async function(_: any, { idTrabajo, nuevoCantidadResponsablesSolicitados}, contexto: contextoQuery){
+        setResponsablesSolicitadosTrabajo: async function (_: any, { idTrabajo, nuevoCantidadResponsablesSolicitados }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             console.log(`Solicitud de set cantidad de responsables solicitados de ${nuevoCantidadResponsablesSolicitados} en trabajo con id ${idTrabajo}`);
-            
+
             try {
                 var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
                 if (!elTrabajo) {
@@ -1692,7 +1884,7 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            elTrabajo.responsablesSolicitados=nuevoCantidadResponsablesSolicitados;
+            elTrabajo.responsablesSolicitados = nuevoCantidadResponsablesSolicitados;
 
             try {
                 await elTrabajo.save();
@@ -1718,21 +1910,21 @@ export const resolvers = {
                 throw new ApolloError("Error en la conexión con la base de datos");
             }
 
-            var administradores:Array<string>=[];
+            var administradores: Array<string> = [];
 
-            if(!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo){
+            if (!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo) {
                 administradores = elTrabajo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(elTrabajo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(elTrabajo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (elTrabajo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    else if(elTrabajo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(elTrabajo.nodoParent.idNodo)
+                    else if (elTrabajo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elTrabajo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -2002,11 +2194,11 @@ export const resolvers = {
             }
 
             try {
-                
+
 
                 elObjetivo.responsables.push(idUsuario);
                 if (elObjetivo.responsablesSolicitados > 0) elObjetivo.responsablesSolicitados--;
-                
+
                 console.log(`Usuario añadido a la lista de responsables`);
                 await elProyecto.save();
             }
@@ -2416,7 +2608,7 @@ export const resolvers = {
 
             return true;
         },
-      
+
     },
 
     NodoDeTrabajos: {
@@ -2428,23 +2620,23 @@ export const resolvers = {
             else if (nodo.tipoNodo === "objetivo") {
                 return "Objetivo"
             }
-        },        
+        },
     },
-    Trabajo:{
-        async administradores(nodo:any){
-            if(!nodo.nodoParent || !nodo.nodoParent.idNodo || !nodo.nodoParent.tipo){
+    Trabajo: {
+        async administradores(nodo: any) {
+            if (!nodo.nodoParent || !nodo.nodoParent.idNodo || !nodo.nodoParent.tipo) {
                 return nodo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(nodo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(nodo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (nodo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(nodo.nodoParent.idNodo)
                     }
-                    else if(nodo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(nodo.nodoParent.idNodo)
+                    else if (nodo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(nodo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -2454,21 +2646,21 @@ export const resolvers = {
             }
         }
     },
-    Objetivo:{
-        async administradores(nodo:any){
-            if(!nodo.nodoParent || !nodo.nodoParent.idNodo || !nodo.nodoParent.tipo){
+    Objetivo: {
+        async administradores(nodo: any) {
+            if (!nodo.nodoParent || !nodo.nodoParent.idNodo || !nodo.nodoParent.tipo) {
                 return nodo.responsables;
             }
-            else{
+            else {
                 try {
-                    var elNodoParent:any=null;
-                    if(nodo.nodoParent.tipo==='trabajo'){
-                        elNodoParent=await Trabajo.findById(nodo.nodoParent.idNodo)
+                    var elNodoParent: any = null;
+                    if (nodo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(nodo.nodoParent.idNodo)
                     }
-                    else if(nodo.nodoParent.tipo==='objetivo'){
-                        elNodoParent=await Objetivo.findById(nodo.nodoParent.idNodo)
+                    else if (nodo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(nodo.nodoParent.idNodo)
                     }
-                    if(!elNodoParent)throw "Nodo parent no encontrado"
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
                     console.log(`Error buscando el nodo parent: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");

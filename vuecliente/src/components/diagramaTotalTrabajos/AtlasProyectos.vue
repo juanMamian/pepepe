@@ -25,7 +25,7 @@
       v-if="usuario && usuario.id"
       v-show="mostrandoMenuContextual"
       :style="[offsetMenuContextual]"
-      :class="{deshabilitado:enviandoQueryNodos}"
+      :class="{ deshabilitado: enviandoQueryNodos }"
     >
       <div
         class="botonMenuContextual"
@@ -33,7 +33,15 @@
         @mouseup.left.stop=""
         @click.stop="crearNodoEnMenuContextual('objetivo')"
       >
-        Crear objetivo {{idNodoSeleccionado!=null && nodoSeleccionado!=null && (nodoSeleccionado.responsables.includes(usuario.id) || usuarioSuperadministrador)?'conectado':''}}
+        Crear objetivo
+        {{
+          idNodoSeleccionado != null &&
+          nodoSeleccionado != null &&
+          (nodoSeleccionado.responsables.includes(usuario.id) ||
+            usuarioSuperadministrador)
+            ? "conectado"
+            : ""
+        }}
       </div>
       <div
         class="botonMenuContextual"
@@ -41,11 +49,19 @@
         @click.stop="crearNodoEnMenuContextual('trabajo')"
         @mouseup.left.stop=""
       >
-        Crear trabajo {{idNodoSeleccionado!=null && nodoSeleccionado!=null && (nodoSeleccionado.responsables.includes(usuario.id) || usuarioSuperadministrador)?'conectado':''}}
+        Crear trabajo
+        {{
+          idNodoSeleccionado != null &&
+          nodoSeleccionado != null &&
+          (nodoSeleccionado.responsables.includes(usuario.id) ||
+            usuarioSuperadministrador)
+            ? "conectado"
+            : ""
+        }}
       </div>
     </div>
 
-    <div id="centroVista"></div>
+    <div id="centroVista" v-show="usuarioSuperadministrador"></div>
     <canvases-atlas-proyectos
       :style="posCuadroDescarga"
       :centroVista="centroVista"
@@ -63,19 +79,21 @@
         :esteObjetivo="objetivo"
         :callingPosiciones="callingPosiciones"
         :idNodoSeleccionado="idNodoSeleccionado"
+        :nodoSeleccionado="nodoSeleccionado"
         :menuCx="idNodoMenuCx && idNodoMenuCx == objetivo.id"
         :factorZoom="factorZoom"
+        :usuarioAdministradorNodoSeleccionado="usuarioAdministradorNodoSeleccionado"
+        :usuarioResponsableNodoSeleccionado="usuarioResponsableNodoSeleccionado"
         v-show="idsNodosVisibles.includes(objetivo.id)"
         @click.native="idNodoSeleccionado = objetivo.id"
         @click.native.right.exact.stop.prevent="idNodoMenuCx = objetivo.id"
         @dblclick.native="idNodoPaVentanita = objetivo.id"
-        :class="{
-          transparentoso:
+        :transparentoso="
             idNodoSeleccionado &&
             idNodoSeleccionado != objetivo.id &&
             !idsNodosRequeridosSeleccionado.includes(objetivo.id) &&
-            !idsNodosRequierenSeleccionado.includes(objetivo.id),
-        }"
+            !idsNodosRequierenSeleccionado.includes(objetivo.id)
+        "
         @eliminar="eliminarNodo(objetivo.id, 'objetivo')"
       />
 
@@ -84,16 +102,18 @@
         :key="trabajo.id"
         :esteTrabajo="trabajo"
         :idNodoSeleccionado="idNodoSeleccionado"
+        :nodoSeleccionado="nodoSeleccionado"
         :menuCx="idNodoMenuCx && idNodoMenuCx == trabajo.id"
         :factorZoom="factorZoom"
         :callingPosiciones="callingPosiciones"
-        :class="{
-          transparentoso:
+        :usuarioAdministradorNodoSeleccionado="usuarioAdministradorNodoSeleccionado"
+        :usuarioResponsableNodoSeleccionado="usuarioResponsableNodoSeleccionado"
+        :transparentoso="
             idNodoSeleccionado &&
             idNodoSeleccionado != trabajo.id &&
             !idsNodosRequeridosSeleccionado.includes(trabajo.id) &&
-            !idsNodosRequierenSeleccionado.includes(trabajo.id),
-        }"
+            !idsNodosRequierenSeleccionado.includes(trabajo.id)
+        "
         v-show="idsNodosVisibles.includes(trabajo.id)"
         @click.native="idNodoSeleccionado = trabajo.id"
         @click.native.right.exact.stop.prevent="idNodoMenuCx = trabajo.id"
@@ -225,7 +245,10 @@ const QUERY_TODOS_NODOS = gql`
         responsablesSolicitados
         administradores
         keywords
-
+        nodoParent {
+          idNodo
+          tipo
+        }
         coords {
           x
           y
@@ -256,6 +279,10 @@ const QUERY_TODOS_NODOS = gql`
         responsablesSolicitados
         administradores
         keywords
+        nodoParent {
+          idNodo
+          tipo
+        }
         coords {
           x
           y
@@ -375,8 +402,8 @@ export default {
       idNodoMenuCx: null,
 
       zoom: 80,
-      minZoom: 20,
-      maxZoom: 200,
+      minZoom: 50,
+      maxZoom: 100,
 
       pinching: false,
       lastPinchDistance: 0,
@@ -643,12 +670,18 @@ export default {
       };
 
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
-      if(this.nodoSeleccionado && (this.nodoSeleccionado.responsables.includes(this.usuario.id) || this.usuarioSuperadministrador)){
-        this.crearNodoConectado(posicionNuevoNodo, tipo, this.idNodoSeleccionado);
-      }
-      else{
+      if (
+        this.nodoSeleccionado &&
+        (this.nodoSeleccionado.responsables.includes(this.usuario.id) ||
+          this.usuarioSuperadministrador)
+      ) {
+        this.crearNodoConectado(
+          posicionNuevoNodo,
+          tipo,
+          this.idNodoSeleccionado
+        );
+      } else {
         this.crearNodo(posicionNuevoNodo, tipo);
-
       }
     },
     crearNodo(posicion, tipo) {
@@ -657,7 +690,7 @@ export default {
         return;
       }
       console.log(`enviando una mutación de crear nodo`);
-      this.enviandoQueryNodos=true;
+      this.enviandoQueryNodos = true;
 
       let infoNodo = {
         coords: {
@@ -682,6 +715,10 @@ export default {
                   responsablesSolicitados
                   administradores
                   keywords
+                  nodoParent {
+                    idNodo
+                    tipo
+                  }
                   coords {
                     x
                     y
@@ -712,6 +749,10 @@ export default {
                   responsablesSolicitados
                   administradores
                   keywords
+                  nodoParent {
+                    idNodo
+                    tipo
+                  }
                   coords {
                     x
                     y
@@ -775,12 +816,12 @@ export default {
             });
           }
           this.idNodoPaVentanita = crearNodoSolidaridad.id;
-          this.enviandoQueryNodos=false;
-          this.mostrandoMenuContextual=false;
+          this.enviandoQueryNodos = false;
+          this.mostrandoMenuContextual = false;
           //this.$router.push("/nodoConocimiento/"+crearNodoSolidaridad.id);
         })
         .catch((error) => {
-          this.enviandoQueryNodos=false;
+          this.enviandoQueryNodos = false;
           console.log(`Error. E: ${error}`);
         });
     },
@@ -791,7 +832,7 @@ export default {
       }
       console.log(`enviando una mutación de crear nodo`);
 
-      this.enviandoQueryNodos=true;
+      this.enviandoQueryNodos = true;
       let infoNodo = {
         coords: {
           x: posicion.x,
@@ -803,8 +844,14 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($infoNodo: NodoSolidaridadInput!, $idNodoRequiriente:ID!) {
-              crearNodoSolidaridadRequerido(infoNodo: $infoNodo, idNodoRequiriente:$idNodoRequiriente) {
+            mutation (
+              $infoNodo: NodoSolidaridadInput!
+              $idNodoRequiriente: ID!
+            ) {
+              crearNodoSolidaridadRequerido(
+                infoNodo: $infoNodo
+                idNodoRequiriente: $idNodoRequiriente
+              ) {
                 __typename
                 ... on Trabajo {
                   id
@@ -815,6 +862,10 @@ export default {
                   responsablesSolicitados
                   administradores
                   keywords
+                  nodoParent {
+                    idNodo
+                    tipo
+                  }
                   coords {
                     x
                     y
@@ -845,6 +896,10 @@ export default {
                   responsablesSolicitados
                   administradores
                   keywords
+                  nodoParent {
+                    idNodo
+                    tipo
+                  }
                   coords {
                     x
                     y
@@ -871,11 +926,11 @@ export default {
           `,
           variables: {
             infoNodo,
-            idNodoRequiriente
+            idNodoRequiriente,
           },
         })
         .then(({ data: { crearNodoSolidaridadRequerido } }) => {
-          const nuevoNodo=crearNodoSolidaridadRequerido[0];
+          const nuevoNodo = crearNodoSolidaridadRequerido[0];
           console.log(`Creado ${nuevoNodo.id}`);
           const store = this.$apollo.provider.defaultClient;
           const cache = store.readQuery({
@@ -890,9 +945,7 @@ export default {
           });
           var nuevoCache = JSON.parse(JSON.stringify(cache));
           var losNodos = nuevoCache.nodosTrabajosSegunCentro;
-          const indexN = losNodos.findIndex(
-            (n) => n.id === nuevoNodo.id
-          );
+          const indexN = losNodos.findIndex((n) => n.id === nuevoNodo.id);
           if (indexN > -1) {
             console.log(`El nodo ya estaba en caché`);
           } else {
@@ -910,13 +963,13 @@ export default {
             });
           }
           this.idNodoPaVentanita = nuevoNodo.id;
-          this.enviandoQueryNodos=false;
-          this.mostrandoMenuContextual=false;
+          this.enviandoQueryNodos = false;
+          this.mostrandoMenuContextual = false;
 
           //this.$router.push("/nodoConocimiento/"+crearNodoSolidaridad.id);
         })
         .catch((error) => {
-          this.enviandoQueryNodos=false;
+          this.enviandoQueryNodos = false;
           console.log(`Error. E: ${error}`);
         });
     },
@@ -980,6 +1033,17 @@ export default {
     },
     nodoSeleccionado() {
       return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
+    },
+    usuarioAdministradorNodoSeleccionado(){
+      if(!this.usuario || !this.usuario.id)return false;
+      if(!this.nodoSeleccionado)return false;
+      return this.nodoSeleccionado.administradores.includes(this.usuario.id);
+    },
+    usuarioResponsableNodoSeleccionado(){
+      if(!this.usuario || !this.usuario.id)return false;
+      if(!this.nodoSeleccionado)return false;
+
+      return this.nodoSeleccionado.responsables.includes(this.usuario.id);
     },
     nodosRequierenSeleccionado() {
       if (!this.idNodoSeleccionado) return [];
@@ -1126,7 +1190,7 @@ export default {
 }
 #loadingNodos {
   position: absolute;
-  bottom: 1%;
+  bottom: 50%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -1146,7 +1210,5 @@ export default {
   transform: translate(-50%, -50%);
   border-radius: 50%;
 }
-.transparentoso {
-  opacity: 0.2;
-}
+
 </style>
