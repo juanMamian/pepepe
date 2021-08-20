@@ -472,6 +472,8 @@ export default {
 .seleccionado {
   border-width: 2px;
   border-color: purple;
+  box-shadow: 2px 2px 2px 2px grey;
+
 }
 #zonaNombre {
   position: absolute;

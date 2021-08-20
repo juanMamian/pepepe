@@ -331,6 +331,7 @@
       class="botonIr"
       @click.stop="navegarAlObjetivo"
       title="Abrir la página de este trabajo"
+      v-show="false"
     />
 
     <div id="controlesObjetivo"></div>

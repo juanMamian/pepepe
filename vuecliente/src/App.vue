@@ -56,6 +56,23 @@
           </div> -->
         </div>
 
+       <div id="bloqueSolidaridad" class="bloqueBotones">
+          <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
+            Solidaridad
+          </div>
+          <div id="enlacesHijosSolidaridad" class="contenedorHijos">
+            <router-link to="/atlasSolidaridad">
+              <div
+                class="botonNavBarra botonNav hoverNegro botonNavHijo"
+                id="navAtlasSolidaridad"
+              >
+                Atlas de solidaridad
+              </div>
+            </router-link>
+            
+          </div>
+        </div>
+
         <div id="bloqueHerramientas" class="bloqueBotones">
           <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
             Herramientas

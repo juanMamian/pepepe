@@ -20,6 +20,8 @@
       ]"
     ></div>
 
+    <buscador-nodos :cerrarBusqueda="cerrarBusqueda"/>
+
     <div
       id="menuContextual"
       v-if="usuario && usuario.id"
@@ -176,6 +178,7 @@ import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue";
 import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 import Loading from "../utilidades/Loading.vue";
+import BuscadorNodos from './BuscadorNodos.vue';
 
 // const fragmentoTrabajos = gql`
 //   fragment fragTrabajo on Trabajo {
@@ -316,6 +319,7 @@ export default {
     VentanitaObjetivo,
     VentanitaTrabajo,
     Loading,
+    BuscadorNodos,
   },
   name: "AtlasProyectos",
   apollo: {
@@ -415,6 +419,7 @@ export default {
       enviandoQueryNodos: false,
 
       callingPosiciones: false,
+      cerrarBusqueda:0,
     };
   },
   methods: {
@@ -458,6 +463,7 @@ export default {
       this.mostrandoMenuContextual = false;
       this.idNodoMenuCx = null;
       this.idNodoPaVentanita = null;
+      this.cerrarBusqueda++;
     },
     movimientoMobile(e) {
       if (this.pinching) {
@@ -1185,7 +1191,7 @@ export default {
   width: min(400px, 90%);
   position: absolute;
   top: 50px;
-  left: 50px;
+  left: 5%;
   z-index: 2;
 }
 #loadingNodos {

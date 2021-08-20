@@ -459,6 +459,8 @@ export default {
   border-radius: 50%;  
   cursor: pointer;
   transition-timing-function: linear;
+  box-shadow: 2px 2px 2px 2px grey;
+
 }
 #iconoFondo {
   position: absolute;

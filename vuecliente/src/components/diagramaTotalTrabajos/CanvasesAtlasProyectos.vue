@@ -133,7 +133,7 @@ export default {
       // this.$set(this.sizeCanvasVista, 'width', lapiz.canvas.width+'px');
       // this.$set(this.sizeCanvasVista, 'height', lapiz.canvas.height+'px');
       
-      lapiz.lineWidth = 1;
+      lapiz.lineWidth = 2;
       lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
       lapiz.beginPath();
       lapiz.strokeStyle = "#b3b3b3";

@@ -147,6 +147,6 @@ esquemaTrabajo.add({
    
 });
 
-esquemaTrabajo.index({keywords:"text"});
 
+esquemaTrabajo.index({nombre:"text", keywords: "text", descripcion:"text"});
 export const ModeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);

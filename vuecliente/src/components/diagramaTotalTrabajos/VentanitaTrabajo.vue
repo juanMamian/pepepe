@@ -331,6 +331,7 @@
       class="botonIr"
       @click.stop="navegarAlTrabajo"
       title="Abrir la página de este trabajo"
+      v-show="false"
     />
 
     <div id="controlesTrabajo"></div>
@@ -789,7 +790,6 @@ export default {
   border: 2px solid #585858;
   border-radius: 5px;
   min-height: 10px;
-
   position: relative;
   padding: 5px 0px;
   padding-bottom: 10px;
