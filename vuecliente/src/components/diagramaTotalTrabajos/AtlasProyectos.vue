@@ -20,7 +20,7 @@
       ]"
     ></div>
 
-    <buscador-nodos :cerrarBusqueda="cerrarBusqueda"/>
+    <buscador-nodos :cerrarBusqueda="cerrarBusqueda" @nodoSeleccionado="centrarEnNodo"/>
 
     <div
       id="menuContextual"
@@ -978,6 +978,23 @@ export default {
           this.enviandoQueryNodos = false;
           console.log(`Error. E: ${error}`);
         });
+    },
+    centrarEnNodo(n) {
+      var contenedor = this.$el;
+      let posContenedor = contenedor.getBoundingClientRect();
+      
+      this.$set(
+        this.esquinaVistaDecimal,
+        "x",
+        n.coords.x - posContenedor.width / (2 * this.factorZoom)
+      );
+      this.$set(
+        this.esquinaVistaDecimal,
+        "y",
+        n.coords.y - posContenedor.height / (2 * this.factorZoom)
+      );
+      this.idNodoSeleccionado=n.id;
+      //this.centroVista=e;
     },
   },
   computed: {

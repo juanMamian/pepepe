@@ -430,7 +430,7 @@ export default {
       return false;
     },
     estiloColor(){
-      var elColor='rgb(238, 117, 117, 0.9)';
+      var elColor='rgba(105, 199, 199, 0.9)';
       if(this.seleccionado){
         elColor='rgb(193 72 139)';
       }

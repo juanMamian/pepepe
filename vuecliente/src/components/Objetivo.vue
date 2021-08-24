@@ -1,11 +1,11 @@
 <template>
-  <div class="trabajo">
+  <div class="objetivo">
     <div id="zonaNombre" class="bordeAbajo">
       <div class="barraSuperiorZona"></div>
       <div id="nombre">
-        {{ esteTrabajo.nombre }}
+        {{ esteObjetivo.nombre }}
       </div>
-      <img src="@/assets/iconos/iconoTrabajo.png" alt="" id="imagenIcono" />
+      <img src="@/assets/iconos/iconoObjetivo.png" alt="" id="imagenIcono" />
     </div>
     <div id="zonaDescripcion" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
@@ -13,7 +13,7 @@
       </div>
 
       <div id="descripcion" ref="descripcion">
-        {{ esteTrabajo.descripcion }}
+        {{ esteObjetivo.descripcion }}
       </div>
     </div>
 
@@ -31,7 +31,7 @@
                 : 'rotateZ(0deg)',
             }"
           ></div>
-          Responsable{{ esteTrabajo.responsables.length === 1 ? "" : "s" }}
+          Responsable{{ esteObjetivo.responsables.length === 1 ? "" : "s" }}
         </div>
       </div>
 
@@ -45,7 +45,7 @@
           <div
             class="controlesResponsables hoverGris botonesControles"
             :class="{ deshabilitado: enviandoQueryResponsables }"
-            v-if="usuarioLogeado == true && esteTrabajo.responsables.length < 1"
+            v-if="usuarioLogeado == true && esteObjetivo.responsables.length < 1"
             id="asumirResponsable"
             @click="asumirComoResponsable"
           >
@@ -71,8 +71,8 @@
             v-if="
               usuarioLogeado &&
               !usuarioResponsable &&
-              !usuarioPosibleResponsableTrabajo &&
-              esteTrabajo.responsables.length > 0
+              !usuarioPosibleResponsableObjetivo &&
+              esteObjetivo.responsables.length > 0
             "
             id="botonAddResponsable"
             @click="entrarListaPosiblesResponsables"
@@ -85,7 +85,7 @@
             v-if="
               usuarioLogeado == true &&
               (usuarioResponsable == true ||
-                usuarioPosibleResponsableTrabajo == true)
+                usuarioPosibleResponsableObjetivo == true)
             "
             v-show="idResponsableSeleccionado===null"
             @click="abandonarListaResponsables"
@@ -109,7 +109,7 @@
           <icono-persona-autonomo
             :idPersona="idPersona"
             :key="idPersona"
-            v-for="idPersona of esteTrabajo.responsables"
+            v-for="idPersona of esteObjetivo.responsables"
             :seleccionado="idResponsableSeleccionado == idPersona"
             @click.native.stop="
               idResponsableSeleccionado = idPersona;
@@ -120,7 +120,7 @@
             class="personaPosibleResponsable"
             :idPersona="idPersona"
             :key="idPersona"
-            v-for="idPersona of esteTrabajo.posiblesResponsables"
+            v-for="idPersona of esteObjetivo.posiblesResponsables"
             v-show="
               usuarioResponsable ||
               (usuario && usuario.id && usuario.id === idPersona)
@@ -151,7 +151,7 @@
               :style="[
                 {
                   backgroundColor:
-                    esteTrabajo.responsablesSolicitados !=
+                    esteObjetivo.responsablesSolicitados !=
                     responsablesSolicitados
                       ? 'orange'
                       : 'white',
@@ -161,54 +161,21 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <div
-      id="zonaMateriales"
-      ref="zonaMateriales"
-      class="zonaPrimerNivel"
-      @click.stop="idMaterialSeleccionado = null"
-    >
-      <div class="barraSuperiorZona">
-        <div class="nombreZona">Materiales</div>
-      </div>
-      <div id="controlesMateriales" class="controlesZona">
-        <div
-          class="controlesMateriales botonesControles hoverGris"
-          v-if="usuarioResponsable"
-          @click="crearNuevoMaterial"
-        >
-          Añadir material
-        </div>
-      </div>
-
-      <div id="listaMateriales" v-show="esteTrabajo.materiales.length > 0">
-        <material-trabajo
-          v-for="material of esteTrabajo.materiales"
-          :key="material.id"
-          :esteMaterial="material"
-          :seleccionado="material.id == idMaterialSeleccionado"
-          :usuarioResponsable="usuarioResponsable"
-          :idTrabajo="esteTrabajo.id"
-          @click.native.stop="idMaterialSeleccionado = material.id"
-          @meElimine="eliminarMaterialDeCache(material.id)"
-        />
-      </div>
-    </div>
+    </div>    
 
     <div
       id="zonaForo"
       ref="zonaForo"
       class="zonaPrimerNivel"
-      v-if="esteTrabajo.idForoResponsables && usuarioResponsable"
+      v-if="esteObjetivo.idForoResponsables && usuarioResponsable"
     >
       <div class="barraSuperiorZona">
         <div class="nombreZona">foro</div>
       </div>
-      <foro :parent="infoAsParent" :idForo="esteTrabajo.idForoResponsables" />
+      <foro :parent="infoAsParent" :idForo="esteObjetivo.idForoResponsables" />
     </div>
 
-    <div id="controlesTrabajo"></div>
+    <div id="controlesObjetivo"></div>
   </div>
 </template>
 
@@ -216,13 +183,12 @@
 import gql from "graphql-tag";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
-import MaterialTrabajo from "./trabajos/Material.vue";
 import Loading from "./utilidades/Loading.vue";
 import debounce from "debounce"
 
-const QUERY_TRABAJO = gql`
-  query ($idTrabajo: ID!) {
-    trabajo(idTrabajo: $idTrabajo) {
+const QUERY_OBJETIVO = gql`
+  query ($idObjetivo: ID!) {
+    objetivo(idObjetivo: $idObjetivo) {
       id
       nombre
       descripcion
@@ -233,46 +199,38 @@ const QUERY_TRABAJO = gql`
       nodoParent{
         idNodo
         tipo
-      }      
-      materiales {
-        id
-        nombre
-        descripcion
-        cantidadNecesaria
-        cantidadDisponible
-      }
+      }           
     }
   }
 `;
 
 export default {
-  name: "Trabajo",
+  name: "Objetivo",
   components: {
     Foro,
     IconoPersonaAutonomo,
-    MaterialTrabajo,
     Loading,
   },
   apollo: {
-    esteTrabajo: {
-      query: QUERY_TRABAJO,
+    esteObjetivo: {
+      query: QUERY_OBJETIVO,
       variables() {
         return {
-          idTrabajo: this.$route.params.idTrabajo,
+          idObjetivo: this.$route.params.idObjetivo,
         };
       },
-      update({ trabajo }) {
-        this.responsablesSolicitados=trabajo.responsablesSolicitados;
-        return trabajo;
+      update({ objetivo }) {
+        this.responsablesSolicitados=objetivo.responsablesSolicitados;
+        return objetivo;
       },
       skip() {
-        return !this.$route.params.idTrabajo;
+        return !this.$route.params.idObjetivo;
       },
     },
   },
   data() {
     return {
-      esteTrabajo: {
+      esteObjetivo: {
         responsables: [],
         materiales: [],
       },
@@ -291,25 +249,25 @@ export default {
   },
   computed: {
     usuarioResponsable: function () {
-      return this.esteTrabajo.responsables.includes(this.usuario.id);
+      return this.esteObjetivo.responsables.includes(this.usuario.id);
     },
     infoAsParent() {
       return {
-        id: this.esteTrabajo.id,
-        tipo: "trabajo",
-        nombre: this.esteTrabajo.nombre,
+        id: this.esteObjetivo.id,
+        tipo: "objetivo",
+        nombre: this.esteObjetivo.nombre,
       };
     },
-    usuarioPosibleResponsableTrabajo: function () {
-      if (!this.esteTrabajo.posiblesResponsables) return false;
+    usuarioPosibleResponsableObjetivo: function () {
+      if (!this.esteObjetivo.posiblesResponsables) return false;
 
-      if (this.esteTrabajo.posiblesResponsables.includes(this.usuario.id)) {
+      if (this.esteObjetivo.posiblesResponsables.includes(this.usuario.id)) {
         return true;
       }
       return false;
     },
     responsableSeleccionadoEstaAceptado() {
-      return this.esteTrabajo.responsables.includes(
+      return this.esteObjetivo.responsables.includes(
         this.idResponsableSeleccionado
       );
     },
@@ -317,16 +275,16 @@ export default {
   methods: {
     asumirComoResponsable() {
       console.log(
-        `enviando id ${this.usuario.id} para la lista de responsables del trabajo con id ${this.esteTrabajo.id} en el proyecto con id ${this.idEsteProyecto}`
+        `enviando id ${this.usuario.id} para la lista de responsables del objetivo con id ${this.esteObjetivo.id} en el proyecto con id ${this.idEsteProyecto}`
       );
       this.enviandoQueryResponsables = true;
 
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idTrabajo: ID!, $idUsuario: ID!) {
-              addResponsableTrabajo(
-                idTrabajo: $idTrabajo
+            mutation ($idObjetivo: ID!, $idUsuario: ID!) {
+              addResponsableObjetivo(
+                idObjetivo: $idObjetivo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -336,7 +294,7 @@ export default {
             }
           `,
           variables: {
-            idTrabajo: this.esteTrabajo.id,
+            idObjetivo: this.esteObjetivo.id,
             idUsuario: this.$store.state.usuario.id,
           },
         })
@@ -350,15 +308,15 @@ export default {
     },
     entrarListaPosiblesResponsables() {
       console.log(
-        `Enviando peticion de entrar a la lista de posibles responsables del trabajo con id ${this.esteTrabajo.id}`
+        `Enviando peticion de entrar a la lista de posibles responsables del objetivo con id ${this.esteObjetivo.id}`
       );
       this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idTrabajo: ID!, $idUsuario: ID!) {
-              addPosibleResponsableTrabajo(
-                idTrabajo: $idTrabajo
+            mutation ($idObjetivo: ID!, $idUsuario: ID!) {
+              addPosibleResponsableObjetivo(
+                idObjetivo: $idObjetivo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -367,7 +325,7 @@ export default {
             }
           `,
           variables: {
-            idTrabajo: this.esteTrabajo.id,
+            idObjetivo: this.esteObjetivo.id,
             idUsuario: this.$store.state.usuario.id,
           },
         })
@@ -380,14 +338,14 @@ export default {
         });
     },
     abandonarListaResponsables() {
-      console.log(`Abandonando este trabajo`);
+      console.log(`Abandonando este objetivo`);
       this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idTrabajo: ID!, $idUsuario: ID!) {
-              removeResponsableTrabajo(
-                idTrabajo: $idTrabajo
+            mutation ($idObjetivo: ID!, $idUsuario: ID!) {
+              removeResponsableObjetivo(
+                idObjetivo: $idObjetivo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -397,7 +355,7 @@ export default {
             }
           `,
           variables: {
-            idTrabajo: this.esteTrabajo.id,
+            idObjetivo: this.esteObjetivo.id,
             idUsuario: this.$store.state.usuario.id,
           },
         })
@@ -417,9 +375,9 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idTrabajo: ID!, $idUsuario: ID!) {
-              addResponsableTrabajo(
-                idTrabajo: $idTrabajo
+            mutation ($idObjetivo: ID!, $idUsuario: ID!) {
+              addResponsableObjetivo(
+                idObjetivo: $idObjetivo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -430,7 +388,7 @@ export default {
             }
           `,
           variables: {
-            idTrabajo: this.esteTrabajo.id,
+            idObjetivo: this.esteObjetivo.id,
             idUsuario: idPosibleResponsable,
           },
         })
@@ -441,90 +399,7 @@ export default {
           this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
-    },
-    crearNuevoMaterial() {
-      console.log(`enviando mutacion de crear nuevo material`);
-      this.creandoMaterial = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idTrabajo: ID!) {
-              crearMaterialEnTrabajoSolidaridad(                
-                idTrabajo: $idTrabajo
-              ) {
-                id
-                nombre
-                descripcion
-                cantidadNecesaria
-                cantidadDisponible
-              }
-            }
-          `,
-          variables: {            
-            idTrabajo: this.esteTrabajo.id,
-          },
-          update: (store, { data: { crearMaterialEnTrabajoSolidaridad } }) => {
-            
-            const nuevoMaterial = crearMaterialEnTrabajoSolidaridad;
-            try {
-              let cache = store.readQuery({
-                query: QUERY_TRABAJO,
-                variables: {                  
-                  idTrabajo: this.esteTrabajo.id,
-                },
-              });
-
-              let nuevoCache = JSON.parse(JSON.stringify(cache));
-              nuevoCache.trabajo.materiales.push(nuevoMaterial);
-
-              store.writeQuery({
-                query: QUERY_TRABAJO,
-                variables: {                  
-                  idTrabajo: this.esteTrabajo.id,
-                },
-                data: nuevoCache,
-              });
-              console.log(`cache actualizado`);
-            } catch (error) {
-              console.log(`Error actualizando cache: ${error}`);
-              return;
-            }
-          },
-        })
-        .then((respuesta) => {
-          console.log(`respuesta. ${respuesta}`);
-          this.creandoMaterial = false;
-        })
-        .catch((error) => {
-          this.creandoMaterial = false;
-          console.log(`error: ${error}`);
-        });
-    },
-    eliminarMaterialDeCache(idMaterial) {
-      let store = this.$apollo.provider.defaultClient;
-      let cache = store.readQuery({
-        query: QUERY_TRABAJO,
-        variables: {
-          idTrabajo: this.esteTrabajo.id,
-        },
-      });
-      let nuevoCache = JSON.parse(JSON.stringify(cache));
-      let indexT = nuevoCache.trabajo.materiales.findIndex(
-        (t) => t.id == idMaterial
-      );
-      if (indexT > -1) {
-        nuevoCache.trabajo.materiales.splice(indexT, 1);
-      } else {
-        console.log(`El material no existía en el trabajo`);
-      }
-      store.writeQuery({
-        query: QUERY_TRABAJO,
-        variables: {
-          idTrabajo: this.esteTrabajo.id,
-        },
-        data: nuevoCache,
-      });
-    },
+    },   
     debounceSetResponsablesSolicitados: debounce(function(){
       this.setResponsablesSolicitados(parseInt(this.responsablesSolicitados));
     }, 2000),    
@@ -534,11 +409,11 @@ export default {
         .mutate({
           mutation: gql`
             mutation (
-              $idTrabajo: ID!
+              $idObjetivo: ID!
               $nuevoCantidadResponsablesSolicitados: Int!
             ) {
-              setResponsablesSolicitadosTrabajo(
-                idTrabajo: $idTrabajo
+              setResponsablesSolicitadosObjetivo(
+                idObjetivo: $idObjetivo
                 nuevoCantidadResponsablesSolicitados: $nuevoCantidadResponsablesSolicitados
               ) {
                 id
@@ -547,7 +422,7 @@ export default {
             }
           `,
           variables: {
-            idTrabajo: this.esteTrabajo.id,
+            idObjetivo: this.esteObjetivo.id,
             nuevoCantidadResponsablesSolicitados: cantidad,
           },
         })
@@ -560,7 +435,7 @@ export default {
   },
   watch:{
     responsablesSolicitados(nuevo){
-      if(nuevo===this.esteTrabajo.responsablesSolicitados)return;
+      if(nuevo===this.esteObjetivo.responsablesSolicitados)return;
       console.log(`Cambio en responsables solicitados`);
       this.debounceSetResponsablesSolicitados();
     }
@@ -569,7 +444,7 @@ export default {
 </script>
 
 <style scoped>
-.trabajo {
+.objetivo {
   border: 2px solid #0b8794;
   border-radius: 5px;
   position: relative;
@@ -578,14 +453,14 @@ export default {
   background-color: rgb(230, 247, 247);
 }
 
-#controlesTrabajo {
+#controlesObjetivo {
   position: absolute;
   bottom: 0px;
   right: 0px;
   display: flex;
   flex-direction: row-reverse;
 }
-.controlesTrabajo {
+.controlesObjetivo {
   padding: 3px 5px;
   cursor: pointer;
 }

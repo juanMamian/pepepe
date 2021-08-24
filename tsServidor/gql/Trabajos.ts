@@ -34,7 +34,8 @@ export const typeDefs = gql`
        descripcion:String,       
        vinculos:[VinculoNodoProyecto],
        keywords:String,
-       nodoParent:InfoNodoSolidaridad
+       nodoParent:InfoNodoSolidaridad,
+       idForoResponsables:ID,
        estadoDesarrollo:String,       
        coords: Coords,
        angulo:Float,
@@ -106,14 +107,14 @@ export const typeDefs = gql`
        busquedaTrabajosProyectos(textoBusqueda:String!):[InfoBasicaTrabajo],
        trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo],
        trabajosSegunCentro(centro: CoordsInput!, radio: Int!):[Trabajo],
-       nodosTrabajosSegunCentro(centro:CoordsInput!, radio: Int!):[NodoDeTrabajos]
-    busquedaAmpliaNodosSolidaridad(palabrasBuscadas:String!):ResultadoBusquedaNodosSolidaridad,
+       nodosTrabajosSegunCentro(centro:CoordsInput!, radio: Int!):[NodoDeTrabajos],
+        busquedaAmpliaNodosSolidaridad(palabrasBuscadas:String!):ResultadoBusquedaNodosSolidaridad,
 
    }
 
    extend type Mutation{
-    crearMaterialEnTrabajoDeProyecto(idProyecto:ID!, idTrabajo:ID!):MaterialTrabajo,
-    eliminarMaterialDeTrabajo(idTrabajo:ID!, idMaterial: ID!):Boolean,
+    crearMaterialEnTrabajoSolidaridad(idTrabajo:ID!):MaterialTrabajo,
+    eliminarMaterialDeTrabajoSolidaridad(idTrabajo:ID!, idMaterial: ID!):Boolean,
     editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
     editarDescripcionMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoDescripcion: String!):MaterialTrabajo,
     editarCantidadesMaterialTrabajo(idTrabajo: ID!, idMaterial:ID!, nuevoCantidadNecesaria:Int!, nuevoCantidadDisponible:Int):MaterialTrabajo,
@@ -166,22 +167,12 @@ export const resolvers = {
             } catch (error) {
                 console.log(`error buscando un objetivo. E: ${error}`);
                 throw new ApolloError("");
-            }
+            }            
 
-            if (!elObjetivo.idProyectoParent) {
-                console.log(`Objetivo ${elObjetivo.nombre} no tenia idProyectoParent. Buscándole`);
-                try {
-                    let elProyectoParent: any = await Proyecto.findOne({ idsObjetivos: { $in: elObjetivo._id } }).exec();
-                    if (!elProyectoParent) throw "No habia proyecto parent";
-                    console.log(`Era del proyecto ${elProyectoParent.nombre}`);
-                    elObjetivo.idProyectoParent = elProyectoParent._id;
-                    await elObjetivo.save();
-                } catch (error) {
-                    console.log(`Error buscando proyecto parent. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base datos");
-                }
-            }
-
+            if (!elObjetivo.idForoResponsables) {
+                console.log(`El objetivo no tenía foro`);
+            }           
+           
             return elObjetivo;
         },
         busquedaObjetivosProyectos: async function (_: any, { textoBusqueda }: any, contexto: contextoQuery) {
@@ -224,59 +215,12 @@ export const resolvers = {
             } catch (error) {
                 console.log(`error buscando un trabajo. E: ${error}`);
                 throw new ApolloError("");
-            }
-
-            if (!elTrabajo.idProyectoParent) {
-                console.log(`Trabajo ${elTrabajo.nombre} no tenia idProyectoParent. Buscándole`);
-                try {
-                    let elProyectoParent: any = await Proyecto.findOne({ idsTrabajos: { $in: elTrabajo._id } }).exec();
-                    if (!elProyectoParent) throw "No habia proyecto parent";
-                    console.log(`Era del proyecto ${elProyectoParent.nombre}`);
-                    elTrabajo.idProyectoParent = elProyectoParent._id;
-                    await elTrabajo.save();
-                } catch (error) {
-                    console.log(`Error buscando proyecto parent. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base datos");
-                }
-            }
+            }            
 
             if (!elTrabajo.idForoResponsables) {
-                tieneForo = false;
-            }
-            else {
-                try {
-                    let elForo: any = await Foro.findById(elTrabajo.idForoResponsables).exec();
-                    if (!elForo) {
-                        console.log(`El foro no existía. Se creará uno nuevo`);
-                        tieneForo = false;
-                    }
-                } catch (error) {
-                    console.log(`Error buscando foro en la base de datos. E :${error}`);
-                }
-            }
-
-            if (!tieneForo) {
-                console.log(`El trabajo ${elTrabajo.nombre} no tenía foro. Creando con miembros: ${elTrabajo.responsables}.`);
-                try {
-                    var nuevoForo: any = await Foro.create({
-                        miembros: elTrabajo.responsables,
-                        acceso: "privado"
-                    });
-                    var idNuevoForo = nuevoForo._id;
-                    await nuevoForo.save();
-                } catch (error) {
-                    console.log(`Error creando el nuevo foro. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-                console.log(`Nuevo foro creado`);
-                try {
-                    elTrabajo.idForoResponsables = idNuevoForo;
-                    await elTrabajo.save();
-                } catch (error) {
-                    console.log(`Error guardando el trabajo`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-            }
+                console.log(`El trabajo no tenía foro`);
+            }           
+           
             return elTrabajo;
         },
         busquedaTrabajosProyectos: async function (_: any, { textoBusqueda }: any, contexto: contextoQuery) {
@@ -2431,16 +2375,11 @@ export const resolvers = {
         },
 
 
-        async crearMaterialEnTrabajoDeProyecto(_: any, { idProyecto, idTrabajo }: any, contexto: contextoQuery) {
+        async crearMaterialEnTrabajoSolidaridad(_: any, { idTrabajo }: any, contexto: contextoQuery) {
             console.log(`Peticion de crear un nuevo material en el trabajo con id ${idTrabajo}`);
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-
-            if (!credencialesUsuario.id) {
-                console.log(`Usuario no autenticado`);
-                throw new AuthenticationError("No autorizado");
-            }
 
             try {
                 var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
@@ -2448,6 +2387,14 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error buscando el trabajo. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
+            }
+
+
+
+            const permisosEspeciales=["superadministrador"];
+            if (!credencialesUsuario.id || !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) || !elTrabajo.responsables.includes(credencialesUsuario.id)) {
+                console.log(`Error de autenticación`);
+                throw new AuthenticationError("No autorizado");
             }
 
             try {
@@ -2606,7 +2553,7 @@ export const resolvers = {
             console.log(`Cantidades guardado`);
             return elMaterial;
         },
-        async eliminarMaterialDeTrabajo(_: any, { idMaterial, idTrabajo }: any, contexto: contextoQuery) {
+        async eliminarMaterialDeTrabajoSolidaridad(_: any, { idMaterial, idTrabajo }: any, contexto: contextoQuery) {
             console.log(`peticion de eliminar un material con id ${idMaterial} de un trabajo con id ${idTrabajo}`);
             let credencialesUsuario = contexto.usuario;
 
@@ -2644,7 +2591,7 @@ export const resolvers = {
             return true;
         },
 
-        
+
 
     },
 

@@ -1,9 +1,5 @@
 <template>
-  <div
-    class="ventanitaTrabajo"
-    :class="{ seleccionado }"
-    @mouseup.left.stop=""
-  >
+  <div class="ventanitaTrabajo" :class="{ seleccionado }" @mouseup.left.stop="">
     <div
       id="zonaNombre"
       :class="{ bordeAbajo: seleccionado }"
@@ -31,7 +27,11 @@
           v-show="editandoNombre"
           @keypress.enter="guardarNuevoNombre"
         /> -->
-        <div class="controlesLateralesZona" :class="{deshabilitado: enviandoNuevoNombre}" v-if="usuarioAdministrador">
+        <div
+          class="controlesLateralesZona"
+          :class="{ deshabilitado: enviandoNuevoNombre }"
+          v-if="usuarioAdministrador"
+        >
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -82,7 +82,7 @@
         <div
           class="controlesZona"
           v-show="usuarioAdministrador && mostrandoDescripcion"
-          :class="{deshabilitado: enviandoNuevoDescripcion}"
+          :class="{ deshabilitado: enviandoNuevoDescripcion }"
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -141,14 +141,16 @@
       </div>
 
       <div v-show="mostrandoResponsables">
-        <div id="controlesResponsables" class="controlesZona" :class="{deshabilitado:enviandoQueryResponsables}">
+        <div
+          id="controlesResponsables"
+          class="controlesZona"
+          :class="{ deshabilitado: enviandoQueryResponsables }"
+        >
           <loading v-show="enviandoQueryResponsables" texto="Esperando..." />
           <div
             class="controlesResponsables hoverGris botonesControles"
             :class="{ deshabilitado: enviandoQueryResponsables }"
-            v-if="
-              usuarioLogeado == true && esteTrabajo.responsables.length < 1
-            "
+            v-if="usuarioLogeado == true && esteTrabajo.responsables.length < 1"
             id="asumirResponsable"
             @click="asumirComoResponsable"
           >
@@ -162,6 +164,7 @@
               usuarioResponsableTrabajo &&
               responsablesSolicitados < 1
             "
+            v-show="idResponsableSeleccionado===null"
             id="solicitarResponsable"
             @click="setResponsablesSolicitados(1)"
           >
@@ -189,6 +192,7 @@
               (usuarioResponsableTrabajo == true ||
                 usuarioPosibleResponsableTrabajo == true)
             "
+            v-show="idResponsableSeleccionado===null"
             @click="abandonarListaResponsables"
           >
             Abandonar
@@ -206,7 +210,7 @@
             Aceptar como responsable
           </div>
         </div>
-        <div id="listaResponsables">
+        <div id="listaResponsables" @click.stop="idResponsableSeleccionado=null">
           <icono-persona-autonomo
             :idPersona="idPersona"
             :key="idPersona"
@@ -266,7 +270,11 @@
       </div>
     </div>
 
-    <div id="zonaKeywords" class="zonaPrimerNivel" v-show="usuarioAdministrador">
+    <div
+      id="zonaKeywords"
+      class="zonaPrimerNivel"
+      v-show="usuarioAdministrador"
+    >
       <div
         class="barraSuperiorZona"
         @click="mostrandoKeywords = !mostrandoKeywords"
@@ -275,9 +283,7 @@
           <div
             class="trianguloBullet"
             :style="{
-              transform: mostrandoKeywords
-                ? 'rotateZ(90deg)'
-                : 'rotateZ(0deg)',
+              transform: mostrandoKeywords ? 'rotateZ(90deg)' : 'rotateZ(0deg)',
             }"
           ></div>
           Palabras clave
@@ -285,7 +291,7 @@
         <div
           class="controlesZona"
           v-show="usuarioAdministrador && mostrandoKeywords"
-          :class="{deshabilitado: enviandoNuevoKeywords}"
+          :class="{ deshabilitado: enviandoNuevoKeywords }"
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -302,9 +308,7 @@
             title="guardar"
             class="bGuardar"
             id="bGuardarNuevoKeywords"
-            v-show="
-              editandoKeywords == true && nuevoKeywordsIlegal == false
-            "
+            v-show="editandoKeywords == true && nuevoKeywordsIlegal == false"
             @click.stop="guardarNuevoKeywords"
           />
         </div>
@@ -331,7 +335,7 @@
       class="botonIr"
       @click.stop="navegarAlTrabajo"
       title="Abrir la página de este trabajo"
-      v-show="false"
+      v-show="true"
     />
 
     <div id="controlesTrabajo"></div>
@@ -364,7 +368,7 @@ export default {
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
 
-      mostrandoKeywords:false,
+      mostrandoKeywords: false,
       nuevoKeywords: null,
       editandoKeywords: false,
       enviandoNuevoKeywords: false,
@@ -731,7 +735,7 @@ export default {
     }, 2000),
     setResponsablesSolicitados(cantidad) {
       if (cantidad < 0) cantidad = 0;
-      this.enviandoQueryResponsables=true;
+      this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -753,14 +757,14 @@ export default {
             nuevoCantidadResponsablesSolicitados: cantidad,
           },
         })
-        .then(({data:{setResponsablesSolicitadosTrabajo}}) => {
-          this.enviandoQueryResponsables=false;
-          this.responsablesSolicitados=setResponsablesSolicitadosTrabajo.responsablesSolicitados
+        .then(({ data: { setResponsablesSolicitadosTrabajo } }) => {
+          this.enviandoQueryResponsables = false;
+          this.responsablesSolicitados =
+            setResponsablesSolicitadosTrabajo.responsablesSolicitados;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
-          this.enviandoQueryResponsables=false;
-
+          this.enviandoQueryResponsables = false;
         });
     },
     navegarAlTrabajo() {
@@ -771,10 +775,9 @@ export default {
     responsablesSolicitados(nuevo) {
       if (nuevo === this.esteTrabajo.responsablesSolicitados) return;
       console.log(`Cambio en responsables solicitados`);
-      if(nuevo<1){        
+      if (nuevo < 1) {
         this.setResponsablesSolicitados(parseInt(nuevo));
-      }
-      else{
+      } else {
         this.debounceSetResponsablesSolicitados();
       }
     },
@@ -825,14 +828,12 @@ export default {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  cursor:pointer;
-
+  cursor: pointer;
 }
 
 .iconoCompletado {
   background-color: rgb(44, 136, 44);
 }
-
 
 .zonaPrimerNivel {
   position: relative;

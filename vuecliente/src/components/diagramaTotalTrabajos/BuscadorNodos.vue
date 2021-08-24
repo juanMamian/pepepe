@@ -23,20 +23,39 @@
 
     <loading texto="Buscando" v-show="esperandoResultados" />
 
-    <div id="listaResultados" v-show="mostrandoLista">
-      <div
-        class="resultado"
-        :key="resultadoTrabajo.id"
-        v-for="resultadoTrabajo of resultados.trabajos"
-        @click.stop="
-          $emit('nodoSeleccionado', resultadoTrabajo);
-          mostrandoInput = false;
-          mostrandoLista = false;
-        "
-      >
-        {{ resultadoTrabajo.nombre }}
+    <div id="contenedorListas">
+      <div class="listaResultados" v-show="mostrandoLista && resultados.trabajos && resultados.trabajos.length>0">
+        <img src="@/assets/iconos/iconoTrabajo.png" alt="Trabajos" width="15px" class="iconoLista">
+        <div
+          class="resultado"
+          :key="resultadoTrabajo.id"
+          v-for="resultadoTrabajo of resultados.trabajos"
+          @click.stop="
+            $emit('nodoSeleccionado', resultadoTrabajo);
+            mostrandoInput = false;
+            mostrandoLista = false;
+          "
+        >
+          {{ resultadoTrabajo.nombre }}
+        </div>
+      </div>
+      <div class="listaResultados" v-show="mostrandoLista && resultados.objetivos && resultados.objetivos.length>0">
+        <img src="@/assets/iconos/iconoObjetivo.png" alt="Objetivos" width="15px" class="iconoLista">
+        <div
+          class="resultado"
+          :key="resultadoObjetivo.id"
+          v-for="resultadoObjetivo of resultados.objetivos"
+          @click.stop="
+            $emit('nodoSeleccionado', resultadoObjetivo);
+            mostrandoInput = false;
+            mostrandoLista = false;
+          "
+        >
+          {{ resultadoObjetivo.nombre }}
+        </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -133,7 +152,7 @@ export default {
   top: 1%;
   left: 1%;
   /* transform: translateX(-50%); */
-  z-index: 1;
+  z-index: 100;
 }
 #inputBuscador {
   font-size: 20px;
@@ -156,21 +175,26 @@ export default {
 .opaco {
   opacity: 0.5;
 }
-#listaResultados {
-  margin: 2px auto;
+#contenedorListas{
+  display: flex;
+}
+.listaResultados {  
   width: 280px;
 }
-
+.iconoLista{
+  display: block;
+  margin: 5px auto;
+}
 .resultado {
   padding: 5px 15px;
-  font-size: 15px;
-  background-color: lightblue;
+  font-size: 15px;  
   cursor: pointer;
+  background-color: lightblue;
+
 }
 .resultado:hover {
   background-color: rgb(133, 179, 194);
 }
-
 .unfold-enter {
   width: 0px;
 }

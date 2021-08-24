@@ -7,7 +7,7 @@
       <div
         class="controlesCampo"
         id="controlesCampoNombre"
-        v-show="usuarioResponsableTrabajo && seleccionado"
+        v-show="usuarioResponsable && seleccionado"
       >
         <img
           src="@/assets/iconos/editar.png"
@@ -68,7 +68,7 @@
       <div
         class="controlesCampo"
         id="controlesCampoCantidades"
-        v-show="usuarioResponsableTrabajo && seleccionado"
+        v-show="usuarioResponsable && seleccionado"
       >
         <img
           src="@/assets/iconos/editar.png"
@@ -91,7 +91,7 @@
     </div>
 
     <div id="campoDescripcion" class="campoPrimerNivel" v-show="seleccionado">
-      <div class="controlesCampo" v-show="usuarioResponsableTrabajo">
+      <div class="controlesCampo" v-show="usuarioResponsable">
         <img
           src="@/assets/iconos/editar.png"
           alt="Editar"
@@ -133,7 +133,7 @@
       <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
 
-    <div id="bEliminar" v-show="seleccionado && usuarioResponsableTrabajo" @click="eliminarse">
+    <div id="bEliminar" v-show="seleccionado && usuarioResponsable" @click="eliminarse">
       Eliminar
     </div>
   </div>
@@ -152,7 +152,7 @@ export default {
     Loading,
   },
   props: {
-    usuarioResponsableTrabajo: Boolean,
+    usuarioResponsable: Boolean,
     seleccionado: Boolean,
     idTrabajo: String,
     esteMaterial: Object,
@@ -358,7 +358,7 @@ export default {
         .mutate({
           mutation: gql`
             mutation($idTrabajo: ID!, $idMaterial: ID!) {
-              eliminarMaterialDeTrabajo(
+              eliminarMaterialDeTrabajoSolidaridad(
                 idTrabajo: $idTrabajo
                 idMaterial: $idMaterial
               )
@@ -369,9 +369,9 @@ export default {
             idMaterial: this.esteMaterial.id,
           },
         })
-        .then(({ data: { eliminarMaterialDeTrabajo } }) => {
+        .then(({ data: { eliminarMaterialDeTrabajoSolidaridad } }) => {
           this.deshabilitado = false;
-          console.log(`Resultado: ${eliminarMaterialDeTrabajo}`);
+          console.log(`Resultado: ${eliminarMaterialDeTrabajoSolidaridad}`);
           this.$emit("meElimine");
         })
         .catch((error) => {

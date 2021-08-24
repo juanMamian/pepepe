@@ -162,6 +162,7 @@
               usuarioResponsableObjetivo &&
               responsablesSolicitados < 1
             "
+            v-show="idResponsableSeleccionado===null"
             id="solicitarResponsable"
             @click="setResponsablesSolicitados(1)"
           >
@@ -189,6 +190,7 @@
               (usuarioResponsableObjetivo == true ||
                 usuarioPosibleResponsableObjetivo == true)
             "
+            v-show="idResponsableSeleccionado===null"
             @click="abandonarListaResponsables"
           >
             Abandonar
@@ -206,7 +208,7 @@
             Aceptar como responsable
           </div>
         </div>
-        <div id="listaResponsables">
+        <div id="listaResponsables" @click.stop="idResponsableSeleccionado=null">
           <icono-persona-autonomo
             :idPersona="idPersona"
             :key="idPersona"
@@ -331,7 +333,7 @@
       class="botonIr"
       @click.stop="navegarAlObjetivo"
       title="Abrir la página de este trabajo"
-      v-show="false"
+      v-show="true"
     />
 
     <div id="controlesObjetivo"></div>

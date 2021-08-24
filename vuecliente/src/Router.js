@@ -16,6 +16,7 @@ import PortadaActividadesEstudiantiles from "./components/actividadesProfes/Port
 import ActividadEspecifica from "./components/actividadesProfes/ActividadEspecifica"
 import Home from "./components/Home"
 import Trabajo from "./components/Trabajo"
+import Objetivo from "./components/Objetivo"
 import BuscadorTrabajos from "./components/BuscadorTrabajos"
 import TodosMateriales from "./components/TodosMateriales"
 import ForosGenerales from "./components/ForosGenerales"
@@ -62,6 +63,7 @@ const routes = [
     { path: "/proyectos", name: "proyectos", component: Proyectos },
     { path: "/proyecto/:idProyecto", name: "verProyecto", component: Proyecto },
     { path: "/trabajo/:idTrabajo", name: "verTrabajo", component: Trabajo },
+    { path: "/objetivo/:idObjetivo", name: "verObjetivo", component: Objetivo },
     { path: "/registro", name: "registro", component: Registro },
     {
         path: "/actividadesVirtuales2021", component: ActividadesEstudiantiles, children: [

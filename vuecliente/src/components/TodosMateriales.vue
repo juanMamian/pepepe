@@ -50,7 +50,7 @@
 
 <script>
 import gql from "graphql-tag";
-import MaterialTrabajo from "./trabajo/MaterialTrabajo.vue";
+import MaterialTrabajo from "./trabajos/Material.vue";
 import IconoTrabajo from "./proyecto/IconoTrabajo.vue";
 
 const QUERY_PROYECTOS = gql`
