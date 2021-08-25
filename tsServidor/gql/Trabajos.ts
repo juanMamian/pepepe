@@ -60,6 +60,7 @@ export const typeDefs = gql`
         cantidadNecesaria:Int,
         cantidadDisponible:Int,    
         idTrabajoParent:ID,
+        
     }
 
    type Trabajo{
@@ -109,6 +110,8 @@ export const typeDefs = gql`
        trabajosSegunCentro(centro: CoordsInput!, radio: Int!):[Trabajo],
        nodosTrabajosSegunCentro(centro:CoordsInput!, radio: Int!):[NodoDeTrabajos],
         busquedaAmpliaNodosSolidaridad(palabrasBuscadas:String!):ResultadoBusquedaNodosSolidaridad,
+        
+        todosMateriales:[MaterialTrabajo],
 
    }
 
@@ -204,8 +207,7 @@ export const resolvers = {
             return losObjetivos;
         },
 
-        trabajo: async function (_: any, { idTrabajo }: any, context: contextoQuery) {
-            let tieneForo = true;
+        trabajo: async function (_: any, { idTrabajo }: any, context: contextoQuery) {            
 
             try {
                 var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
@@ -309,6 +311,29 @@ export const resolvers = {
             console.log(`${opciones.length} opciones: ${opciones}`);
             return { trabajos: losTrabajos, objetivos: losObjetivos }
         },
+
+        todosMateriales: async function(_:any, __:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            try {
+                var losTrabajos:any=await Trabajo.find({}).exec();
+
+            } catch (error) {
+                console.log(`Error buscando los trabajos`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var listaMateriales:Array<string>=[];
+
+            losTrabajos.forEach(trabajo=>{
+                trabajo.materiales.forEach(material=>{
+                    material.idTrabajoParent=trabajo.id                    
+                })
+                listaMateriales=listaMateriales.concat(trabajo.materiales);
+            })
+            
+            return listaMateriales;
+        }
     },
 
     Mutation: {

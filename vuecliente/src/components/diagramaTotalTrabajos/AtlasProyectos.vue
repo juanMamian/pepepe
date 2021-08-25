@@ -20,8 +20,11 @@
       ]"
     ></div>
 
-    <buscador-nodos :cerrarBusqueda="cerrarBusqueda" @nodoSeleccionado="centrarEnNodo"/>
-
+    <buscador-nodos
+      :cerrarBusqueda="cerrarBusqueda"
+      @nodoSeleccionado="centrarEnNodo"
+    />
+    <ventana-materiales @centrarEnNodo="centrarEnNodoById" />
     <div
       id="menuContextual"
       v-if="usuario && usuario.id"
@@ -84,17 +87,19 @@
         :nodoSeleccionado="nodoSeleccionado"
         :menuCx="idNodoMenuCx && idNodoMenuCx == objetivo.id"
         :factorZoom="factorZoom"
-        :usuarioAdministradorNodoSeleccionado="usuarioAdministradorNodoSeleccionado"
+        :usuarioAdministradorNodoSeleccionado="
+          usuarioAdministradorNodoSeleccionado
+        "
         :usuarioResponsableNodoSeleccionado="usuarioResponsableNodoSeleccionado"
         v-show="idsNodosVisibles.includes(objetivo.id)"
         @click.native="idNodoSeleccionado = objetivo.id"
         @click.native.right.exact.stop.prevent="idNodoMenuCx = objetivo.id"
         @dblclick.native="idNodoPaVentanita = objetivo.id"
         :transparentoso="
-            idNodoSeleccionado &&
-            idNodoSeleccionado != objetivo.id &&
-            !idsNodosRequeridosSeleccionado.includes(objetivo.id) &&
-            !idsNodosRequierenSeleccionado.includes(objetivo.id)
+          idNodoSeleccionado &&
+          idNodoSeleccionado != objetivo.id &&
+          !idsNodosRequeridosSeleccionado.includes(objetivo.id) &&
+          !idsNodosRequierenSeleccionado.includes(objetivo.id)
         "
         @eliminar="eliminarNodo(objetivo.id, 'objetivo')"
       />
@@ -108,13 +113,15 @@
         :menuCx="idNodoMenuCx && idNodoMenuCx == trabajo.id"
         :factorZoom="factorZoom"
         :callingPosiciones="callingPosiciones"
-        :usuarioAdministradorNodoSeleccionado="usuarioAdministradorNodoSeleccionado"
+        :usuarioAdministradorNodoSeleccionado="
+          usuarioAdministradorNodoSeleccionado
+        "
         :usuarioResponsableNodoSeleccionado="usuarioResponsableNodoSeleccionado"
         :transparentoso="
-            idNodoSeleccionado &&
-            idNodoSeleccionado != trabajo.id &&
-            !idsNodosRequeridosSeleccionado.includes(trabajo.id) &&
-            !idsNodosRequierenSeleccionado.includes(trabajo.id)
+          idNodoSeleccionado &&
+          idNodoSeleccionado != trabajo.id &&
+          !idsNodosRequeridosSeleccionado.includes(trabajo.id) &&
+          !idsNodosRequierenSeleccionado.includes(trabajo.id)
         "
         v-show="idsNodosVisibles.includes(trabajo.id)"
         @click.native="idNodoSeleccionado = trabajo.id"
@@ -178,7 +185,8 @@ import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue";
 import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 import Loading from "../utilidades/Loading.vue";
-import BuscadorNodos from './BuscadorNodos.vue';
+import BuscadorNodos from "./BuscadorNodos.vue";
+import VentanaMateriales from "./VentanaMateriales.vue";
 
 // const fragmentoTrabajos = gql`
 //   fragment fragTrabajo on Trabajo {
@@ -320,6 +328,7 @@ export default {
     VentanitaTrabajo,
     Loading,
     BuscadorNodos,
+    VentanaMateriales,
   },
   name: "AtlasProyectos",
   apollo: {
@@ -419,7 +428,8 @@ export default {
       enviandoQueryNodos: false,
 
       callingPosiciones: false,
-      cerrarBusqueda:0,
+      cerrarBusqueda: 0,
+      cerrarMateriales:0,
     };
   },
   methods: {
@@ -982,7 +992,7 @@ export default {
     centrarEnNodo(n) {
       var contenedor = this.$el;
       let posContenedor = contenedor.getBoundingClientRect();
-      
+
       this.$set(
         this.esquinaVistaDecimal,
         "x",
@@ -993,7 +1003,50 @@ export default {
         "y",
         n.coords.y - posContenedor.height / (2 * this.factorZoom)
       );
-      this.idNodoSeleccionado=n.id;
+      this.idNodoSeleccionado = n.id;
+      //this.centroVista=e;
+    },
+    centrarEnNodoById(idNodo) {
+      var contenedor = this.$el;
+      let posContenedor = contenedor.getBoundingClientRect();
+
+      console.log(`Centrando en nodo con id ${idNodo}`);
+
+      this.$apollo
+        .query({
+          query: gql`
+            query ($idTrabajo: ID!) {
+              trabajo(idTrabajo: $idTrabajo) {
+                id
+                nombre
+                coords{
+                  x
+                  y
+                }
+              }
+            }
+          `,
+          variables: {
+            idTrabajo: idNodo,
+          },
+        })
+        .then(({data:{ trabajo }}) => {
+          console.log(`Respuesta: ${trabajo}`);
+          this.$set(
+            this.esquinaVistaDecimal,
+            "x",
+            trabajo.coords.x - posContenedor.width / (2 * this.factorZoom)
+          );
+          this.$set(
+            this.esquinaVistaDecimal,
+            "y",
+            trabajo.coords.y - posContenedor.height / (2 * this.factorZoom)
+          );
+          this.idNodoSeleccionado = trabajo.id;
+        }).catch((error)=>{
+          console.log(`Error: ${error}`);
+        });
+
       //this.centroVista=e;
     },
   },
@@ -1057,14 +1110,14 @@ export default {
     nodoSeleccionado() {
       return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
-    usuarioAdministradorNodoSeleccionado(){
-      if(!this.usuario || !this.usuario.id)return false;
-      if(!this.nodoSeleccionado)return false;
+    usuarioAdministradorNodoSeleccionado() {
+      if (!this.usuario || !this.usuario.id) return false;
+      if (!this.nodoSeleccionado) return false;
       return this.nodoSeleccionado.administradores.includes(this.usuario.id);
     },
-    usuarioResponsableNodoSeleccionado(){
-      if(!this.usuario || !this.usuario.id)return false;
-      if(!this.nodoSeleccionado)return false;
+    usuarioResponsableNodoSeleccionado() {
+      if (!this.usuario || !this.usuario.id) return false;
+      if (!this.nodoSeleccionado) return false;
 
       return this.nodoSeleccionado.responsables.includes(this.usuario.id);
     },
@@ -1209,7 +1262,7 @@ export default {
   position: absolute;
   top: 50px;
   left: 5%;
-  z-index: 2;
+  z-index: 60;
 }
 #loadingNodos {
   position: absolute;
@@ -1233,5 +1286,7 @@ export default {
   transform: translate(-50%, -50%);
   border-radius: 50%;
 }
-
+#ventanaMateriales {
+  position: absolute;
+}
 </style>
