@@ -377,7 +377,9 @@ export default {
     },
     colorCartelNombre() {
       var color = "white";
-
+      if(this.esteTrabajo.responsables && this.esteTrabajo.responsables.length>0){
+        color="#f0ee6e";
+      }
       if (this.administradoPorSeleccionado) {
         color = "rgb(224 169 135)";
       }

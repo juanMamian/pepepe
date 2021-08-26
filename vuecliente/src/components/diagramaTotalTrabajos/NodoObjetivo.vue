@@ -371,7 +371,9 @@ export default {
     },
     colorCartelNombre() {
       var color = "white";
-
+      if(this.esteObjetivo.responsables && this.esteObjetivo.responsables.length>0){
+        color="#f0ee6e";
+      }
       if (this.administradoPorSeleccionado) {
         color = "rgb(224 169 135)";
       }
@@ -430,7 +432,7 @@ export default {
       return false;
     },
     estiloColor(){
-      var elColor='rgba(105, 199, 199, 0.9)';
+      var elColor='rgba(105, 199, 199, 0.9)';      
       if(this.seleccionado){
         elColor='rgb(193 72 139)';
       }
