@@ -78,7 +78,7 @@
       :idNodoSeleccionado="idNodoSeleccionado"
     />
     <div id="contenedorNodos" :style="[posContenedores]">
-      <nodo-objetivo
+      <!-- <nodo-objetivo
         v-for="objetivo of objetivos"
         :key="objetivo.id"
         :esteObjetivo="objetivo"
@@ -95,6 +95,7 @@
         @click.native="idNodoSeleccionado = objetivo.id"
         @click.native.right.exact.stop.prevent="idNodoMenuCx = objetivo.id"
         @dblclick.native="idNodoPaVentanita = objetivo.id"
+        @meAbrieron="idNodoPaVentanita = objetivo.id"
         :transparentoso="
           idNodoSeleccionado &&
           idNodoSeleccionado != objetivo.id &&
@@ -127,7 +128,35 @@
         @click.native="idNodoSeleccionado = trabajo.id"
         @click.native.right.exact.stop.prevent="idNodoMenuCx = trabajo.id"
         @dblclick.native="idNodoPaVentanita = trabajo.id"
+        @meAbrieron="idNodoPaVentanita = trabajo.id"
         @eliminar="eliminarNodo(trabajo.id, 'trabajo')"
+      /> -->
+
+      <nodo
+        v-for="nodo of todosNodos"
+        :key="nodo.id"
+        :esteNodo="nodo"
+        :idNodoSeleccionado="idNodoSeleccionado"
+        :nodoSeleccionado="nodoSeleccionado"
+        :menuCx="idNodoMenuCx && idNodoMenuCx == nodo.id"
+        :factorZoom="factorZoom"
+        :callingPosiciones="callingPosiciones"
+        :usuarioAdministradorNodoSeleccionado="
+          usuarioAdministradorNodoSeleccionado
+        "
+        :usuarioResponsableNodoSeleccionado="usuarioResponsableNodoSeleccionado"
+        :transparentoso="
+          idNodoSeleccionado &&
+          idNodoSeleccionado != nodo.id &&
+          !idsNodosRequeridosSeleccionado.includes(nodo.id) &&
+          !idsNodosRequierenSeleccionado.includes(nodo.id)
+        "
+        v-show="idsNodosVisibles.includes(nodo.id)"
+        @click.native="idNodoSeleccionado = nodo.id"
+        @click.native.right.exact.stop.prevent="idNodoMenuCx = nodo.id"
+        @dblclick.native="idNodoPaVentanita = nodo.id"
+        @meAbrieron="idNodoPaVentanita = nodo.id"
+        @eliminar="eliminarNodo(nodo.id, nodo.__typename.toLowerCase())"
       />
 
       <div
@@ -179,14 +208,15 @@
 
 <script>
 import gql from "graphql-tag";
-import NodoObjetivo from "./NodoObjetivo.vue";
-import NodoTrabajo from "./NodoTrabajo.vue";
+// import NodoObjetivo from "./NodoObjetivo.vue";
+// import NodoTrabajo from "./NodoTrabajo.vue";
 import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue";
 import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 import Loading from "../utilidades/Loading.vue";
 import BuscadorNodos from "./BuscadorNodos.vue";
 import VentanaMateriales from "./VentanaMateriales.vue";
+import Nodo from './Nodo.vue';
 
 // const fragmentoTrabajos = gql`
 //   fragment fragTrabajo on Trabajo {
@@ -321,14 +351,15 @@ const QUERY_TODOS_NODOS = gql`
 
 export default {
   components: {
-    NodoObjetivo,
-    CanvasesAtlasProyectos,
-    NodoTrabajo,
+    // NodoObjetivo,
+    // NodoTrabajo,
+    CanvasesAtlasProyectos,    
     VentanitaObjetivo,
     VentanitaTrabajo,
     Loading,
     BuscadorNodos,
     VentanaMateriales,
+    Nodo,
   },
   name: "AtlasProyectos",
   apollo: {
@@ -520,8 +551,8 @@ export default {
         return;
       }
 
-      const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
-      const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
+      const deltaX = Math.round((e.changedTouches[0].clientX - this.ultimoTouchX)/this.factorZoom);
+      const deltaY = Math.round((e.changedTouches[0].clientY - this.ultimoTouchY)/this.factorZoom);
       this.ultimoTouchX = e.changedTouches[0].clientX;
       this.ultimoTouchY = e.changedTouches[0].clientY;
 
@@ -609,20 +640,22 @@ export default {
       if (!confirm("¿Seguro de que quieres eliminar este elemento?")) return;
       console.log(`enviando mutacion de eliminar nodo`);
       this.enviandoQueryNodos = true;
+
+
       const dis = this;
       this.$apollo
         .mutate({
           mutation: gql`
             mutation ($idNodo: ID!, $tipo: String!) {
-              eliminarNodoDeTrabajos(idNodo: $idNodo, tipo: $tipo)
+              eliminarNodoSolidaridad(idNodo: $idNodo, tipo: $tipo)
             }
           `,
           variables: {
             idNodo,
             tipo,
           },
-          update(store, { data: { eliminarNodoDeTrabajos } }) {
-            if (!eliminarNodoDeTrabajos) {
+          update(store, { data: { eliminarNodoSolidaridad } }) {
+            if (!eliminarNodoSolidaridad) {
               console.log(`Nodo no fue eliminado`);
               return;
             }
@@ -1221,6 +1254,7 @@ export default {
 #menuContextual {
   position: absolute;
   background-color: rgb(173, 173, 173);
+  z-index: 2;
 }
 .botonMenuContextual {
   padding: 5px 10px;
@@ -1260,7 +1294,7 @@ export default {
 .ventanitaNodo {
   width: min(400px, 90%);
   position: absolute;
-  top: 50px;
+  top: 5%;
   left: 5%;
   z-index: 60;
 }

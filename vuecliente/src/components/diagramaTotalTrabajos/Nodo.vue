@@ -1,13 +1,13 @@
 <template>
   <div
-    class="nodoObjetivo"
+    class="nodo"
     :class="{ seleccionado }"
     :style="[
       estiloPosicion,
       estiloZeta,
       estiloSize,
-      estiloColor,
       { transition: callingPosiciones ? 'left 5s' : '' },
+      estiloColor,
     ]"
     @mousedown.left="agarrado = callingPosiciones ? false : true"
     @mouseup.left="guardarPosicion"
@@ -15,12 +15,19 @@
   >
     <div id="zonaArrastre" v-show="agarrado"></div>
     <img
+      v-if="esteNodo.__typename === 'Objetivo'"
       src="@/assets/iconos/iconoObjetivo.png"
-      alt="Objetivo"
-      id="iconoFondo"
       :class="{ transparentoso }"
+      alt="Nodo"
+      id="iconoFondo"
     />
-
+    <img
+      v-else
+      src="@/assets/iconos/iconoTrabajo.png"
+      :class="{ transparentoso }"
+      alt="Nodo"
+      id="iconoFondo"
+    />
     <img
       src="@/assets/iconos/maximizar.png"
       alt="abrir"
@@ -28,6 +35,7 @@
       title="Ampliar información"
       v-show="seleccionado"
       @click.left.stop="$emit('meAbrieron')"
+      @mouseup.left.stop=""
     />
     <div
       id="zonaNombre"
@@ -35,25 +43,31 @@
       :class="{ transparentoso }"
     >
       <div id="nombre" draggable="false">
-        {{
-          callingPosiciones ? esteObjetivo.peso.toFixed(2) : esteObjetivo.nombre
-        }}
+        <!-- <img
+          src="@/assets/iconos/estrella.png"
+          alt=""
+          class="iconoNodo"
+          draggable="false"
+          :style="{width: Math.round(17*factorZoom)+'px'}"
+          :class="{
+            iconoCompletado: esteNodo.estadoDesarrollo === 'completado',
+          }"
+        /> -->
+        {{ callingPosiciones ? esteNodo.peso.toFixed(2) : esteNodo.nombre }}
       </div>
     </div>
 
     <div id="menuContextual" v-show="menuCx">
       <template
-        v-if="
-          idNodoSeleccionado != null && idNodoSeleccionado != esteObjetivo.id
-        "
+        v-if="idNodoSeleccionado != null && idNodoSeleccionado != esteNodo.id"
       >
         <div class="seccionMenuCx">El elemento seleccionado...</div>
         <div
           class="botonMenuCx"
-          @click.stop="crearRequerimento(idNodoSeleccionado, esteObjetivo.id)"
           v-show="usuarioResponsableNodoSeleccionado"
           @mouseup.stop=""
           @mousedown.stop=""
+          @click.stop="crearRequerimento(idNodoSeleccionado, esteNodo.id)"
         >
           Requiere este elemento
         </div>
@@ -61,8 +75,8 @@
           class="botonMenuCx"
           @mouseup.stop=""
           @mousedown.stop=""
+          @click.stop="eliminarVinculo(idNodoSeleccionado, esteNodo.id)"
           v-show="requeridoPorSeleccionado"
-          @click.stop="eliminarVinculo(idNodoSeleccionado, esteObjetivo.id)"
           :class="{
             deshabilitado: !usuarioResponsableNodoSeleccionado,
           }"
@@ -76,10 +90,9 @@
         :class="{
           deshabilitado:
             (autoadministrado &&
-            esteObjetivo.administradores.length > 1 &&
-            !usuarioSuperadministrador) ||
-            (!usuarioResponsable && esteObjetivo.responsables.length>0)
-            ,
+              esteNodo.administradores.length > 1 &&
+              !usuarioSuperadministrador) ||
+            (!usuarioResponsable && esteNodo.responsables.length > 0),
         }"
         @click="eliminarse"
       >
@@ -91,12 +104,10 @@
 
 <script>
 import gql from "graphql-tag";
-
 export default {
-  name: "NodoObjetivo",
+  name: "nodo",
   props: {
-    esteObjetivo: Object,
-    idProyecto: String,
+    esteNodo: Object,
     idNodoSeleccionado: String,
     nodoSeleccionado: Object,
     menuCx: Boolean,
@@ -108,6 +119,13 @@ export default {
   },
   data() {
     return {
+      estiloNombreBase: {
+        minWidth: 80,
+        fontSize: 12,
+        minHeight: 15,
+        padding: 10,
+        borderRadius: 10,
+      },
       agarrado: false,
       arrastrandoNodo: 0,
       umbralArrastreNodo: 10,
@@ -121,14 +139,6 @@ export default {
       size: {
         x: 40,
         y: 40,
-      },
-
-      estiloNombreBase: {
-        minWidth: 80,
-        fontSize: 12,
-        minHeight: 15,
-        padding: 10,
-        borderRadius: 10,
       },
     };
   },
@@ -174,28 +184,37 @@ export default {
         this.agarrado = false;
         return;
       }
-
       this.arrastrandoNodo = 0;
       this.agarrado = false;
 
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idObjetivo: ID!, $nuevaPosicion: CoordsInput) {
-              setPosicionObjetivo(
-                idObjetivo: $idObjetivo
+            mutation ($idNodo: ID!, $nuevaPosicion: CoordsInput) {
+              setPosicionNodoSolidaridad(
+                idNodo: $idNodo
                 nuevaPosicion: $nuevaPosicion
               ) {
-                id
-                coords {
-                  x
-                  y
+                __typename
+                ... on Trabajo {
+                  id
+                  coords {
+                    x
+                    y
+                  }
+                }
+                ... on Objetivo {
+                  id
+                  coords {
+                    x
+                    y
+                  }
                 }
               }
             }
           `,
           variables: {
-            idObjetivo: this.esteObjetivo.id,
+            idNodo: this.esteNodo.id,
             nuevaPosicion: this.posicion,
           },
         })
@@ -342,13 +361,16 @@ export default {
     },
     seleccionado() {
       return (
-        this.idNodoSeleccionado &&
-        this.idNodoSeleccionado == this.esteObjetivo.id
+        this.idNodoSeleccionado && this.idNodoSeleccionado == this.esteNodo.id
       );
     },
     usuarioResponsable() {
       if (!this.usuario || !this.usuario.id) return false;
-      return this.esteObjetivo.responsables.includes(this.usuario.id);
+      return this.esteNodo.responsables.includes(this.usuario.id);
+    },
+    usuarioAdministrador() {
+      if (!this.usuario || !this.usuario.id) return false;
+      return this.esteNodo.administradores.includes(this.usuario.id);
     },
     estiloCartelNombre() {
       return {
@@ -364,15 +386,18 @@ export default {
           parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
       };
     },
-    administradoPorSeleccionado(){
-      if(!this.nodoSeleccionado)return false;
+    administradoPorSeleccionado() {
+      if (!this.nodoSeleccionado) return false;
 
-      return this.esteObjetivo.nodoParent && this.esteObjetivo.nodoParent.idNodo===this.nodoSeleccionado.id;
+      return (
+        this.esteNodo.nodoParent &&
+        this.esteNodo.nodoParent.idNodo === this.nodoSeleccionado.id
+      );
     },
     colorCartelNombre() {
       var color = "white";
-      if(this.esteObjetivo.responsables && this.esteObjetivo.responsables.length>0){
-        color="#f0ee6e";
+      if (this.esteNodo.responsables && this.esteNodo.responsables.length > 0) {
+        color = "#f0ee6e";
       }
       if (this.administradoPorSeleccionado) {
         color = "rgb(224 169 135)";
@@ -384,29 +409,29 @@ export default {
         backgroundColor: color,
       };
     },
-    usuarioAdministrador() {
-      if (!this.usuario || !this.usuario.id) return false;
-      return this.esteObjetivo.administradores.includes(this.usuario.id);
-    },
     autoadministrado() {
-      return (
-        !this.esteObjetivo.nodoParent || !this.esteObjetivo.nodoParent.idNodo
-      );
+      return !this.esteNodo.nodoParent || !this.esteNodo.nodoParent.idNodo;
     },
     conectadoAlSeleccionado() {
       if (!this.nodoSeleccionado) return false;
       if (
-        this.esteObjetivo.vinculos.some(
-          (v) => v.idRef === this.idNodoSeleccionado
-        )
+        this.esteNodo.vinculos.some((v) => v.idRef === this.idNodoSeleccionado)
       ) {
         return true;
       }
 
       if (
-        this.nodoSeleccionado.vinculos.some(
-          (v) => v.idRef === this.esteObjetivo.id
-        )
+        this.nodoSeleccionado.vinculos.some((v) => v.idRef === this.esteNodo.id)
+      ) {
+        return true;
+      }
+
+      return false;
+    },
+    requeridoPorSeleccionado() {
+      if (!this.nodoSeleccionado) return false;
+      if (
+        this.nodoSeleccionado.vinculos.some((v) => v.idRef === this.esteNodo.id)
       ) {
         return true;
       }
@@ -415,54 +440,40 @@ export default {
     },
     huerfano() {
       return (
-        this.esteObjetivo.responsables.length === 0 &&
-        this.esteObjetivo.administradores.length === 0
+        this.esteNodo.responsables.length === 0 &&
+        this.esteNodo.administradores.length === 0
       );
     },
-    requeridoPorSeleccionado() {
-      if (!this.nodoSeleccionado) return false;
-      if (
-        this.nodoSeleccionado.vinculos.some(
-          (v) => v.idRef === this.esteObjetivo.id
-        )
-      ) {
-        return true;
-      }
-
-      return false;
-    },
-    estiloColor(){
-      var elColor='rgba(105, 199, 199, 0.9)';      
-      if(this.seleccionado){
-        elColor='rgb(193 72 139)';
+    estiloColor() {
+      var elColor = "rgba(105, 199, 199, 0.9)";
+      if (this.seleccionado) {
+        elColor = "rgb(193 72 139)";
       }
       return {
-        backgroundColor: elColor
-      }
-    }
+        backgroundColor: elColor,
+      };
+    },
   },
   watch: {
-    esteObjetivo() {
-      this.$set(this.posicion, "x", this.esteObjetivo.coords.x);
-      this.$set(this.posicion, "y", this.esteObjetivo.coords.y);
+    esteNodo() {
+      this.$set(this.posicion, "x", this.esteNodo.coords.x);
+      this.$set(this.posicion, "y", this.esteNodo.coords.y);
     },
   },
   mounted() {
     this.montado = true;
-    this.$set(this.posicion, "x", this.esteObjetivo.coords.x);
-    this.$set(this.posicion, "y", this.esteObjetivo.coords.y);
+    this.$set(this.posicion, "x", this.esteNodo.coords.x);
+    this.$set(this.posicion, "y", this.esteNodo.coords.y);
   },
 };
 </script>
 
 <style scoped>
-.nodoObjetivo {
+.nodo {
   position: absolute;
-  border-radius: 50%;  
+  border-radius: 50%;
   cursor: pointer;
   transition-timing-function: linear;
-  box-shadow: 2px 2px 2px 2px grey;
-  
 }
 #iconoFondo {
   position: absolute;
@@ -477,6 +488,7 @@ export default {
 .seleccionado {
   border-width: 2px;
   border-color: purple;
+  box-shadow: 2px 2px 2px 2px grey;
 }
 #zonaNombre {
   position: absolute;
@@ -488,7 +500,7 @@ export default {
 #nombre {
   user-select: none;
 }
-.iconoObjetivo {
+.iconoNodo {
   border-radius: 50%;
   padding: 3px;
 }

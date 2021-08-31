@@ -147,7 +147,8 @@ export const typeDefs = gql`
     setResponsablesSolicitadosTrabajo(idTrabajo:ID!, nuevoCantidadResponsablesSolicitados: Int!):Trabajo,
     setPosicionTrabajo(idTrabajo:ID!, nuevaPosicion:CoordsInput):Trabajo,
 
-    eliminarNodoDeTrabajos(idNodo:ID!, tipo: String!):Boolean,
+    setPosicionNodoSolidaridad(idNodo:ID!, nuevaPosicion:CoordsInput):NodoDeTrabajos,
+    eliminarNodoSolidaridad(idNodo:ID!, tipo: String!):Boolean,
     crearNodoSolidaridad(infoNodo:NodoSolidaridadInput!):NodoDeTrabajos,
     crearNodoSolidaridadRequerido(infoNodo:NodoSolidaridadInput!, idNodoRequiriente: ID!):[NodoDeTrabajos],
     desvincularNodosSolidaridad(idUnNodo:ID!, idOtroNodo:ID!):[NodoDeTrabajos],
@@ -337,7 +338,69 @@ export const resolvers = {
     },
 
     Mutation: {
-        async eliminarNodoDeTrabajos(_: any, { idNodo, tipo }: any, contexto: contextoQuery) {
+        async setPosicionNodoSolidaridad(_: any, { idNodo, nuevaPosicion }, contexto: contextoQuery) {
+            console.log(`Guardando posicion de nodo en el diagrama del proyecto`);
+            const credencialesUsuario = contexto.usuario;
+
+            try {
+                var tipoDeNodo='trabajo'
+                var elNodo: any = await Trabajo.findById(idNodo).exec();                
+
+                if (!elNodo) {
+                    tipoDeNodo='objetivo';
+                    elNodo = await Objetivo.findById(idNodo).exec();
+                }    
+                if (!elNodo) {
+                    tipoDeNodo='';
+                    throw "Nodo no encontrado"
+                }
+                elNodo.tipoNodo=tipoDeNodo;
+            }
+            catch (error) {
+                console.log("Error buscando el nodo. E: " + error);
+                throw new ApolloError("Error en la conexión con la base de datos");
+            }
+
+            var administradores: Array<string> = [];
+
+            if (!elNodo.nodoParent || !elNodo.nodoParent.idNodo || !elNodo.nodoParent.tipo) {
+                administradores = elNodo.responsables;
+            }
+            else {
+                try {
+                    var elNodoParent: any = null;
+                    if (elNodo.nodoParent.tipo === 'trabajo') {
+                        elNodoParent = await Trabajo.findById(elNodo.nodoParent.idNodo)
+                    }
+                    else if (elNodo.nodoParent.tipo === 'objetivo') {
+                        elNodoParent = await Objetivo.findById(elNodo.nodoParent.idNodo)
+                    }
+                    if (!elNodoParent) throw "Nodo parent no encontrado"
+                } catch (error) {
+                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                administradores = elNodoParent.responsables;
+            }
+
+            //Authorización
+            if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de nodo`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                elNodo.coords = nuevaPosicion;
+                await elNodo.save();
+            } catch (error) {
+                console.log(`error guardando el nodo modificado: ${error}`);
+            }
+
+            return elNodo;
+
+        },
+        async eliminarNodoSolidaridad(_: any, { idNodo, tipo }: any, contexto: contextoQuery) {
             console.log(`peticion de eliminar un ${tipo} con id ${idNodo}`);
             let credencialesUsuario = contexto.usuario;
 

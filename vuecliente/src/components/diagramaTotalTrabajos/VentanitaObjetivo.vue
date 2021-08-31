@@ -3,6 +3,7 @@
     class="ventanitaObjetivo"
     :class="{ seleccionado }"
     @mouseup.left.stop=""
+    @touchmove.stop=""
   >
     <div
       id="zonaNombre"
@@ -791,9 +792,10 @@ export default {
   border: 2px solid #585858;
   border-radius: 5px;
   min-height: 10px;
-
+  max-height:90%;
+  overflow-y: scroll;
   position: relative;
-  padding: 5px 0px;
+  padding: 5px 5px;
   padding-bottom: 10px;
   background-color: rgb(231, 182, 182);
 }

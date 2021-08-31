@@ -234,7 +234,7 @@ export default {
         x: Math.round(((nodoTo.coords.x-zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom)),
         y: Math.round(((nodoTo.coords.y-zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom)),
       };
-      console.log(`Trazando desde ${JSON.stringify(inicio)} hasta ${JSON.stringify(final)}`);
+      
       lapiz.moveTo(inicio.x, inicio.y);
       lapiz.lineTo(final.x, final.y);
       //ahora la flechita

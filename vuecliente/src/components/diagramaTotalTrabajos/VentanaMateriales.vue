@@ -88,7 +88,8 @@ export default {
     top: 10%;    
     z-index: 50;
     width: min(90%, 400px);
-    max-height: 60%;
+    max-height: 70%;
+    
 }
 #iconoMateriales{
     position: absolute;

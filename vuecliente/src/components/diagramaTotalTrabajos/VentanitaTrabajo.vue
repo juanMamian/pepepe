@@ -794,9 +794,12 @@ export default {
   border-radius: 5px;
   min-height: 10px;
   position: relative;
-  padding: 5px 0px;
+  padding: 5px 1px;
   padding-bottom: 10px;
   background-color: rgb(231, 182, 182);
+  max-height:90%;
+  overflow-y:scroll;
+  overflow-x: visible;
 }
 
 .seleccionado {
