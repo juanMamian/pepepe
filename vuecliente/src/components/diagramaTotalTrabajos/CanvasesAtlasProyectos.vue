@@ -7,6 +7,8 @@
       v-show="mostrandoTodosVinculos"
       :style="[sizeCanvasVista]"
     ></canvas>
+
+    
     <canvas
       id="canvasVinculosSeleccionado"
       ref="canvasVinculosSeleccionado"
@@ -117,41 +119,41 @@ export default {
 
     },
     crearImagenTodosVinculos() {
-      var nodosRelevantes=this.todosNodos;            
+      // var nodosRelevantes=this.todosNodos;            
 
-      if (nodosRelevantes.length <= 1) return 
-      console.log(`Dibujando todos vínculos con ${nodosRelevantes.length} nodos`);
-      var posicionCanvas={
-        x:this.centroDescarga.x-this.radioDescarga,
-        y:this.centroDescarga.y-this.radioDescarga,
-      }
-      var lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
+      // if (nodosRelevantes.length <= 1) return 
+      // console.log(`Dibujando todos vínculos con ${nodosRelevantes.length} nodos`);
+      // var posicionCanvas={
+      //   x:this.centroDescarga.x-this.radioDescarga,
+      //   y:this.centroDescarga.y-this.radioDescarga,
+      // }
+      // var lapiz = this.$refs.canvasTodosVinculos.getContext("2d");
                         
-      lapiz.canvas.width = Math.round((this.radioDescarga*2)*this.factorZoom);
-      lapiz.canvas.height = Math.round((this.radioDescarga*2)*this.factorZoom);
+      // lapiz.canvas.width = Math.round((this.radioDescarga*2)*this.factorZoom);
+      // lapiz.canvas.height = Math.round((this.radioDescarga*2)*this.factorZoom);
 
-      // this.$set(this.sizeCanvasVista, 'width', lapiz.canvas.width+'px');
-      // this.$set(this.sizeCanvasVista, 'height', lapiz.canvas.height+'px');
+      // // this.$set(this.sizeCanvasVista, 'width', lapiz.canvas.width+'px');
+      // // this.$set(this.sizeCanvasVista, 'height', lapiz.canvas.height+'px');
       
-      lapiz.lineWidth = 2;
-      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
-      lapiz.beginPath();
-      lapiz.strokeStyle = "#b3b3b3";
-      for (let nodo of nodosRelevantes) {
-        for (let vinculo of nodo.vinculos) {
-          if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) continue;
-          if (vinculo.tipo == "requiere") {
-            this.dibujarLineaEntreNodos(
-              nodosRelevantes.find((nodo) => nodo.id == vinculo.idRef),
-              nodo,
-              lapiz,
-              posicionCanvas
-            );
-          }
-        }
-      }
-      lapiz.stroke();
-      this.mostrandoTodosVinculos=true;
+      // lapiz.lineWidth = 2;
+      // lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+      // lapiz.beginPath();
+      // lapiz.strokeStyle = "#b3b3b3";
+      // for (let nodo of nodosRelevantes) {
+      //   for (let vinculo of nodo.vinculos) {
+      //     if (!nodosRelevantes.some((n) => n.id == vinculo.idRef)) continue;
+      //     if (vinculo.tipo == "requiere") {
+      //       this.dibujarLineaEntreNodos(
+      //         nodosRelevantes.find((nodo) => nodo.id == vinculo.idRef),
+      //         nodo,
+      //         lapiz,
+      //         posicionCanvas
+      //       );
+      //     }
+      //   }
+      // }
+      // lapiz.stroke();
+      // this.mostrandoTodosVinculos=true;
     },
     crearImagenVinculosSeleccionado: function () {
       var nodosRelevantes = this.todosNodos;

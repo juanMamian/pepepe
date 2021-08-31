@@ -64,7 +64,7 @@
         <div class="seccionMenuCx">El elemento seleccionado...</div>
         <div
           class="botonMenuCx"
-          v-show="usuarioResponsableNodoSeleccionado"
+          v-show="usuarioResponsableNodoSeleccionado || usuarioSuperadministrador"
           @mouseup.stop=""
           @mousedown.stop=""
           @click.stop="crearRequerimento(idNodoSeleccionado, esteNodo.id)"
@@ -78,7 +78,7 @@
           @click.stop="eliminarVinculo(idNodoSeleccionado, esteNodo.id)"
           v-show="requeridoPorSeleccionado"
           :class="{
-            deshabilitado: !usuarioResponsableNodoSeleccionado,
+            deshabilitado: !usuarioResponsableNodoSeleccionado && !usuarioSuperadministrador,
           }"
         >
           Desconectar
@@ -220,6 +220,7 @@ export default {
         })
         .then(() => {
           console.log(`Posición guardada`);
+          this.$emit("meMovi");
         })
         .catch((error) => {
           console.log(`Error. E: ${error}`);

@@ -67,7 +67,7 @@
     </div>
 
     <div id="centroVista" v-show="usuarioSuperadministrador"></div>
-    <canvases-atlas-proyectos
+    <!-- <canvases-atlas-proyectos
       :style="posCuadroDescarga"
       :centroVista="centroVista"
       :centroDescarga="centroDescarga"
@@ -76,7 +76,20 @@
       :callingPosiciones="callingPosiciones"
       :factorZoom="factorZoom"
       :idNodoSeleccionado="idNodoSeleccionado"
-    />
+    /> -->
+
+    <div id="contenedorCanvasNodos" :style="[posContenedores]">
+      <canvas-enlaces-nodo
+        v-for="nodo of nodosConRequerimentos"        
+        :key="nodo.id"
+        :esteNodo="nodo"
+        :todosNodos="todosNodos"
+        :factorZoom="factorZoom"
+        :nodoSeleccionado="nodoSeleccionado"
+        :redibujarEnlaces="redibujarEnlacesNodos"
+      />
+    </div>
+
     <div id="contenedorNodos" :style="[posContenedores]">
       <!-- <nodo-objetivo
         v-for="objetivo of objetivos"
@@ -152,6 +165,7 @@
           !idsNodosRequierenSeleccionado.includes(nodo.id)
         "
         v-show="idsNodosVisibles.includes(nodo.id)"
+        @meMovi="redibujarEnlacesNodos++"
         @click.native="idNodoSeleccionado = nodo.id"
         @click.native.right.exact.stop.prevent="idNodoMenuCx = nodo.id"
         @dblclick.native="idNodoPaVentanita = nodo.id"
@@ -210,13 +224,14 @@
 import gql from "graphql-tag";
 // import NodoObjetivo from "./NodoObjetivo.vue";
 // import NodoTrabajo from "./NodoTrabajo.vue";
-import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue";
+// import CanvasesAtlasProyectos from "./CanvasesAtlasProyectos.vue";
 import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 import Loading from "../utilidades/Loading.vue";
 import BuscadorNodos from "./BuscadorNodos.vue";
 import VentanaMateriales from "./VentanaMateriales.vue";
-import Nodo from './Nodo.vue';
+import Nodo from "./Nodo.vue";
+import CanvasEnlacesNodo from "./CanvasEnlacesNodo.vue";
 
 // const fragmentoTrabajos = gql`
 //   fragment fragTrabajo on Trabajo {
@@ -353,13 +368,14 @@ export default {
   components: {
     // NodoObjetivo,
     // NodoTrabajo,
-    CanvasesAtlasProyectos,    
+    // CanvasesAtlasProyectos,
     VentanitaObjetivo,
     VentanitaTrabajo,
     Loading,
     BuscadorNodos,
     VentanaMateriales,
     Nodo,
+    CanvasEnlacesNodo,
   },
   name: "AtlasProyectos",
   apollo: {
@@ -446,7 +462,7 @@ export default {
       idNodoMenuCx: null,
 
       zoom: 80,
-      minZoom: 50,
+      minZoom: 30,
       maxZoom: 100,
 
       pinching: false,
@@ -460,7 +476,9 @@ export default {
 
       callingPosiciones: false,
       cerrarBusqueda: 0,
-      cerrarMateriales:0,
+      cerrarMateriales: 0,
+
+      redibujarEnlacesNodos:0,
     };
   },
   methods: {
@@ -551,8 +569,12 @@ export default {
         return;
       }
 
-      const deltaX = Math.round((e.changedTouches[0].clientX - this.ultimoTouchX)/this.factorZoom);
-      const deltaY = Math.round((e.changedTouches[0].clientY - this.ultimoTouchY)/this.factorZoom);
+      const deltaX = Math.round(
+        (e.changedTouches[0].clientX - this.ultimoTouchX) / this.factorZoom
+      );
+      const deltaY = Math.round(
+        (e.changedTouches[0].clientY - this.ultimoTouchY) / this.factorZoom
+      );
       this.ultimoTouchX = e.changedTouches[0].clientX;
       this.ultimoTouchY = e.changedTouches[0].clientY;
 
@@ -641,7 +663,6 @@ export default {
       console.log(`enviando mutacion de eliminar nodo`);
       this.enviandoQueryNodos = true;
 
-
       const dis = this;
       this.$apollo
         .mutate({
@@ -696,6 +717,7 @@ export default {
           if (dis.idNodoSeleccionado === idNodo) {
             dis.idNodoSeleccionado = null;
           }
+
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
@@ -867,6 +889,7 @@ export default {
           this.idNodoPaVentanita = crearNodoSolidaridad.id;
           this.enviandoQueryNodos = false;
           this.mostrandoMenuContextual = false;
+          
           //this.$router.push("/nodoConocimiento/"+crearNodoSolidaridad.id);
         })
         .catch((error) => {
@@ -1052,7 +1075,7 @@ export default {
               trabajo(idTrabajo: $idTrabajo) {
                 id
                 nombre
-                coords{
+                coords {
                   x
                   y
                 }
@@ -1063,7 +1086,7 @@ export default {
             idTrabajo: idNodo,
           },
         })
-        .then(({data:{ trabajo }}) => {
+        .then(({ data: { trabajo } }) => {
           console.log(`Respuesta: ${trabajo}`);
           this.$set(
             this.esquinaVistaDecimal,
@@ -1076,7 +1099,8 @@ export default {
             trabajo.coords.y - posContenedor.height / (2 * this.factorZoom)
           );
           this.idNodoSeleccionado = trabajo.id;
-        }).catch((error)=>{
+        })
+        .catch((error) => {
           console.log(`Error: ${error}`);
         });
 
@@ -1182,6 +1206,9 @@ export default {
     objetivos() {
       return this.todosNodos.filter((n) => n.__typename === "Objetivo");
     },
+    nodosConRequerimentos(){
+      return this.todosNodos.filter(n=>n.vinculos.filter(v=>v.tipo==='requiere').length>0)
+    }
   },
   watch: {
     callingPosiciones(nuevo) {
@@ -1266,6 +1293,9 @@ export default {
 #contenedorNodos {
   position: relative;
   z-index: 1;
+}
+#contenedorCanvasNodos {
+  position: relative;
 }
 
 #canvasesAtlasProyectos {
