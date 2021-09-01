@@ -150,6 +150,9 @@ export default {
     },
   },
   computed: {
+    posNodo(){
+      return this.esteNodo.coords
+    },
     idsNodosRequeridos() {
       return this.esteNodo.vinculos
         .filter((v) => v.tipo === "requiere")
@@ -168,7 +171,6 @@ export default {
         (n) =>
           this.idsNodosRequeridos.includes(n.id) || n.id === this.esteNodo.id
       );
-      console.log(`${nodosInvolucrados.length} nodos involucrados`);
       const x1 = nodosInvolucrados.reduce((acc, n) => {
         if (n.coords.x < acc) {
           return n.coords.x;
@@ -252,6 +254,14 @@ export default {
     cantidadNodosRequeridos(){
         this.trazarVinculosGrises();
         this.trazarVinculosRequeridos();
+    },
+    posNodo(){
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
+    },
+    esquinas(){
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
     }
   },
 };

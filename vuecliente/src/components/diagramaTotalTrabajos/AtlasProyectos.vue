@@ -382,38 +382,6 @@ export default {
   },
   name: "AtlasProyectos",
   apollo: {
-    // trabajos: {
-    //   query: QUERY_TRABAJOS,
-    //   variables() {
-    //     return {
-    //       centro: this.centroDescarga,
-    //       radio: this.radioDescarga,
-    //     };
-    //   },
-    //   update({ trabajosSegunCentro }) {
-    //     return trabajosSegunCentro;
-    //   },
-    //   skip() {
-    //     return !this.radioDescarga;
-    //   },
-    //   debounce: 1000,
-    // },
-    // objetivos: {
-    //   query: QUERY_OBJETIVOS,
-    //   variables() {
-    //     return {
-    //       centro: this.centroDescarga,
-    //       radio: this.radioDescarga,
-    //     };
-    //   },
-    //   update({ objetivosSegunCentro }) {
-    //     return objetivosSegunCentro;
-    //   },
-    //   skip() {
-    //     return !this.radioDescarga;
-    //   },
-    //   debounce: 1000,
-    // },
     todosNodos: {
       query: QUERY_TODOS_NODOS,
       variables() {
@@ -430,6 +398,102 @@ export default {
       },
       skip() {
         return !this.radioDescarga;
+      },
+      subscribeToMore: {
+        document: gql`
+          subscription($centro: CoordsInput!, $radio:Int!) {
+            nodoEditado(centro:$centro, radio:$radio) {
+              __typename
+              ... on Trabajo {
+                id
+                nombre
+                descripcion
+                responsables
+                posiblesResponsables
+                responsablesSolicitados
+                administradores
+                keywords
+                nodoParent {
+                  idNodo
+                  tipo
+                }
+                coords {
+                  x
+                  y
+                }
+                estadoDesarrollo
+                vinculos {
+                  idRef
+                  tipo
+                  tipoRef
+                }
+                stuck
+                angulo
+                centroMasa {
+                  x
+                  y
+                }
+                puntaje
+                nivel
+                turnoNivel
+                peso
+              }
+              ... on Objetivo {
+                id
+                nombre
+                descripcion
+                responsables
+                posiblesResponsables
+                responsablesSolicitados
+                administradores
+                keywords
+                nodoParent {
+                  idNodo
+                  tipo
+                }
+                coords {
+                  x
+                  y
+                }
+                estadoDesarrollo
+                vinculos {
+                  idRef
+                  tipo
+                  tipoRef
+                }
+                stuck
+                angulo
+                centroMasa {
+                  x
+                  y
+                }
+                puntaje
+                nivel
+                turnoNivel
+                peso
+              }
+            }
+          }
+        `,
+        variables() {
+          return {
+            centro: {
+              x: this.centroDescarga.x,
+              y: this.centroDescarga.y,
+            },
+            radio: this.radioDescarga,
+          };
+        },
+        updateQuery: (previousResult, { subscriptionData: { data } }) => {
+          const indexN = previousResult.nodosTrabajosSegunCentro.findIndex(
+            (n) => n.id == data.nodoEditado.id
+          );
+          if (indexN > -1) {
+            previousResult.nodosTrabajosSegunCentro.splice(indexN, 1);
+          }
+          previousResult.nodosTrabajosSegunCentro.push(data.nodoEditado);          
+          return previousResult;
+        },
       },
     },
   },
@@ -468,7 +532,7 @@ export default {
       minZoom: 30,
       maxZoom: 100,
       showingZoomInfo: false,
-      infoPosZoom:null,
+      infoPosZoom: null,
 
       pinching: false,
       lastPinchDistance: 0,
@@ -484,7 +548,6 @@ export default {
       cerrarMateriales: 0,
 
       redibujarEnlacesNodos: 0,
-      
     };
   },
   methods: {
@@ -535,16 +598,28 @@ export default {
         var contenedor = this.$el;
         let posContenedor = contenedor.getBoundingClientRect();
 
-        const posPinch={
-          x: ((e.touches[0].pageX-posContenedor.left) + (e.touches[1].pageX-posContenedor.left))/2,
-          y: ((e.touches[0].pageY - posContenedor.top) + (e.touches[1].pageY - posContenedor.top))/2,
-        } //Posición en pixeles.
+        const posPinch = {
+          x:
+            (e.touches[0].pageX -
+              posContenedor.left +
+              (e.touches[1].pageX - posContenedor.left)) /
+            2,
+          y:
+            (e.touches[0].pageY -
+              posContenedor.top +
+              (e.touches[1].pageY - posContenedor.top)) /
+            2,
+        }; //Posición en pixeles.
 
-        const coordsPinch={
-          x: Math.round((posPinch.x/this.factorZoom)+this.esquinaVistaDecimal.x),
-          y: Math.round((posPinch.y/this.factorZoom)+this.esquinaVistaDecimal.y),
-        }//Posicion en unidades absolutas (Las que usa el atlas)              
-       
+        const coordsPinch = {
+          x: Math.round(
+            posPinch.x / this.factorZoom + this.esquinaVistaDecimal.x
+          ),
+          y: Math.round(
+            posPinch.y / this.factorZoom + this.esquinaVistaDecimal.y
+          ),
+        }; //Posicion en unidades absolutas (Las que usa el atlas)
+
         var dist = Math.hypot(
           e.touches[0].pageX - e.touches[1].pageX,
           e.touches[0].pageY - e.touches[1].pageY
@@ -552,8 +627,8 @@ export default {
         var pinch = dist - this.lastPinchDistance;
         pinch = pinch * 0.3;
         this.zoomVista(pinch, coordsPinch);
-        this.lastPinchDistance = dist;        
-               
+        this.lastPinchDistance = dist;
+
         return;
       }
 
@@ -1359,7 +1434,7 @@ export default {
   display: inline-block;
   font-weight: bold;
   color: rgb(102, 102, 102);
-  z-index:3;
+  z-index: 3;
 }
 
 .fadeOut-leave-to {
