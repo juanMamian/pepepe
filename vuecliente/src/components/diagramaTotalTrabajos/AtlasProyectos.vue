@@ -587,7 +587,7 @@ export default {
     },
     zoomVista(deltaZoom, posZoom) {
       const viejoZoom = this.zoom;
-      var nuevoZoom = this.zoom + deltaZoom;
+      var nuevoZoom = Math.round(this.zoom + deltaZoom);
       if (nuevoZoom < this.minZoom) {
         this.zoom = this.minZoom;
       } else if (nuevoZoom > this.maxZoom) {
