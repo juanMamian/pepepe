@@ -19,7 +19,9 @@
         { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
       ]"
     ></div>
-
+    <transition name="fadeOut">
+      <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
+    </transition>
     <buscador-nodos
       :cerrarBusqueda="cerrarBusqueda"
       @nodoSeleccionado="centrarEnNodo"
@@ -80,7 +82,7 @@
 
     <div id="contenedorCanvasNodos" :style="[posContenedores]">
       <canvas-enlaces-nodo
-        v-for="nodo of nodosConRequerimentos"        
+        v-for="nodo of nodosConRequerimentos"
         :key="nodo.id"
         :esteNodo="nodo"
         :todosNodos="todosNodos"
@@ -232,6 +234,7 @@ import BuscadorNodos from "./BuscadorNodos.vue";
 import VentanaMateriales from "./VentanaMateriales.vue";
 import Nodo from "./Nodo.vue";
 import CanvasEnlacesNodo from "./CanvasEnlacesNodo.vue";
+import debounce from "debounce";
 
 // const fragmentoTrabajos = gql`
 //   fragment fragTrabajo on Trabajo {
@@ -464,6 +467,8 @@ export default {
       zoom: 80,
       minZoom: 30,
       maxZoom: 100,
+      showingZoomInfo: false,
+      infoPosZoom:null,
 
       pinching: false,
       lastPinchDistance: 0,
@@ -478,7 +483,8 @@ export default {
       cerrarBusqueda: 0,
       cerrarMateriales: 0,
 
-      redibujarEnlacesNodos:0,
+      redibujarEnlacesNodos: 0,
+      
     };
   },
   methods: {
@@ -529,43 +535,25 @@ export default {
         var contenedor = this.$el;
         let posContenedor = contenedor.getBoundingClientRect();
 
-        const posZoom = {
-          x:
-            Math.round(posContenedor.width / 2 / this.factorZoom) +
-            this.esquinaVista.x,
-          y:
-            Math.round(posContenedor.height / 2 / this.factorZoom) +
-            this.esquinaVista.y,
-        };
+        const posPinch={
+          x: ((e.touches[0].pageX-posContenedor.left) + (e.touches[1].pageX-posContenedor.left))/2,
+          y: ((e.touches[0].pageY - posContenedor.top) + (e.touches[1].pageY - posContenedor.top))/2,
+        } //Posición en pixeles.
 
-        const proporciones = {
-          x:
-            (posZoom.x - this.esquinaVistaDecimal.x) /
-            (posContenedor.width / this.factorZoom),
-          y:
-            (posZoom.y - this.esquinaVistaDecimal.y) /
-            (posContenedor.height / this.factorZoom),
-        };
-
+        const coordsPinch={
+          x: Math.round((posPinch.x/this.factorZoom)+this.esquinaVistaDecimal.x),
+          y: Math.round((posPinch.y/this.factorZoom)+this.esquinaVistaDecimal.y),
+        }//Posicion en unidades absolutas (Las que usa el atlas)              
+       
         var dist = Math.hypot(
           e.touches[0].pageX - e.touches[1].pageX,
           e.touches[0].pageY - e.touches[1].pageY
         );
         var pinch = dist - this.lastPinchDistance;
-        pinch = pinch * 0.5;
-        this.zoomVista(pinch);
-        this.lastPinchDistance = dist;
-
-        this.$set(
-          this.esquinaVistaDecimal,
-          "x",
-          posZoom.x - (posContenedor.width / this.factorZoom) * proporciones.x
-        );
-        this.$set(
-          this.esquinaVistaDecimal,
-          "y",
-          posZoom.y - (posContenedor.height / this.factorZoom) * proporciones.y
-        );
+        pinch = pinch * 0.3;
+        this.zoomVista(pinch, coordsPinch);
+        this.lastPinchDistance = dist;        
+               
         return;
       }
 
@@ -717,7 +705,6 @@ export default {
           if (dis.idNodoSeleccionado === idNodo) {
             dis.idNodoSeleccionado = null;
           }
-
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
@@ -889,7 +876,7 @@ export default {
           this.idNodoPaVentanita = crearNodoSolidaridad.id;
           this.enviandoQueryNodos = false;
           this.mostrandoMenuContextual = false;
-          
+
           //this.$router.push("/nodoConocimiento/"+crearNodoSolidaridad.id);
         })
         .catch((error) => {
@@ -1106,6 +1093,9 @@ export default {
 
       //this.centroVista=e;
     },
+    hideZoomInfo: debounce(function () {
+      this.showingZoomInfo = false;
+    }, 1000),
   },
   computed: {
     offsetMenuContextual() {
@@ -1206,9 +1196,11 @@ export default {
     objetivos() {
       return this.todosNodos.filter((n) => n.__typename === "Objetivo");
     },
-    nodosConRequerimentos(){
-      return this.todosNodos.filter(n=>n.vinculos.filter(v=>v.tipo==='requiere').length>0)
-    }
+    nodosConRequerimentos() {
+      return this.todosNodos.filter(
+        (n) => n.vinculos.filter((v) => v.tipo === "requiere").length > 0
+      );
+    },
   },
   watch: {
     callingPosiciones(nuevo) {
@@ -1247,6 +1239,10 @@ export default {
       if (!nuevo) {
         this.idNodoPaVentanita = null;
       }
+    },
+    zoom() {
+      this.showingZoomInfo = true;
+      this.hideZoomInfo();
     },
   },
   mounted() {
@@ -1352,5 +1348,27 @@ export default {
 }
 #ventanaMateriales {
   position: absolute;
+}
+
+#infoZoom {
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px;
+  display: inline-block;
+  font-weight: bold;
+  color: rgb(102, 102, 102);
+  z-index:3;
+}
+
+.fadeOut-leave-to {
+  opacity: 0;
+}
+.fadeOut-leave-active {
+  transition: opacity 1s;
+}
+.fadeOut-leave {
+  opacity: 1;
 }
 </style>
