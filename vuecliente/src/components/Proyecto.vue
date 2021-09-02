@@ -326,6 +326,7 @@
 
           <calendario
             :configCalendario="{ tipo: 'club', id: esteProyecto.id }"
+            :creacionEventosDisallowed="usuarioResponsableProyecto?false:true"
             :key="'calendario' + versionCalendario"
           />
         </div>

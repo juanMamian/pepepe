@@ -2,12 +2,25 @@
   <div class="ventanaEventoCalendario" @click.stop="" @mouseup.left.stop="">
     <div id="zonaParent" v-if="infoEvento">
       <div id="nombreParent">
-        {{infoEvento.tipoParent}}: {{infoEvento.nombreParent}}
+        {{ infoEvento.tipoParent }}: {{ infoEvento.nombreParent }}
       </div>
     </div>
     <div id="zonaConfirmarAsistencia">
-      <img src="@/assets/iconos/join.png" @click.stop="toggleAsistencia" class="botonConfirmacionAsistencia" :class="{asistenciaConfirmada: usuarioParticipanteEvento, deshabilitado: enviandoQueryAsistencia}" id="botonConfirmarAsistencia" :title="usuarioParticipanteEvento?'Cancelar asistencia':'Confirmar asistencia'"/>
-      
+      <img
+        src="@/assets/iconos/join.png"
+        @click.stop="toggleAsistencia"
+        class="botonConfirmacionAsistencia"
+        :class="{
+          asistenciaConfirmada: usuarioParticipanteEvento,
+          deshabilitado: enviandoQueryAsistencia,
+        }"
+        id="botonConfirmarAsistencia"
+        :title="
+          usuarioParticipanteEvento
+            ? 'Cancelar asistencia'
+            : 'Confirmar asistencia'
+        "
+      />
     </div>
     <div id="zonaNombre" class="zonaPrimerNivel">
       <div class="controlesZona" v-show="usuarioResponsableEvento">
@@ -32,97 +45,98 @@
       <div id="nombre" v-show="!editandoNombre">
         {{ esteEvento.nombre }}
       </div>
-      <input
+      <textarea
+        :class="{ letrasRojas: nuevoNombreIlegal }"
+        id="inputNuevoNombre"        
+        rows="2"
+        v-model="nuevoNombre"
+        v-show="editandoNombre"
+        @keypress.enter.prevent="guardarNuevoNombre"
+      >
+      </textarea>
+      <!-- <input
         type="text"
         id="inputNuevoNombre"
         :class="{ letrasRojas: nuevoNombreIlegal }"
         v-model="nuevoNombre"
         v-show="editandoNombre"
         @keypress.enter="guardarNuevoNombre"
-      />
-      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />      
+      /> -->
+      <loading v-show="enviandoNuevoNombre" texto="Enviando..." />
     </div>
 
     <div id="zonaDescripcion" class="zonaPrimerNivel">
-        <div class="barraSuperiorZona">
-          <div
-            class="nombreZona"            
-          >            
-            Detalles
-          </div>
-        </div>        
-          <div class="controlesZona" v-if="usuarioResponsableEvento">
-            <img
-              src="@/assets/iconos/editar.png"
-              alt="Editar"
-              id="bEditarrDescripcion"
-              class="bEditar"
-              title="Editar descripcion del evento"
-              @click="toggleEditandoDescripcion"
-            />
-            <img
-              src="@/assets/iconos/guardar.png"
-              alt="Guardar"
-              title="guardar"
-              class="bGuardar"
-              id="bGuardarNuevoDescripcion"
-              v-show="
-                editandoDescripcion == true && nuevoDescripcionIlegal == false
-              "
-              @click="guardarNuevoDescripcion"
-            />
-          </div>
-          <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
-            {{ esteEvento.descripcion }}
-          </div>
+      <div class="barraSuperiorZona">
+        <div class="nombreZona">Detalles</div>
+      </div>
+      <div class="controlesZona" v-if="usuarioResponsableEvento">
+        <img
+          src="@/assets/iconos/editar.png"
+          alt="Editar"
+          id="bEditarrDescripcion"
+          class="bEditar"
+          title="Editar descripcion del evento"
+          @click="toggleEditandoDescripcion"
+        />
+        <img
+          src="@/assets/iconos/guardar.png"
+          alt="Guardar"
+          title="guardar"
+          class="bGuardar"
+          id="bGuardarNuevoDescripcion"
+          v-show="
+            editandoDescripcion == true && nuevoDescripcionIlegal == false
+          "
+          @click="guardarNuevoDescripcion"
+        />
+      </div>
+      <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
+        {{ esteEvento.descripcion }}
+      </div>
 
-          <textarea
-            id="inputNuevoDescripcion"
-            ref="inputNuevoDescripcion"
-            :class="{ letrasRojas: nuevoDescripcionIlegal }"
-            v-model="nuevoDescripcion"
-            v-show="editandoDescripcion"
-          />
-          <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />        
+      <textarea
+        id="inputNuevoDescripcion"
+        ref="inputNuevoDescripcion"
+        :class="{ letrasRojas: nuevoDescripcionIlegal }"
+        v-model="nuevoDescripcion"
+        v-show="editandoDescripcion"
+      />
+      <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
     </div>
 
     <div id="zonaParticipantes" class="zonaPrimerNivel">
       <div class="barraSuperiorZona">
-          <div
-            class="nombreZona"            
-          >            
-            Participantes
-          </div>
-        </div>
-        <div id="listaParticipantes" @click="idParticipanteSeleccionado=null">            
-            <icono-persona-autonomo
-              :idPersona="idPersona"
-              factorEscala=0.7
-              :key="'participante'+idPersona"
-              v-for="idPersona of esteEvento.participantes"
-              :seleccionado="idParticipanteSeleccionado == idPersona"
-              @click.native.stop="
-                idParticipanteSeleccionado = idPersona;
-                participanteSeleccionadoEstaAceptado = true;
-              "
-            />            
-          </div>
+        <div class="nombreZona">Participantes</div>
+      </div>
+      <div id="listaParticipantes" @click="idParticipanteSeleccionado = null">
+        <icono-persona-autonomo
+          :idPersona="idPersona"
+          factorEscala="0.7"
+          :key="'participante' + idPersona"
+          v-for="idPersona of esteEvento.participantes"
+          :seleccionado="idParticipanteSeleccionado == idPersona"
+          @click.native.stop="
+            idParticipanteSeleccionado = idPersona;
+            participanteSeleccionadoEstaAceptado = true;
+          "
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import gql from 'graphql-tag';
-import Loading from './Loading.vue';
-import iconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue"
+import gql from "graphql-tag";
+import Loading from "./Loading.vue";
+import iconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
 const charProhibidosNombreEvento = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionEvento = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
-const QUERY_INFO_EVENTO=gql`
-  query($idEvento:ID!){
-    infoAdicionalEvento(idEvento:$idEvento){
+const QUERY_INFO_EVENTO = gql`
+  query ($idEvento: ID!) {
+    infoAdicionalEvento(idEvento: $idEvento) {
       id
-      participantes{
+      participantes {
         id
         nombres
         apellidos
@@ -131,26 +145,25 @@ const QUERY_INFO_EVENTO=gql`
       tipoParent
     }
   }
-
 `;
 
 export default {
   components: { Loading, iconoPersonaAutonomo },
-  apollo:{
-    infoEvento:{
+  apollo: {
+    infoEvento: {
       query: QUERY_INFO_EVENTO,
-      variables(){
+      variables() {
         return {
-          idEvento: this.esteEvento.id
-        }
+          idEvento: this.esteEvento.id,
+        };
       },
-      update(data){
-        return data.infoAdicionalEvento
+      update(data) {
+        return data.infoAdicionalEvento;
       },
-      skip(){
-        return (!this.esteEvento || !this.esteEvento.id)
-      }
-    }
+      skip() {
+        return !this.esteEvento || !this.esteEvento.id;
+      },
+    },
   },
   name: "VentanaEventoCalendario",
   props: {
@@ -166,9 +179,9 @@ export default {
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
 
-      enviandoQueryAsistencia:false,
+      enviandoQueryAsistencia: false,
 
-      idParticipanteSeleccionado:null,
+      idParticipanteSeleccionado: null,
     };
   },
   methods: {
@@ -258,31 +271,42 @@ export default {
       this.editandoDescripcion = !this.editandoDescripcion;
       this.nuevoDescripcion = this.esteEvento.descripcion;
     },
-    toggleAsistencia(){
-      if(!this.usuario || !this.usuario.id)return
-      this.enviandoQueryAsistencia=true;
+    toggleAsistencia() {
+      if (!this.usuario || !this.usuario.id) return;
+      this.enviandoQueryAsistencia = true;
       console.log(`Toggling asistencia`);
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idEvento: ID!, $idUsuario:ID!, $nuevoAsistencia:Boolean!){
-            setAsistenciaUsuarioEventoCalendario(idEvento: $idEvento, idUsuario: $idUsuario, nuevoAsistencia: $nuevoAsistencia){
-              id
-              participantes
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idEvento: ID!
+              $idUsuario: ID!
+              $nuevoAsistencia: Boolean!
+            ) {
+              setAsistenciaUsuarioEventoCalendario(
+                idEvento: $idEvento
+                idUsuario: $idUsuario
+                nuevoAsistencia: $nuevoAsistencia
+              ) {
+                id
+                participantes
+              }
             }
-          }
-        `,
-        variables:{
-          idEvento: this.esteEvento.id,
-          idUsuario: this.usuario.id,
-          nuevoAsistencia: this.usuarioParticipanteEvento?false:true,
-        }
-      }).then(()=>{
-        this.enviandoQueryAsistencia=false;
-      }).catch((error)=>{
-        console.log(`Error toggling asistencia: ${error}`);
-        this.enviandoQueryAsistencia=false;
-      })
-    }
+          `,
+          variables: {
+            idEvento: this.esteEvento.id,
+            idUsuario: this.usuario.id,
+            nuevoAsistencia: this.usuarioParticipanteEvento ? false : true,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryAsistencia = false;
+        })
+        .catch((error) => {
+          console.log(`Error toggling asistencia: ${error}`);
+          this.enviandoQueryAsistencia = false;
+        });
+    },
   },
   computed: {
     usuarioResponsableEvento() {
@@ -307,13 +331,13 @@ export default {
       }
       return false;
     },
-    usuarioParticipanteEvento(){
-      if(!this.usuario || !this.usuario.id){
+    usuarioParticipanteEvento() {
+      if (!this.usuario || !this.usuario.id) {
         return false;
       }
 
-      return this.esteEvento.participantes.includes(this.usuario.id)
-    }
+      return this.esteEvento.participantes.includes(this.usuario.id);
+    },
   },
 };
 </script>
@@ -322,36 +346,35 @@ export default {
 .ventanaEventoCalendario {
   background-color: rgb(127, 202, 202);
 }
-#zonaParent{
+#zonaParent {
   padding: 5px;
 }
-#nombreParent{
+#nombreParent {
   font-size: 12px;
   font-style: italic;
   color: gray;
 }
-#zonaConfirmarAsistencia{
+#zonaConfirmarAsistencia {
   position: absolute;
-  left:100%;
+  left: 100%;
   top: 5%;
-  
+
   border-radius: 20px;
 }
-.botonConfirmacionAsistencia{
-  width: 30px;  
+.botonConfirmacionAsistencia {
+  width: 30px;
   border-radius: 50%;
-  cursor:pointer;
+  cursor: pointer;
   border: 1px solid black;
 }
-.botonConfirmacionAsistencia.asistenciaConfirmada{
+.botonConfirmacionAsistencia.asistenciaConfirmada {
   background-color: rgb(68, 184, 68);
 }
-.botonConfirmacionAsistencia:not(.asistenciaConfirmada):hover{
+.botonConfirmacionAsistencia:not(.asistenciaConfirmada):hover {
   background-color: rgba(68, 184, 68, 0.514);
 }
-.botonConfirmacionAsistencia.asistenciaConfirmada:hover{
-    background-color: rgba(68, 184, 68, 0.452);
-
+.botonConfirmacionAsistencia.asistenciaConfirmada:hover {
+  background-color: rgba(68, 184, 68, 0.452);
 }
 .zonaPrimerNivel {
   border: 2px solid black;
@@ -399,7 +422,7 @@ export default {
   white-space: pre-wrap;
 }
 #inputNuevoNombre {
-  font-size: 23px;
+  font-size: 17px;
   display: block;
   margin: 10px auto;
 }
@@ -422,7 +445,7 @@ export default {
   padding-bottom: 30px;
   overflow-y: scroll;
 }
-.iconoPersonaAutonomo{
+.iconoPersonaAutonomo {
   margin: 0px 10px;
   margin-bottom: 40px;
 }

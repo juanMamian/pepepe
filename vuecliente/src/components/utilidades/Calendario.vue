@@ -31,7 +31,7 @@
       <div
         class="control"
         id="botonCrearEvento"
-        v-show="configCalendario.tipo != 'personal'"
+        v-show="configCalendario.tipo != 'personal' && !creacionEventosDisallowed"
         @click="
           seleccionandoPlaceNuevoEvento = !seleccionandoPlaceNuevoEvento;
           minutoInicialFantasmaNuevoEvento = null;
@@ -358,6 +358,7 @@ export default {
   },
   props: {
     configCalendario: Object,
+    creacionEventosDisallowed:Boolean
   },
   data() {
     const dateHoy = new Date(Date.now());
