@@ -14,16 +14,54 @@
     />
     <div id="barraConjuntos">
       <div
-        class="selectorConjunto"
+        class="selectorConjunto"      
         :class="{ seleccionado: conjunto.id === idConjuntoSeleccionado }"
-        @click="
-          idConjuntoSeleccionado = conjunto.id;
-          idNodoSeleccionado = null;
-        "
+        @click="seleccionarColeccion($event, conjunto.id)"
         v-for="conjunto of conjuntos"
         :key="'selectorConjunto' + conjunto.id"
       >
-        {{ conjunto.titulo }}
+        <div
+          class="nombreColeccion"
+          v-show="
+            !editandoNombreColeccion ||
+            !conjunto.editable ||
+            conjunto.id != idConjuntoSeleccionado
+          "
+        >
+          {{ conjunto.titulo }}
+        </div>
+        <input
+          type="text"
+          name="nuevoNombreColeccion"
+          :id="'inputNombreColeccion'+conjunto.id"
+          v-show="
+            conjunto.editable &&
+            conjunto.id === idConjuntoSeleccionado &&
+            editandoNombreColeccion
+          "
+          :class="{deshabilitado: enviandoQueryColecciones}"
+          @keypress.enter="guardarNuevoNombreColeccion($event, conjunto.id)"
+          @blur="editandoNombreColeccion = false"
+        />
+        <img
+          src="@/assets/iconos/delete.png"
+          alt="Eliminar"
+          width="20px"
+          title="Eliminar colección"
+          v-show="
+            !editandoNombreColeccion &&
+            conjunto.editable &&
+            conjunto.id === idConjuntoSeleccionado
+          "
+          class="botonEliminarColeccion"
+          @click.stop="eliminarColeccion(conjunto.id)"
+        />
+      </div>
+      <div
+        id="controlesConjuntos"
+        :class="{ deshabilitado: enviandoQueryColecciones }"        
+      >
+        <div @click="crearNuevaColeccion" class="botonControlesConjuntos">Nueva colección</div>
       </div>
     </div>
     <div
@@ -48,10 +86,19 @@
         v-show="idConjuntoSeleccionado != 1"
         @click.stop="toggleNodoTarget(idNodoSeleccionado)"
       />
+      <img
+        src="@/assets/iconos/delete.png"
+        alt="Eliminar"
+        :class="{deshabilitado: enviandoQueryNodosSeccion}"
+        v-show="idNodoSeleccionado"
+        class="botonEliminarNodoColeccion"
+        @click.stop="eliminarNodoSeleccionadoSeccionSeleccionada"
+      />
     </div>
     <div
       id="listaNodosConjunto"
-      v-show="abierto"
+      v-if="conjuntoSeleccionado"
+      v-show="abierto && conjuntoSeleccionado"
       :key="'listaNodos' + idConjuntoSeleccionado"
       @click.self.stop="idNodoSeleccionado = null"
     >
@@ -68,6 +115,7 @@
     </div>
     <div
       id="listaClasesNodo"
+      v-if="conjuntoSeleccionado"
       v-show="conjuntoSeleccionado.nombre === 'nodosConClaseDictada'"
     >
       <div
@@ -102,6 +150,8 @@
 import IconoNodoConocimiento from "./IconoNodoConocimiento.vue";
 import gql from "graphql-tag";
 
+const charProhibidosNombreColeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+
 export default {
   components: { IconoNodoConocimiento },
   name: "PanelConjuntosNodos",
@@ -114,9 +164,13 @@ export default {
     return {
       abierto: false,
       idConjuntoSeleccionado: 0,
+      editandoNombreColeccion: false,
+
       idNodoSeleccionado: null,
 
       enviandoQueryTarget: false,
+      enviandoQueryColecciones: false,
+      enviandoQueryNodosSeccion: false,
     };
   },
   methods: {
@@ -174,6 +228,177 @@ export default {
       if (!idNodo) return;
       this.$router.push("/nodoConocimiento/" + idNodo);
     },
+    crearNuevaColeccion() {
+      this.enviandoQueryColecciones = true;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation {
+              crearColeccionNodosAtlasConocimientoUsuario {
+                id
+                atlas {
+                  colecciones {
+                    id
+                    nombre
+                    idsNodos
+                    nodos {
+                      id
+                      nombre
+                    }
+                  }
+                }
+              }
+            }
+          `,
+        })
+        .then(() => {
+          this.enviandoQueryColecciones = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoQueryColecciones = false;
+        });
+    },
+    seleccionarColeccion(e, idColeccion) {
+      if (this.idConjuntoSeleccionado === idColeccion) {
+        const nombreColeccion=this.conjuntos.find(c=>c.id===idColeccion).nombre;
+        console.log(`Seting value del input a ${nombreColeccion}`);
+        this.editandoNombreColeccion = true;
+        document.getElementById('inputNombreColeccion'+idColeccion).value=nombreColeccion;
+
+      } else {
+        this.editandoNombreColeccion = false;
+      }
+      this.idConjuntoSeleccionado = idColeccion;
+      this.idNodoSeleccionado = null;
+    },
+    guardarNuevoNombreColeccion(e, idColeccion) {
+      var nuevoNombre = e.target.value;
+      console.log(
+        `seting nombre de coleccion ${idColeccion} con value: ${nuevoNombre}`
+      );
+      if (charProhibidosNombreColeccion.test(nuevoNombre)) {
+        alert("¡El nombre contenía caracteres ilegales!");
+        return true;
+      }
+      this.enviandoQueryColecciones = true;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!, $nuevoNombre: String!) {
+              setNombreColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+                nuevoNombre: $nuevoNombre
+              ) {
+                id
+                atlas {
+                  colecciones {
+                    id
+                    nombre
+                    idsNodos
+                    nodos {
+                      id
+                      nombre
+                    }
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            idColeccion,
+            nuevoNombre,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryColecciones = false;
+          this.editandoNombreColeccion = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoQueryColecciones = false;
+        });
+    },
+    eliminarColeccion(idColeccion) {
+      if (
+        !confirm(
+          "Confirmar eliminación de colección? (Esta acción no se puede deshacer)"
+        )
+      )
+        return;
+      this.idConjuntoSeleccionado = null;
+      this.enviandoQueryColecciones = true;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!) {
+              eliminarColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+              ) {
+                id
+                atlas {
+                  colecciones {
+                    id
+                    idsNodos
+                    nodos {
+                      id
+                      nombre
+                    }
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            idColeccion,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryColecciones = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoQueryColecciones = false;
+        });
+    },
+    eliminarNodoSeleccionadoSeccionSeleccionada() {
+
+      if(!this.idConjuntoSeleccionado || !this.idNodoSeleccionado)return
+
+      this.enviandoQueryNodosSeccion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!, $idNodo: ID!) {
+              removeNodoColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+                idNodo: $idNodo
+              ) {
+                id
+                idsNodos
+                nodos {
+                  id
+                  nombre
+                }
+              }
+            }
+          `,
+          variables:{
+            idColeccion:this.idConjuntoSeleccionado,
+            idNodo:this.idNodoSeleccionado
+          }
+        })
+        .then(() => {
+          this.enviandoQueryNodosSeccion = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoQueryNodosSeccion = false;
+        });
+    },    
   },
   computed: {
     offset() {
@@ -210,8 +435,7 @@ export default {
     clasesDictadasUsuario() {
       if (!this.usuario || !this.usuario.id) return;
       var clasesDictadas = [];
-      this.nodosClasesDictadasUsuario.forEach((nodo) => {
-        console.log(`Buscando mis clases en el nodo ${nodo.nombre}`);
+      this.nodosClasesDictadasUsuario.forEach((nodo) => {        
         clasesDictadas = clasesDictadas.concat(
           nodo.clases
             .filter((c) => c.idExperto === this.usuario.id)
@@ -226,20 +450,16 @@ export default {
       return clasesDictadas;
     },
     conjuntos() {
-      return [
-        {
-          nombre: "nodosObjetivo",
-          titulo: "Nodos Objetivo",
-          id: 0,
-          nodos: this.nodosObjetivo,
-        },
-        {
+      if(this.yo.atlas.configuracion.modo==='experto'){
+        return this.conjuntosUsuario.concat([{
           nombre: "nodosConClaseDictada",
           titulo: "Mis clases",
           id: 1,
           nodos: [],
-        },
-      ];
+          modo: "experto",
+        }])
+      }
+      return this.conjuntosUsuario
     },
     conjuntoSeleccionado() {
       if (this.idConjuntoSeleccionado === null) return null;
@@ -249,12 +469,26 @@ export default {
       if (!this.idNodoSeleccionado) return null;
       return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
+    conjuntosUsuario() {
+      if (!this.yo || !this.yo.atlas || !this.yo.atlas.colecciones) {
+        return [];
+      }
+
+      this.yo.atlas.colecciones.forEach((c) => {
+        c.titulo = c.nombre;
+        c.modo = "estudiante";
+        c.editable = true;
+        c.editandoNombre = false;
+      });
+
+      return this.yo.atlas.colecciones;
+    },
   },
-  watch:{
-    abierto(){
-      this.idNodoSeleccionado=null;
-    }
-  }
+  watch: {
+    abierto() {
+      this.idNodoSeleccionado = null;
+    },
+  },
 };
 </script>
 
@@ -285,9 +519,29 @@ export default {
   background-color: rgba(95, 158, 160, 0.637);
   padding: 3px 5px;
   font-style: italic;
+  display: flex;
 }
 .selectorConjunto.seleccionado {
   background-color: cadetblue;
+}
+.botonEliminarColeccion {
+  cursor: pointer;
+  border-radius: 50%;
+  margin-left: 10px;
+}
+.botonEliminarColeccion:hover {
+  background-color: rgb(219, 63, 63);
+}
+#controlesConjuntos {
+  margin-left: auto;
+}
+.botonControlesConjuntos {
+  font-size: 14px;
+  color: gray;
+  cursor: pointer;
+}
+.botonControlesConjuntos:hover {
+  background-color: rgba(128, 128, 128, 0.527);
 }
 #controlesListaNodos {
   display: flex;
@@ -309,6 +563,19 @@ export default {
 }
 #botonRastrearNodo:hover {
   background-color: rgba(95, 158, 160, 0.658);
+}
+
+.botonEliminarNodoColeccion {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  cursor: pointer;
+  align-self: center;
+  border-radius: 50%;
+  margin-left: 10px;
+}
+.botonEliminarNodoColeccion:hover {
+  background-color: rgb(236, 68, 68);
 }
 
 #listaNodosConjunto {

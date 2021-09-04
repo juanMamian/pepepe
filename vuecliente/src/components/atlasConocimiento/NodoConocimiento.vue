@@ -6,18 +6,20 @@
     @mousedown.ctrl.stop="arrastrandoNodo = true"
     @click.ctrl.capture="stopProp"
     @mouseup.left="guardarPosicion"
-    @mousemove="arrastrarNodo"    
-    @mouseleave="
-      arrastrandoNodo = false;      
-    "
+    @mousemove="arrastrarNodo"
+    @mouseleave="arrastrandoNodo = false"
     @dblclick="abrirPaginaNodo"
   >
     <div id="zonaArrastre" v-show="arrastrandoNodo"></div>
     <img
-      :src="this.serverUrl + '/api/atlas/iconos/' + esteNodo.id"
+      src="@/assets/iconos/nodoConocimientoDefault.png"
       :class="{
-        fantasmeado: usuarioLogeado && !aprendible && yo.atlas.configuracion.modo==='estudiante' && !callingPosiciones,
-        deNodoSeleccionado: seleccionado
+        fantasmeado:
+          usuarioLogeado &&
+          !aprendible &&
+          yo.atlas.configuracion.modo === 'estudiante' &&
+          !callingPosiciones,
+        deNodoSeleccionado: seleccionado,
       }"
       alt=""
       class="iconoNodo"
@@ -27,7 +29,7 @@
       src="@/assets/iconos/success.png"
       alt="Completado"
       title="Aprendizaje de este tema completado"
-      v-show="nodoAprendido && yo.atlas.configuracion.modo==='estudiante'"
+      v-show="nodoAprendido && yo.atlas.configuracion.modo === 'estudiante'"
       :style="[
         {
           width: parseInt(20 * factorZoom) + 'px',
@@ -69,7 +71,15 @@
       >
         {{ esteNodo.id }}
       </div>
-      <div
+      <div class="botonMenuCx selectorSubseccionMenuCx" v-show="yo.atlas && yo.atlas.colecciones && yo.atlas.colecciones.length>0">
+        Colecciones
+        <div class="subseccionMenuCx">
+          <div class="botonMenuCx" v-for="coleccion of yo.atlas.colecciones" :key="coleccion.id" @click.stop="toggleNodoEnColeccion(coleccion.id)" :class="{enColeccion:coleccion.idsNodos.includes(esteNodo.id)}">
+            {{coleccion.nombre}}
+          </div>
+        </div>
+      </div>
+      <!-- <div
         class="botonMenuCx"
         v-if="usuarioLogeado && !esNodoObjetivo"
         @click.stop="setNodoObjetivo(true)"
@@ -82,7 +92,7 @@
         @click.stop="setNodoObjetivo(false)"
       >
         Retirar de objetivos
-      </div>
+      </div> -->
       <div
         class="botonMenuCx"
         v-if="usuarioLogeado"
@@ -124,15 +134,23 @@
     <div
       id="nombre"
       :style="[estiloCartelNombre]"
-      ref="nombre"      
+      ref="nombre"
       :class="{
         nombreSeleccionado: seleccionado,
-        nombreNodoAprendido:nodoAprendido && yo.atlas.configuracion.modo==='estudiante',
-        nombreNodoOutreach:!aprendible && !callingPosiciones && yo.atlas.configuracion.modo==='estudiante',
-        nombreNodoAprendible:aprendible && !nodoAprendido && yo.atlas.configuracion.modo==='estudiante',
-        nombreNodoExperto:usuarioExpertoNodo && yo.atlas.configuracion.modo==='experto',        
-        nodoStuck: esteNodo.stuck && callingPosiciones,        
-        deNodoSeleccionado: seleccionado
+        nombreNodoAprendido:
+          nodoAprendido && yo.atlas.configuracion.modo === 'estudiante',
+        nombreNodoOutreach:
+          !aprendible &&
+          !callingPosiciones &&
+          yo.atlas.configuracion.modo === 'estudiante',
+        nombreNodoAprendible:
+          aprendible &&
+          !nodoAprendido &&
+          yo.atlas.configuracion.modo === 'estudiante',
+        nombreNodoExperto:
+          usuarioExpertoNodo && yo.atlas.configuracion.modo === 'experto',
+        nodoStuck: esteNodo.stuck && callingPosiciones,
+        deNodoSeleccionado: seleccionado,
       }"
     >
       {{ callingPosiciones ? esteNodo.puntaje : esteNodo.nombre }}
@@ -151,7 +169,16 @@
         title="Abrir este nodo"
         class="botonAbrirNodo"
       />
-      <div class="botonEquis" @click.stop="mostrarDescripcion=false" @mousedown.stop="" @mouseup.stop="" id="botonCerrarDescripcion"><div class="linea1"></div><div class="linea2"></div></div>
+      <div
+        class="botonEquis"
+        @click.stop="mostrarDescripcion = false"
+        @mousedown.stop=""
+        @mouseup.stop=""
+        id="botonCerrarDescripcion"
+      >
+        <div class="linea1"></div>
+        <div class="linea2"></div>
+      </div>
     </div>
   </div>
 </template>
@@ -165,7 +192,7 @@ export default {
     return {
       arrastrandoNodo: false,
       nombreEditable: false,
-      nombreEditandose: false,      
+      nombreEditandose: false,
 
       baseSize: {
         x: 50,
@@ -184,7 +211,7 @@ export default {
         padding: 5,
         borderRadius: 4,
       },
-      mostrarDescripcion:true,
+      mostrarDescripcion: true,
     };
   },
   props: {
@@ -314,11 +341,10 @@ export default {
           parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
       };
     },
-    usuarioExpertoNodo(){
-      if(!this.usuario || !this.usuario.id)return false
+    usuarioExpertoNodo() {
+      if (!this.usuario || !this.usuario.id) return false;
       return this.esteNodo.expertos.includes(this.usuario.id);
-    }
-    
+    },
   },
   methods: {
     toggleAprendido() {
@@ -344,30 +370,35 @@ export default {
           }
         });
     },
-    setNodoObjetivo(nuevoEstadoObjetivo) {
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idNodo: ID!, $nuevoEstadoObjetivo: Boolean!) {
-              setNodoObjetivo(
-                idNodo: $idNodo
-                nuevoEstadoObjetivo: $nuevoEstadoObjetivo
-              )
-            }
-          `,
-          variables: {
-            idNodo: this.esteNodo.id,
-            nuevoEstadoObjetivo,
-          },
-        })
-        .then(({ data: { setNodoObjetivo } }) => {
-          if (setNodoObjetivo) {
-            this.$emit("cambieEstadoObjetivo", nuevoEstadoObjetivo);
-          }
-        });
-    },
+    // setNodoObjetivo(nuevoEstadoObjetivo) {
+    //   this.$apollo
+    //     .mutate({
+    //       mutation: gql`
+    //         mutation ($idNodo: ID!, $nuevoEstadoObjetivo: Boolean!) {
+    //           setNodoObjetivo(
+    //             idNodo: $idNodo
+    //             nuevoEstadoObjetivo: $nuevoEstadoObjetivo
+    //           )
+    //         }
+    //       `,
+    //       variables: {
+    //         idNodo: this.esteNodo.id,
+    //         nuevoEstadoObjetivo,
+    //       },
+    //     })
+    //     .then(({ data: { setNodoObjetivo } }) => {
+    //       if (setNodoObjetivo) {
+    //         this.$emit("cambieEstadoObjetivo", nuevoEstadoObjetivo);
+    //       }
+    //     });
+    // },
     abrirPaginaNodo() {
-      if (!this.aprendible && !this.usuarioSuperadministrador && this.yo.atlas.configuracion.modo==='estudiante') return alert("¡Aún no puedes estudiar este nodo!");
+      if (
+        !this.aprendible &&
+        !this.usuarioSuperadministrador &&
+        this.yo.atlas.configuracion.modo === "estudiante"
+      )
+        return alert("¡Aún no puedes estudiar este nodo!");
       this.$router.push("/nodoConocimiento/" + this.esteNodo.id);
     },
     copiarId(e) {
@@ -442,16 +473,40 @@ export default {
       console.log(`Stopping`);
       e.stopPropagation();
     },
+    toggleNodoEnColeccion(idColeccion){
+      if(!this.usuario || !this.usuario.id){
+        return ;
+      }
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idNodo:ID!, $idColeccion:ID!, $idUsuario:ID!){
+            toggleNodoColeccionNodosAtlasConocimientoUsuario(idNodo: $idNodo, idColeccion:$idColeccion, idUsuario: $idUsuario){
+              id
+              idsNodos
+              nodos{
+                id
+                nombre
+              }
+            }
+          }
+        `,
+        variables:{
+          idNodo: this.esteNodo.id,
+          idColeccion,
+          idUsuario: this.usuario.id,
+        }
+      })
+    }
   },
   watch: {
     esteNodo() {
       this.posicion = { ...this.esteNodo.coords };
     },
-    seleccionado(estado){
-      if(estado){
-        this.mostrarDescripcion=true;
+    seleccionado(estado) {
+      if (estado) {
+        this.mostrarDescripcion = true;
       }
-    }
+    },
   },
   mounted() {
     this.posicion = { ...this.esteNodo.coords };
@@ -482,7 +537,7 @@ export default {
   pointer-events: all;
   background-color: rgba(128, 128, 128, 0.349);
 }
-#zonaArrastre{
+#zonaArrastre {
   width: 500px;
   height: 500px;
   position: absolute;
@@ -494,7 +549,7 @@ export default {
 .fantasmeado {
   opacity: 0.2;
 }
-.fantasmeado.imgSeleccionado{
+.fantasmeado.imgSeleccionado {
   opacity: 0.5;
 }
 .escondido {
@@ -507,27 +562,27 @@ export default {
   left: 50%;
   transform: translateX(-50%);
   border-width: 1px;
-  border-style: solid;  
+  border-style: solid;
 }
 
-.nombreNodoOutreach{
+.nombreNodoOutreach {
   background-color: rgb(127, 190, 192);
   border-color: rgb(53, 110, 112);
   opacity: 0.4;
 }
-.nombreNodoOutreach:hover{
+.nombreNodoOutreach:hover {
   opacity: 0.6;
 }
-.nombreNodoOutreach.deNodoSeleccionado{
+.nombreNodoOutreach.deNodoSeleccionado {
   opacity: 0.8;
 }
 
-.nombreNodoAprendible{
+.nombreNodoAprendible {
   background-color: rgb(221, 236, 91);
   border-color: rgb(189, 120, 16);
 }
 
-.nombreNodoAprendido{
+.nombreNodoAprendido {
   background-color: rgb(135, 199, 135);
   border-color: rgb(24, 92, 24);
 }
@@ -535,7 +590,7 @@ export default {
 #nombre.nodoStuck {
   background-color: rgb(206, 94, 94);
 }
-.nombreNodoExperto{
+.nombreNodoExperto {
   background-color: rgb(150, 101, 150);
 }
 #menuContextual {
@@ -543,7 +598,7 @@ export default {
   top: 110%;
   left: 110%;
   min-width: 140px;
-  padding: 5px;
+  padding: 5px 0px;
   z-index: 10;
   background-color: rgb(177, 177, 159);
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
@@ -552,6 +607,7 @@ export default {
 .botonMenuCx {
   cursor: pointer;
   font-size: 14px;
+  padding: 3px 6px;
 }
 .seccionMenuCx {
   font-size: 15px;
@@ -559,6 +615,27 @@ export default {
 }
 .botonMenuCx:hover {
   background-color: gray;
+}
+.selectorSubseccionMenuCx{
+  position: relative;
+}
+
+.subseccionMenuCx{
+  position: absolute;
+  left: 100%;
+  top: 0%;
+  display: none;
+  background-color: rgb(177, 177, 159);
+}
+.selectorSubseccionMenuCx:hover>.subseccionMenuCx{
+  display: block;
+}
+.enColeccion{
+  background-color: rgb(117, 182, 117);
+}
+.enColeccion:hover{
+    background-color: rgb(136, 168, 136);
+
 }
 .cuadritoDescripcionNodo {
   position: absolute;
@@ -607,7 +684,7 @@ export default {
   background-color: rgb(33, 168, 33);
   border-radius: 50%;
 }
-#botonCerrarDescripcion{
+#botonCerrarDescripcion {
   left: 101%;
   bottom: 101%;
   width: 15px;

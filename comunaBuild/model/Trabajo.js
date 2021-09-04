@@ -62,18 +62,16 @@ exports.esquemaTrabajo.add({
         type: Number,
         default: 0,
     },
-    idObjetivoParent: {
-        type: String,
-    },
     nodosConocimiento: {
         type: [String],
         required: true,
         default: []
     },
-    idNodoParent: {
-        type: String,
+    nodoParent: {
+        idNodo: String,
+        tipo: String,
     },
-    idForo: {
+    idForoResponsables: {
         type: String,
     },
     vinculos: {
@@ -147,5 +145,5 @@ exports.esquemaTrabajo.add({
         default: 0
     }
 });
-exports.esquemaTrabajo.index({ keywords: "text" });
+exports.esquemaTrabajo.index({ nombre: "text", keywords: "text", descripcion: "text" });
 exports.ModeloTrabajo = mongoose_1.default.model("Trabajo", exports.esquemaTrabajo);

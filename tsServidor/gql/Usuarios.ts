@@ -1,8 +1,9 @@
-import { ApolloError, AuthenticationError, gql, withFilter } from "apollo-server-express";
+import { ApolloError, AuthenticationError, gql, UserInputError, withFilter } from "apollo-server-express";
 import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario } from "../model/Usuario"
 import { GraphQLDateTime } from "graphql-iso-date";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
 import { contextoQuery } from "./tsObjetos"
+import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 
 
 interface Usuario {
@@ -51,11 +52,19 @@ export const typeDefs = gql`
         aprendido:Boolean
     }
 
+    type ColeccionNodosAtlasConocimiento{
+        id:ID,
+        nombre: String,
+        idsNodos: [ID],
+        nodos:[NodoConocimiento],
+    }
+
     type infoAtlas{
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
         idNodoTarget:ID,
-        configuracion: ConfiguracionAtlas
+        configuracion: ConfiguracionAtlas,
+        colecciones:[ColeccionNodosAtlasConocimiento]
     }
 
     enum relacionUsuarioConocimiento{
@@ -140,6 +149,13 @@ export const typeDefs = gql`
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 
+        crearColeccionNodosAtlasConocimientoUsuario:Usuario,
+        eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Usuario,
+        setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):Usuario,
+        addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):ColeccionNodosAtlasConocimiento,
+        removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):ColeccionNodosAtlasConocimiento,
+        toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
+                
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -496,9 +512,23 @@ export const resolvers = {
 
             console.log(`Seting modo ${nuevoModo} para el usuario ${idUsuario}`);            
 
+            // try {
+            //     var losUsuarios:any=await Usuario.find({}).exec();
+            //     losUsuarios.forEach(async (u)=>{
+            //         u.atlas.colecciones=[];
+            //         await u.save();
+            //     })
+
+            // } catch (error) {
+            //     console.log(`Error corrigiendo todos los usuarios`);
+            // }
+
             try {
                 var elUsuario:any= await Usuario.findById(idUsuario).exec();
+                
                 elUsuario.atlas.configuracion.modo=nuevoModo;                
+                // console.log(`Guardando usuario.atlas con valor: ${elUsuario.atlas}`);
+                console.log(`Guardando usuario.atlas.colecciones con valor: ${elUsuario.atlas.colecciones}`);
                 await elUsuario.save();
             
             } catch (error) {
@@ -509,6 +539,227 @@ export const resolvers = {
             return elUsuario;
             
         },
+     
+        async crearColeccionNodosAtlasConocimientoUsuario(_:any, __:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            if(!credencialesUsuario.id){
+                console.log(`Error: no hay id en las credenciales de usuario`);
+                throw new AuthenticationError("No logeado");                
+            }
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+                if(!elUsuario){
+                    throw "Usuario no encontrado";
+                }
+            } catch (error) {
+                console.log(`Error buscando el usuario en la base de datos`);                  
+                throw new ApolloError("Usuario no encontrado");
+            }
+
+            var nuevaColeccion = elUsuario.atlas.colecciones.create();
+            elUsuario.atlas.colecciones.push(nuevaColeccion);
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando la colección en la base de datos`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elUsuario;
+
+        },
+        async eliminarColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            if(!credencialesUsuario.id){
+                console.log(`Error: no hay id en las credenciales de usuario`);
+                throw new AuthenticationError("No logeado");                
+            }
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+                if(!elUsuario){
+                    throw "Usuario no encontrado";
+                }
+            } catch (error) {
+                console.log(`Error buscando el usuario en la base de datos`);                  
+                throw new ApolloError("Usuario no encontrado");
+            }
+
+            const indexC=elUsuario.atlas.colecciones.findIndex(c=>c.id===idColeccion);
+
+            if(indexC>-1){
+                elUsuario.atlas.colecciones.splice(indexC, 1);
+            }
+            else{
+                throw new UserInputError("Colección no encontrada");
+            }
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando la colección en la base de datos`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elUsuario;
+
+        },
+        async setNombreColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, nuevoNombre}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+                if(!elUsuario){
+                    throw "Usuario no encontrado";                    
+                }
+            } catch (error) {
+                console.log(`Error buscando el usuario`);
+                throw new ApolloError("Usuario no encontrado");
+            }
+
+            nuevoNombre = nuevoNombre.trim();
+            const charProhibidosNombreColeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+            if (charProhibidosNombreColeccion.test(nuevoNombre)) {
+                throw new UserInputError("Nombre ilegal");
+            }
+
+            const indexC=elUsuario.atlas.colecciones.findIndex(c=>c.id===idColeccion);
+
+            if(indexC>-1){
+                elUsuario.atlas.colecciones[indexC].nombre=nuevoNombre;
+            }
+            else{
+                throw new UserInputError("Colección no encontrada");
+            }
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando los datos del usuario`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elUsuario;
+
+        },
+        async addNodoColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, idNuevoNodo}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+                if(!elUsuario){
+                    throw "Usuario no encontrado";                    
+                }
+            } catch (error) {
+                console.log(`Error buscando el usuario`);
+                throw new ApolloError("Usuario no encontrado");
+            }
+
+            var laColeccion=elUsuario.atlas.colecciones.id(idColeccion);
+            if(!laColeccion){
+                console.log(`Coleccion no encontrada`);
+                throw new UserInputError("Colección no encontrada");
+            }
+
+            var indexN=laColeccion.idsNodos.indexOf(idNuevoNodo);
+            if(indexN===-1){
+                laColeccion.idsNodos.push(idNuevoNodo);
+            }
+            else{
+                throw new UserInputError("Nodo ya existía en la colección");
+            }
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                throw new ApolloError("Error guardando datos de usuario en la base de datos");
+            }
+
+            return laColeccion;
+        },
+        async removeNodoColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, idNodo}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+                if(!elUsuario){
+                    throw "Usuario no encontrado";                    
+                }
+            } catch (error) {
+                console.log(`Error buscando el usuario`);
+                throw new ApolloError("Usuario no encontrado");
+            }
+
+            var laColeccion=elUsuario.atlas.colecciones.id(idColeccion);
+            if(!laColeccion){
+                console.log(`Coleccion no encontrada`);
+                throw new UserInputError("Colección no encontrada");
+            }
+
+            var indexN=laColeccion.idsNodos.indexOf(idNodo);
+            if(indexN>-1){
+                laColeccion.idsNodos.splice(indexN, 1);
+            }
+            else{
+                throw new UserInputError("Nodo no existía en la colección")
+            }
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                throw new ApolloError("Error guardando datos de usuario en la base de datos");
+            }
+
+            return laColeccion;
+        },
+        async toggleNodoColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, idNodo, idUsuario}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+                if(!elUsuario){
+                    throw "Usuario no encontrado";                    
+                }
+            } catch (error) {
+                console.log(`Error buscando el usuario`);
+                throw new ApolloError("Usuario no encontrado");
+            }
+
+            //Autorizacion
+            const permisosEspeciales=["superadministrador"];
+            if(!permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) && !credencialesUsuario.id!=idUsuario){
+                console.log(`No autorizado`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var laColeccion=elUsuario.atlas.colecciones.id(idColeccion);
+            if(!laColeccion){
+                console.log(`Coleccion no encontrada`);
+                throw new UserInputError("Colección no encontrada");
+            }
+
+            const indexN=laColeccion.idsNodos.indexOf(idNodo);
+            if(indexN===-1){
+                laColeccion.idsNodos.push(idNodo);
+            }
+            else{
+                laColeccion.idsNodos.splice(indexN, 1);
+            }
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                throw new ApolloError("Error guardando datos de usuario en la base de datos");
+            }
+
+            return laColeccion;
+        }
+        
+
     },
     Usuario: {
         edad: function (parent: any, _: any, __: any) {
@@ -565,6 +816,19 @@ export const resolvers = {
     },
     Date: {
         GraphQLDateTime
+    },
+    ColeccionNodosAtlasConocimiento:{
+        nodos: async function(parent: any, _:any, __:any){
+            console.log(`Resolviendo nodos de coleccion con parent: ${parent}`);
+            try {
+                var losNodos:any=await Nodo.find({_id:{$in: parent.idsNodos}}).exec();
+            } catch (error) {
+                console.log(`Error buscando los nodos de la coleccion ${parent.id}`);
+            }
+            console.log(`Encontrados ${losNodos.length} nodos`);
+            if(!losNodos)losNodos=[];
+            return losNodos;
+        }
     }
 
 

@@ -47,11 +47,18 @@ exports.typeDefs = apollo_server_express_1.gql `
         aprendido:Boolean
     }
 
+    type ColeccionNodosAtlasConocimiento{
+        id:ID,
+        nombre: String,
+        idsNodos: [ID]
+    }
+
     type infoAtlas{
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
         idNodoTarget:ID,
-        configuracion: ConfiguracionAtlas
+        configuracion: ConfiguracionAtlas,
+        colecciones:[ColeccionNodosAtlasConocimiento]
     }
 
     enum relacionUsuarioConocimiento{
@@ -136,6 +143,12 @@ exports.typeDefs = apollo_server_express_1.gql `
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 
+        crearColeccionNodosAtlasConocimientoUsuario:Usuario,
+        eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Usuario,
+        setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):String,
+        addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):Usuario,
+        removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):Usuario,
+                
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -491,6 +504,8 @@ exports.resolvers = {
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
                     elUsuario.atlas.configuracion.modo = nuevoModo;
+                    // console.log(`Guardando usuario.atlas con valor: ${elUsuario.atlas}`);
+                    console.log(`Guardando usuario.atlas.colecciones con valor: ${elUsuario.atlas.colecciones}`);
                     yield elUsuario.save();
                 }
                 catch (error) {
@@ -500,6 +515,172 @@ exports.resolvers = {
                 return elUsuario;
             });
         },
+        crearColeccionNodosAtlasConocimientoUsuario(_, __, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario.id) {
+                    console.log(`Error: no hay id en las credenciales de usuario`);
+                    throw new apollo_server_express_1.AuthenticationError("No logeado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                var nuevaColeccion = elUsuario.colecciones.create();
+                elUsuario.colecciones.push(nuevaColeccion);
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando la colección en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elUsuario;
+            });
+        },
+        eliminarColeccionNodosAtlasConocimientoUsuario(_, { idColeccion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario.id) {
+                    console.log(`Error: no hay id en las credenciales de usuario`);
+                    throw new apollo_server_express_1.AuthenticationError("No logeado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                const indexC = elUsuario.colecciones.findIndex(c => c.id === idColeccion);
+                if (indexC > -1) {
+                    elUsuario.colecciones.splice(indexC, 1);
+                }
+                else {
+                    throw new apollo_server_express_1.UserInputError("Colección no encontrada");
+                }
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando la colección en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elUsuario;
+            });
+        },
+        setNombreColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, nuevoNombre }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                nuevoNombre = nuevoNombre.trim();
+                const charProhibidosNombreColeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+                if (charProhibidosNombreColeccion.test(nuevoNombre)) {
+                    throw new apollo_server_express_1.UserInputError("Nombre ilegal");
+                }
+                const indexC = elUsuario.colecciones.findIndex(c => c.id === idColeccion);
+                if (indexC > -1) {
+                    elUsuario.colecciones[indexC].nombre = nuevoNombre;
+                }
+                else {
+                    throw new apollo_server_express_1.UserInputError("Colección no encontrada");
+                }
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando los datos del usuario`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return nuevoNombre;
+            });
+        },
+        addNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNuevoNodo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                var laColeccion = elUsuario.colecciones.id(idColeccion);
+                if (!laColeccion) {
+                    console.log(`Coleccion no encontrada`);
+                    throw new apollo_server_express_1.UserInputError("Colección no encontrada");
+                }
+                var indexN = laColeccion.idsNodos.indexOf(idNuevoNodo);
+                if (indexN === -1) {
+                    laColeccion.idsNodos.push(idNuevoNodo);
+                }
+                else {
+                    throw new apollo_server_express_1.UserInputError("Nodo ya existía en la colección");
+                }
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError("Error guardando datos de usuario en la base de datos");
+                }
+                return elUsuario;
+            });
+        },
+        removeNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNodo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                var laColeccion = elUsuario.colecciones.id(idColeccion);
+                if (!laColeccion) {
+                    console.log(`Coleccion no encontrada`);
+                    throw new apollo_server_express_1.UserInputError("Colección no encontrada");
+                }
+                var indexN = laColeccion.idsNodos.indexOf(idNodo);
+                if (indexN > -1) {
+                    laColeccion.idsNodos.splice(indexN, 1);
+                }
+                else {
+                    throw new apollo_server_express_1.UserInputError("Nodo no existía en la colección");
+                }
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError("Error guardando datos de usuario en la base de datos");
+                }
+                return elUsuario;
+            });
+        }
     },
     Usuario: {
         edad: function (parent, _, __) {

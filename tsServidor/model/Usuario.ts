@@ -10,6 +10,21 @@ export const permisosDeUsuario = [
     "actividadesEstudiantiles-guia"
 ];
 
+const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({
+    nombre:{
+        type:String,
+        default:"Nueva colección",
+        min:3,
+        max: 30,
+    },
+    idsNodos:{
+        type: [String],
+        default:[]
+    },    
+},
+{strict: true}
+);
+
 const esquemaNotificacion = new mongoose.Schema({
     texto: {
         type: String,
@@ -150,6 +165,10 @@ const esquemaUsuario = new mongoose.Schema({
                 default: 'estudiante',
                 enum:['estudiante', 'experto']
             }
+        },
+        colecciones:{
+            type: [esquemaColeccionNodosAtlasConocimiento],
+            default:[]
         },
         idNodoTarget:String,
     },

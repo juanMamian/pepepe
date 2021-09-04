@@ -43,8 +43,11 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
         required: true,
         default: []
     },
-    idNodoParent: {
-        type: String
+    nodoParent: {
+        type: {
+            idNodo: String,
+            tipo: String,
+        },
     },
     keywords: {
         type: String,
@@ -106,7 +109,10 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
     peso: {
         type: Number,
         default: 0
-    }
+    },
+    idForoResponsables: {
+        type: String,
+    },
 });
 exports.esquemaObjetivo.index({ keywords: "text", nombre: "text", descripcion: "text" });
 exports.ModeloObjetivo = mongoose_1.default.model("Objetivo", exports.esquemaObjetivo);

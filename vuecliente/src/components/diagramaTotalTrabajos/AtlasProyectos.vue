@@ -401,8 +401,8 @@ export default {
       },
       subscribeToMore: {
         document: gql`
-          subscription($centro: CoordsInput!, $radio:Int!) {
-            nodoEditado(centro:$centro, radio:$radio) {
+          subscription ($centro: CoordsInput!, $radio: Int!) {
+            nodoEditado(centro: $centro, radio: $radio) {
               __typename
               ... on Trabajo {
                 id
@@ -491,7 +491,7 @@ export default {
           if (indexN > -1) {
             previousResult.nodosTrabajosSegunCentro.splice(indexN, 1);
           }
-          previousResult.nodosTrabajosSegunCentro.push(data.nodoEditado);          
+          previousResult.nodosTrabajosSegunCentro.push(data.nodoEditado);
           return previousResult;
         },
       },

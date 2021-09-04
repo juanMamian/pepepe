@@ -43,6 +43,7 @@ export default {
   position: relative;
   pointer-events: all;
   background-color: rgba(128, 128, 128, 0.349);
+  user-select: none;
 }
 .iconoNodo {
   position: absolute;

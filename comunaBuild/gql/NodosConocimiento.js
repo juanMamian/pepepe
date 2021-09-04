@@ -264,12 +264,28 @@ exports.resolvers = {
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo);
+                    if (!elNodo)
+                        throw "Nodo a eliminar no encontrado";
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError("Error buscando el nodo a eliminar");
+                }
+                try {
                     yield Nodo_1.ModeloNodo.deleteOne({ _id: idNodo }).exec();
                 }
                 catch (error) {
                     console.log(`error eliminando nodo`);
                 }
                 console.log(`nodo ${idNodo} eliminado`);
+                //Eliminar foros del nodo
+                try {
+                    yield Foro_1.ModeloForo.findByIdAndDelete(elNodo.idForoPublico).exec();
+                    yield Foro_1.ModeloForo.findByIdAndDelete(elNodo.idForoExpertos).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando los foros para ser eliminados`);
+                }
                 return idNodo;
             });
         },

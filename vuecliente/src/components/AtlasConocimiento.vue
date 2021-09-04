@@ -167,6 +167,15 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
           modo
         }
         idNodoTarget
+        colecciones{
+          id
+          nombre
+          idsNodos
+          nodos{
+            id
+            nombre
+          }
+        }
       }
     }
   }
