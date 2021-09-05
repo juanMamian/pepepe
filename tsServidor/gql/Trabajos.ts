@@ -1,10 +1,13 @@
 import { ApolloError, AuthenticationError, gql, UserInputError, withFilter } from "apollo-server-express";
-import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; const Nodo = require("../model/atlas/Nodo");
 import { ModeloUsuario as Usuario } from "../model/Usuario"
 import { contextoQuery } from "./tsObjetos"
 import { ModeloForo as Foro } from "../model/Foros/Foro"
-import { ModeloProyecto as Proyecto } from "../model/Proyecto";
+
 import { ModeloObjetivo as Objetivo } from "../model/Objetivo";
+import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; 
+const Nodo = require("../model/atlas/Nodo");
+
+import { ModeloProyecto as Proyecto } from "../model/Proyecto";
 
 
 export const typeDefs = gql`

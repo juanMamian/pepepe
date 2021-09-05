@@ -172,6 +172,18 @@ const esquemaUsuario = new mongoose.Schema({
         },
         idNodoTarget:String,
     },
+    atlasSolidaridad:{
+        coordsVista:{
+            x: {
+                type: Number,
+                default: 0
+            },
+            y: {
+                type: Number,
+                default: 0
+            }
+        }
+    },
     notificaciones: {
         type: [esquemaNotificacion],
         required: true,

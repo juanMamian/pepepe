@@ -236,61 +236,6 @@ import Nodo from "./Nodo.vue";
 import CanvasEnlacesNodo from "./CanvasEnlacesNodo.vue";
 import debounce from "debounce";
 
-// const fragmentoTrabajos = gql`
-//   fragment fragTrabajo on Trabajo {
-//     id
-//     nombre
-//     idProyectoParent
-//     coords {
-//       x
-//       y
-//     }
-//     estadoDesarrollo
-//     vinculos {
-//       idRef
-//       tipo
-//       tipoRef
-//     }
-//     stuck
-//     angulo
-//     centroMasa {
-//       x
-//       y
-//     }
-//     puntaje
-//     nivel
-//     turnoNivel
-//   }
-// `;
-
-// const fragmentoObjetivos = gql`
-//   fragment fragObjetivo on Objetivo {
-//     id
-//     nombre
-//     responsables
-//     idProyectoParent
-//     coords {
-//       x
-//       y
-//     }
-//     estado
-//     vinculos {
-//       idRef
-//       tipo
-//       tipoRef
-//     }
-//     stuck
-//     angulo
-//     centroMasa {
-//       x
-//       y
-//     }
-//     puntaje
-//     nivel
-//     turnoNivel
-//   }
-// `;
-
 const QUERY_TODOS_NODOS = gql`
   query ($centro: CoordsInput!, $radio: Int!) {
     nodosTrabajosSegunCentro(centro: $centro, radio: $radio) {
@@ -366,7 +311,19 @@ const QUERY_TODOS_NODOS = gql`
     }
   }
 `;
-
+const QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD = gql`
+  query {
+    yo {
+      id
+      atlasSolidaridad {
+        coordsVista {
+          x
+          y
+        }
+      }
+    }
+  }
+`;
 export default {
   components: {
     // NodoObjetivo,
@@ -397,7 +354,7 @@ export default {
         return nodosTrabajosSegunCentro;
       },
       skip() {
-        return !this.radioDescarga;
+        return !this.radioDescarga || !this.coordsInicialesSetted;
       },
       subscribeToMore: {
         document: gql`
@@ -496,9 +453,24 @@ export default {
         },
       },
     },
+    yo: {
+      query: QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD,
+      update({ yo }) {        
+        console.log(`Coords vista del usuario: ${JSON.stringify(yo.atlasSolidaridad.coordsVista)}`);
+        this.calcularEsquinaVista(yo.atlasSolidaridad.coordsVista);
+        this.coordsInicialesSetted = true;
+        return yo;
+      },
+      skip() {
+        return !this.usuarioLogeado || !this.montado;
+      },
+      fetchPolicy:"network-only"
+    },
   },
   data() {
     return {
+      montado:false,
+
       mostrandoMenuContextual: false,
       posMenuContextual: {
         top: 0,
@@ -506,8 +478,8 @@ export default {
       },
 
       esquinaVistaDecimal: {
-        x: -500,
-        y: -500,
+        x: 0,
+        y: 0,
       },
       centroDescarga: {
         x: 0,
@@ -548,9 +520,32 @@ export default {
       cerrarMateriales: 0,
 
       redibujarEnlacesNodos: 0,
+
+      enviandoCoordsVistaUsuario: false,
+      coordsInicialesSetted: false,
+      esquinaVistaCalculada: false,
     };
   },
   methods: {
+    calcularEsquinaVista(centro) {
+      if(this.esquinaVistaCalculada)return;
+      console.log(`Calculando esquina vista iniciando en ${JSON.stringify(centro)} con size atlas: ${JSON.stringify(this.sizeAtlas)}`);
+      this.$set(
+        this.esquinaVistaDecimal,
+        "x",
+        Math.round(
+          centro.x - this.sizeAtlas.x / (2 * this.factorZoom)
+        )
+      );
+      this.$set(
+        this.esquinaVistaDecimal,
+        "y",
+        Math.round(
+          centro.y - this.sizeAtlas.y / (2 * this.factorZoom)
+        )
+      );
+      this.esquinaVistaCalculada=true;
+    },
     abrirMenuContextual(e) {
       let posAtlas = this.$el.getBoundingClientRect();
 
@@ -561,6 +556,37 @@ export default {
       this.$set(this.posMenuContextual, "x", leftClick);
       this.mostrandoMenuContextual = true;
     },
+    uploadVistaActual: debounce(function () {
+      this.enviandoCoordsVistaUsuario = true;
+      console.log(`Uploading vista de usuario`);
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($coords: CoordsInput!) {
+              setCoordsVistaAtlasSolidaridadUsuario(coords: $coords)
+            }
+          `,
+          variables: {
+            coords: {
+              x: Math.round(
+                this.esquinaVistaDecimal.x +
+                  this.sizeAtlas.x / (2 * this.factorZoom)
+              ),
+              y: Math.round(
+                this.esquinaVistaDecimal.y +
+                  this.sizeAtlas.y / (2 * this.factorZoom)
+              ),
+            },
+          },
+        })
+        .then(() => {
+          this.enviandoCoordsVistaUsuario = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoCoordsVistaUsuario = false;
+        });
+    }, 3000),
     desplazarVista(deltaX, deltaY) {
       this.$set(
         this.esquinaVistaDecimal,
@@ -572,6 +598,7 @@ export default {
         "y",
         this.esquinaVistaDecimal.y - deltaY
       );
+      this.uploadVistaActual();
     },
     panVista(e) {
       if (!this.panningVista) {
@@ -585,12 +612,14 @@ export default {
       this.vistaPanned = true;
     },
     clickFondoAtlas() {
-      if (!this.vistaPanned) this.idNodoSeleccionado = null;
+      if (!this.vistaPanned) {
+        this.idNodoSeleccionado = null;
+        this.idNodoPaVentanita = null;
+      }
       this.panningVista = false;
       this.vistaPanned = false;
       this.mostrandoMenuContextual = false;
       this.idNodoMenuCx = null;
-      this.idNodoPaVentanita = null;
       this.cerrarBusqueda++;
     },
     movimientoMobile(e) {
@@ -1322,9 +1351,9 @@ export default {
   },
   mounted() {
     var posAtlas = this.$el.getBoundingClientRect();
-    console.log(`Atlas: Ancho: ${posAtlas.width}, alto: ${posAtlas.height}`);
+
     this.$set(this.sizeAtlas, "x", posAtlas.width);
-    this.$set(this.sizeAtlas, "y", posAtlas.height);
+    this.$set(this.sizeAtlas, "y", posAtlas.height);    
     this.$set(
       this.sizeAtlas,
       "diagonal",
@@ -1334,7 +1363,8 @@ export default {
     this.radioDescarga = Math.ceil(
       (Math.max(this.sizeAtlas.x, this.sizeAtlas.y) * 2) / this.factorZoom
     );
-  },
+    this.montado=true;
+ },
   created() {
     window.addEventListener("wheel", this.zoomWheel, { passive: false });
   },

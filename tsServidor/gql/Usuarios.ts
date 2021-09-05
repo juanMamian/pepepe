@@ -4,7 +4,8 @@ import { GraphQLDateTime } from "graphql-iso-date";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
-
+import { ModeloObjetivo as Objetivo } from "../model/Objetivo";
+import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; 
 
 interface Usuario {
     username: string,
@@ -66,7 +67,9 @@ export const typeDefs = gql`
         configuracion: ConfiguracionAtlas,
         colecciones:[ColeccionNodosAtlasConocimiento]
     }
-
+    type InfoAtlasSolidaridad{
+        coordsVista:Coords,       
+    }
     enum relacionUsuarioConocimiento{
         APRENDIENDO
         APRENDIDO
@@ -100,6 +103,7 @@ export const typeDefs = gql`
         username:String,
         nodosConocimiento: [ConocimientoUsuario],
         atlas:infoAtlas,        
+        atlasSolidaridad:InfoAtlasSolidaridad,
         permisos:[String]
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
@@ -155,7 +159,9 @@ export const typeDefs = gql`
         addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):ColeccionNodosAtlasConocimiento,
         removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):ColeccionNodosAtlasConocimiento,
         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
-                
+
+        setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
+        setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -757,7 +763,78 @@ export const resolvers = {
             }
 
             return laColeccion;
+        },
+
+        async setCoordsVistaAtlasSolidaridadUsuario(_:any, {coords}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            if(!credencialesUsuario.id){
+                throw new AuthenticationError("No Autenticado");
+            }
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+            } catch (error) {
+                console.log(`Error buscando el usuario`);
+                throw new ApolloError("Usuario no encontrado");
+            }            
+            elUsuario.atlasSolidaridad.coordsVista=coords;
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando el usuario con el nuevo coords de centroVista`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(coords)}`);
+            return true;
+        },
+        async setNodoSolidaridadAsCoordsVistaUsuario(_:any, {idNodo}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            if(!credencialesUsuario.id){
+                throw new AuthenticationError("No Autenticado");
+            }
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+            } catch (error) {
+                console.log(`Error buscando el usuario`);
+                throw new ApolloError("Usuario no encontrado");
+            }            
+
+            try {
+                var tipoDeNodo='trabajo'
+                var elNodo: any = await Trabajo.findById(idNodo).exec();                
+
+                if (!elNodo) {
+                    tipoDeNodo='objetivo';
+                    elNodo = await Objetivo.findById(idNodo).exec();
+                }    
+                if (!elNodo) {
+                    tipoDeNodo='';
+                    throw "Nodo no encontrado"
+                }
+                elNodo.tipoNodo=tipoDeNodo;
+            }
+            catch (error) {
+                console.log("Error buscando el nodo. E: " + error);
+                throw new ApolloError("Error en la conexión con la base de datos");
+            }
+            elUsuario.atlasSolidaridad.coordsVista=elNodo.coords;
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando el usuario con el nuevo coords de centroVista`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(elNodo.coords)} del nodo ${idNodo}`);
+            return true;
         }
+        
         
 
     },
