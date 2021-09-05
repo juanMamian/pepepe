@@ -439,6 +439,18 @@ export default {
       console.log(`Cambio en responsables solicitados`);
       this.debounceSetResponsablesSolicitados();
     }
+  },
+  mounted(){
+    this.$apollo.mutate({
+      mutation: gql`
+        mutation($idNodo: ID!){
+          setNodoSolidaridadAsCoordsVistaUsuario(idNodo: $idNodo)
+        }
+      `,
+      variables:{
+        idNodo:this.$route.params.idObjetivo
+      }
+    })
   }
 };
 </script>
