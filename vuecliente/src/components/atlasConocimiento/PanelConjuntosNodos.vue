@@ -4,6 +4,7 @@
     :style="[offset]"
     @mouseup.left.stop=""
     @mousedown.left.stop=""
+    @touchmove.stop=""
   >
     <img
       src="@/assets/iconos/userNodes.png"
@@ -393,6 +394,7 @@ export default {
         })
         .then(() => {
           this.enviandoQueryNodosSeccion = false;
+          this.idNodoSeleccionado=null;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
@@ -513,6 +515,8 @@ export default {
 }
 #barraConjuntos {
   display: flex;
+  width: 100%;
+  overflow-x: scroll;
 }
 .selectorConjunto {
   cursor: pointer;
@@ -528,6 +532,8 @@ export default {
   cursor: pointer;
   border-radius: 50%;
   margin-left: 10px;
+  width:20px;
+  height:20px;
 }
 .botonEliminarColeccion:hover {
   background-color: rgb(219, 63, 63);
@@ -581,6 +587,9 @@ export default {
 #listaNodosConjunto {
   display: flex;
   flex-wrap: wrap;
+  overflow-y: scroll;
+  max-height: 55vh;
+  padding-top: 10px;
 }
 .iconoNodoConocimiento {
   margin: 0px 40px;
