@@ -17,6 +17,52 @@
       </div>
     </div>
 
+    <div id="zonaEnlaces" class="zonaPrimerNivel">
+      <div
+        class="barraSuperiorZona"
+        @click="mostrandoEnlaces = !mostrandoEnlaces"
+      >
+        <div class="nombreZona">
+          <div
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoEnlaces ? 'rotateZ(90deg)' : 'rotateZ(0deg)',
+            }"
+          ></div>
+          Enlaces
+        </div>
+      </div>
+
+      <div v-show="mostrandoEnlaces">
+        <div
+          id="controlesEnlaces"
+          class="controlesZona"
+          :class="{ deshabilitado: enviandoQueryEnlaces }"
+        >
+          <loading v-show="enviandoQueryEnlaces" texto="Esperando..." />
+          <div
+            class="controlesEnlaces hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryEnlaces }"
+            v-if="usuarioLogeado == true && usuarioResponsable"
+            id="botonCrearEnlace"
+            @click="crearNuevoEnlace"
+          >
+            Crear enlace
+          </div>
+        </div>
+        <div id="listaEnlaces">
+          <enlace-nodo-solidaridad
+            v-for="enlace of esteObjetivo.enlaces"
+            :key="enlace.id"
+            :esteEnlace="enlace"
+            :idNodo="esteObjetivo.id"
+            tipoNodo="objetivo"
+            @meElimine="eliminarEnlaceCache(enlace.id)"
+          />
+        </div>
+      </div>
+    </div>
+
     <div id="zonaResponsables" class="zonaPrimerNivel">
       <div
         class="barraSuperiorZona"
@@ -45,7 +91,9 @@
           <div
             class="controlesResponsables hoverGris botonesControles"
             :class="{ deshabilitado: enviandoQueryResponsables }"
-            v-if="usuarioLogeado == true && esteObjetivo.responsables.length < 1"
+            v-if="
+              usuarioLogeado == true && esteObjetivo.responsables.length < 1
+            "
             id="asumirResponsable"
             @click="asumirComoResponsable"
           >
@@ -59,7 +107,7 @@
               usuarioResponsable &&
               responsablesSolicitados < 1
             "
-            v-show="idResponsableSeleccionado===null"
+            v-show="idResponsableSeleccionado === null"
             id="solicitarResponsable"
             @click="setResponsablesSolicitados(1)"
           >
@@ -87,7 +135,7 @@
               (usuarioResponsable == true ||
                 usuarioPosibleResponsableObjetivo == true)
             "
-            v-show="idResponsableSeleccionado===null"
+            v-show="idResponsableSeleccionado === null"
             @click="abandonarListaResponsables"
           >
             Abandonar
@@ -105,15 +153,16 @@
             Aceptar como responsable
           </div>
         </div>
-        <div id="listaResponsables" @click.stop="idResponsableSeleccionado=null">
+        <div
+          id="listaResponsables"
+          @click.stop="idResponsableSeleccionado = null"
+        >
           <icono-persona-autonomo
             :idPersona="idPersona"
             :key="idPersona"
             v-for="idPersona of esteObjetivo.responsables"
             :seleccionado="idResponsableSeleccionado == idPersona"
-            @click.native.stop="
-              idResponsableSeleccionado = idPersona;
-            "
+            @click.native.stop="idResponsableSeleccionado = idPersona"
           />
 
           <icono-persona-autonomo
@@ -126,9 +175,7 @@
               (usuario && usuario.id && usuario.id === idPersona)
             "
             :seleccionado="idResponsableSeleccionado == idPersona"
-            @click.native.stop="
-              idResponsableSeleccionado = idPersona;
-            "
+            @click.native.stop="idResponsableSeleccionado = idPersona"
             @dblclick.native.shift="aceptarResponsable(idPersona)"
           />
 
@@ -161,7 +208,7 @@
           </div>
         </div>
       </div>
-    </div>    
+    </div>
 
     <div
       id="zonaForo"
@@ -184,7 +231,8 @@ import gql from "graphql-tag";
 import Foro from "./Foro.vue";
 import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import Loading from "./utilidades/Loading.vue";
-import debounce from "debounce"
+import debounce from "debounce";
+import EnlaceNodoSolidaridad from "./paginaNodoSolidaridad/EnlaceNodoSolidaridad.vue";
 
 const QUERY_OBJETIVO = gql`
   query ($idObjetivo: ID!) {
@@ -196,10 +244,17 @@ const QUERY_OBJETIVO = gql`
       responsables
       posiblesResponsables
       responsablesSolicitados
-      nodoParent{
+      enlaces {
+        id
+        nombre
+        descripcion
+        link
+        tipo
+      }
+      nodoParent {
         idNodo
         tipo
-      }           
+      }
     }
   }
 `;
@@ -210,6 +265,7 @@ export default {
     Foro,
     IconoPersonaAutonomo,
     Loading,
+    EnlaceNodoSolidaridad,
   },
   apollo: {
     esteObjetivo: {
@@ -220,7 +276,7 @@ export default {
         };
       },
       update({ objetivo }) {
-        this.responsablesSolicitados=objetivo.responsablesSolicitados;
+        this.responsablesSolicitados = objetivo.responsablesSolicitados;
         return objetivo;
       },
       skip() {
@@ -233,8 +289,9 @@ export default {
       esteObjetivo: {
         responsables: [],
         materiales: [],
+        enlaces:[]
       },
-      responsablesSolicitados:0,
+      responsablesSolicitados: 0,
       idResponsableSeleccionado: null,
 
       idNodoSeleccionado: null,
@@ -244,7 +301,10 @@ export default {
       creandoMaterial: false,
 
       enviandoQueryResponsables: false,
-      mostrandoResponsables:true,
+      mostrandoResponsables: true,
+
+      enviandoQueryEnlaces: false,
+      mostrandoEnlaces: true,
     };
   },
   computed: {
@@ -399,10 +459,10 @@ export default {
           this.enviandoQueryResponsables = false;
           console.log("error: " + error);
         });
-    },   
-    debounceSetResponsablesSolicitados: debounce(function(){
+    },
+    debounceSetResponsablesSolicitados: debounce(function () {
       this.setResponsablesSolicitados(parseInt(this.responsablesSolicitados));
-    }, 2000),    
+    }, 2000),
     setResponsablesSolicitados(cantidad) {
       if (cantidad < 0) cantidad = 0;
       this.$apollo
@@ -426,32 +486,108 @@ export default {
             nuevoCantidadResponsablesSolicitados: cantidad,
           },
         })
-        .then(() => {          
-        })
+        .then(() => {})
         .catch((error) => {
           console.log(`Error: ${error}`);
         });
-    },    
+    },
+    crearNuevoEnlace() {
+      this.enviandoQueryEnlaces = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $tipoNodo: String!) {
+              crearEnlaceNodoSolidaridad(idNodo: $idNodo, tipoNodo: $tipoNodo) {
+                id
+                nombre
+                descripcion
+                link
+                tipo
+              }
+            }
+          `,
+          variables: {
+            idNodo: this.esteObjetivo.id,
+            tipoNodo: "objetivo",
+          },
+        })
+        .then(({ data: { crearEnlaceNodoSolidaridad } }) => {
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_OBJETIVO,
+            variables: {
+              idObjetivo: this.esteObjetivo.id,
+            },
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          var indexE = nuevoCache.objetivo.enlaces.findIndex(
+            (e) => e.id === crearEnlaceNodoSolidaridad.id
+          );
+          if (indexE > -1) {
+            console.log(`El enlace ya estaba en el caché`);
+          } else {
+            nuevoCache.objetivo.enlaces.push(crearEnlaceNodoSolidaridad);
+          }
+          store.writeQuery({
+            query: QUERY_OBJETIVO,
+            variables: {
+              idObjetivo: this.esteObjetivo.id,
+            },
+            data: nuevoCache,
+          });
+          this.enviandoQueryEnlaces = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoQueryEnlaces = false;
+        });
+    },
+    eliminarEnlaceCache(idEnlace) {
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_OBJETIVO,
+        variables: {
+          idObjetivo: this.esteObjetivo.id,
+        },
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      const indexE = nuevoCache.objetivo.enlaces.findIndex(
+        (e) => e.id === idEnlace
+      );
+      if (indexE > -1) {
+        nuevoCache.objetivo.enlaces.splice(indexE, 1);        
+      } else {
+        console.log(`El enlace no estaba en el caché`);
+      }
+      store.writeQuery({
+        query: QUERY_OBJETIVO,
+        variables: {
+          idObjetivo: this.esteObjetivo.id,
+        },
+        data: nuevoCache,
+      });
+      this.enviandoQueryEnlaces = false;
+    },
   },
-  watch:{
-    responsablesSolicitados(nuevo){
-      if(nuevo===this.esteObjetivo.responsablesSolicitados)return;
+  watch: {
+    responsablesSolicitados(nuevo) {
+      if (nuevo === this.esteObjetivo.responsablesSolicitados) return;
       console.log(`Cambio en responsables solicitados`);
       this.debounceSetResponsablesSolicitados();
-    }
+    },
   },
-  mounted(){
+  mounted() {
     this.$apollo.mutate({
       mutation: gql`
-        mutation($idNodo: ID!){
+        mutation ($idNodo: ID!) {
           setNodoSolidaridadAsCoordsVistaUsuario(idNodo: $idNodo)
         }
       `,
-      variables:{
-        idNodo:this.$route.params.idObjetivo
-      }
-    })
-  }
+      variables: {
+        idNodo: this.$route.params.idObjetivo,
+      },
+    });
+  },
 };
 </script>
 

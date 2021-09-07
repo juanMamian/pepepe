@@ -27,6 +27,33 @@ const esquemaMaterial= new mongoose.Schema({
 
 });
 
+const esquemaEnlace= new mongoose.Schema({
+    nombre:{
+        type: String,
+        min: 2,
+        max: 30,
+        required: true,
+        default: "Nuevo enlace"
+    },
+    descripcion: {
+        type: String,
+        max: 1000,
+        default:"",
+    },
+    link:{
+        type: String,
+        min:6,
+        max:500,
+    },
+    tipo:{
+        type: String,
+        enum: ["enlace", "hojaCalculo", "documentoTexto"],
+        default:"enlace",
+    }
+
+
+})
+
 export var esquemaTrabajo = new mongoose.Schema();
 
 
@@ -43,6 +70,10 @@ esquemaTrabajo.add({
         max: 10000,
         default:"Sin descripcion",
         required:true
+    },
+    enlaces:{
+        type: [esquemaEnlace],
+        default:[]
     },
     estadoDesarrollo:{
         type:String,

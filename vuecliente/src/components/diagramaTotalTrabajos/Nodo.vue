@@ -64,7 +64,9 @@
         <div class="seccionMenuCx">El elemento seleccionado...</div>
         <div
           class="botonMenuCx"
-          v-show="usuarioResponsableNodoSeleccionado || usuarioSuperadministrador"
+          v-show="
+            usuarioResponsableNodoSeleccionado || usuarioSuperadministrador
+          "
           @mouseup.stop=""
           @mousedown.stop=""
           @click.stop="crearRequerimento(idNodoSeleccionado, esteNodo.id)"
@@ -78,7 +80,8 @@
           @click.stop="eliminarVinculo(idNodoSeleccionado, esteNodo.id)"
           v-show="requeridoPorSeleccionado"
           :class="{
-            deshabilitado: !usuarioResponsableNodoSeleccionado && !usuarioSuperadministrador,
+            deshabilitado:
+              !usuarioResponsableNodoSeleccionado && !usuarioSuperadministrador,
           }"
         >
           Desconectar
@@ -89,10 +92,11 @@
         v-show="usuarioSuperadministrador || usuarioAdministrador"
         :class="{
           deshabilitado:
-            (autoadministrado &&
+            ((autoadministrado &&
               esteNodo.administradores.length > 1 &&
               !usuarioSuperadministrador) ||
-            (!usuarioResponsable && esteNodo.responsables.length > 0),
+              (!usuarioResponsable && esteNodo.responsables.length > 0)) &&
+            !usuarioSuperadministrador,
         }"
         @click="eliminarse"
       >

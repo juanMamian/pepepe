@@ -34,7 +34,8 @@ export const typeDefs = gql`
        posiblesResponsables:[String],
        responsablesSolicitados:Int,
        administradores:[String],
-       descripcion:String,       
+       descripcion:String,
+       enlaces: [EnlaceNodoSolidaridad], 
        vinculos:[VinculoNodoProyecto],
        keywords:String,
        nodoParent:InfoNodoSolidaridad,
@@ -66,10 +67,19 @@ export const typeDefs = gql`
         
     }
 
+    type EnlaceNodoSolidaridad{
+        id: ID!, 
+        nombre: String,
+        descripcion: String,
+        link: String,
+        tipo: String
+    }
+
    type Trabajo{
        id: ID,       
        nombre: String,
        descripcion:String,
+       enlaces: [EnlaceNodoSolidaridad], 
        responsables: [String],
        posiblesResponsables:[String],
        administradores:[String],
@@ -124,6 +134,9 @@ export const typeDefs = gql`
     editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
     editarDescripcionMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoDescripcion: String!):MaterialTrabajo,
     editarCantidadesMaterialTrabajo(idTrabajo: ID!, idMaterial:ID!, nuevoCantidadNecesaria:Int!, nuevoCantidadDisponible:Int):MaterialTrabajo,
+
+    crearEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!):EnlaceNodoSolidaridad,
+    eliminarEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace:ID!):Boolean,
 
     crearObjetivo(posicion:CoordsInput):Objetivo,
     eliminarObjetivo(idObjetivo:ID!, idProyecto:ID!):Boolean,
@@ -869,6 +882,100 @@ export const resolvers = {
             pubsub.publish(NODO_EDITADO, {nodoEditado: nodoRequerido});
             return [nodoRequiriente, nodoRequerido];
 
+        },
+
+        async crearEnlaceNodoSolidaridad(_: any, { idNodo, tipoNodo }: any, contexto: contextoQuery) {
+            console.log(`Peticion de crear un nuevo enlace en el NodoSolidaridad con id ${idNodo}`);
+
+            //Authorización
+            let credencialesUsuario = contexto.usuario;
+
+            try {
+
+                var elNodo: any = null;
+                if (tipoNodo === 'objetivo') {
+                    elNodo = await Objetivo.findById(idNodo).exec();
+                }
+                else if (tipoNodo === 'trabajo') {
+                    elNodo = await Trabajo.findById(idNodo).exec();
+                }
+                if (!elNodo) {
+                    throw "nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            const permisosEspeciales=["superadministrador"];
+            if (!credencialesUsuario.id || !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+                console.log(`Error de autenticación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var nuevoEnlace = elNodo.enlaces.create();
+                elNodo.enlaces.push(nuevoEnlace);
+                await elNodo.save();
+            }
+            catch (error) {
+                console.log("Error guardando el enlace creado en el nodo. E: " + error);
+                throw new ApolloError("Error introduciendo el enlace en el nodo");
+            }
+
+            console.log(`Enviando nuevo enlace: ${nuevoEnlace}`);
+            return nuevoEnlace;
+        },
+        async eliminarEnlaceNodoSolidaridad(_: any, { idNodo, tipoNodo, idEnlace }: any, contexto: contextoQuery) {
+            console.log(`Peticion de eliminar un enlace con id ${idEnlace} en el NodoSolidaridad con id ${idNodo}`);
+
+            //Authorización
+            let credencialesUsuario = contexto.usuario;
+
+            try {
+
+                var elNodo: any = null;
+                if (tipoNodo === 'objetivo') {
+                    elNodo = await Objetivo.findById(idNodo).exec();
+                }
+                else if (tipoNodo === 'trabajo') {
+                    elNodo = await Trabajo.findById(idNodo).exec();
+                }
+                if (!elNodo) {
+                    throw "nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            const permisosEspeciales=["superadministrador"];
+            if (!credencialesUsuario.id || !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+                console.log(`Error de autenticación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            const indexE=elNodo.enlaces.findIndex(e=>e.id===idEnlace);
+
+            if(indexE>-1){
+                elNodo.enlaces.splice(indexE, 1);
+            }
+            else{
+                console.log(`Error. El enlace a eliminar no existía.`);
+                throw new UserInputError("Enlace no encontrado");
+            }
+
+            try {                             
+                await elNodo.save();
+            }
+            catch (error) {
+                console.log("Error guardando el nodo. E: " + error);
+                throw new ApolloError("Error introduciendo el enlace en el nodo");
+            }
+            
+            return true;
         },
 
         async crearObjetivo(_: any, { posicion }: any, contexto: contextoQuery) {

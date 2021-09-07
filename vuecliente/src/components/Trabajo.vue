@@ -17,6 +17,52 @@
       </div>
     </div>
 
+    <div id="zonaEnlaces" class="zonaPrimerNivel">
+      <div
+        class="barraSuperiorZona"
+        @click="mostrandoEnlaces = !mostrandoEnlaces"
+      >
+        <div class="nombreZona">
+          <div
+            class="trianguloBullet"
+            :style="{
+              transform: mostrandoEnlaces ? 'rotateZ(90deg)' : 'rotateZ(0deg)',
+            }"
+          ></div>
+          Enlaces
+        </div>
+      </div>
+
+      <div v-show="mostrandoEnlaces">
+        <div
+          id="controlesEnlaces"
+          class="controlesZona"
+          :class="{ deshabilitado: enviandoQueryEnlaces }"
+        >
+          <loading v-show="enviandoQueryEnlaces" texto="Esperando..." />
+          <div
+            class="controlesEnlaces hoverGris botonesControles"
+            :class="{ deshabilitado: enviandoQueryEnlaces }"
+            v-if="usuarioLogeado == true && usuarioResponsable"
+            id="botonCrearEnlace"
+            @click="crearNuevoEnlace"
+          >
+            Crear enlace
+          </div>
+        </div>
+        <div id="listaEnlaces">
+          <enlace-nodo-solidaridad
+            v-for="enlace of esteTrabajo.enlaces"
+            :key="enlace.id"
+            :esteEnlace="enlace"
+            :idNodo="esteTrabajo.id"
+            tipoNodo="trabajo"
+            @meElimine="eliminarEnlaceCache(enlace.id)"
+          />
+        </div>
+      </div>
+    </div>
+
     <div id="zonaResponsables" class="zonaPrimerNivel">
       <div
         class="barraSuperiorZona"
@@ -219,6 +265,7 @@ import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
 import MaterialTrabajo from "./trabajos/Material.vue";
 import Loading from "./utilidades/Loading.vue";
 import debounce from "debounce"
+import EnlaceNodoSolidaridad from "./paginaNodoSolidaridad/EnlaceNodoSolidaridad.vue";
 
 const QUERY_TRABAJO = gql`
   query ($idTrabajo: ID!) {
@@ -226,6 +273,13 @@ const QUERY_TRABAJO = gql`
       id
       nombre
       descripcion
+       enlaces {
+        id
+        nombre
+        descripcion
+        link
+        tipo
+      }
       idForoResponsables
       responsables
       posiblesResponsables
@@ -252,6 +306,8 @@ export default {
     IconoPersonaAutonomo,
     MaterialTrabajo,
     Loading,
+    EnlaceNodoSolidaridad,
+
   },
   apollo: {
     esteTrabajo: {
@@ -275,6 +331,7 @@ export default {
       esteTrabajo: {
         responsables: [],
         materiales: [],
+        enlaces:[],
       },
       responsablesSolicitados:0,
       idResponsableSeleccionado: null,
@@ -287,6 +344,9 @@ export default {
 
       enviandoQueryResponsables: false,
       mostrandoResponsables:true,
+
+      enviandoQueryEnlaces: false,
+      mostrandoEnlaces:true,
     };
   },
   computed: {
@@ -556,7 +616,84 @@ export default {
         .catch((error) => {
           console.log(`Error: ${error}`);
         });
-    },    
+    },
+    crearNuevoEnlace() {
+      this.enviandoQueryEnlaces = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $tipoNodo: String!) {
+              crearEnlaceNodoSolidaridad(idNodo: $idNodo, tipoNodo: $tipoNodo) {
+                id
+                nombre
+                descripcion
+                link
+                tipo
+              }
+            }
+          `,
+          variables: {
+            idNodo: this.esteTrabajo.id,
+            tipoNodo: "trabajo",
+          },
+        })
+        .then(({ data: { crearEnlaceNodoSolidaridad } }) => {
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_TRABAJO,
+            variables: {
+              idTrabajo: this.esteTrabajo.id,
+            },
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          var indexE = nuevoCache.trabajo.enlaces.findIndex(
+            (e) => e.id === crearEnlaceNodoSolidaridad.id
+          );
+          if (indexE > -1) {
+            console.log(`El enlace ya estaba en el caché`);
+          } else {
+            nuevoCache.trabajo.enlaces.push(crearEnlaceNodoSolidaridad);
+          }
+          store.writeQuery({
+            query: QUERY_TRABAJO,
+            variables: {
+              idTrabajo: this.esteTrabajo.id,
+            },
+            data: nuevoCache,
+          });
+          this.enviandoQueryEnlaces = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoQueryEnlaces = false;
+        });
+    },
+    eliminarEnlaceCache(idEnlace) {
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_TRABAJO,
+        variables: {
+          idTrabajo: this.esteTrabajo.id,
+        },
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      const indexE = nuevoCache.trabajo.enlaces.findIndex(
+        (e) => e.id === idEnlace
+      );
+      if (indexE > -1) {
+        nuevoCache.trabajo.enlaces.splice(indexE, 1);        
+      } else {
+        console.log(`El enlace no estaba en el caché`);
+      }
+      store.writeQuery({
+        query: QUERY_TRABAJO,
+        variables: {
+          idTrabajo: this.esteTrabajo.id,
+        },
+        data: nuevoCache,
+      });
+      this.enviandoQueryEnlaces = false;
+    },
   },
   watch:{
     responsablesSolicitados(nuevo){
