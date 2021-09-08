@@ -137,6 +137,10 @@ export const typeDefs = gql`
 
     crearEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!):EnlaceNodoSolidaridad,
     eliminarEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace:ID!):Boolean,
+    editarNombreEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoNombre: String!):EnlaceNodoSolidaridad,
+    editarDescripcionEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoDescripcion: String!):EnlaceNodoSolidaridad,
+    editarLinkEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoLink: String!):EnlaceNodoSolidaridad,
+
 
     crearObjetivo(posicion:CoordsInput):Objetivo,
     eliminarObjetivo(idObjetivo:ID!, idProyecto:ID!):Boolean,
@@ -976,6 +980,179 @@ export const resolvers = {
             }
             
             return true;
+        },
+        async editarNombreEnlaceNodoSolidaridad(_: any, { idNodo, tipoNodo, idEnlace, nuevoNombre }, contexto: contextoQuery) {
+
+            console.log(`cambiando el nombre del enlace con id ${idEnlace} del nodosolidaridad con id ${idNodo}`);
+            const charProhibidosNombreEnlace = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+
+            nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
+            if (charProhibidosNombreEnlace.test(nuevoNombre)) {
+                throw new ApolloError("Nombre ilegal");
+            }
+
+            nuevoNombre = nuevoNombre.trim();
+
+            try {
+                var elNodo: any = null;
+                if (tipoNodo === 'objetivo') {
+                    elNodo = await Objetivo.findById(idNodo).exec();
+                }
+                else if (tipoNodo === 'trabajo') {
+                    elNodo = await Trabajo.findById(idNodo).exec();
+                }
+                if (!elNodo) {
+                    throw "nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            let credencialesUsuario = contexto.usuario;
+            if (!elNodo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de nodosolidaridad`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elEnlace = elNodo.enlaces.id(idEnlace);
+                if (!elEnlace) {
+                    console.log(`Enlace no encontrado en el nodosolidaridad`);
+                    throw "No existía el enlace";
+                }
+                elEnlace.nombre = nuevoNombre;
+            }
+            catch (error) {
+                console.log("Error cambiando el nombre en la base de datos. E: " + error);
+                throw new ApolloError("Error guardando el nombre en la base de datos");
+            }
+            try {
+                await elNodo.save();
+            }
+            catch (error) {
+                console.log("Error guardando el enlace creado en el nodosolidaridad. E: " + error);
+                throw new ApolloError("Error introduciendo el enlace en el nodosolidaridad");
+            }
+            console.log(`Nombre cambiado`);
+            return elEnlace;
+        },
+        async editarDescripcionEnlaceNodoSolidaridad(_: any, { idNodo, tipoNodo, idEnlace, nuevoDescripcion }, contexto: contextoQuery) {
+
+            console.log(`cambiando la descripcion del enlace con id ${idEnlace} del nodosolidaridad con id ${idNodo}`);
+            const charProhibidosDescripcion = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+
+            if (charProhibidosDescripcion.test(nuevoDescripcion)) {
+                throw new ApolloError("Descripcion ilegal");
+            }
+
+            nuevoDescripcion = nuevoDescripcion.trim();
+
+            try {
+                var elNodo: any = null;
+                if (tipoNodo === 'objetivo') {
+                    elNodo = await Objetivo.findById(idNodo).exec();
+                }
+                else if (tipoNodo === 'trabajo') {
+                    elNodo = await Trabajo.findById(idNodo).exec();
+                }
+                if (!elNodo) {
+                    throw "nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            let credencialesUsuario = contexto.usuario;
+            if (!elNodo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando descripcion de nodosolidaridad`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elEnlace = elNodo.enlaces.id(idEnlace);
+                if (!elEnlace) {
+                    console.log(`Enlace no encontrado en el nodosolidaridad`);
+                    throw "No existía el enlace";
+                }
+                elEnlace.descripcion = nuevoDescripcion;
+            }
+            catch (error) {
+                console.log("Error cambiando el descripcion en la base de datos. E: " + error);
+                throw new ApolloError("Error guardando el descripcion en la base de datos");
+            }
+            try {
+                await elNodo.save();
+            }
+            catch (error) {
+                console.log("Error guardando el enlace creado en el nodosolidaridad. E: " + error);
+                throw new ApolloError("Error introduciendo el enlace en el nodosolidaridad");
+            }
+            console.log(`Descripcion cambiado`);
+            return elEnlace;
+        },
+        async editarLinkEnlaceNodoSolidaridad(_: any, { idNodo, tipoNodo, idEnlace, nuevoLink }, contexto: contextoQuery) {
+
+            console.log(`cambiando el link del enlace con id ${idEnlace} del nodosolidaridad con id ${idNodo}`);
+            // const charProhibidosLinkEnlace = /[^ a-zA-ZÀ-ž0-9_.-?/=:]/;
+
+            nuevoLink = nuevoLink.replace(/\s\s+/g, " ");
+            // if (charProhibidosLinkEnlace.test(nuevoLink)) {
+            //     throw new ApolloError("Link ilegal");
+            // }
+
+            nuevoLink = nuevoLink.trim();
+
+            try {
+                var elNodo: any = null;
+                if (tipoNodo === 'objetivo') {
+                    elNodo = await Objetivo.findById(idNodo).exec();
+                }
+                else if (tipoNodo === 'trabajo') {
+                    elNodo = await Trabajo.findById(idNodo).exec();
+                }
+                if (!elNodo) {
+                    throw "nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            let credencialesUsuario = contexto.usuario;
+            if (!elNodo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando link de nodosolidaridad`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elEnlace = elNodo.enlaces.id(idEnlace);
+                if (!elEnlace) {
+                    console.log(`Enlace no encontrado en el nodosolidaridad`);
+                    throw "No existía el enlace";
+                }
+                elEnlace.link = nuevoLink;
+            }
+            catch (error) {
+                console.log("Error cambiando el link en la base de datos. E: " + error);
+                throw new ApolloError("Error guardando el link en la base de datos");
+            }
+            try {
+                await elNodo.save();
+            }
+            catch (error) {
+                console.log("Error guardando el enlace creado en el nodosolidaridad. E: " + error);
+                throw new ApolloError("Error introduciendo el enlace en el nodosolidaridad");
+            }
+            console.log(`Link cambiado`);
+            return elEnlace;
         },
 
         async crearObjetivo(_: any, { posicion }: any, contexto: contextoQuery) {

@@ -38,7 +38,7 @@ const esquemaEnlace= new mongoose.Schema({
     descripcion: {
         type: String,
         max: 1000,
-        default:"",
+        default:"Sin descripción",
     },
     link:{
         type: String,
