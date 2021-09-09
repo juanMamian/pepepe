@@ -21,6 +21,7 @@ fragment fragResponsables on PublicUsuario {
   nombres
   apellidos
   email
+  permisos
   numeroTel
   lugarResidencia
 }

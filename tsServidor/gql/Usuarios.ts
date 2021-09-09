@@ -128,6 +128,7 @@ export const typeDefs = gql`
         apellidos:String,
         email:String,
         numeroTel:String,
+        permisos:[String],
         lugarResidencia:String,
         edad:Int,
         idGrupoEstudiantil:String,       
@@ -152,6 +153,9 @@ export const typeDefs = gql`
         setNodoAtlasTarget(idNodo:ID!):Boolean,
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
+
+        asignarPermisoTodosUsuarios(nuevoPermiso:String!):Boolean,
+        togglePermisoUsuario(permiso:String!, idUsuario:ID!):PublicUsuario,
 
         crearColeccionNodosAtlasConocimientoUsuario:Usuario,
         eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Usuario,
@@ -544,6 +548,80 @@ export const resolvers = {
             
             return elUsuario;
             
+        },
+
+        async asignarPermisoTodosUsuarios(_: any, {nuevoPermiso}: any, contexto: contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+            const permisosAutorizados=["superadministrador"];
+
+            if(!credencialesUsuario.permisos.some(async (p)=>permisosAutorizados.includes(p))){
+                console.log(`El usuario no tenía los permisos correctos`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var losUsuarios:any=await Usuario.find({}).exec();
+            } catch (error) {
+                console.log(`Error buscando los usuarios: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            losUsuarios.forEach(async (usuario)=>{
+                const indexP=usuario.permisos.indexOf(nuevoPermiso);
+                if(indexP>-1){
+                    usuario.permisos.splice(indexP, 1);
+                }
+                usuario.permisos.push(nuevoPermiso);
+
+                try {
+                    await usuario.save();
+                } catch (error) {
+                    console.log(`Error guardando el usuario con el nuevo permiso: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+            });
+
+            return true;
+
+
+
+        },
+        async togglePermisoUsuario(_:any, {permiso, idUsuario}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+            const permisosAutorizados=["superadministrador"];
+
+            if(!credencialesUsuario.permisos.some(async (p)=>permisosAutorizados.includes(p))){
+                console.log(`El usuario no tenía los permisos correctos`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elUsuario:any=await Usuario.findById(idUsuario).exec();
+                if(!elUsuario)throw "Usuario no encontrado";
+            } catch (error) {
+                console.log(`Error buscando el usuario: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            const indexP=elUsuario.permisos.indexOf(permiso);
+
+            if(indexP>-1){
+                elUsuario.permisos.splice(indexP, 1);
+            }
+            else{
+                elUsuario.permisos.push(permiso)
+            }
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando el usuario`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elUsuario;
+
+
         },
      
         async crearColeccionNodosAtlasConocimientoUsuario(_:any, __:any, contexto:contextoQuery){

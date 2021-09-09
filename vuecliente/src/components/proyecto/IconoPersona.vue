@@ -4,7 +4,7 @@
       class="fotografia"
       :src="this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id"
       v-show="fotografiaEnabled"
-      @load="fotografiaEnabled=true"
+      @load="fotografiaEnabled = true"
       alt=""
     />
     <div id="contenedorAlertas">
@@ -15,16 +15,23 @@
     </div>
     <div id="menuCxPersona" v-show="menuContextual">
       <div class="botonMenuCx" @click="copiarId">{{ estaPersona.id }}</div>
-      <div class="botonMenuCx" v-if="usuarioSuperadministrador">{{ estaPersona.username }}</div>
-      <div
-        class="infoMenuCx"
-        :key="index"
-        v-for="(permiso, index) in estaPersona.permisos"
-      >
-        {{ permiso }}
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador">
+        {{ estaPersona.username }}
       </div>
-      <input type="text" v-model="nuevoPermiso" @click.stop="" placeholder="Nuevo permiso" />
-      <div class="botonMenuCx" @click.stop="addPermisos">Dar permiso</div>
+      <div class="botonMenuCx">
+        Permisos
+        <div id="listaPermisos">
+          <div
+            class="elementoListaPermisos"
+            :class="{permisoActivo: estaPersona.permisos && estaPersona.permisos.includes(permiso)}"
+            v-for="(permiso, index) of permisosPosibles"
+            :key="'permiso' + estaPersona.id + index"
+            @click.stop="togglePermiso(permiso, estaPersona.id)"
+          >
+            {{permiso}}
+          </div>
+        </div>
+      </div>
       <div
         class="botonMenuCx"
         :key="index"
@@ -43,7 +50,26 @@ import gql from "graphql-tag";
 export default {
   name: "IconoPersona",
   data() {
-    return { nuevoPermiso: null, mounted: false, fotografiaEnabled:false };
+    return {
+      nuevoPermiso: null,
+      mounted: false,
+      fotografiaEnabled: false,
+      permisosPosibles: [
+        "usuario",
+        "administrador",
+        "atlasAdministrador",
+        "superadministrador",
+        "actividadesEstudiantiles-profe",
+        "actividadesEstudiantiles-administrador",
+        "actividadesEstudiantiles-guia",
+        "visitante",
+        "maestraVida",
+        "maestraVida-estudiante",
+        "maestraVida-profesor",
+        "maestraVida-acompañante",
+        "comunere"
+      ],
+    };
   },
   props: {
     estaPersona: {
@@ -59,7 +85,6 @@ export default {
     opcionesMenuCx: {
       type: Array,
     },
-    
   },
   computed: {
     soyYo() {
@@ -79,7 +104,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($nuevoPermiso: String!, $idUsuario: ID!) {
+            mutation ($nuevoPermiso: String!, $idUsuario: ID!) {
               addPermisoUsuario(
                 nuevoPermiso: $nuevoPermiso
                 idUsuario: $idUsuario
@@ -108,8 +133,24 @@ export default {
       document.execCommand("copy");
       document.body.removeChild(el);
     },
-    fotografiaCargada(){
+    fotografiaCargada() {
       console.log(`Fotografía cargada`);
+    },
+    togglePermiso(permiso, idPersona){
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($permiso:String!, $idUsuario:ID!){
+            togglePermisoUsuario(permiso: $permiso, idUsuario: $idUsuario){
+              id
+              permisos
+            }
+          }
+        `,
+        variables:{
+          permiso,
+          idUsuario:idPersona
+        }
+      })
     }
   },
   mounted() {
@@ -117,7 +158,7 @@ export default {
   },
   beforeRouteUpdate() {
     console.log(`Before update`);
-  }
+  },
 };
 </script>
 
@@ -130,10 +171,9 @@ export default {
   width: 70px;
   height: 70px;
   border: 1px solid transparent;
-
 }
 .iconoPersona:hover {
-  border-color:purple;
+  border-color: purple;
 }
 
 .fotografia {
@@ -176,6 +216,7 @@ export default {
   cursor: pointer;
   font-size: 14px;
   padding: 3px 7px;
+  position: relative;
 }
 .seccionMenuCx {
   font-size: 15px;
@@ -187,6 +228,27 @@ export default {
 }
 .botonMenuCx:hover {
   background-color: gray;
+}
+#listaPermisos {
+  position: absolute;
+  left: 100%;
+  top: 0%;
+  min-height: 10px;
+  min-width: 10px;
+  background-color: gray;
+}
+.elementoListaPermisos{
+  padding: 2px 5px;
+  cursor: pointer;
+}
+.elementoListaPermisos:hover{
+  background-color: rgb(187, 187, 187);
+}
+.permisoActivo{
+  background-color: rgb(45, 156, 45);
+}
+.permisoActivo:hover{
+  background-color: rgb(77, 192, 77);
 }
 #menuCxPersona {
   position: absolute;

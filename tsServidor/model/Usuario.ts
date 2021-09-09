@@ -7,7 +7,13 @@ export const permisosDeUsuario = [
     "superadministrador",
     "actividadesEstudiantiles-profe",
     "actividadesEstudiantiles-administrador",
-    "actividadesEstudiantiles-guia"
+    "actividadesEstudiantiles-guia",
+    "visitante",
+    "maestraVida",
+    "maestraVida-estudiante",
+    "maestraVida-profesor",
+    "maestraVida-acompañante",
+    "comunere"
 ];
 
 const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({

@@ -11,7 +11,7 @@
       <div id="botonesNavEnlaces" :class="{enlacesOcultos:!mostrandoNav}" @click="mostrandoNav=false">
         <router-link
           to="/actividadesVirtuales2021"
-          v-if="usuarioLogeado == true && usuario.permisos && usuario.permisos.includes('usuario')"
+          v-if="usuarioLogeado == true && usuario.permisos && usuario.permisos.includes('maestraVida')"
         >
           <div
             class="botonNavBarra botonNav hoverNegro"
@@ -21,7 +21,7 @@
           </div>
         </router-link>
 
-        <router-link to="/foros" v-if="usuarioLogeado == true">
+        <router-link to="/foros" v-if="usuarioLogeado == true && usuario.permisos && usuario.permisos.includes('maestraVida')">
           <div
             class="botonNavBarra botonNav hoverNegro"
             id="navActividadesVirtuales"
@@ -30,7 +30,7 @@
           </div>
         </router-link>
 
-        <div id="bloqueProyectos" class="bloqueBotones">
+        <div id="bloqueProyectos" class="bloqueBotones" v-if="usuario && usuario.permisos && usuario.permisos.includes('maestraVida')">
           <router-link to="/proyectos" v-if="usuarioLogeado == true">
             <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
               Grupos

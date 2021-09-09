@@ -68,6 +68,7 @@
 
       <input
         ref="inputNuevoLink"
+        id="inputNuevoLink"
         :class="{ deshabilitado: enviandoNuevoLink }"
         type="text"
         @keypress.enter="guardarNuevoLink"
@@ -382,7 +383,12 @@ export default {
 </script>
 
 <style scoped>
-.enlaceNodoSolidaridad {
+.enlaceNodoSolidaridad{
+  padding: 5px 10px;
+
+}
+.enlaceNodoSolidaridad:hover {
+  background-color: rgba(128, 128, 128, 0.342);
 }
 #lineaPrincipal {
   display: flex;
@@ -402,6 +408,9 @@ export default {
   height: 25px;
   border-radius: 50%;
   cursor: pointer;
+}
+#botonAbrirEnlace:hover {
+  background-color: rgb(92, 139, 226);
 }
 #botonMostrarDescripcion {
   width: 25px;
@@ -427,6 +436,11 @@ export default {
   width: 90%;
   margin: 5px auto;
 }
+#inputNuevoLink{
+  width: 90%;
+  margin: 5px auto;
+  display: block;
+}
 .campoDescripcion {
   width: 90%;
   margin: 5px auto;
@@ -446,6 +460,7 @@ export default {
   cursor: pointer;
   border-radius: 50%;
   padding: 5px;
+  margin-left: 5%;
 }
 #botonGuardarDescripcion:hover {
   background-color: rgba(128, 128, 128, 0.685);
