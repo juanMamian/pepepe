@@ -25,6 +25,7 @@ export default {
     todosNodos: Array,
     factorZoom: Number,
     nodoSeleccionado: Object,
+    childSeleccionado:Boolean,
     redibujarEnlaces: {
       type: Number,
       default: 0,
@@ -62,18 +63,26 @@ export default {
 
       lapiz.lineWidth = 2;
       lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
-      lapiz.beginPath();
-      lapiz.strokeStyle = "#d55f18";
+      
 
       this.nodosRequeridos.forEach((nodoRequerido) => {
+        
+        lapiz.beginPath();  
+        if(nodoRequerido.nodoParent && nodoRequerido.nodoParent.idNodo===this.esteNodo.id){
+          lapiz.strokeStyle = "#d55f18";
+        }
+        else{
+          lapiz.strokeStyle = "#d09a83";
+        }
         this.dibujarLineaEntreNodos(
           nodoRequerido,
           this.esteNodo,
           lapiz,
           this.posicion
         );
+        lapiz.stroke();
+
       });
-      lapiz.stroke();
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicion) {
       var anguloVinculo = Math.atan(

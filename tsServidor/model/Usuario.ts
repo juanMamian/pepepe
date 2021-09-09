@@ -188,6 +188,10 @@ const esquemaUsuario = new mongoose.Schema({
                 type: Number,
                 default: 0
             }
+        },
+        nodosPlegados:{
+            type:[String],
+            default:[]
         }
     },
     notificaciones: {

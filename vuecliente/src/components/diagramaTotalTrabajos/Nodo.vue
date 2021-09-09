@@ -7,27 +7,36 @@
       estiloZeta,
       estiloSize,
       { transition: callingPosiciones ? 'left 5s' : '' },
-      estiloColor,
     ]"
     @mousedown.left="agarrado = callingPosiciones ? false : true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
   >
     <div id="zonaArrastre" v-show="agarrado"></div>
-    <img
+
+    
+    <div id="bolita" :style="[estiloColor]">
+      <img
       v-if="esteNodo.__typename === 'Objetivo'"
       src="@/assets/iconos/iconoObjetivo.png"
       :class="{ transparentoso }"
       alt="Nodo"
-      id="iconoFondo"
+      class="iconoFondo"
     />
-    <img
-      v-else
-      src="@/assets/iconos/iconoTrabajo.png"
-      :class="{ transparentoso }"
-      alt="Nodo"
-      id="iconoFondo"
-    />
+      <img
+        v-else
+        src="@/assets/iconos/iconoTrabajo.png"
+        :class="{ transparentoso }"
+        alt="Nodo"
+        class="iconoFondo"
+      />
+    </div>
+    <div
+      class="aureola"
+      id="aureolaParentSeleccionado"
+      v-show="parentDeSeleccionado"
+    ></div>
+
     <img
       src="@/assets/iconos/maximizar.png"
       alt="abrir"
@@ -120,6 +129,8 @@ export default {
     transparentoso: Boolean,
     usuarioAdministradorNodoSeleccionado: Boolean,
     usuarioResponsableNodoSeleccionado: Boolean,
+    childSeleccionado: Boolean,
+    parentDeSeleccionado: Boolean,
   },
   data() {
     return {
@@ -391,22 +402,11 @@ export default {
           parseInt(this.estiloNombreBase.borderRadius * this.factorZoom) + "px",
       };
     },
-    administradoPorSeleccionado() {
-      if (!this.nodoSeleccionado) return false;
-
-      return (
-        this.esteNodo.nodoParent &&
-        this.esteNodo.nodoParent.idNodo === this.nodoSeleccionado.id
-      );
-    },
     colorCartelNombre() {
       var color = "white";
       if (this.esteNodo.responsables && this.esteNodo.responsables.length > 0) {
         color = "#f0ee6e";
-      }
-      if (this.administradoPorSeleccionado) {
-        color = "rgb(224 169 135)";
-      }
+      }      
       if (this.usuarioResponsable) {
         color = "rgb(166 137 193)";
       }
@@ -480,7 +480,28 @@ export default {
   cursor: pointer;
   transition-timing-function: linear;
 }
-#iconoFondo {
+.aureola {
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  background-color: rgba(128, 0, 128, 0.322);
+  top: -10%;
+  left: -10%;
+  border-radius: 50%;
+  z-index: 0;
+  box-shadow: 0 30px 40px rgba(0,0,0,.1);
+}
+#bolita{
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  z-index: 1;
+
+}
+.iconoFondo {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -559,6 +580,7 @@ export default {
   transform: translate(-50%, -50%);
   border-radius: 50%;
 }
+
 .transparentoso {
   opacity: 0.2;
 }

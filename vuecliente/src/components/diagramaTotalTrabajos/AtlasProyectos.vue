@@ -166,6 +166,8 @@
           !idsNodosRequeridosSeleccionado.includes(nodo.id) &&
           !idsNodosRequierenSeleccionado.includes(nodo.id)
         "
+        :childSeleccionado="nodosChildrenSeleccionado.includes(nodo.id)"
+        :parentDeSeleccionado="idNodoParentNodoSeleccionado===nodo.id"
         v-show="idsNodosVisibles.includes(nodo.id)"
         @meMovi="redibujarEnlacesNodos++"
         @click.native="idNodoSeleccionado = nodo.id"
@@ -1261,6 +1263,14 @@ export default {
     nodoSeleccionado() {
       return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
+    idNodoParentNodoSeleccionado(){
+      if(!this.nodoSeleccionado || !this.nodoSeleccionado.nodoParent)return null
+
+      const nodoParent=this.todosNodos.find(n=>n.id===this.nodoSeleccionado.nodoParent.idNodo)
+
+      if(!nodoParent) return null;
+      return nodoParent.id;
+    },
     usuarioAdministradorNodoSeleccionado() {
       if (!this.usuario || !this.usuario.id) return false;
       if (!this.nodoSeleccionado) return false;
@@ -1287,6 +1297,10 @@ export default {
         .filter((v) => v.tipo == "requiere")
         .map((v) => v.idRef);
       return this.todosNodos.filter((n) => idsRequeridos.includes(n.id));
+    },
+    nodosChildrenSeleccionado(){
+      if(!this.nodoSeleccionado)return []
+      return this.todosNodos.filter(n=>n.nodoParent && n.nodoParent.idNodo===this.idNodoSeleccionado).map(n=>n.id);
     },
     idsNodosRequierenSeleccionado() {
       return this.nodosRequierenSeleccionado.map((n) => n.id);
