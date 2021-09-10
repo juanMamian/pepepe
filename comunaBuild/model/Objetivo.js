@@ -6,6 +6,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloObjetivo = exports.esquemaObjetivo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const VinculosNodosProyecto_1 = require("./VinculosNodosProyecto");
+const esquemaEnlace = new mongoose_1.default.Schema({
+    nombre: {
+        type: String,
+        min: 2,
+        max: 30,
+        required: true,
+        default: "Nuevo enlace"
+    },
+    descripcion: {
+        type: String,
+        max: 1000,
+        default: "",
+    },
+    link: {
+        type: String,
+        min: 6,
+        max: 500,
+    },
+    tipo: {
+        type: String,
+        enum: ["enlace", "hojaCalculo", "documentoTexto"],
+        default: "enlace",
+    }
+});
 exports.esquemaObjetivo = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -31,6 +55,10 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
         default: "Sin descripcion",
         required: true,
         max: 2000
+    },
+    enlaces: {
+        type: [esquemaEnlace],
+        default: []
     },
     estadoDesarrollo: {
         type: String,

@@ -12,7 +12,13 @@ exports.permisosDeUsuario = [
     "superadministrador",
     "actividadesEstudiantiles-profe",
     "actividadesEstudiantiles-administrador",
-    "actividadesEstudiantiles-guia"
+    "actividadesEstudiantiles-guia",
+    "visitante",
+    "maestraVida",
+    "maestraVida-estudiante",
+    "maestraVida-profesor",
+    "maestraVida-acompañante",
+    "comunere"
 ];
 const esquemaColeccionNodosAtlasConocimiento = new mongoose_1.default.Schema({
     nombre: {
@@ -163,10 +169,26 @@ const esquemaUsuario = new mongoose_1.default.Schema({
             }
         },
         colecciones: {
-            type: esquemaColeccionNodosAtlasConocimiento,
+            type: [esquemaColeccionNodosAtlasConocimiento],
             default: []
         },
         idNodoTarget: String,
+    },
+    atlasSolidaridad: {
+        coordsVista: {
+            x: {
+                type: Number,
+                default: 0
+            },
+            y: {
+                type: Number,
+                default: 0
+            }
+        },
+        idsNodosPlegados: {
+            type: [String],
+            default: []
+        }
     },
     notificaciones: {
         type: [esquemaNotificacion],
@@ -212,10 +234,6 @@ esquemaUsuario.methods.getEdad = function () {
     let edadAños = Math.floor(edad / (60 * 60 * 24 * 365 * 1000));
     return edadAños;
 };
-esquemaUsuario.pre('save', function (next) {
-    console.log(`Presave hook: This: ${this}`);
-    next();
-});
 var charProhibidos = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;
 var charProhibidosNombre = /[^ a-zA-ZÀ-žñÑ]/g;
 var charProhibidosNumeroTel = /[^0-9+-]/g;

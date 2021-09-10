@@ -82,13 +82,15 @@
 
     <div id="contenedorCanvasNodos" :style="[posContenedores]">
       <canvas-enlaces-nodo
-        v-for="nodo of nodosConRequerimentos"
+        v-for="nodo of nodosConRequerimentos"        
+        :yo="yo"
         :key="nodo.id"
         :esteNodo="nodo"
         :todosNodos="todosNodos"
         :factorZoom="factorZoom"
         :nodoSeleccionado="nodoSeleccionado"
         :redibujarEnlaces="redibujarEnlacesNodos"
+        :idsNodosVisibles="idsNodosVisibles"
       />
     </div>
 
@@ -148,11 +150,13 @@
       /> -->
 
       <nodo
+        :yo="yo"
         v-for="nodo of todosNodos"
         :key="nodo.id"
         :esteNodo="nodo"
         :idNodoSeleccionado="idNodoSeleccionado"
         :nodoSeleccionado="nodoSeleccionado"
+        :idsNodosPlegados="idsNodosPlegados"
         :menuCx="idNodoMenuCx && idNodoMenuCx == nodo.id"
         :factorZoom="factorZoom"
         :callingPosiciones="callingPosiciones"
@@ -322,6 +326,7 @@ const QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD = gql`
           x
           y
         }
+        idsNodosPlegados
       }
     }
   }
@@ -458,7 +463,6 @@ export default {
     yo: {
       query: QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD,
       update({ yo }) {        
-        console.log(`Coords vista del usuario: ${JSON.stringify(yo.atlasSolidaridad.coordsVista)}`);
         this.calcularEsquinaVista(yo.atlasSolidaridad.coordsVista);
         this.coordsInicialesSetted = true;
         return yo;
@@ -531,7 +535,6 @@ export default {
   methods: {
     calcularEsquinaVista(centro) {
       if(this.esquinaVistaCalculada)return;
-      console.log(`Calculando esquina vista iniciando en ${JSON.stringify(centro)} con size atlas: ${JSON.stringify(this.sizeAtlas)}`);
       this.$set(
         this.esquinaVistaDecimal,
         "x",
@@ -1240,10 +1243,7 @@ export default {
         left: posx * this.factorZoom + "px",
         top: posy * this.factorZoom + "px",
       };
-    },
-    idsNodosVisibles() {
-      return this.todosNodos.map((n) => n.id);
-    },
+    },    
     objetivoSeleccionado() {
       if (!this.idNodoSeleccionado) return null;
       return this.objetivos.find((o) => o.id == this.idNodoSeleccionado);
@@ -1307,6 +1307,28 @@ export default {
     },
     idsNodosRequeridosSeleccionado() {
       return this.nodosRequeridosSeleccionado.map((n) => n.id);
+    },
+    idsNodosPlegados(){
+      if(!this.yo) return [];
+
+      return this.yo.atlasSolidaridad.idsNodosPlegados;
+    },
+    idsNodosSubplegados(){
+      var listaTotal=[];
+      var listaActual=this.idsNodosPlegados;
+      while(listaActual.length>0){
+        listaActual=this.todosNodos.filter(n=>n.nodoParent && listaActual.includes(n.nodoParent.idNodo)).map(n=>n.id);
+        listaTotal=listaTotal.concat(listaActual);
+      }
+
+      return listaTotal;
+    },
+    idsNodosVisibles() {
+      return this.todosNodos.filter(n=>{
+        if(!n.nodoParent)return true;
+
+        return !this.idsNodosPlegados.includes(n.nodoParent.idNodo) && !this.idsNodosSubplegados.includes(n.nodoParent.idNodo);
+      }).map((n) => n.id);
     },
     trabajos() {
       return this.todosNodos.filter((n) => n.__typename === "Trabajo");

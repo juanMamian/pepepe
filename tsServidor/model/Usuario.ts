@@ -189,7 +189,7 @@ const esquemaUsuario = new mongoose.Schema({
                 default: 0
             }
         },
-        nodosPlegados:{
+        idsNodosPlegados:{
             type:[String],
             default:[]
         }

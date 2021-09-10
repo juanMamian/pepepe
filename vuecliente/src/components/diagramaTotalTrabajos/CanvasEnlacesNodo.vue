@@ -1,5 +1,5 @@
 <template>
-  <div id="canvasEnlacesNodo">
+  <div id="canvasEnlacesNodo" v-show="nodoVisible">
     <canvas
       v-show="!seleccionado"
       ref="enlacesGrises"
@@ -21,11 +21,13 @@
 export default {
   name: "CanvasEnlacesNodo",
   props: {
+    yo:Object,
     esteNodo: Object,
     todosNodos: Array,
     factorZoom: Number,
     nodoSeleccionado: Object,
-    childSeleccionado:Boolean,
+    childSeleccionado: Boolean,
+    idsNodosVisibles: Array,
     redibujarEnlaces: {
       type: Number,
       default: 0,
@@ -33,6 +35,7 @@ export default {
   },
   methods: {
     trazarVinculosGrises() {
+      if(!this.nodoVisible)return;
       var lapiz = this.$refs.enlacesGrises.getContext("2d");
       lapiz.canvas.width =
         (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom;
@@ -45,16 +48,19 @@ export default {
       lapiz.strokeStyle = "#b3b3b3";
 
       this.nodosRequeridos.forEach((nodoRequerido) => {
-        this.dibujarLineaEntreNodos(
-          nodoRequerido,
-          this.esteNodo,
-          lapiz,
-          this.posicion
-        );
+        if (this.idsNodosVisibles.includes(nodoRequerido.id)) {
+          this.dibujarLineaEntreNodos(
+            nodoRequerido,
+            this.esteNodo,
+            lapiz,
+            this.posicion
+          );
+        }
       });
       lapiz.stroke();
     },
     trazarVinculosRequeridos() {
+      if(!this.nodoVisible)return;
       var lapiz = this.$refs.enlacesVerdes.getContext("2d");
       lapiz.canvas.width =
         (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom;
@@ -63,25 +69,26 @@ export default {
 
       lapiz.lineWidth = 2;
       lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
-      
 
       this.nodosRequeridos.forEach((nodoRequerido) => {
-        
-        lapiz.beginPath();  
-        if(nodoRequerido.nodoParent && nodoRequerido.nodoParent.idNodo===this.esteNodo.id){
-          lapiz.strokeStyle = "#d55f18";
+        if (this.idsNodosVisibles.includes(nodoRequerido.id)) {
+          lapiz.beginPath();
+          if (
+            nodoRequerido.nodoParent &&
+            nodoRequerido.nodoParent.idNodo === this.esteNodo.id
+          ) {
+            lapiz.strokeStyle = "#d55f18";
+          } else {
+            lapiz.strokeStyle = "#d09a83";
+          }
+          this.dibujarLineaEntreNodos(
+            nodoRequerido,
+            this.esteNodo,
+            lapiz,
+            this.posicion
+          );
+          lapiz.stroke();
         }
-        else{
-          lapiz.strokeStyle = "#d09a83";
-        }
-        this.dibujarLineaEntreNodos(
-          nodoRequerido,
-          this.esteNodo,
-          lapiz,
-          this.posicion
-        );
-        lapiz.stroke();
-
       });
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicion) {
@@ -159,8 +166,8 @@ export default {
     },
   },
   computed: {
-    posNodo(){
-      return this.esteNodo.coords
+    posNodo() {
+      return this.esteNodo.coords;
     },
     idsNodosRequeridos() {
       return this.esteNodo.vinculos
@@ -172,8 +179,8 @@ export default {
         this.idsNodosRequeridos.includes(n.id)
       );
     },
-    cantidadNodosRequeridos(){
-        return this.nodosRequeridos.length;
+    cantidadNodosRequeridos() {
+      return this.nodosRequeridos.length;
     },
     esquinas() {
       const nodosInvolucrados = this.todosNodos.filter(
@@ -249,7 +256,14 @@ export default {
       }
       return this.nodoSeleccionado.id === this.esteNodo.id;
     },
-    
+    plegado(){
+      if(!this.usuario || !this.usuario.id || !this.yo || !this.yo.atlasSolidaridad || !this.yo.atlasSolidaridad.idsNodosPlegados) return false;
+
+      return this.yo.atlasSolidaridad.idsNodosPlegados.includes(this.esteNodo.id);
+    },
+    nodoVisible(){
+      return this.idsNodosVisibles.includes(this.esteNodo.id);
+    }
   },
   mounted() {
     this.trazarVinculosGrises();
@@ -260,18 +274,22 @@ export default {
       this.trazarVinculosGrises();
       this.trazarVinculosRequeridos();
     },
-    cantidadNodosRequeridos(){
-        this.trazarVinculosGrises();
-        this.trazarVinculosRequeridos();
-    },
-    posNodo(){
+    cantidadNodosRequeridos() {
       this.trazarVinculosGrises();
       this.trazarVinculosRequeridos();
     },
-    esquinas(){
+    posNodo() {
       this.trazarVinculosGrises();
       this.trazarVinculosRequeridos();
-    }
+    },
+    esquinas() {
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
+    },
+    plegado() {
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
+    },
   },
 };
 </script>

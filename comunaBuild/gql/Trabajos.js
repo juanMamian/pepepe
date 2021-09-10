@@ -11,12 +11,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
-const Trabajo_1 = require("../model/Trabajo");
-const Nodo = require("../model/atlas/Nodo");
 const Usuario_1 = require("../model/Usuario");
 const Foro_1 = require("../model/Foros/Foro");
-const Proyecto_1 = require("../model/Proyecto");
 const Objetivo_1 = require("../model/Objetivo");
+const Trabajo_1 = require("../model/Trabajo");
+const Nodo = require("../model/atlas/Nodo");
+const Proyecto_1 = require("../model/Proyecto");
 exports.typeDefs = apollo_server_express_1.gql `
     input NodoSolidaridadInput{        
         tipo:String,
@@ -41,7 +41,8 @@ exports.typeDefs = apollo_server_express_1.gql `
        posiblesResponsables:[String],
        responsablesSolicitados:Int,
        administradores:[String],
-       descripcion:String,       
+       descripcion:String,
+       enlaces: [EnlaceNodoSolidaridad], 
        vinculos:[VinculoNodoProyecto],
        keywords:String,
        nodoParent:InfoNodoSolidaridad,
@@ -73,10 +74,19 @@ exports.typeDefs = apollo_server_express_1.gql `
         
     }
 
+    type EnlaceNodoSolidaridad{
+        id: ID!, 
+        nombre: String,
+        descripcion: String,
+        link: String,
+        tipo: String
+    }
+
    type Trabajo{
        id: ID,       
        nombre: String,
        descripcion:String,
+       enlaces: [EnlaceNodoSolidaridad], 
        responsables: [String],
        posiblesResponsables:[String],
        administradores:[String],
@@ -131,6 +141,13 @@ exports.typeDefs = apollo_server_express_1.gql `
     editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
     editarDescripcionMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoDescripcion: String!):MaterialTrabajo,
     editarCantidadesMaterialTrabajo(idTrabajo: ID!, idMaterial:ID!, nuevoCantidadNecesaria:Int!, nuevoCantidadDisponible:Int):MaterialTrabajo,
+
+    crearEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!):EnlaceNodoSolidaridad,
+    eliminarEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace:ID!):Boolean,
+    editarNombreEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoNombre: String!):EnlaceNodoSolidaridad,
+    editarDescripcionEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoDescripcion: String!):EnlaceNodoSolidaridad,
+    editarLinkEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoLink: String!):EnlaceNodoSolidaridad,
+
 
     crearObjetivo(posicion:CoordsInput):Objetivo,
     eliminarObjetivo(idObjetivo:ID!, idProyecto:ID!):Boolean,
@@ -839,6 +856,250 @@ exports.resolvers = {
                 pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequiriente });
                 pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequerido });
                 return [nodoRequiriente, nodoRequerido];
+            });
+        },
+        crearEnlaceNodoSolidaridad(_, { idNodo, tipoNodo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Peticion de crear un nuevo enlace en el NodoSolidaridad con id ${idNodo}`);
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elNodo = null;
+                    if (tipoNodo === 'objetivo') {
+                        elNodo = yield Objetivo_1.ModeloObjetivo.findById(idNodo).exec();
+                    }
+                    else if (tipoNodo === 'trabajo') {
+                        elNodo = yield Trabajo_1.ModeloTrabajo.findById(idNodo).exec();
+                    }
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                const permisosEspeciales = ["superadministrador"];
+                if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+                    console.log(`Error de autenticación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var nuevoEnlace = elNodo.enlaces.create();
+                    elNodo.enlaces.push(nuevoEnlace);
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el enlace creado en el nodo. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el enlace en el nodo");
+                }
+                console.log(`Enviando nuevo enlace: ${nuevoEnlace}`);
+                return nuevoEnlace;
+            });
+        },
+        eliminarEnlaceNodoSolidaridad(_, { idNodo, tipoNodo, idEnlace }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Peticion de eliminar un enlace con id ${idEnlace} en el NodoSolidaridad con id ${idNodo}`);
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                try {
+                    var elNodo = null;
+                    if (tipoNodo === 'objetivo') {
+                        elNodo = yield Objetivo_1.ModeloObjetivo.findById(idNodo).exec();
+                    }
+                    else if (tipoNodo === 'trabajo') {
+                        elNodo = yield Trabajo_1.ModeloTrabajo.findById(idNodo).exec();
+                    }
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                const permisosEspeciales = ["superadministrador"];
+                if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+                    console.log(`Error de autenticación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                const indexE = elNodo.enlaces.findIndex(e => e.id === idEnlace);
+                if (indexE > -1) {
+                    elNodo.enlaces.splice(indexE, 1);
+                }
+                else {
+                    console.log(`Error. El enlace a eliminar no existía.`);
+                    throw new apollo_server_express_1.UserInputError("Enlace no encontrado");
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el nodo. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el enlace en el nodo");
+                }
+                return true;
+            });
+        },
+        editarNombreEnlaceNodoSolidaridad(_, { idNodo, tipoNodo, idEnlace, nuevoNombre }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`cambiando el nombre del enlace con id ${idEnlace} del nodosolidaridad con id ${idNodo}`);
+                const charProhibidosNombreEnlace = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+                nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
+                if (charProhibidosNombreEnlace.test(nuevoNombre)) {
+                    throw new apollo_server_express_1.ApolloError("Nombre ilegal");
+                }
+                nuevoNombre = nuevoNombre.trim();
+                try {
+                    var elNodo = null;
+                    if (tipoNodo === 'objetivo') {
+                        elNodo = yield Objetivo_1.ModeloObjetivo.findById(idNodo).exec();
+                    }
+                    else if (tipoNodo === 'trabajo') {
+                        elNodo = yield Trabajo_1.ModeloTrabajo.findById(idNodo).exec();
+                    }
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                if (!elNodo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                    console.log(`Error de autenticacion editando nombre de nodosolidaridad`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elEnlace = elNodo.enlaces.id(idEnlace);
+                    if (!elEnlace) {
+                        console.log(`Enlace no encontrado en el nodosolidaridad`);
+                        throw "No existía el enlace";
+                    }
+                    elEnlace.nombre = nuevoNombre;
+                }
+                catch (error) {
+                    console.log("Error cambiando el nombre en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error guardando el nombre en la base de datos");
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el enlace creado en el nodosolidaridad. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el enlace en el nodosolidaridad");
+                }
+                console.log(`Nombre cambiado`);
+                return elEnlace;
+            });
+        },
+        editarDescripcionEnlaceNodoSolidaridad(_, { idNodo, tipoNodo, idEnlace, nuevoDescripcion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`cambiando la descripcion del enlace con id ${idEnlace} del nodosolidaridad con id ${idNodo}`);
+                const charProhibidosDescripcion = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+                if (charProhibidosDescripcion.test(nuevoDescripcion)) {
+                    throw new apollo_server_express_1.ApolloError("Descripcion ilegal");
+                }
+                nuevoDescripcion = nuevoDescripcion.trim();
+                try {
+                    var elNodo = null;
+                    if (tipoNodo === 'objetivo') {
+                        elNodo = yield Objetivo_1.ModeloObjetivo.findById(idNodo).exec();
+                    }
+                    else if (tipoNodo === 'trabajo') {
+                        elNodo = yield Trabajo_1.ModeloTrabajo.findById(idNodo).exec();
+                    }
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                if (!elNodo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                    console.log(`Error de autenticacion editando descripcion de nodosolidaridad`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elEnlace = elNodo.enlaces.id(idEnlace);
+                    if (!elEnlace) {
+                        console.log(`Enlace no encontrado en el nodosolidaridad`);
+                        throw "No existía el enlace";
+                    }
+                    elEnlace.descripcion = nuevoDescripcion;
+                }
+                catch (error) {
+                    console.log("Error cambiando el descripcion en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error guardando el descripcion en la base de datos");
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el enlace creado en el nodosolidaridad. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el enlace en el nodosolidaridad");
+                }
+                console.log(`Descripcion cambiado`);
+                return elEnlace;
+            });
+        },
+        editarLinkEnlaceNodoSolidaridad(_, { idNodo, tipoNodo, idEnlace, nuevoLink }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`cambiando el link del enlace con id ${idEnlace} del nodosolidaridad con id ${idNodo}`);
+                // const charProhibidosLinkEnlace = /[^ a-zA-ZÀ-ž0-9_.-?/=:]/;
+                nuevoLink = nuevoLink.replace(/\s\s+/g, " ");
+                // if (charProhibidosLinkEnlace.test(nuevoLink)) {
+                //     throw new ApolloError("Link ilegal");
+                // }
+                nuevoLink = nuevoLink.trim();
+                try {
+                    var elNodo = null;
+                    if (tipoNodo === 'objetivo') {
+                        elNodo = yield Objetivo_1.ModeloObjetivo.findById(idNodo).exec();
+                    }
+                    else if (tipoNodo === 'trabajo') {
+                        elNodo = yield Trabajo_1.ModeloTrabajo.findById(idNodo).exec();
+                    }
+                    if (!elNodo) {
+                        throw "nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo a eliminar en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Authorización
+                let credencialesUsuario = contexto.usuario;
+                if (!elNodo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                    console.log(`Error de autenticacion editando link de nodosolidaridad`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elEnlace = elNodo.enlaces.id(idEnlace);
+                    if (!elEnlace) {
+                        console.log(`Enlace no encontrado en el nodosolidaridad`);
+                        throw "No existía el enlace";
+                    }
+                    elEnlace.link = nuevoLink;
+                }
+                catch (error) {
+                    console.log("Error cambiando el link en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error guardando el link en la base de datos");
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el enlace creado en el nodosolidaridad. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el enlace en el nodosolidaridad");
+                }
+                console.log(`Link cambiado`);
+                return elEnlace;
             });
         },
         crearObjetivo(_, { posicion }, contexto) {

@@ -4,7 +4,7 @@ import { contextoQuery } from "./tsObjetos"
 import { ModeloForo as Foro } from "../model/Foros/Foro"
 
 import { ModeloObjetivo as Objetivo } from "../model/Objetivo";
-import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; 
+import { ModeloTrabajo as Trabajo } from "../model/Trabajo";
 const Nodo = require("../model/atlas/Nodo");
 
 import { ModeloProyecto as Proyecto } from "../model/Proyecto";
@@ -141,7 +141,6 @@ export const typeDefs = gql`
     editarDescripcionEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoDescripcion: String!):EnlaceNodoSolidaridad,
     editarLinkEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoLink: String!):EnlaceNodoSolidaridad,
 
-
     crearObjetivo(posicion:CoordsInput):Objetivo,
     eliminarObjetivo(idObjetivo:ID!, idProyecto:ID!):Boolean,
     editarNombreObjetivo(idObjetivo:ID!, nuevoNombre: String!):Objetivo,
@@ -172,6 +171,7 @@ export const typeDefs = gql`
     crearNodoSolidaridadRequerido(infoNodo:NodoSolidaridadInput!, idNodoRequiriente: ID!):[NodoDeTrabajos],
     desvincularNodosSolidaridad(idUnNodo:ID!, idOtroNodo:ID!):[NodoDeTrabajos],
     crearRequerimentoEntreNodosSolidaridad(idNodoRequiriente:ID!, idNodoRequerido:ID!):[NodoDeTrabajos],
+    crearParentingEntreNodosSolidaridad(idNodoRequiriente:ID!, idNodoRequerido:ID!):[NodoDeTrabajos],
 
    }
 
@@ -186,13 +186,13 @@ export const resolvers = {
     Subscription: {
         nodoEditado: {
             subscribe: withFilter(
-                (_: any, {centro, radio}: any, contexto: contextoQuery) => {
+                (_: any, { centro, radio }: any, contexto: contextoQuery) => {
                     console.log(`--------------------------Creando una subscripción a nodos editados de ${contexto.usuario.username} con centro en ${centro} y de radio ${radio}`);
                     return contexto.pubsub.asyncIterator(NODO_EDITADO)
                 },
                 (nodoEditado: any, variables, contexto: contextoQuery) => {
                     console.log(`Decidiendo si notificar a ${contexto.usuario.id} acerca de un nodo editado en las coords ${JSON.stringify(nodoEditado.nodoEditado.coords)} con las variables ${JSON.stringify(variables)}`);
-                    if (nodoEditado.nodoEditado.coords.x>variables.centro.x+variables.radio || nodoEditado.nodoEditado.coords.x<variables.centro.x-variables.radio || nodoEditado.nodoEditado.coords.y>variables.centro.y+variables.radio || nodoEditado.nodoEditado.coords.y<variables.centro.y-variables.radio) {
+                    if (nodoEditado.nodoEditado.coords.x > variables.centro.x + variables.radio || nodoEditado.nodoEditado.coords.x < variables.centro.x - variables.radio || nodoEditado.nodoEditado.coords.y > variables.centro.y + variables.radio || nodoEditado.nodoEditado.coords.y < variables.centro.y - variables.radio) {
                         console.log(`No se notificara`);
                         return false;
                     }
@@ -213,12 +213,12 @@ export const resolvers = {
             } catch (error) {
                 console.log(`error buscando un objetivo. E: ${error}`);
                 throw new ApolloError("");
-            }            
+            }
 
             if (!elObjetivo.idForoResponsables) {
                 console.log(`El objetivo no tenía foro`);
-            }           
-           
+            }
+
             return elObjetivo;
         },
         busquedaObjetivosProyectos: async function (_: any, { textoBusqueda }: any, contexto: contextoQuery) {
@@ -250,7 +250,7 @@ export const resolvers = {
             return losObjetivos;
         },
 
-        trabajo: async function (_: any, { idTrabajo }: any, context: contextoQuery) {            
+        trabajo: async function (_: any, { idTrabajo }: any, context: contextoQuery) {
 
             try {
                 var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
@@ -260,12 +260,12 @@ export const resolvers = {
             } catch (error) {
                 console.log(`error buscando un trabajo. E: ${error}`);
                 throw new ApolloError("");
-            }            
+            }
 
             if (!elTrabajo.idForoResponsables) {
                 console.log(`El trabajo no tenía foro`);
-            }           
-           
+            }
+
             return elTrabajo;
         },
         busquedaTrabajosProyectos: async function (_: any, { textoBusqueda }: any, contexto: contextoQuery) {
@@ -355,26 +355,26 @@ export const resolvers = {
             return { trabajos: losTrabajos, objetivos: losObjetivos }
         },
 
-        todosMateriales: async function(_:any, __:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
+        todosMateriales: async function (_: any, __: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
 
             try {
-                var losTrabajos:any=await Trabajo.find({}).exec();
+                var losTrabajos: any = await Trabajo.find({}).exec();
 
             } catch (error) {
                 console.log(`Error buscando los trabajos`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var listaMateriales:Array<string>=[];
+            var listaMateriales: Array<string> = [];
 
-            losTrabajos.forEach(trabajo=>{
-                trabajo.materiales.forEach(material=>{
-                    material.idTrabajoParent=trabajo.id                    
+            losTrabajos.forEach(trabajo => {
+                trabajo.materiales.forEach(material => {
+                    material.idTrabajoParent = trabajo.id
                 })
-                listaMateriales=listaMateriales.concat(trabajo.materiales);
+                listaMateriales = listaMateriales.concat(trabajo.materiales);
             })
-            
+
             return listaMateriales;
         }
     },
@@ -385,18 +385,18 @@ export const resolvers = {
             const credencialesUsuario = contexto.usuario;
 
             try {
-                var tipoDeNodo='trabajo'
-                var elNodo: any = await Trabajo.findById(idNodo).exec();                
+                var tipoDeNodo = 'trabajo'
+                var elNodo: any = await Trabajo.findById(idNodo).exec();
 
                 if (!elNodo) {
-                    tipoDeNodo='objetivo';
+                    tipoDeNodo = 'objetivo';
                     elNodo = await Objetivo.findById(idNodo).exec();
-                }    
+                }
                 if (!elNodo) {
-                    tipoDeNodo='';
+                    tipoDeNodo = '';
                     throw "Nodo no encontrado"
                 }
-                elNodo.tipoNodo=tipoDeNodo;
+                elNodo.tipoNodo = tipoDeNodo;
             }
             catch (error) {
                 console.log("Error buscando el nodo. E: " + error);
@@ -438,9 +438,9 @@ export const resolvers = {
             } catch (error) {
                 console.log(`error guardando el nodo modificado: ${error}`);
             }
-            
+
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elNodo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elNodo });
 
             return elNodo;
 
@@ -596,9 +596,9 @@ export const resolvers = {
 
             //PUBSUB
             const pubsub = contexto.pubsub;
-            
+
             nuevoNodo.tipoNodo = infoNodo.tipo;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: nuevoNodo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: nuevoNodo });
 
             return nuevoNodo
         },
@@ -687,8 +687,8 @@ export const resolvers = {
             console.log(`nuevo nodo de solidaridad creado:`);
             nuevoNodo.tipoNodo = infoNodo.tipo;
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: nuevoNodo});
-            pubsub.publish(NODO_EDITADO, {nodoEditado: nodoRequiriente});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: nuevoNodo });
+            pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequiriente });
             return [nuevoNodo, nodoRequiriente]
         },
         async desvincularNodosSolidaridad(_: any, { idUnNodo, idOtroNodo }: any, contexto: contextoQuery) {
@@ -760,8 +760,8 @@ export const resolvers = {
             unNodo.tipoNodo = tipoUnNodo;
             otroNodo.tipoNodo = tipoOtroNodo;
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: unNodo});
-            pubsub.publish(NODO_EDITADO, {nodoEditado: otroNodo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: unNodo });
+            pubsub.publish(NODO_EDITADO, { nodoEditado: otroNodo });
             return [unNodo, otroNodo];
 
         },
@@ -882,8 +882,74 @@ export const resolvers = {
             nodoRequiriente.tipoNodo = tipoNodoRequiriente;
             nodoRequerido.tipoNodo = tipoNodoRequerido;
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: nodoRequiriente});
-            pubsub.publish(NODO_EDITADO, {nodoEditado: nodoRequerido});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequiriente });
+            pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequerido });
+            return [nodoRequiriente, nodoRequerido];
+
+        },
+        async crearParentingEntreNodosSolidaridad(_: any, { idNodoRequiriente, idNodoRequerido }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+
+            console.log(`Query de set que nodo ${idNodoRequiriente} es parent del nodo ${idNodoRequerido}`);
+
+            try {
+                var tipoNodoRequiriente = 'trabajo'
+                var nodoRequiriente: any = await Trabajo.findById(idNodoRequiriente).exec();
+                if (!nodoRequiriente) {
+                    tipoNodoRequiriente = 'objetivo';
+                    nodoRequiriente = await Objetivo.findById(idNodoRequiriente).exec();
+                }
+                if (!nodoRequiriente) throw "Nodo requiriente no encontrado"
+
+                var tipoNodoRequerido = 'trabajo';
+                var nodoRequerido: any = await Trabajo.findById(idNodoRequerido).exec();
+                if (!nodoRequerido) {
+                    tipoNodoRequerido = 'objetivo';
+                    nodoRequerido = await Objetivo.findById(idNodoRequerido).exec();
+                }
+                if (!nodoRequerido) throw "Nodo requerido no encontrado"
+            } catch (error) {
+                console.log(`Error buscando los nodos a desvincular: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Autorización
+
+            const permisosEspeciales = ["superadministrador"];
+            if (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
+                console.log(`Fallo en autenticación`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var indexV = nodoRequiriente.vinculos.findIndex(v => v.idRef === idNodoRequerido);
+            if (indexV === -1) {
+                console.log(`Error: No había vínculo previo entre estos nodos`);
+                throw new UserInputError("Los nodos no estavan vinculados");
+            }
+
+
+            //Si el nodo requerido estaba huérfano, entonces lo toma bajo su control
+
+
+            console.log(`El nodo requerido queda bajo el control del nodo requiriente.`);
+            nodoRequerido.nodoParent = {
+                idNodo: idNodoRequiriente,
+                tipo: tipoNodoRequiriente
+            }
+
+            try {
+                await nodoRequiriente.save();
+                await nodoRequerido.save();
+            } catch (error) {
+                console.log(`Error guardando los nodos después de la vinculación: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`Parented`);
+            nodoRequiriente.tipoNodo = tipoNodoRequiriente;
+            nodoRequerido.tipoNodo = tipoNodoRequerido;
+            const pubsub = contexto.pubsub;
+            pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequiriente });
+            pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequerido });
             return [nodoRequiriente, nodoRequerido];
 
         },
@@ -912,8 +978,8 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            const permisosEspeciales=["superadministrador"];
-            if (!credencialesUsuario.id || !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+            const permisosEspeciales = ["superadministrador"];
+            if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -955,30 +1021,30 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            const permisosEspeciales=["superadministrador"];
-            if (!credencialesUsuario.id || !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+            const permisosEspeciales = ["superadministrador"];
+            if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            const indexE=elNodo.enlaces.findIndex(e=>e.id===idEnlace);
+            const indexE = elNodo.enlaces.findIndex(e => e.id === idEnlace);
 
-            if(indexE>-1){
+            if (indexE > -1) {
                 elNodo.enlaces.splice(indexE, 1);
             }
-            else{
+            else {
                 console.log(`Error. El enlace a eliminar no existía.`);
                 throw new UserInputError("Enlace no encontrado");
             }
 
-            try {                             
+            try {
                 await elNodo.save();
             }
             catch (error) {
                 console.log("Error guardando el nodo. E: " + error);
                 throw new ApolloError("Error introduciendo el enlace en el nodo");
             }
-            
+
             return true;
         },
         async editarNombreEnlaceNodoSolidaridad(_: any, { idNodo, tipoNodo, idEnlace, nuevoNombre }, contexto: contextoQuery) {
@@ -1289,9 +1355,9 @@ export const resolvers = {
             }
 
             console.log(`Nombre cambiado`);
-            elObjetivo.tipoNodo='objetivo';
+            elObjetivo.tipoNodo = 'objetivo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elObjetivo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
 
             return elObjetivo;
         },
@@ -1356,10 +1422,10 @@ export const resolvers = {
 
             }
             console.log(`Descripcion guardado`);
-            
-            elObjetivo.tipoNodo='objetivo';
+
+            elObjetivo.tipoNodo = 'objetivo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elObjetivo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
             return elObjetivo;
         },
         async editarKeywordsObjetivo(_: any, { idProyecto, idObjetivo, nuevoKeywords }, contexto: contextoQuery) {
@@ -1486,9 +1552,9 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
-            elObjetivo.tipoNodo='objetivo';
+            elObjetivo.tipoNodo = 'objetivo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elObjetivo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
 
             return elObjetivo;
 
@@ -1540,9 +1606,9 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             console.log(`Objetivo guardado`);
-            elObjetivo.tipoNodo='objetivo';
+            elObjetivo.tipoNodo = 'objetivo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elObjetivo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
             return elObjetivo
         },
         removeResponsableObjetivo: async function (_: any, { idObjetivo, idUsuario }: any, contexto: contextoQuery) {
@@ -1608,9 +1674,9 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
-            elObjetivo.tipoNodo='objetivo';
+            elObjetivo.tipoNodo = 'objetivo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elObjetivo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
 
             return elObjetivo;
         },
@@ -1667,9 +1733,9 @@ export const resolvers = {
 
             }
             console.log(`Estado guardado`);
-            elObjetivo.tipoNodo='objetivo';
+            elObjetivo.tipoNodo = 'objetivo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elObjetivo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
             return elObjetivo;
         },
         setResponsablesSolicitadosObjetivo: async function (_: any, { idObjetivo, nuevoCantidadResponsablesSolicitados }, contexto: contextoQuery) {
@@ -1701,9 +1767,9 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             console.log(`Retornando con ${elObjetivo.responsablesSolicitados} responsables solicitados`);
-            elObjetivo.tipoNodo='objetivo';
+            elObjetivo.tipoNodo = 'objetivo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elObjetivo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
             return elObjetivo;
         },
         async setPosicionObjetivo(_: any, { idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
@@ -1919,9 +1985,9 @@ export const resolvers = {
 
             console.log(`Nombre cambiado`);
 
-            elTrabajo.tipoNodo='trabajo';
+            elTrabajo.tipoNodo = 'trabajo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elTrabajo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
             return elTrabajo;
         },
         async editarDescripcionTrabajo(_: any, { idTrabajo, nuevoDescripcion }, contexto: contextoQuery) {
@@ -1985,9 +2051,9 @@ export const resolvers = {
 
             }
             console.log(`Descripcion guardado`);
-            elTrabajo.tipoNodo='trabajo';
+            elTrabajo.tipoNodo = 'trabajo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elTrabajo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
             return elTrabajo;
         },
         async editarKeywordsTrabajo(_: any, { idProyecto, idTrabajo, nuevoKeywords }, contexto: contextoQuery) {
@@ -2114,9 +2180,9 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
-            elTrabajo.tipoNodo='trabajo';
+            elTrabajo.tipoNodo = 'trabajo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elTrabajo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
             return elTrabajo;
 
         },
@@ -2167,9 +2233,9 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             console.log(`Trabajo guardado`);
-            elTrabajo.tipoNodo='trabajo';
+            elTrabajo.tipoNodo = 'trabajo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elTrabajo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
             return elTrabajo
         },
         removeResponsableTrabajo: async function (_: any, { idTrabajo, idUsuario }: any, contexto: contextoQuery) {
@@ -2235,9 +2301,9 @@ export const resolvers = {
             } catch (error) {
                 console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
             }
-            elTrabajo.tipoNodo='trabajo';
+            elTrabajo.tipoNodo = 'trabajo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elTrabajo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
             return elTrabajo;
         },
         async setEstadoTrabajo(_: any, { idTrabajo, nuevoEstado }, contexto: contextoQuery) {
@@ -2293,9 +2359,9 @@ export const resolvers = {
 
             }
             console.log(`Estado guardado`);
-            elTrabajo.tipoNodo='trabajo';
+            elTrabajo.tipoNodo = 'trabajo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elTrabajo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
             return elTrabajo;
         },
         setResponsablesSolicitadosTrabajo: async function (_: any, { idTrabajo, nuevoCantidadResponsablesSolicitados }, contexto: contextoQuery) {
@@ -2327,9 +2393,9 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             console.log(`Retornando con ${elTrabajo.responsablesSolicitados} responsables solicitados`);
-            elTrabajo.tipoNodo='trabajo';
+            elTrabajo.tipoNodo = 'trabajo';
             const pubsub = contexto.pubsub;
-            pubsub.publish(NODO_EDITADO, {nodoEditado: elTrabajo});
+            pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
             return elTrabajo;
         },
         async setPosicionTrabajo(_: any, { idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
@@ -2702,7 +2768,7 @@ export const resolvers = {
 
             console.log(`Objetivo guardado`);
             return elObjetivo
-        },       
+        },
         setPosicionObjetivoProyecto: async function (_: any, { idProyecto, idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
             console.log(`Solicitud de set posicion de objetivo en el diagrama del proyecto`);
 
@@ -2787,8 +2853,8 @@ export const resolvers = {
 
 
 
-            const permisosEspeciales=["superadministrador"];
-            if (!credencialesUsuario.id || !permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) || !elTrabajo.responsables.includes(credencialesUsuario.id)) {
+            const permisosEspeciales = ["superadministrador"];
+            if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elTrabajo.responsables.includes(credencialesUsuario.id)) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }

@@ -68,7 +68,8 @@ export const typeDefs = gql`
         colecciones:[ColeccionNodosAtlasConocimiento]
     }
     type InfoAtlasSolidaridad{
-        coordsVista:Coords,       
+        coordsVista:Coords, 
+        idsNodosPlegados: [String]      
     }
     enum relacionUsuarioConocimiento{
         APRENDIENDO
@@ -156,6 +157,8 @@ export const typeDefs = gql`
 
         asignarPermisoTodosUsuarios(nuevoPermiso:String!):Boolean,
         togglePermisoUsuario(permiso:String!, idUsuario:ID!):PublicUsuario,
+
+        setPlegarNodoSolidaridadUsuario(idNodo:ID!):Usuario,
 
         crearColeccionNodosAtlasConocimientoUsuario:Usuario,
         eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Usuario,
@@ -622,6 +625,36 @@ export const resolvers = {
             return elUsuario;
 
 
+        },
+
+        async setPlegarNodoSolidaridadUsuario(_:any, {idNodo}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+            const idUsuario=credencialesUsuario.id;
+            try {
+                var elUsuario:any=await Usuario.findById(idUsuario).exec();
+                if(!elUsuario)throw "Usuario no encontrado";
+            } catch (error) {
+                console.log(`Error buscando el usuario: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }            
+
+            const indexN=elUsuario.atlasSolidaridad.idsNodosPlegados.indexOf(idNodo);
+
+            if(indexN>-1){
+                elUsuario.atlasSolidaridad.idsNodosPlegados.splice(indexN, 1);
+            }
+            else{
+                elUsuario.atlasSolidaridad.idsNodosPlegados.push(idNodo)
+            }
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando el usuario`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return elUsuario;
         },
      
         async crearColeccionNodosAtlasConocimientoUsuario(_:any, __:any, contexto:contextoQuery){

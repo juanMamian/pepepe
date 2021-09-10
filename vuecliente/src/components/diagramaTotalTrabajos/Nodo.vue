@@ -36,7 +36,7 @@
       id="aureolaParentSeleccionado"
       v-show="parentDeSeleccionado"
     ></div>
-
+    <img src="@/assets/iconos/archivo.png" v-show="plegado" alt="Plegado" title="Este nodo ha sido plegado" id="iconoPlegado">
     <img
       src="@/assets/iconos/maximizar.png"
       alt="abrir"
@@ -67,6 +67,14 @@
     </div>
 
     <div id="menuContextual" v-show="menuCx">
+      <div
+        class="botonMenuCx"
+        v-show="usuario && usuario.id"
+        :class="{deshabilitado: enviandoQueryPlegar}"
+        @click.stop="togglePlegar"
+      >
+        {{plegado?'Desplegar': 'Plegar'}}
+      </div>
       <template
         v-if="idNodoSeleccionado != null && idNodoSeleccionado != esteNodo.id"
       >
@@ -74,13 +82,26 @@
         <div
           class="botonMenuCx"
           v-show="
-            usuarioResponsableNodoSeleccionado || usuarioSuperadministrador
+            (usuarioResponsableNodoSeleccionado || usuarioSuperadministrador) &&
+            !requeridoPorSeleccionado
           "
           @mouseup.stop=""
           @mousedown.stop=""
           @click.stop="crearRequerimento(idNodoSeleccionado, esteNodo.id)"
         >
           Requiere este elemento
+        </div>
+        <div
+          class="botonMenuCx"
+          v-show="
+            usuarioSuperadministrador &&
+            requeridoPorSeleccionado
+          "
+          @mouseup.stop=""
+          @mousedown.stop=""
+          @click.stop="crearParenting(idNodoSeleccionado, esteNodo.id)"
+        >
+          Se adueña de este elemento
         </div>
         <div
           class="botonMenuCx"
@@ -131,6 +152,7 @@ export default {
     usuarioResponsableNodoSeleccionado: Boolean,
     childSeleccionado: Boolean,
     parentDeSeleccionado: Boolean,
+    idsNodosPlegados:Array,
   },
   data() {
     return {
@@ -155,6 +177,8 @@ export default {
         x: 40,
         y: 40,
       },
+
+      enviandoQueryPlegar:false,
     };
   },
   methods: {
@@ -288,6 +312,53 @@ export default {
         },
       });
     },
+    crearParenting(idNodoRequiriente, idNodoRequerido) {
+      console.log(
+        `Se fijara que ${idNodoRequiriente} es parent de ${idNodoRequerido}`
+      );
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation ($idNodoRequiriente: ID!, $idNodoRequerido: ID!) {
+            crearParentingEntreNodosSolidaridad(
+              idNodoRequiriente: $idNodoRequiriente
+              idNodoRequerido: $idNodoRequerido
+            ) {
+              __typename
+              ... on Trabajo {
+                id
+                vinculos {
+                  idRef
+                  tipo
+                  tipoRef
+                }
+                administradores
+                nodoParent {
+                  idNodo
+                  tipo
+                }
+              }
+              ... on Objetivo {
+                id
+                vinculos {
+                  idRef
+                  tipo
+                  tipoRef
+                }
+                administradores
+                nodoParent {
+                  idNodo
+                  tipo
+                }
+              }
+            }
+          }
+        `,
+        variables: {
+          idNodoRequiriente,
+          idNodoRequerido,
+        },
+      });
+    },
     eliminarVinculo(idUnNodo, idOtroNodo) {
       console.log(`Se desconectará el nodo ${idUnNodo} del nodo ${idOtroNodo}`);
 
@@ -340,6 +411,37 @@ export default {
         return;
       }
       this.$emit("eliminar");
+    },
+    togglePlegar() {      
+
+      this.enviandoQueryPlegar = true;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!) {
+              setPlegarNodoSolidaridadUsuario(
+                idNodo: $idNodo                
+              ) {
+                id
+                atlasSolidaridad{
+                  idsNodosPlegados
+                }
+              }
+            }
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,            
+          },
+        })
+        .then(() => {
+          this.enviandoQueryPlegar = false;
+          console.log(`toggled`);
+        })
+        .catch((error) => {
+          this.enviandoQueryPlegar = false;
+          console.log(`Error: E:${error}`);
+        });
     },
   },
   computed: {
@@ -457,7 +559,10 @@ export default {
       return {
         backgroundColor: elColor,
       };
-    },
+    },    
+    plegado(){
+      return this.idsNodosPlegados.includes(this.esteNodo.id);
+    }
   },
   watch: {
     esteNodo() {
@@ -510,6 +615,18 @@ export default {
   height: 50%;
   user-select: none;
   pointer-events: none;
+}
+#iconoPlegado{
+  position: absolute;
+  padding: 5%;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background-color: rgb(195, 220, 221);
+  user-select: none;
+  z-index: 10;
+  top: 0%;
+  left: 100%;
 }
 .seleccionado {
   border-width: 2px;

@@ -14,6 +14,9 @@ const apollo_server_express_1 = require("apollo-server-express");
 const Usuario_1 = require("../model/Usuario");
 const graphql_iso_date_1 = require("graphql-iso-date");
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
+const Nodo_1 = require("../model/atlas/Nodo");
+const Objetivo_1 = require("../model/Objetivo");
+const Trabajo_1 = require("../model/Trabajo");
 exports.typeDefs = apollo_server_express_1.gql `
     scalar Date
 
@@ -50,7 +53,8 @@ exports.typeDefs = apollo_server_express_1.gql `
     type ColeccionNodosAtlasConocimiento{
         id:ID,
         nombre: String,
-        idsNodos: [ID]
+        idsNodos: [ID],
+        nodos:[NodoConocimiento],
     }
 
     type infoAtlas{
@@ -60,7 +64,10 @@ exports.typeDefs = apollo_server_express_1.gql `
         configuracion: ConfiguracionAtlas,
         colecciones:[ColeccionNodosAtlasConocimiento]
     }
-
+    type InfoAtlasSolidaridad{
+        coordsVista:Coords, 
+        idsNodosPlegados: [String]      
+    }
     enum relacionUsuarioConocimiento{
         APRENDIENDO
         APRENDIDO
@@ -94,6 +101,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         username:String,
         nodosConocimiento: [ConocimientoUsuario],
         atlas:infoAtlas,        
+        atlasSolidaridad:InfoAtlasSolidaridad,
         permisos:[String]
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
@@ -118,6 +126,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         apellidos:String,
         email:String,
         numeroTel:String,
+        permisos:[String],
         lugarResidencia:String,
         edad:Int,
         idGrupoEstudiantil:String,       
@@ -143,12 +152,20 @@ exports.typeDefs = apollo_server_express_1.gql `
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 
+        asignarPermisoTodosUsuarios(nuevoPermiso:String!):Boolean,
+        togglePermisoUsuario(permiso:String!, idUsuario:ID!):PublicUsuario,
+
+        setPlegarNodoSolidaridadUsuario(idNodo:ID!):Usuario,
+
         crearColeccionNodosAtlasConocimientoUsuario:Usuario,
         eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Usuario,
-        setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):String,
-        addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):Usuario,
-        removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):Usuario,
-                
+        setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):Usuario,
+        addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):ColeccionNodosAtlasConocimiento,
+        removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):ColeccionNodosAtlasConocimiento,
+        toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
+
+        setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
+        setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -501,6 +518,15 @@ exports.resolvers = {
                     throw new apollo_server_express_1.AuthenticationError("No autenticado");
                 }
                 console.log(`Seting modo ${nuevoModo} para el usuario ${idUsuario}`);
+                // try {
+                //     var losUsuarios:any=await Usuario.find({}).exec();
+                //     losUsuarios.forEach(async (u)=>{
+                //         u.atlas.colecciones=[];
+                //         await u.save();
+                //     })
+                // } catch (error) {
+                //     console.log(`Error corrigiendo todos los usuarios`);
+                // }
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
                     elUsuario.atlas.configuracion.modo = nuevoModo;
@@ -511,6 +537,102 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`error guardando usuario en la base de datos: ${error}`);
                     throw new apollo_server_express_1.ApolloError("");
+                }
+                return elUsuario;
+            });
+        },
+        asignarPermisoTodosUsuarios(_, { nuevoPermiso }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                const permisosAutorizados = ["superadministrador"];
+                if (!credencialesUsuario.permisos.some((p) => __awaiter(this, void 0, void 0, function* () { return permisosAutorizados.includes(p); }))) {
+                    console.log(`El usuario no tenía los permisos correctos`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var losUsuarios = yield Usuario_1.ModeloUsuario.find({}).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando los usuarios: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                losUsuarios.forEach((usuario) => __awaiter(this, void 0, void 0, function* () {
+                    const indexP = usuario.permisos.indexOf(nuevoPermiso);
+                    if (indexP > -1) {
+                        usuario.permisos.splice(indexP, 1);
+                    }
+                    usuario.permisos.push(nuevoPermiso);
+                    try {
+                        yield usuario.save();
+                    }
+                    catch (error) {
+                        console.log(`Error guardando el usuario con el nuevo permiso: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                    }
+                }));
+                return true;
+            });
+        },
+        togglePermisoUsuario(_, { permiso, idUsuario }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                const permisosAutorizados = ["superadministrador"];
+                if (!credencialesUsuario.permisos.some((p) => __awaiter(this, void 0, void 0, function* () { return permisosAutorizados.includes(p); }))) {
+                    console.log(`El usuario no tenía los permisos correctos`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                const indexP = elUsuario.permisos.indexOf(permiso);
+                if (indexP > -1) {
+                    elUsuario.permisos.splice(indexP, 1);
+                }
+                else {
+                    elUsuario.permisos.push(permiso);
+                }
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elUsuario;
+            });
+        },
+        setPlegarNodoSolidaridadUsuario(_, { idNodo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                const idUsuario = credencialesUsuario.id;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                const indexN = elUsuario.atlasSolidaridad.idsNodosPlegados.indexOf(idNodo);
+                if (indexN > -1) {
+                    elUsuario.atlasSolidaridad.idsNodosPlegados.splice(indexN, 1);
+                }
+                else {
+                    elUsuario.atlasSolidaridad.idsNodosPlegados.push(idNodo);
+                }
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 return elUsuario;
             });
@@ -532,8 +654,8 @@ exports.resolvers = {
                     console.log(`Error buscando el usuario en la base de datos`);
                     throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
                 }
-                var nuevaColeccion = elUsuario.colecciones.create();
-                elUsuario.colecciones.push(nuevaColeccion);
+                var nuevaColeccion = elUsuario.atlas.colecciones.create();
+                elUsuario.atlas.colecciones.push(nuevaColeccion);
                 try {
                     yield elUsuario.save();
                 }
@@ -561,9 +683,9 @@ exports.resolvers = {
                     console.log(`Error buscando el usuario en la base de datos`);
                     throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
                 }
-                const indexC = elUsuario.colecciones.findIndex(c => c.id === idColeccion);
+                const indexC = elUsuario.atlas.colecciones.findIndex(c => c.id === idColeccion);
                 if (indexC > -1) {
-                    elUsuario.colecciones.splice(indexC, 1);
+                    elUsuario.atlas.colecciones.splice(indexC, 1);
                 }
                 else {
                     throw new apollo_server_express_1.UserInputError("Colección no encontrada");
@@ -596,9 +718,9 @@ exports.resolvers = {
                 if (charProhibidosNombreColeccion.test(nuevoNombre)) {
                     throw new apollo_server_express_1.UserInputError("Nombre ilegal");
                 }
-                const indexC = elUsuario.colecciones.findIndex(c => c.id === idColeccion);
+                const indexC = elUsuario.atlas.colecciones.findIndex(c => c.id === idColeccion);
                 if (indexC > -1) {
-                    elUsuario.colecciones[indexC].nombre = nuevoNombre;
+                    elUsuario.atlas.colecciones[indexC].nombre = nuevoNombre;
                 }
                 else {
                     throw new apollo_server_express_1.UserInputError("Colección no encontrada");
@@ -610,7 +732,7 @@ exports.resolvers = {
                     console.log(`Error guardando los datos del usuario`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                return nuevoNombre;
+                return elUsuario;
             });
         },
         addNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNuevoNodo }, contexto) {
@@ -626,7 +748,7 @@ exports.resolvers = {
                     console.log(`Error buscando el usuario`);
                     throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
                 }
-                var laColeccion = elUsuario.colecciones.id(idColeccion);
+                var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
                 if (!laColeccion) {
                     console.log(`Coleccion no encontrada`);
                     throw new apollo_server_express_1.UserInputError("Colección no encontrada");
@@ -644,7 +766,7 @@ exports.resolvers = {
                 catch (error) {
                     throw new apollo_server_express_1.ApolloError("Error guardando datos de usuario en la base de datos");
                 }
-                return elUsuario;
+                return laColeccion;
             });
         },
         removeNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNodo }, contexto) {
@@ -660,7 +782,7 @@ exports.resolvers = {
                     console.log(`Error buscando el usuario`);
                     throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
                 }
-                var laColeccion = elUsuario.colecciones.id(idColeccion);
+                var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
                 if (!laColeccion) {
                     console.log(`Coleccion no encontrada`);
                     throw new apollo_server_express_1.UserInputError("Colección no encontrada");
@@ -678,7 +800,114 @@ exports.resolvers = {
                 catch (error) {
                     throw new apollo_server_express_1.ApolloError("Error guardando datos de usuario en la base de datos");
                 }
-                return elUsuario;
+                return laColeccion;
+            });
+        },
+        toggleNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNodo, idUsuario }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                //Autorizacion
+                const permisosEspeciales = ["superadministrador"];
+                if (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !credencialesUsuario.id != idUsuario) {
+                    console.log(`No autorizado`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+                if (!laColeccion) {
+                    console.log(`Coleccion no encontrada`);
+                    throw new apollo_server_express_1.UserInputError("Colección no encontrada");
+                }
+                const indexN = laColeccion.idsNodos.indexOf(idNodo);
+                if (indexN === -1) {
+                    laColeccion.idsNodos.push(idNodo);
+                }
+                else {
+                    laColeccion.idsNodos.splice(indexN, 1);
+                }
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError("Error guardando datos de usuario en la base de datos");
+                }
+                return laColeccion;
+            });
+        },
+        setCoordsVistaAtlasSolidaridadUsuario(_, { coords }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No Autenticado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                elUsuario.atlasSolidaridad.coordsVista = coords;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario con el nuevo coords de centroVista`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(coords)}`);
+                return true;
+            });
+        },
+        setNodoSolidaridadAsCoordsVistaUsuario(_, { idNodo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No Autenticado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                try {
+                    var tipoDeNodo = 'trabajo';
+                    var elNodo = yield Trabajo_1.ModeloTrabajo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        tipoDeNodo = 'objetivo';
+                        elNodo = yield Objetivo_1.ModeloObjetivo.findById(idNodo).exec();
+                    }
+                    if (!elNodo) {
+                        tipoDeNodo = '';
+                        throw "Nodo no encontrado";
+                    }
+                    elNodo.tipoNodo = tipoDeNodo;
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error en la conexión con la base de datos");
+                }
+                elUsuario.atlasSolidaridad.coordsVista = elNodo.coords;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario con el nuevo coords de centroVista`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(elNodo.coords)} del nodo ${idNodo}`);
+                return true;
             });
         }
     },
@@ -743,5 +972,22 @@ exports.resolvers = {
     },
     Date: {
         GraphQLDateTime: graphql_iso_date_1.GraphQLDateTime
+    },
+    ColeccionNodosAtlasConocimiento: {
+        nodos: function (parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Resolviendo nodos de coleccion con parent: ${parent}`);
+                try {
+                    var losNodos = yield Nodo_1.ModeloNodo.find({ _id: { $in: parent.idsNodos } }).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando los nodos de la coleccion ${parent.id}`);
+                }
+                console.log(`Encontrados ${losNodos.length} nodos`);
+                if (!losNodos)
+                    losNodos = [];
+                return losNodos;
+            });
+        }
     }
 };
