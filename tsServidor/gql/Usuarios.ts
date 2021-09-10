@@ -835,7 +835,7 @@ export const resolvers = {
         },
         async toggleNodoColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, idNodo, idUsuario}:any, contexto:contextoQuery){
             const credencialesUsuario=contexto.usuario;
-
+            console.log(`Toggling nodo ${idNodo} en colección ${idColeccion} para el usuario ${idUsuario}`);
             try {
                 var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
                 if(!elUsuario){
@@ -848,7 +848,7 @@ export const resolvers = {
 
             //Autorizacion
             const permisosEspeciales=["superadministrador"];
-            if(!permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) && !credencialesUsuario.id!=idUsuario){
+            if(!permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) && credencialesUsuario.id!=idUsuario){
                 console.log(`No autorizado`);
                 throw new AuthenticationError("No autorizado");
             }
