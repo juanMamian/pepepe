@@ -9,11 +9,21 @@
     </canvas>
     <canvas
       v-show="seleccionado"
-      ref="enlacesVerdes"
-      class="enlacesVerdes enlaces"
+      ref="enlacesRequeridos"
+      class="enlacesRequeridos enlaces"
       :style="[offset]"
     >
     </canvas>
+    <transition name="fade">
+    <canvas
+      v-show="seleccionado && !plegado"
+      ref="enlacesChildren"
+      class="enlacesChildren enlaces"
+      :style="[offset]"
+    >
+    </canvas>
+    </transition>
+
   </div>
 </template>
 
@@ -21,7 +31,7 @@
 export default {
   name: "CanvasEnlacesNodo",
   props: {
-    yo:Object,
+    yo: Object,
     esteNodo: Object,
     todosNodos: Array,
     factorZoom: Number,
@@ -35,7 +45,7 @@ export default {
   },
   methods: {
     trazarVinculosGrises() {
-      if(!this.nodoVisible)return;
+      if (!this.nodoVisible) return;
       var lapiz = this.$refs.enlacesGrises.getContext("2d");
       lapiz.canvas.width =
         (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom;
@@ -60,8 +70,8 @@ export default {
       lapiz.stroke();
     },
     trazarVinculosRequeridos() {
-      if(!this.nodoVisible)return;
-      var lapiz = this.$refs.enlacesVerdes.getContext("2d");
+      if (!this.nodoVisible) return;
+      var lapiz = this.$refs.enlacesRequeridos.getContext("2d");
       lapiz.canvas.width =
         (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom;
       lapiz.canvas.height =
@@ -71,7 +81,7 @@ export default {
       lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
 
       this.nodosRequeridos.forEach((nodoRequerido) => {
-        if (this.idsNodosVisibles.includes(nodoRequerido.id)) {
+        if (this.idsNodosVisibles.includes(nodoRequerido.id) && !(nodoRequerido.nodoParent && nodoRequerido.nodoParent.idNodo===this.esteNodo.id) ) {
           lapiz.beginPath();
           if (
             nodoRequerido.nodoParent &&
@@ -90,6 +100,29 @@ export default {
           lapiz.stroke();
         }
       });
+    },
+    trazarVinculosChildren() {
+      if (!this.nodoVisible) return;
+      var lapiz = this.$refs.enlacesChildren.getContext("2d");
+      lapiz.canvas.width =
+        (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom;
+      lapiz.canvas.height =
+        (this.esquinas.y2 - this.esquinas.y1) * this.factorZoom;
+
+      lapiz.lineWidth = 2;
+      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+      lapiz.beginPath();
+      lapiz.strokeStyle = "#d55f18";
+
+      this.nodosChildren.forEach((nodoChild) => {
+        this.dibujarLineaEntreNodos(
+          nodoChild,
+          this.esteNodo,
+          lapiz,
+          this.posicion
+        );
+      });
+      lapiz.stroke();
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicion) {
       var anguloVinculo = Math.atan(
@@ -179,6 +212,14 @@ export default {
         this.idsNodosRequeridos.includes(n.id)
       );
     },
+    nodosChildren() {
+      return this.todosNodos.filter(
+        (n) =>
+          this.idsNodosRequeridos.includes(n.id) &&
+          n.nodoParent &&
+          n.nodoParent.idNodo === this.esteNodo.id
+      );
+    },
     cantidadNodosRequeridos() {
       return this.nodosRequeridos.length;
     },
@@ -256,18 +297,28 @@ export default {
       }
       return this.nodoSeleccionado.id === this.esteNodo.id;
     },
-    plegado(){
-      if(!this.usuario || !this.usuario.id || !this.yo || !this.yo.atlasSolidaridad || !this.yo.atlasSolidaridad.idsNodosPlegados) return false;
+    plegado() {
+      if (
+        !this.usuario ||
+        !this.usuario.id ||
+        !this.yo ||
+        !this.yo.atlasSolidaridad ||
+        !this.yo.atlasSolidaridad.idsNodosPlegados
+      )
+        return false;
 
-      return this.yo.atlasSolidaridad.idsNodosPlegados.includes(this.esteNodo.id);
+      return this.yo.atlasSolidaridad.idsNodosPlegados.includes(
+        this.esteNodo.id
+      );
     },
-    nodoVisible(){
+    nodoVisible() {
       return this.idsNodosVisibles.includes(this.esteNodo.id);
-    }
+    },
   },
   mounted() {
     this.trazarVinculosGrises();
     this.trazarVinculosRequeridos();
+    this.trazarVinculosChildren();
   },
   watch: {
     redibujarEnlaces() {
@@ -298,5 +349,14 @@ export default {
 .enlaces {
   position: absolute;
   pointer-events: none;
+}
+
+
+.fade-enter-active, .fade-leave-active{
+  transition: opacity 0.3s;
+}
+
+.fade-enter, .fade-leave-to{
+  opacity: 0;
 }
 </style>

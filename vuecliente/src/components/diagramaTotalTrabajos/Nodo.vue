@@ -72,6 +72,8 @@
         v-show="usuario && usuario.id"
         :class="{deshabilitado: enviandoQueryPlegar}"
         @click.stop="togglePlegar"
+        @mousedown.left.stop=""
+        @mouseup.left.stop=""
       >
         {{plegado?'Desplegar': 'Plegar'}}
       </div>

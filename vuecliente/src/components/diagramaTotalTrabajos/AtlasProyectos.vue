@@ -148,7 +148,7 @@
         @meAbrieron="idNodoPaVentanita = trabajo.id"
         @eliminar="eliminarNodo(trabajo.id, 'trabajo')"
       /> -->
-
+      <transition-group name="fade" tag="div">
       <nodo
         :yo="yo"
         v-for="nodo of todosNodos"
@@ -180,6 +180,7 @@
         @meAbrieron="idNodoPaVentanita = nodo.id"
         @eliminar="eliminarNodo(nodo.id, nodo.__typename.toLowerCase())"
       />
+      </transition-group>
 
       <div
         id="indicadorCentroDescarga"
@@ -1511,5 +1512,14 @@ export default {
 }
 .fadeOut-leave {
   opacity: 1;
+}
+
+
+.fade-enter-active, .fade-leave-active{
+  transition: opacity 0.3s;
+}
+
+.fade-enter, .fade-leave-to{
+  opacity: 0;
 }
 </style>
