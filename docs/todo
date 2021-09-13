@@ -25,6 +25,7 @@ Reestructuracion no-urgente
 *al revisar que los nombres, descripciones, etc. de proyectos, nodos, clases etc. no contengan caracteres ilegales en el backend se debe verificar que se lance un UserInputError en lugar de un ApolloError
 *Manejar vinculos huérfanos del atlas de solidaridad.
 *validar links de enlaces de nodos solidaridad en front y back.
+*prevenir loops de children en atlas de solidaridad.
 
 Funcionalidad urgente
 

@@ -122,6 +122,7 @@ export const typeDefs = gql`
        trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo],
        trabajosSegunCentro(centro: CoordsInput!, radio: Int!):[Trabajo],
        nodosTrabajosSegunCentro(centro:CoordsInput!, radio: Int!):[NodoDeTrabajos],
+       todosNodosSolidaridad:[NodoDeTrabajos],
         busquedaAmpliaNodosSolidaridad(palabrasBuscadas:String!):ResultadoBusquedaNodosSolidaridad,
         
         todosMateriales:[MaterialTrabajo],
@@ -192,6 +193,9 @@ export const resolvers = {
                 },
                 (nodoEditado: any, variables, contexto: contextoQuery) => {
                     console.log(`Decidiendo si notificar a ${contexto.usuario.id} acerca de un nodo editado en las coords ${JSON.stringify(nodoEditado.nodoEditado.coords)} con las variables ${JSON.stringify(variables)}`);
+                    if(variables.radio===0){
+                        return true;
+                    }
                     if (nodoEditado.nodoEditado.coords.x > variables.centro.x + variables.radio || nodoEditado.nodoEditado.coords.x < variables.centro.x - variables.radio || nodoEditado.nodoEditado.coords.y > variables.centro.y + variables.radio || nodoEditado.nodoEditado.coords.y < variables.centro.y - variables.radio) {
                         console.log(`No se notificara`);
                         return false;
@@ -316,6 +320,25 @@ export const resolvers = {
             try {
                 var losTrabajos: any = await Trabajo.find({ "coords.x": { $gt: centro.x - radio, $lt: centro.x + radio }, "coords.y": { $gt: centro.y - radio, $lt: centro.y + radio } }).exec();
                 var losObjetivos: any = await Objetivo.find({ "coords.x": { $gt: centro.x - radio, $lt: centro.x + radio }, "coords.y": { $gt: centro.y - radio, $lt: centro.y + radio } }).exec();
+            } catch (error) {
+                console.log(`Error buscando trabajos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            losTrabajos.forEach(t => t.tipoNodo = "trabajo");
+            losObjetivos.forEach(o => o.tipoNodo = "objetivo");
+
+            console.log(`${losTrabajos.length} trabajos encontrados.`);
+            console.log(`${losObjetivos.length} objetivos encontrados.`);
+            const todosNodos = losTrabajos.concat(losObjetivos);
+            console.log(`Retornando ${todosNodos.length} nodos`);
+            return todosNodos;
+        },
+        todosNodosSolidaridad: async function (_: any, ___: any, __: any) {
+            console.log(`Todos nodos solidaridad solicitados`);
+
+            try {
+                var losTrabajos: any = await Trabajo.find({}).exec();
+                var losObjetivos: any = await Objetivo.find({}).exec();
             } catch (error) {
                 console.log(`Error buscando trabajos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");

@@ -22,9 +22,10 @@
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
-    <buscador-nodos
-      :cerrarBusqueda="cerrarBusqueda"
-      @nodoSeleccionado="centrarEnNodo"
+    <vista-lista
+      :todosNodos="todosNodos"
+      :cerrar="cerrarVistaLista"
+      @centrarEnNodo="centrarEnNodoById($event)"
     />
     <ventana-materiales @centrarEnNodo="centrarEnNodoById" />
     <div
@@ -82,7 +83,7 @@
 
     <div id="contenedorCanvasNodos" :style="[posContenedores]">
       <canvas-enlaces-nodo
-        v-for="nodo of nodosConRequerimentos"        
+        v-for="nodo of nodosConRequerimentos"
         :yo="yo"
         :key="nodo.id"
         :esteNodo="nodo"
@@ -149,37 +150,39 @@
         @eliminar="eliminarNodo(trabajo.id, 'trabajo')"
       /> -->
       <transition-group name="fade" tag="div">
-      <nodo
-        :yo="yo"
-        v-for="nodo of todosNodos"
-        :key="nodo.id"
-        :esteNodo="nodo"
-        :idNodoSeleccionado="idNodoSeleccionado"
-        :nodoSeleccionado="nodoSeleccionado"
-        :idsNodosPlegados="idsNodosPlegados"
-        :menuCx="idNodoMenuCx && idNodoMenuCx == nodo.id"
-        :factorZoom="factorZoom"
-        :callingPosiciones="callingPosiciones"
-        :usuarioAdministradorNodoSeleccionado="
-          usuarioAdministradorNodoSeleccionado
-        "
-        :usuarioResponsableNodoSeleccionado="usuarioResponsableNodoSeleccionado"
-        :transparentoso="
-          idNodoSeleccionado &&
-          idNodoSeleccionado != nodo.id &&
-          !idsNodosRequeridosSeleccionado.includes(nodo.id) &&
-          !idsNodosRequierenSeleccionado.includes(nodo.id)
-        "
-        :childSeleccionado="nodosChildrenSeleccionado.includes(nodo.id)"
-        :parentDeSeleccionado="idNodoParentNodoSeleccionado===nodo.id"
-        v-show="idsNodosVisibles.includes(nodo.id)"
-        @meMovi="redibujarEnlacesNodos++"
-        @click.native="idNodoSeleccionado = nodo.id"
-        @click.native.right.exact.stop.prevent="idNodoMenuCx = nodo.id"
-        @dblclick.native="idNodoPaVentanita = nodo.id"
-        @meAbrieron="idNodoPaVentanita = nodo.id"
-        @eliminar="eliminarNodo(nodo.id, nodo.__typename.toLowerCase())"
-      />
+        <nodo
+          :yo="yo"
+          v-for="nodo of todosNodos"
+          :key="nodo.id"
+          :esteNodo="nodo"
+          :idNodoSeleccionado="idNodoSeleccionado"
+          :nodoSeleccionado="nodoSeleccionado"
+          :idsNodosPlegados="idsNodosPlegados"
+          :menuCx="idNodoMenuCx && idNodoMenuCx == nodo.id"
+          :factorZoom="factorZoom"
+          :callingPosiciones="callingPosiciones"
+          :usuarioAdministradorNodoSeleccionado="
+            usuarioAdministradorNodoSeleccionado
+          "
+          :usuarioResponsableNodoSeleccionado="
+            usuarioResponsableNodoSeleccionado
+          "
+          :transparentoso="
+            idNodoSeleccionado &&
+            idNodoSeleccionado != nodo.id &&
+            !idsNodosRequeridosSeleccionado.includes(nodo.id) &&
+            !idsNodosRequierenSeleccionado.includes(nodo.id)
+          "
+          :childSeleccionado="nodosChildrenSeleccionado.includes(nodo.id)"
+          :parentDeSeleccionado="idNodoParentNodoSeleccionado === nodo.id"
+          v-show="idsNodosVisibles.includes(nodo.id)"
+          @meMovi="redibujarEnlacesNodos++"
+          @click.native="idNodoSeleccionado = nodo.id"
+          @click.native.right.exact.stop.prevent="idNodoMenuCx = nodo.id"
+          @dblclick.native="idNodoPaVentanita = nodo.id"
+          @meAbrieron="idNodoPaVentanita = nodo.id"
+          @eliminar="eliminarNodo(nodo.id, nodo.__typename.toLowerCase())"
+        />
       </transition-group>
 
       <div
@@ -237,15 +240,91 @@ import gql from "graphql-tag";
 import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 import Loading from "../utilidades/Loading.vue";
-import BuscadorNodos from "./BuscadorNodos.vue";
 import VentanaMateriales from "./VentanaMateriales.vue";
 import Nodo from "./Nodo.vue";
 import CanvasEnlacesNodo from "./CanvasEnlacesNodo.vue";
 import debounce from "debounce";
+import VistaLista from "./VistaLista.vue";
 
-const QUERY_TODOS_NODOS = gql`
-  query ($centro: CoordsInput!, $radio: Int!) {
-    nodosTrabajosSegunCentro(centro: $centro, radio: $radio) {
+// const QUERY_TODOS_NODOS_BY_RADIUS = gql`
+//   query ($centro: CoordsInput!, $radio: Int!) {
+//     nodosTrabajosSegunCentro(centro: $centro, radio: $radio) {
+//       __typename
+//       ... on Trabajo {
+//         id
+//         nombre
+//         descripcion
+//         responsables
+//         posiblesResponsables
+//         responsablesSolicitados
+//         administradores
+//         keywords
+//         nodoParent {
+//           idNodo
+//           tipo
+//         }
+//         coords {
+//           x
+//           y
+//         }
+//         estadoDesarrollo
+//         vinculos {
+//           idRef
+//           tipo
+//           tipoRef
+//         }
+//         stuck
+//         angulo
+//         centroMasa {
+//           x
+//           y
+//         }
+//         puntaje
+//         nivel
+//         turnoNivel
+//         peso
+//       }
+//       ... on Objetivo {
+//         id
+//         nombre
+//         descripcion
+//         responsables
+//         posiblesResponsables
+//         responsablesSolicitados
+//         administradores
+//         keywords
+//         nodoParent {
+//           idNodo
+//           tipo
+//         }
+//         coords {
+//           x
+//           y
+//         }
+//         estadoDesarrollo
+//         vinculos {
+//           idRef
+//           tipo
+//           tipoRef
+//         }
+//         stuck
+//         angulo
+//         centroMasa {
+//           x
+//           y
+//         }
+//         puntaje
+//         nivel
+//         turnoNivel
+//         peso
+//       }
+//     }
+//   }
+// `;
+
+const QUERY_TODOS_NODOS=gql`
+  query {
+    todosNodosSolidaridad{
       __typename
       ... on Trabajo {
         id
@@ -318,6 +397,8 @@ const QUERY_TODOS_NODOS = gql`
     }
   }
 `;
+
+
 const QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD = gql`
   query {
     yo {
@@ -340,26 +421,29 @@ export default {
     VentanitaObjetivo,
     VentanitaTrabajo,
     Loading,
-    BuscadorNodos,
     VentanaMateriales,
     Nodo,
     CanvasEnlacesNodo,
+    VistaLista,
   },
   name: "AtlasProyectos",
   apollo: {
     todosNodos: {
       query: QUERY_TODOS_NODOS,
-      variables() {
-        return {
-          centro: {
-            x: this.centroDescarga.x,
-            y: this.centroDescarga.y,
-          },
-          radio: this.radioDescarga,
-        };
-      },
-      update({ nodosTrabajosSegunCentro }) {
-        return nodosTrabajosSegunCentro;
+      // variables() {
+      //   return {
+      //     centro: {
+      //       x: this.centroDescarga.x,
+      //       y: this.centroDescarga.y,
+      //     },
+      //     radio: this.radioDescarga,
+      //   };
+      // },
+      // update({ nodosTrabajosSegunCentro }) {
+      //   return nodosTrabajosSegunCentro;
+      // },
+      update({todosNodosSolidaridad}){
+        return todosNodosSolidaridad
       },
       skip() {
         return !this.radioDescarga || !this.coordsInicialesSetted;
@@ -443,27 +527,27 @@ export default {
         variables() {
           return {
             centro: {
-              x: this.centroDescarga.x,
-              y: this.centroDescarga.y,
+              x: 0,
+              y: 0,
             },
-            radio: this.radioDescarga,
+            radio: 0,
           };
         },
         updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          const indexN = previousResult.nodosTrabajosSegunCentro.findIndex(
+          const indexN = previousResult.todosNodosSolidaridad.findIndex(
             (n) => n.id == data.nodoEditado.id
           );
           if (indexN > -1) {
-            previousResult.nodosTrabajosSegunCentro.splice(indexN, 1);
+            previousResult.todosNodosSolidaridad.splice(indexN, 1);
           }
-          previousResult.nodosTrabajosSegunCentro.push(data.nodoEditado);
+          previousResult.todosNodosSolidaridad.push(data.nodoEditado);
           return previousResult;
         },
       },
     },
     yo: {
       query: QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD,
-      update({ yo }) {        
+      update({ yo }) {
         this.calcularEsquinaVista(yo.atlasSolidaridad.coordsVista);
         this.coordsInicialesSetted = true;
         return yo;
@@ -471,12 +555,12 @@ export default {
       skip() {
         return !this.usuarioLogeado || !this.montado;
       },
-      fetchPolicy:"network-only"
+      fetchPolicy: "network-only",
     },
   },
   data() {
     return {
-      montado:false,
+      montado: false,
 
       mostrandoMenuContextual: false,
       posMenuContextual: {
@@ -525,6 +609,7 @@ export default {
       callingPosiciones: false,
       cerrarBusqueda: 0,
       cerrarMateriales: 0,
+      cerrarVistaLista:0,
 
       redibujarEnlacesNodos: 0,
 
@@ -535,22 +620,18 @@ export default {
   },
   methods: {
     calcularEsquinaVista(centro) {
-      if(this.esquinaVistaCalculada)return;
+      if (this.esquinaVistaCalculada) return;
       this.$set(
         this.esquinaVistaDecimal,
         "x",
-        Math.round(
-          centro.x - this.sizeAtlas.x / (2 * this.factorZoom)
-        )
+        Math.round(centro.x - this.sizeAtlas.x / (2 * this.factorZoom))
       );
       this.$set(
         this.esquinaVistaDecimal,
         "y",
-        Math.round(
-          centro.y - this.sizeAtlas.y / (2 * this.factorZoom)
-        )
+        Math.round(centro.y - this.sizeAtlas.y / (2 * this.factorZoom))
       );
-      this.esquinaVistaCalculada=true;
+      this.esquinaVistaCalculada = true;
     },
     abrirMenuContextual(e) {
       let posAtlas = this.$el.getBoundingClientRect();
@@ -627,6 +708,7 @@ export default {
       this.mostrandoMenuContextual = false;
       this.idNodoMenuCx = null;
       this.cerrarBusqueda++;
+      this.cerrarVistaLista++;
     },
     movimientoMobile(e) {
       if (this.pinching) {
@@ -1165,41 +1247,19 @@ export default {
 
       console.log(`Centrando en nodo con id ${idNodo}`);
 
-      this.$apollo
-        .query({
-          query: gql`
-            query ($idTrabajo: ID!) {
-              trabajo(idTrabajo: $idTrabajo) {
-                id
-                nombre
-                coords {
-                  x
-                  y
-                }
-              }
-            }
-          `,
-          variables: {
-            idTrabajo: idNodo,
-          },
-        })
-        .then(({ data: { trabajo } }) => {
-          console.log(`Respuesta: ${trabajo}`);
-          this.$set(
-            this.esquinaVistaDecimal,
-            "x",
-            trabajo.coords.x - posContenedor.width / (2 * this.factorZoom)
-          );
-          this.$set(
-            this.esquinaVistaDecimal,
-            "y",
-            trabajo.coords.y - posContenedor.height / (2 * this.factorZoom)
-          );
-          this.idNodoSeleccionado = trabajo.id;
-        })
-        .catch((error) => {
-          console.log(`Error: ${error}`);
-        });
+      const elNodo=this.todosNodos.find(n=>n.id===idNodo);
+      this.$set(
+        this.esquinaVistaDecimal,
+        "x",
+        elNodo.coords.x - posContenedor.width / (2 * this.factorZoom)
+      );
+      this.$set(
+        this.esquinaVistaDecimal,
+        "y",
+        elNodo.coords.y - posContenedor.height / (2 * this.factorZoom)
+      );
+
+      this.idNodoSeleccionado=idNodo;
 
       //this.centroVista=e;
     },
@@ -1244,7 +1304,7 @@ export default {
         left: posx * this.factorZoom + "px",
         top: posy * this.factorZoom + "px",
       };
-    },    
+    },
     objetivoSeleccionado() {
       if (!this.idNodoSeleccionado) return null;
       return this.objetivos.find((o) => o.id == this.idNodoSeleccionado);
@@ -1264,12 +1324,15 @@ export default {
     nodoSeleccionado() {
       return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
-    idNodoParentNodoSeleccionado(){
-      if(!this.nodoSeleccionado || !this.nodoSeleccionado.nodoParent)return null
+    idNodoParentNodoSeleccionado() {
+      if (!this.nodoSeleccionado || !this.nodoSeleccionado.nodoParent)
+        return null;
 
-      const nodoParent=this.todosNodos.find(n=>n.id===this.nodoSeleccionado.nodoParent.idNodo)
+      const nodoParent = this.todosNodos.find(
+        (n) => n.id === this.nodoSeleccionado.nodoParent.idNodo
+      );
 
-      if(!nodoParent) return null;
+      if (!nodoParent) return null;
       return nodoParent.id;
     },
     usuarioAdministradorNodoSeleccionado() {
@@ -1299,9 +1362,13 @@ export default {
         .map((v) => v.idRef);
       return this.todosNodos.filter((n) => idsRequeridos.includes(n.id));
     },
-    nodosChildrenSeleccionado(){
-      if(!this.nodoSeleccionado)return []
-      return this.todosNodos.filter(n=>n.nodoParent && n.nodoParent.idNodo===this.idNodoSeleccionado).map(n=>n.id);
+    nodosChildrenSeleccionado() {
+      if (!this.nodoSeleccionado) return [];
+      return this.todosNodos
+        .filter(
+          (n) => n.nodoParent && n.nodoParent.idNodo === this.idNodoSeleccionado
+        )
+        .map((n) => n.id);
     },
     idsNodosRequierenSeleccionado() {
       return this.nodosRequierenSeleccionado.map((n) => n.id);
@@ -1309,27 +1376,36 @@ export default {
     idsNodosRequeridosSeleccionado() {
       return this.nodosRequeridosSeleccionado.map((n) => n.id);
     },
-    idsNodosPlegados(){
-      if(!this.yo) return [];
+    idsNodosPlegados() {
+      if (!this.yo) return [];
 
       return this.yo.atlasSolidaridad.idsNodosPlegados;
     },
-    idsNodosSubplegados(){
-      var listaTotal=[];
-      var listaActual=this.idsNodosPlegados;
-      while(listaActual.length>0){
-        listaActual=this.todosNodos.filter(n=>n.nodoParent && listaActual.includes(n.nodoParent.idNodo)).map(n=>n.id);
-        listaTotal=listaTotal.concat(listaActual);
+    idsNodosSubplegados() {
+      var listaTotal = [];
+      var listaActual = this.idsNodosPlegados;
+      while (listaActual.length > 0) {
+        listaActual = this.todosNodos
+          .filter(
+            (n) => n.nodoParent && listaActual.includes(n.nodoParent.idNodo)
+          )
+          .map((n) => n.id);
+        listaTotal = listaTotal.concat(listaActual);
       }
 
       return listaTotal;
     },
     idsNodosVisibles() {
-      return this.todosNodos.filter(n=>{
-        if(!n.nodoParent)return true;
+      return this.todosNodos
+        .filter((n) => {
+          if (!n.nodoParent) return true;
 
-        return !this.idsNodosPlegados.includes(n.nodoParent.idNodo) && !this.idsNodosSubplegados.includes(n.nodoParent.idNodo);
-      }).map((n) => n.id);
+          return (
+            !this.idsNodosPlegados.includes(n.nodoParent.idNodo) &&
+            !this.idsNodosSubplegados.includes(n.nodoParent.idNodo)
+          );
+        })
+        .map((n) => n.id);
     },
     trabajos() {
       return this.todosNodos.filter((n) => n.__typename === "Trabajo");
@@ -1390,7 +1466,7 @@ export default {
     var posAtlas = this.$el.getBoundingClientRect();
 
     this.$set(this.sizeAtlas, "x", posAtlas.width);
-    this.$set(this.sizeAtlas, "y", posAtlas.height);    
+    this.$set(this.sizeAtlas, "y", posAtlas.height);
     this.$set(
       this.sizeAtlas,
       "diagonal",
@@ -1400,8 +1476,8 @@ export default {
     this.radioDescarga = Math.ceil(
       (Math.max(this.sizeAtlas.x, this.sizeAtlas.y) * 2) / this.factorZoom
     );
-    this.montado=true;
- },
+    this.montado = true;
+  },
   created() {
     window.addEventListener("wheel", this.zoomWheel, { passive: false });
   },
@@ -1514,12 +1590,13 @@ export default {
   opacity: 1;
 }
 
-
-.fade-enter-active, .fade-leave-active{
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s;
 }
 
-.fade-enter, .fade-leave-to{
+.fade-enter,
+.fade-leave-to {
   opacity: 0;
 }
 </style>
