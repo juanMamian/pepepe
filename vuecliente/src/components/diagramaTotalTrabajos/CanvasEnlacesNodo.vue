@@ -1,29 +1,42 @@
 <template>
   <div id="canvasEnlacesNodo" v-show="nodoVisible">
-    <canvas
-      v-show="!seleccionado"
-      ref="enlacesGrises"
-      class="enlacesGrises enlaces"
-      :style="[offset]"
-    >
-    </canvas>
-    <canvas
-      v-show="seleccionado"
-      ref="enlacesRequeridos"
-      class="enlacesRequeridos enlaces"
-      :style="[offset]"
-    >
-    </canvas>
     <transition name="fade">
-    <canvas
-      v-show="seleccionado && !plegado"
-      ref="enlacesChildren"
-      class="enlacesChildren enlaces"
-      :style="[offset]"
-    >
-    </canvas>
+      <canvas
+        v-show="!seleccionado"
+        ref="enlacesGrises"
+        class="enlacesGrises enlaces"
+        :style="[offset]"
+      >
+      </canvas>
+    </transition>
+    <transition name="fade">
+      <canvas
+        v-show="seleccionado"
+        ref="enlacesRequeridos"
+        class="enlacesRequeridos enlaces"
+        :style="[offset]"
+      >
+      </canvas>
+    </transition>
+    <transition name="fade">
+      <canvas
+        v-show="seleccionado && !plegado"
+        ref="enlacesChildren"
+        class="enlacesChildren enlaces"
+        :style="[offset]"
+      >
+      </canvas>
     </transition>
 
+    <transition name="fade">
+      <canvas
+        v-show="requiereSeleccionado"
+        ref="enlacesSeleccionado"
+        class="enlacesSeleccionado enlaces"
+        :style="[offsetSeleccionado]"
+      >
+      </canvas>
+    </transition>
   </div>
 </template>
 
@@ -43,7 +56,77 @@ export default {
       default: 0,
     },
   },
+  data() {
+    return {
+      esquinasSeleccionado: {
+        x1: 0,
+        x2: 0,
+        y1: 0,
+        y2: 0,
+      },
+      posicionSeleccionado:{
+        x:0,
+        y:0
+      },      
+    };
+  },
   methods: {
+    setEsquinasSeleccionado() {
+      if (!this.requiereSeleccionado)
+        this.esquinasSeleccionado= {
+          x1: 0,
+          x2: 0,
+          y1: 0,
+          y2: 0,
+        };
+      const nodosInvolucrados = [
+        this.todosNodos.find((n) => n.id === this.esteNodo.id),
+        this.todosNodos.find((n) => n.id === this.nodoSeleccionado.id),
+      ];
+
+      const x1 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.coords.x < acc) {
+          return n.coords.x;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.coords.x);
+      const x2 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.coords.x > acc) {
+          return n.coords.x;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.coords.x);
+      const y1 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.coords.y < acc) {
+          return n.coords.y;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.coords.y);
+      const y2 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.coords.y > acc) {
+          return n.coords.y;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.coords.y);
+
+      this.esquinasSeleccionado= {
+        x1,
+        x2,
+        y1,
+        y2,
+      };
+    },
+    setPosicionSeleccionado() {
+      this.posicionSeleccionado = {
+        x: this.esquinasSeleccionado.x1,
+        y: this.esquinasSeleccionado.y1,
+      };
+    },
+    
     trazarVinculosGrises() {
       if (!this.nodoVisible) return;
       var lapiz = this.$refs.enlacesGrises.getContext("2d");
@@ -81,7 +164,13 @@ export default {
       lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
 
       this.nodosRequeridos.forEach((nodoRequerido) => {
-        if (this.idsNodosVisibles.includes(nodoRequerido.id) && !(nodoRequerido.nodoParent && nodoRequerido.nodoParent.idNodo===this.esteNodo.id) ) {
+        if (
+          this.idsNodosVisibles.includes(nodoRequerido.id) &&
+          !(
+            nodoRequerido.nodoParent &&
+            nodoRequerido.nodoParent.idNodo === this.esteNodo.id
+          )
+        ) {
           lapiz.beginPath();
           if (
             nodoRequerido.nodoParent &&
@@ -120,6 +209,35 @@ export default {
           this.esteNodo,
           lapiz,
           this.posicion
+        );
+      });
+      lapiz.stroke();
+    },
+    trazarVinculosSeleccionado() {
+      if (!this.nodoVisible) return;
+
+      this.setEsquinasSeleccionado();
+      this.setPosicionSeleccionado();
+      var lapiz = this.$refs.enlacesSeleccionado.getContext("2d");
+      lapiz.canvas.width =
+        (this.esquinasSeleccionado.x2 - this.esquinasSeleccionado.x1) *
+        this.factorZoom;
+      lapiz.canvas.height =
+        (this.esquinasSeleccionado.y2 - this.esquinasSeleccionado.y1) *
+        this.factorZoom;
+
+      lapiz.lineWidth = 2;
+      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+      lapiz.beginPath();
+      lapiz.strokeStyle = "#1e4bbf";
+      console.log(`Trazando vinculos seleccionado con esquinas: ${JSON.stringify(this.esquinasSeleccionado)}`);
+      console.log(`Con offsetSeleccionado ${JSON.stringify(this.offsetSeleccionado)}`);
+      [this.nodoSeleccionado].forEach((nodoAzul) => {
+        this.dibujarLineaEntreNodos(
+          nodoAzul,
+          this.esteNodo,
+          lapiz,
+          this.posicionSeleccionado
         );
       });
       lapiz.stroke();
@@ -278,6 +396,7 @@ export default {
         height: (this.esquinas.y2 - this.esquinas.y1) * this.factorZoom + "px",
       };
     },
+
     apariencia() {
       if (
         this.nodoSeleccionado &&
@@ -314,6 +433,25 @@ export default {
     nodoVisible() {
       return this.idsNodosVisibles.includes(this.esteNodo.id);
     },
+    requiereSeleccionado() {
+      if(!this.nodoSeleccionado)return false;
+      return this.esteNodo.vinculos.some((v) => v.tipo === "requiere" && v.idRef === this.nodoSeleccionado.id)
+      ;
+    },
+    offsetSeleccionado() {
+      return {
+        left: this.esquinasSeleccionado.x1 * this.factorZoom + "px",
+        top: this.esquinasSeleccionado.y1 * this.factorZoom + "px",
+        width:
+          (this.esquinasSeleccionado.x2 - this.esquinasSeleccionado.x1) *
+            this.factorZoom +
+          "px",
+        height:
+          (this.esquinasSeleccionado.y2 - this.esquinasSeleccionado.y1) *
+            this.factorZoom +
+          "px",
+      };
+    },
   },
   mounted() {
     this.trazarVinculosGrises();
@@ -332,15 +470,27 @@ export default {
     posNodo() {
       this.trazarVinculosGrises();
       this.trazarVinculosRequeridos();
+      this.trazarVinculosChildren();
     },
     esquinas() {
       this.trazarVinculosGrises();
       this.trazarVinculosRequeridos();
+      this.trazarVinculosChildren();
+
     },
     plegado() {
       this.trazarVinculosGrises();
       this.trazarVinculosRequeridos();
     },
+    nodoSeleccionado() {
+      if (this.requiereSeleccionado) {
+        console.log(
+          `${this.esteNodo.nombre} requiere al seleccionado, trazando lineas azules`
+        );
+        this.trazarVinculosSeleccionado();
+      }
+    },
+    
   },
 };
 </script>
@@ -351,12 +501,13 @@ export default {
   pointer-events: none;
 }
 
-
-.fade-enter-active, .fade-leave-active{
-  transition: opacity 0.3s;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
 }
 
-.fade-enter, .fade-leave-to{
+.fade-enter,
+.fade-leave-to {
   opacity: 0;
 }
 </style>
