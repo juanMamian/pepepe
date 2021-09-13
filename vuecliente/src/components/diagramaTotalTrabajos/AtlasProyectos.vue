@@ -23,6 +23,7 @@
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
     <vista-lista
+      ref="vistaLista"
       :todosNodos="todosNodos"
       :cerrar="cerrarVistaLista"
       @centrarEnNodo="centrarEnNodoById($event)"
@@ -216,12 +217,14 @@
       class="ventanitaNodo"
       :key="objetivoEnVentanita.id"
       :esteObjetivo="objetivoEnVentanita"
+      @navegarAlNodo="navegarPaginaNodo"
     />
     <ventanita-trabajo
       v-if="idNodoPaVentanita && trabajoEnVentanita && !callingPosiciones"
       class="ventanitaNodo"
       :key="trabajoEnVentanita.id"
       :esteTrabajo="trabajoEnVentanita"
+      @navegarAlNodo="navegarPaginaNodo"
     />
 
     <loading
@@ -1262,6 +1265,11 @@ export default {
       this.idNodoSeleccionado=idNodo;
 
       //this.centroVista=e;
+    },    
+    navegarPaginaNodo(d){
+      console.log(`Navegando a nodo con dirección ${d}`);
+      this.idNodoPaVentanita=null;
+      this.$router.push(d);
     },
     hideZoomInfo: debounce(function () {
       this.showingZoomInfo = false;
@@ -1464,7 +1472,6 @@ export default {
   },
   mounted() {
     var posAtlas = this.$el.getBoundingClientRect();
-
     this.$set(this.sizeAtlas, "x", posAtlas.width);
     this.$set(this.sizeAtlas, "y", posAtlas.height);
     this.$set(
@@ -1477,13 +1484,25 @@ export default {
       (Math.max(this.sizeAtlas.x, this.sizeAtlas.y) * 2) / this.factorZoom
     );
     this.montado = true;
-  },
+  },    
   created() {
     window.addEventListener("wheel", this.zoomWheel, { passive: false });
   },
   removed() {
     window.removeEventListener("wheel", this.zoomWheel);
   },
+  beforeRouteLeave(to, from, next){
+    console.log(`Hacia: ${to}`);
+    if(this.$refs.vistaLista.abierta){      
+      this.$refs.vistaLista.abierta=false;
+      return next(false) ;
+    }
+    if(this.idNodoPaVentanita){      
+      this.idNodoPaVentanita=null;
+      return next(false);
+    }
+    next();
+  }
 };
 </script>
 

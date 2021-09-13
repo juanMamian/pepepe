@@ -768,7 +768,7 @@ export default {
         });
     },
     navegarAlTrabajo() {
-      this.$router.push("/trabajo/" + this.esteTrabajo.id);
+      this.$emit('navegarAlNodo', "/trabajo/" + this.esteTrabajo.id);      
     },
   },
   watch: {

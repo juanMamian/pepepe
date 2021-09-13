@@ -78,6 +78,19 @@ export default {
     cerrar() {
       this.abierta = false;
     },
+    // abierta(valor){
+    //     if(valor){
+    //         console.log(`Ruta actual: ${this.$router.currentRoute.path}`);
+    //         if(this.$router.currentRoute.path==='/atlasSolidaridad'){
+    //             this.$router.push("atlasSolidaridad/vistaLista");
+    //         }
+    //     }        
+    //     else{
+    //         if(this.$router.currentRoute.path==='/atlasSolidaridad/vistaLista'){
+    //             this.$router.push("");
+    //         }
+    //     }
+    // }
   },
 };
 </script>

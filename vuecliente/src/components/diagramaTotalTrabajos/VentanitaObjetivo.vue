@@ -766,7 +766,7 @@ export default {
         });
     },
     navegarAlObjetivo() {
-      this.$router.push("/objetivo/" + this.esteObjetivo.id);
+      this.$emit('navegarAlNodo', "/objetivo/" + this.esteObjetivo.id);      
     },
   },
   watch: {

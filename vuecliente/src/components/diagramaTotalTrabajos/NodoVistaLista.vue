@@ -95,7 +95,6 @@ export default {
       }
     },
     childrenBuscados(){
-      console.log(`Revisando si con ${this.busqueda} hay children buscados`);
       if(this.$refs.nodosChildren){
         return this.$refs.nodosChildren.some(c=>c.buscado || c.childrenBuscados);
       }
