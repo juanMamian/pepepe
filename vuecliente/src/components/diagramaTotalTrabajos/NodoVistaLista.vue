@@ -95,6 +95,7 @@ export default {
       }
     },
     childrenBuscados(){
+      if(!this.busqueda || this.busqueda.trim()<2)return false;
       if(this.$refs.nodosChildren){
         return this.$refs.nodosChildren.some(c=>c.buscado || c.childrenBuscados);
       }
