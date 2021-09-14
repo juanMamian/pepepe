@@ -64,16 +64,16 @@ export default {
         y1: 0,
         y2: 0,
       },
-      posicionSeleccionado:{
-        x:0,
-        y:0
-      },      
+      posicionSeleccionado: {
+        x: 0,
+        y: 0,
+      },
     };
   },
   methods: {
     setEsquinasSeleccionado() {
       if (!this.requiereSeleccionado)
-        this.esquinasSeleccionado= {
+        this.esquinasSeleccionado = {
           x1: 0,
           x2: 0,
           y1: 0,
@@ -113,7 +113,7 @@ export default {
         }
       }, this.esteNodo.coords.y);
 
-      this.esquinasSeleccionado= {
+      this.esquinasSeleccionado = {
         x1,
         x2,
         y1,
@@ -126,7 +126,7 @@ export default {
         y: this.esquinasSeleccionado.y1,
       };
     },
-    
+
     trazarVinculosGrises() {
       if (!this.nodoVisible) return;
       var lapiz = this.$refs.enlacesGrises.getContext("2d");
@@ -204,12 +204,14 @@ export default {
       lapiz.strokeStyle = "#d55f18";
 
       this.nodosChildren.forEach((nodoChild) => {
-        this.dibujarLineaEntreNodos(
-          nodoChild,
-          this.esteNodo,
-          lapiz,
-          this.posicion
-        );
+        if (this.idsNodosVisibles.includes(nodoChild.id)) {
+          this.dibujarLineaEntreNodos(
+            nodoChild,
+            this.esteNodo,
+            lapiz,
+            this.posicion
+          );
+        }
       });
       lapiz.stroke();
     },
@@ -230,8 +232,6 @@ export default {
       lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
       lapiz.beginPath();
       lapiz.strokeStyle = "#1e4bbf";
-      console.log(`Trazando vinculos seleccionado con esquinas: ${JSON.stringify(this.esquinasSeleccionado)}`);
-      console.log(`Con offsetSeleccionado ${JSON.stringify(this.offsetSeleccionado)}`);
       [this.nodoSeleccionado].forEach((nodoAzul) => {
         this.dibujarLineaEntreNodos(
           nodoAzul,
@@ -344,7 +344,9 @@ export default {
     esquinas() {
       const nodosInvolucrados = this.todosNodos.filter(
         (n) =>
-          this.idsNodosRequeridos.includes(n.id) || n.id === this.esteNodo.id
+          (this.idsNodosRequeridos.includes(n.id) ||
+            n.id === this.esteNodo.id) &&
+          this.idsNodosVisibles.includes(n.id)
       );
       const x1 = nodosInvolucrados.reduce((acc, n) => {
         if (n.coords.x < acc) {
@@ -434,9 +436,10 @@ export default {
       return this.idsNodosVisibles.includes(this.esteNodo.id);
     },
     requiereSeleccionado() {
-      if(!this.nodoSeleccionado)return false;
-      return this.esteNodo.vinculos.some((v) => v.tipo === "requiere" && v.idRef === this.nodoSeleccionado.id)
-      ;
+      if (!this.nodoSeleccionado) return false;
+      return this.esteNodo.vinculos.some(
+        (v) => v.tipo === "requiere" && v.idRef === this.nodoSeleccionado.id
+      );
     },
     offsetSeleccionado() {
       return {
@@ -476,7 +479,6 @@ export default {
       this.trazarVinculosGrises();
       this.trazarVinculosRequeridos();
       this.trazarVinculosChildren();
-
     },
     plegado() {
       this.trazarVinculosGrises();
@@ -484,13 +486,9 @@ export default {
     },
     nodoSeleccionado() {
       if (this.requiereSeleccionado) {
-        console.log(
-          `${this.esteNodo.nombre} requiere al seleccionado, trazando lineas azules`
-        );
         this.trazarVinculosSeleccionado();
       }
     },
-    
   },
 };
 </script>

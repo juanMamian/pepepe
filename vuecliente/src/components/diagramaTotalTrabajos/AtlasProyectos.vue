@@ -227,6 +227,16 @@
       @navegarAlNodo="navegarPaginaNodo"
     />
 
+    <panel-control-nodos
+      :todosNodos="todosNodos"
+      @centrarEnNodo="centrarEnNodoById"
+      :mostrandoTrabajos="mostrandoTrabajos"
+      :mostrandoObjetivos="mostrandoObjetivos"
+      :idsNodosVisibles="idsNodosVisibles"
+      @setMostrandoTrabajos="mostrandoTrabajos=$event"
+      @setMostrandoObjetivos="mostrandoObjetivos=$event"
+    />
+
     <loading
       id="loadingNodos"
       v-show="$apollo.queries.todosNodos.loading"
@@ -248,6 +258,7 @@ import Nodo from "./Nodo.vue";
 import CanvasEnlacesNodo from "./CanvasEnlacesNodo.vue";
 import debounce from "debounce";
 import VistaLista from "./VistaLista.vue";
+import PanelControlNodos from "./PanelControlNodos.vue";
 
 // const QUERY_TODOS_NODOS_BY_RADIUS = gql`
 //   query ($centro: CoordsInput!, $radio: Int!) {
@@ -325,9 +336,9 @@ import VistaLista from "./VistaLista.vue";
 //   }
 // `;
 
-const QUERY_TODOS_NODOS=gql`
+const QUERY_TODOS_NODOS = gql`
   query {
-    todosNodosSolidaridad{
+    todosNodosSolidaridad {
       __typename
       ... on Trabajo {
         id
@@ -401,7 +412,6 @@ const QUERY_TODOS_NODOS=gql`
   }
 `;
 
-
 const QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD = gql`
   query {
     yo {
@@ -428,6 +438,7 @@ export default {
     Nodo,
     CanvasEnlacesNodo,
     VistaLista,
+    PanelControlNodos,
   },
   name: "AtlasProyectos",
   apollo: {
@@ -445,8 +456,8 @@ export default {
       // update({ nodosTrabajosSegunCentro }) {
       //   return nodosTrabajosSegunCentro;
       // },
-      update({todosNodosSolidaridad}){
-        return todosNodosSolidaridad
+      update({ todosNodosSolidaridad }) {
+        return todosNodosSolidaridad;
       },
       skip() {
         return !this.radioDescarga || !this.coordsInicialesSetted;
@@ -612,13 +623,16 @@ export default {
       callingPosiciones: false,
       cerrarBusqueda: 0,
       cerrarMateriales: 0,
-      cerrarVistaLista:0,
+      cerrarVistaLista: 0,
 
       redibujarEnlacesNodos: 0,
 
       enviandoCoordsVistaUsuario: false,
       coordsInicialesSetted: false,
       esquinaVistaCalculada: false,
+
+      mostrandoTrabajos: true,
+      mostrandoObjetivos: true,
     };
   },
   methods: {
@@ -1248,9 +1262,8 @@ export default {
       var contenedor = this.$el;
       let posContenedor = contenedor.getBoundingClientRect();
 
-      console.log(`Centrando en nodo con id ${idNodo}`);
 
-      const elNodo=this.todosNodos.find(n=>n.id===idNodo);
+      const elNodo = this.todosNodos.find((n) => n.id === idNodo);
       this.$set(
         this.esquinaVistaDecimal,
         "x",
@@ -1262,13 +1275,13 @@ export default {
         elNodo.coords.y - posContenedor.height / (2 * this.factorZoom)
       );
 
-      this.idNodoSeleccionado=idNodo;
+      this.idNodoSeleccionado = idNodo;
 
       //this.centroVista=e;
-    },    
-    navegarPaginaNodo(d){
+    },
+    navegarPaginaNodo(d) {
       console.log(`Navegando a nodo con dirección ${d}`);
-      this.idNodoPaVentanita=null;
+      this.idNodoPaVentanita = null;
       this.$router.push(d);
     },
     hideZoomInfo: debounce(function () {
@@ -1406,6 +1419,8 @@ export default {
     idsNodosVisibles() {
       return this.todosNodos
         .filter((n) => {
+          if(n.__typename==='Trabajo' && !this.mostrandoTrabajos)return false;
+          if(n.__typename==='Objetivo' && !this.mostrandoObjetivos)return false;
           if (!n.nodoParent) return true;
 
           return (
@@ -1452,7 +1467,6 @@ export default {
         this.sizeAtlas.diagonal / this.factorZoom / 2
       ) {
         //Hora de actualizar nodos
-        console.log(`Reubicando centro descarga`);
         this.radioDescarga = Math.ceil(
           (Math.max(this.sizeAtlas.x, this.sizeAtlas.y) * 2) / this.factorZoom
         );
@@ -1484,25 +1498,25 @@ export default {
       (Math.max(this.sizeAtlas.x, this.sizeAtlas.y) * 2) / this.factorZoom
     );
     this.montado = true;
-  },    
+  },
   created() {
     window.addEventListener("wheel", this.zoomWheel, { passive: false });
   },
   removed() {
     window.removeEventListener("wheel", this.zoomWheel);
   },
-  beforeRouteLeave(to, from, next){
+  beforeRouteLeave(to, from, next) {
     console.log(`Hacia: ${to}`);
-    if(this.$refs.vistaLista.abierta){      
-      this.$refs.vistaLista.abierta=false;
-      return next(false) ;
+    if (this.$refs.vistaLista.abierta) {
+      this.$refs.vistaLista.abierta = false;
+      return next(false);
     }
-    if(this.idNodoPaVentanita){      
-      this.idNodoPaVentanita=null;
+    if (this.idNodoPaVentanita) {
+      this.idNodoPaVentanita = null;
       return next(false);
     }
     next();
-  }
+  },
 };
 </script>
 
