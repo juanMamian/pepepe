@@ -233,9 +233,15 @@
       :mostrandoTrabajos="mostrandoTrabajos"
       :mostrandoObjetivos="mostrandoObjetivos"
       :idsNodosVisibles="idsNodosVisibles"
-      @setMostrandoTrabajos="mostrandoTrabajos=$event"
-      @setMostrandoObjetivos="mostrandoObjetivos=$event"
+      @setMostrandoTrabajos="mostrandoTrabajos = $event"
+      @setMostrandoObjetivos="mostrandoObjetivos = $event"
     />
+
+    <transition name="fadeOutLento">
+      <div id="nombreNodoEmergente" v-show="showingNombreNodoEmergente">
+        {{ nodoSeleccionado ? nodoSeleccionado.nombre : "" }}
+      </div>
+    </transition>
 
     <loading
       id="loadingNodos"
@@ -633,6 +639,8 @@ export default {
 
       mostrandoTrabajos: true,
       mostrandoObjetivos: true,
+
+      showingNombreNodoEmergente:false,
     };
   },
   methods: {
@@ -1262,7 +1270,6 @@ export default {
       var contenedor = this.$el;
       let posContenedor = contenedor.getBoundingClientRect();
 
-
       const elNodo = this.todosNodos.find((n) => n.id === idNodo);
       this.$set(
         this.esquinaVistaDecimal,
@@ -1284,6 +1291,9 @@ export default {
       this.idNodoPaVentanita = null;
       this.$router.push(d);
     },
+    hideNombreNodoEmergente: debounce(function () {
+      this.showingNombreNodoEmergente = false;
+    }, 4000),
     hideZoomInfo: debounce(function () {
       this.showingZoomInfo = false;
     }, 1000),
@@ -1419,8 +1429,10 @@ export default {
     idsNodosVisibles() {
       return this.todosNodos
         .filter((n) => {
-          if(n.__typename==='Trabajo' && !this.mostrandoTrabajos)return false;
-          if(n.__typename==='Objetivo' && !this.mostrandoObjetivos)return false;
+          if (n.__typename === "Trabajo" && !this.mostrandoTrabajos)
+            return false;
+          if (n.__typename === "Objetivo" && !this.mostrandoObjetivos)
+            return false;
           if (!n.nodoParent) return true;
 
           return (
@@ -1477,6 +1489,14 @@ export default {
     idNodoSeleccionado(nuevo) {
       if (!nuevo) {
         this.idNodoPaVentanita = null;
+        this.showingNombreNodoEmergente=false;
+      }
+      else{
+        if(this.zoom<65){
+          this.showingNombreNodoEmergente=true;
+          this.hideNombreNodoEmergente()
+        }
+        
       }
     },
     zoom() {
@@ -1613,6 +1633,19 @@ export default {
   z-index: 3;
 }
 
+#nombreNodoEmergente{
+  position:fixed;
+  bottom: 5px;
+  left:50%;
+  transform: translateX(-50%);
+  border-radius: 10px;
+  border: 2px solid rgb(56, 128, 131);
+  background-color: rgb(185, 215, 216);
+  padding: 10px;
+  font-size: 20px;
+  z-index: 10;
+}
+
 .fadeOut-leave-to {
   opacity: 0;
 }
@@ -1620,6 +1653,16 @@ export default {
   transition: opacity 1s;
 }
 .fadeOut-leave {
+  opacity: 1;
+}
+
+.fadeOutLento-leave-to {
+  opacity: 0;
+}
+.fadeOutLento-leave-active {
+  transition: opacity 2s;
+}
+.fadeOutLento-leave {
   opacity: 1;
 }
 
