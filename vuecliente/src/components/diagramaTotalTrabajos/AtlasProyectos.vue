@@ -22,13 +22,13 @@
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
-    <vista-lista
+    <!-- <vista-lista
       ref="vistaLista"
       :todosNodos="todosNodos"
-      :cerrar="cerrarVistaLista"
+      :cerrar="cerrarListas"
       @centrarEnNodo="centrarEnNodoById($event)"
-    />
-    <ventana-materiales @centrarEnNodo="centrarEnNodoById" />
+    /> -->
+    <listas :todosNodos="todosNodos" :cerrar="cerrarListas" ref="listas" @centrarEnNodo="centrarEnNodoById" />
     <div
       id="menuContextual"
       v-if="usuario && usuario.id"
@@ -259,12 +259,11 @@ import gql from "graphql-tag";
 import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 import Loading from "../utilidades/Loading.vue";
-import VentanaMateriales from "./VentanaMateriales.vue";
 import Nodo from "./Nodo.vue";
 import CanvasEnlacesNodo from "./CanvasEnlacesNodo.vue";
 import debounce from "debounce";
-import VistaLista from "./VistaLista.vue";
 import PanelControlNodos from "./PanelControlNodos.vue";
+import Listas from './Listas.vue';
 
 // const QUERY_TODOS_NODOS_BY_RADIUS = gql`
 //   query ($centro: CoordsInput!, $radio: Int!) {
@@ -440,11 +439,10 @@ export default {
     VentanitaObjetivo,
     VentanitaTrabajo,
     Loading,
-    VentanaMateriales,
     Nodo,
     CanvasEnlacesNodo,
-    VistaLista,
     PanelControlNodos,
+    Listas,
   },
   name: "AtlasProyectos",
   apollo: {
@@ -629,7 +627,7 @@ export default {
       callingPosiciones: false,
       cerrarBusqueda: 0,
       cerrarMateriales: 0,
-      cerrarVistaLista: 0,
+      cerrarListas: 0,
 
       redibujarEnlacesNodos: 0,
 
@@ -733,7 +731,7 @@ export default {
       this.mostrandoMenuContextual = false;
       this.idNodoMenuCx = null;
       this.cerrarBusqueda++;
-      this.cerrarVistaLista++;
+      this.cerrarListas++;
     },
     movimientoMobile(e) {
       if (this.pinching) {
@@ -1527,8 +1525,8 @@ export default {
   },
   beforeRouteLeave(to, from, next) {
     console.log(`Hacia: ${to}`);
-    if (this.$refs.vistaLista.abierta) {
-      this.$refs.vistaLista.abierta = false;
+    if (this.$refs.listas.abierta) {
+      this.$refs.listas.abierta = false;
       return next(false);
     }
     if (this.idNodoPaVentanita) {
@@ -1616,9 +1614,6 @@ export default {
   background-color: rgb(0, 60, 255);
   transform: translate(-50%, -50%);
   border-radius: 50%;
-}
-#ventanaMateriales {
-  position: absolute;
 }
 
 #infoZoom {

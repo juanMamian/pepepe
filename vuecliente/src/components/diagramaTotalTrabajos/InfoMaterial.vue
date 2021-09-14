@@ -84,9 +84,11 @@ export default {
 </script>
 
 <style scoped>
-.infoMaterial {
-  background-color: rgb(231, 162, 112);
+.infoMaterial {  
   padding: 5px 10px;
+}
+.infoMaterial:hover {  
+  background-color: cadetblue;
 }
 #barraPrincipal {
   display: flex;
@@ -94,9 +96,7 @@ export default {
 .botonesDerecha {
   margin-left: auto;
 }
-.infoMaterial:hover {
-  background-color: rgb(201, 122, 67);
-}
+
 .botonDerecha {
   cursor: pointer;
   width: 20px;

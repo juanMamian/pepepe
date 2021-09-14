@@ -91,7 +91,7 @@ export default {
         }
       }
       return{
-        backgroundColor:'cadetblue'
+        
       }
     },
     childrenBuscados(){
@@ -119,10 +119,7 @@ export default {
   transform-origin: 25% 70%;
   transition: transform 0.2s;
 }
-.elementoLista:hover{
-  background-color: cadetblue;
 
-}
 
 .zonaNombre{
   cursor: pointer;
