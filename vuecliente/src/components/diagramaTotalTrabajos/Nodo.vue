@@ -1,7 +1,7 @@
 <template>
   <div
     class="nodo"
-    :class="{ seleccionado }"
+    :class="{ seleccionado, deshabilitado: enviandoQueryGeneral }"
     :style="[
       estiloPosicion,
       estiloZeta,
@@ -97,7 +97,8 @@
           class="botonMenuCx"
           v-show="
             usuarioSuperadministrador &&
-            requeridoPorSeleccionado
+            requeridoPorSeleccionado &&
+            !childSeleccionado
           "
           @mouseup.stop=""
           @mousedown.stop=""
@@ -179,7 +180,7 @@ export default {
         x: 40,
         y: 40,
       },
-
+      enviandoQueryGeneral:false,
       enviandoQueryPlegar:false,
     };
   },
@@ -412,7 +413,31 @@ export default {
         console.log(`No autorizado`);
         return;
       }
-      this.$emit("eliminar");
+      this.enviandoQueryGeneral = true;
+      const dis=this;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $tipo: String!) {
+              eliminarNodoSolidaridad(idNodo: $idNodo, tipo: $tipo)
+            }
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            tipo: this.esteNodo.__typename.toLowerCase(),
+          },          
+        })
+        .then(() => {
+          dis.enviandoQueryGeneral = false;  
+          this.$emit("meElimine");
+
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          dis.enviandoQueryGeneral = false;
+        });
+
+
     },
     togglePlegar() {      
 
@@ -546,7 +571,7 @@ export default {
       }
 
       return false;
-    },
+    },    
     huerfano() {
       return (
         this.esteNodo.responsables.length === 0 &&

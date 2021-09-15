@@ -28,7 +28,12 @@
       :cerrar="cerrarListas"
       @centrarEnNodo="centrarEnNodoById($event)"
     /> -->
-    <listas :todosNodos="todosNodos" :cerrar="cerrarListas" ref="listas" @centrarEnNodo="centrarEnNodoById" />
+    <listas
+      :todosNodos="todosNodos"
+      :cerrar="cerrarListas"
+      ref="listas"
+      @centrarEnNodo="centrarEnNodoById"
+    />
     <div
       id="menuContextual"
       v-if="usuario && usuario.id"
@@ -39,6 +44,7 @@
       <div
         class="botonMenuContextual"
         id="botonCrearObjetivo"
+        v-show="usuarioSuperadministrador"
         @mouseup.left.stop=""
         @click.stop="crearNodoEnMenuContextual('objetivo')"
       >
@@ -57,6 +63,7 @@
         id="botonCrearObjetivo"
         @click.stop="crearNodoEnMenuContextual('trabajo')"
         @mouseup.left.stop=""
+        v-show="usuarioSuperadministrador"
       >
         Crear trabajo
         {{
@@ -182,7 +189,7 @@
           @click.native.right.exact.stop.prevent="idNodoMenuCx = nodo.id"
           @dblclick.native="idNodoPaVentanita = nodo.id"
           @meAbrieron="idNodoPaVentanita = nodo.id"
-          @eliminar="eliminarNodo(nodo.id, nodo.__typename.toLowerCase())"
+          @meElimine="eliminarNodoCache(nodo.id)"
         />
       </transition-group>
 
@@ -263,11 +270,11 @@ import Nodo from "./Nodo.vue";
 import CanvasEnlacesNodo from "./CanvasEnlacesNodo.vue";
 import debounce from "debounce";
 import PanelControlNodos from "./PanelControlNodos.vue";
-import Listas from './Listas.vue';
+import Listas from "./Listas.vue";
 
 // const QUERY_TODOS_NODOS_BY_RADIUS = gql`
 //   query ($centro: CoordsInput!, $radio: Int!) {
-//     nodosTrabajosSegunCentro(centro: $centro, radio: $radio) {
+//     todosNodosSolidaridad(centro: $centro, radio: $radio) {
 //       __typename
 //       ... on Trabajo {
 //         id
@@ -457,8 +464,8 @@ export default {
       //     radio: this.radioDescarga,
       //   };
       // },
-      // update({ nodosTrabajosSegunCentro }) {
-      //   return nodosTrabajosSegunCentro;
+      // update({ todosNodosSolidaridad }) {
+      //   return todosNodosSolidaridad;
       // },
       update({ todosNodosSolidaridad }) {
         return todosNodosSolidaridad;
@@ -638,7 +645,7 @@ export default {
       mostrandoTrabajos: true,
       mostrandoObjetivos: true,
 
-      showingNombreNodoEmergente:false,
+      showingNombreNodoEmergente: false,
     };
   },
   methods: {
@@ -861,70 +868,24 @@ export default {
       // this.$set(this.esquinaVistaDecimal, "x", posZoom.x-((posContenedor.width/this.factorZoom)*proporciones.x) );
       // this.$set(this.esquinaVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );
     },
-    eliminarNodo(idNodo, tipo) {
-      if (!confirm("¿Seguro de que quieres eliminar este elemento?")) return;
-      console.log(`enviando mutacion de eliminar nodo`);
-      this.enviandoQueryNodos = true;
-
-      const dis = this;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idNodo: ID!, $tipo: String!) {
-              eliminarNodoSolidaridad(idNodo: $idNodo, tipo: $tipo)
-            }
-          `,
-          variables: {
-            idNodo,
-            tipo,
-          },
-          update(store, { data: { eliminarNodoSolidaridad } }) {
-            if (!eliminarNodoSolidaridad) {
-              console.log(`Nodo no fue eliminado`);
-              return;
-            }
-            const cache = store.readQuery({
-              query: QUERY_TODOS_NODOS,
-              variables: {
-                centro: {
-                  x: dis.centroDescarga.x,
-                  y: dis.centroDescarga.y,
-                },
-                radio: dis.radioDescarga,
-              },
-            });
-            var nuevoCache = JSON.parse(JSON.stringify(cache));
-            const indexN = nuevoCache.nodosTrabajosSegunCentro.findIndex(
-              (n) => n.id == idNodo
-            );
-            if (indexN > -1) {
-              nuevoCache.nodosTrabajosSegunCentro.splice(indexN, 1);
-              store.writeQuery({
-                query: QUERY_TODOS_NODOS,
-                variables: {
-                  centro: {
-                    x: dis.centroDescarga.x,
-                    y: dis.centroDescarga.y,
-                  },
-                  radio: dis.radioDescarga,
-                },
-                data: nuevoCache,
-              });
-            } else {
-              console.log(`El nodo no estaba presente`);
-            }
-          },
-        })
-        .then(() => {
-          dis.enviandoQueryNodos = false;
-          if (dis.idNodoSeleccionado === idNodo) {
-            dis.idNodoSeleccionado = null;
-          }
-        })
-        .catch((error) => {
-          console.log(`Error: ${error}`);
-          dis.enviandoQueryNodos = false;
+    eliminarNodoCache(idNodo) {
+      const store=this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_TODOS_NODOS,       
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      const indexN = nuevoCache.todosNodosSolidaridad.findIndex(
+        (n) => n.id == idNodo
+      );
+      if (indexN > -1) {
+        nuevoCache.todosNodosSolidaridad.splice(indexN, 1);
+        store.writeQuery({
+          query: QUERY_TODOS_NODOS,          
+          data: nuevoCache,
         });
+      } else {
+        console.log(`El nodo no estaba presente`);
+      }
     },
     crearNodoEnMenuContextual(tipo) {
       let posContenedor = document
@@ -1068,7 +1029,7 @@ export default {
             },
           });
           var nuevoCache = JSON.parse(JSON.stringify(cache));
-          var losNodos = nuevoCache.nodosTrabajosSegunCentro;
+          var losNodos = nuevoCache.todosNodosSolidaridad;
           const indexN = losNodos.findIndex(
             (n) => n.id === crearNodoSolidaridad.id
           );
@@ -1218,7 +1179,7 @@ export default {
             },
           });
           var nuevoCache = JSON.parse(JSON.stringify(cache));
-          var losNodos = nuevoCache.nodosTrabajosSegunCentro;
+          var losNodos = nuevoCache.todosNodosSolidaridad;
           const indexN = losNodos.findIndex((n) => n.id === nuevoNodo.id);
           if (indexN > -1) {
             console.log(`El nodo ya estaba en caché`);
@@ -1487,14 +1448,12 @@ export default {
     idNodoSeleccionado(nuevo) {
       if (!nuevo) {
         this.idNodoPaVentanita = null;
-        this.showingNombreNodoEmergente=false;
-      }
-      else{
-        if(this.zoom<65){
-          this.showingNombreNodoEmergente=true;
-          this.hideNombreNodoEmergente()
+        this.showingNombreNodoEmergente = false;
+      } else {
+        if (this.zoom < 65) {
+          this.showingNombreNodoEmergente = true;
+          this.hideNombreNodoEmergente();
         }
-        
       }
     },
     zoom() {
@@ -1628,10 +1587,10 @@ export default {
   z-index: 3;
 }
 
-#nombreNodoEmergente{
-  position:fixed;
+#nombreNodoEmergente {
+  position: fixed;
   bottom: 5px;
-  left:50%;
+  left: 50%;
   transform: translateX(-50%);
   border-radius: 10px;
   border: 2px solid rgb(56, 128, 131);
