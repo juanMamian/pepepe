@@ -10,7 +10,9 @@
     <div id="barraSelectoresListas">
       <img
         src="@/assets/iconos/lista.png"
-        :class="{ selectorSeleccionado: listaSeleccionada === 'nodos' && abierta }"
+        :class="{
+          selectorSeleccionado: listaSeleccionada === 'nodos' && abierta,
+        }"
         title="Todos los nodos"
         alt="Nodos"
         class="selectorLista"
@@ -31,18 +33,23 @@
         @click="listaSeleccionada = 'materiales'"
       />
     </div>
+    <div id="zonaListas" @click.self.stop="idNodoSeleccionado=null">
+      <lista-nodos
+        :todosNodos="todosNodos"
+        class="lista"
+        v-show="listaSeleccionada === 'nodos' && abierta"
+        :idNodoSeleccionado="idNodoSeleccionado"
+        @centrarEnNodo="$emit('centrarEnNodo', $event)"
+        @nodoSeleccionado="idNodoSeleccionado = $event===idNodoSeleccionado?null: $event"
+        @click.native.self="idNodoSeleccionado=null"
+      />
 
-    <lista-nodos
-      :todosNodos="todosNodos"
-      class="lista"
-      v-show="listaSeleccionada === 'nodos' && abierta"
-      @centrarEnNodo="$emit('centrarEnNodo', $event)"
-    />
-
-    <lista-materiales
-      v-show="listaSeleccionada === 'materiales' && abierta"
-      @centrarEnNodo="$emit('centrarEnNodo', $event)"
-    />
+      <lista-materiales
+        v-show="listaSeleccionada === 'materiales' && abierta"
+        :idNodoSeleccionado="idNodoSeleccionado"
+        @centrarEnNodo="$emit('centrarEnNodo', $event)"
+      />
+    </div>
   </div>
 </template>
 
@@ -63,7 +70,15 @@ export default {
     return {
       abierta: false,
       listaSeleccionada: null,
+
+      idNodoSeleccionado: null,
     };
+  },
+  computed:{
+    nodoSeleccionado(){
+      if(!this.idNodoSeleccionado)return null
+      return this.todosNodos.find(n=>n.id===this.idNodoSeleccionado)
+    }
   },
   watch: {
     cerrar() {
@@ -105,7 +120,10 @@ export default {
 .selectorSeleccionado:hover {
   background-color: rgba(54, 130, 133, 0.719);
 }
-.lista {
+#zonaListas{
   height: 85%;
+}
+.lista {
+  height: 100%;
 }
 </style>

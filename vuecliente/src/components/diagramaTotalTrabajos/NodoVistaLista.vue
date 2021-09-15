@@ -1,7 +1,7 @@
 <template>
   <div class="nodoVistaLista">
     <div class="elementoLista" v-show="!busqueda || busqueda.length<2 || buscado || childrenBuscados">
-      <div class="zonaNombre" @click="mostrandoChildren = !mostrandoChildren" :style="[colorNombre]">
+      <div class="zonaNombre" :class="{seleccionado}" @click="mostrandoChildren = !mostrandoChildren; $emit('nodoSeleccionado', esteNodo.id)" :style="[colorNombre]">
         <div
           class="trianguloBullet"
           :style="{
@@ -26,7 +26,9 @@
           :key="nodo.id"
           :esteNodo="nodo"
           :busqueda="busqueda"
+          :idNodoSeleccionado="idNodoSeleccionado"
           @centrarEnNodo="$emit('centrarEnNodo', $event)"
+          @nodoSeleccionado="$emit('nodoSeleccionado', $event)"
         />
       </div>
     </div>
@@ -39,6 +41,7 @@ export default {
   props: {
     esteNodo: Object,
     busqueda: String,
+    idNodoSeleccionado:String,
   },
   data() {
     return {
@@ -49,7 +52,17 @@ export default {
     emitirCentrarNodo(){
       this.$emit('centrarEnNodo', this.esteNodo.id);
     },
-    
+    desplegarIfTargetChild(idTarget){
+      var desplegar=false;
+      (this.$refs.nodosChildren || []).forEach(nodo=>{
+        if(nodo.desplegarIfTargetChild(idTarget) || nodo.esteNodo.id===idTarget){
+          this.mostrandoChildren=true;
+          desplegar = true;
+        }
+      })
+
+      return desplegar;
+    }
   },
   computed:{
     palabrasBuscadas(){
@@ -102,6 +115,9 @@ export default {
       else{
         return false;
       }
+    },
+    seleccionado(){
+      return this.idNodoSeleccionado && this.esteNodo.id===this.idNodoSeleccionado;
     }
 
   }
@@ -111,6 +127,7 @@ export default {
 <style scoped>
 .nodoVistaLista {
 }
+
 .trianguloBullet {
   border: 10px solid transparent;
   border-left: 10px solid black;
@@ -130,7 +147,12 @@ export default {
 .zonaNombre:hover{
   background-color: rgb(137, 197, 199);
 }
-
+.seleccionado{
+  background-color: rgb(139, 87, 139);
+}
+.seleccionado:hover{
+  background-color: rgb(153, 83, 153);
+}
 #botonesRight{
   margin-left: auto;
 }

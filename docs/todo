@@ -26,6 +26,7 @@ Reestructuracion no-urgente
 *Manejar vinculos huérfanos del atlas de solidaridad.
 *validar links de enlaces de nodos solidaridad en front y back.
 *prevenir loops de children en atlas de solidaridad.
+*eliminar materiales cuando se elimina el trabajoParent del atlas de solidaridad.
 
 Funcionalidad urgente
 

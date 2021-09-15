@@ -19,10 +19,13 @@
     <div id="laListaNodos">
       <nodo-vista-lista
         v-for="nodoPrimerNivel of nodosPrimerNivel"
+        ref="nodosEnLista"
         :key="nodoPrimerNivel.id"
         :esteNodo="nodoPrimerNivel"
         :busqueda="busqueda"
+        :idNodoSeleccionado="idNodoSeleccionado"
         @centrarEnNodo="$emit('centrarEnNodo', $event)"
+        @nodoSeleccionado="$emit('nodoSeleccionado', $event)"
       />
     </div>
   </div>
@@ -34,6 +37,7 @@ export default {
   components: { NodoVistaLista },
   name: "ListaNodos",
   props: {
+    idNodoSeleccionado:String,
     todosNodos: Array,
   },
   data() {
@@ -47,6 +51,11 @@ export default {
         (n) => n.nodoParent && n.nodoParent.id === nodo.id
       );
     },
+    desplegarCascadaHaciaNodo(idNodoTarget){
+      this.$refs.nodosEnLista.forEach(nodo=>{
+        nodo.desplegarIfTargetChild(idNodoTarget);
+      })
+    }
   },
   computed: {
     nodosPrimerNivel() {
@@ -63,6 +72,13 @@ export default {
       });
     },
   },
+  watch:{
+    idNodoSeleccionado(){
+      if(!this.idNodoSeleccionado || !this.busqueda || this.busqueda.length<2)return;
+      this.desplegarCascadaHaciaNodo(this.idNodoSeleccionado);
+      this.busqueda=null;
+    }
+  }
 };
 </script>
 
