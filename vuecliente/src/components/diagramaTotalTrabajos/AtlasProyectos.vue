@@ -44,7 +44,7 @@
       <div
         class="botonMenuContextual"
         id="botonCrearObjetivo"
-        v-show="usuarioSuperadministrador"
+        v-show="usuarioSuperadministrador || (nodoSeleccionado!=null && nodoSeleccionado.responsables.includes(usuario.id))"
         @mouseup.left.stop=""
         @click.stop="crearNodoEnMenuContextual('objetivo')"
       >
@@ -63,7 +63,7 @@
         id="botonCrearObjetivo"
         @click.stop="crearNodoEnMenuContextual('trabajo')"
         @mouseup.left.stop=""
-        v-show="usuarioSuperadministrador"
+        v-show="usuarioSuperadministrador || (nodoSeleccionado!=null && nodoSeleccionado.responsables.includes(usuario.id))"
       >
         Crear trabajo
         {{
