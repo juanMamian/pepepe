@@ -105,6 +105,11 @@ router.post("/login", async (req: Request, res: Response) => {
 
     const username = req.body.username;
     const pass = req.body.password;
+
+    if(username==='SebastianHernandez'){
+        return res.status(400).send({ error: "sebastian", msjUsuario: "Usuario bloqueado" });
+    }
+
     console.log("loging " + JSON.stringify(req.body));
 
     try {
@@ -122,7 +127,8 @@ router.post("/login", async (req: Request, res: Response) => {
         let datosToken = {
             id: elUsuario._id,
             permisos: elUsuario.permisos,
-            username: elUsuario.username
+            username: elUsuario.username,
+            version:1,
         }
         let token = jwt.sign(datosToken, process.env.JWT_SECRET,);
         let respuesta = {

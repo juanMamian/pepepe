@@ -122,6 +122,9 @@ export default {
               dis.loginFailMsg = "Datos inválidos";
               return;
             }
+            if (error.response.data.error == "sebastian") {
+              console.log(`Usuario bloqueado temporalmente`);
+            }
           }
           if (error.response && error.response.data.msjUsuario) {
             alert(error.response.data.msjUsuario);

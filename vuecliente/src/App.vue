@@ -365,6 +365,12 @@ export default {
       let datosU = parseJwt(token);
       let secsActual = parseInt(Date.now() / 1000);
 
+      if(!datosU.version || datosU.version<1){
+        console.log(`Versión de token caducada`);
+        this.$store.commit("deslogearse");
+        return;
+      }
+
       if (secsActual < datosU.exp || !datosU.exp) {
         this.$store.commit("logearse", token);
       } else {
