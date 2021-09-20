@@ -30,7 +30,7 @@
         <div
           class="controlesLateralesZona"
           :class="{ deshabilitado: enviandoNuevoNombre }"
-          v-if="usuarioAdministrador"
+          v-if="usuarioAdministrador || usuarioSuperadministrador"
         >
           <img
             src="@/assets/iconos/editar.png"
@@ -81,7 +81,7 @@
         </div>
         <div
           class="controlesZona"
-          v-show="usuarioAdministrador && mostrandoDescripcion"
+          v-show="(usuarioAdministrador || usuarioSuperadministrador) && mostrandoDescripcion"
           :class="{ deshabilitado: enviandoNuevoDescripcion }"
         >
           <img
