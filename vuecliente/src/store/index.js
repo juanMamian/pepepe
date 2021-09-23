@@ -31,6 +31,7 @@ export default new Vuex.Store({
         token: null,
 
         refreshActividadEspecifica:0,
+        refreshNodoVentanitaAtlasSolidaridad:0,
 
     },
     mutations: {
@@ -62,6 +63,9 @@ export default new Vuex.Store({
 
         refreshActividadEspecifica(state){
             state.refreshActividadEspecifica++;
+        },
+        refreshNodoVentanitaAtlasSolidaridad(state){
+            state.refreshNodoVentanitaAtlasSolidaridad++;
         },
 
         setCentroVistaAtlas(state, nuevoCentro){

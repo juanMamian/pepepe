@@ -468,6 +468,7 @@ export default {
       //   return todosNodosSolidaridad;
       // },
       update({ todosNodosSolidaridad }) {
+        this.descargasTodosNodos++;
         return todosNodosSolidaridad;
       },
       skip() {
@@ -628,6 +629,7 @@ export default {
       // proyectos: [],
       // trabajos: [],
       // objetivos: [],
+      descargasTodosNodos:0,
       todosNodos: [],
       enviandoQueryNodos: false,
 
@@ -1258,6 +1260,9 @@ export default {
     }, 1000),
   },
   computed: {
+    refreshNodoVentanita(){
+      return this.$store.state.refreshNodoVentanitaAtlasSolidaridad;
+    },
     offsetMenuContextual() {
       return {
         top: this.posMenuContextual.y + "px",
@@ -1460,6 +1465,22 @@ export default {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
     },
+    descargasTodosNodos(val){
+      const idNodoNotificado=this.$route.params.nv;
+      if(val===1 && idNodoNotificado){
+        console.log("Centrando en nodo "+idNodoNotificado);
+        this.centrarEnNodoById(idNodoNotificado);
+        this.idNodoPaVentanita=idNodoNotificado;
+      }
+    },
+    refreshNodoVentanita(){
+      const idNodoNotificado=this.$route.params.nv;
+      if(idNodoNotificado){
+        console.log("Centrando en nodo "+idNodoNotificado);
+        this.centrarEnNodoById(idNodoNotificado);
+        this.idNodoPaVentanita=idNodoNotificado;
+      }
+    }
   },
   mounted() {
     var posAtlas = this.$el.getBoundingClientRect();

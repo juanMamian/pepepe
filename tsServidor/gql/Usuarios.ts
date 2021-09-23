@@ -45,7 +45,7 @@ export const typeDefs = gql`
         causante:MinimoCausante,
         elementoTarget: MinimoElemento,
         fecha:Date
-    }
+    }  
 
     type DatoNodoUsuario{
         idNodo:ID,

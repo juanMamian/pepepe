@@ -1,18 +1,18 @@
 <template>
-<transition name="recogerseArriba">
-  <div class="notificacion" @click="visitar">
-    <div id="info">{{ fechaFormateada }}</div>
-    <img
-      :src="
-        this.serverUrl +
-        '/api/usuarios/fotografias/' +
-        estaNotificacion.causante.id
-      "
-      alt=""
-      id="caritaCausante"
-    />
-    <div id="texto" v-html="mensaje"></div>
-  </div>
+  <transition name="recogerseArriba">
+    <div class="notificacion" @click="visitar">
+      <div id="info">{{ fechaFormateada }}</div>
+      <img
+        :src="
+          this.serverUrl +
+          '/api/usuarios/fotografias/' +
+          estaNotificacion.causante.id
+        "
+        alt=""
+        id="caritaCausante"
+      />
+      <div id="texto" v-html="mensaje"></div>
+    </div>
   </transition>
 </template>
 
@@ -31,18 +31,30 @@ export default {
   },
   methods: {
     visitar() {
-       var enlace = "/";
-       if (this.estaNotificacion.elementoTarget.tipo == "actividadEstudiantil") {
-         enlace += "actividad/" + this.estaNotificacion.elementoTarget.id;
-       }
+      var enlace = "/";
+      if (this.estaNotificacion.elementoTarget.tipo == "actividadEstudiantil") {
+        enlace += "actividad/" + this.estaNotificacion.elementoTarget.id;
+      } else if (
+        this.estaNotificacion.elementoTarget.tipo === "nodoAtlasSolidaridad"
+      ) {
+        enlace += "atlasSolidaridad/" + this.estaNotificacion.elementoTarget.id;
+      }
       this.eliminarse();
-      this.$router.push(enlace).catch((error)=>{
-        console.log(`Error de navegación: ${error.message.substr(0,28)}`);
-        if(error.message.substr(0,28)=="Avoided redundant navigation"){
+      this.$router.push(enlace).catch((error) => {
+        console.log(`Error de navegación: ${error.message.substr(0, 28)}`);
+        if (error.message.substr(0, 28) == "Avoided redundant navigation") {
           console.log(`Refreshing`);
           //this.$router.go();
-          this.$store.commit("refreshActividadEspecifica");
+          if (
+            this.estaNotificacion.elementoTarget.tipo == "actividadEstudiantil"
+          ) {
+              this.$store.commit("refreshActividadEspecifica");
 
+          } else if (
+            this.estaNotificacion.elementoTarget.tipo === "nodoAtlasSolidaridad"
+          ) {
+            this.$store.commit("refreshNodoVentanitaAtlasSolidaridad");
+          }
         }
       });
     },
@@ -51,7 +63,7 @@ export default {
       console.log(`Eliminandose: ${idNotificacion}`);
       this.$apollo.mutate({
         mutation: gql`
-          mutation($idNotificacion: ID!) {
+          mutation ($idNotificacion: ID!) {
             eliminarNotificacion(idNotificacion: $idNotificacion)
           }
         `,
@@ -64,7 +76,7 @@ export default {
               query: QUERY_YO,
               variables: { idNotificacion },
             });
-            let nuevoCache=JSON.parse(JSON.stringify(cache));
+            let nuevoCache = JSON.parse(JSON.stringify(cache));
             let indexN = nuevoCache.yo.notificaciones.findIndex(
               (n) => n.id == idNotificacion
             );
@@ -93,6 +105,8 @@ export default {
         } else {
           mensaje += "Tienes una nueva respuesta en una actividad";
         }
+      } else {
+        mensaje = this.estaNotificacion.texto;
       }
       return mensaje;
     },
@@ -147,10 +161,10 @@ export default {
 .textoTarget {
   color: white;
 }
-.recogerseArriba-leave-to{
+.recogerseArriba-leave-to {
   height: 0px;
 }
-.recogerseArriba-leave-active{
+.recogerseArriba-leave-active {
   transition: height 0.3s;
 }
 </style>

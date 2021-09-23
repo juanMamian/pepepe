@@ -2,6 +2,7 @@ import { ApolloError, AuthenticationError, gql, UserInputError, withFilter } fro
 import { ModeloUsuario as Usuario } from "../model/Usuario"
 import { contextoQuery } from "./tsObjetos"
 import { ModeloForo as Foro } from "../model/Foros/Foro"
+import { NUEVA_NOTIFICACION_PERSONAL } from "./Usuarios";
 
 import { ModeloObjetivo as Objetivo } from "../model/Objetivo";
 import { ModeloTrabajo as Trabajo } from "../model/Trabajo";
@@ -1619,7 +1620,6 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-
             try {
                 elObjetivo.posiblesResponsables.push(idUsuario);
                 await elObjetivo.save();
@@ -1632,6 +1632,40 @@ export const resolvers = {
             elObjetivo.tipoNodo = 'objetivo';
             const pubsub = contexto.pubsub;
             pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
+
+            //Crear notificacion para los responsables actuales del objetivo
+
+            try {
+                var currentResponsables:any=await Usuario.find({_id:{$in:elObjetivo.responsables}}).exec();
+            } catch (error) {
+                console.log('Error buscando current responsables: '+error);                                
+            }
+
+            if(currentResponsables){
+                console.log("Se creará notificación de usuario para "+ currentResponsables.length+" responsables actuales")
+                currentResponsables.forEach(async (responsable)=>{
+                    let newNotificacion=responsable.notificaciones.create({
+                        texto: "Nueva solicitud de participación en un nodo de solidaridad del que eres responsable",
+                        causante: {
+                            tipo: 'persona',
+                            id: idUsuario
+                        },
+                        elementoTarget:{
+                            tipo: 'nodoAtlasSolidaridad',
+                            id:elObjetivo.id
+                        },                                                
+                    });
+                    responsable.notificaciones.push(newNotificacion);
+                    try {
+                        await responsable.save();
+                        pubsub.publish(NUEVA_NOTIFICACION_PERSONAL, { idNotificado: responsable.id, nuevaNotificacion: newNotificacion });
+
+                    } catch (error) {
+                        console.log("Error guardando el responsable con nueva notificación: "+error)
+                    }
+                });
+            }
+
             return elObjetivo
         },
         removeResponsableObjetivo: async function (_: any, { idObjetivo, idUsuario }: any, contexto: contextoQuery) {
@@ -2259,6 +2293,39 @@ export const resolvers = {
             elTrabajo.tipoNodo = 'trabajo';
             const pubsub = contexto.pubsub;
             pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
+
+            //Crear notificacion para los responsables actuales del trabajo
+
+            try {
+                var currentResponsables:any=await Usuario.find({_id:{$in:elTrabajo.responsables}}).exec();
+            } catch (error) {
+                console.log('Error buscando current responsables: '+error);                                
+            }
+
+            if(currentResponsables){
+                console.log("Se creará notificación de usuario para "+ currentResponsables.length+" responsables actuales")
+                currentResponsables.forEach(async (responsable)=>{
+                    let newNotificacion=responsable.notificaciones.create({
+                        texto: "Nueva solicitud de participación en un nodo de solidaridad del que eres responsable",
+                        causante: {
+                            tipo: 'persona',
+                            id: idUsuario
+                        },
+                        elementoTarget:{
+                            tipo: 'nodoAtlasSolidaridad',
+                            id:elTrabajo.id
+                        },                                                
+                    });
+                    responsable.notificaciones.push(newNotificacion);
+                    try {
+                        await responsable.save();
+                        pubsub.publish(NUEVA_NOTIFICACION_PERSONAL, { idNotificado: responsable.id, nuevaNotificacion: newNotificacion });
+
+                    } catch (error) {
+                        console.log("Error guardando el responsable con nueva notificación: "+error)
+                    }
+                });
+            }
             return elTrabajo
         },
         removeResponsableTrabajo: async function (_: any, { idTrabajo, idUsuario }: any, contexto: contextoQuery) {

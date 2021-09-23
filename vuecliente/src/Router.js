@@ -55,7 +55,7 @@ const routes = [
         }
     },
     { path: "/calendarioPersonal", component: CalendarioPersonal },
-    { path: "/atlasSolidaridad/:subVentana", component: AtlasProyectos },
+    { path: "/atlasSolidaridad/:nv", component: AtlasProyectos },
     { path: "/atlasSolidaridad", component: AtlasProyectos },
     { path: "/trabajos", component: BuscadorTrabajos },
     { path: "/foros", component: ForosGenerales },
