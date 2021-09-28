@@ -160,7 +160,7 @@
             :class="{ deshabilitado: enviandoQueryResponsables }"
             v-if="
               usuarioLogeado == true &&
-              usuarioResponsableObjetivo &&
+              usuarioResponsable &&
               responsablesSolicitados < 1
             "
             v-show="idResponsableSeleccionado===null"
@@ -174,7 +174,7 @@
             :class="{ deshabilitado: enviandoQueryResponsables }"
             v-if="
               usuarioLogeado &&
-              !usuarioResponsableObjetivo &&
+              !usuarioResponsable &&
               !usuarioPosibleResponsableObjetivo &&
               esteObjetivo.responsables.length > 0
             "
@@ -188,7 +188,7 @@
             :class="{ deshabilitado: enviandoQueryResponsables }"
             v-if="
               usuarioLogeado == true &&
-              (usuarioResponsableObjetivo == true ||
+              (usuarioResponsable == true ||
                 usuarioPosibleResponsableObjetivo == true)
             "
             v-show="idResponsableSeleccionado===null"
@@ -199,7 +199,7 @@
           <div
             class="controlesResponsables hoverGris botonesControles"
             :class="{ deshabilitado: enviandoQueryResponsables }"
-            v-if="usuarioLogeado == true && usuarioResponsableObjetivo == true"
+            v-if="usuarioLogeado == true && usuarioResponsable == true"
             v-show="
               idResponsableSeleccionado != null &&
               responsableSeleccionadoEstaAceptado == false
@@ -227,7 +227,7 @@
             :key="idPersona"
             v-for="idPersona of esteObjetivo.posiblesResponsables"
             v-show="
-              usuarioResponsableObjetivo ||
+              usuarioResponsable ||
               (usuario && usuario.id && usuario.id === idPersona)
             "
             :seleccionado="idResponsableSeleccionado == idPersona"
@@ -253,7 +253,7 @@
               type="number"
               id="inputResponsablesSolicitados"
               v-model="responsablesSolicitados"
-              :readonly="usuarioResponsableObjetivo ? false : true"
+              :readonly="usuarioResponsable ? false : true"
               :style="[
                 {
                   backgroundColor:
@@ -334,7 +334,7 @@
       class="botonIr"
       @click.stop="navegarAlObjetivo"
       title="Abrir la página de este trabajo"
-      v-show="true"
+      v-show="usuarioResponsable || usuarioSuperadministrador"
     />
 
     <div id="controlesObjetivo"></div>
@@ -415,7 +415,7 @@ export default {
       }
       return false;
     },
-    usuarioResponsableObjetivo() {
+    usuarioResponsable() {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteObjetivo.responsables.includes(this.usuario.id);
     },
