@@ -2,7 +2,7 @@
   <div id="listaMateriales">
     <info-material
       v-for="material of todosMateriales"
-      v-show="!idNodoSeleccionado || idNodoSeleccionado===material.idTrabajoParent"
+      v-show="!idNodoSeleccionado || idNodoSeleccionado===material.idTrabajoParent || descendientesNodoSeleccionado.includes(material.idTrabajoParent)"
       :key="material.id"
       :esteMaterial="material"
       @centrarEnNodo="$emit('centrarEnNodo', $event)"
@@ -37,6 +37,7 @@ export default {
   },
   props: {
     idNodoSeleccionado: String,
+    descendientesNodoSeleccionado:Array,
     cerrarVentana: Number,
   },
   data() {
@@ -54,5 +55,6 @@ export default {
   border-radius: 10px;
   background-color: rgba(95, 158, 160, 0.788);
   border: 2px solid rgb(22, 88, 90);
+  overflow-y:scroll ;
 }
 </style>

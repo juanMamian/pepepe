@@ -43,10 +43,11 @@
         @nodoSeleccionado="idNodoSeleccionado = $event===idNodoSeleccionado?null: $event"
         @click.native.self="idNodoSeleccionado=null"
       />
-
+      <span id="tituloListaMateriales">Materiales {{nodoSeleccionado?' relevantes para el nodo '+nodoSeleccionado.nombre:''}}</span>
       <lista-materiales
         v-show="listaSeleccionada === 'materiales' && abierta"
         :idNodoSeleccionado="idNodoSeleccionado"
+        :descendientesNodoSeleccionado="descendientesNodoSeleccionado"
         @centrarEnNodo="$emit('centrarEnNodo', $event)"
       />
     </div>
@@ -78,6 +79,29 @@ export default {
     nodoSeleccionado(){
       if(!this.idNodoSeleccionado)return null
       return this.todosNodos.find(n=>n.id===this.idNodoSeleccionado)
+    },
+    descendientesNodoSeleccionado(){
+      if(!this.nodoSeleccionado)return null;
+      const maxNesting=5;
+      var nesting=0;
+      var idNodosCurrentNivel=[this.nodoSeleccionado.id];
+      var nodosDescendientes=[];
+      while(idNodosCurrentNivel.length>0 && nesting<maxNesting){
+        nesting++;
+        let nodosCurrentNivel=this.todosNodos.filter(n=>idNodosCurrentNivel.includes(n.id));        
+        var requerimentos=[];
+        nodosCurrentNivel.forEach(currentNodo=>{
+          currentNodo.vinculos.filter(v=>v.tipo==='requiere').map(v=>v.idRef).forEach(idV=>{
+            let indexV=requerimentos.indexOf(idV);
+            if(indexV===-1){
+              requerimentos.push(idV);
+            }
+          })
+        });
+        nodosDescendientes=nodosDescendientes.concat(requerimentos);
+        idNodosCurrentNivel=requerimentos;        
+      }
+      return nodosDescendientes;
     }
   },
   watch: {
@@ -123,7 +147,12 @@ export default {
 #zonaListas{
   height: 85%;
 }
+#tituloListaMateriales{
+  font-size: 13px;
+  color: rgb(82, 81, 81);
+}
 .lista {
   height: 100%;
 }
+
 </style>

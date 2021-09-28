@@ -13,7 +13,7 @@
           @click.stop="mostrandoResponsables = !mostrandoResponsables"
         />
         <img
-          src="@/assets/iconos/iconoTrabajo.png"
+          src="@/assets/iconos/ir.png"
           alt="Trabajo de orígen"
           class="botonNodo botonDerecha"
           v-if="esteMaterial.idTrabajoParent"
