@@ -536,6 +536,9 @@ export default {
       if (this.esteNodo.responsables && this.esteNodo.responsables.length > 0) {
         color = "#f0ee6e";
       }      
+      if(this.esteNodo.estadoDesarrollo==='completado'){
+        color="rgb(86, 176, 54)";
+      }
       if (this.usuarioResponsable) {
         color = "rgb(166 137 193)";
       }
