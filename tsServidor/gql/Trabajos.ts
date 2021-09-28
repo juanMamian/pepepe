@@ -2944,7 +2944,7 @@ export const resolvers = {
 
 
             const permisosEspeciales = ["superadministrador"];
-            if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elTrabajo.responsables.includes(credencialesUsuario.id)) {
+            if (!credencialesUsuario.id || (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !elTrabajo.responsables.includes(credencialesUsuario.id))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -3173,7 +3173,7 @@ export const resolvers = {
                     }
                     if (!elNodoParent) throw "Nodo parent no encontrado"
                 } catch (error) {
-                    console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                    console.log(`Error buscando el nodo parent de ${nodo.nombre}: ${elNodoParent}`);
                     throw new ApolloError("Error conectando con la base de datos");
                 }
 

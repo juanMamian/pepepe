@@ -223,9 +223,11 @@
           class="controlesMateriales botonesControles hoverGris"
           v-if="usuarioResponsable"
           @click="crearNuevoMaterial"
+          :class="{deshabilitado: enviandoQueryGestionMateriales}"
         >
           Añadir material
         </div>
+        <loading v-show="enviandoQueryGestionMateriales" texto="Esperando..."/>
       </div>
 
       <div id="listaMateriales" v-show="esteTrabajo.materiales.length > 0">
@@ -347,6 +349,8 @@ export default {
 
       enviandoQueryEnlaces: false,
       mostrandoEnlaces:true,
+
+      enviandoQueryGestionMateriales:false,
     };
   },
   computed: {
@@ -505,6 +509,7 @@ export default {
     crearNuevoMaterial() {
       console.log(`enviando mutacion de crear nuevo material`);
       this.creandoMaterial = true;
+      this.enviandoQueryGestionMateriales=true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -554,10 +559,12 @@ export default {
         .then((respuesta) => {
           console.log(`respuesta. ${respuesta}`);
           this.creandoMaterial = false;
+          this.enviandoQueryGestionMateriales=false;
         })
         .catch((error) => {
           this.creandoMaterial = false;
           console.log(`error: ${error}`);
+          this.enviandoQueryGestionMateriales=false;
         });
     },
     eliminarMaterialDeCache(idMaterial) {

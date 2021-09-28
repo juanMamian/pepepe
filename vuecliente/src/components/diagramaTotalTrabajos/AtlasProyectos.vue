@@ -252,7 +252,7 @@
 
     <loading
       id="loadingNodos"
-      v-show="$apollo.queries.todosNodos.loading"
+      v-show="$apollo.queries.todosNodos.loading || !coordsInicialesSetted"
       texto="Descargando información..."
     />
   </div>
