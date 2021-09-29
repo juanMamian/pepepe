@@ -44,8 +44,26 @@ const esquemaNotificacion = new mongoose_1.default.Schema({
     elementoTarget: {
         tipo: {
             type: String,
-            enum: ["actividadEstudiantil"]
+            enum: ["actividadEstudiantil", "nodoAtlasSolidaridad"]
         },
+        id: String
+    },
+    fecha: {
+        type: Date,
+        required: true,
+        default: Date.now
+    }
+});
+const esquemaNotificacionEventoAtlasSolidaridad = new mongoose_1.default.Schema({
+    texto: {
+        type: String,
+        default: "Nueva notificacion",
+    },
+    causante: {
+        tipo: String,
+        id: String
+    },
+    nodoTarget: {
         id: String
     },
     fecha: {
@@ -199,6 +217,10 @@ const esquemaUsuario = new mongoose_1.default.Schema({
         type: [esquemaNotificacionActividadForo],
         default: [],
         required: true,
+    },
+    notificacionesAtlasSolidaridad: {
+        type: [esquemaNotificacionEventoAtlasSolidaridad],
+        default: []
     },
     misTrabajos: {
         type: [String],

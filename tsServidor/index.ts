@@ -35,6 +35,12 @@ app.get("/libro", function (req: Request, res: Response) {
   res.sendFile(__dirname + "/clientes/libro/index.html");
 });
 
+//rutas observadores pájaros
+app.use("/avesMaestrasPromocional", express.static(__dirname+"/clientes/observadoresPajaros"));
+app.get("/avesMaestrasPromocional", function (req: Request, res: Response) {
+  res.sendFile(__dirname + "/clientes/observadoresPajaros/index.html");
+});
+
 
 aServer.applyMiddleware({ app });
 

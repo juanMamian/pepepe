@@ -13,6 +13,7 @@ exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Usuario_1 = require("../model/Usuario");
 const Foro_1 = require("../model/Foros/Foro");
+const Usuarios_1 = require("./Usuarios");
 const Objetivo_1 = require("../model/Objetivo");
 const Trabajo_1 = require("../model/Trabajo");
 const Nodo = require("../model/atlas/Nodo");
@@ -129,6 +130,7 @@ exports.typeDefs = apollo_server_express_1.gql `
        trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo],
        trabajosSegunCentro(centro: CoordsInput!, radio: Int!):[Trabajo],
        nodosTrabajosSegunCentro(centro:CoordsInput!, radio: Int!):[NodoDeTrabajos],
+       todosNodosSolidaridad:[NodoDeTrabajos],
         busquedaAmpliaNodosSolidaridad(palabrasBuscadas:String!):ResultadoBusquedaNodosSolidaridad,
         
         todosMateriales:[MaterialTrabajo],
@@ -147,7 +149,6 @@ exports.typeDefs = apollo_server_express_1.gql `
     editarNombreEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoNombre: String!):EnlaceNodoSolidaridad,
     editarDescripcionEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoDescripcion: String!):EnlaceNodoSolidaridad,
     editarLinkEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoLink: String!):EnlaceNodoSolidaridad,
-
 
     crearObjetivo(posicion:CoordsInput):Objetivo,
     eliminarObjetivo(idObjetivo:ID!, idProyecto:ID!):Boolean,
@@ -179,6 +180,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     crearNodoSolidaridadRequerido(infoNodo:NodoSolidaridadInput!, idNodoRequiriente: ID!):[NodoDeTrabajos],
     desvincularNodosSolidaridad(idUnNodo:ID!, idOtroNodo:ID!):[NodoDeTrabajos],
     crearRequerimentoEntreNodosSolidaridad(idNodoRequiriente:ID!, idNodoRequerido:ID!):[NodoDeTrabajos],
+    crearParentingEntreNodosSolidaridad(idNodoRequiriente:ID!, idNodoRequerido:ID!):[NodoDeTrabajos],
 
    }
 
@@ -196,6 +198,9 @@ exports.resolvers = {
                 return contexto.pubsub.asyncIterator(NODO_EDITADO);
             }, (nodoEditado, variables, contexto) => {
                 console.log(`Decidiendo si notificar a ${contexto.usuario.id} acerca de un nodo editado en las coords ${JSON.stringify(nodoEditado.nodoEditado.coords)} con las variables ${JSON.stringify(variables)}`);
+                if (variables.radio === 0) {
+                    return true;
+                }
                 if (nodoEditado.nodoEditado.coords.x > variables.centro.x + variables.radio || nodoEditado.nodoEditado.coords.x < variables.centro.x - variables.radio || nodoEditado.nodoEditado.coords.y > variables.centro.y + variables.radio || nodoEditado.nodoEditado.coords.y < variables.centro.y - variables.radio) {
                     console.log(`No se notificara`);
                     return false;
@@ -325,6 +330,26 @@ exports.resolvers = {
                 try {
                     var losTrabajos = yield Trabajo_1.ModeloTrabajo.find({ "coords.x": { $gt: centro.x - radio, $lt: centro.x + radio }, "coords.y": { $gt: centro.y - radio, $lt: centro.y + radio } }).exec();
                     var losObjetivos = yield Objetivo_1.ModeloObjetivo.find({ "coords.x": { $gt: centro.x - radio, $lt: centro.x + radio }, "coords.y": { $gt: centro.y - radio, $lt: centro.y + radio } }).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando trabajos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                losTrabajos.forEach(t => t.tipoNodo = "trabajo");
+                losObjetivos.forEach(o => o.tipoNodo = "objetivo");
+                console.log(`${losTrabajos.length} trabajos encontrados.`);
+                console.log(`${losObjetivos.length} objetivos encontrados.`);
+                const todosNodos = losTrabajos.concat(losObjetivos);
+                console.log(`Retornando ${todosNodos.length} nodos`);
+                return todosNodos;
+            });
+        },
+        todosNodosSolidaridad: function (_, ___, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Todos nodos solidaridad solicitados`);
+                try {
+                    var losTrabajos = yield Trabajo_1.ModeloTrabajo.find({}).exec();
+                    var losObjetivos = yield Objetivo_1.ModeloObjetivo.find({}).exec();
                 }
                 catch (error) {
                     console.log(`Error buscando trabajos. E: ${error}`);
@@ -850,6 +875,66 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`Vinculados`);
+                nodoRequiriente.tipoNodo = tipoNodoRequiriente;
+                nodoRequerido.tipoNodo = tipoNodoRequerido;
+                const pubsub = contexto.pubsub;
+                pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequiriente });
+                pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequerido });
+                return [nodoRequiriente, nodoRequerido];
+            });
+        },
+        crearParentingEntreNodosSolidaridad(_, { idNodoRequiriente, idNodoRequerido }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                console.log(`Query de set que nodo ${idNodoRequiriente} es parent del nodo ${idNodoRequerido}`);
+                try {
+                    var tipoNodoRequiriente = 'trabajo';
+                    var nodoRequiriente = yield Trabajo_1.ModeloTrabajo.findById(idNodoRequiriente).exec();
+                    if (!nodoRequiriente) {
+                        tipoNodoRequiriente = 'objetivo';
+                        nodoRequiriente = yield Objetivo_1.ModeloObjetivo.findById(idNodoRequiriente).exec();
+                    }
+                    if (!nodoRequiriente)
+                        throw "Nodo requiriente no encontrado";
+                    var tipoNodoRequerido = 'trabajo';
+                    var nodoRequerido = yield Trabajo_1.ModeloTrabajo.findById(idNodoRequerido).exec();
+                    if (!nodoRequerido) {
+                        tipoNodoRequerido = 'objetivo';
+                        nodoRequerido = yield Objetivo_1.ModeloObjetivo.findById(idNodoRequerido).exec();
+                    }
+                    if (!nodoRequerido)
+                        throw "Nodo requerido no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error buscando los nodos a desvincular: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                //Autorización
+                const permisosEspeciales = ["superadministrador"];
+                if (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p))) {
+                    console.log(`Fallo en autenticación`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var indexV = nodoRequiriente.vinculos.findIndex(v => v.idRef === idNodoRequerido);
+                if (indexV === -1) {
+                    console.log(`Error: No había vínculo previo entre estos nodos`);
+                    throw new apollo_server_express_1.UserInputError("Los nodos no estavan vinculados");
+                }
+                //Si el nodo requerido estaba huérfano, entonces lo toma bajo su control
+                console.log(`El nodo requerido queda bajo el control del nodo requiriente.`);
+                nodoRequerido.nodoParent = {
+                    idNodo: idNodoRequiriente,
+                    tipo: tipoNodoRequiriente
+                };
+                try {
+                    yield nodoRequiriente.save();
+                    yield nodoRequerido.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando los nodos después de la vinculación: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Parented`);
                 nodoRequiriente.tipoNodo = tipoNodoRequiriente;
                 nodoRequerido.tipoNodo = tipoNodoRequerido;
                 const pubsub = contexto.pubsub;
@@ -1462,6 +1547,37 @@ exports.resolvers = {
                 elObjetivo.tipoNodo = 'objetivo';
                 const pubsub = contexto.pubsub;
                 pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
+                //Crear notificacion para los responsables actuales del objetivo
+                try {
+                    var currentResponsables = yield Usuario_1.ModeloUsuario.find({ _id: { $in: elObjetivo.responsables } }).exec();
+                }
+                catch (error) {
+                    console.log('Error buscando current responsables: ' + error);
+                }
+                if (currentResponsables) {
+                    console.log("Se creará notificación de usuario para " + currentResponsables.length + " responsables actuales");
+                    currentResponsables.forEach((responsable) => __awaiter(this, void 0, void 0, function* () {
+                        let newNotificacion = responsable.notificaciones.create({
+                            texto: "Nueva solicitud de participación en un nodo de solidaridad del que eres responsable",
+                            causante: {
+                                tipo: 'persona',
+                                id: idUsuario
+                            },
+                            elementoTarget: {
+                                tipo: 'nodoAtlasSolidaridad',
+                                id: elObjetivo.id
+                            },
+                        });
+                        responsable.notificaciones.push(newNotificacion);
+                        try {
+                            yield responsable.save();
+                            pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: responsable.id, nuevaNotificacion: newNotificacion });
+                        }
+                        catch (error) {
+                            console.log("Error guardando el responsable con nueva notificación: " + error);
+                        }
+                    }));
+                }
                 return elObjetivo;
             });
         },
@@ -2045,6 +2161,37 @@ exports.resolvers = {
                 elTrabajo.tipoNodo = 'trabajo';
                 const pubsub = contexto.pubsub;
                 pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
+                //Crear notificacion para los responsables actuales del trabajo
+                try {
+                    var currentResponsables = yield Usuario_1.ModeloUsuario.find({ _id: { $in: elTrabajo.responsables } }).exec();
+                }
+                catch (error) {
+                    console.log('Error buscando current responsables: ' + error);
+                }
+                if (currentResponsables) {
+                    console.log("Se creará notificación de usuario para " + currentResponsables.length + " responsables actuales");
+                    currentResponsables.forEach((responsable) => __awaiter(this, void 0, void 0, function* () {
+                        let newNotificacion = responsable.notificaciones.create({
+                            texto: "Nueva solicitud de participación en un nodo de solidaridad del que eres responsable",
+                            causante: {
+                                tipo: 'persona',
+                                id: idUsuario
+                            },
+                            elementoTarget: {
+                                tipo: 'nodoAtlasSolidaridad',
+                                id: elTrabajo.id
+                            },
+                        });
+                        responsable.notificaciones.push(newNotificacion);
+                        try {
+                            yield responsable.save();
+                            pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: responsable.id, nuevaNotificacion: newNotificacion });
+                        }
+                        catch (error) {
+                            console.log("Error guardando el responsable con nueva notificación: " + error);
+                        }
+                    }));
+                }
                 return elTrabajo;
             });
         },
@@ -2608,7 +2755,7 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 const permisosEspeciales = ["superadministrador"];
-                if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elTrabajo.responsables.includes(credencialesUsuario.id)) {
+                if (!credencialesUsuario.id || (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !elTrabajo.responsables.includes(credencialesUsuario.id))) {
                     console.log(`Error de autenticación`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
@@ -2821,7 +2968,7 @@ exports.resolvers = {
                             throw "Nodo parent no encontrado";
                     }
                     catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
+                        console.log(`Error buscando el nodo parent de ${nodo.nombre}: ${elNodoParent}`);
                         throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                     }
                     return elNodoParent.responsables;

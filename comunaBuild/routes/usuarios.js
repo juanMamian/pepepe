@@ -100,6 +100,9 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     const username = req.body.username;
     const pass = req.body.password;
+    if (username === 'SebastianHernandez') {
+        return res.status(400).send({ error: "sebastian", msjUsuario: "Usuario bloqueado" });
+    }
     console.log("loging " + JSON.stringify(req.body));
     try {
         var elUsuario = yield Usuario_1.ModeloUsuario.findOne({ username }, "username password permisos").exec();
@@ -117,7 +120,8 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         let datosToken = {
             id: elUsuario._id,
             permisos: elUsuario.permisos,
-            username: elUsuario.username
+            username: elUsuario.username,
+            version: 1,
         };
         let token = jwt.sign(datosToken, process.env.JWT_SECRET);
         let respuesta = {

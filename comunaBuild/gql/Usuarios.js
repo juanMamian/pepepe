@@ -42,7 +42,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         causante:MinimoCausante,
         elementoTarget: MinimoElemento,
         fecha:Date
-    }
+    }  
 
     type DatoNodoUsuario{
         idNodo:ID,
@@ -806,6 +806,7 @@ exports.resolvers = {
         toggleNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNodo, idUsuario }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 const credencialesUsuario = contexto.usuario;
+                console.log(`Toggling nodo ${idNodo} en colección ${idColeccion} para el usuario ${idUsuario}`);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
                     if (!elUsuario) {
@@ -818,7 +819,7 @@ exports.resolvers = {
                 }
                 //Autorizacion
                 const permisosEspeciales = ["superadministrador"];
-                if (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !credencialesUsuario.id != idUsuario) {
+                if (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && credencialesUsuario.id != idUsuario) {
                     console.log(`No autorizado`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }

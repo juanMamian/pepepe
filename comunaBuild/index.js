@@ -35,6 +35,11 @@ app.use("/libro", express_1.default.static(__dirname + "/clientes/libro"));
 app.get("/libro", function (req, res) {
     res.sendFile(__dirname + "/clientes/libro/index.html");
 });
+//rutas observadores pájaros
+app.use("/avesMaestrasPromocional", express_1.default.static(__dirname + "/clientes/observadoresPajaros"));
+app.get("/avesMaestrasPromocional", function (req, res) {
+    res.sendFile(__dirname + "/clientes/observadoresPajaros/index.html");
+});
 Schema_1.aServer.applyMiddleware({ app });
 //Carpetas publicas
 app.use("/assetsAtlas/contenidosNodos", routesContenidosNodos);
