@@ -1003,7 +1003,7 @@ export const resolvers = {
             }
 
             const permisosEspeciales = ["superadministrador"];
-            if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+            if (!credencialesUsuario.id || (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !elNodo.responsables.includes(credencialesUsuario.id))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -1046,7 +1046,7 @@ export const resolvers = {
             }
 
             const permisosEspeciales = ["superadministrador"];
-            if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+            if (!credencialesUsuario.id || (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !elNodo.responsables.includes(credencialesUsuario.id))) {
                 console.log(`Error de autenticación`);
                 throw new AuthenticationError("No autorizado");
             }
