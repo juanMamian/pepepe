@@ -74,7 +74,7 @@
       <div class="botonMenuCx selectorSubseccionMenuCx" v-show="yo.atlas && yo.atlas.colecciones && yo.atlas.colecciones.length>0">
         Colecciones
         <div class="subseccionMenuCx">
-          <div class="botonMenuCx" v-for="coleccion of yo.atlas.colecciones" :key="coleccion.id" @click.stop="toggleNodoEnColeccion(coleccion.id)" :class="{enColeccion:coleccion.idsNodos.includes(esteNodo.id)}">
+          <div class="botonMenuCx" v-for="coleccion of yo.atlas.colecciones" :key="coleccion.id" @click.stop="toggleNodoEnColeccion(coleccion.id)" :class="{enColeccion:coleccion.idsNodos.includes(esteNodo.id), deshabilitado: enviandoQueryColecciones}">
             {{coleccion.nombre}}
           </div>
         </div>
@@ -212,6 +212,7 @@ export default {
         borderRadius: 4,
       },
       mostrarDescripcion: true,
+      enviandoQueryColecciones: false,
     };
   },
   props: {
@@ -477,6 +478,7 @@ export default {
       if(!this.usuario || !this.usuario.id){
         return ;
       }
+      this.enviandoQueryColecciones=true;
       this.$apollo.mutate({
         mutation:gql`
           mutation($idNodo:ID!, $idColeccion:ID!, $idUsuario:ID!){
@@ -495,6 +497,12 @@ export default {
           idColeccion,
           idUsuario: this.usuario.id,
         }
+      }).then(()=>{
+        this.enviandoQueryColecciones=false;
+      }).catch(()=>{
+
+      this.enviandoQueryColecciones=false;
+
       })
     }
   },
