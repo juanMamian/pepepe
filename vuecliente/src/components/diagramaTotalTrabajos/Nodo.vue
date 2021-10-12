@@ -45,6 +45,7 @@
       v-show="seleccionado"
       @click.left.stop="$emit('meAbrieron')"
       @mouseup.left.stop=""
+      @mousedown.left.stop=""
     />
     <div
       id="zonaNombre"
