@@ -43,7 +43,7 @@
         @nodoSeleccionado="idNodoSeleccionado = $event===idNodoSeleccionado?null: $event"
         @click.native.self="idNodoSeleccionado=null"
       />
-      <span id="tituloListaMateriales">Materiales {{nodoSeleccionado?' relevantes para el nodo '+nodoSeleccionado.nombre:''}}</span>
+      <span v-show="abierta" id="tituloListaMateriales">Materiales {{nodoSeleccionado?' relevantes para el nodo '+nodoSeleccionado.nombre:''}}</span>
       <lista-materiales
         v-show="listaSeleccionada === 'materiales' && abierta"
         :idNodoSeleccionado="idNodoSeleccionado"
