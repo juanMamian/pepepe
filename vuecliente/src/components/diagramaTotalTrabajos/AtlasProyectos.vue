@@ -560,14 +560,15 @@ export default {
           };
         },
         updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          const indexN = previousResult.todosNodosSolidaridad.findIndex(
+          var nuevoPreviousResult=JSON.parse(JSON.stringify(previousResult));
+          const indexN = nuevoPreviousResult.todosNodosSolidaridad.findIndex(
             (n) => n.id == data.nodoEditado.id
           );
           if (indexN > -1) {
-            previousResult.todosNodosSolidaridad.splice(indexN, 1);
+            nuevoPreviousResult.todosNodosSolidaridad.splice(indexN, 1);
           }
-          previousResult.todosNodosSolidaridad.push(data.nodoEditado);
-          return previousResult;
+          nuevoPreviousResult.todosNodosSolidaridad.push(data.nodoEditado);
+          return nuevoPreviousResult;
         },
       },
     },
