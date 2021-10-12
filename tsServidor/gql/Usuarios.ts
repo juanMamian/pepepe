@@ -28,6 +28,10 @@ export const typeDefs = gql`
         tipo:String,
     }
 
+    type ConfiguracionAtlasUsuario{
+        modo:String
+    }
+
     type NotificacionActividadForos{
         idParent:ID,
         tipoParent:String,
@@ -60,7 +64,7 @@ export const typeDefs = gql`
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
         idNodoTarget:ID,
-        configuracion: ConfiguracionAtlas,
+        configuracion: ConfiguracionAtlasUsuario,
         colecciones:[ColeccionNodosAtlasConocimiento]
     }
     type InfoAtlasSolidaridad{

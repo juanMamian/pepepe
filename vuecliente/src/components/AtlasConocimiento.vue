@@ -31,12 +31,13 @@
         Crear Nodo de conocimiento
       </div>
     </div>
-    <div
+     <div
       id="botonCallingPosiciones"
       v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
-      @click.stop="callingPosiciones = !callingPosiciones"
+      @click.stop="togglePosicionamiento"
+      :class="{deshabilitado: enviandoQueryConfiguracionAtlas || $apollo.queries.configuracionAtlas.loading}"
       :style="[
-        { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
+        { backgroundColor: configuracionAtlas.posicionando ? 'green' : 'transparent' },
       ]"
     ></div>
     <buscador-nodos-conocimiento
@@ -86,6 +87,7 @@
           !idsNecesariosParaTarget.includes(nodo.id) &&
           idNodoTarget != nodo.id
         "
+        :configuracionAtlas="configuracionAtlas"
         :callingPosiciones="callingPosiciones"
         @click.right.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
         @click.native.stop="seleccionNodo(nodo)"
@@ -137,6 +139,10 @@ const QUERY_NODOS = gql`
         x
         y
       }
+      autoCoords{
+        x
+        y
+      }
       centroMasa {
         x
         y
@@ -149,7 +155,16 @@ const QUERY_NODOS = gql`
         rol
         tipo
       }
+      fuerzaCentroMasa{
+        fuerza
+        direccion
+      }
+      fuerzaColision{
+        fuerza
+        direccion
+      }
     }
+
   }
 `;
 
@@ -202,10 +217,12 @@ export default {
       },
       update({ todosNodos }) {
         this.nodosDescargados = true;
-        todosNodos.forEach((nodo) => {
-          nodo.coordsManuales = nodo.coords;
+        var nuevoTodosNodos=JSON.parse(JSON.stringify(todosNodos))
+        nuevoTodosNodos.forEach((nodo) => {
+          nodo.coordsManuales = nodo.autoCoords;
+          nodo.coords=nodo.autoCoords
         });
-        return todosNodos;
+        return nuevoTodosNodos;
       },
       fetchPolicy: "cache-and-network",
     },
@@ -215,9 +232,26 @@ export default {
         return !this.usuarioLogeado || this.todosNodos.length < 1;
       },
     },
+    configuracionAtlas:{
+      query:gql`
+        query($nombreAtlas: String!){
+          configuracionAtlas(nombreAtlas: $nombreAtlas){
+            id
+            posicionando
+          }
+        }
+      `,
+      variables:{
+        nombreAtlas:"conocimiento"
+      },
+      fetchPolicy: "network-only",
+    }
   },
   data() {
     return {
+      configuracionAtlas:{
+        posicionando:false,
+      },
       hovered: false,
       todosNodos: [],
       nodosDescargados: false,
@@ -266,6 +300,8 @@ export default {
         top: "0px",
         left: "0px",
       },
+      enviandoQueryConfiguracionAtlas:false,
+
     };
   },
   computed: {
@@ -334,6 +370,26 @@ export default {
     },
   },
   methods: {
+    togglePosicionamiento(){
+      this.enviandoQueryConfiguracionAtlas=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($nombreAtlas:String!){
+            togglePosicionamientoAutomaticoAtlas(nombreAtlas: $nombreAtlas){
+              id
+              posicionando
+            }
+          }
+        `,
+        variables:{
+          nombreAtlas:"conocimiento"
+        }
+      }).then(()=>{
+        this.enviandoQueryConfiguracionAtlas=false;
+      }).catch(()=>{
+        this.enviandoQueryConfiguracionAtlas=false;
+      })
+    },
     abrirMenuContextual(e) {
       let posCalendario = this.$el.getBoundingClientRect();
 

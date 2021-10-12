@@ -2,22 +2,18 @@ const mongoose = require("mongoose");
 
 
 import { ModeloConfiguracionAtlas as ConfiguracionAtlas } from "./model/ConfiguracionAtlas";
-import { ModeloObjetivo as Objetivo } from "./model/Objetivo";
-import { ModeloTrabajo as Trabajo } from "./model/Trabajo";
+import { ModeloNodo as NodoConocimiento } from "./model/atlas/Nodo";
 
 const anchoCeldas = 400;
-const nodoDeInteres = "Garantizar una alimentación saludable en Maestra Vida";
+const nodoDeInteres = null;
 //const nodoDeInteres = "Realizar una limpieza de los computadores de Maloka";
 const soloCalcular=false;
 
 
-export async function posicionAutomaticaSolidaridad() {
+export async function posicionAutomaticaConocimiento() {
 
     try {
-        var todosObjetivos:any = await Objetivo.find({}).exec();
-        var todosTrabajos:any = await Trabajo.find({}).exec();
-
-        var todosNodos = todosObjetivos.concat(todosTrabajos);
+        var todosNodos:any = await NodoConocimiento.find({}).exec();            
         console.log(`Total: ${todosNodos.length} nodos`);
     }
     catch (error) {
@@ -40,13 +36,13 @@ export async function posicionAutomaticaSolidaridad() {
             posicionando:false,
         }
         try {
-            configuracion=await ConfiguracionAtlas.findOne({nombre: "solidaridad"}).exec();
+            configuracion=await ConfiguracionAtlas.findOne({nombre: "conocimiento"}).exec();
         } catch (error) {
             console.log(`Error descargando configuración del atlas: ${error}`);
         }
         if(configuracion.posicionando){
             await posicionar(todosNodos, celdas);
-            console.log(`Posicionando nodos solidaridad...`);
+            console.log(`Posicionando nodos conocimiento...`);
             await uploadNodos(todosNodos);
         }
         
@@ -58,7 +54,6 @@ export async function posicionAutomaticaSolidaridad() {
 }
 
 function posicionar(todosNodos, celdas) {
-    todosNodos = todosNodos.sort((a, b) => b.peso - a.peso);
     todosNodos.forEach(nodo => {        
         setFuerzaCentroMasa(nodo, todosNodos);
         setFuerzaColision(nodo, celdas, todosNodos);
@@ -206,7 +201,7 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
     var idsRequeridos = nodo.vinculos.map(v => v.idRef);
 
     var idsRequirientes = todosNodos.filter(n => {
-        var idsRequeridos = n.vinculos.filter(v => v.tipo = "requiere").map(v => v.idRef);
+        var idsRequeridos = n.vinculos.filter(v => v.tipo = "continuacion").map(v => v.idRef);
         return idsRequeridos.includes(nodo.id);
     }).map(n => n.id);
 

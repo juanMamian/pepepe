@@ -59,6 +59,10 @@ var esquemaNodo = new mongoose.Schema({
         x:Number,
         y:Number,
     },
+    autoCoords:{
+        x:Number,
+        y:Number,
+    },
     centroMasa:{
         x:Number,
         y:Number,
@@ -106,6 +110,26 @@ var esquemaNodo = new mongoose.Schema({
         }],
         required:true,
         default:[]
+    },
+    fuerzaCentroMasa:{
+        fuerza:{
+            type: Number,
+            default:0
+        },
+        direccion:{
+            type:Number,
+            default:0
+        }
+    },
+    fuerzaColision:{
+        fuerza:{
+            type: Number,
+            default:0
+        },
+        direccion:{
+            type:Number,
+            default:0
+        }
     },
     coordx:Number,
     coordy:Number,

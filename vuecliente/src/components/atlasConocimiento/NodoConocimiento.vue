@@ -11,6 +11,10 @@
     @dblclick="abrirPaginaNodo"
   >
     <div id="zonaArrastre" v-show="arrastrandoNodo"></div>
+
+    <div v-if="usuarioSuperadministrador" v-show="configuracionAtlas.posicionando" id="fuerzaCentroMasa" class="fuerzaMovimiento" :style="[estiloFuerzaCentroMasa]"><div class="flechitaFuerza"></div></div>
+    <div v-if="usuarioSuperadministrador" v-show="configuracionAtlas.posicionando" id="fuerzaColision" class="fuerzaMovimiento" :style="[estiloFuerzaColision]"><div class="flechitaFuerza"></div></div>
+
     <img
       src="@/assets/iconos/nodoConocimientoDefault.png"
       :class="{
@@ -242,6 +246,7 @@ export default {
 
     callingPosiciones: Boolean,
     factorZoom: Number,
+    configuracionAtlas:Object,
   },
   computed: {
     menuCx() {
@@ -345,6 +350,20 @@ export default {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteNodo.expertos.includes(this.usuario.id);
     },
+    estiloFuerzaCentroMasa(){
+      return {
+        width: Math.round(this.esteNodo.fuerzaCentroMasa.fuerza*this.factorZoom)+'px',
+        height: Math.round(3*this.factorZoom)+"px",
+        transform: "rotate("+this.esteNodo.fuerzaCentroMasa.direccion+"rad)"
+        }
+    },
+    estiloFuerzaColision(){
+      return {
+        width: Math.round(this.factorZoom*this.esteNodo.fuerzaColision.fuerza)+'px',
+        height: Math.round(3*this.factorZoom)+"px",
+        transform: "rotate("+this.esteNodo.fuerzaColision.direccion+"rad)"
+        }
+    }
   },
   methods: {
     toggleAprendido() {
@@ -509,7 +528,7 @@ export default {
     },
   },
   mounted() {
-    this.posicion = { ...this.esteNodo.coords };
+    this.posicion = { ...this.esteNodo.autoCoords };
   },
 };
 </script>
@@ -689,5 +708,29 @@ export default {
   bottom: 101%;
   width: 15px;
   height: 15px;
+}
+.fuerzaMovimiento{  
+  background-color: black;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0% 0%;
+  z-index: 200;
+}
+#fuerzaCentroMasa{
+  background-color: blue;
+}
+#fuerzaColision{
+  background-color: red;
+}
+.flechitaFuerza{
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 1px;
+  height: 1px;
+  border: 5px solid transparent;
+  border-left-color: black;
+  transform: translate(-50%, -50%);
 }
 </style>
