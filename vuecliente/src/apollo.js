@@ -1,17 +1,15 @@
-import {ApolloClient} from "apollo-client"
-import {InMemoryCache} from "apollo-cache-inmemory";
-import {createHttpLink} from "apollo-link-http"
-import VueApollo from "vue-apollo";
-import { typeDefs, resolvers} from "./apolloStore/Schema"
-import {split} from "apollo-link"
-import {WebSocketLink} from "apollo-link-ws"
-import {getMainDefinition} from "apollo-utilities"
-import {setContext} from "apollo-link-context"
-import Vue from 'vue'
-import { onError } from '@apollo/client/link/error'
-import possibleTypes from "../possibleTypes.json"
+import { ApolloClient, HttpLink, InMemoryCache, split } from '@apollo/client/core'
+import { createApolloProvider } from '@vue/apollo-option'
 
-Vue.use(VueApollo);
+import {WebSocketLink} from "@apollo/client/link/ws"
+
+import {getMainDefinition} from "@apollo/client/utilities"
+import {setContext} from "@apollo/client/link/context"
+import { onError } from '@apollo/client/link/error'
+
+import possibleTypes from "../possibleTypes.json"
+import { typeDefs, resolvers} from "./apolloStore/Schema"
+
 
 const cache= new InMemoryCache({
   possibleTypes
@@ -31,10 +29,8 @@ export const wsServerUrl=process.env.NODE_ENV === 'production'
 ? 'wss://'+serverUrl.substr(7)+'/subscripciones'
 : 'ws://'+serverUrl.substr(7)+'/subscripciones'
 
-//console.log(`Server url: ${serverUrl}`);
 
-
-const httpLink = createHttpLink({
+const httpLink = new HttpLink({
   uri: serverUrl+"/graphql"
 });
 
@@ -52,8 +48,7 @@ const wsLink = new WebSocketLink({
   },
 })
 
-const authLink=setContext((_, {headers})=>{
-    
+const authLink=setContext((_, {headers})=>{    
     return {
         headers:{
             ...headers,
@@ -61,6 +56,7 @@ const authLink=setContext((_, {headers})=>{
         }
     }
 });
+
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (process.env.NODE_ENV !== 'production') {
     if (graphQLErrors)
@@ -96,6 +92,9 @@ export const apolloClient=new ApolloClient({
   connectToDevTools:true,
 });
 
-export const apolloProvider=new VueApollo({
+
+export const apolloProvider=createApolloProvider({
   defaultClient:apolloClient
-})
+});
+
+

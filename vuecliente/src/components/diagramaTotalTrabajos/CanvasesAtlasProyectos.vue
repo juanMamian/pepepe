@@ -94,7 +94,7 @@ export default {
         lapiz.beginPath();
         lapiz.strokeStyle = nodo.stuck?'red':"#9761d2";
 
-        lapiz.moveTo((nodo.coords.x -posicionCanvas.x)*this.factorZoom, (nodo.coords.y-posicionCanvas.y)*this.factorZoom);
+        lapiz.moveTo((nodo.autoCoords.x -posicionCanvas.x)*this.factorZoom, (nodo.autoCoords.y-posicionCanvas.y)*this.factorZoom);
         lapiz.lineTo((nodo.centroMasa.x - posicionCanvas.x)*this.factorZoom, (nodo.centroMasa.y - posicionCanvas.y)*this.factorZoom);
         lapiz.arc((nodo.centroMasa.x - posicionCanvas.x)*this.factorZoom, (nodo.centroMasa.y - posicionCanvas.y)*this.factorZoom, 10, 0, Math.PI*2);
         lapiz.stroke();     
@@ -104,8 +104,8 @@ export default {
      nodosRelevantes.forEach(nodo=>{
        if(!nodo.stuck){
         lapiz.strokeStyle = 'blue';
-        let nodox=(nodo.coords.x - posicionCanvas.x)*this.factorZoom;
-        let nodoy=(nodo.coords.y - posicionCanvas.y)*this.factorZoom;
+        let nodox=(nodo.autoCoords.x - posicionCanvas.x)*this.factorZoom;
+        let nodoy=(nodo.autoCoords.y - posicionCanvas.y)*this.factorZoom;
         lapiz.moveTo(nodox, nodoy);
         
         let vectorx=(Math.cos(nodo.angulo)*100);
@@ -215,12 +215,12 @@ export default {
     dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicion) {
       
       var anguloVinculo = Math.atan(
-        (nodoTo.coords.y - nodoFrom.coords.y) / (nodoTo.coords.x - nodoFrom.coords.x)
+        (nodoTo.autoCoords.y - nodoFrom.autoCoords.y) / (nodoTo.autoCoords.x - nodoFrom.autoCoords.x)
       );
 
-      if (nodoTo.coords.y - nodoFrom.coords.y < 0 && nodoTo.coords.x - nodoFrom.coords.x < 0)
+      if (nodoTo.autoCoords.y - nodoFrom.autoCoords.y < 0 && nodoTo.autoCoords.x - nodoFrom.autoCoords.x < 0)
         anguloVinculo += Math.PI;
-      if (nodoTo.coords.y - nodoFrom.coords.y > 0 && nodoTo.coords.x - nodoFrom.coords.x < 0)
+      if (nodoTo.autoCoords.y - nodoFrom.autoCoords.y > 0 && nodoTo.autoCoords.x - nodoFrom.autoCoords.x < 0)
         anguloVinculo += Math.PI;
 
       const zonaNodo={
@@ -229,12 +229,12 @@ export default {
       }
       
       let inicio = {
-        x: Math.round(((nodoFrom.coords.x+zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom)),
-        y: Math.round(((nodoFrom.coords.y+zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom)),
+        x: Math.round(((nodoFrom.autoCoords.x+zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom)),
+        y: Math.round(((nodoFrom.autoCoords.y+zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom)),
       };
       let final = {
-        x: Math.round(((nodoTo.coords.x-zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom)),
-        y: Math.round(((nodoTo.coords.y-zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom)),
+        x: Math.round(((nodoTo.autoCoords.x-zonaNodo.x)*this.factorZoom) - (posicion.x*this.factorZoom)),
+        y: Math.round(((nodoTo.autoCoords.y-zonaNodo.y)*this.factorZoom) - (posicion.y*this.factorZoom)),
       };
       
       lapiz.moveTo(inicio.x, inicio.y);
@@ -319,16 +319,16 @@ export default {
       let bordes = {};
       bordes.top = nodosRelevantes.reduce((acc, n) => {
         //console.log(`Reduciendo ${n.nombre} con coords: ${n.posicion}`);
-        return n.coords.y > acc ? n.coords.y : acc;
+        return n.autoCoords.y > acc ? n.autoCoords.y : acc;
       }, 0);
       bordes.bot = nodosRelevantes.reduce((acc, n) => {
-        return n.coords.y < acc ? n.coords.y : acc;
+        return n.autoCoords.y < acc ? n.autoCoords.y : acc;
       }, 0);
       bordes.left = nodosRelevantes.reduce((acc, n) => {
-        return n.coords.x < acc ? n.coords.x : acc;
+        return n.autoCoords.x < acc ? n.autoCoords.x : acc;
       }, 0);
       bordes.right = nodosRelevantes.reduce((acc, n) => {
-        return n.coords.x > acc ? n.coords.x : acc;
+        return n.autoCoords.x > acc ? n.autoCoords.x : acc;
       }, 0);
 
       return {

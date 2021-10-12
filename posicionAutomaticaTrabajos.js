@@ -29,12 +29,8 @@ db.once('open', function () {
     console.log(`¡Base de datos conectada!`);
 });
 const anchoCeldas = 400;
-const altoFilaNodos=300;
-var pasoBase = 10;
-
 const nodoDeInteres = null;
 
-//setInterval(() => posicionar(), 5000);
 iniciar();
 
 async function iniciar() {
@@ -45,7 +41,7 @@ async function iniciar() {
     try {
         var todosObjetivos = await Objetivo.find({}).exec();
         var todosTrabajos = await Trabajo.find({}).exec();
-       
+
         var todosNodos = todosObjetivos.concat(todosTrabajos);
         console.log(`Total: ${todosNodos.length} nodos`);
     }
@@ -55,14 +51,18 @@ async function iniciar() {
     }
 
     filtrarVinculosHuerfanos(todosNodos);
+    
+    //Iniciar coordenadas
     todosNodos.forEach(nodo => {
-        if (!nodo.coords.x) nodo.coords.x = 0;
+        if (!nodo.autoCoords.x) nodo.autoCoords.x = nodo.coords.x;
+        if (!nodo.autoCoords.y) nodo.autoCoords.y = nodo.coords.y;
     });
     var celdas = setCeldas(todosNodos);
     // console.log(`Hay ${nodosCompletados.length} nodos completados`);
 
     while (true) {
         await posicionar(todosNodos, celdas);
+        console.log(`Uploading...`);
         await uploadNodos(todosNodos);
         await sleep(5000);
     }
@@ -71,149 +71,114 @@ async function iniciar() {
 }
 
 function posicionar(todosNodos, celdas) {
-    decidirNiveles(todosNodos);
-    todosNodos.forEach(nodo=>{
-        if(nodo.nivel===null)nodo.nivel=-1;
-        nodo.coords.y=altoFilaNodos*nodo.nivel;
-    })
-    calcularCentrosMasa(todosNodos);
-    todosNodos=todosNodos.sort((a, b)=>b.peso-a.peso);
-    todosNodos.forEach(nodo => {        
-        actualizarCentroMasa(nodo, todosNodos);
-        posicionarHorizontalmente(nodo, celdas, todosNodos)
+    todosNodos = todosNodos.sort((a, b) => b.peso - a.peso);
+    todosNodos.forEach(nodo => {
+        setFuerzaCentroMasa(nodo, todosNodos);
+        setFuerzaColision(nodo, celdas, todosNodos);
+        moverNodo(nodo, celdas);        
     });
 }
 
-function posicionarHorizontalmente(nodo, celdas, todosNodos) {
 
-    if (nodoDeInteres != null && nodo.nombre != nodoDeInteres) return;
-    const paso = 15;
-    var balanceo = 0;
-    var encontrado = false;
-    if (nodo.nombre === nodoDeInteres) {
-        console.log(`${nodo.nombre} intenta ubicarse en ${nodo.centroMasa.x}`);
-    }
-    while (!encontrado) {
-        let coordsIntento = {
-            x: nodo.centroMasa.x + balanceo,
-            y: nodo.centroMasa.y
-        };
-        if (nodo.nombre === nodoDeInteres) {
-            console.log(`Probando en ${coordsIntento.x}`);
-        }
-        var contacto = true;
-        contacto = checkContacto(nodo, coordsIntento, celdas, todosNodos);
-        if (!contacto) {
-            if (nodo.nombre === nodoDeInteres) {
-                console.log(`Encontrado`);
-            }
-            encontrado = true;
-            nodo.coords.x = Math.round(coordsIntento.x);
-            break;
-        }
-        let coordsIntentoIzq = {
-            x: nodo.centroMasa.x - balanceo,
-            y: nodo.centroMasa.y
-        };
-        if (nodo.nombre === nodoDeInteres) {
-            console.log(`Probando en ${coordsIntentoIzq.x}`);
-        }
+function moverNodo(nodo, celdas){
 
-        contacto = checkContacto(nodo, coordsIntentoIzq, celdas, todosNodos);
-        if (!contacto) {
-            if (nodo.nombre === nodoDeInteres) {
-                console.log(`Encontrado`);
-            }
-            encontrado = true;
-            nodo.coords.x = Math.round(coordsIntentoIzq.x);
-        }
-        balanceo += paso;
+    const viejaCelda={
+        x: getCeldaH(nodo.autoCoords),
+        y: getCeldaV(nodo.autoCoords),
     }
 
-    const nuevaCelda=getCelda(nodo.coords);
+    nodo.autoCoords.x=Math.round(nodo.autoCoords.x+(nodo.fuerzaCentroMasa.fuerza*Math.cos(nodo.fuerzaCentroMasa.direccion)) + (nodo.fuerzaColision.fuerza*Math.cos(nodo.fuerzaColision.direccion)));
+    nodo.autoCoords.y=Math.round(nodo.autoCoords.y+(nodo.fuerzaCentroMasa.fuerza*Math.sin(nodo.fuerzaCentroMasa.direccion)) + (nodo.fuerzaColision.fuerza*Math.sin(nodo.fuerzaColision.direccion)));
     
-    if(nodo.celda!=nuevaCelda){
-        const indexN=celdas[nodo.celda].indexOf(nodo.id);
+    const nuevaCelda={
+        x: getCeldaH(nodo.autoCoords),
+        y: getCeldaV(nodo.autoCoords),
+    };
+
+    if(viejaCelda.x!=nuevaCelda.x || viejaCelda.y != nuevaCelda.y){//Hay cambio de celda
+        //Retirar el nodo de la vieja celda
+        const indexN=celdas[viejaCelda.x][viejaCelda.y].indexOf(nodo.id);
         if(indexN>-1){
-            celdas[nodo.celda].splice(indexN, 1);
-            if(!celdas[nuevaCelda]){
-                celdas[nuevaCelda]=[];
-            }
-            celdas[nuevaCelda].push(nodo.id);
+            celdas[viejaCelda.x][viejaCelda.y].splice(indexN, 1);
         }
         else{
-            console.log(`EL NODO NO ESTABA EN SU CELDA`);
+            console.log(`Alerta!! El nodo no estaba en su celda`);
+        }
+
+        //Introducir el nodo a la nueva celda
+        if(!celdas[nuevaCelda.x]){
+            celdas[nuevaCelda.x]={}
+        }
+        if(!celdas[nuevaCelda.x][nuevaCelda.y]){
+            celdas[nuevaCelda.x][nuevaCelda.y]=[];
+        }
+        const indexM=celdas[nuevaCelda.x][nuevaCelda.y].indexOf(nodo.id);
+        if(indexM===-1){
+            celdas[nuevaCelda.x][nuevaCelda.y].push(nodo.id);
+        }
+        else{
+            console.log(`Alerta!!, el nodo estaba anotado en la nueva celda antes de entrar a ella`);
         }
     }
-    nodo.celda=nuevaCelda;
+    
 }
 
-function checkContacto(nodo, coords, celdas, todosNodos) {
-    const umbralContacto = 200;
-    const celdaCoords=getCelda(coords);
-    var celdasRelevantes = [celdaCoords - 1, celdaCoords, celdaCoords + 1];
+function setFuerzaColision(nodo, celdas, todosNodos) {
+    const celdaX = getCeldaH(nodo.autoCoords);
+    const celdaY = getCeldaV(nodo.autoCoords);
+    var celdasRelevantes = [
+        { x: celdaX - 1, y: celdaY - 1 }, { x: celdaX, y: celdaY - 1 }, { x: celdaX + 1, y: celdaY - 1 },
+        { x: celdaX - 1, y: celdaY }, { x: celdaX, y: celdaY }, { x: celdaX + 1, y: celdaY },
+        { x: celdaX - 1, y: celdaY + 1 }, { x: celdaX, y: celdaY + 1 }, { x: celdaX + 1, y: celdaY + 1 },
+    ];
     if (nodo.nombre === nodoDeInteres) {
-        console.log(`Checking contacto de ${nodo.nombre} en las coords: ${JSON.stringify(coords)}`);
+        console.log(`Setting fuerzaColision de ${nodo.nombre} en las coords: ${JSON.stringify(nodo.autoCoords)}`);
     }
     var idsNodosRelevantes = [];
-    celdasRelevantes.forEach(celda => {
-        if (celdas[celda]) {
-            idsNodosRelevantes = idsNodosRelevantes.concat(celdas[celda]);
-        }        
+    celdasRelevantes.forEach(celda => {                
+        if (celdas[celda.x] && celdas[celda.x][celda.y]) {
+            idsNodosRelevantes = idsNodosRelevantes.concat(celdas[celda.x][celda.y]);
+        }
     });
-    const indexN=idsNodosRelevantes.indexOf(nodo.id);
-    if(indexN>-1){
+
+    //Retirar el propio nodo de la lista.
+    const indexN = idsNodosRelevantes.indexOf(nodo.id);
+    if (indexN > -1) {
         idsNodosRelevantes.splice(indexN, 1);
     }
+
     var nodosRelevantes = todosNodos.filter(n => idsNodosRelevantes.includes(n.id));
+    if (nodosRelevantes.length > 0) {
+        var sumaX = nodosRelevantes.reduce((sum, n) => sum + n.autoCoords.x, 0);
+        var centroX = sumaX / nodosRelevantes.length;
 
-    nodosRelevantes = nodosRelevantes.filter(n => n.peso >= nodo.peso && n.nivel===nodo.nivel);
-
-    if(nodo.nombre==="Hacer posible la colaboración en el desarrollo de proyectos"){
-        console.log(`El nodo de interes considera relevantes ${nodosRelevantes.length} nodos para contacto: `);
-        nodosRelevantes.forEach(n=>console.log(`${n.nombre.substr(0, 18)}`) );
+        var sumaY = nodosRelevantes.reduce((sum, n) => sum + n.autoCoords.y, 0);
+        var centroY = sumaY / nodosRelevantes.length;
+        
+        centroColision={
+            x : Math.round(centroX),
+            y : Math.round(centroY)
+        }
+    }
+    else {
+        centroColision = { x: nodo.autoCoords.x, y: nodo.autoCoords.y }
+    }
+        
+    var coordsFuerza = {
+        x: nodo.autoCoords.x - centroColision.x,
+        y: nodo.autoCoords.y - centroColision.y
     }
 
-    var contacto = false;
-    nodosRelevantes.forEach(nr => {
-        if (nodo.nombre === nodoDeInteres) {
-            console.log(`${nr.id}: ${nr.coords.x}`);
-        }
-        if (Math.abs(nr.coords.x - coords.x) < umbralContacto) {
-            contacto = true;
-        }
-        else {
-
-        }
-    });
-    return contacto;
+    const distanciaUnidad=300; //Distancia en la cual la fuerza de colision se reduce a 1.
+    const factorFuerza=1/distanciaUnidad;
+    var fuerzaPolar = cartesian2Polar(coordsFuerza.x, coordsFuerza.y);
+    if(nodosRelevantes.length>0){
+        fuerzaPolar.fuerza = nodosRelevantes.length/(factorFuerza*fuerzaPolar.fuerza);
+    }
+    nodo.fuerzaColision=fuerzaPolar;
 }
 
-function calcularCentrosMasa(todosNodos) {
-    todosNodos.forEach(nodo => {
-        var idsRequeridos = nodo.vinculos.map(v => v.idRef);
-
-        var idsRequirientes = todosNodos.filter(n => {
-            var idsRequeridos = n.vinculos.filter(v => v.tipo = "requiere").map(v => v.idRef);
-            return idsRequeridos.includes(nodo.id);
-        }).map(n => n.id);
-
-        var idsVinculos = idsRequeridos.concat(idsRequirientes);
-        if (idsVinculos.length > 0) {
-            var nodosVinculados = todosNodos.filter(n => idsVinculos.includes(n.id));
-            var sumaX = nodosVinculados.reduce((sum, n) => sum + n.coords.x, 0);
-            var centroX = sumaX / nodosVinculados.length;
-            nodo.centroMasa.x = Math.round(centroX);
-        }
-        else {
-            nodo.centroMasa.x = nodo.coords.x;
-        }
-        nodo.peso = idsVinculos.length;
-
-    })
-}
-
-function actualizarCentroMasa(nodo, todosNodos) {
+function setFuerzaCentroMasa(nodo, todosNodos) {
     var idsRequeridos = nodo.vinculos.map(v => v.idRef);
 
     var idsRequirientes = todosNodos.filter(n => {
@@ -224,98 +189,32 @@ function actualizarCentroMasa(nodo, todosNodos) {
     var idsVinculos = idsRequeridos.concat(idsRequirientes);
     if (idsVinculos.length > 0) {
         var nodosVinculados = todosNodos.filter(n => idsVinculos.includes(n.id));
-        var sumaX = nodosVinculados.reduce((sum, n) => sum + n.coords.x, 0);
+        var sumaX = nodosVinculados.reduce((sum, n) => sum + n.autoCoords.x, 0);
         var centroX = sumaX / nodosVinculados.length;
+
+        var sumaY = nodosVinculados.reduce((sum, n) => sum + n.autoCoords.y, 0);
+        var centroY = sumaY / nodosVinculados.length;
+
         nodo.centroMasa.x = Math.round(centroX);
+        nodo.centroMasa.y = Math.round(centroY);
     }
     else {
-        nodo.centroMasa.x = nodo.coords.x;
+        nodo.centroMasa.x = nodo.autoCoords.x;
+        nodo.centroMasa.y = nodo.autoCoords.y;
     }
     nodo.peso = idsVinculos.length;
+
+    var coordsFuerza = {
+        x: nodo.centroMasa.x - nodo.autoCoords.x,
+        y: nodo.centroMasa.y - nodo.autoCoords.y
+    }
+
+    var fuerzaPolar = cartesian2Polar(coordsFuerza.x, coordsFuerza.y);
+    fuerzaPolar.fuerza = fuerzaPolar.fuerza / 2;
+
+    nodo.fuerzaCentroMasa = fuerzaPolar;
 }
 
-function decidirNiveles(todosNodos) {
-
-    todosNodos.forEach(n => {
-        n.nivelado = false;
-        n.nivel = -100000;
-    });
-    var nodosNoCompletados = todosNodos.filter(n => n.estadoDesarrollo == "noCompletado");
-    console.log(`Hay ${nodosNoCompletados.length} nodos no completados`);
-
-    //Set Nodos nivel 0
-    nodosNoCompletados.forEach(nodo => {
-        let idsVinculos = nodo.vinculos.map(v => v.idRef);
-        if (idsVinculos.length === 0) {
-            nodo.nivel = 0;
-            nodo.nivelado = true;
-            // console.log(`+`);
-        }
-        else {
-            var idsVinculosRequeridos = nodo.vinculos.filter(v => v.tipo === "requiere").map(v => v.idRef);
-            var nodosRequeridos = nodosNoCompletados.filter(n => idsVinculosRequeridos.includes(n.id));
-            if (nodosRequeridos.every(n => n.estadoDesarrollo === "completado")) {
-                nodo.nivel = 0;
-                nodo.nivelado = true;
-                // console.log(`++`);
-            }
-        }
-
-    });
-    
-    console.log(`Hay ${todosNodos.filter(n=>n.nivel===0).length} nodos en cero`);
- 
-    // //Set nodos siguientes niveles.
-    var nivelAnterior = 0;
-    var nodosNivelAnterior = nodosNoCompletados.filter(n => n.nivel === 0);
-    console.log(`Hay ${nodosNivelAnterior.length} nodos en el nivel 0`);
-
-    while (nodosNivelAnterior.length > 0) {
-        console.log(`Buscando nodos de nivel ${nivelAnterior + 1}`);
-
-        var nodosEsteNivel = nodosNoCompletados.filter(n => {
-            var idsVinculosRequeridos = n.vinculos.filter(v => v.tipo === 'requiere').map(v => v.idRef);
-            var nodosRequeridos = nodosNoCompletados.filter(n => idsVinculosRequeridos.includes(n.id));
-            return nodosRequeridos.some(n => n.nivel === nivelAnterior)
-        });
-        console.log(`Encontrados ${nodosEsteNivel.length} nodos para el nivel ${nivelAnterior + 1}`);
-
-        nodosEsteNivel.forEach(n => {
-            n.nivel = nivelAnterior + 1;
-            n.ubicado = true;
-        });
-
-        nivelAnterior++;
-        nodosNivelAnterior = nodosNoCompletados.filter(n => n.nivel === nivelAnterior);
-    }
-    
-    var nodosCompletados= todosNodos.filter(n => n.estadoDesarrollo == "completado");
-    var nivelAnterior = 0;
-    var nodosNivelAnterior = todosNodos.filter(n => n.nivel === 0);
-    console.log(`Hay ${nodosNivelAnterior.length} nodos en el nivel 0`);
-
-    while (nodosNivelAnterior.length > 0) {
-        console.log(`Buscando nodos de nivel ${nivelAnterior - 1}`);
-
-        var idsNodosEsteNivel=[];
-        nodosNivelAnterior.forEach(na=>{
-            const idsVinculos=na.vinculos.filter(v=>v.tipo==='requiere').map(v=>v.idRef);
-            idsNodosEsteNivel=idsNodosEsteNivel.concat(idsVinculos);
-        });
-
-        var nodosEsteNivel = nodosCompletados.filter(n=>idsNodosEsteNivel.includes(n.id));
-        console.log(`Encontrados ${nodosEsteNivel.length} nodos para el nivel ${nivelAnterior - 1}`);
-
-        nodosEsteNivel.forEach(n => {
-            n.nivel = nivelAnterior - 1;
-            n.ubicado = true;
-        });
-
-        nivelAnterior--;
-        nodosNivelAnterior = nodosCompletados.filter(n => n.nivel === nivelAnterior);
-    }
-    
-}
 
 function filtrarVinculosHuerfanos(todosNodos) {
     todosNodos.forEach(nodo => {
@@ -341,18 +240,27 @@ function filtrarVinculosHuerfanos(todosNodos) {
 function setCeldas(todosNodos) {
     celdas = {};
     todosNodos.forEach(nodo => {
-        let celdaNodo = getCelda(nodo.coords);
-        nodo.celda = celdaNodo;
-        if (!celdas[celdaNodo]) {
-            celdas[celdaNodo] = []
+        nodo.celdaH = getCeldaH(nodo.autoCoords);
+        nodo.celdaV = getCeldaV(nodo.autoCoords);
+
+        if (!celdas[nodo.celdaH]) {
+            celdas[nodo.celdaH] = {};
         }
-        celdas[celdaNodo].push(nodo.id)
+        if (!celdas[nodo.celdaH][nodo.celdaV]) {
+            celdas[nodo.celdaH][nodo.celdaV] = []
+        }
+        celdas[nodo.celdaH][nodo.celdaV].push(nodo.id)
     });
     return celdas;
 }
 
-function getCelda(coords) {
+function getCeldaH(coords) {
     celda = Math.floor(coords.x / anchoCeldas);
+    return celda;
+}
+
+function getCeldaV(coords) {
+    celda = Math.floor(coords.y / anchoCeldas);
     return celda;
 }
 
@@ -373,4 +281,11 @@ function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
+}
+
+function cartesian2Polar(x, y) {
+    distance = Math.sqrt(x * x + y * y)
+    radians = Math.atan2(y, x) //This takes y first
+    polarCoor = { fuerza: distance, direccion: radians }
+    return polarCoor
 }

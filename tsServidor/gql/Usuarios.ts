@@ -21,11 +21,7 @@ interface InterfacePayloadNuevaNotificacion {
 
 
 export const typeDefs = gql`
-    scalar Date
-
-    type ConfiguracionAtlas{
-        modo:String
-    }
+    scalar Date   
 
     type MinimoCausante{
         id:ID,

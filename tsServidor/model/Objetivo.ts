@@ -106,6 +106,16 @@ export const esquemaObjetivo = new mongoose.Schema({
             default:0
         }
     },
+    autoCoords:{
+        x:{
+            type: Number,
+            default:0
+        },
+        y:{
+            type: Number,
+            default:0
+        }
+    },
     angulo:{
         type: Number,
         default:0,
@@ -141,6 +151,26 @@ export const esquemaObjetivo = new mongoose.Schema({
     idForoResponsables:{
         type:String,        
     },
+    fuerzaCentroMasa:{
+        fuerza:{
+            type: Number,
+            default:0
+        },
+        direccion:{
+            type:Number,
+            default:0
+        }
+    },
+    fuerzaColision:{
+        fuerza:{
+            type: Number,
+            default:0
+        },
+        direccion:{
+            type:Number,
+            default:0
+        }
+    }
     
 });
 

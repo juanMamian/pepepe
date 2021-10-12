@@ -37,6 +37,8 @@
       >
       </canvas>
     </transition>
+
+    
   </div>
 </template>
 
@@ -85,33 +87,33 @@ export default {
       ];
 
       const x1 = nodosInvolucrados.reduce((acc, n) => {
-        if (n.coords.x < acc) {
-          return n.coords.x;
+        if (n.autoCoords.x < acc) {
+          return n.autoCoords.x;
         } else {
           return acc;
         }
-      }, this.esteNodo.coords.x);
+      }, this.esteNodo.autoCoords.x);
       const x2 = nodosInvolucrados.reduce((acc, n) => {
-        if (n.coords.x > acc) {
-          return n.coords.x;
+        if (n.autoCoords.x > acc) {
+          return n.autoCoords.x;
         } else {
           return acc;
         }
-      }, this.esteNodo.coords.x);
+      }, this.esteNodo.autoCoords.x);
       const y1 = nodosInvolucrados.reduce((acc, n) => {
-        if (n.coords.y < acc) {
-          return n.coords.y;
+        if (n.autoCoords.y < acc) {
+          return n.autoCoords.y;
         } else {
           return acc;
         }
-      }, this.esteNodo.coords.y);
+      }, this.esteNodo.autoCoords.y);
       const y2 = nodosInvolucrados.reduce((acc, n) => {
-        if (n.coords.y > acc) {
-          return n.coords.y;
+        if (n.autoCoords.y > acc) {
+          return n.autoCoords.y;
         } else {
           return acc;
         }
-      }, this.esteNodo.coords.y);
+      }, this.esteNodo.autoCoords.y);
 
       this.esquinasSeleccionado = {
         x1,
@@ -244,18 +246,18 @@ export default {
     },
     dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicion) {
       var anguloVinculo = Math.atan(
-        (nodoTo.coords.y - nodoFrom.coords.y) /
-          (nodoTo.coords.x - nodoFrom.coords.x)
+        (nodoTo.autoCoords.y - nodoFrom.autoCoords.y) /
+          (nodoTo.autoCoords.x - nodoFrom.autoCoords.x)
       );
 
       if (
-        nodoTo.coords.y - nodoFrom.coords.y < 0 &&
-        nodoTo.coords.x - nodoFrom.coords.x < 0
+        nodoTo.autoCoords.y - nodoFrom.autoCoords.y < 0 &&
+        nodoTo.autoCoords.x - nodoFrom.autoCoords.x < 0
       )
         anguloVinculo += Math.PI;
       if (
-        nodoTo.coords.y - nodoFrom.coords.y > 0 &&
-        nodoTo.coords.x - nodoFrom.coords.x < 0
+        nodoTo.autoCoords.y - nodoFrom.autoCoords.y > 0 &&
+        nodoTo.autoCoords.x - nodoFrom.autoCoords.x < 0
       )
         anguloVinculo += Math.PI;
 
@@ -266,21 +268,21 @@ export default {
 
       let inicio = {
         x: Math.round(
-          (nodoFrom.coords.x + zonaNodo.x) * this.factorZoom -
+          (nodoFrom.autoCoords.x + zonaNodo.x) * this.factorZoom -
             posicion.x * this.factorZoom
         ),
         y: Math.round(
-          (nodoFrom.coords.y + zonaNodo.y) * this.factorZoom -
+          (nodoFrom.autoCoords.y + zonaNodo.y) * this.factorZoom -
             posicion.y * this.factorZoom
         ),
       };
       let final = {
         x: Math.round(
-          (nodoTo.coords.x - zonaNodo.x) * this.factorZoom -
+          (nodoTo.autoCoords.x - zonaNodo.x) * this.factorZoom -
             posicion.x * this.factorZoom
         ),
         y: Math.round(
-          (nodoTo.coords.y - zonaNodo.y) * this.factorZoom -
+          (nodoTo.autoCoords.y - zonaNodo.y) * this.factorZoom -
             posicion.y * this.factorZoom
         ),
       };
@@ -318,7 +320,7 @@ export default {
   },
   computed: {
     posNodo() {
-      return this.esteNodo.coords;
+      return this.esteNodo.autoCoords;
     },
     idsNodosRequeridos() {
       return this.esteNodo.vinculos
@@ -349,33 +351,33 @@ export default {
           this.idsNodosVisibles.includes(n.id)
       );
       const x1 = nodosInvolucrados.reduce((acc, n) => {
-        if (n.coords.x < acc) {
-          return n.coords.x;
+        if (n.autoCoords.x < acc) {
+          return n.autoCoords.x;
         } else {
           return acc;
         }
-      }, this.esteNodo.coords.x);
+      }, this.esteNodo.autoCoords.x);
       const x2 = nodosInvolucrados.reduce((acc, n) => {
-        if (n.coords.x > acc) {
-          return n.coords.x;
+        if (n.autoCoords.x > acc) {
+          return n.autoCoords.x;
         } else {
           return acc;
         }
-      }, this.esteNodo.coords.x);
+      }, this.esteNodo.autoCoords.x);
       const y1 = nodosInvolucrados.reduce((acc, n) => {
-        if (n.coords.y < acc) {
-          return n.coords.y;
+        if (n.autoCoords.y < acc) {
+          return n.autoCoords.y;
         } else {
           return acc;
         }
-      }, this.esteNodo.coords.y);
+      }, this.esteNodo.autoCoords.y);
       const y2 = nodosInvolucrados.reduce((acc, n) => {
-        if (n.coords.y > acc) {
-          return n.coords.y;
+        if (n.autoCoords.y > acc) {
+          return n.autoCoords.y;
         } else {
           return acc;
         }
-      }, this.esteNodo.coords.y);
+      }, this.esteNodo.autoCoords.y);
 
       return {
         x1,

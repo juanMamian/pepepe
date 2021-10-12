@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloTrabajo = exports.esquemaTrabajo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const VinculosNodosProyecto_1 = require("./VinculosNodosProyecto");
+const Schema_1 = require("../gql/Schema");
+const Trabajos_1 = require("../gql/Trabajos");
 const esquemaMaterial = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -140,6 +142,16 @@ exports.esquemaTrabajo.add({
             default: 0
         }
     },
+    autoCoords: {
+        x: {
+            type: Number,
+            default: 0
+        },
+        y: {
+            type: Number,
+            default: 0
+        }
+    },
     angulo: {
         type: Number,
         default: 0,
@@ -172,6 +184,10 @@ exports.esquemaTrabajo.add({
         type: Number,
         default: 0
     }
+});
+exports.esquemaTrabajo.post("save", function (trabajo) {
+    console.log(`Publicando nodoEditado`);
+    Schema_1.pubsub.publish(Trabajos_1.NODO_EDITADO, { nodoEditado: trabajo });
 });
 exports.esquemaTrabajo.index({ nombre: "text", keywords: "text", descripcion: "text" });
 exports.ModeloTrabajo = mongoose_1.default.model("Trabajo", exports.esquemaTrabajo);

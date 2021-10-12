@@ -106,6 +106,16 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
             default: 0
         }
     },
+    autoCoords: {
+        x: {
+            type: Number,
+            default: 0
+        },
+        y: {
+            type: Number,
+            default: 0
+        }
+    },
     angulo: {
         type: Number,
         default: 0,

@@ -5,15 +5,19 @@
     :style="[
       estiloPosicion,
       estiloZeta,
-      estiloSize,
-      { transition: callingPosiciones ? 'left 5s' : '' },
+      estiloSize,  
+      {
+        transition: configuracionAtlas.posicionando?'left 3s, top 3s': ''
+      }    
     ]"
-    @mousedown.left="agarrado = callingPosiciones ? false : true"
+    @mousedown.left="agarrado =  true"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
   >
     <div id="zonaArrastre" v-show="agarrado"></div>
 
+    <div v-if="usuarioSuperadministrador" v-show="configuracionAtlas.posicionando" id="fuerzaCentroMasa" class="fuerzaMovimiento" :style="[estiloFuerzaCentroMasa]"><div class="flechitaFuerza"></div></div>
+    <div v-if="usuarioSuperadministrador" v-show="configuracionAtlas.posicionando" id="fuerzaColision" class="fuerzaMovimiento" :style="[estiloFuerzaColision]"><div class="flechitaFuerza"></div></div>
     
     <div id="bolita" :style="[estiloColor]">
       <img
@@ -62,7 +66,7 @@
             iconoCompletado: esteNodo.estadoDesarrollo === 'completado',
           }"
         /> -->
-        {{ callingPosiciones ? esteNodo.peso.toFixed(2) : esteNodo.nombre }}
+        {{ esteNodo.nombre }}
       </div>
     </div>
 
@@ -148,14 +152,14 @@ export default {
     idNodoSeleccionado: String,
     nodoSeleccionado: Object,
     menuCx: Boolean,
-    factorZoom: Number,
-    callingPosiciones: Boolean,
+    factorZoom: Number,    
     transparentoso: Boolean,
     usuarioAdministradorNodoSeleccionado: Boolean,
     usuarioResponsableNodoSeleccionado: Boolean,
     childSeleccionado: Boolean,
     parentDeSeleccionado: Boolean,
     idsNodosPlegados:Array,
+    configuracionAtlas:Object,
   },
   data() {
     return {
@@ -244,10 +248,18 @@ export default {
                     x
                     y
                   }
+                  autoCoords {
+                    x
+                    y
+                  }
                 }
                 ... on Objetivo {
                   id
                   coords {
+                    x
+                    y
+                  }
+                  autoCoords {
                     x
                     y
                   }
@@ -470,6 +482,7 @@ export default {
           console.log(`Error: E:${error}`);
         });
     },
+    
   },
   computed: {
     estiloPosicion() {
@@ -592,18 +605,32 @@ export default {
     },    
     plegado(){
       return this.idsNodosPlegados.includes(this.esteNodo.id);
+    },
+    estiloFuerzaCentroMasa(){
+      return {
+        width: Math.round(this.esteNodo.fuerzaCentroMasa.fuerza*this.factorZoom)+'px',
+        height: Math.round(3*this.factorZoom)+"px",
+        transform: "rotate("+this.esteNodo.fuerzaCentroMasa.direccion+"rad)"
+        }
+    },
+    estiloFuerzaColision(){
+      return {
+        width: Math.round(this.factorZoom*this.esteNodo.fuerzaColision.fuerza)+'px',
+        height: Math.round(3*this.factorZoom)+"px",
+        transform: "rotate("+this.esteNodo.fuerzaColision.direccion+"rad)"
+        }
     }
   },
   watch: {
     esteNodo() {
-      this.$set(this.posicion, "x", this.esteNodo.coords.x);
-      this.$set(this.posicion, "y", this.esteNodo.coords.y);
+      this.$set(this.posicion, "x", this.esteNodo.autoCoords.x);
+      this.$set(this.posicion, "y", this.esteNodo.autoCoords.y);
     },
   },
   mounted() {
     this.montado = true;
-    this.$set(this.posicion, "x", this.esteNodo.coords.x);
-    this.$set(this.posicion, "y", this.esteNodo.coords.y);
+    this.$set(this.posicion, "x", this.esteNodo.autoCoords.x);
+    this.$set(this.posicion, "y", this.esteNodo.autoCoords.y);
   },
 };
 </script>
@@ -727,7 +754,30 @@ export default {
   transform: translate(-50%, -50%);
   border-radius: 50%;
 }
-
+.fuerzaMovimiento{  
+  background-color: black;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0% 0%;
+  z-index: 200;
+}
+#fuerzaCentroMasa{
+  background-color: blue;
+}
+#fuerzaColision{
+  background-color: red;
+}
+.flechitaFuerza{
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 1px;
+  height: 1px;
+  border: 5px solid transparent;
+  border-left-color: black;
+  transform: translate(-50%, -50%);
+}
 .transparentoso {
   opacity: 0.2;
 }

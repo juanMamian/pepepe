@@ -11,6 +11,7 @@ const routesContenidosNodos=require("./routes/atlas/contenidosNodos");
 const routesCuentos=require("./routes/cuentos");
 import { iniciarMongoose } from "./mongoose";
 
+
 const ejwt = require("express-jwt");
 import cors from "cors";
 import { aServer } from "./gql/Schema";
@@ -83,6 +84,8 @@ aServer.installSubscriptionHandlers(httpServer);
 
 
 iniciarMongoose();
+
+
 
 
 httpServer.listen(port, () => {

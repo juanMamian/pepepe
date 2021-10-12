@@ -1,4 +1,8 @@
 const mongoose = require("mongoose");
+import {posicionAutomaticaSolidaridad} from "./posicionAutomaticaSolidaridad"
+
+
+export var dbConectada=false;
 mongoose.set('useFindAndModify', false);
 export const iniciarMongoose = async () => {
     try {
@@ -19,4 +23,7 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
     console.log(`¡Base de datos conectada!`);
+    dbConectada=true;
+    posicionAutomaticaSolidaridad();
+
 });

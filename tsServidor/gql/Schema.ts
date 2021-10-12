@@ -4,6 +4,7 @@ import { typeDefs as tdUsuarios, resolvers as rUsuarios } from "./Usuarios"
 import { typeDefs as tdProyectos, resolvers as rProyectos } from "./Proyectos"
 import { typeDefs as tdTrabajos, resolvers as rTrabajos } from "./Trabajos"
 import { typeDefs as tdEventos, resolvers as rEventos } from "./Eventos"
+import { typeDefs as tdAtlases, resolvers as rAtlases } from "./Atlases"
 
 // import { typeDefs as tdObjetivos, resolvers as rObjetivos } from "./Objetivos"
 import { typeDefs as tdGruposEstudiantiles, resolvers as rGruposEstudiantiles } from "./GruposEstudiantiles"
@@ -18,7 +19,7 @@ const jwt = require("jsonwebtoken");
 
 const globalTypeDefs = gql`
     type Query{
-        fakeQuery:String
+        fakeQuery:String,
     }
     type Mutation{
         fakeMutation:String
@@ -30,14 +31,20 @@ const globalTypeDefs = gql`
         x: Int,
         y: Int
     }
+    type FuerzaPolar{
+        fuerza: Int,
+        direccion: Float,
+    }
     input CoordsInput{
         x:Int,
         y:Int
     }
+
+
 `;
 
-const typeDefs = [globalTypeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos, tdEventos,  tdGruposEstudiantiles, tdForos, tdCuentos];
-const resolvers = merge({}, rNodos, rUsuarios, rProyectos, rTrabajos, rEventos, rGruposEstudiantiles, rForos, rCuentos);
+const typeDefs = [globalTypeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos, tdEventos,  tdGruposEstudiantiles, tdForos, tdCuentos, tdAtlases];
+const resolvers = merge({}, rNodos, rUsuarios, rProyectos, rTrabajos, rEventos, rGruposEstudiantiles, rForos, rCuentos, rAtlases);
 
 export const esquema = makeExecutableSchema({
     typeDefs,

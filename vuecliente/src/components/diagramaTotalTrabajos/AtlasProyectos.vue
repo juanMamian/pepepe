@@ -14,9 +14,10 @@
     <div
       id="botonCallingPosiciones"
       v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
-      @click.stop="callingPosiciones = !callingPosiciones"
+      @click.stop="togglePosicionamiento"
+      :class="{deshabilitado: enviandoQueryConfiguracionAtlas || $apollo.queries.configuracionAtlas.loading}"
       :style="[
-        { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
+        { backgroundColor: configuracionAtlas.posicionando ? 'green' : 'transparent' },
       ]"
     ></div>
     <transition name="fadeOut">
@@ -44,7 +45,11 @@
       <div
         class="botonMenuContextual"
         id="botonCrearObjetivo"
-        v-show="usuarioSuperadministrador || (nodoSeleccionado!=null && nodoSeleccionado.responsables.includes(usuario.id))"
+        v-show="
+          usuarioSuperadministrador ||
+          (nodoSeleccionado != null &&
+            nodoSeleccionado.responsables.includes(usuario.id))
+        "
         @mouseup.left.stop=""
         @click.stop="crearNodoEnMenuContextual('objetivo')"
       >
@@ -63,7 +68,11 @@
         id="botonCrearObjetivo"
         @click.stop="crearNodoEnMenuContextual('trabajo')"
         @mouseup.left.stop=""
-        v-show="usuarioSuperadministrador || (nodoSeleccionado!=null && nodoSeleccionado.responsables.includes(usuario.id))"
+        v-show="
+          usuarioSuperadministrador ||
+          (nodoSeleccionado != null &&
+            nodoSeleccionado.responsables.includes(usuario.id))
+        "
       >
         Crear trabajo
         {{
@@ -77,17 +86,7 @@
       </div>
     </div>
 
-    <div id="centroVista" v-show="usuarioSuperadministrador"></div>
-    <!-- <canvases-atlas-proyectos
-      :style="posCuadroDescarga"
-      :centroVista="centroVista"
-      :centroDescarga="centroDescarga"
-      :radioDescarga="radioDescarga"
-      :todosNodos="todosNodos"
-      :callingPosiciones="callingPosiciones"
-      :factorZoom="factorZoom"
-      :idNodoSeleccionado="idNodoSeleccionado"
-    /> -->
+    <div id="centroVista" v-show="usuarioSuperadministrador"></div>   
 
     <div id="contenedorCanvasNodos" :style="[posContenedores]">
       <canvas-enlaces-nodo
@@ -104,59 +103,7 @@
     </div>
 
     <div id="contenedorNodos" :style="[posContenedores]">
-      <!-- <nodo-objetivo
-        v-for="objetivo of objetivos"
-        :key="objetivo.id"
-        :esteObjetivo="objetivo"
-        :callingPosiciones="callingPosiciones"
-        :idNodoSeleccionado="idNodoSeleccionado"
-        :nodoSeleccionado="nodoSeleccionado"
-        :menuCx="idNodoMenuCx && idNodoMenuCx == objetivo.id"
-        :factorZoom="factorZoom"
-        :usuarioAdministradorNodoSeleccionado="
-          usuarioAdministradorNodoSeleccionado
-        "
-        :usuarioResponsableNodoSeleccionado="usuarioResponsableNodoSeleccionado"
-        v-show="idsNodosVisibles.includes(objetivo.id)"
-        @click.native="idNodoSeleccionado = objetivo.id"
-        @click.native.right.exact.stop.prevent="idNodoMenuCx = objetivo.id"
-        @dblclick.native="idNodoPaVentanita = objetivo.id"
-        @meAbrieron="idNodoPaVentanita = objetivo.id"
-        :transparentoso="
-          idNodoSeleccionado &&
-          idNodoSeleccionado != objetivo.id &&
-          !idsNodosRequeridosSeleccionado.includes(objetivo.id) &&
-          !idsNodosRequierenSeleccionado.includes(objetivo.id)
-        "
-        @eliminar="eliminarNodo(objetivo.id, 'objetivo')"
-      />
-
-      <nodo-trabajo
-        v-for="trabajo of trabajos"
-        :key="trabajo.id"
-        :esteTrabajo="trabajo"
-        :idNodoSeleccionado="idNodoSeleccionado"
-        :nodoSeleccionado="nodoSeleccionado"
-        :menuCx="idNodoMenuCx && idNodoMenuCx == trabajo.id"
-        :factorZoom="factorZoom"
-        :callingPosiciones="callingPosiciones"
-        :usuarioAdministradorNodoSeleccionado="
-          usuarioAdministradorNodoSeleccionado
-        "
-        :usuarioResponsableNodoSeleccionado="usuarioResponsableNodoSeleccionado"
-        :transparentoso="
-          idNodoSeleccionado &&
-          idNodoSeleccionado != trabajo.id &&
-          !idsNodosRequeridosSeleccionado.includes(trabajo.id) &&
-          !idsNodosRequierenSeleccionado.includes(trabajo.id)
-        "
-        v-show="idsNodosVisibles.includes(trabajo.id)"
-        @click.native="idNodoSeleccionado = trabajo.id"
-        @click.native.right.exact.stop.prevent="idNodoMenuCx = trabajo.id"
-        @dblclick.native="idNodoPaVentanita = trabajo.id"
-        @meAbrieron="idNodoPaVentanita = trabajo.id"
-        @eliminar="eliminarNodo(trabajo.id, 'trabajo')"
-      /> -->
+     
       <transition-group name="fade" tag="div">
         <nodo
           :yo="yo"
@@ -167,8 +114,8 @@
           :nodoSeleccionado="nodoSeleccionado"
           :idsNodosPlegados="idsNodosPlegados"
           :menuCx="idNodoMenuCx && idNodoMenuCx == nodo.id"
-          :factorZoom="factorZoom"
-          :callingPosiciones="callingPosiciones"
+          :configuracionAtlas="configuracionAtlas"
+          :factorZoom="factorZoom"          
           :usuarioAdministradorNodoSeleccionado="
             usuarioAdministradorNodoSeleccionado
           "
@@ -220,14 +167,14 @@
     </div>
 
     <ventanita-objetivo
-      v-if="idNodoPaVentanita && objetivoEnVentanita && !callingPosiciones"
+      v-if="idNodoPaVentanita && objetivoEnVentanita"
       class="ventanitaNodo"
       :key="objetivoEnVentanita.id"
       :esteObjetivo="objetivoEnVentanita"
       @navegarAlNodo="navegarPaginaNodo"
     />
     <ventanita-trabajo
-      v-if="idNodoPaVentanita && trabajoEnVentanita && !callingPosiciones"
+      v-if="idNodoPaVentanita && trabajoEnVentanita"
       class="ventanitaNodo"
       :key="trabajoEnVentanita.id"
       :esteTrabajo="trabajoEnVentanita"
@@ -369,6 +316,10 @@ const QUERY_TODOS_NODOS = gql`
           x
           y
         }
+        autoCoords {
+          x
+          y
+        }
         estadoDesarrollo
         vinculos {
           idRef
@@ -385,6 +336,14 @@ const QUERY_TODOS_NODOS = gql`
         nivel
         turnoNivel
         peso
+        fuerzaCentroMasa{
+          fuerza
+          direccion
+        }
+        fuerzaColision{
+          fuerza
+          direccion
+        }
       }
       ... on Objetivo {
         id
@@ -403,6 +362,10 @@ const QUERY_TODOS_NODOS = gql`
           x
           y
         }
+        autoCoords {
+          x
+          y
+        }
         estadoDesarrollo
         vinculos {
           idRef
@@ -419,6 +382,14 @@ const QUERY_TODOS_NODOS = gql`
         nivel
         turnoNivel
         peso
+        fuerzaCentroMasa{
+          fuerza
+          direccion
+        }
+        fuerzaColision{
+          fuerza
+          direccion
+        }
       }
     }
   }
@@ -496,6 +467,10 @@ export default {
                   x
                   y
                 }
+                autoCoords {
+                  x
+                  y
+                }
                 estadoDesarrollo
                 vinculos {
                   idRef
@@ -512,6 +487,14 @@ export default {
                 nivel
                 turnoNivel
                 peso
+                fuerzaCentroMasa{
+          fuerza
+          direccion
+        }
+        fuerzaColision{
+          fuerza
+          direccion
+        }
               }
               ... on Objetivo {
                 id
@@ -530,6 +513,10 @@ export default {
                   x
                   y
                 }
+                autoCoords {
+                  x
+                  y
+                }
                 estadoDesarrollo
                 vinculos {
                   idRef
@@ -546,6 +533,14 @@ export default {
                 nivel
                 turnoNivel
                 peso
+                fuerzaCentroMasa{
+          fuerza
+          direccion
+        }
+        fuerzaColision{
+          fuerza
+          direccion
+        }
               }
             }
           }
@@ -563,13 +558,15 @@ export default {
           const indexN = previousResult.todosNodosSolidaridad.findIndex(
             (n) => n.id == data.nodoEditado.id
           );
+          var nuevoCache=JSON.parse(JSON.stringify(previousResult));
           if (indexN > -1) {
-            previousResult.todosNodosSolidaridad.splice(indexN, 1);
+            nuevoCache.todosNodosSolidaridad.splice(indexN, 1);
           }
-          previousResult.todosNodosSolidaridad.push(data.nodoEditado);
-          return previousResult;
+          nuevoCache.todosNodosSolidaridad.push(data.nodoEditado);
+          return nuevoCache;
         },
       },
+      fetchPolicy: "network-only"
     },
     yo: {
       query: QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD,
@@ -583,9 +580,26 @@ export default {
       },
       fetchPolicy: "network-only",
     },
+    configuracionAtlas:{
+      query:gql`
+        query($nombreAtlas: String!){
+          configuracionAtlas(nombreAtlas: $nombreAtlas){
+            id
+            posicionando
+          }
+        }
+      `,
+      variables:{
+        nombreAtlas:"solidaridad"
+      },
+      fetchPolicy: "network-only",
+    }
   },
   data() {
     return {
+      configuracionAtlas:{
+        posicionando:false,
+      },
       montado: false,
 
       mostrandoMenuContextual: false,
@@ -629,11 +643,10 @@ export default {
       // proyectos: [],
       // trabajos: [],
       // objetivos: [],
-      descargasTodosNodos:0,
+      descargasTodosNodos: 0,
       todosNodos: [],
       enviandoQueryNodos: false,
-
-      callingPosiciones: false,
+      
       cerrarBusqueda: 0,
       cerrarMateriales: 0,
       cerrarListas: 0,
@@ -648,9 +661,30 @@ export default {
       mostrandoObjetivos: true,
 
       showingNombreNodoEmergente: false,
+      enviandoQueryConfiguracionAtlas:false,
     };
   },
   methods: {
+    togglePosicionamiento(){
+      this.enviandoQueryConfiguracionAtlas=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($nombreAtlas:String!){
+            togglePosicionamientoAutomaticoAtlas(nombreAtlas: $nombreAtlas){
+              id
+              posicionando
+            }
+          }
+        `,
+        variables:{
+          nombreAtlas:"solidaridad"
+        }
+      }).then(()=>{
+        this.enviandoQueryConfiguracionAtlas=false;
+      }).catch(()=>{
+        this.enviandoQueryConfiguracionAtlas=false;
+      })
+    },
     calcularEsquinaVista(centro) {
       if (this.esquinaVistaCalculada) return;
       this.$set(
@@ -871,9 +905,9 @@ export default {
       // this.$set(this.esquinaVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );
     },
     eliminarNodoCache(idNodo) {
-      const store=this.$apollo.provider.defaultClient;
+      const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
-        query: QUERY_TODOS_NODOS,       
+        query: QUERY_TODOS_NODOS,
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
       const indexN = nuevoCache.todosNodosSolidaridad.findIndex(
@@ -882,7 +916,7 @@ export default {
       if (indexN > -1) {
         nuevoCache.todosNodosSolidaridad.splice(indexN, 1);
         store.writeQuery({
-          query: QUERY_TODOS_NODOS,          
+          query: QUERY_TODOS_NODOS,
           data: nuevoCache,
         });
       } else {
@@ -959,6 +993,10 @@ export default {
                     x
                     y
                   }
+                  autoCoords {
+                    x
+                    y
+                  }
                   estadoDesarrollo
                   vinculos {
                     idRef
@@ -975,6 +1013,14 @@ export default {
                   nivel
                   turnoNivel
                   peso
+                  fuerzaCentroMasa{
+          fuerza
+          direccion
+        }
+        fuerzaColision{
+          fuerza
+          direccion
+        }
                 }
                 ... on Objetivo {
                   id
@@ -993,6 +1039,10 @@ export default {
                     x
                     y
                   }
+                  autoCoords {
+                    x
+                    y
+                  }
                   estadoDesarrollo
                   vinculos {
                     idRef
@@ -1009,6 +1059,14 @@ export default {
                   nivel
                   turnoNivel
                   peso
+                  fuerzaCentroMasa{
+          fuerza
+          direccion
+        }
+        fuerzaColision{
+          fuerza
+          direccion
+        }
                 }
               }
             }
@@ -1107,6 +1165,10 @@ export default {
                     x
                     y
                   }
+                  autoCoords {
+                    x
+                    y
+                  }
                   estadoDesarrollo
                   vinculos {
                     idRef
@@ -1123,6 +1185,14 @@ export default {
                   nivel
                   turnoNivel
                   peso
+                  fuerzaCentroMasa{
+          fuerza
+          direccion
+        }
+        fuerzaColision{
+          fuerza
+          direccion
+        }
                 }
                 ... on Objetivo {
                   id
@@ -1141,6 +1211,10 @@ export default {
                     x
                     y
                   }
+                  autoCoords {
+                    x
+                    y
+                  }
                   estadoDesarrollo
                   vinculos {
                     idRef
@@ -1157,6 +1231,14 @@ export default {
                   nivel
                   turnoNivel
                   peso
+                  fuerzaCentroMasa{
+          fuerza
+          direccion
+        }
+        fuerzaColision{
+          fuerza
+          direccion
+        }
                 }
               }
             }
@@ -1217,12 +1299,12 @@ export default {
       this.$set(
         this.esquinaVistaDecimal,
         "x",
-        n.coords.x - posContenedor.width / (2 * this.factorZoom)
+        n.autoCoords.x - posContenedor.width / (2 * this.factorZoom)
       );
       this.$set(
         this.esquinaVistaDecimal,
         "y",
-        n.coords.y - posContenedor.height / (2 * this.factorZoom)
+        n.autoCoords.y - posContenedor.height / (2 * this.factorZoom)
       );
       this.idNodoSeleccionado = n.id;
       //this.centroVista=e;
@@ -1235,12 +1317,12 @@ export default {
       this.$set(
         this.esquinaVistaDecimal,
         "x",
-        elNodo.coords.x - posContenedor.width / (2 * this.factorZoom)
+        elNodo.autoCoords.x - posContenedor.width / (2 * this.factorZoom)
       );
       this.$set(
         this.esquinaVistaDecimal,
         "y",
-        elNodo.coords.y - posContenedor.height / (2 * this.factorZoom)
+        elNodo.autoCoords.y - posContenedor.height / (2 * this.factorZoom)
       );
 
       this.idNodoSeleccionado = idNodo;
@@ -1260,7 +1342,7 @@ export default {
     }, 1000),
   },
   computed: {
-    refreshNodoVentanita(){
+    refreshNodoVentanita() {
       return this.$store.state.refreshNodoVentanitaAtlasSolidaridad;
     },
     offsetMenuContextual() {
@@ -1418,20 +1500,7 @@ export default {
       );
     },
   },
-  watch: {
-    callingPosiciones(nuevo) {
-      if (nuevo) {
-        // this.$apollo.queries.proyectos.startPolling(5000);
-        // this.$apollo.queries.trabajos.startPolling(5000);
-        // this.$apollo.queries.objetivos.startPolling(5000);
-        this.$apollo.queries.todosNodos.startPolling(5000);
-      } else {
-        // this.$apollo.queries.proyectos.stopPolling();
-        // this.$apollo.queries.trabajos.stopPolling();
-        // this.$apollo.queries.objetivos.stopPolling();
-        this.$apollo.queries.todosNodos.stopPolling();
-      }
-    },
+  watch: {    
     centroVista(actual) {
       const distanciaCentroDescarga = Math.hypot(
         this.centroDescarga.x - actual.x,
@@ -1465,22 +1534,22 @@ export default {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
     },
-    descargasTodosNodos(val){
-      const idNodoNotificado=this.$route.params.nv;
-      if(val===1 && idNodoNotificado){
-        console.log("Centrando en nodo "+idNodoNotificado);
+    descargasTodosNodos(val) {
+      const idNodoNotificado = this.$route.params.nv;
+      if (val === 1 && idNodoNotificado) {
+        console.log("Centrando en nodo " + idNodoNotificado);
         this.centrarEnNodoById(idNodoNotificado);
-        this.idNodoPaVentanita=idNodoNotificado;
+        this.idNodoPaVentanita = idNodoNotificado;
       }
     },
-    refreshNodoVentanita(){
-      const idNodoNotificado=this.$route.params.nv;
-      if(idNodoNotificado){
-        console.log("Centrando en nodo "+idNodoNotificado);
+    refreshNodoVentanita() {
+      const idNodoNotificado = this.$route.params.nv;
+      if (idNodoNotificado) {
+        console.log("Centrando en nodo " + idNodoNotificado);
         this.centrarEnNodoById(idNodoNotificado);
-        this.idNodoPaVentanita=idNodoNotificado;
+        this.idNodoPaVentanita = idNodoNotificado;
       }
-    }
+    },
   },
   mounted() {
     var posAtlas = this.$el.getBoundingClientRect();

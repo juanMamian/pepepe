@@ -47,7 +47,7 @@ export default {
   },
   methods: {
     guardarChildren(nodo) {
-      nodo.children = this.todosNodos.filter(
+      nodo.children = this.nodosTodos.filter(
         (n) => n.nodoParent && n.nodoParent.id === nodo.id
       );
     },
@@ -63,12 +63,24 @@ export default {
         (n) => !n.nodoParent || !n.nodoParent.idNodo
       );
     },
+    nodosTodos(){
+      return this.todosNodos.map(n=>{
+        return JSON.parse(JSON.stringify(n));
+      })
+    },
     nodosNested() {
-      return this.todosNodos.map((nodo) => {
-        nodo.children = this.todosNodos.filter(
+      return this.nodosTodos.map((nodo) => {
+        var nuevoNodo=JSON.parse(JSON.stringify(nodo));
+        nuevoNodo.children = this.nodosTodos.filter(
           (n) => n.nodoParent && n.nodoParent.idNodo === nodo.id
         );
-        return nodo;
+
+        return nuevoNodo;
+        // return {
+        //   ...nodo,
+        //   children:this.todosNodos.filter(
+        //   (n) => n.nodoParent && n.nodoParent.idNodo === nodo.id)
+        // }
       });
     },
   },

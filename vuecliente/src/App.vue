@@ -287,14 +287,15 @@ export default {
           }
         `,
         updateQuery: (previousResult, { subscriptionData: { data } }) => {
+          var nuevoCache=JSON.parse(JSON.stringify(previousResult));
           if (
-            !previousResult.yo.notificaciones.some(
+            !nuevoCache.yo.notificaciones.some(
               (n) => n.id == data.nuevaNotificacion.id
             )
           ) {
-            previousResult.yo.notificaciones.push(data.nuevaNotificacion);
+            nuevoCache.yo.notificaciones.push(data.nuevaNotificacion);
           }
-          return previousResult;
+          return nuevoCache;
         },
         skip() {
           return !this.usuarioLogeado;
