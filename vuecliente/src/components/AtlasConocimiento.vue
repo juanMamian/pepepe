@@ -556,8 +556,8 @@ export default {
         console.log(`No autorizado`);
         return;
       }
-      this.todosNodos[this.todosNodos.findIndex((n) => n.id == idNodo)].coords =
-        coordsManuales;
+      // this.todosNodos[this.todosNodos.findIndex((n) => n.id == idNodo)].coords =
+      //   coordsManuales;
       this.$apollo
         .mutate({
           mutation: gql`

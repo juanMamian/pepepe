@@ -1,7 +1,6 @@
 Reestructuracion no-urgente
 *verificar el manejo de contraseñas
 *Cambiar el registro de modo que se realice a través de graphql, no de la API
-*Lograr que el servidor envíe una imagen fallback cuando busque y no encuentre el ícono de un nodo
 *Crear la validacion de nombre de nodo
 *cambiar el nombre de fragmentoResponsables a fragmentoUsuarios en utilidades gql del cliente.
 *mover el componente IconoPersona a la carpeta root de componentes porque es un componente que se usa en muchos lugares.
@@ -12,27 +11,23 @@ Reestructuracion no-urgente
 *proteger con check de auth la funcion de set estado de desarrollo estudiantil
 *Cuando un usuario es eliminado, se daña el funcionamiento de una lista de cosas. Solucionar.
  -Responsables de proyecto y trabajos.
-*Revisar todos los sitios del cliente en donde se usó WriteQuery sin crear un nuevo cache.
-*Que al eliminar un trabajo, o proyecto, o otro componente que es dueño de uno foro, se elimine el foro
+*Que al eliminar un trabajo, o proyecto, o otro componente que es dueño de un foro, se elimine el foro
 *update adecuado después de eliminar una actividad. Actualmente simplemente hay un refresh de la página. Me parece que habrá que reconstruir el mecanismo de paginación de actividades para esto.
-*Que el último responsable de un proyecto pueda eliminarlo.
-*Loading para cuando uno elimina una respuesta
-*Revisar el resolveType de nodoProyecto en los resolvers de proyectos.
-*Reparar la publicación de una nueva respuesta en actividades estudiantiles: Puede hacerse sin necesidad de la variable "Nuebo desarrollo", seleccionando el desarrollo en el que se publicará usando la información "infoEstudiante"
+*Que el último responsable de un grupo pueda eliminarlo.
+*Loading para cuando uno elimina una respuesta en actividades virtuales.
+*Reparar la publicación de una nueva respuesta en actividades estudiantiles: Puede hacerse sin necesidad de la variable "Nuevo desarrollo", seleccionando el desarrollo en el que se publicará usando la información "infoEstudiante"
 *Revisar minimos y maximos en campos string de la base de datos
-*Debouncear el guardado de posicion de trabajos y objetivos en el diagrama de flujo de los proyectos
-*Revisar que en todos los casos es que se descarga nodoConocimiento de la base de datos, seleccionar los campos para no traer el icono de cada nodo, que es pesado.
+*Revisar que en todos los casos en que se descarga nodoConocimiento de la base de datos, seleccionar los campos para no traer el icono de cada nodo, que es pesado.
 *al revisar que los nombres, descripciones, etc. de proyectos, nodos, clases etc. no contengan caracteres ilegales en el backend se debe verificar que se lance un UserInputError en lugar de un ApolloError
 *Manejar vinculos huérfanos del atlas de solidaridad.
 *validar links de enlaces de nodos solidaridad en front y back.
 *prevenir loops de children en atlas de solidaridad.
 *eliminar materiales cuando se elimina el trabajoParent del atlas de solidaridad.
+*Personalización de colores en el atlas de solidaridad.
 
 Funcionalidad urgente
 
 *Que se puedan enviar emoticones
-*Que al crear trabajos se guarde la id del proyecto creador
-*Que al crear un objetivo en el diagrama de flujo, aparezca automáticamente.
 
 
 Pruebas:{
@@ -42,7 +37,3 @@ Pruebas:{
         personas
     }
 }
-
-
-*Error de marlon cambiando el nombre de la actividad en el celular
-*Error de Aura navegando entre los grupos estudiantiles.
