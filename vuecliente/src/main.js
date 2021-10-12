@@ -3,7 +3,9 @@ import App from './App.vue'
 import store from "./store/index"
 import { apolloProvider, serverUrl } from "./apollo"
 import { router } from "./Router"
-
+// import VueApolloComponents from '@vue/apollo-components'
+import VueApollo from "vue-apollo"
+// import VueApollo from 'vue-apollo'
 const clienteUrl = process.env.NODE_ENV === 'production'? serverUrl+'/pepepe' : 'http://localhost:8080'
 
 Vue.mixin({
@@ -60,6 +62,9 @@ Vue.mixin({
 
 
 Vue.config.productionTip = false
+Vue.use(VueApollo)
+
+
 
 new Vue({
   render: h => h(App),
@@ -67,3 +72,5 @@ new Vue({
   apolloProvider,
   router
 }).$mount('#app')
+
+

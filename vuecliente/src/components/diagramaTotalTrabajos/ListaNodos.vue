@@ -47,7 +47,7 @@ export default {
   },
   methods: {
     guardarChildren(nodo) {
-      nodo.children = this.todosNodos.filter(
+      nodo.children = this.nodosTodos.filter(
         (n) => n.nodoParent && n.nodoParent.id === nodo.id
       );
     },
@@ -58,14 +58,17 @@ export default {
     }
   },
   computed: {
+    nodosTodos(){
+      return JSON.parse(JSON.stringify(this.todosNodos))
+    },
     nodosPrimerNivel() {
       return this.nodosNested.filter(
         (n) => !n.nodoParent || !n.nodoParent.idNodo
       );
     },
     nodosNested() {
-      return this.todosNodos.map((nodo) => {
-        nodo.children = this.todosNodos.filter(
+      return this.nodosTodos.map((nodo) => {
+        nodo.children = this.nodosTodos.filter(
           (n) => n.nodoParent && n.nodoParent.idNodo === nodo.id
         );
         return nodo;
