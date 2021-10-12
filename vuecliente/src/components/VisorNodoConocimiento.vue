@@ -547,7 +547,8 @@ export default {
         };
       },
       update({ nodo }) {
-        nodo.secciones.forEach((seccion) => {
+        var nuevoNodo=JSON.parse(JSON.stringify(nodo));
+        nuevoNodo.secciones.forEach((seccion) => {
           seccion.subiendoArchivo = false;
           seccion.editandose = false;
           seccion.texto = seccion.nombre;
@@ -555,7 +556,7 @@ export default {
             archivo.enviandoInfo = false;
           });
         });
-        return nodo;
+        return nuevoNodo;
       },
     },
   },

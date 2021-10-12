@@ -202,7 +202,8 @@ export default {
       },
       update({ todosNodos }) {
         this.nodosDescargados = true;
-        todosNodos.forEach((nodo) => {
+        var nuevoTodosNodos=JSON.parse(JSON.stringify(todosNodos))
+        nuevoTodosNodos.forEach((nodo) => {
           nodo.coordsManuales = nodo.coords;
         });
         return todosNodos;

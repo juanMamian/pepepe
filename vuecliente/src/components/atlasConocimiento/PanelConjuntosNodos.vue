@@ -476,14 +476,16 @@ export default {
         return [];
       }
 
-      this.yo.atlas.colecciones.forEach((c) => {
+      var nuevoColecciones=JSON.parse(JSON.stringify(this.yo.atlas.colecciones))
+
+      nuevoColecciones.forEach((c) => {
         c.titulo = c.nombre;
         c.modo = "estudiante";
         c.editable = true;
         c.editandoNombre = false;
       });
 
-      return this.yo.atlas.colecciones;
+      return nuevoColecciones;
     },
   },
   watch: {

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import {EsquemaVinculosNodosProyecto} from "./VinculosNodosProyecto";
-
+import {pubsub} from "../gql/Schema"
+import {NODO_EDITADO} from "../gql/Trabajos"
 const esquemaEnlace= new mongoose.Schema({
     nombre:{
         type: String,
@@ -142,6 +143,12 @@ export const esquemaObjetivo = new mongoose.Schema({
         type:String,        
     },
     
+});
+
+
+esquemaObjetivo.post("save", function(objetivo){
+    objetivo.tipoNodo="objetivo";
+    pubsub.publish(NODO_EDITADO, { nodoEditado: objetivo });    
 });
 
 esquemaObjetivo.index({keywords:"text", nombre: "text", descripcion: "text"});

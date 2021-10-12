@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import {EsquemaVinculosNodosProyecto} from "./VinculosNodosProyecto";
-
+import {pubsub} from "../gql/Schema"
+import {NODO_EDITADO} from "../gql/Trabajos"
 
 const esquemaMaterial= new mongoose.Schema({
     nombre:{
@@ -143,6 +144,16 @@ esquemaTrabajo.add({
             default:0
         }
     },
+    autoCoords:{
+        x:{
+            type: Number,
+            default:0
+        },
+        y:{
+            type: Number,
+            default:0
+        }
+    },
     angulo:{
         type: Number,
         default:0,
@@ -174,10 +185,34 @@ esquemaTrabajo.add({
     peso:{
         type:Number,
         default:0
+    },
+    fuerzaCentroMasa:{
+        fuerza:{
+            type: Number,
+            default:0
+        },
+        direccion:{
+            type:Number,
+            default:0
+        }
+    },
+    fuerzaColision:{
+        fuerza:{
+            type: Number,
+            default:0
+        },
+        direccion:{
+            type:Number,
+            default:0
+        }
     }
    
 });
 
+esquemaTrabajo.post("save", function(trabajo){
+    trabajo.tipoNodo="trabajo";
+    pubsub.publish(NODO_EDITADO, { nodoEditado: trabajo });    
+});
 
 esquemaTrabajo.index({nombre:"text", keywords: "text", descripcion:"text"});
 export const ModeloTrabajo = mongoose.model("Trabajo", esquemaTrabajo);

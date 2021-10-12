@@ -50,9 +50,7 @@ export const typeDefs = gql`
        centroMasa:Coords,
        nivel: Int,
        turnoNivel:Float,
-       peso:Int,
-       fuerzaCentroMasa:FuerzaPolar
-    fuerzaColision:FuerzaPolar
+       peso:Int,       
 
    }
 
@@ -106,9 +104,7 @@ export const typeDefs = gql`
        centroMasa:Coords,
        nivel: Int,
        turnoNivel:Float,
-       peso:Int,
-       fuerzaCentroMasa:FuerzaPolar,
-    fuerzaColision:FuerzaPolar
+       peso:Int,       
    }
 
    type InfoBasicaTrabajo{

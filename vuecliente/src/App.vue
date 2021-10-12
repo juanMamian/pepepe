@@ -344,7 +344,8 @@ export default {
       return {};
     },
     notificacionesOrdenadas: function () {
-      let lasNotificaciones = this.yo.notificaciones;
+      var lasNotificaciones = JSON.parse(JSON.stringify(this.yo.notificaciones));
+      
       return lasNotificaciones.sort((a, b) => {
         return new Date(b.fecha) - new Date(a.fecha);
       });
