@@ -44,7 +44,11 @@
       <div
         class="botonMenuContextual"
         id="botonCrearObjetivo"
-        v-show="usuarioSuperadministrador || (nodoSeleccionado!=null && nodoSeleccionado.responsables.includes(usuario.id))"
+        v-show="
+          usuarioSuperadministrador ||
+          (nodoSeleccionado != null &&
+            nodoSeleccionado.responsables.includes(usuario.id))
+        "
         @mouseup.left.stop=""
         @click.stop="crearNodoEnMenuContextual('objetivo')"
       >
@@ -63,7 +67,11 @@
         id="botonCrearObjetivo"
         @click.stop="crearNodoEnMenuContextual('trabajo')"
         @mouseup.left.stop=""
-        v-show="usuarioSuperadministrador || (nodoSeleccionado!=null && nodoSeleccionado.responsables.includes(usuario.id))"
+        v-show="
+          usuarioSuperadministrador ||
+          (nodoSeleccionado != null &&
+            nodoSeleccionado.responsables.includes(usuario.id))
+        "
       >
         Crear trabajo
         {{
@@ -560,7 +568,7 @@ export default {
           };
         },
         updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          var nuevoPreviousResult=JSON.parse(JSON.stringify(previousResult));
+          var nuevoPreviousResult = JSON.parse(JSON.stringify(previousResult));
           const indexN = nuevoPreviousResult.todosNodosSolidaridad.findIndex(
             (n) => n.id == data.nodoEditado.id
           );
@@ -630,7 +638,7 @@ export default {
       // proyectos: [],
       // trabajos: [],
       // objetivos: [],
-      descargasTodosNodos:0,
+      descargasTodosNodos: 0,
       todosNodos: [],
       enviandoQueryNodos: false,
 
@@ -733,15 +741,18 @@ export default {
     },
     clickFondoAtlas() {
       if (!this.vistaPanned) {
-        this.idNodoSeleccionado = null;
+        if (!this.idNodoPaVentanita) {
+          this.idNodoSeleccionado = null;
+        }
         this.idNodoPaVentanita = null;
+        this.idNodoMenuCx = null;
+        this.cerrarBusqueda++;
+        this.cerrarListas++;
       }
+      this.mostrandoMenuContextual = false;
+
       this.panningVista = false;
       this.vistaPanned = false;
-      this.mostrandoMenuContextual = false;
-      this.idNodoMenuCx = null;
-      this.cerrarBusqueda++;
-      this.cerrarListas++;
     },
     movimientoMobile(e) {
       if (this.pinching) {
@@ -872,9 +883,9 @@ export default {
       // this.$set(this.esquinaVistaDecimal, "y", posZoom.y-((posContenedor.height/this.factorZoom)*proporciones.y) );
     },
     eliminarNodoCache(idNodo) {
-      const store=this.$apollo.provider.defaultClient;
+      const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
-        query: QUERY_TODOS_NODOS,       
+        query: QUERY_TODOS_NODOS,
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
       const indexN = nuevoCache.todosNodosSolidaridad.findIndex(
@@ -883,7 +894,7 @@ export default {
       if (indexN > -1) {
         nuevoCache.todosNodosSolidaridad.splice(indexN, 1);
         store.writeQuery({
-          query: QUERY_TODOS_NODOS,          
+          query: QUERY_TODOS_NODOS,
           data: nuevoCache,
         });
       } else {
@@ -1261,7 +1272,7 @@ export default {
     }, 1000),
   },
   computed: {
-    refreshNodoVentanita(){
+    refreshNodoVentanita() {
       return this.$store.state.refreshNodoVentanitaAtlasSolidaridad;
     },
     offsetMenuContextual() {
@@ -1466,22 +1477,22 @@ export default {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
     },
-    descargasTodosNodos(val){
-      const idNodoNotificado=this.$route.params.nv;
-      if(val===1 && idNodoNotificado){
-        console.log("Centrando en nodo "+idNodoNotificado);
+    descargasTodosNodos(val) {
+      const idNodoNotificado = this.$route.params.nv;
+      if (val === 1 && idNodoNotificado) {
+        console.log("Centrando en nodo " + idNodoNotificado);
         this.centrarEnNodoById(idNodoNotificado);
-        this.idNodoPaVentanita=idNodoNotificado;
+        this.idNodoPaVentanita = idNodoNotificado;
       }
     },
-    refreshNodoVentanita(){
-      const idNodoNotificado=this.$route.params.nv;
-      if(idNodoNotificado){
-        console.log("Centrando en nodo "+idNodoNotificado);
+    refreshNodoVentanita() {
+      const idNodoNotificado = this.$route.params.nv;
+      if (idNodoNotificado) {
+        console.log("Centrando en nodo " + idNodoNotificado);
         this.centrarEnNodoById(idNodoNotificado);
-        this.idNodoPaVentanita=idNodoNotificado;
+        this.idNodoPaVentanita = idNodoNotificado;
       }
-    }
+    },
   },
   mounted() {
     var posAtlas = this.$el.getBoundingClientRect();
