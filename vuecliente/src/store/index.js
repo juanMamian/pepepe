@@ -77,15 +77,16 @@ export default new Vuex.Store({
         },
 
         setRespuestasLeidasConversacionUsuario(state, datos){
-            var infoForo=state.usuario.foros.find(f=>f.idForo==datos.idForo);
+            var nuevoUsuario=JSON.parse(JSON.stringify(state.usuario));
+            var infoForo=nuevoUsuario.foros.find(f=>f.idForo==datos.idForo);
             if(!infoForo){
                 var nuevoInfoForo={
                     idForo:datos.idForo,
                     conversaciones:[],
                     __typename:"InfoForosUsuario"
                 };
-                state.usuario.foros.push(nuevoInfoForo);
-                infoForo=state.usuario.foros.find(f=>f.idForo==datos.idForo);
+                nuevoUsuario.foros.push(nuevoInfoForo);
+                infoForo=nuevoUsuario.foros.find(f=>f.idForo==datos.idForo);
             }
             
 
@@ -98,7 +99,8 @@ export default new Vuex.Store({
                 infoForo.conversaciones.push(nuevoInfoConversacion);
                 infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==datos.idConversacion);
             }
-            infoConversacion.respuestasLeidas=datos.respuestasLeidas;                        
+            infoConversacion.respuestasLeidas=datos.respuestasLeidas;        
+            state.usuario=nuevoUsuario;                
         }
     }
 });
