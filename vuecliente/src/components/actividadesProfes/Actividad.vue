@@ -566,14 +566,15 @@ export default {
               return;
             }
             console.log(`Retirando participacion`);
-            var cache = store.readQuery({
+            const cache = store.readQuery({
               query: QUERY_ACTIVIDAD,
               variables: {
                 idGrupo: dis.idGrupo,
                 idActividad: dis.idActividad,
               },
             });
-            var elDesarrollo = dis.estaActividad.desarrollos.find(
+            var nuevoCache=JSON.parse(JSON.stringify(cache));
+            var elDesarrollo = nuevoCache.actividadDeGrupoEstudiantil.desarrollos.find(
               (d) => d.id == idDesarrollo
             );
 
@@ -588,11 +589,11 @@ export default {
               elDesarrollo.participaciones.splice(indexP, 1);
               if (elDesarrollo.participaciones.length < 1) {
                 console.log(`Desarrollo quedó vacío`);
-                let indexD = dis.estaActividad.desarrollos.findIndex(
+                let indexD = nuevoCache.actividadDeGrupoEstudiantil.desarrollos.findIndex(
                   (d) => d.id == idDesarrollo
                 );
                 if (indexD > -1) {
-                  dis.estaActividad.desarrollos.splice(indexD, 1);
+                  nuevoCache.actividadDeGrupoEstudiantil.desarrollos.splice(indexD, 1);
                 }
                 {
                   console.log(`Desarrollo no encontrado`);
@@ -605,7 +606,7 @@ export default {
                   idGrupo: dis.idGrupo,
                   idActividad: dis.idActividad,
                 },
-                data: cache,
+                data: nuevoCache,
               });
               console.log(`Participacion retirada`);
             } else {
@@ -684,21 +685,24 @@ export default {
     },
     addDesarrolloCreado(nuevoDesarrollo) {
       let store = this.$apollo.provider.defaultClient;
-      var cache = store.readQuery({
+      const cache = store.readQuery({
         query: QUERY_ACTIVIDAD,
         variables: {
           idGrupo: this.idGrupo,
           idActividad: this.idActividad,
         },
       });
+      var nuevoCache=JSON.parse(JSON.stringify(cache));
 
       if (
-        this.estaActividad.desarrollos.some((d) => d.id == nuevoDesarrollo.id)
-      ) {
+        nuevoCache.actividadDeGrupoEstudiantil.desarrollos.some((d) => d.id == nuevoDesarrollo.id)
+      ) {        
         console.log(`Ese desarrollo ya estaba`);
       }
+      else{
+        nuevoCache.actividadDeGrupoEstudiantil.desarrollos.push(nuevoDesarrollo);
+      }
 
-      this.estaActividad.desarrollos.push(nuevoDesarrollo);
 
       store.writeQuery({
         query: QUERY_ACTIVIDAD,
@@ -706,7 +710,7 @@ export default {
           idGrupo: this.idGrupo,
           idActividad: this.idActividad,
         },
-        data: cache,
+        data: nuevoCache,
       });
       console.log(`Nuevo desarrollo añadido`);
     },
@@ -719,7 +723,8 @@ export default {
           idActividad: this.idActividad,
         },
       });
-      var elDesarrollo = this.estaActividad.desarrollos.find(
+      var nuevoCache=JSON.parse(JSON.stringify(cache));
+      var elDesarrollo = nuevoCache.actividadDeGrupoEstudiantil.desarrollos.find(
         (d) => d.id == idDesarrollo
       );
 
@@ -740,7 +745,7 @@ export default {
           idGrupo: this.idGrupo,
           idActividad: this.idActividad,
         },
-        data: cache,
+        data: nuevoCache,
       });
       console.log(`Nueva respuesta añadida`);
     },

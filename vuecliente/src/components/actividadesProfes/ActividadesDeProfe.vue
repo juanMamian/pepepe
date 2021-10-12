@@ -94,7 +94,7 @@ export default {
       return false;
     },
     actividadesOrdenadas: function () {
-      let lasActividades = this.actividades;
+      var lasActividades = JSON.parse(JSON.stringify(this.actividades));
       lasActividades.sort((a, b) => {
         return new Date(b.fechaUpload) - new Date(a.fechaUpload);
       });
