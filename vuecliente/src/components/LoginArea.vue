@@ -88,6 +88,7 @@ export default {
   methods: {
     iniciarSesion: function () {
       console.log(`Iniciando login`);
+      this.username=this.username.normalize("NFD").replace(/\p{Diacritic}/gu, "")
       let dis = this;
       //Validacion de caracteres
       if (
