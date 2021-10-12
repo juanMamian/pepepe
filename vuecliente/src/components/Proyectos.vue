@@ -58,7 +58,8 @@ export default {
       query: QUERY_PROYECTOS,
       fetchPolicy: "cache-and-network",
       update:function({proyectos}){
-        return proyectos.sort((a, b)=>{
+        var nuevoProyectos=JSON.parse(JSON.stringify(proyectos));
+        return nuevoProyectos.sort((a, b)=>{
           let res=0;
           if(a.responsables.some(r=>r.id==this.$store.state.usuario.id)){
             res--;
