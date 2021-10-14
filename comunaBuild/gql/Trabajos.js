@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolvers = exports.typeDefs = void 0;
+exports.resolvers = exports.NODO_EDITADO = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Usuario_1 = require("../model/Usuario");
 const Foro_1 = require("../model/Foros/Foro");
@@ -24,7 +24,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         nombre: String,        
         coords:CoordsInput,
         vinculos:[vinculoInput]
-    }
+    }    
 
     type ResultadoBusquedaNodosSolidaridad{
         trabajos:[Trabajo]
@@ -50,13 +50,15 @@ exports.typeDefs = apollo_server_express_1.gql `
        idForoResponsables:ID,
        estadoDesarrollo:String,       
        coords: Coords,
+       autoCoords: Coords,
        angulo:Float,
        stuck:Boolean,
        puntaje:Float,
        centroMasa:Coords,
        nivel: Int,
        turnoNivel:Float,
-       peso:Int,
+       peso:Int,       
+
    }
 
    type InfoBasicaObjetivo{
@@ -102,14 +104,14 @@ exports.typeDefs = apollo_server_express_1.gql `
        materiales:[MaterialTrabajo],
        estado:String,       
        coords: Coords,
+       autoCoords: Coords,
        angulo:Float,
        stuck:Boolean,
        puntaje:Float,
        centroMasa:Coords,
        nivel: Int,
        turnoNivel:Float,
-       peso:Int,
-
+       peso:Int,       
    }
 
    type InfoBasicaTrabajo{
@@ -138,6 +140,7 @@ exports.typeDefs = apollo_server_express_1.gql `
    }
 
    extend type Mutation{
+
     crearMaterialEnTrabajoSolidaridad(idTrabajo:ID!):MaterialTrabajo,
     eliminarMaterialDeTrabajoSolidaridad(idTrabajo:ID!, idMaterial: ID!):Boolean,
     editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
@@ -189,15 +192,14 @@ exports.typeDefs = apollo_server_express_1.gql `
    }
 
 `;
-const NODO_EDITADO = "nodo_solidaridad_editado";
+exports.NODO_EDITADO = "nodo_solidaridad_editado";
 exports.resolvers = {
     Subscription: {
         nodoEditado: {
             subscribe: apollo_server_express_1.withFilter((_, { centro, radio }, contexto) => {
                 console.log(`--------------------------Creando una subscripción a nodos editados de ${contexto.usuario.username} con centro en ${centro} y de radio ${radio}`);
-                return contexto.pubsub.asyncIterator(NODO_EDITADO);
+                return contexto.pubsub.asyncIterator(exports.NODO_EDITADO);
             }, (nodoEditado, variables, contexto) => {
-                console.log(`Decidiendo si notificar a ${contexto.usuario.id} acerca de un nodo editado en las coords ${JSON.stringify(nodoEditado.nodoEditado.coords)} con las variables ${JSON.stringify(variables)}`);
                 if (variables.radio === 0) {
                     return true;
                 }
@@ -435,21 +437,30 @@ exports.resolvers = {
                     administradores = elNodo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elNodo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elNodo.nodoParent.idNodo);
+                    var idParent = elNodo.nodoParent.idNodo;
+                    var tipoParent = elNodo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elNodo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elNodo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elNodo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -464,8 +475,6 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`error guardando el nodo modificado: ${error}`);
                 }
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elNodo });
                 return elNodo;
             });
         },
@@ -607,9 +616,7 @@ exports.resolvers = {
                 }
                 console.log(`nuevo nodo de solidaridad creado`);
                 //PUBSUB
-                const pubsub = contexto.pubsub;
                 nuevoNodo.tipoNodo = infoNodo.tipo;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: nuevoNodo });
                 return nuevoNodo;
             });
         },
@@ -690,9 +697,6 @@ exports.resolvers = {
                 }
                 console.log(`nuevo nodo de solidaridad creado:`);
                 nuevoNodo.tipoNodo = infoNodo.tipo;
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: nuevoNodo });
-                pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequiriente });
                 return [nuevoNodo, nodoRequiriente];
             });
         },
@@ -761,9 +765,6 @@ exports.resolvers = {
                 console.log(`Desvinculados`);
                 unNodo.tipoNodo = tipoUnNodo;
                 otroNodo.tipoNodo = tipoOtroNodo;
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: unNodo });
-                pubsub.publish(NODO_EDITADO, { nodoEditado: otroNodo });
                 return [unNodo, otroNodo];
             });
         },
@@ -877,9 +878,6 @@ exports.resolvers = {
                 console.log(`Vinculados`);
                 nodoRequiriente.tipoNodo = tipoNodoRequiriente;
                 nodoRequerido.tipoNodo = tipoNodoRequerido;
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequiriente });
-                pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequerido });
                 return [nodoRequiriente, nodoRequerido];
             });
         },
@@ -937,9 +935,6 @@ exports.resolvers = {
                 console.log(`Parented`);
                 nodoRequiriente.tipoNodo = tipoNodoRequiriente;
                 nodoRequerido.tipoNodo = tipoNodoRequerido;
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequiriente });
-                pubsub.publish(NODO_EDITADO, { nodoEditado: nodoRequerido });
                 return [nodoRequiriente, nodoRequerido];
             });
         },
@@ -965,7 +960,7 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 const permisosEspeciales = ["superadministrador"];
-                if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+                if (!credencialesUsuario.id || (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !elNodo.responsables.includes(credencialesUsuario.id))) {
                     console.log(`Error de autenticación`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
@@ -1004,7 +999,7 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 const permisosEspeciales = ["superadministrador"];
-                if (!credencialesUsuario.id || !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) || !elNodo.responsables.includes(credencialesUsuario.id)) {
+                if (!credencialesUsuario.id || (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !elNodo.responsables.includes(credencialesUsuario.id))) {
                     console.log(`Error de autenticación`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
@@ -1277,21 +1272,30 @@ exports.resolvers = {
                     administradores = elObjetivo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elObjetivo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elObjetivo.nodoParent.idNodo);
+                    var idParent = elObjetivo.nodoParent.idNodo;
+                    var tipoParent = elObjetivo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elObjetivo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elObjetivo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elObjetivo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -1310,8 +1314,6 @@ exports.resolvers = {
                 }
                 console.log(`Nombre cambiado`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1332,22 +1334,31 @@ exports.resolvers = {
                 if (!elObjetivo.nodoParent || !elObjetivo.nodoParent.idNodo || !elObjetivo.nodoParent.tipo) {
                     administradores = elObjetivo.responsables;
                 }
-                else {
-                    try {
-                        var elNodoParent = null;
-                        if (elObjetivo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elObjetivo.nodoParent.idNodo);
+                else { //Buscar el proximo nodo parent con responsables.
+                    var idParent = elObjetivo.nodoParent.idNodo;
+                    var tipoParent = elObjetivo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elObjetivo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elObjetivo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elObjetivo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -1371,8 +1382,6 @@ exports.resolvers = {
                 }
                 console.log(`Descripcion guardado`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1394,21 +1403,30 @@ exports.resolvers = {
                     administradores = elObjetivo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elObjetivo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elObjetivo.nodoParent.idNodo);
+                    var idParent = elObjetivo.nodoParent.idNodo;
+                    var tipoParent = elObjetivo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elObjetivo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elObjetivo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elObjetivo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -1496,8 +1514,6 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1545,8 +1561,6 @@ exports.resolvers = {
                 }
                 console.log(`Objetivo guardado`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
                 //Crear notificacion para los responsables actuales del objetivo
                 try {
                     var currentResponsables = yield Usuario_1.ModeloUsuario.find({ _id: { $in: elObjetivo.responsables } }).exec();
@@ -1571,6 +1585,7 @@ exports.resolvers = {
                         responsable.notificaciones.push(newNotificacion);
                         try {
                             yield responsable.save();
+                            const pubsub = contexto.pubsub;
                             pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: responsable.id, nuevaNotificacion: newNotificacion });
                         }
                         catch (error) {
@@ -1637,8 +1652,6 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1660,21 +1673,30 @@ exports.resolvers = {
                     administradores = elObjetivo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elObjetivo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elObjetivo.nodoParent.idNodo);
+                    var idParent = elObjetivo.nodoParent.idNodo;
+                    var tipoParent = elObjetivo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elObjetivo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elObjetivo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elObjetivo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -1693,8 +1715,6 @@ exports.resolvers = {
                 }
                 console.log(`Estado guardado`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1726,8 +1746,6 @@ exports.resolvers = {
                 }
                 console.log(`Retornando con ${elObjetivo.responsablesSolicitados} responsables solicitados`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1750,21 +1768,30 @@ exports.resolvers = {
                     administradores = elObjetivo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elObjetivo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elObjetivo.nodoParent.idNodo);
+                    var idParent = elObjetivo.nodoParent.idNodo;
+                    var tipoParent = elObjetivo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elObjetivo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elObjetivo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elObjetivo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -1891,21 +1918,30 @@ exports.resolvers = {
                     administradores = elTrabajo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elTrabajo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elTrabajo.nodoParent.idNodo);
+                    var idParent = elTrabajo.nodoParent.idNodo;
+                    var tipoParent = elTrabajo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elTrabajo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elTrabajo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elTrabajo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -1924,8 +1960,6 @@ exports.resolvers = {
                 }
                 console.log(`Nombre cambiado`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -1940,33 +1974,42 @@ exports.resolvers = {
                 }
                 catch (error) {
                     console.log("Error buscando el trabajo. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Erro en la conexión con la base de datos");
+                    throw new apollo_server_express_1.ApolloError("Error en la conexión con la base de datos");
                 }
                 var administradores = [];
                 if (!elTrabajo.nodoParent || !elTrabajo.nodoParent.idNodo || !elTrabajo.nodoParent.tipo) {
                     administradores = elTrabajo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elTrabajo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elTrabajo.nodoParent.idNodo);
+                    var idParent = elTrabajo.nodoParent.idNodo;
+                    var tipoParent = elTrabajo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elTrabajo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elTrabajo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elTrabajo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
                 if (!administradores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                    console.log(`Error de autenticacion editando nombre de trabajo`);
+                    console.log(`Error de autenticacion editando descripció de trabajo`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 const charProhibidosDescripcionTrabajo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
@@ -1985,8 +2028,6 @@ exports.resolvers = {
                 }
                 console.log(`Descripcion guardado`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2008,21 +2049,30 @@ exports.resolvers = {
                     administradores = elTrabajo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elTrabajo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elTrabajo.nodoParent.idNodo);
+                    var idParent = elTrabajo.nodoParent.idNodo;
+                    var tipoParent = elTrabajo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elTrabajo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elTrabajo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elTrabajo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -2110,8 +2160,6 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2159,8 +2207,6 @@ exports.resolvers = {
                 }
                 console.log(`Trabajo guardado`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
                 //Crear notificacion para los responsables actuales del trabajo
                 try {
                     var currentResponsables = yield Usuario_1.ModeloUsuario.find({ _id: { $in: elTrabajo.responsables } }).exec();
@@ -2185,6 +2231,7 @@ exports.resolvers = {
                         responsable.notificaciones.push(newNotificacion);
                         try {
                             yield responsable.save();
+                            const pubsub = contexto.pubsub;
                             pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: responsable.id, nuevaNotificacion: newNotificacion });
                         }
                         catch (error) {
@@ -2251,8 +2298,6 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2274,21 +2319,30 @@ exports.resolvers = {
                     administradores = elTrabajo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elTrabajo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elTrabajo.nodoParent.idNodo);
+                    var idParent = elTrabajo.nodoParent.idNodo;
+                    var tipoParent = elTrabajo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elTrabajo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elTrabajo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elTrabajo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -2307,8 +2361,6 @@ exports.resolvers = {
                 }
                 console.log(`Estado guardado`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2340,8 +2392,6 @@ exports.resolvers = {
                 }
                 console.log(`Retornando con ${elTrabajo.responsablesSolicitados} responsables solicitados`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2364,21 +2414,30 @@ exports.resolvers = {
                     administradores = elTrabajo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (elTrabajo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(elTrabajo.nodoParent.idNodo);
+                    var idParent = elTrabajo.nodoParent.idNodo;
+                    var tipoParent = elTrabajo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (elTrabajo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(elTrabajo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${elTrabajo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     administradores = elNodoParent.responsables;
                 }
                 //Authorización
@@ -2956,21 +3015,30 @@ exports.resolvers = {
                     return nodo.responsables;
                 }
                 else {
-                    try {
-                        var elNodoParent = null;
-                        if (nodo.nodoParent.tipo === 'trabajo') {
-                            elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(nodo.nodoParent.idNodo);
+                    var idParent = nodo.nodoParent.idNodo;
+                    var tipoParent = nodo.nodoParent.tipo;
+                    var elNodoParent = null;
+                    do {
+                        try {
+                            elNodoParent = null;
+                            if (tipoParent === 'trabajo') {
+                                elNodoParent = yield Trabajo_1.ModeloTrabajo.findById(idParent);
+                            }
+                            else if (tipoParent === 'objetivo') {
+                                elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(idParent);
+                            }
+                            if (!elNodoParent)
+                                throw "Nodo parent no encontrado";
                         }
-                        else if (nodo.nodoParent.tipo === 'objetivo') {
-                            elNodoParent = yield Objetivo_1.ModeloObjetivo.findById(nodo.nodoParent.idNodo);
+                        catch (error) {
+                            console.log(`Error buscando el nodo parent de ${nodo.nombre}: ${elNodoParent}`);
+                            throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                         }
-                        if (!elNodoParent)
-                            throw "Nodo parent no encontrado";
-                    }
-                    catch (error) {
-                        console.log(`Error buscando el nodo parent de ${nodo.nombre}: ${elNodoParent}`);
-                        throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
-                    }
+                        if (elNodoParent.nodoParent) {
+                            idParent = elNodoParent.nodoParent.idNodo;
+                            tipoParent = elNodoParent.nodoParent.tipo;
+                        }
+                    } while (elNodoParent.responsables.length < 1 && elNodoParent.nodoParent && elNodoParent.nodoParent.idNodo && elNodoParent.nodoParent.tipo);
                     return elNodoParent.responsables;
                 }
             });

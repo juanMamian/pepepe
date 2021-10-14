@@ -105,11 +105,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
     const username = req.body.username;
     const pass = req.body.password;
-
-    if(username==='SebastianHernandez'){
-        return res.status(400).send({ error: "sebastian", msjUsuario: "Usuario bloqueado" });
-    }
-
+   
     console.log("loging " + JSON.stringify(req.body));
 
     try {

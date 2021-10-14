@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModeloObjetivo = exports.esquemaObjetivo = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const VinculosNodosProyecto_1 = require("./VinculosNodosProyecto");
+const Schema_1 = require("../gql/Schema");
+const Trabajos_1 = require("../gql/Trabajos");
 const esquemaEnlace = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -141,6 +143,10 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
     idForoResponsables: {
         type: String,
     },
+});
+exports.esquemaObjetivo.post("save", function (objetivo) {
+    objetivo.tipoNodo = "objetivo";
+    Schema_1.pubsub.publish(Trabajos_1.NODO_EDITADO, { nodoEditado: objetivo });
 });
 exports.esquemaObjetivo.index({ keywords: "text", nombre: "text", descripcion: "text" });
 exports.ModeloObjetivo = mongoose_1.default.model("Objetivo", exports.esquemaObjetivo);
