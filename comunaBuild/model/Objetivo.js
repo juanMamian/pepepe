@@ -151,6 +151,26 @@ exports.esquemaObjetivo = new mongoose_1.default.Schema({
     idForoResponsables: {
         type: String,
     },
+    fuerzaCentroMasa: {
+        fuerza: {
+            type: Number,
+            default: 0
+        },
+        direccion: {
+            type: Number,
+            default: 0
+        }
+    },
+    fuerzaColision: {
+        fuerza: {
+            type: Number,
+            default: 0
+        },
+        direccion: {
+            type: Number,
+            default: 0
+        }
+    }
 });
 exports.esquemaObjetivo.index({ keywords: "text", nombre: "text", descripcion: "text" });
 exports.ModeloObjetivo = mongoose_1.default.model("Objetivo", exports.esquemaObjetivo);

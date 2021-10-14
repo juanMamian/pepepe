@@ -24,7 +24,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         nombre: String,        
         coords:CoordsInput,
         vinculos:[vinculoInput]
-    }
+    }    
 
     type ResultadoBusquedaNodosSolidaridad{
         trabajos:[Trabajo]
@@ -58,6 +58,9 @@ exports.typeDefs = apollo_server_express_1.gql `
        nivel: Int,
        turnoNivel:Float,
        peso:Int,
+       fuerzaCentroMasa:FuerzaPolar
+    fuerzaColision:FuerzaPolar
+
    }
 
    type InfoBasicaObjetivo{
@@ -111,7 +114,8 @@ exports.typeDefs = apollo_server_express_1.gql `
        nivel: Int,
        turnoNivel:Float,
        peso:Int,
-
+       fuerzaCentroMasa:FuerzaPolar,
+    fuerzaColision:FuerzaPolar
    }
 
    type InfoBasicaTrabajo{
@@ -140,6 +144,7 @@ exports.typeDefs = apollo_server_express_1.gql `
    }
 
    extend type Mutation{
+
     crearMaterialEnTrabajoSolidaridad(idTrabajo:ID!):MaterialTrabajo,
     eliminarMaterialDeTrabajoSolidaridad(idTrabajo:ID!, idMaterial: ID!):Boolean,
     editarNombreMaterialTrabajo(idTrabajo:ID!, idMaterial: ID!, nuevoNombre: String!):MaterialTrabajo,
@@ -199,7 +204,6 @@ exports.resolvers = {
                 console.log(`--------------------------Creando una subscripción a nodos editados de ${contexto.usuario.username} con centro en ${centro} y de radio ${radio}`);
                 return contexto.pubsub.asyncIterator(exports.NODO_EDITADO);
             }, (nodoEditado, variables, contexto) => {
-                console.log(`Decidiendo si notificar a ${contexto.usuario.id} acerca de un nodo editado en las coords ${JSON.stringify(nodoEditado.nodoEditado.coords)} con las variables ${JSON.stringify(variables)}`);
                 if (variables.radio === 0) {
                     return true;
                 }
@@ -475,8 +479,6 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`error guardando el nodo modificado: ${error}`);
                 }
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elNodo });
                 return elNodo;
             });
         },
@@ -618,9 +620,7 @@ exports.resolvers = {
                 }
                 console.log(`nuevo nodo de solidaridad creado`);
                 //PUBSUB
-                const pubsub = contexto.pubsub;
                 nuevoNodo.tipoNodo = infoNodo.tipo;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: nuevoNodo });
                 return nuevoNodo;
             });
         },
@@ -701,9 +701,6 @@ exports.resolvers = {
                 }
                 console.log(`nuevo nodo de solidaridad creado:`);
                 nuevoNodo.tipoNodo = infoNodo.tipo;
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: nuevoNodo });
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: nodoRequiriente });
                 return [nuevoNodo, nodoRequiriente];
             });
         },
@@ -772,9 +769,6 @@ exports.resolvers = {
                 console.log(`Desvinculados`);
                 unNodo.tipoNodo = tipoUnNodo;
                 otroNodo.tipoNodo = tipoOtroNodo;
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: unNodo });
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: otroNodo });
                 return [unNodo, otroNodo];
             });
         },
@@ -888,9 +882,6 @@ exports.resolvers = {
                 console.log(`Vinculados`);
                 nodoRequiriente.tipoNodo = tipoNodoRequiriente;
                 nodoRequerido.tipoNodo = tipoNodoRequerido;
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: nodoRequiriente });
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: nodoRequerido });
                 return [nodoRequiriente, nodoRequerido];
             });
         },
@@ -948,9 +939,6 @@ exports.resolvers = {
                 console.log(`Parented`);
                 nodoRequiriente.tipoNodo = tipoNodoRequiriente;
                 nodoRequerido.tipoNodo = tipoNodoRequerido;
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: nodoRequiriente });
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: nodoRequerido });
                 return [nodoRequiriente, nodoRequerido];
             });
         },
@@ -1330,8 +1318,6 @@ exports.resolvers = {
                 }
                 console.log(`Nombre cambiado`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1400,8 +1386,6 @@ exports.resolvers = {
                 }
                 console.log(`Descripcion guardado`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1534,8 +1518,6 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1583,8 +1565,6 @@ exports.resolvers = {
                 }
                 console.log(`Objetivo guardado`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elObjetivo });
                 //Crear notificacion para los responsables actuales del objetivo
                 try {
                     var currentResponsables = yield Usuario_1.ModeloUsuario.find({ _id: { $in: elObjetivo.responsables } }).exec();
@@ -1609,6 +1589,7 @@ exports.resolvers = {
                         responsable.notificaciones.push(newNotificacion);
                         try {
                             yield responsable.save();
+                            const pubsub = contexto.pubsub;
                             pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: responsable.id, nuevaNotificacion: newNotificacion });
                         }
                         catch (error) {
@@ -1675,8 +1656,6 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1740,8 +1719,6 @@ exports.resolvers = {
                 }
                 console.log(`Estado guardado`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1773,8 +1750,6 @@ exports.resolvers = {
                 }
                 console.log(`Retornando con ${elObjetivo.responsablesSolicitados} responsables solicitados`);
                 elObjetivo.tipoNodo = 'objetivo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elObjetivo });
                 return elObjetivo;
             });
         },
@@ -1989,8 +1964,6 @@ exports.resolvers = {
                 }
                 console.log(`Nombre cambiado`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2059,8 +2032,6 @@ exports.resolvers = {
                 }
                 console.log(`Descripcion guardado`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2193,8 +2164,6 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2242,8 +2211,6 @@ exports.resolvers = {
                 }
                 console.log(`Trabajo guardado`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elTrabajo });
                 //Crear notificacion para los responsables actuales del trabajo
                 try {
                     var currentResponsables = yield Usuario_1.ModeloUsuario.find({ _id: { $in: elTrabajo.responsables } }).exec();
@@ -2268,6 +2235,7 @@ exports.resolvers = {
                         responsable.notificaciones.push(newNotificacion);
                         try {
                             yield responsable.save();
+                            const pubsub = contexto.pubsub;
                             pubsub.publish(Usuarios_1.NUEVA_NOTIFICACION_PERSONAL, { idNotificado: responsable.id, nuevaNotificacion: newNotificacion });
                         }
                         catch (error) {
@@ -2334,8 +2302,6 @@ exports.resolvers = {
                     console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
                 }
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2399,8 +2365,6 @@ exports.resolvers = {
                 }
                 console.log(`Estado guardado`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },
@@ -2432,8 +2396,6 @@ exports.resolvers = {
                 }
                 console.log(`Retornando con ${elTrabajo.responsablesSolicitados} responsables solicitados`);
                 elTrabajo.tipoNodo = 'trabajo';
-                const pubsub = contexto.pubsub;
-                pubsub.publish(exports.NODO_EDITADO, { nodoEditado: elTrabajo });
                 return elTrabajo;
             });
         },

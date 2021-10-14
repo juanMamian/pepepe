@@ -61,6 +61,7 @@ type NodoConocimiento{
     vinculos: [Vinculo],
     coordsManuales: Coords,
     coords:Coords,
+    autoCoords:Coords,
     centroMasa:Coords,
     stuck:Boolean,
     puntaje:Int,
@@ -73,6 +74,8 @@ type NodoConocimiento{
     posiblesExpertos:[String],
     secciones:[SeccionContenidoNodo],
     angulo:Float
+    fuerzaCentroMasa:FuerzaPolar,
+    fuerzaColision:FuerzaPolar
 }
 
 input NodoConocimientoInput{
@@ -151,7 +154,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`enviando todos los nombres, vinculos y coordenadas`);
                 try {
-                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre descripcion expertos vinculos coordsManuales coords centroMasa stuck angulo puntaje coordx coordy ubicado clases").exec();
+                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre descripcion expertos vinculos coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
                     console.log(`encontrados ${todosNodos.length} nodos`);
                 }
                 catch (error) {

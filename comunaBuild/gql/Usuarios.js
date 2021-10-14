@@ -18,15 +18,15 @@ const Nodo_1 = require("../model/atlas/Nodo");
 const Objetivo_1 = require("../model/Objetivo");
 const Trabajo_1 = require("../model/Trabajo");
 exports.typeDefs = apollo_server_express_1.gql `
-    scalar Date
-
-    type ConfiguracionAtlas{
-        modo:String
-    }
+    scalar Date   
 
     type MinimoCausante{
         id:ID,
         tipo:String,
+    }
+
+    type ConfiguracionAtlasUsuario{
+        modo:String
     }
 
     type NotificacionActividadForos{
@@ -61,7 +61,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
         idNodoTarget:ID,
-        configuracion: ConfiguracionAtlas,
+        configuracion: ConfiguracionAtlasUsuario,
         colecciones:[ColeccionNodosAtlasConocimiento]
     }
     type InfoAtlasSolidaridad{

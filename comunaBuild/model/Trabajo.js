@@ -183,10 +183,30 @@ exports.esquemaTrabajo.add({
     peso: {
         type: Number,
         default: 0
+    },
+    fuerzaCentroMasa: {
+        fuerza: {
+            type: Number,
+            default: 0
+        },
+        direccion: {
+            type: Number,
+            default: 0
+        }
+    },
+    fuerzaColision: {
+        fuerza: {
+            type: Number,
+            default: 0
+        },
+        direccion: {
+            type: Number,
+            default: 0
+        }
     }
 });
 exports.esquemaTrabajo.post("save", function (trabajo) {
-    console.log(`Publicando nodoEditado`);
+    trabajo.tipoNodo = "trabajo";
     Schema_1.pubsub.publish(Trabajos_1.NODO_EDITADO, { nodoEditado: trabajo });
 });
 exports.esquemaTrabajo.index({ nombre: "text", keywords: "text", descripcion: "text" });
