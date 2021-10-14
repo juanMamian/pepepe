@@ -109,7 +109,7 @@ export default {
 
           if (respuesta.data.username == dis.username) {
             dis.$store.commit("logearse", respuesta.data.token);            
-            window.location.href = dis.clienteUrl;
+           // window.location.href = dis.clienteUrl;
             dis.enviandoDatos = false;
           }
         })
@@ -122,10 +122,7 @@ export default {
               dis.loginFail = true;
               dis.loginFailMsg = "Datos inválidos";
               return;
-            }
-            if (error.response.data.error == "sebastian") {
-              console.log(`Usuario bloqueado temporalmente`);
-            }
+            }            
           }
           if (error.response && error.response.data.msjUsuario) {
             alert(error.response.data.msjUsuario);
