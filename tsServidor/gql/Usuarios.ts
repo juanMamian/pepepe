@@ -557,7 +557,7 @@ export const resolvers = {
             const credencialesUsuario=contexto.usuario;
             const permisosAutorizados=["superadministrador"];
 
-            if(!credencialesUsuario.permisos.some(async (p)=>permisosAutorizados.includes(p))){
+            if(!credencialesUsuario.permisos.some((p)=>permisosAutorizados.includes(p))){
                 console.log(`El usuario no tenía los permisos correctos`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -593,7 +593,7 @@ export const resolvers = {
             const credencialesUsuario=contexto.usuario;
             const permisosAutorizados=["superadministrador"];
 
-            if(!credencialesUsuario.permisos.some(async (p)=>permisosAutorizados.includes(p))){
+            if(!credencialesUsuario.permisos.some((p)=>permisosAutorizados.includes(p))){
                 console.log(`El usuario no tenía los permisos correctos`);
                 throw new AuthenticationError("No autorizado");
             }
