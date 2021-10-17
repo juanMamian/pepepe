@@ -1,6 +1,6 @@
 import Vue from "vue"
 import Vuex from "vuex"
-import { apolloClient } from "../apollo"
+import { apolloClient, onLogin, onLogout } from "../apollo"
 Vue.use(Vuex);
 
 function parseJwt(token) {
@@ -39,26 +39,15 @@ export default new Vuex.Store({
 
             let usuario = parseJwt(token);
 
+            onLogin(apolloClient, token);
+
             state.token = token;
             state.usuario.username = usuario.username;
             state.usuario.permisos = usuario.permisos;
-            state.usuario.id = usuario.id;
-
-            let usuarioLS = JSON.stringify(state.usuario);
-
-            localStorage.setItem("pepepe_usuario", usuarioLS);
-            localStorage.setItem("token", token);
-
+            state.usuario.id = usuario.id;                           
         },
-        deslogearse(state) {
-            localStorage.clear();
-
-            state.usuario.username = null,
-                state.usuario.permisos = null,
-                state.usuario.id = null,
-
-                state.token = null
-            apolloClient.cache.data.clear();
+        deslogearse() {
+            onLogout(apolloClient);
         },
 
         refreshActividadEspecifica(state){

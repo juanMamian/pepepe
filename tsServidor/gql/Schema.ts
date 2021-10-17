@@ -57,13 +57,11 @@ const context = ({ req, res, connection }: any) => {
     }
     else {
         //console.log(`Conexion normal`);
-
         let headers: any = req.headers;
         //console.log(`headers: ${JSON.stringify(headers)}`);
-
         if (!headers.authorization) return { usuario };
         
-        const token: string = headers.authorization;
+        const token: string = headers.authorization.substr(7);
         try {
             usuario = jwt.verify(token, process.env.JWT_SECRET);
         }
@@ -78,8 +76,8 @@ const context = ({ req, res, connection }: any) => {
 
 }
 
-const onConnect=function(connectionParams, webSocket){
-    
+const onConnect=function(connectionParams, webSocket){    +
+    console.log(`Subscription`);
     var usuario: InterfaceCredencialesUsuario = {
         id: "",
         permisos: []
@@ -87,8 +85,7 @@ const onConnect=function(connectionParams, webSocket){
     if (connectionParams.headers && connectionParams.headers.Authorization) {
         let token=connectionParams.headers.Authorization.substr(7);
         try {
-            usuario = jwt.verify(token, process.env.JWT_SECRET);
-            
+            usuario = jwt.verify(token, process.env.JWT_SECRET);            
         }
         catch (error) {
             usuario = {
@@ -99,9 +96,11 @@ const onConnect=function(connectionParams, webSocket){
     }
     else{
         console.log(`Sin token`);
+        console.log(`Headers: ${JSON.stringify(connectionParams)}`);
     }
     return { usuario: usuario, pubsub };
 }
+
 
 export const aServer = new ApolloServer({
     typeDefs,
