@@ -32,7 +32,7 @@
           v-show="editandoNombre"
           @keypress.enter="guardarNuevoNombre"
         /> -->
-        <div class="controlesLateralesZona" :class="{deshabilitado: enviandoNuevoNombre}" v-if="usuarioAdministrador">
+        <div class="controlesLateralesZona" :class="{deshabilitado: enviandoNuevoNombre}" v-if="usuarioAdministrador || usuarioSuperadministrador">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
@@ -82,7 +82,8 @@
         </div>
         <div
           class="controlesZona"
-          v-show="usuarioAdministrador && mostrandoDescripcion"
+          v-if="usuarioAdministrador || usuarioSuperadministrador"
+          v-show="mostrandoDescripcion"
           :class="{deshabilitado: enviandoNuevoDescripcion}"
         >
           <img
@@ -90,8 +91,7 @@
             alt="Editar"
             id="bEditarDescripcion"
             class="bEditar"
-            title="Editar descripcion del objetivo"
-            v-show="usuarioAdministrador"
+            title="Editar descripcion del objetivo"            
             @click.stop="toggleEditandoDescripcion"
           />
           <img
@@ -269,7 +269,7 @@
       </div>
     </div>
 
-    <div id="zonaKeywords" class="zonaPrimerNivel" v-show="usuarioAdministrador">
+    <div id="zonaKeywords" class="zonaPrimerNivel" v-if="usuarioAdministrador || usuarioSuperadministrador">
       <div
         class="barraSuperiorZona"
         @click="mostrandoKeywords = !mostrandoKeywords"
@@ -287,7 +287,7 @@
         </div>
         <div
           class="controlesZona"
-          v-show="usuarioAdministrador && mostrandoKeywords"
+          v-show="mostrandoKeywords"
           :class="{deshabilitado: enviandoNuevoKeywords}"
         >
           <img
@@ -295,8 +295,7 @@
             alt="Editar"
             id="bEditarKeywords"
             class="bEditar"
-            title="Editar keywords del objetivo"
-            v-show="usuarioAdministrador"
+            title="Editar keywords del objetivo"            
             @click.stop="toggleEditandoKeywords"
           />
           <img
