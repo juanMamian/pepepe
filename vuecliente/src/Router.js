@@ -92,3 +92,13 @@ const routes = [
 export const router = new Router({
     routes
 });
+
+router.beforeEach((to, from, next)=>{
+    if(to.name!="loginArea" && (!store.state.usuario.id || !store.state.token)){
+        console.log(`Usuario deslogeado, dirigiendo a loginArea`);
+        next({name: "loginArea"});
+    }
+    else{
+        next();
+    }
+})

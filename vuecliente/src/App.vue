@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div id="navBar">
+    <div id="navBar" v-show="usuarioLogeado">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
       <img
         id="botonDesplegarNav"

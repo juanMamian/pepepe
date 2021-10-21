@@ -1,7 +1,6 @@
 <template>
   <div id="loginArea">
     <div id="ventanaCentral">
-      <form>
         <p id="tituloVentana">Iniciar sesion</p>
         <br />
         <input
@@ -26,14 +25,13 @@
         <br />
         <br />
         <loading v-show="enviandoDatos" :texto="'Conectando...'" />
-        <button
+        <div
           class="botonEnviar"
           @click.stop.prevent="iniciarSesion"
           :class="{ loginFail, desaparecido: enviandoDatos }"
         >
-          {{ loginFail ? loginFailMsg : "Conectarse" }}
-        </button>
-      </form>
+          {{ loginFail ? loginFailMsg : "Enviar" }}
+        </div>
     </div>
   </div>
 </template>
@@ -87,6 +85,10 @@ export default {
   },
   methods: {
     iniciarSesion: function () {
+      if(this.usuarioLogeado){
+        console.log(`El usuario ya estaba logeado`);
+        return;
+      }
       console.log(`Iniciando login`);
       this.username=this.username.normalize("NFD").replace(/\p{Diacritic}/gu, "")
       let dis = this;
@@ -144,36 +146,45 @@ export default {
 
 <style scoped>
 #tituloVentana {
-  font-size: 35px;
+  font-size: 25px;
   margin: 5px auto;
   text-align: center;
   font-family: sans-serif;
+  
 }
 .inputs {
-  font-size: 20px;
+  font-size: 17px;
   margin-right: auto;
   margin-left: auto;
-  margin-top: 15px;
+  margin-top: 4px;
   display: block;
   padding: 5px;
   background-color: #fbe2cb;
+  border-color: gray;
 }
 #ventanaCentral {
   margin: 5% auto;
-  padding: 20px;
-  width: min(550px, 90%);  
+  padding: 20px;   
+  padding-top: 45px;
+  padding-bottom: 50px;
   box-shadow: 3px 3px grey, 3px 3px 3px 3px grey;
-  background-color: rgb(232 191 155);
+  position: relative;
+  width: min(270px, 90%);
 }
 .botonEnviar {
-  display: block;
+  width: 80px;
+  text-align: center;
   margin-left: auto;
   margin-right: auto;
-  font-size: 20px;
-  padding: 10px 5px;
-  background-color: #f2933e;
+  font-size: 15px;
+  padding: 5px 15px;
+  background-color: #e59248;
   border-radius: 5px;
   cursor: pointer;
+}
+.botonEnviar:hover {
+    background-color: #e6a66f;
+
 }
 .loginFail {
   color: red;

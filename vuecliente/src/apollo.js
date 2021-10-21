@@ -217,11 +217,12 @@ export async function onLogout (apolloClient) {
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(AUTH_TOKEN)
   }
-  if (apolloClient.wsClient) restartWebsockets(apolloClient.wsClient)
+  if (apolloClient.wsClient) {
+    restartWebsockets(apolloClient.wsClient)
+  }
 
   try {
     console.log(`Reseteando cache`);
-    await apolloClient.cache.reset();
   } catch (e) {
     // eslint-disable-next-line no-console
     console.log('%cError on cache reset (logout)', 'color: orange;', e.message)

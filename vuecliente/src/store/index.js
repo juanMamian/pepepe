@@ -46,8 +46,9 @@ export default new Vuex.Store({
             state.usuario.permisos = usuario.permisos;
             state.usuario.id = usuario.id;                           
         },
-        deslogearse() {
+        deslogearse(state) {
             onLogout(apolloClient);
+            state.clear();
         },
 
         refreshActividadEspecifica(state){
