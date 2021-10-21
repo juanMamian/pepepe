@@ -61,6 +61,7 @@ export const typeDefs = gql`
     }
 
     type infoAtlas{
+        id: ID
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
         idNodoTarget:ID,

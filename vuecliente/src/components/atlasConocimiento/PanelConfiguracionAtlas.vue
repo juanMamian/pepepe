@@ -21,7 +21,10 @@
           class="iconoModo"
           alt="Estudiante"
           title="Cambiar a modo estudiante"
-          :class="{ activo: yo.atlas.configuracion.modo === 'estudiante', deshabilitado:enviandoQueryModo }"
+          :class="{
+            activo: yo.atlas.configuracion.modo === 'estudiante',
+            deshabilitado: enviandoQueryModo,
+          }"
           @click="setModo('estudiante')"
         />
         <img
@@ -29,7 +32,10 @@
           class="iconoModo"
           alt="Experto"
           title="Cambiar a modo experto"
-          :class="{ activo: yo.atlas.configuracion.modo === 'experto', deshabilitado:enviandoQueryModo }"
+          :class="{
+            activo: yo.atlas.configuracion.modo === 'experto',
+            deshabilitado: enviandoQueryModo,
+          }"
           @click="setModo('experto')"
         />
       </div>
@@ -71,13 +77,17 @@ export default {
         .mutate({
           mutation: gql`
             mutation ($idUsuario: ID!, $nuevoModo: String!) {
-              setModoUsuarioAtlas(idUsuario: $idUsuario, nuevoModo: $nuevoModo){
+              setModoUsuarioAtlas(
+                idUsuario: $idUsuario
+                nuevoModo: $nuevoModo
+              ) {
+                id
+                atlas {
                   id
-                  atlas{
-                      configuracion{
-                          modo
-                      }                    
+                  configuracion {
+                    modo
                   }
+                }
               }
             }
           `,
@@ -88,7 +98,6 @@ export default {
         })
         .then(() => {
           this.enviandoQueryModo = false;
-          
         })
         .catch((error) => {
           this.enviandoQueryModo = false;

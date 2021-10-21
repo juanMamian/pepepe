@@ -158,6 +158,7 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
     yo {
       id
       atlas {
+      id
         datosNodos {
           idNodo
           objetivo
@@ -200,7 +201,7 @@ export default {
       query: QUERY_NODOS,
       result: function () {
         this.dibujarVinculosGrises();
-      },      
+      },
       update({ todosNodos }) {
         this.nodosDescargados = true;
         var nuevoTodosNodos = JSON.parse(JSON.stringify(todosNodos));
@@ -217,7 +218,9 @@ export default {
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
       update({ yo }) {
-        console.log(`Recibido el yo así: ${JSON.stringify(yo.atlas.centroVista)}`);
+        console.log(
+          `Recibido el yo así: ${JSON.stringify(yo.atlas.centroVista)}`
+        );
         this.calcularEsquinaVista(yo.atlas.centroVista);
         this.coordsInicialesSetted = true;
         return yo;
@@ -225,16 +228,15 @@ export default {
       skip() {
         return !this.usuarioLogeado || !this.montado;
       },
-            fetchPolicy: "network-only",
-
+      fetchPolicy: "network-only",
     },
   },
   data() {
     return {
-      montado:false,
-      sizeAtlas:{
+      montado: false,
+      sizeAtlas: {
         x: 1000,
-        y: 1000
+        y: 1000,
       },
       hovered: false,
       todosNodos: [],
@@ -252,7 +254,7 @@ export default {
         },
       },
       coordsInicialesSetted: false,
-      esquinaVistaCalculada:false,
+      esquinaVistaCalculada: false,
 
       centroVistaDecimal: {
         x: 218,
@@ -1055,7 +1057,7 @@ export default {
     if (screen.width < 600) {
       this.zoom = 70;
     }
-    this.montado=true;
+    this.montado = true;
   },
   created() {
     window.addEventListener("wheel", this.zoomWheel, { passive: false });
