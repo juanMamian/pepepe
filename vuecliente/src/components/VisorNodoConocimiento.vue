@@ -245,9 +245,19 @@
           <iframe
             id="visorContenido"
             :ref="'contenidoExterno' + seccion.id"
+            :key="'version'+seccion.version"
             :src="direccionNodo + '/' + seccion.id + '/'"
+            v-if="!seccion.tipoPrimario || seccion.tipoPrimario.substr(0, 5)!='image'"
             v-show="!editandoArchivosContenidos"
           ></iframe>
+          <img 
+            :src="direccionNodo + '/' + seccion.id + '/'"           
+            alt="Esperando imágen"
+            :key="'version'+seccion.version"
+            v-show="!editandoArchivosContenidos"
+            v-else
+            class="imagenContenidoSeccion"
+          >
           <div
             class="cuadroCargaArchivos"
             v-if="
@@ -555,6 +565,7 @@ export default {
           seccion.archivos.forEach((archivo) => {
             archivo.enviandoInfo = false;
           });
+          seccion.version=0
         });        
         return nuevoNodo;
       },
@@ -1081,7 +1092,7 @@ export default {
         `Marcando ${nombreArchivo} como primario en la sección ${idSeccion}`
       );
 
-      const dis = this;
+      // const dis = this;
       archivo.enviandoInfo = true;
       this.$apollo
         .mutate({
@@ -1091,7 +1102,10 @@ export default {
                 idNodo: $idNodo
                 idSeccion: $idSeccion
                 nombreArchivo: $nombreArchivo
-              )
+              ){
+                id
+                tipoPrimario
+              }
             }
           `,
           variables: {
@@ -1099,43 +1113,48 @@ export default {
             idSeccion,
             nombreArchivo,
           },
-          update(store, { data: { marcarPrimarioArchivoSeccionNodo } }) {
-            archivo.enviandoInfo = false;
+          // update(store, { data } ) {
+          //   archivo.enviandoInfo = false;
+            
+          //   const cache = store.readQuery({
+          //     query: QUERY_NODO,
+          //     variables: {
+          //       idNodo: dis.$route.params.idNodo,
+          //     },
+          //   });
+          //   var nuevoCache = JSON.parse(JSON.stringify(cache));
 
-            if (!marcarPrimarioArchivoSeccionNodo) {
-              console.log(`Archivo no marcado`);
-              return;
-            }
-            const cache = store.readQuery({
-              query: QUERY_NODO,
-              variables: {
-                idNodo: dis.$route.params.idNodo,
-              },
-            });
-            var nuevoCache = JSON.parse(JSON.stringify(cache));
+          //   var laSeccion = nuevoCache.nodo.secciones.find(
+          //     (s) => s.id == idSeccion
+          //   );
+          //   if (!laSeccion) {
+          //     console.log(`Seccion no encontrada`);
+          //     return;
+          //   }
 
-            var laSeccion = nuevoCache.nodo.secciones.find(
-              (s) => s.id == idSeccion
-            );
-            if (!laSeccion) {
-              console.log(`Seccion no encontrada`);
-              return;
-            }
+          //   laSeccion.archivos.forEach((archivo) => {
+          //     archivo.primario = archivo.nombre == nombreArchivo ? true : false;
+          //   });
 
-            laSeccion.archivos.forEach((archivo) => {
-              archivo.primario = archivo.nombre == nombreArchivo ? true : false;
-            });
-
-            store.writeQuery({
-              query: QUERY_NODO,
-              variables: {
-                idNodo: dis.$route.params.idNodo,
-              },
-              data: nuevoCache,
-            });
-          },
+          //   store.writeQuery({
+          //     query: QUERY_NODO,
+          //     variables: {
+          //       idNodo: dis.$route.params.idNodo,
+          //     },
+          //     data: nuevoCache,
+          //   });
+          // },
         })
-        .then(() => {})
+        .then(() => {
+          var laSeccion=this.esteNodo.secciones.find(s=>s.id===idSeccion);
+          if(!laSeccion){
+            console.log(`Seccion no encontrada`);
+          }
+          laSeccion.version++;
+          laSeccion.archivos.forEach((archivo) => {
+            archivo.primario = archivo.nombre == nombreArchivo ? true : false;
+          });
+        })
         .catch((error) => {
           archivo.enviandoInfo = false;
           console.log(`Error. E: ${error}`);
@@ -1582,6 +1601,11 @@ export default {
   display: block;
   margin: 65px auto;
   resize: vertical;
+}
+.imagenContenidoSeccion{
+  max-width:100%;
+  margin: 0px auto;
+  display: block;
 }
 #keywords {
   border: 1px solid rgb(0, 0, 44);

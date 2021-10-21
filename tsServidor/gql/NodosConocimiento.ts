@@ -147,7 +147,7 @@ extend type Mutation{
     removeExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
 
     eliminarArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean
-    marcarPrimarioArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean,
+    marcarPrimarioArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):SeccionContenidoNodo,
 
     crearNuevaSeccionNodoConocimiento(idNodo:ID!, nombreNuevaSeccion:String!):SeccionContenidoNodo,
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
@@ -925,9 +925,10 @@ export const resolvers = {
                 console.log(`Error guardando carpeta. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+            
 
             console.log(`Archivo seteado`);
-            return encontrado;
+            return laSeccion;
         },
 
         crearNuevaSeccionNodoConocimiento: async function (_: any, { idNodo, nombreNuevaSeccion }: any, contexto: contextoQuery) {
