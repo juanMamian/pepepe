@@ -19,7 +19,7 @@
       <div class="botonMenuCx" v-if="usuarioSuperadministrador">
         {{ estaPersona.username }}
       </div>
-      <div class="botonMenuCx">
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador">
         Permisos
         <div id="listaPermisos">
           <div

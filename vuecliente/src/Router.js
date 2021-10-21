@@ -85,10 +85,20 @@ const routes = [
         ]
     },    
     {path: "/actividad/:idActividad", name:"actividadEspecifica", component: ActividadEspecifica},    
-    { path: "/personas", name: "personas", component: Personas },
+    { path: "/personas", name: "personas", component: Personas},
     { path: "/", redirect: "/home" }
 ];
 
 export const router = new Router({
     routes
 });
+
+router.beforeEach((to, from, next)=>{
+    if(to.name!="loginArea" && (!store.state.usuario.id || !store.state.token)){
+        console.log(`Usuario deslogeado, dirigiendo a loginArea`);
+        next({name: "loginArea"});
+    }
+    else{
+        next();
+    }
+})

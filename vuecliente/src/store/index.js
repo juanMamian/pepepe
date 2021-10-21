@@ -1,6 +1,7 @@
 import Vue from "vue"
 import Vuex from "vuex"
-import { apolloClient } from "../apollo"
+import { apolloClient, onLogin, onLogout } from "../apollo"
+import {router} from "../Router"
 Vue.use(Vuex);
 
 function parseJwt(token) {
@@ -36,29 +37,32 @@ export default new Vuex.Store({
     },
     mutations: {
         logearse: function (state, token) {
-
             let usuario = parseJwt(token);
+            onLogin(apolloClient, token);
 
             state.token = token;
             state.usuario.username = usuario.username;
             state.usuario.permisos = usuario.permisos;
-            state.usuario.id = usuario.id;
+            state.usuario.id = usuario.id;                           
 
-            let usuarioLS = JSON.stringify(state.usuario);
-
-            localStorage.setItem("pepepe_usuario", usuarioLS);
-            localStorage.setItem("token", token);
-
+            router.push({name: "home"})
         },
         deslogearse(state) {
-            localStorage.clear();
-
-            state.usuario.username = null,
-                state.usuario.permisos = null,
-                state.usuario.id = null,
-
-                state.token = null
+            onLogout(apolloClient);
             apolloClient.cache.data.clear();
+            state.token=null;
+            state.usuario={
+                username: null,
+                permisos: [],
+                id: null,
+                atlas:{
+                    centroVista:null,
+                    configuracion:{
+                        modo: 'estudiante'
+                    }
+                },
+                foros:[]
+            }
         },
 
         refreshActividadEspecifica(state){
