@@ -85,7 +85,7 @@ const routes = [
         ]
     },    
     {path: "/actividad/:idActividad", name:"actividadEspecifica", component: ActividadEspecifica},    
-    { path: "/personas", name: "personas", component: Personas },
+    { path: "/personas", name: "personas", component: Personas},
     { path: "/", redirect: "/home" }
 ];
 

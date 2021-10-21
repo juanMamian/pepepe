@@ -29,7 +29,6 @@ export const wsServerUrl = process.env.NODE_ENV === 'production'
   : 'ws://' + serverUrl.substr(7) + '/subscripciones'
 
 const httpAuthLink = setContext((_, { headers }) => {
-  console.log(`Definiendo auth http`);
   return {
     headers: {
       ...headers,
@@ -59,7 +58,6 @@ export const wsLink = new WebSocketLink({
   },
 })
 
-console.log(`Opciones de wsLink: ${JSON.stringify(wsLink.option)}`);
 
 
 // const wsAuthLink = new ApolloLink((operation, forward) => {
@@ -111,16 +109,13 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 const splitLink = split(
   // split based on operation type  
   ({ query }) => {
-    console.log(`Splitting`);
     // console.log(`Con: ${JSON.stringify(query)}`);
     const definition = getMainDefinition(query)
     if (definition.kind === 'OperationDefinition' &&
       definition.operation === 'subscription') {
-      console.log(`Dirgiendo a ws`);
       return true
     }
     else {
-      console.log(`Dirigiendo a http`);
       return false;
     }
   },
@@ -204,12 +199,7 @@ export async function onLogin (apolloClient, token) {
     localStorage.setItem(AUTH_TOKEN, token)
   }
   if (apolloClient.wsClient) restartWebsockets(apolloClient.wsClient)
-  try {
-    await apolloClient.resetStore()
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.log('%cError on cache reset (login)', 'color: orange;', e.message)
-  }
+ 
 }
 
 // Manually call this when user log out
@@ -219,12 +209,5 @@ export async function onLogout (apolloClient) {
   }
   if (apolloClient.wsClient) {
     restartWebsockets(apolloClient.wsClient)
-  }
-
-  try {
-    console.log(`Reseteando cache`);
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.log('%cError on cache reset (logout)', 'color: orange;', e.message)
   }
 }
