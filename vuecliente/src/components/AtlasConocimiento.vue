@@ -167,14 +167,18 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
           modo
         }
         idNodoTarget
-        colecciones{
+        colecciones {
           id
           nombre
           idsNodos
-          nodos{
+          nodos {
             id
             nombre
           }
+        }
+        centroVista {
+          x
+          y
         }
       }
     }
@@ -196,29 +200,42 @@ export default {
       query: QUERY_NODOS,
       result: function () {
         this.dibujarVinculosGrises();
-      },
-      pollInterval() {
-        return this.callingPosiciones ? 5000 : null;
-      },
+      },      
       update({ todosNodos }) {
         this.nodosDescargados = true;
-        var nuevoTodosNodos=JSON.parse(JSON.stringify(todosNodos))
+        var nuevoTodosNodos = JSON.parse(JSON.stringify(todosNodos));
         nuevoTodosNodos.forEach((nodo) => {
           nodo.coordsManuales = nodo.coords;
         });
         return todosNodos;
       },
+      skip() {
+        return !this.coordsInicialesSetted;
+      },
       fetchPolicy: "cache-and-network",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
-      skip() {
-        return !this.usuarioLogeado || this.todosNodos.length < 1;
+      update({ yo }) {
+        console.log(`Recibido el yo así: ${JSON.stringify(yo.atlas.centroVista)}`);
+        this.calcularEsquinaVista(yo.atlas.centroVista);
+        this.coordsInicialesSetted = true;
+        return yo;
       },
+      skip() {
+        return !this.usuarioLogeado || !this.montado;
+      },
+            fetchPolicy: "network-only",
+
     },
   },
   data() {
     return {
+      montado:false,
+      sizeAtlas:{
+        x: 1000,
+        y: 1000
+      },
       hovered: false,
       todosNodos: [],
       nodosDescargados: false,
@@ -234,6 +251,8 @@ export default {
           },
         },
       },
+      coordsInicialesSetted: false,
+      esquinaVistaCalculada:false,
 
       centroVistaDecimal: {
         x: 218,
@@ -335,6 +354,20 @@ export default {
     },
   },
   methods: {
+    calcularEsquinaVista(centro) {
+      if (this.esquinaVistaCalculada) return;
+      this.$set(
+        this.centroVistaDecimal,
+        "x",
+        Math.round(centro.x - this.sizeAtlas.x / (2 * this.factorZoom))
+      );
+      this.$set(
+        this.centroVistaDecimal,
+        "y",
+        Math.round(centro.y - this.sizeAtlas.y / (2 * this.factorZoom))
+      );
+      this.esquinaVistaCalculada = true;
+    },
     abrirMenuContextual(e) {
       let posCalendario = this.$el.getBoundingClientRect();
 
@@ -1010,17 +1043,19 @@ export default {
     },
   },
   mounted() {
-    // if (!this.usuario.atlas || !this.usuario.atlas.centroVista) {
-    //   console.log(`No había info de centro vista en la store. Descargando`);
-    //   this.descargarCentroVista();
-    //   return;
-    // }
-    // this.$set(this.centroVistaDecimal, "x", this.usuario.atlas.centroVista.x);
-    // this.$set(this.centroVistaDecimal, "y", this.usuario.atlas.centroVista.y);
+    var posAtlas = this.$el.getBoundingClientRect();
+    this.$set(this.sizeAtlas, "x", posAtlas.width);
+    this.$set(this.sizeAtlas, "y", posAtlas.height);
+    this.$set(
+      this.sizeAtlas,
+      "diagonal",
+      Math.hypot(this.sizeAtlas.x, this.sizeAtlas.y)
+    );
 
     if (screen.width < 600) {
       this.zoom = 70;
     }
+    this.montado=true;
   },
   created() {
     window.addEventListener("wheel", this.zoomWheel, { passive: false });

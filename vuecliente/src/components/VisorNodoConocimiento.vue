@@ -555,7 +555,7 @@ export default {
           seccion.archivos.forEach((archivo) => {
             archivo.enviandoInfo = false;
           });
-        });
+        });        
         return nuevoNodo;
       },
     },
@@ -1396,6 +1396,20 @@ export default {
       });
     },
   },
+  mounted(){
+    this.$apollo.mutate({
+      mutation:gql`
+        mutation($idNodo: ID!){
+          setNodoConocimientoAsCoordsVistaUsuario(idNodo: $idNodo)
+        }
+      `,
+      variables:{
+        idNodo:this.$route.params.idNodo
+      }
+    }).catch((error)=>{
+      console.log(`Error setting coordenadas de usuario: ${error}`);
+    })
+  }
 };
 </script>
 

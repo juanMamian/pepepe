@@ -168,6 +168,7 @@ export const typeDefs = gql`
         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
 
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
+        setNodoConocimientoAsCoordsVistaUsuario(idNodo:ID!):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
     }
     extend type Subscription{
@@ -943,6 +944,42 @@ export const resolvers = {
             }
 
             console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(elNodo.coords)} del nodo ${idNodo}`);
+            return true;
+        },
+        async setNodoConocimientoAsCoordsVistaUsuario(_:any, {idNodo}:any, contexto:contextoQuery){
+            const credencialesUsuario=contexto.usuario;
+
+            if(!credencialesUsuario.id){
+                throw new AuthenticationError("No Autenticado");
+            }
+
+            try {
+                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+            } catch (error) {
+                console.log(`Error buscando el usuario`);
+                throw new ApolloError("Usuario no encontrado");
+            }            
+
+            try {                
+                var elNodo: any = await Nodo.findById(idNodo).exec();                            
+                if (!elNodo) {
+                    throw "Nodo no encontrado"
+                }                
+            }
+            catch (error) {
+                console.log("Error buscando el nodo. E: " + error);
+                throw new ApolloError("Error en la conexión con la base de datos");
+            }
+            elUsuario.atlas.centroVista=elNodo.coords;
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando el usuario con el nuevo coords de centroVista`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            console.log(`Nuevo coords vista en atlas de conocimiento setted en ${JSON.stringify(elNodo.coords)} del nodo ${idNodo}`);
             return true;
         }
         
