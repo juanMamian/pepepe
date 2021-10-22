@@ -21,12 +21,14 @@
           v-model="password"
           placeholder="password"          
           @input="loginFail = false"
+          @keypress.enter="$refs.botonEnviar.click()"
         />
         <br />
         <br />
         <loading v-show="enviandoDatos" :texto="'Conectando...'" />
         <div
           class="botonEnviar"
+          ref="botonEnviar"
           @click.stop.prevent="iniciarSesion"
           :class="{ loginFail, desaparecido: enviandoDatos }"
         >

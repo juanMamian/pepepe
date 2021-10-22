@@ -239,20 +239,7 @@ export const QUERY_YO = gql`
   }
 `;
 
-function parseJwt(token) {
-  var base64Url = token.split(".")[1];
-  var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-  var jsonPayload = decodeURIComponent(
-    atob(base64)
-      .split("")
-      .map(function (c) {
-        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-      })
-      .join("")
-  );
 
-  return JSON.parse(jsonPayload);
-}
 
 export default {
   name: "App",
@@ -357,30 +344,7 @@ export default {
       this.$store.commit("deslogearse");
       this.$router.push("/login");
     },
-  },
-  mounted() {
-    let token = localStorage.getItem("token");
-    //let reloj=new Date();
-    if (!token) {
-      console.log(``);
-    } else {
-      let datosU = parseJwt(token);
-      let secsActual = parseInt(Date.now() / 1000);
-
-      if(!datosU.version || datosU.version<1){
-        console.log(`Versión de token caducada`);
-        this.$store.commit("deslogearse");
-        return;
-      }
-
-      if (secsActual < datosU.exp || !datosU.exp) {
-        this.$store.commit("logearse", token);
-      } else {
-        console.log(`Token expirado: exp: ${datosU.exp}`);
-        this.$store.commit("deslogearse");
-      }
-    }
-  },
+  },  
 };
 </script>
 
