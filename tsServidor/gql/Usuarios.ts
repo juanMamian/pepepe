@@ -69,6 +69,7 @@ export const typeDefs = gql`
         colecciones:[ColeccionNodosAtlasConocimiento]
     }
     type InfoAtlasSolidaridad{
+        id: ID
         coordsVista:Coords, 
         idsNodosPlegados: [String]      
     }

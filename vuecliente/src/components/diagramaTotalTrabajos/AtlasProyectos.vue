@@ -32,7 +32,7 @@
       :todosNodos="todosNodos"
       :cerrar="cerrarListas"
       ref="listas"
-      @centrarEnNodo="centrarEnNodoById"
+      @centrarEnNodo="centrarEnNodoById($event); cerrarListas++"
     />
     <div
       id="menuContextual"
@@ -437,6 +437,7 @@ const QUERY_DATOS_USUARIO_ATLAS_SOLIDARIDAD = gql`
     yo {
       id
       atlasSolidaridad {
+        id
         coordsVista {
           x
           y

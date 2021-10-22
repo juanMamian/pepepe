@@ -273,7 +273,7 @@
     <div
       id="zonaKeywords"
       class="zonaPrimerNivel"
-      v-show="usuarioAdministrador"
+      v-if="usuarioAdministrador || usuarioSuperadministrador"
     >
       <div
         class="barraSuperiorZona"
@@ -290,7 +290,7 @@
         </div>
         <div
           class="controlesZona"
-          v-show="usuarioAdministrador && mostrandoKeywords"
+          v-show="mostrandoKeywords"
           :class="{ deshabilitado: enviandoNuevoKeywords }"
         >
           <img
@@ -299,7 +299,6 @@
             id="bEditarKeywords"
             class="bEditar"
             title="Editar keywords del trabajo"
-            v-show="usuarioAdministrador"
             @click.stop="toggleEditandoKeywords"
           />
           <img

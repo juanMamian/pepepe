@@ -453,6 +453,7 @@ export default {
               ) {
                 id
                 atlasSolidaridad{
+                id
                   idsNodosPlegados
                 }
               }
