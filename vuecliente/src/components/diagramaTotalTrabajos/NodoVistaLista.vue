@@ -1,13 +1,14 @@
 <template>
   <div class="nodoVistaLista">
     <div class="elementoLista" v-show="!busqueda || busqueda.length<2 || buscado || childrenBuscados">
-      <div class="zonaNombre" :class="{seleccionado}" @click="mostrandoChildren = !mostrandoChildren; $emit('nodoSeleccionado', esteNodo.id)" :style="[colorNombre]">
+      <div class="zonaNombre" :class="{seleccionado}" @click="$emit('nodoSeleccionado', esteNodo.id)" :style="[colorNombre]">
         <div
           class="trianguloBullet"
           :style="{
             transform: mostrandoChildren || childrenBuscados ? 'rotateZ(90deg)' : 'rotateZ(0deg)',
           }"
           v-if="esteNodo.children && esteNodo.children.length > 0"
+          @click.stop="mostrandoChildren=!mostrandoChildren"
         ></div>
         {{ esteNodo.nombre }}
         <div id="botonesRight">
@@ -27,6 +28,7 @@
           :esteNodo="nodo"
           :busqueda="busqueda"
           :idNodoSeleccionado="idNodoSeleccionado"
+          :id="'nodoEnLista'+nodo.id"
           @centrarEnNodo="$emit('centrarEnNodo', $event)"
           @nodoSeleccionado="$emit('nodoSeleccionado', $event)"
         />
@@ -120,7 +122,8 @@ export default {
       return this.idNodoSeleccionado && this.esteNodo.id===this.idNodoSeleccionado;
     }
 
-  }
+  },
+  
 };
 </script>
 
@@ -129,10 +132,10 @@ export default {
 }
 
 .trianguloBullet {
-  border: 10px solid transparent;
-  border-left: 10px solid black;
+  border: 8px solid transparent;
+  border-left: 8px solid black;
   display: inline-block;
-  
+  margin-right: 5px;
   transform-origin: 25% 70%;
   transition: transform 0.2s;
 }

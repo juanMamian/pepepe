@@ -15,7 +15,7 @@
     <div id="zonaArrastre" v-show="agarrado"></div>
 
     
-    <div id="bolita" :style="[estiloColor]">
+    <div id="bolita" :style="[estiloBolita]">
       <img
       v-if="esteNodo.__typename === 'Objetivo'"
       src="@/assets/iconos/iconoObjetivo.png"
@@ -541,9 +541,7 @@ export default {
       if(this.esteNodo.estadoDesarrollo==='completado'){
         color="rgb(86, 176, 54)";
       }
-      if (this.usuarioResponsable) {
-        color = "rgb(166 137 193)";
-      }
+     
       return {
         backgroundColor: color,
       };
@@ -583,13 +581,19 @@ export default {
         this.esteNodo.administradores.length === 0
       );
     },
-    estiloColor() {
+    estiloBolita() {
       var elColor = "rgba(105, 199, 199, 0.9)";
       if (this.seleccionado) {
-        elColor = "rgb(193 72 139)";
+        elColor = "rgb(239 114 41)";
+      }
+
+      var borde="";
+      if(this.usuarioResponsable){
+        borde=Math.round(3*this.factorZoom)+"px dotted purple";
       }
       return {
         backgroundColor: elColor,
+        border: borde
       };
     },    
     plegado(){
@@ -636,7 +640,7 @@ export default {
   top: 0%;
   left: 0%;
   z-index: 1;
-
+  box-sizing: border-box;
 }
 .iconoFondo {
   position: absolute;

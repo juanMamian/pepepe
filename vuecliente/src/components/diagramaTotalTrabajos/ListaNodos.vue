@@ -20,6 +20,7 @@
       <nodo-vista-lista
         v-for="nodoPrimerNivel of nodosPrimerNivel"
         ref="nodosEnLista"
+        :id="'nodoEnLista'+nodoPrimerNivel.id"
         :key="nodoPrimerNivel.id"
         :esteNodo="nodoPrimerNivel"
         :busqueda="busqueda"
@@ -80,6 +81,12 @@ export default {
       if(!this.idNodoSeleccionado || !this.busqueda || this.busqueda.length<2)return;
       this.desplegarCascadaHaciaNodo(this.idNodoSeleccionado);
       this.busqueda=null;
+      this.$nextTick(()=>{
+        const domSeleccionado=document.getElementById('nodoEnLista'+this.idNodoSeleccionado);
+        console.log(`Seleccionado: ${domSeleccionado}`);
+        const topSeleccionado=domSeleccionado.getBoundingClientRect().top-document.getElementById('laListaNodos').getBoundingClientRect().top;
+        document.getElementById("laListaNodos").scrollTop=topSeleccionado;
+      })
     }
   }
 };
@@ -110,6 +117,10 @@ export default {
   height: 100%;
   border-radius: 10px;
   padding: 10px;
+}
+#zonaBuscar{
+  display: flex;
+  margin-bottom: 5px;
 }
 #botonBuscar {
   cursor: pointer;
