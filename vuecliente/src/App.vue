@@ -30,13 +30,13 @@
           </div>
         </router-link>
 
-        <div id="bloqueProyectos" class="bloqueBotones" v-if="usuario && usuario.permisos && usuario.permisos.includes('maestraVida')">
-          <router-link to="/proyectos" v-if="usuarioLogeado == true">
-            <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
+        <div id="bloqueGrupos" class="bloqueBotones" v-if="usuario && usuario.permisos && usuario.permisos.includes('maestraVida')">
+          <router-link to="/grupos" v-if="usuarioLogeado == true">
+            <div class="botonNavBarra botonNav hoverNegro" id="navGrupos">
               Grupos
             </div>
           </router-link>
-          <!-- <div id="enlacesHijosProyectos" class="contenedorHijos">
+          <!-- <div id="enlacesHijosGrupos" class="contenedorHijos">
             <router-link to="/trabajos" v-if="usuarioLogeado == true">
               <div
                 class="botonNavHijo botonNav hoverNegro botonNavHijo"

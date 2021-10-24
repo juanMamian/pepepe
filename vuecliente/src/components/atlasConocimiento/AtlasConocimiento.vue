@@ -108,12 +108,12 @@
 
 <script>
 import gql from "graphql-tag";
-import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
-import Canvases from "./atlasConocimiento/Canvases.vue";
-import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
-import Loading from "./utilidades/Loading.vue";
-import PanelConjuntosNodos from "./atlasConocimiento/PanelConjuntosNodos.vue";
-import PanelConfiguracionAtlas from "./atlasConocimiento/PanelConfiguracionAtlas.vue";
+import NodoConocimiento from "./NodoConocimiento.vue";
+import Canvases from "./Canvases.vue";
+import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
+import Loading from "../utilidades/Loading.vue";
+import PanelConjuntosNodos from "./PanelConjuntosNodos.vue";
+import PanelConfiguracionAtlas from "./PanelConfiguracionAtlas.vue";
 const debounce = require("debounce");
 
 const QUERY_NODOS = gql`

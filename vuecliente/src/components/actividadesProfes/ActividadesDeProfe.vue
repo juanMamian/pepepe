@@ -32,7 +32,7 @@
 
 <script>
 import gql from "graphql-tag";
-import IconoPersona from "../proyecto/IconoPersona";
+import IconoPersona from "../utilidades/IconoPersona";
 import {fragmentoResponsables} from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 import Loading from "../utilidades/Loading.vue";

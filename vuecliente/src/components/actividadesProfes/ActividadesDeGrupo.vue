@@ -188,7 +188,7 @@
 </template>
 
 <script>
-import IconoPersona from "../proyecto/IconoPersona";
+import IconoPersona from "../utilidades/IconoPersona";
 import gql from "graphql-tag";
 import {
   fragmentoActividad,

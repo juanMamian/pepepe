@@ -1,15 +1,15 @@
 <template>
-  <div class="proyecto">
+  <div class="grupo">
     <loading texto="Cargando grupo..." v-show="loading" />
     <template v-if="!loading">
       <div id="zonaNombre" class="zonaPrimerNivel">
-        <div class="controlesZona" v-show="usuarioResponsableProyecto">
+        <div class="controlesZona" v-show="usuarioResponsableGrupo">
           <img
             src="@/assets/iconos/editar.png"
             alt="Editar"
             id="bEditarrNombre"
             class="bEditar"
-            title="Editar nombre del proyecto"
+            title="Editar nombre del grupo"
             @click="toggleEditandoNombre"
           />
           <img
@@ -22,8 +22,8 @@
             @click="guardarNuevoNombre"
           />
         </div>
-        <div id="nombreProyecto" v-show="!editandoNombre">
-          {{ esteProyecto.nombre }}
+        <div id="nombreGrupo" v-show="!editandoNombre">
+          {{ esteGrupo.nombre }}
         </div>
         <input
           type="text"
@@ -38,7 +38,7 @@
           src="@/assets/iconos/foro.png"
           alt="Enlace al foro"
           id="enlaceForo"
-          title="Ir al foro de este proyecto"
+          title="Ir al foro de este grupo"
           @click="navegarAlForo"
         />
       </div>
@@ -60,13 +60,13 @@
           </div>
         </div>
         <div v-show="mostrandoDescripcion">
-          <div class="controlesZona" v-if="usuarioResponsableProyecto">
+          <div class="controlesZona" v-if="usuarioResponsableGrupo">
             <img
               src="@/assets/iconos/editar.png"
               alt="Editar"
               id="bEditarrDescripcion"
               class="bEditar"
-              title="Editar descripcion del proyecto"
+              title="Editar descripcion del grupo"
               @click="toggleEditandoDescripcion"
             />
             <img
@@ -82,7 +82,7 @@
             />
           </div>
           <div id="descripcion" ref="descripcion" v-show="!editandoDescripcion">
-            {{ esteProyecto.descripcion }}
+            {{ esteGrupo.descripcion }}
           </div>
 
           <textarea
@@ -111,7 +111,7 @@
               }"
             ></div>
             {{
-              esteProyecto.responsables.length === 1
+              esteGrupo.responsables.length === 1
                 ? "Coordinador"
                 : "Coordinadores"
             }}
@@ -125,7 +125,7 @@
               class="controlesResponsables hoverGris botonesControles"
               :class="{ deshabilitado: enviandoQueryResponsables }"
               v-if="
-                usuarioLogeado == true && esteProyecto.responsables.length < 1
+                usuarioLogeado == true && esteGrupo.responsables.length < 1
               "
               id="asumirResponsable"
               @click="asumirComoResponsable"
@@ -137,7 +137,7 @@
               :class="{ deshabilitado: enviandoQueryResponsables }"
               v-if="
                 usuarioLogeado == true &&
-                usuarioResponsableProyecto &&
+                usuarioResponsableGrupo &&
                 responsablesSolicitados < 1
               "
               id="solicitarResponsable"
@@ -150,9 +150,9 @@
               :class="{ deshabilitado: enviandoQueryResponsables }"
               v-if="
                 usuarioLogeado &&
-                !usuarioResponsableProyecto &&
-                !usuarioPosibleResponsableProyecto &&
-                esteProyecto.responsables.length > 0
+                !usuarioResponsableGrupo &&
+                !usuarioPosibleResponsableGrupo &&
+                esteGrupo.responsables.length > 0
               "
               id="botonAddResponsable"
               @click="entrarListaPosiblesResponsables"
@@ -164,8 +164,8 @@
               :class="{ deshabilitado: enviandoQueryResponsables }"
               v-if="
                 usuarioLogeado == true &&
-                (usuarioResponsableProyecto == true ||
-                  usuarioPosibleResponsableProyecto == true)
+                (usuarioResponsableGrupo == true ||
+                  usuarioPosibleResponsableGrupo == true)
               "
               @click="abandonarListaResponsables"
             >
@@ -175,7 +175,7 @@
               class="controlesResponsables hoverGris botonesControles"
               :class="{ deshabilitado: enviandoQueryResponsables }"
               v-if="
-                usuarioLogeado == true && usuarioResponsableProyecto == true
+                usuarioLogeado == true && usuarioResponsableGrupo == true
               "
               v-show="
                 idResponsableSeleccionado != null &&
@@ -190,7 +190,7 @@
             <icono-persona-autonomo
               :idPersona="idPersona"
               :key="idPersona"
-              v-for="idPersona of esteProyecto.responsables"
+              v-for="idPersona of esteGrupo.responsables"
               :seleccionado="idResponsableSeleccionado == idPersona"
               @click.native.stop="
                 idResponsableSeleccionado = idPersona;
@@ -202,9 +202,9 @@
               class="personaPosibleResponsable"
               :idPersona="idPersona"
               :key="idPersona"
-              v-for="idPersona of esteProyecto.posiblesResponsables"
+              v-for="idPersona of esteGrupo.posiblesResponsables"
               v-show="
-                usuarioResponsableProyecto ||
+                usuarioResponsableGrupo ||
                 (usuario && usuario.id && usuario.id === idPersona)
               "
               :seleccionado="idResponsableSeleccionado == idPersona"
@@ -230,11 +230,11 @@
                 type="number"
                 id="inputResponsablesSolicitados"
                 v-model="responsablesSolicitados"
-                :readonly="usuarioResponsableProyecto ? false : true"
+                :readonly="usuarioResponsableGrupo ? false : true"
                 :style="[
                   {
                     backgroundColor:
-                      esteProyecto.responsablesSolicitados !=
+                      esteGrupo.responsablesSolicitados !=
                       responsablesSolicitados
                         ? 'orange'
                         : 'white',
@@ -261,7 +261,7 @@
               }"
             ></div>
             {{
-              esteProyecto.participantes.length === 1
+              esteGrupo.participantes.length === 1
                 ? "Participante"
                 : "Participantes"
             }}
@@ -276,8 +276,8 @@
               :class="{ deshabilitado: enviandoQueryParticipantes }"
               v-if="
                 usuarioLogeado == true &&
-                !usuarioParticipanteProyecto &&
-                !usuarioResponsableProyecto
+                !usuarioParticipanteGrupo &&
+                !usuarioResponsableGrupo
               "
               @click="entrarListaParticipantes()"
             >
@@ -286,7 +286,7 @@
             <div
               class="controlesParticipantes hoverGris botonesControles"
               :class="{ deshabilitado: enviandoQueryParticipantes }"
-              v-if="usuarioLogeado == true && usuarioParticipanteProyecto"
+              v-if="usuarioLogeado == true && usuarioParticipanteGrupo"
               @click="abandonarListaParticipantes()"
             >
               Abandonar
@@ -296,7 +296,7 @@
             <icono-persona-autonomo
               :idPersona="idPersona"
               :key="'participante' + idPersona"
-              v-for="idPersona of esteProyecto.participantes"
+              v-for="idPersona of esteGrupo.participantes"
               :seleccionado="idParticipanteSeleccionado == idPersona"
               @click.native.stop="
                 idParticipanteSeleccionado = idPersona;
@@ -325,8 +325,8 @@
           <div id="controlesEventos" class="controlesZona"></div>
 
           <calendario
-            :configCalendario="{ tipo: 'club', id: esteProyecto.id }"
-            :creacionEventosDisallowed="usuarioResponsableProyecto?false:true"
+            :configCalendario="{ tipo: 'club', id: esteGrupo.id }"
+            :creacionEventosDisallowed="usuarioResponsableGrupo?false:true"
             :key="'calendario' + versionCalendario"
           />
         </div>
@@ -358,7 +358,7 @@
             />
             <div
               class="controlesResponsables hoverGris botonesControles"              
-              v-if="usuarioLogeado && usuarioResponsableProyecto"
+              v-if="usuarioLogeado && usuarioResponsableGrupo"
               id="botonAdministrarBienesServicios"
               @click="administrandoBienesServicios=!administrandoBienesServicios"
             >
@@ -367,7 +367,7 @@
             <div
               class="controlesResponsables hoverGris botonesControles"
               :class="{ deshabilitado: enviandoQueryBienesServicios }"
-              v-if="usuarioLogeado && usuarioResponsableProyecto && administrandoBienesServicios"
+              v-if="usuarioLogeado && usuarioResponsableGrupo && administrandoBienesServicios"
               id="botonCrearProductoRepartir"
               @click="crearProductoRepartir"
             >
@@ -379,21 +379,21 @@
           <div
             id="listaBienesServicios"
             v-show="
-              esteProyecto.bienes.length > 0 ||
-              esteProyecto.servicios.length > 0
+              esteGrupo.bienes.length > 0 ||
+              esteGrupo.servicios.length > 0
             "
           >
             <bien-repartir-admin
-              :idProyecto="esteProyecto.id"
+              :idGrupo="esteGrupo.id"
               :esteBien="bien"
-              v-for="bien of esteProyecto.bienes"
+              v-for="bien of esteGrupo.bienes"
               :key="bien.id"
               v-show="administrandoBienesServicios"
               @meElimine="eliminarBienDeCache(bien.id)"
             />
 
-            <bien-ofrecido v-for="bien of esteProyecto.bienes" :key="'bienOfrecido'+bien.id"
-            :esteBien="bien" :idProyecto="esteProyecto.id"
+            <bien-ofrecido v-for="bien of esteGrupo.bienes" :key="'bienOfrecido'+bien.id"
+            :esteBien="bien" :idGrupo="esteGrupo.id"
             v-show="!administrandoBienesServicios"
             @nuevaPeticionCreada="addPeticionBienCache($event, bien.id)"
 
@@ -425,10 +425,10 @@
         </div>
         <div id="controlesObjetivos" class="controlesZona"></div>
         <diagrama-flujo
-          :idProyecto="esteProyecto.id"
-          :objetivos="esteProyecto.objetivos"
-          :trabajos="esteProyecto.trabajos"
-          :usuarioResponsableProyecto="usuarioResponsableProyecto"
+          :idGrupo="esteGrupo.id"
+          :objetivos="esteGrupo.objetivos"
+          :trabajos="esteGrupo.trabajos"
+          :usuarioResponsableGrupo="usuarioResponsableGrupo"
           :activo="idNodoAbierto == null"
           :deshabilitar="realizandoOperacionDiagrama"
           v-if="mostrandoDiagramaFlujo"
@@ -452,8 +452,8 @@
         </div>
         <foro
           :parent="infoAsParent"
-          :idForo="esteProyecto.idForo"
-          v-if="usuarioResponsableProyecto || usuarioParticipanteProyecto"
+          :idForo="esteGrupo.idForo"
+          v-if="usuarioResponsableGrupo || usuarioParticipanteGrupo"
           v-show="mostrandoForo"
         />
       </div>
@@ -464,31 +464,31 @@
 <script>
 import gql from "graphql-tag";
 import {
-  fragmentoObjetivoProyecto,
-  // fragmentoBienProyecto,
-  fragmentoProyecto,
-  // fragmentoObjetivoProyecto,
-  fragmentoTrabajoProyecto,
-} from "./utilidades/recursosGql";
-import Loading from "./utilidades/Loading.vue";
-import Foro from "./Foro.vue";
-import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
-import DiagramaFlujo from "./proyecto/DiagramaFlujo.vue";
+  fragmentoObjetivoGrupo,
+  // fragmentoBienGrupo,
+  fragmentoGrupo,
+  // fragmentoObjetivoGrupo,
+  fragmentoTrabajoGrupo,
+} from "../utilidades/recursosGql";
+import Loading from "../utilidades/Loading.vue";
+import Foro from "../foros/Foro.vue";
+import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
+import DiagramaFlujo from "./DiagramaFlujo.vue";
 import debounce from "debounce";
-import Calendario from "./utilidades/Calendario.vue";
-// import BienRepartirAdmin from "./proyecto/BienRepartirAdmin.vue";
-// import BienOfrecido from "./proyecto/BienOfrecido.vue";
+import Calendario from "../calendario/Calendario.vue";
+// import BienRepartirAdmin from "./grupo/BienRepartirAdmin.vue";
+// import BienOfrecido from "./grupo/BienOfrecido.vue";
 
-const QUERY_PROYECTO = gql`
-  query ($idProyecto: ID!) {
-    proyecto(idProyecto: $idProyecto) {
-      ...fragProyecto
+const QUERY_GRUPO = gql`
+  query ($idGrupo: ID!) {
+    grupo(idGrupo: $idGrupo) {
+      ...fragGrupo
     }
   }
-  ${fragmentoProyecto}
+  ${fragmentoGrupo}
 `;
-const charProhibidosNombreProyecto = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
-const charProhibidosDescripcionProyecto = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
+const charProhibidosNombreGrupo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+const charProhibidosDescripcionGrupo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
 
 export default {
   components: {
@@ -500,20 +500,20 @@ export default {
     // BienRepartirAdmin,
     // BienOfrecido,
   },
-  name: "proyecto",
+  name: "Grupo",
   apollo: {
-    esteProyecto: {
-      query: QUERY_PROYECTO,
+    esteGrupo: {
+      query: QUERY_GRUPO,
       variables() {
         return {
-          idProyecto: this.$route.params.idProyecto,
+          idGrupo: this.$route.params.idGrupo,
         };
       },
       update(respuesta) {
         this.loading = false;
         this.responsablesSolicitados =
-          respuesta.proyecto.responsablesSolicitados;
-        return respuesta.proyecto;
+          respuesta.grupo.responsablesSolicitados;
+        return respuesta.grupo;
       },
       fetchPolicy: "network-only",
     },
@@ -522,7 +522,7 @@ export default {
     return {
       loading: true,
 
-      esteProyecto: {
+      esteGrupo: {
         responsables: [],
         posiblesResponsables: [],
         participantes: [],
@@ -568,37 +568,37 @@ export default {
     };
   },
   computed: {
-    usuarioResponsableProyecto: function () {
-      if (!this.esteProyecto.responsables) return false;
+    usuarioResponsableGrupo: function () {
+      if (!this.esteGrupo.responsables) return false;
 
       if (
-        this.esteProyecto.responsables.includes(this.$store.state.usuario.id)
+        this.esteGrupo.responsables.includes(this.$store.state.usuario.id)
       ) {
         return true;
       }
       return false;
     },
-    usuarioParticipanteProyecto: function () {
-      if (!this.esteProyecto.participantes) return false;
+    usuarioParticipanteGrupo: function () {
+      if (!this.esteGrupo.participantes) return false;
 
       if (
-        this.esteProyecto.participantes.includes(this.$store.state.usuario.id)
+        this.esteGrupo.participantes.includes(this.$store.state.usuario.id)
       ) {
         return true;
       }
       return false;
     },
-    usuarioPosibleResponsableProyecto: function () {
-      if (!this.esteProyecto.posiblesResponsables) return false;
+    usuarioPosibleResponsableGrupo: function () {
+      if (!this.esteGrupo.posiblesResponsables) return false;
 
-      if (this.esteProyecto.posiblesResponsables.includes(this.usuario.id)) {
+      if (this.esteGrupo.posiblesResponsables.includes(this.usuario.id)) {
         return true;
       }
       return false;
     },
     permisosEdicion: function () {
       if (
-        this.usuarioResponsableProyecto ||
+        this.usuarioResponsableGrupo ||
         this.$store.state.usuario.permisos == "superadministrador"
       ) {
         return true;
@@ -609,7 +609,7 @@ export default {
       if (!this.nuevoNombre || this.nuevoNombre.length < 1) {
         return true;
       }
-      if (charProhibidosNombreProyecto.test(this.nuevoNombre)) {
+      if (charProhibidosNombreGrupo.test(this.nuevoNombre)) {
         return true;
       }
       return false;
@@ -618,16 +618,16 @@ export default {
       if (!this.nuevoDescripcion || this.nuevoDescripcion.length < 1) {
         return true;
       }
-      if (charProhibidosDescripcionProyecto.test(this.nuevoDescripcion)) {
+      if (charProhibidosDescripcionGrupo.test(this.nuevoDescripcion)) {
         return true;
       }
       return false;
     },
     infoAsParent() {
       return {
-        id: this.esteProyecto.id,
-        tipo: "proyecto",
-        nombre: this.esteProyecto.nombre,
+        id: this.esteGrupo.id,
+        tipo: "grupo",
+        nombre: this.esteGrupo.nombre,
       };
     },
     realizandoOperacionDiagrama() {
@@ -640,7 +640,7 @@ export default {
         console.log(`No enviado`);
         return;
       }
-      if (this.nuevoNombre == this.esteProyecto.nombre) {
+      if (this.nuevoNombre == this.esteGrupo.nombre) {
         this.editandoNombre = false;
         return;
       }
@@ -649,9 +649,9 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $nuevoNombre: String!) {
-              editarNombreProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $nuevoNombre: String!) {
+              editarNombreGrupo(
+                idGrupo: $idGrupo
                 nuevoNombre: $nuevoNombre
               ) {
                 id
@@ -660,7 +660,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             nuevoNombre: this.nuevoNombre,
           },
         })
@@ -678,7 +678,7 @@ export default {
         console.log(`No enviado`);
         return;
       }
-      if (this.nuevoDescripcion == this.esteProyecto.descripcion) {
+      if (this.nuevoDescripcion == this.esteGrupo.descripcion) {
         this.editandoDescripcion = false;
         return;
       }
@@ -687,9 +687,9 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $nuevoDescripcion: String!) {
-              editarDescripcionProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $nuevoDescripcion: String!) {
+              editarDescripcionGrupo(
+                idGrupo: $idGrupo
                 nuevoDescripcion: $nuevoDescripcion
               ) {
                 id
@@ -698,7 +698,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             nuevoDescripcion: this.nuevoDescripcion,
           },
         })
@@ -713,23 +713,23 @@ export default {
     },
     toggleEditandoNombre() {
       this.editandoNombre = !this.editandoNombre;
-      this.nuevoNombre = this.esteProyecto.nombre;
+      this.nuevoNombre = this.esteGrupo.nombre;
     },
     toggleEditandoDescripcion() {
       this.$refs.inputNuevoDescripcion.style.height =
         this.$refs.descripcion.offsetHeight + "px";
       this.editandoDescripcion = !this.editandoDescripcion;
-      this.nuevoDescripcion = this.esteProyecto.descripcion;
+      this.nuevoDescripcion = this.esteGrupo.descripcion;
     },
     abandonarListaResponsables() {
-      console.log(`Abandonando la responsabilidad en este proyecto`);
+      console.log(`Abandonando la responsabilidad en este grupo`);
       this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $idUsuario: ID!) {
-              removeResponsableProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $idUsuario: ID!) {
+              removeResponsableGrupo(
+                idGrupo: $idGrupo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -739,7 +739,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             idUsuario: this.usuario.id,
           },
         })
@@ -760,9 +760,9 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $idUsuario: ID!) {
-              addResponsableProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $idUsuario: ID!) {
+              addResponsableGrupo(
+                idGrupo: $idGrupo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -773,7 +773,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             idUsuario: idPosibleResponsable,
           },
         })
@@ -789,15 +789,15 @@ export default {
     },
     entrarListaPosiblesResponsables() {
       console.log(
-        `Enviando peticion de entrar a la lista de posibles responsables del proyecto con id ${this.esteProyecto.id}`
+        `Enviando peticion de entrar a la lista de posibles responsables del grupo con id ${this.esteGrupo.id}`
       );
       this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $idUsuario: ID!) {
-              addPosibleResponsableProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $idUsuario: ID!) {
+              addPosibleResponsableGrupo(
+                idGrupo: $idGrupo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -806,7 +806,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             idUsuario: this.$store.state.usuario.id,
           },
         })
@@ -820,15 +820,15 @@ export default {
     },
     asumirComoResponsable() {
       console.log(
-        `enviando id ${this.$store.state.usuario.id} para la lista de responsables del proyecto con id ${this.esteProyecto.id}`
+        `enviando id ${this.$store.state.usuario.id} para la lista de responsables del grupo con id ${this.esteGrupo.id}`
       );
       this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $idUsuario: ID!) {
-              addResponsableProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $idUsuario: ID!) {
+              addResponsableGrupo(
+                idGrupo: $idGrupo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -838,7 +838,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             idUsuario: this.$store.state.usuario.id,
           },
         })
@@ -853,15 +853,15 @@ export default {
     },
     entrarListaParticipantes() {
       console.log(
-        `Enviando peticion de entrar a la lista de participantes del proyecto con id ${this.esteProyecto.id}`
+        `Enviando peticion de entrar a la lista de participantes del grupo con id ${this.esteGrupo.id}`
       );
       this.enviandoQueryParticipantes = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $idUsuario: ID!) {
-              addParticipanteProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $idUsuario: ID!) {
+              addParticipanteGrupo(
+                idGrupo: $idGrupo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -870,7 +870,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             idUsuario: this.$store.state.usuario.id,
           },
         })
@@ -884,14 +884,14 @@ export default {
         });
     },
     abandonarListaParticipantes() {
-      console.log(`Abandonando la participación en este proyecto`);
+      console.log(`Abandonando la participación en este grupo`);
       this.enviandoQueryParticipantes = true;
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $idUsuario: ID!) {
-              removeParticipanteProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $idUsuario: ID!) {
+              removeParticipanteGrupo(
+                idGrupo: $idGrupo
                 idUsuario: $idUsuario
               ) {
                 id
@@ -900,7 +900,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             idUsuario: this.usuario.id,
           },
         })
@@ -919,42 +919,42 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $posicion: CoordsInput) {
-              crearTrabajoEnProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $posicion: CoordsInput) {
+              crearTrabajoEnGrupo(
+                idGrupo: $idGrupo
                 posicion: $posicion
               ) {
-                ...fragTrabajoProyecto
+                ...fragTrabajoGrupo
               }
             }
-            ${fragmentoTrabajoProyecto}
+            ${fragmentoTrabajoGrupo}
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             posicion,
           },
-          update: (store, { data: { crearTrabajoEnProyecto } }) => {
-            console.log(`respuesta: ${JSON.stringify(crearTrabajoEnProyecto)}`);
-            const nuevoTrabajo = crearTrabajoEnProyecto;
+          update: (store, { data: { crearTrabajoEnGrupo } }) => {
+            console.log(`respuesta: ${JSON.stringify(crearTrabajoEnGrupo)}`);
+            const nuevoTrabajo = crearTrabajoEnGrupo;
             try {
               const cache = store.readQuery({
-                query: QUERY_PROYECTO,
-                variables: { idProyecto: this.esteProyecto.id },
+                query: QUERY_GRUPO,
+                variables: { idGrupo: this.esteGrupo.id },
               });
               console.log(
-                `Trabajos en cache: ${cache.proyecto.trabajos.length}`
+                `Trabajos en cache: ${cache.grupo.trabajos.length}`
               );
               const nuevoCache = JSON.parse(JSON.stringify(cache));
-              nuevoCache.proyecto.trabajos.push(nuevoTrabajo);
+              nuevoCache.grupo.trabajos.push(nuevoTrabajo);
 
               store.writeQuery({
-                query: QUERY_PROYECTO,
-                variables: { idProyecto: this.esteProyecto.id },
+                query: QUERY_GRUPO,
+                variables: { idGrupo: this.esteGrupo.id },
                 data: nuevoCache,
               });
               console.log(`cache actualizado`);
               console.log(
-                `Trabajos en cache: ${nuevoCache.proyecto.trabajos.length}`
+                `Trabajos en cache: ${nuevoCache.grupo.trabajos.length}`
               );
             } catch (error) {
               console.log(`Error actualizando cache: ${error}`);
@@ -976,39 +976,39 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idProyecto: ID!, $posicion: CoordsInput) {
-              crearObjetivoEnProyecto(
-                idProyecto: $idProyecto
+            mutation ($idGrupo: ID!, $posicion: CoordsInput) {
+              crearObjetivoEnGrupo(
+                idGrupo: $idGrupo
                 posicion: $posicion
               ) {
-                ...fragObjetivoProyecto
+                ...fragObjetivoGrupo
               }
             }
-            ${fragmentoObjetivoProyecto}
+            ${fragmentoObjetivoGrupo}
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             posicion,
           },
-          update: (store, { data: { crearObjetivoEnProyecto } }) => {
+          update: (store, { data: { crearObjetivoEnGrupo } }) => {
             console.log(
               `respuesta: ${JSON.stringify(
-                JSON.stringify(crearObjetivoEnProyecto)
+                JSON.stringify(crearObjetivoEnGrupo)
               )}`
             );
-            const nuevoObjetivo = crearObjetivoEnProyecto;
+            const nuevoObjetivo = crearObjetivoEnGrupo;
             try {
               const cache = store.readQuery({
-                query: QUERY_PROYECTO,
-                variables: { idProyecto: this.esteProyecto.id },
+                query: QUERY_GRUPO,
+                variables: { idGrupo: this.esteGrupo.id },
               });
 
               var nuevoCache = JSON.parse(JSON.stringify(cache));
-              nuevoCache.proyecto.objetivos.push(nuevoObjetivo);
+              nuevoCache.grupo.objetivos.push(nuevoObjetivo);
 
               store.writeQuery({
-                query: QUERY_PROYECTO,
-                variables: { idProyecto: this.esteProyecto.id },
+                query: QUERY_GRUPO,
+                variables: { idGrupo: this.esteGrupo.id },
                 data: nuevoCache,
               });
               console.log(`cache actualizado`);
@@ -1034,38 +1034,38 @@ export default {
     //   this.$apollo
     //     .mutate({
     //       mutation: gql`
-    //         mutation ($idProyecto: ID!) {
-    //           crearBienRepartirVacioProyecto(idProyecto: $idProyecto) {
-    //             ...fragBienProyecto
+    //         mutation ($idGrupo: ID!) {
+    //           crearBienRepartirVacioGrupo(idGrupo: $idGrupo) {
+    //             ...fragBienGrupo
     //           }
     //         }
-    //         ${fragmentoBienProyecto}
+    //         ${fragmentoBienGrupo}
     //       `,
     //       variables: {
-    //         idProyecto: this.esteProyecto.id,
+    //         idGrupo: this.esteGrupo.id,
     //       },
     //     })
-    //     .then(({ data: { crearBienRepartirVacioProyecto } }) => {
+    //     .then(({ data: { crearBienRepartirVacioGrupo } }) => {
     //       this.enviandoQueryBienesServicios = false;
     //       const store = this.$apollo.provider.defaultClient;
     //       const cache = store.readQuery({
-    //         query: QUERY_PROYECTO,
+    //         query: QUERY_GRUPO,
     //         variables: {
-    //           idProyecto: this.esteProyecto.id,
+    //           idGrupo: this.esteGrupo.id,
     //         },
     //       });
-    //       const iBien = cache.proyecto.bienes.findIndex(
-    //         (b) => b.id == crearBienRepartirVacioProyecto.id
+    //       const iBien = cache.grupo.bienes.findIndex(
+    //         (b) => b.id == crearBienRepartirVacioGrupo.id
     //       );
     //       if (iBien > -1) {
     //         console.log(`El bien ya estaba en caché`);
     //       } else {
     //         var nuevoCache = JSON.parse(JSON.stringify(cache));
-    //         nuevoCache.proyecto.bienes.push(crearBienRepartirVacioProyecto);
+    //         nuevoCache.grupo.bienes.push(crearBienRepartirVacioGrupo);
     //         store.writeQuery({
-    //           query: QUERY_PROYECTO,
+    //           query: QUERY_GRUPO,
     //           variables: {
-    //             idProyecto: this.esteProyecto.id,
+    //             idGrupo: this.esteGrupo.id,
     //           },
     //           data: nuevoCache,
     //         });
@@ -1079,22 +1079,22 @@ export default {
     eliminarTrabajoDeCache(idTrabajo) {
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
-        query: QUERY_PROYECTO,
+        query: QUERY_GRUPO,
         variables: {
-          idProyecto: this.esteProyecto.id,
+          idGrupo: this.esteGrupo.id,
         },
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
-      let indexT = nuevoCache.proyecto.trabajos.indexOf(idTrabajo);
+      let indexT = nuevoCache.grupo.trabajos.indexOf(idTrabajo);
       if (indexT > -1) {
-        nuevoCache.proyecto.idsTrabajos.splice(indexT, 1);
+        nuevoCache.grupo.idsTrabajos.splice(indexT, 1);
       } else {
-        console.log(`El trabajo no existía en el proyecto`);
+        console.log(`El trabajo no existía en el grupo`);
       }
       store.writeQuery({
-        query: QUERY_PROYECTO,
+        query: QUERY_GRUPO,
         variables: {
-          idProyecto: this.esteProyecto.id,
+          idGrupo: this.esteGrupo.id,
         },
         data: nuevoCache,
       });
@@ -1102,24 +1102,24 @@ export default {
     eliminarObjetivoDeCache(idObjetivo) {
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
-        query: QUERY_PROYECTO,
+        query: QUERY_GRUPO,
         variables: {
-          idProyecto: this.esteProyecto.id,
+          idGrupo: this.esteGrupo.id,
         },
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
-      let indexT = nuevoCache.proyecto.objetivos.findIndex(
+      let indexT = nuevoCache.grupo.objetivos.findIndex(
         (t) => t.id == idObjetivo
       );
       if (indexT > -1) {
-        nuevoCache.proyecto.objetivos.splice(indexT, 1);
+        nuevoCache.grupo.objetivos.splice(indexT, 1);
       } else {
-        console.log(`El objetivo no existía en el proyecto`);
+        console.log(`El objetivo no existía en el grupo`);
       }
       store.writeQuery({
-        query: QUERY_PROYECTO,
+        query: QUERY_GRUPO,
         variables: {
-          idProyecto: this.esteProyecto.id,
+          idGrupo: this.esteGrupo.id,
         },
         data: nuevoCache,
       });
@@ -1127,22 +1127,22 @@ export default {
     // eliminarBienDeCache(idBien) {
     //   const store = this.$apollo.provider.defaultClient;
     //   const cache = store.readQuery({
-    //     query: QUERY_PROYECTO,
+    //     query: QUERY_GRUPO,
     //     variables: {
-    //       idProyecto: this.esteProyecto.id,
+    //       idGrupo: this.esteGrupo.id,
     //     },
     //   });
     //   var nuevoCache = JSON.parse(JSON.stringify(cache));
-    //   let indexB = nuevoCache.proyecto.bienes.findIndex((b) => b.id == idBien);
+    //   let indexB = nuevoCache.grupo.bienes.findIndex((b) => b.id == idBien);
     //   if (indexB > -1) {
-    //     nuevoCache.proyecto.bienes.splice(indexB, 1);
+    //     nuevoCache.grupo.bienes.splice(indexB, 1);
     //   } else {
-    //     console.log(`El bien no existía en el proyecto`);
+    //     console.log(`El bien no existía en el grupo`);
     //   }
     //   store.writeQuery({
-    //     query: QUERY_PROYECTO,
+    //     query: QUERY_GRUPO,
     //     variables: {
-    //       idProyecto: this.esteProyecto.id,
+    //       idGrupo: this.esteGrupo.id,
     //     },
     //     data: nuevoCache,
     //   });
@@ -1151,13 +1151,13 @@ export default {
     //   console.log(`Introduciendo la peticion ${JSON.stringify(nuevaPeticion)} en el cache para el bien ${idBien}`);
     //   const store = this.$apollo.provider.defaultClient;
     //   const cache = store.readQuery({
-    //     query: QUERY_PROYECTO,
+    //     query: QUERY_GRUPO,
     //     variables: {
-    //       idProyecto: this.esteProyecto.id,
+    //       idGrupo: this.esteGrupo.id,
     //     },
     //   });
     //   var nuevoCache = JSON.parse(JSON.stringify(cache));
-    //   var elBien=nuevoCache.proyecto.bienes.find(b=>b.id==idBien)
+    //   var elBien=nuevoCache.grupo.bienes.find(b=>b.id==idBien)
     //   if(!elBien){
     //     console.log(`Tratando de introducir una nueva peticion en un bien que no estaba en el caché`);
     //     return
@@ -1171,15 +1171,15 @@ export default {
     //     elBien.listaPeticiones.push(nuevaPeticion);
     //   }
     //   store.writeQuery({
-    //     query: QUERY_PROYECTO,
+    //     query: QUERY_GRUPO,
     //     variables: {
-    //       idProyecto: this.esteProyecto.id,
+    //       idGrupo: this.esteGrupo.id,
     //     },
     //     data: nuevoCache,
     //   });
     // },
     navegarAlForo() {
-      console.log(`Navegando al foro de este proyecto`);
+      console.log(`Navegando al foro de este grupo`);
       this.$refs.zonaForo.scrollIntoView();
     },
     abrirNodo(idNodo) {
@@ -1196,11 +1196,11 @@ export default {
         .mutate({
           mutation: gql`
             mutation (
-              $idProyecto: ID!
+              $idGrupo: ID!
               $nuevoCantidadResponsablesSolicitados: Int!
             ) {
-              setResponsablesSolicitadosProyecto(
-                idProyecto: $idProyecto
+              setResponsablesSolicitadosGrupo(
+                idGrupo: $idGrupo
                 nuevoCantidadResponsablesSolicitados: $nuevoCantidadResponsablesSolicitados
               ) {
                 id
@@ -1209,7 +1209,7 @@ export default {
             }
           `,
           variables: {
-            idProyecto: this.esteProyecto.id,
+            idGrupo: this.esteGrupo.id,
             nuevoCantidadResponsablesSolicitados: cantidad,
           },
         })
@@ -1221,7 +1221,7 @@ export default {
   },
   watch: {
     responsablesSolicitados(nuevo) {
-      if (nuevo === this.esteProyecto.responsablesSolicitados) return;
+      if (nuevo === this.esteGrupo.responsablesSolicitados) return;
       console.log(`Cambio en responsables solicitados`);
       this.debounceSetResponsablesSolicitados();
     },
@@ -1230,14 +1230,14 @@ export default {
 </script>
 
 <style scoped>
-.proyecto {
+.grupo {
   margin: 5px auto;
   width: min(93%, 1300px);
   padding: 5px 20px;
   padding-bottom: 300px;
 }
 
-#nombreProyecto {
+#nombreGrupo {
   margin-top: 15px;
   font-size: 23px;
   font-weight: bolder;

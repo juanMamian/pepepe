@@ -64,8 +64,8 @@
 
 <script>
 import gql from "graphql-tag";
-import { fragmentoResponsables } from "./utilidades/recursosGql";
-import Loading from "./utilidades/Loading.vue";
+import { fragmentoResponsables } from "../utilidades/recursosGql";
+import Loading from "../utilidades/Loading.vue";
 
 export default {
   components: { Loading },

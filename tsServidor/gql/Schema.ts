@@ -1,5 +1,5 @@
 const { ApolloServer, gql, PubSub } = require("apollo-server-express");
-import { typeDefs as tdNodos, resolvers as rNodos } from "./NodosConocimiento"
+import { typeDefs as tdNodos, resolvers as rNodos } from "./AtlasConocimiento"
 import { typeDefs as tdUsuarios, resolvers as rUsuarios } from "./Usuarios"
 import { typeDefs as tdProyectos, resolvers as rProyectos } from "./Proyectos"
 import { typeDefs as tdTrabajos, resolvers as rTrabajos } from "./Trabajos"

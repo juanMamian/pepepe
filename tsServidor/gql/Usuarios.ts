@@ -3,9 +3,9 @@ import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario } from
 import { GraphQLDateTime } from "graphql-iso-date";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
 import { contextoQuery } from "./tsObjetos"
-import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
-import { ModeloObjetivo as Objetivo } from "../model/Objetivo";
-import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; 
+import { ModeloNodo as Nodo } from "../model/atlasConocimiento/Nodo";
+import { ModeloObjetivo as Objetivo } from "../model/atlasSolidaridad/Objetivo";
+import { ModeloTrabajo as Trabajo } from "../model/atlasSolidaridad/Trabajo"; 
 
 interface Usuario {
     username: string,

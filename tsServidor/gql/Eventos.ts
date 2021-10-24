@@ -1,8 +1,8 @@
 import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloEvento as Evento } from "../model/Evento";
-import { ModeloProyecto as Proyecto } from "../model/Proyecto";
-import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
+import { ModeloGrupo as Grupo } from "../model/Grupo";
+import { ModeloNodo as Nodo } from "../model/atlasConocimiento/Nodo";
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 
 
@@ -132,7 +132,7 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto: any = await Proyecto.findById(idClub).exec();
+                var elProyecto: any = await Grupo.findById(idClub).exec();
                 if (!elProyecto) throw "Proyecto parent no encontrado";
             } catch (error) {
                 console.log(`Error buscando el club parent. E: ${error}`);
@@ -213,7 +213,7 @@ export const resolvers = {
             var infoEvento:any=null;
             if (elEvento.origen === 'club') {
                 try {
-                    var elParent: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    var elParent: any = await Grupo.findById(elEvento.idOrigen).exec();
                 } catch (error) {
                     console.log(`Error buscando el proyecto parent del evento`);
                     throw new ApolloError("Error conectando con la base de datos");
@@ -273,7 +273,7 @@ export const resolvers = {
             var participantesEvento: Array<string> = [];
             if (origen === "club") {
                 try {
-                    var elProyecto: any = await Proyecto.findById(idOrigen).exec();
+                    var elProyecto: any = await Grupo.findById(idOrigen).exec();
                     if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
@@ -377,7 +377,7 @@ export const resolvers = {
             var idsAutorizados = [];
             if (elEvento.origen === "club") {
                 try {
-                    var elProyecto: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    var elProyecto: any = await Grupo.findById(elEvento.idOrigen).exec();
                     if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
@@ -418,7 +418,7 @@ export const resolvers = {
             var idsAutorizados = [];
             if (elEvento.origen === "club") {
                 try {
-                    var elProyecto: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    var elProyecto: any = await Grupo.findById(elEvento.idOrigen).exec();
                     if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
@@ -471,7 +471,7 @@ export const resolvers = {
             var idsAutorizados = [];
             if (elEvento.origen === "club") {
                 try {
-                    var elProyecto: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    var elProyecto: any = await Grupo.findById(elEvento.idOrigen).exec();
                     if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
@@ -523,7 +523,7 @@ export const resolvers = {
             var idsAutorizados = [];
             if (elEvento.origen === "club") {
                 try {
-                    var elProyecto: any = await Proyecto.findById(elEvento.idOrigen).exec();
+                    var elProyecto: any = await Grupo.findById(elEvento.idOrigen).exec();
                     if (!elProyecto) throw "Proyecto parent no encontrado";
                 } catch (error) {
                     console.log(`Error buscando el club parent. E: ${error}`);
@@ -605,7 +605,7 @@ export const resolvers = {
             var responsables: Array<string> = [];
             if (parent.origen === "club") {
                 try {
-                    var elProyecto: any = await Proyecto.findById(parent.idOrigen).exec();
+                    var elProyecto: any = await Grupo.findById(parent.idOrigen).exec();
                     if (!elProyecto) throw "Proyecto parent no encontrado buscando responsables de un evento";
                     responsables = elProyecto.responsables;
                 } catch (error) {

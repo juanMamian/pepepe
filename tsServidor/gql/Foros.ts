@@ -2,14 +2,14 @@ import { ApolloError, AuthenticationError, gql, withFilter } from "apollo-server
 import mongoose from "mongoose";
 import fs from "fs";
 import { ModeloForo as Foro } from "../model/Foros/Foro";
-import { ModeloProyecto as Proyecto } from "../model/Proyecto";
+import { ModeloGrupo as Grupo } from "../model/Grupo";
 import { ModeloConversacion as Conversacion, esquemaRespuestaConversacion, charProhibidosMensajeRespuesta } from "../model/Foros/Conversacion";
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import path from "path"
 import { contextoQuery } from "./tsObjetos"
 import { drive, jwToken } from "../routes/utilidades"
-import { ModeloNodo as NodoConocimiento } from "../model/atlas/Nodo";
-import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; const Nodo = require("../model/atlas/Nodo");
+import { ModeloNodo as NodoConocimiento } from "../model/atlasConocimiento/Nodo";
+import { ModeloTrabajo as Trabajo } from "../model/atlasSolidaridad/Trabajo"; const Nodo = require("../model/atlasConocimiento/Nodo");
 import { ModeloLibro as Libro } from "../model/cuentos/Libro";
 
 
@@ -339,7 +339,7 @@ export const resolvers = {
             console.log(`Creando notificacion para los miembros del ${parent.tipo} ${parent.nombre}`);
             try {
                 if (parent.tipo == "proyecto") {
-                    var elParent: any = await Proyecto.findById(parent.id, "_id responsables").exec();
+                    var elParent: any = await Grupo.findById(parent.id, "_id responsables").exec();
                     var idsMiembros = elParent.responsables;
                 }
                 else if (parent.tipo == "trabajo") {
@@ -594,7 +594,7 @@ export const resolvers = {
             console.log(`Creando notificacion para los miembros del ${parent.tipo} ${parent.nombre}`);
             try {
                 if (parent.tipo == "proyecto") {
-                    var elParent: any = await Proyecto.findById(parent.id, "_id responsables").exec();
+                    var elParent: any = await Grupo.findById(parent.id, "_id responsables").exec();
                     var idsMiembros = elParent.responsables;
                 }
                 else if (parent.tipo == "trabajo") {

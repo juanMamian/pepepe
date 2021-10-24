@@ -32,7 +32,7 @@
 <script>
 import gql from "graphql-tag";
 import { fragmentoResponsables } from "./utilidades/recursosGql";
-import IconoPersona from "./proyecto/IconoPersona";
+import IconoPersona from "./utilidades/IconoPersona";
 import Loading from "./utilidades/Loading.vue";
 import axios from "axios";
 

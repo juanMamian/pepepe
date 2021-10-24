@@ -85,8 +85,8 @@ fragment fragActividad on ActividadGrupoEstudiantil {
 ${fragmentoDesarrollo}
 `;
 
-export const fragmentoBienProyecto = gql`
-  fragment fragBienProyecto on BienProyecto{
+export const fragmentoBienGrupo = gql`
+  fragment fragBienGrupo on BienGrupo{
     id
       nombre
       descripcion
@@ -103,8 +103,8 @@ export const fragmentoBienProyecto = gql`
   }
 `
 
-export const fragmentoServicioProyecto = gql`
-fragment fragServicioProyecto on ServicioProyecto{
+export const fragmentoServicioGrupo = gql`
+fragment fragServicioGrupo on ServicioGrupo{
   id
   nombre
   descripcion
@@ -113,8 +113,8 @@ fragment fragServicioProyecto on ServicioProyecto{
   }
 }
 `
-export const fragmentoTrabajoProyecto = gql`
-  fragment fragTrabajoProyecto on TrabajoDeProyecto{
+export const fragmentoTrabajoGrupo = gql`
+  fragment fragTrabajoGrupo on TrabajoDeGrupo{
     id
       nombre
       descripcion
@@ -131,8 +131,8 @@ export const fragmentoTrabajoProyecto = gql`
   }
 `;
 
-export const fragmentoObjetivoProyecto = gql`
-  fragment fragObjetivoProyecto on ObjetivoDeProyecto{
+export const fragmentoObjetivoGrupo = gql`
+  fragment fragObjetivoGrupo on ObjetivoDeGrupo{
     id
     nombre
     descripcion
@@ -149,8 +149,8 @@ export const fragmentoObjetivoProyecto = gql`
   }
 `;
 
-export const fragmentoProyecto = gql`
-  fragment fragProyecto on Proyecto{
+export const fragmentoGrupo = gql`
+  fragment fragGrupo on Grupo{
     id
     nombre
     descripcion
@@ -159,14 +159,14 @@ export const fragmentoProyecto = gql`
     participantes
     posiblesResponsables    
     objetivos {
-      ...fragObjetivoProyecto
+      ...fragObjetivoGrupo
     }
     trabajos {
-      ...fragTrabajoProyecto
+      ...fragTrabajoGrupo
     }
   }  
-  ${fragmentoTrabajoProyecto}
-  ${fragmentoObjetivoProyecto}
+  ${fragmentoTrabajoGrupo}
+  ${fragmentoObjetivoGrupo}
 `;
 
 const fragmentoQuote =gql`

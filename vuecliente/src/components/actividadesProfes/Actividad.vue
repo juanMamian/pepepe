@@ -320,7 +320,7 @@ import FileDownload from "js-file-download";
 import gql from "graphql-tag";
 import MiParticipacion from "./MiParticipacion.vue";
 import ParticipacionEstudiante from "./ParticipacionEstudiante.vue";
-import IconoPersona from "../proyecto/IconoPersona.vue";
+import IconoPersona from "../utilidades/IconoPersona.vue";
 import Loading from "../utilidades/Loading.vue";
 import { fragmentoActividad } from "../utilidades/recursosGql";
 var charProhibidosNombre = /[^ a-zA-ZÀ-ž0-9_():.,-]/g;

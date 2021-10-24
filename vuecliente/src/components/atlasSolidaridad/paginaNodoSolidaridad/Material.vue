@@ -141,7 +141,7 @@
 
 <script>
 import gql from "graphql-tag";
-import Loading from "../utilidades/Loading.vue";
+import Loading from "../../utilidades/Loading.vue";
 
 const charProhibidosNombreMaterial = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionMaterial = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;

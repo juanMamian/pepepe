@@ -1,10 +1,9 @@
 import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
-import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
+import { ModeloNodo as Nodo } from "../model/atlasConocimiento/Nodo";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloForo as Foro } from "../model/Foros/Foro"
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
-import { EsquemaVinculosNodosProyecto } from "../model/VinculosNodosProyecto";
 import { ModeloEvento as Evento } from "../model/Evento";
 
 

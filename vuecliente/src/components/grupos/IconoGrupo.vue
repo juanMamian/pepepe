@@ -1,25 +1,25 @@
 <template>
   <div
-    class="iconoProyecto"
-    :class="{ proyectoPropio: usuarioResponsableProyecto, seleccionado }"
-    @dblclick="navegarAlProyecto"
+    class="iconoGrupo"
+    :class="{ grupoPropio: usuarioResponsableGrupo, seleccionado }"
+    @dblclick="navegarAlGrupo"
   >
     <p
       id="nombre"
       ref="nombre"      
     >
-      {{ esteProyecto.nombre }}
+      {{ esteGrupo.nombre }}
     </p>
-    <img @click.stop="navegarAlProyecto" v-show="seleccionado" src="@/assets/iconos/enviar.png" alt="entrar" title="Entrar a este proyecto" id="bEntrarProyecto">
+    <img @click.stop="navegarAlGrupo" v-show="seleccionado" src="@/assets/iconos/enviar.png" alt="entrar" title="Entrar a este grupo" id="bEntrarGrupo">
   </div>
 </template>
 
 <script>
 
 export default {
-  name: "IconoProyecto",
+  name: "IconoGrupo",
   props: {
-    esteProyecto: Object,
+    esteGrupo: Object,
     seleccionado:Boolean
   },
   data() {
@@ -28,10 +28,10 @@ export default {
     };
   },
   computed: {    
-    usuarioResponsableProyecto: function () {
-      if (!this.esteProyecto.responsables) return false;
+    usuarioResponsableGrupo: function () {
+      if (!this.esteGrupo.responsables) return false;
 
-      if (this.esteProyecto.responsables.includes(this.usuario.id)) {
+      if (this.esteGrupo.responsables.includes(this.usuario.id)) {
         return true;
       }
       return false;
@@ -39,15 +39,15 @@ export default {
     
   },
   methods: {    
-    navegarAlProyecto(){
-      this.$router.push("/proyecto/"+this.esteProyecto.id)
+    navegarAlGrupo(){
+      this.$router.push("/grupo/"+this.esteGrupo.id)
     }
   },
 };
 </script>
 
 <style scoped>
-.iconoProyecto {
+.iconoGrupo {
   width: 160px;
   height: 200px;
   margin: 15px;
@@ -58,14 +58,14 @@ export default {
   border-radius: 5px;
   background-color: burlywood;
 }
-.iconoProyecto:hover {
+.iconoGrupo:hover {
   box-shadow: 2px 2px 2px 2px grey;
 }
 #nombre {
   text-align: center;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
-#bEntrarProyecto{
+#bEntrarGrupo{
   width: 45px;
   height: 45px;
   display: block;
@@ -74,7 +74,7 @@ export default {
   cursor: pointer;
   border-radius: 50%;
 }
-.proyectoPropio {
+.grupoPropio {
   border-bottom: 2px solid purple;
 }
 .seleccionado{

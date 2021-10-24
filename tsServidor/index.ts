@@ -4,10 +4,10 @@ const app: Application = express();
 const dotenv = require("dotenv");
 dotenv.config();
 const usuariosRoutes = require("./routes/usuarios");
-const routesNodos = require("./routes/atlas/nodos");
+const routesNodosConocimiento = require("./routes/atlasConocimiento/nodos");
 const routesActividadesProfes = require("./routes/actividadesProfes");
 const routesForos = require("./routes/foros");
-const routesContenidosNodos=require("./routes/atlas/contenidosNodos");
+const routesContenidosNodos=require("./routes/atlasConocimiento/contenidosNodos");
 const routesCuentos=require("./routes/cuentos");
 import { iniciarMongoose } from "./mongoose";
 
@@ -67,7 +67,7 @@ const rutaArchivosAudioTexto=/apiCuentos\/audioTexto\/\S+/;
 //Routes
 app.use(express.json());
 app.use("/api/usuarios", cors(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: ['/api/usuarios/login', '/api/usuarios/registro', rutaFotografias] }), usuariosRoutes);
-app.use("/api/atlas", cors(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaIconos, rutaContenidosSeccion] }), routesNodos);
+app.use("/api/atlas", cors(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaIconos, rutaContenidosSeccion] }), routesNodosConocimiento);
 app.use("/api/actividadesProfes", cors(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaGuias, rutaEvidencias] }), routesActividadesProfes);
 app.use("/api/foros", cors(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaAdjuntos] }), routesForos);
 

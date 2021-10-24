@@ -4,11 +4,9 @@ import { contextoQuery } from "./tsObjetos"
 import { ModeloForo as Foro } from "../model/Foros/Foro"
 import { NUEVA_NOTIFICACION_PERSONAL } from "./Usuarios";
 
-import { ModeloObjetivo as Objetivo } from "../model/Objetivo";
-import { ModeloTrabajo as Trabajo } from "../model/Trabajo";
-const Nodo = require("../model/atlas/Nodo");
-
-import { ModeloProyecto as Proyecto } from "../model/Proyecto";
+import { ModeloObjetivo as Objetivo } from "../model/atlasSolidaridad/Objetivo";
+import { ModeloTrabajo as Trabajo } from "../model/atlasSolidaridad/Trabajo";
+import { ModeloGrupo as Grupo} from "../model/Grupo"
 
 
 export const typeDefs = gql`
@@ -37,7 +35,7 @@ export const typeDefs = gql`
        administradores:[String],
        descripcion:String,
        enlaces: [EnlaceNodoSolidaridad], 
-       vinculos:[VinculoNodoProyecto],
+       vinculos:[VinculoNodoGrupo],
        keywords:String,
        nodoParent:InfoNodoSolidaridad,
        idForoResponsables:ID,
@@ -57,7 +55,7 @@ export const typeDefs = gql`
    type InfoBasicaObjetivo{
        id:ID,
        nombre: String,
-       idProyecto:ID
+       idGrupo:ID
    }
 
     type MaterialTrabajo{
@@ -90,8 +88,8 @@ export const typeDefs = gql`
        nodoParent:InfoNodoSolidaridad
        nodosConocimiento:[String],
        idForoResponsables:ID,
-       diagramaProyecto:InfoDiagramaProyecto,
-       vinculos:[VinculoNodoProyecto],
+       diagramaGrupo:InfoDiagramaGrupo,
+       vinculos:[VinculoNodoGrupo],
        keywords:String,       
        estadoDesarrollo:String,
        materiales:[MaterialTrabajo],
@@ -110,19 +108,19 @@ export const typeDefs = gql`
    type InfoBasicaTrabajo{
        id:ID,
        nombre: String,
-       idProyecto:ID
+       idGrupo:ID
    }
 
    union NodoDeTrabajos = Trabajo | Objetivo
 
    extend type Query{
         objetivo(idObjetivo: ID!):Objetivo,
-       busquedaObjetivosProyectos(textoBusqueda:String!):[InfoBasicaObjetivo],
+       busquedaObjetivosGrupos(textoBusqueda:String!):[InfoBasicaObjetivo],
        objetivosSegunCentro(centro: CoordsInput!, radio:Int!):[Objetivo],
 
        trabajo(idTrabajo: ID!):Trabajo,
-       busquedaTrabajosProyectos(textoBusqueda:String!):[InfoBasicaTrabajo],
-       trabajosDeProyectoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo],
+       busquedaTrabajosGrupos(textoBusqueda:String!):[InfoBasicaTrabajo],
+       trabajosDeGrupoDeUsuario(idUsuario:ID!):[InfoBasicaTrabajo],
        trabajosSegunCentro(centro: CoordsInput!, radio: Int!):[Trabajo],
        nodosTrabajosSegunCentro(centro:CoordsInput!, radio: Int!):[NodoDeTrabajos],
        todosNodosSolidaridad:[NodoDeTrabajos],
@@ -147,7 +145,7 @@ export const typeDefs = gql`
     editarLinkEnlaceNodoSolidaridad(idNodo:ID!, tipoNodo:String!, idEnlace: ID!, nuevoLink: String!):EnlaceNodoSolidaridad,
 
     crearObjetivo(posicion:CoordsInput):Objetivo,
-    eliminarObjetivo(idObjetivo:ID!, idProyecto:ID!):Boolean,
+    eliminarObjetivo(idObjetivo:ID!, idGrupo:ID!):Boolean,
     editarNombreObjetivo(idObjetivo:ID!, nuevoNombre: String!):Objetivo,
     editarDescripcionObjetivo(idObjetivo:ID!, nuevoDescripcion: String!):Objetivo,
     editarKeywordsObjetivo(idObjetivo:ID!, nuevoKeywords: String!):Objetivo,
@@ -158,8 +156,8 @@ export const typeDefs = gql`
     setResponsablesSolicitadosObjetivo(idObjetivo:ID!, nuevoCantidadResponsablesSolicitados: Int!):Objetivo,
     setPosicionObjetivo(idObjetivo:ID!, nuevaPosicion:CoordsInput):Objetivo,
 
-    crearTrabajo(idProyecto: ID!, posicion:CoordsInput):ID,
-    eliminarTrabajo(idTrabajo:ID!, idProyecto:ID!):Boolean,
+    crearTrabajo(idGrupo: ID!, posicion:CoordsInput):ID,
+    eliminarTrabajo(idTrabajo:ID!, idGrupo:ID!):Boolean,
     editarNombreTrabajo(idTrabajo:ID!, nuevoNombre: String!):Trabajo,
     editarDescripcionTrabajo(idTrabajo:ID!, nuevoDescripcion: String!):Trabajo,
     editarKeywordsTrabajo(idTrabajo:ID!, nuevoKeywords: String!):Trabajo,
@@ -228,7 +226,7 @@ export const resolvers = {
 
             return elObjetivo;
         },
-        busquedaObjetivosProyectos: async function (_: any, { textoBusqueda }: any, contexto: contextoQuery) {
+        busquedaObjetivosGrupos: async function (_: any, { textoBusqueda }: any, contexto: contextoQuery) {
             console.log(`Buscando objetivo usando texto de búsqueda: ${textoBusqueda}`);
             const sizePaginaObjetivos = 50;
             if (contexto.usuario.id === "") {
@@ -275,7 +273,7 @@ export const resolvers = {
 
             return elTrabajo;
         },
-        busquedaTrabajosProyectos: async function (_: any, { textoBusqueda }: any, contexto: contextoQuery) {
+        busquedaTrabajosGrupos: async function (_: any, { textoBusqueda }: any, contexto: contextoQuery) {
             console.log(`Buscando trabajo usando texto de búsqueda: ${textoBusqueda}`);
             const sizePaginaTrabajos = 50;
             if (contexto.usuario.id === "") {
@@ -294,7 +292,7 @@ export const resolvers = {
             console.log(`Enviando ${losTrabajos.length} trabajos encontrados`);
             return losTrabajos;
         },
-        trabajosDeProyectoDeUsuario: async function (_: any, { idUsuario }: any, contexto: contextoQuery) {
+        trabajosDeGrupoDeUsuario: async function (_: any, { idUsuario }: any, contexto: contextoQuery) {
             console.log('Peticion de trabajos de usuario con id ' + idUsuario);
 
             try {
@@ -408,7 +406,7 @@ export const resolvers = {
     Mutation: {
        
         async setPosicionNodoSolidaridad(_: any, { idNodo, nuevaPosicion }, contexto: contextoQuery) {
-            console.log(`Guardando posicion de nodo en el diagrama del proyecto`);
+            console.log(`Guardando posicion de nodo en el diagrama del grupo`);
             const credencialesUsuario = contexto.usuario;
 
             try {
@@ -1250,7 +1248,7 @@ export const resolvers = {
             //Authorización
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario.id || credencialesUsuario.id.length < 2) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -1269,7 +1267,7 @@ export const resolvers = {
             console.log(`Nuevo foro creado`);
 
             try {
-                var nuevoObjetivo: any = await new Objetivo({ idForoResponsables: idNuevoForo, diagramaProyecto: { posicion } });
+                var nuevoObjetivo: any = await new Objetivo({ idForoResponsables: idNuevoForo, diagramaGrupo: { posicion } });
                 await nuevoObjetivo.save();
             } catch (error) {
                 console.log(`Error creando el nuevo objetivo. E: ${error}`);
@@ -1277,18 +1275,18 @@ export const resolvers = {
             }
             return nuevoObjetivo;
         },
-        async eliminarObjetivo(_: any, { idObjetivo, idProyecto }: any, contexto: contextoQuery) {
-            console.log(`peticion de eliminar un objetivo con id ${idObjetivo} de un proyecto con id ${idProyecto}`);
+        async eliminarObjetivo(_: any, { idObjetivo, idGrupo }: any, contexto: contextoQuery) {
+            console.log(`peticion de eliminar un objetivo con id ${idObjetivo} de un grupo con id ${idGrupo}`);
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Error buscando el proyecto en la base de datos. E: " + error);
+                console.log("Error buscando el grupo en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
@@ -1296,19 +1294,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
 
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
 
             try {
                 await Objetivo.findByIdAndDelete(idObjetivo);
-                await Proyecto.findByIdAndUpdate(idProyecto, { $pull: { idsObjetivos: idObjetivo } });
+                await Grupo.findByIdAndUpdate(idGrupo, { $pull: { idsObjetivos: idObjetivo } });
             }
             catch (error) {
                 console.log("Error eliminando objetivo. E: " + error);
-                throw new ApolloError("Error introduciendo el objetivo en el proyecto");
+                throw new ApolloError("Error introduciendo el objetivo en el grupo");
             }
 
             console.log(`eliminado`);
@@ -1466,7 +1464,7 @@ export const resolvers = {
             
             return elObjetivo;
         },
-        async editarKeywordsObjetivo(_: any, { idProyecto, idObjetivo, nuevoKeywords }, contexto: contextoQuery) {
+        async editarKeywordsObjetivo(_: any, { idGrupo, idObjetivo, nuevoKeywords }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
                 var elObjetivo: any = await Objetivo.findById(idObjetivo).exec();
@@ -1597,7 +1595,7 @@ export const resolvers = {
             try {
                 await Foro.findByIdAndUpdate(elObjetivo.idForoResponsables, { miembros: elObjetivo.responsables });
             } catch (error) {
-                console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+                console.log(`Error mirroring responsables del grupo hacia miembros del foro. E: ${error}`);
             }
             elObjetivo.tipoNodo = 'objetivo';
             
@@ -1696,7 +1694,7 @@ export const resolvers = {
             //Authorización
 
             if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -1750,7 +1748,7 @@ export const resolvers = {
             try {
                 await Foro.findByIdAndUpdate(elObjetivo.idForoResponsables, { miembros: elObjetivo.responsables });
             } catch (error) {
-                console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+                console.log(`Error mirroring responsables del grupo hacia miembros del foro. E: ${error}`);
             }
             elObjetivo.tipoNodo = 'objetivo';
             
@@ -1857,7 +1855,7 @@ export const resolvers = {
             return elObjetivo;
         },
         async setPosicionObjetivo(_: any, { idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
-            console.log(`Guardando posicion de objetivo en el diagrama del proyecto`);
+            console.log(`Guardando posicion de objetivo en el diagrama del grupo`);
             const credencialesUsuario = contexto.usuario;
 
             try {
@@ -1920,24 +1918,24 @@ export const resolvers = {
 
         },
 
-        async crearTrabajo(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
-            console.log(`Peticion de crear un nuevo trabajo en el proyecto con id ${idProyecto}`);
+        async crearTrabajo(_: any, { idGrupo, posicion }: any, contexto: contextoQuery) {
+            console.log(`Peticion de crear un nuevo trabajo en el grupo con id ${idGrupo}`);
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Proyecto no encontrado. E: " + error);
+                console.log("Grupo no encontrado. E: " + error);
                 throw new ApolloError("Error conectandose con la base de datos");
             }
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -1957,7 +1955,7 @@ export const resolvers = {
 
 
             try {
-                var nuevoTrabajo: any = await new Trabajo({ idProyectoParent: idProyecto, idForoResponsables: idNuevoForo, diagramaProyecto: { posicion } });
+                var nuevoTrabajo: any = await new Trabajo({ idGrupoParent: idGrupo, idForoResponsables: idNuevoForo, diagramaGrupo: { posicion } });
                 var idNuevoTrabajo = nuevoTrabajo._id;
                 await nuevoTrabajo.save();
             } catch (error) {
@@ -1967,27 +1965,27 @@ export const resolvers = {
 
 
             try {
-                elProyecto.idsTrabajos.push(idNuevoTrabajo);
-                await elProyecto.save();
+                elGrupo.idsTrabajos.push(idNuevoTrabajo);
+                await elGrupo.save();
             }
             catch (error) {
-                console.log("Error guardando el trabajo creado en el proyecto. E: " + error);
-                throw new ApolloError("Error introduciendo el trabajo en el proyecto");
+                console.log("Error guardando el trabajo creado en el grupo. E: " + error);
+                throw new ApolloError("Error introduciendo el trabajo en el grupo");
             }
             return idNuevoTrabajo;
         },
-        async eliminarTrabajo(_: any, { idTrabajo, idProyecto }: any, contexto: contextoQuery) {
-            console.log(`peticion de eliminar un trabajo con id ${idTrabajo} de un proyecto con id ${idProyecto}`);
+        async eliminarTrabajo(_: any, { idTrabajo, idGrupo }: any, contexto: contextoQuery) {
+            console.log(`peticion de eliminar un trabajo con id ${idTrabajo} de un grupo con id ${idGrupo}`);
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Error buscando el proyecto en la base de datos. E: " + error);
+                console.log("Error buscando el grupo en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
@@ -1995,19 +1993,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
 
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
 
             try {
                 await Trabajo.findByIdAndDelete(idTrabajo);
-                await Proyecto.findByIdAndUpdate(idProyecto, { $pull: { idsTrabajos: idTrabajo } });
+                await Grupo.findByIdAndUpdate(idGrupo, { $pull: { idsTrabajos: idTrabajo } });
             }
             catch (error) {
                 console.log("Error eliminando trabajo. E: " + error);
-                throw new ApolloError("Error introduciendo el trabajo en el proyecto");
+                throw new ApolloError("Error introduciendo el trabajo en el grupo");
             }
 
             console.log(`eliminado`);
@@ -2164,7 +2162,7 @@ export const resolvers = {
             
             return elTrabajo;
         },
-        async editarKeywordsTrabajo(_: any, { idProyecto, idTrabajo, nuevoKeywords }, contexto: contextoQuery) {
+        async editarKeywordsTrabajo(_: any, { idGrupo, idTrabajo, nuevoKeywords }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
                 var elTrabajo: any = await Trabajo.findById(idTrabajo).exec();
@@ -2295,7 +2293,7 @@ export const resolvers = {
             try {
                 await Foro.findByIdAndUpdate(elTrabajo.idForoResponsables, { miembros: elTrabajo.responsables });
             } catch (error) {
-                console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+                console.log(`Error mirroring responsables del grupo hacia miembros del foro. E: ${error}`);
             }
             elTrabajo.tipoNodo = 'trabajo';
             
@@ -2393,7 +2391,7 @@ export const resolvers = {
             //Authorización
 
             if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -2447,7 +2445,7 @@ export const resolvers = {
             try {
                 await Foro.findByIdAndUpdate(elTrabajo.idForoResponsables, { miembros: elTrabajo.responsables });
             } catch (error) {
-                console.log(`Error mirroring responsables del proyecto hacia miembros del foro. E: ${error}`);
+                console.log(`Error mirroring responsables del grupo hacia miembros del foro. E: ${error}`);
             }
             elTrabajo.tipoNodo = 'trabajo';
             
@@ -2553,7 +2551,7 @@ export const resolvers = {
             return elTrabajo;
         },
         async setPosicionTrabajo(_: any, { idTrabajo, nuevaPosicion }, contexto: contextoQuery) {
-            console.log(`Guardando posicion de trabajo en el diagrama del proyecto`);
+            console.log(`Guardando posicion de trabajo en el diagrama del grupo`);
             const credencialesUsuario = contexto.usuario;
 
             try {
@@ -2616,51 +2614,51 @@ export const resolvers = {
 
         },
 
-        async crearObjetivoEnProyecto(_: any, { idProyecto, posicion }: any, contexto: contextoQuery) {
-            console.log(`Peticion de crear un nuevo objetivo en el proyecto con id ${idProyecto}`);
+        async crearObjetivoEnGrupo(_: any, { idGrupo, posicion }: any, contexto: contextoQuery) {
+            console.log(`Peticion de crear un nuevo objetivo en el grupo con id ${idGrupo}`);
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Proyecto no encontrado. E: " + error);
+                console.log("Grupo no encontrado. E: " + error);
                 throw new ApolloError("Error conectandose con la base de datos");
             }
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
             try {
-                var nuevoObjetivo = elProyecto.objetivos.create({
+                var nuevoObjetivo = elGrupo.objetivos.create({
                     coords: posicion
                 })
-                elProyecto.objetivos.push(nuevoObjetivo);
-                await elProyecto.save();
+                elGrupo.objetivos.push(nuevoObjetivo);
+                await elGrupo.save();
             } catch (error) {
                 console.log(`Error creando el nuevo objetivo. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
             return nuevoObjetivo;
         },
-        async eliminarObjetivoDeProyecto(_: any, { idObjetivo, idProyecto }: any, contexto: contextoQuery) {
-            console.log(`peticion de eliminar un objetivo con id ${idObjetivo} de un proyecto con id ${idProyecto}`);
+        async eliminarObjetivoDeGrupo(_: any, { idObjetivo, idGrupo }: any, contexto: contextoQuery) {
+            console.log(`peticion de eliminar un objetivo con id ${idObjetivo} de un grupo con id ${idGrupo}`);
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Error buscando el proyecto en la base de datos. E: " + error);
+                console.log("Error buscando el grupo en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
@@ -2668,28 +2666,28 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
 
 
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            elProyecto.objetivos.pull({ id: idObjetivo });
+            elGrupo.objetivos.pull({ id: idObjetivo });
 
             try {
-                await elProyecto.save();
+                await elGrupo.save();
             }
             catch (error) {
                 console.log("Error eliminando objetivo. E: " + error);
-                throw new ApolloError("Error introduciendo el objetivo en el proyecto");
+                throw new ApolloError("Error introduciendo el objetivo en el grupo");
             }
 
             console.log(`eliminado`);
 
             return true;
         },
-        async editarNombreObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoNombre }, contexto: contextoQuery) {
+        async editarNombreObjetivoGrupo(_: any, { idGrupo, idObjetivo, nuevoNombre }, contexto: contextoQuery) {
 
-            console.log(`cambiando el nombre del objetivo con id ${idObjetivo} del proyecto con id ${idProyecto}`);
+            console.log(`cambiando el nombre del objetivo con id ${idObjetivo} del grupo con id ${idGrupo}`);
             const charProhibidosNombreObjetivo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
@@ -2700,28 +2698,28 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Error buscando el proyecto. E: " + error);
+                console.log("Error buscando el grupo. E: " + error);
                 throw new ApolloError("Erro en la conexión con la base de datos");
             }
 
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            var elObjetivo = elProyecto.objetivos.id(idObjetivo)
+            var elObjetivo = elGrupo.objetivos.id(idObjetivo)
 
             try {
                 elObjetivo.nombre = nuevoNombre;
-                await elProyecto.save();
+                await elGrupo.save();
             }
             catch (error) {
                 console.log("Error cambiando el nombre en la base de datos. E: " + error);
@@ -2731,23 +2729,23 @@ export const resolvers = {
             console.log(`Nombre cambiado`);
             return elObjetivo;
         },
-        async editarDescripcionObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoDescripcion }, contexto: contextoQuery) {
+        async editarDescripcionObjetivoGrupo(_: any, { idGrupo, idObjetivo, nuevoDescripcion }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
+                console.log(`error buscando el grupo. E: ` + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
             //Authorización
             let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Descripcion de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Descripcion de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -2759,11 +2757,11 @@ export const resolvers = {
 
             nuevoDescripcion = nuevoDescripcion.trim();
 
-            var elObjetivo = elProyecto.objetivos.id(idObjetivo);
+            var elObjetivo = elGrupo.objetivos.id(idObjetivo);
             try {
                 elObjetivo.descripcion = nuevoDescripcion;
                 console.log(`guardando nuevo descripcion ${nuevoDescripcion} en la base de datos`);
-                await elProyecto.save();
+                await elGrupo.save();
             } catch (error) {
                 console.log(`error guardando el objetivo modificado: ${error}`);
                 throw new ApolloError("Error guardando información en la base de datos");
@@ -2772,22 +2770,22 @@ export const resolvers = {
             console.log(`Descripcion guardado`);
             return elObjetivo;
         },
-        async editarKeywordsObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoKeywords }, contexto: contextoQuery) {
+        async editarKeywordsObjetivoGrupo(_: any, { idGrupo, idObjetivo, nuevoKeywords }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
+                console.log(`error buscando el grupo. E: ` + error);
             }
 
             //Authorización
             let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Keywords de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Keywords de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -2799,42 +2797,42 @@ export const resolvers = {
 
             nuevoKeywords = nuevoKeywords.trim();
 
-            var elObjetivo = elProyecto.objetivos.id(idObjetivo);
+            var elObjetivo = elGrupo.objetivos.id(idObjetivo);
 
             try {
 
                 elObjetivo.keywords = nuevoKeywords;
                 console.log(`guardando nuevo keywords ${nuevoKeywords} en la base de datos`);
-                await elProyecto.save();
+                await elGrupo.save();
             } catch (error) {
                 console.log(`error guardando el objetivo modificado: ${error}`);
             }
             console.log(`Keywords guardado`);
             return elObjetivo;
         },
-        addResponsableObjetivoProyecto: async function (_: any, { idProyecto, idObjetivo, idUsuario }: any, contexto: contextoQuery) {
+        addResponsableObjetivoGrupo: async function (_: any, { idGrupo, idObjetivo, idUsuario }: any, contexto: contextoQuery) {
             console.log(`Solicitud de add un usuario con id ${idUsuario} a un objetivo de id ${idObjetivo}`);
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Proyecto no encontrado. E: " + error);
+                console.log("Grupo no encontrado. E: " + error);
                 throw new ApolloError("Error conectandose con la base de datos");
             }
 
 
             //Authorización
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            var elObjetivo = elProyecto.objetivos.id(idObjetivo);
+            var elObjetivo = elGrupo.objetivos.id(idObjetivo);
 
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
@@ -2866,7 +2864,7 @@ export const resolvers = {
                 if (elObjetivo.responsablesSolicitados > 0) elObjetivo.responsablesSolicitados--;
 
                 console.log(`Usuario añadido a la lista de responsables`);
-                await elProyecto.save();
+                await elGrupo.save();
             }
             catch (error) {
                 console.log("Error guardando datos en la base de datos. E: " + error);
@@ -2877,29 +2875,29 @@ export const resolvers = {
             return elObjetivo;
 
         },
-        addPosibleResponsableObjetivoProyecto: async function (_: any, { idProyecto, idObjetivo, idUsuario }: any, contexto: contextoQuery) {
+        addPosibleResponsableObjetivoGrupo: async function (_: any, { idGrupo, idObjetivo, idUsuario }: any, contexto: contextoQuery) {
             console.log(`añadiendo usuario ${idUsuario} a la lista de posibles responsables del objetivo ${idObjetivo}`);
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Proyecto no encontrado. E: " + error);
+                console.log("Grupo no encontrado. E: " + error);
                 throw new ApolloError("Error conectandose con la base de datos");
             }
 
 
             //Authorización
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.includes("superadministrador")) {
+                console.log(`Error de autenticacion editando nombre de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            var elObjetivo = elProyecto.objetivos.id(idObjetivo);
+            var elObjetivo = elGrupo.objetivos.id(idObjetivo);
 
             if (elObjetivo.posiblesResponsables.includes(idUsuario) || elObjetivo.responsables.includes(idUsuario)) {
                 console.log(`el usuario ya estaba en la lista`);
@@ -2919,45 +2917,45 @@ export const resolvers = {
 
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log("Proyecto no encontrado. E: " + error);
+                console.log("Grupo no encontrado. E: " + error);
                 throw new ApolloError("Error conectandose con la base de datos");
             }
 
             console.log(`Objetivo guardado`);
             return elObjetivo
         },
-        setPosicionObjetivoProyecto: async function (_: any, { idProyecto, idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
-            console.log(`Solicitud de set posicion de objetivo en el diagrama del proyecto`);
+        setPosicionObjetivoGrupo: async function (_: any, { idGrupo, idObjetivo, nuevaPosicion }, contexto: contextoQuery) {
+            console.log(`Solicitud de set posicion de objetivo en el diagrama del grupo`);
 
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
+                console.log(`error buscando el grupo. E: ` + error);
             }
 
             //Authorización
             let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Descripcion de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Descripcion de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            var elObjetivo = elProyecto.objetivos.id(idObjetivo)
+            var elObjetivo = elGrupo.objetivos.id(idObjetivo)
 
             try {
                 elObjetivo.coords = nuevaPosicion;
-                await elProyecto.save();
+                await elGrupo.save();
             } catch (error) {
                 console.log(`error guardando el objetivo modificado: ${error}`);
             }
@@ -2965,31 +2963,31 @@ export const resolvers = {
             return elObjetivo;
 
         },
-        async setEstadoObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoEstado }, contexto: contextoQuery) {
+        async setEstadoObjetivoGrupo(_: any, { idGrupo, idObjetivo, nuevoEstado }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
-                if (!elProyecto) {
-                    throw "proyecto no encontrado"
+                var elGrupo: any = await Grupo.findById(idGrupo).exec();
+                if (!elGrupo) {
+                    throw "grupo no encontrado"
                 }
             }
             catch (error) {
-                console.log(`error buscando el proyecto. E: ` + error);
+                console.log(`error buscando el grupo. E: ` + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
             //Authorización
             let permisosEspeciales = ["superadministrador"];
-            if (!elProyecto.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion editando Estado de proyecto`);
+            if (!elGrupo.responsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando Estado de grupo`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            var elObjetivo = elProyecto.objetivos.id(idObjetivo);
+            var elObjetivo = elGrupo.objetivos.id(idObjetivo);
             try {
                 elObjetivo.estadoDesarrollo = nuevoEstado;
                 console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
-                await elProyecto.save();
+                await elGrupo.save();
             } catch (error) {
                 console.log(`error guardando el objetivo modificado: ${error}`);
                 throw new ApolloError("Error guardando información en la base de datos");

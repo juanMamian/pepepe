@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import Calendario from "./utilidades/Calendario.vue"
+import Calendario from "./calendario/Calendario.vue"
 
 export default{
   components: { Calendario },

@@ -495,11 +495,11 @@
 
 <script>
 import gql from "graphql-tag";
-import Loading from "./utilidades/Loading.vue";
-import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
-import Foro from "./Foro.vue";
+import Loading from "../utilidades/Loading.vue";
+import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
+import Foro from "../foros/Foro.vue";
 import axios from "axios";
-import ClaseNodo from "./visorNodoConocimiento/ClaseNodo.vue";
+import ClaseNodo from "./ClaseNodo.vue";
 
 const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;

@@ -460,7 +460,7 @@ export default {
     PanelControlNodos,
     Listas,
   },
-  name: "AtlasProyectos",
+  name: "AtlasSolidaridad",
   apollo: {
     todosNodos: {
       query: QUERY_TODOS_NODOS,

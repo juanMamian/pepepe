@@ -19,7 +19,7 @@
 import gql from "graphql-tag";
 import Actividad from "./Actividad.vue";
 import Loading from "../utilidades/Loading.vue";
-import IconoPersona from "../proyecto/IconoPersona.vue";
+import IconoPersona from "../utilidades/IconoPersona.vue";
 
 const QUERY_ACTIVIDAD_ESPECIFICA = gql`
   query($idActividad: ID!) {

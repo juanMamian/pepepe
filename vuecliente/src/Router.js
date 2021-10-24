@@ -1,13 +1,13 @@
 import Vue from "vue"
 import Router from "vue-router"
-import atlasConocimiento from "./components/AtlasConocimiento.vue"
+import atlasConocimiento from "./components/atlasConocimiento/AtlasConocimiento.vue"
 import loginArea from "./components/LoginArea.vue"
 import perfilPersonal from "./components/PerfilPersonal.vue"
-import VisorNodoConocimiento from "./components/VisorNodoConocimiento.vue"
-import Proyectos from "./components/Proyectos.vue"
-import Proyecto from "./components/Proyecto.vue"
+import VisorNodoConocimiento from "./components/visorNodoConocimiento/VisorNodoConocimiento.vue"
+import Grupos from "./components/grupos/Grupos.vue"
+import Grupo from "./components/grupo/Grupo.vue"
 import Registro from "./components/Registro.vue"
-import ActividadesEstudiantiles from "./components/ActividadesEstudiantiles.vue"
+import ActividadesEstudiantiles from "./components/actividadesProfes/ActividadesEstudiantiles.vue"
 import Personas from "./components/Personas.vue"
 import ActividadesDeGrupo from "./components/actividadesProfes/ActividadesDeGrupo.vue"
 import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
@@ -15,12 +15,10 @@ import store from "./store/index"
 import PortadaActividadesEstudiantiles from "./components/actividadesProfes/PortadaActividadesEstudiantiles";
 import ActividadEspecifica from "./components/actividadesProfes/ActividadEspecifica"
 import Home from "./components/Home"
-import Trabajo from "./components/Trabajo"
-import Objetivo from "./components/Objetivo"
-import BuscadorTrabajos from "./components/BuscadorTrabajos"
-import TodosMateriales from "./components/TodosMateriales"
+import Trabajo from "./components/atlasSolidaridad/paginaNodoSolidaridad/Trabajo"
+import Objetivo from "./components/atlasSolidaridad/paginaNodoSolidaridad/Objetivo"
 import ForosGenerales from "./components/ForosGenerales"
-import AtlasProyectos from "./components/diagramaTotalTrabajos/AtlasProyectos"
+import AtlasSolidaridad from "./components/atlasSolidaridad/AtlasSolidaridad"
 import CalendarioPersonal from "./components/CalendarioPersonal"
 
 Vue.use(Router);
@@ -55,14 +53,12 @@ const routes = [
         }
     },
     { path: "/calendarioPersonal", component: CalendarioPersonal },
-    { path: "/atlasSolidaridad/:nv", component: AtlasProyectos },
-    { path: "/atlasSolidaridad", component: AtlasProyectos },
-    { path: "/trabajos", component: BuscadorTrabajos },
+    { path: "/atlasSolidaridad/:nv", component: AtlasSolidaridad },
+    { path: "/atlasSolidaridad", component: AtlasSolidaridad },
     { path: "/foros", component: ForosGenerales },
-    { path: "/materiales", component: TodosMateriales },
     { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
-    { path: "/proyectos", name: "proyectos", component: Proyectos },
-    { path: "/proyecto/:idProyecto", name: "verProyecto", component: Proyecto },
+    { path: "/grupos", name: "grupos", component: Grupos },
+    { path: "/grupo/:idGrupo", name: "verGrupo", component: Grupo },
     { path: "/trabajo/:idTrabajo", name: "verTrabajo", component: Trabajo },
     { path: "/objetivo/:idObjetivo", name: "verObjetivo", component: Objetivo },
     { path: "/registro", name: "registro", component: Registro },

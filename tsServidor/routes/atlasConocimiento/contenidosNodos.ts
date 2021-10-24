@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path"
 import { promisify } from "util";
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../../model/CarpetaArchivos";
-import { ModeloNodo as Nodo } from "../../model/atlas/Nodo";
+import { ModeloNodo as Nodo } from "../../model/atlasConocimiento/Nodo";
 
 const access = promisify(fs.access);
 

@@ -16,7 +16,7 @@
 
 <script>
 import gql from 'graphql-tag'
-import Calendario from '../utilidades/Calendario.vue'
+import Calendario from '../calendario/Calendario.vue'
 export default {
   components: { Calendario },
     name: "ClaseNodo",

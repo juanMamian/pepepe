@@ -2,7 +2,7 @@ const multer = require("multer");
 const upload = multer({ limits: { fileSize: 10000000 } });
 const router = require("express").Router();
 import {ModeloUsuario as Usuario} from "../../model/Usuario";
-import { ModeloNodo as Nodo } from "../../model/atlas/Nodo";
+import { ModeloNodo as Nodo } from "../../model/atlasConocimiento/Nodo";
 import {ModeloCarpetaArchivos as CarpetasArchivos} from "../../model/CarpetaArchivos";
 import path from "path";
 

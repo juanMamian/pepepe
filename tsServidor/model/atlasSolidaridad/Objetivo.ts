@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import {EsquemaVinculosNodosProyecto} from "./VinculosNodosProyecto";
-import {pubsub} from "../gql/Schema"
-import {NODO_EDITADO} from "../gql/Trabajos"
+import {EsquemaVinculosNodosSolidaridad} from "./VinculosNodosSolidaridad";
+import {pubsub} from "../../gql/Schema"
+import {NODO_EDITADO} from "../../gql/Trabajos"
 const esquemaEnlace= new mongoose.Schema({
     nombre:{
         type: String,
@@ -67,7 +67,7 @@ export const esquemaObjetivo = new mongoose.Schema({
         enum:["noCompletado", "completado"],
     },
     vinculos:{
-        type:[EsquemaVinculosNodosProyecto],
+        type:[EsquemaVinculosNodosSolidaridad],
         required:true,
         default:[]
     },

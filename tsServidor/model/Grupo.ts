@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-const esquemaVinculosNodosProyecto=new mongoose.Schema({
+const esquemaVinculosNodosGrupo=new mongoose.Schema({
     idRef: {
         type: String,
         required: true,
@@ -17,7 +17,7 @@ const esquemaVinculosNodosProyecto=new mongoose.Schema({
     }
 })
 
-const esquemaTrabajoDeProyecto= new mongoose.Schema({
+const esquemaTrabajoDeGrupo= new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
@@ -58,7 +58,7 @@ const esquemaTrabajoDeProyecto= new mongoose.Schema({
         default:[]
     },    
     vinculos:{
-        type:[esquemaVinculosNodosProyecto],
+        type:[esquemaVinculosNodosGrupo],
         required:true,
         default:[]
     },
@@ -79,7 +79,7 @@ const esquemaTrabajoDeProyecto= new mongoose.Schema({
     },   
 });
 
-const esquemaObjetivoDeProyecto = new mongoose.Schema({
+const esquemaObjetivoDeGrupo = new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
@@ -112,7 +112,7 @@ const esquemaObjetivoDeProyecto = new mongoose.Schema({
         enum:["noCompletado", "completado"]
     },
     vinculos:{
-        type:[esquemaVinculosNodosProyecto],
+        type:[esquemaVinculosNodosGrupo],
         required:true,
         default:[]
     },    
@@ -202,7 +202,7 @@ const esquemaServicio = new mongoose.Schema({
     }
 });
 
-const esquemaProyecto = new mongoose.Schema({
+const esquemaGrupo = new mongoose.Schema({
     nombre: {
         type: String,
         min: 2,
@@ -216,12 +216,12 @@ const esquemaProyecto = new mongoose.Schema({
         required:true,
     },
     objetivos: {
-        type: [esquemaObjetivoDeProyecto],
+        type: [esquemaObjetivoDeGrupo],
         required:true,
         default:[]
     },    
     trabajos: {
-        type: [esquemaTrabajoDeProyecto],
+        type: [esquemaTrabajoDeGrupo],
         default: []
     },
     responsables: {
@@ -258,5 +258,5 @@ const esquemaProyecto = new mongoose.Schema({
 
 
 
-export const ModeloProyecto = mongoose.model("Proyecto", esquemaProyecto);
+export const ModeloGrupo = mongoose.model("Grupo", esquemaGrupo);
 

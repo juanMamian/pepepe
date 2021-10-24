@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import Foro from './Foro.vue'
+import Foro from './foros/Foro.vue'
 export default {
   components: { Foro },
     name:"ForosGenerales",

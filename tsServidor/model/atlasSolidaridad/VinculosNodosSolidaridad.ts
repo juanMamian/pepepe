@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const EsquemaVinculosNodosProyecto = new mongoose.Schema(
+export const EsquemaVinculosNodosSolidaridad = new mongoose.Schema(
     {
         idRef: {
             type: String,

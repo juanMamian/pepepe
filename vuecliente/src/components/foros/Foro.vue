@@ -117,9 +117,9 @@
 <script>
 import gql from "graphql-tag";
 // import CreadorConversacion from "./foros/CreadorConversacion.vue";
-import { fragmentoConversacion } from "./utilidades/recursosGql";
-import Conversacion from "./foros/Conversacion.vue";
-import CuadroResponder from "./foros/CuadroResponder.vue";
+import { fragmentoConversacion } from "../utilidades/recursosGql";
+import Conversacion from "./Conversacion.vue";
+import CuadroResponder from "./CuadroResponder.vue";
 
 const charProhibidosTituloNuevaConversacion = /[^ a-zA-ZÀ-ž0-9_():.,-¡!¿?]/;
 

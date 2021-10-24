@@ -238,10 +238,10 @@
 <script>
 import gql from "graphql-tag";
 import EventoCalendario from "./EventoCalendario.vue";
-import { fragmentoEvento } from "./recursosGql";
+import { fragmentoEvento } from "../utilidades/recursosGql";
 import VentanaEventoCalendario from "./VentanaEventoCalendario.vue";
 import EventoCalendarioCruzado from "./EventoCalendarioCruzado.vue";
-import Loading from "./Loading.vue";
+import Loading from "../utilidades/Loading.vue";
 
 const QUERY_EVENTOS_ORIGEN = gql`
   query ($origen: String!, $idOrigen: ID!) {

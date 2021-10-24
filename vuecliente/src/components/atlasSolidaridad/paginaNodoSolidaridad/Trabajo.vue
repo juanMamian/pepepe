@@ -262,12 +262,12 @@
 
 <script>
 import gql from "graphql-tag";
-import Foro from "./Foro.vue";
-import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
-import MaterialTrabajo from "./trabajos/Material.vue";
-import Loading from "./utilidades/Loading.vue";
+import Foro from "../../foros/Foro.vue";
+import IconoPersonaAutonomo from "../../usuario/IconoPersonaAutonomo.vue";
+import MaterialTrabajo from "./Material.vue";
+import Loading from "../../utilidades/Loading.vue";
 import debounce from "debounce"
-import EnlaceNodoSolidaridad from "./paginaNodoSolidaridad/EnlaceNodoSolidaridad.vue";
+import EnlaceNodoSolidaridad from "./EnlaceNodoSolidaridad.vue";
 
 const QUERY_TRABAJO = gql`
   query ($idTrabajo: ID!) {

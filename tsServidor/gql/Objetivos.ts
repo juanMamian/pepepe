@@ -1,10 +1,10 @@
 import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
-import { ModeloObjetivo as Objetivo } from "../model/Objetivo"; 
-const Nodo = require("../model/atlas/Nodo");
+import { ModeloObjetivo as Objetivo } from "../model/atlasSolidaridad/Objetivo"; 
+const Nodo = require("../model/atlasConocimiento/Nodo");
 import { ModeloUsuario as Usuario } from "../model/Usuario"
 import { contextoQuery } from "./tsObjetos"
 import { ModeloForo as Foro } from "../model/Foros/Foro"
-import { ModeloProyecto as Proyecto } from "../model/Proyecto";
+import { ModeloGrupo as Grupo } from "../model/Grupo";
 
 export const typeDefs = gql`
 
@@ -15,7 +15,7 @@ export const typeDefs = gql`
        posiblesResponsables:[String],
        responsablesSolicitados:Int,
        descripcion:String,       
-       vinculos:[VinculoNodoProyecto],
+       vinculos:[VinculoNodoGrupo],
        keywords:String,
        idProyectoParent:ID,
        estado:String,       
@@ -150,7 +150,7 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                var elProyecto: any = await Grupo.findById(idProyecto).exec();
                 if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
@@ -172,7 +172,7 @@ export const resolvers = {
 
             try {
                 await Objetivo.findByIdAndDelete(idObjetivo);
-                await Proyecto.findByIdAndUpdate(idProyecto, { $pull: { idsObjetivos: idObjetivo } });
+                await Grupo.findByIdAndUpdate(idProyecto, { $pull: { idsObjetivos: idObjetivo } });
             }
             catch (error) {
                 console.log("Error eliminando objetivo. E: " + error);
@@ -196,7 +196,7 @@ export const resolvers = {
             nuevoNombre = nuevoNombre.trim();
 
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                var elProyecto: any = await Grupo.findById(idProyecto).exec();
                 if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
@@ -232,7 +232,7 @@ export const resolvers = {
         async editarDescripcionObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoDescripcion }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                var elProyecto: any = await Grupo.findById(idProyecto).exec();
                 if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
@@ -277,7 +277,7 @@ export const resolvers = {
         async editarKeywordsObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoKeywords }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                var elProyecto: any = await Grupo.findById(idProyecto).exec();
                 if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
@@ -332,7 +332,7 @@ export const resolvers = {
             let credencialesUsuario = contexto.usuario;
             const idProyecto=elObjetivo.idProyectoParent;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                var elProyecto: any = await Grupo.findById(idProyecto).exec();
                 if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }
@@ -361,7 +361,7 @@ export const resolvers = {
         async setEstadoObjetivoProyecto(_: any, { idProyecto, idObjetivo, nuevoEstado }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             try {
-                var elProyecto: any = await Proyecto.findById(idProyecto).exec();
+                var elProyecto: any = await Grupo.findById(idProyecto).exec();
                 if (!elProyecto) {
                     throw "proyecto no encontrado"
                 }

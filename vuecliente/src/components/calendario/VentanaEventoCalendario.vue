@@ -127,7 +127,7 @@
 
 <script>
 import gql from "graphql-tag";
-import Loading from "./Loading.vue";
+import Loading from "../utilidades/Loading.vue";
 import iconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
 const charProhibidosNombreEvento = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 const charProhibidosDescripcionEvento = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?@=-]/;
