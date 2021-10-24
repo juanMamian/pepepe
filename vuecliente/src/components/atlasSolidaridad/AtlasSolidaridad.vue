@@ -32,7 +32,10 @@
       :todosNodos="todosNodos"
       :cerrar="cerrarListas"
       ref="listas"
-      @centrarEnNodo="centrarEnNodoById($event); cerrarListas++"
+      @centrarEnNodo="
+        centrarEnNodoById($event);
+        cerrarListas++;
+      "
     />
     <div
       id="menuContextual"
@@ -47,7 +50,7 @@
         v-show="
           usuarioSuperadministrador ||
           (nodoSeleccionado != null &&
-            nodoSeleccionado.responsables.includes(usuario.id))
+            (nodoSeleccionado.responsables.includes(usuario.id) || nodoSeleccionado.responsablesAmplio.includes(usuario.id)))
         "
         @mouseup.left.stop=""
         @click.stop="crearNodoEnMenuContextual('objetivo')"
@@ -56,7 +59,7 @@
         {{
           idNodoSeleccionado != null &&
           nodoSeleccionado != null &&
-          (nodoSeleccionado.responsables.includes(usuario.id) ||
+          (nodoSeleccionado.responsablesAmplio.includes(usuario.id) || nodoSeleccionado.responsables.includes(usuario.id) ||
             usuarioSuperadministrador)
             ? "conectado"
             : ""
@@ -70,14 +73,14 @@
         v-show="
           usuarioSuperadministrador ||
           (nodoSeleccionado != null &&
-            nodoSeleccionado.responsables.includes(usuario.id))
+            (nodoSeleccionado.responsables.includes(usuario.id) || nodoSeleccionado.responsablesAmplio.includes(usuario.id)))
         "
       >
         Crear trabajo
         {{
           idNodoSeleccionado != null &&
           nodoSeleccionado != null &&
-          (nodoSeleccionado.responsables.includes(usuario.id) ||
+          (nodoSeleccionado.responsablesAmplio.includes(usuario.id) || nodoSeleccionado.responsables.includes(usuario.id) ||
             usuarioSuperadministrador)
             ? "conectado"
             : ""
@@ -168,7 +171,7 @@
       <transition-group name="fade" tag="div">
         <nodo
           :yo="yo"
-          v-for="nodo of todosNodos"
+          v-for="nodo of nodosTodos"
           :key="nodo.id"
           :esteNodo="nodo"
           :idNodoSeleccionado="idNodoSeleccionado"
@@ -191,6 +194,7 @@
           "
           :childSeleccionado="nodosChildrenSeleccionado.includes(nodo.id)"
           :parentDeSeleccionado="idNodoParentNodoSeleccionado === nodo.id"
+          :todosNodos="nodosTodos"
           v-show="idsNodosVisibles.includes(nodo.id)"
           @meMovi="redibujarEnlacesNodos++"
           @click.native="idNodoSeleccionado = nodo.id"
@@ -921,7 +925,7 @@ export default {
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
       if (
         this.nodoSeleccionado &&
-        (this.nodoSeleccionado.responsables.includes(this.usuario.id) ||
+        (this.nodoSeleccionado.responsables.includes(this.usuario.id) || this.nodoSeleccionado.responsablesAmplio.includes(this.usuario.id) ||
           this.usuarioSuperadministrador)
       ) {
         this.crearNodoConectado(
@@ -1273,6 +1277,31 @@ export default {
     }, 1000),
   },
   computed: {
+    nodosTodos() {
+      var nuevoTodosNodos = JSON.parse(JSON.stringify(this.todosNodos));
+      return nuevoTodosNodos.map((n) => {
+        var idsResponsablesParent = null;
+        var idNodoActual = n.id;
+        var idNodoParent = n.nodoParent ? n.nodoParent.idNodo : null;
+        var nodoParent = this.todosNodos.find((n) => n.id === idNodoParent);
+
+        while ((!idsResponsablesParent || idsResponsablesParent.length<1) && idNodoActual && nodoParent) {
+          idsResponsablesParent = nodoParent.responsables;
+          idNodoActual = nodoParent.id;
+          idNodoParent = nodoParent.nodoParent
+            ? nodoParent.nodoParent.idNodo
+            : null;
+          nodoParent = this.todosNodos.find((n) => n.id === idNodoParent);
+        }
+        if (!idsResponsablesParent) {
+          n.responsablesAmplio = n.responsables;
+        }
+        else{
+          n.responsablesAmplio = n.responsables.concat(idsResponsablesParent);
+        }
+        return n;
+      });
+    },
     refreshNodoVentanita() {
       return this.$store.state.refreshNodoVentanitaAtlasSolidaridad;
     },
@@ -1330,7 +1359,7 @@ export default {
       return this.trabajos.find((t) => t.id == this.idNodoPaVentanita);
     },
     nodoSeleccionado() {
-      return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
+      return this.nodosTodos.find((n) => n.id === this.idNodoSeleccionado);
     },
     idNodoParentNodoSeleccionado() {
       if (!this.nodoSeleccionado || !this.nodoSeleccionado.nodoParent)

@@ -14,15 +14,14 @@
   >
     <div id="zonaArrastre" v-show="agarrado"></div>
 
-    
     <div id="bolita" :style="[estiloBolita]">
       <img
-      v-if="esteNodo.__typename === 'Objetivo'"
-      src="@/assets/iconos/iconoObjetivo.png"
-      :class="{ transparentoso }"
-      alt="Nodo"
-      class="iconoFondo"
-    />
+        v-if="esteNodo.__typename === 'Objetivo'"
+        src="@/assets/iconos/iconoObjetivo.png"
+        :class="{ transparentoso }"
+        alt="Nodo"
+        class="iconoFondo"
+      />
       <img
         v-else
         src="@/assets/iconos/iconoTrabajo.png"
@@ -36,7 +35,13 @@
       id="aureolaParentSeleccionado"
       v-show="parentDeSeleccionado"
     ></div>
-    <img src="@/assets/iconos/archivo.png" v-show="plegado" alt="Plegado" title="Este nodo ha sido plegado" id="iconoPlegado">
+    <img
+      src="@/assets/iconos/archivo.png"
+      v-show="plegado"
+      alt="Plegado"
+      title="Este nodo ha sido plegado"
+      id="iconoPlegado"
+    />
     <img
       src="@/assets/iconos/maximizar.png"
       alt="abrir"
@@ -71,12 +76,12 @@
       <div
         class="botonMenuCx"
         v-show="usuario && usuario.id"
-        :class="{deshabilitado: enviandoQueryPlegar}"
+        :class="{ deshabilitado: enviandoQueryPlegar }"
         @click.stop="togglePlegar"
         @mousedown.left.stop=""
         @mouseup.left.stop=""
       >
-        {{plegado?'Desplegar': 'Plegar'}}
+        {{ plegado ? "Desplegar" : "Plegar" }}
       </div>
       <template
         v-if="idNodoSeleccionado != null && idNodoSeleccionado != esteNodo.id"
@@ -132,7 +137,7 @@
               (!usuarioResponsable && esteNodo.responsables.length > 0)) &&
             !usuarioSuperadministrador,
         }"
-        @click="eliminarse"
+        @click.stop="eliminarse"
       >
         Eliminar
       </div>
@@ -146,6 +151,7 @@ export default {
   name: "nodo",
   props: {
     esteNodo: Object,
+    todosNodos: Array,
     idNodoSeleccionado: String,
     nodoSeleccionado: Object,
     menuCx: Boolean,
@@ -156,7 +162,7 @@ export default {
     usuarioResponsableNodoSeleccionado: Boolean,
     childSeleccionado: Boolean,
     parentDeSeleccionado: Boolean,
-    idsNodosPlegados:Array,
+    idsNodosPlegados: Array,
   },
   data() {
     return {
@@ -181,8 +187,8 @@ export default {
         x: 40,
         y: 40,
       },
-      enviandoQueryGeneral:false,
-      enviandoQueryPlegar:false,
+      enviandoQueryGeneral: false,
+      enviandoQueryPlegar: false,
     };
   },
   methods: {
@@ -415,7 +421,7 @@ export default {
         return;
       }
       this.enviandoQueryGeneral = true;
-      const dis=this;
+      const dis = this;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -426,41 +432,35 @@ export default {
           variables: {
             idNodo: this.esteNodo.id,
             tipo: this.esteNodo.__typename.toLowerCase(),
-          },          
+          },
         })
         .then(() => {
-          dis.enviandoQueryGeneral = false;  
+          dis.enviandoQueryGeneral = false;
           this.$emit("meElimine");
-
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
           dis.enviandoQueryGeneral = false;
         });
-
-
     },
-    togglePlegar() {      
-
+    togglePlegar() {
       this.enviandoQueryPlegar = true;
 
       this.$apollo
         .mutate({
           mutation: gql`
             mutation ($idNodo: ID!) {
-              setPlegarNodoSolidaridadUsuario(
-                idNodo: $idNodo                
-              ) {
+              setPlegarNodoSolidaridadUsuario(idNodo: $idNodo) {
                 id
-                atlasSolidaridad{
-                id
+                atlasSolidaridad {
+                  id
                   idsNodosPlegados
                 }
               }
             }
           `,
           variables: {
-            idNodo: this.esteNodo.id,            
+            idNodo: this.esteNodo.id,
           },
         })
         .then(() => {
@@ -473,7 +473,7 @@ export default {
         });
     },
   },
-  computed: {
+  computed: {    
     estiloPosicion() {
       if (this.montado) {
         return {
@@ -511,10 +511,10 @@ export default {
         this.idNodoSeleccionado && this.idNodoSeleccionado == this.esteNodo.id
       );
     },
-    usuarioResponsable() {
+    usuarioResponsable(){
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteNodo.responsables.includes(this.usuario.id);
-    },
+    },    
     usuarioAdministrador() {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteNodo.administradores.includes(this.usuario.id);
@@ -537,11 +537,11 @@ export default {
       var color = "white";
       if (this.esteNodo.responsables && this.esteNodo.responsables.length > 0) {
         color = "#f0ee6e";
-      }      
-      if(this.esteNodo.estadoDesarrollo==='completado'){
-        color="rgb(86, 176, 54)";
       }
-     
+      if (this.esteNodo.estadoDesarrollo === "completado") {
+        color = "rgb(86, 176, 54)";
+      }
+
       return {
         backgroundColor: color,
       };
@@ -574,7 +574,7 @@ export default {
       }
 
       return false;
-    },    
+    },
     huerfano() {
       return (
         this.esteNodo.responsables.length === 0 &&
@@ -587,18 +587,18 @@ export default {
         elColor = "rgb(239 114 41)";
       }
 
-      var borde="";
-      if(this.usuarioResponsable){
-        borde=Math.round(3*this.factorZoom)+"px dotted purple";
+      var borde = "";
+      if (this.usuarioResponsable) {
+        borde = Math.round(3 * this.factorZoom) + "px dotted purple";
       }
       return {
         backgroundColor: elColor,
-        border: borde
+        border: borde,
       };
-    },    
-    plegado(){
+    },
+    plegado() {
       return this.idsNodosPlegados.includes(this.esteNodo.id);
-    }
+    },
   },
   watch: {
     esteNodo() {
@@ -630,9 +630,9 @@ export default {
   left: -10%;
   border-radius: 50%;
   z-index: 0;
-  box-shadow: 0 30px 40px rgba(0,0,0,.1);
+  box-shadow: 0 30px 40px rgba(0, 0, 0, 0.1);
 }
-#bolita{
+#bolita {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -652,7 +652,7 @@ export default {
   user-select: none;
   pointer-events: none;
 }
-#iconoPlegado{
+#iconoPlegado {
   position: absolute;
   padding: 5%;
   width: 40%;

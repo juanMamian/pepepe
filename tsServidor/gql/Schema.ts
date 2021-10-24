@@ -1,12 +1,11 @@
 const { ApolloServer, gql, PubSub } = require("apollo-server-express");
 import { typeDefs as tdNodos, resolvers as rNodos } from "./AtlasConocimiento"
 import { typeDefs as tdUsuarios, resolvers as rUsuarios } from "./Usuarios"
-import { typeDefs as tdProyectos, resolvers as rProyectos } from "./Proyectos"
-import { typeDefs as tdTrabajos, resolvers as rTrabajos } from "./Trabajos"
+import { typeDefs as tdProyectos, resolvers as rProyectos } from "./Grupos"
+import { typeDefs as tdTrabajos, resolvers as rTrabajos } from "./AtlasSolidaridad"
 import { typeDefs as tdEventos, resolvers as rEventos } from "./Eventos"
 
-// import { typeDefs as tdObjetivos, resolvers as rObjetivos } from "./Objetivos"
-import { typeDefs as tdGruposEstudiantiles, resolvers as rGruposEstudiantiles } from "./GruposEstudiantiles"
+import { typeDefs as tdGruposEstudiantiles, resolvers as rGruposEstudiantiles } from "./ActividadesEstudiantiles"
 import { typeDefs as tdForos, resolvers as rForos } from "./Foros"
 import {typeDefs as tdCuentos, resolvers as rCuentos} from "./cuentos/Libro"
 import merge from "lodash/merge"

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import {EsquemaVinculosNodosSolidaridad} from "./VinculosNodosSolidaridad";
 import {pubsub} from "../../gql/Schema"
-import {NODO_EDITADO} from "../../gql/Trabajos"
+import {NODO_EDITADO} from "../../gql/AtlasSolidaridad"
 
 const esquemaMaterial= new mongoose.Schema({
     nombre:{

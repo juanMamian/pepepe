@@ -90,7 +90,6 @@
             id="bEditarDescripcion"
             class="bEditar"
             title="Editar descripcion del trabajo"
-            v-show="usuarioAdministrador"
             @click.stop="toggleEditandoDescripcion"
           />
           <img
