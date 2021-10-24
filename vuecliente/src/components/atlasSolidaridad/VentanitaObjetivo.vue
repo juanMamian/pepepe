@@ -788,15 +788,17 @@ export default {
 
 <style scoped>
 .ventanitaObjetivo {
-  border: 2px solid #585858;
+  border: 1px solid #585858;
   border-radius: 5px;
   min-height: 10px;
   max-height:90%;
   overflow-y: scroll;
   position: relative;
-  padding: 5px 5px;
+  padding: 5px 0px;
   padding-bottom: 10px;
-  background-color: rgb(231, 182, 182);
+  background-color:rgb(185 185 185);
+  box-shadow: 3px 3px grey, 3px 3px 3px 3px grey;
+
 }
 
 .seleccionado {
@@ -986,12 +988,14 @@ export default {
   cursor: pointer;
   z-index: 10;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  padding: 5px;
-  margin: 6px auto;
+  width: 20px;
+  height: 20px;
+  padding: 3px;
   display: block;
   background-color: rgb(201, 136, 90);
+  position: absolute;
+  top: 2px;
+  left: 2px;
 }
 .botonIr:hover {
   background-color: rgb(207, 113, 46);
