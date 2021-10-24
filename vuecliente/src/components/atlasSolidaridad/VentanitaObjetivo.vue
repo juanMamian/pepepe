@@ -849,7 +849,7 @@ export default {
   cursor: pointer;
 }
 .nombreZona {
-  font-size: 18px;
+  font-size: 15px;
   padding: 5px 5px;
 }
 #nombre {
