@@ -1582,8 +1582,8 @@ export default {
 .ventanitaNodo {
   width: min(400px, 90%);
   position: absolute;
-  top: 5%;
-  left: 5%;
+  top: 15px;
+  left: 15px;
   z-index: 60;
 }
 #loadingNodos {

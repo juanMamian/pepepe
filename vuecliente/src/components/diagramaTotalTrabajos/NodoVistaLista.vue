@@ -264,6 +264,7 @@ export default {
   flex-wrap: wrap;
   padding-bottom: 50px;
   padding-left: 10px;
+  background-color: rgba(128, 128, 128, 0.253);
 }
 .iconoPersonaAutonomo {
   position: relative;

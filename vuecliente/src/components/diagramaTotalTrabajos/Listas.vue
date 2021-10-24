@@ -7,6 +7,7 @@
     @touchstart.stop=""
     @touchend.stop=""
   >
+    
     <div id="barraSelectoresListas">
       <img
         src="@/assets/iconos/lista.png"
@@ -34,6 +35,10 @@
       />
     </div>
     <div id="zonaListas" @click.self.stop="idNodoSeleccionado=null">
+      <div id="botonCerrarListas" class="botonEquis" v-show="abierta" @click.stop="abierta=false">
+      <div class="linea1"></div>
+      <div class="linea2"></div>
+    </div>
       <lista-nodos
         :todosNodos="todosNodos"
         class="lista"
@@ -118,7 +123,7 @@ export default {
   top: 5px;
   left: 5px;
   overflow-y: hidden;
-  z-index: 100;
+  z-index: 50;
   height: 80%;
   padding: 10px;
 }
@@ -146,6 +151,7 @@ export default {
 }
 #zonaListas{
   height: 85%;
+  position: relative;
 }
 #tituloListaMateriales{
   font-size: 13px;
@@ -153,6 +159,16 @@ export default {
 }
 .lista {
   height: 100%;
+}
+#botonCerrarListas{
+  background-color: white;
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  transform: translate(40%, -20%);
+  z-index: 10;
+  border: 2px solid black;
+  border-radius: 50%;
 }
 
 </style>
