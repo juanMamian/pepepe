@@ -88,7 +88,6 @@ export const esquemaActividad = new mongoose.Schema({
     },
     idCreador: {
         type: String,
-        required: true
     },
     guiaGoogleDrive: {
         idArchivo: {

@@ -1,17 +1,17 @@
 Reestructuracion no-urgente
 *verificar el manejo de contraseñas
 *Cambiar el registro de modo que se realice a través de graphql, no de la API
-*Crear la validacion de nombre de nodo
-*cambiar el nombre de fragmentoResponsables a fragmentoUsuarios en utilidades gql del cliente.
-*mover el componente IconoPersona a la carpeta root de componentes porque es un componente que se usa en muchos lugares.
 *Cambiar la estructura de los desarrollos en Actividad.vue. Hay dos bloques para el desarrollo propio y el resto de desarrollos. Se puede lograr en un solo bloque
-*Verificar en las querys de mongoose que se pidan los datos requeridos, no todos
 *Para solucionar los avisos de typescript puse tipo ANY en los objetos creados mediante el constructor de un modelo mongoose. Habrá que revisar ese asunto en el futuro.
 *Refresh de tokens.
-*proteger con check de auth la funcion de set estado de desarrollo estudiantil
-*Cuando un usuario es eliminado, se daña el funcionamiento de una lista de cosas. Solucionar.
+
+HECHO cambiar el nombre de fragmentoResponsables a fragmentoUsuarios en utilidades gql del cliente.
+*Verificar en las querys de mongoose que se pidan los datos requeridos, no todos
+
+HECHO*proteger con check de auth la funcion de set estado de desarrollo estudiantil
+HECHO*Cuando un usuario es eliminado, se daña el funcionamiento de una lista de cosas. Solucionar.
  -Responsables de proyecto y trabajos.
-*Que al eliminar un trabajo, o proyecto, o otro componente que es dueño de un foro, se elimine el foro
+HECHO*Que al eliminar un trabajo, o proyecto, o otro componente que es dueño de un foro, se elimine el foro
 *update adecuado después de eliminar una actividad. Actualmente simplemente hay un refresh de la página. Me parece que habrá que reconstruir el mecanismo de paginación de actividades para esto.
 *Que el último responsable de un grupo pueda eliminarlo.
 *Loading para cuando uno elimina una respuesta en actividades virtuales.
@@ -23,17 +23,7 @@ Reestructuracion no-urgente
 *validar links de enlaces de nodos solidaridad en front y back.
 *prevenir loops de children en atlas de solidaridad.
 *eliminar materiales cuando se elimina el trabajoParent del atlas de solidaridad.
-*Personalización de colores en el atlas de solidaridad.
 
-Funcionalidad urgente
-
-*Reparar el cambio de modo (experto, estudiante) en el atlas de conocimiento: No se actualiza automáticamente.
+Funcionalidad urgente:
 
 
-Pruebas:{
-    acciones sobre elementos ya eliminados pero no notificados{
-        actividades
-        desarrollos
-        personas
-    }
-}

@@ -31,7 +31,7 @@
 
 <script>
 import gql from "graphql-tag";
-import { fragmentoResponsables } from "./utilidades/recursosGql";
+import { fragmentoUsuarios } from "./utilidades/recursosGql";
 import IconoPersona from "./utilidades/IconoPersona";
 import Loading from "./utilidades/Loading.vue";
 import axios from "axios";
@@ -44,7 +44,7 @@ const QUERY_PERSONAS = gql`
       ...fragResponsables
     }
   }
-  ${fragmentoResponsables}
+  ${fragmentoUsuarios}
 `;
 
 export default {

@@ -2,6 +2,7 @@
   <div
     class="iconoPersonaAutonomo"
     :class="{ yo: soyYo }"
+    v-if="estaPersona && estaPersona.id"
   >
     <img
       class="fotografia"

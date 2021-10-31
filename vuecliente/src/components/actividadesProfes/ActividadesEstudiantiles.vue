@@ -64,7 +64,7 @@
 
 <script>
 import gql from "graphql-tag";
-import { fragmentoResponsables } from "../utilidades/recursosGql";
+import { fragmentoUsuarios } from "../utilidades/recursosGql";
 import Loading from "../utilidades/Loading.vue";
 
 export default {
@@ -92,7 +92,7 @@ export default {
             ...fragResponsables
           }
         }
-        ${fragmentoResponsables}
+        ${fragmentoUsuarios}
       `,
       update: function ({ usuariosProfe }) {
         this.cargandoProfes = false;

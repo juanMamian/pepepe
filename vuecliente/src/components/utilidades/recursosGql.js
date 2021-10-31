@@ -14,7 +14,7 @@ export const fragmentoEvento = gql`
   }
 `;
 
-export const fragmentoResponsables = gql`
+export const fragmentoUsuarios = gql`
 fragment fragResponsables on PublicUsuario {
   id
   username

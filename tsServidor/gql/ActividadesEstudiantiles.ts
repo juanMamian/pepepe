@@ -473,10 +473,22 @@ export const resolvers = {
 
         },
         setEstadoDesarrolloActividadEstudiantil: async function (_: any, { idDesarrollo, idActividad, idGrupo, nuevoEstado }: any, contexto: contextoQuery) {
+            const credencialesUsuario=contexto.usuario;
+            
             try {
                 var ColeccionActividadesEsteGrupo = mongoose.model("actividadesGrupo" + idGrupo, esquemaActividad, "actividadesGrupo" + idGrupo);
 
                 let laActividad: any = await ColeccionActividadesEsteGrupo.findById(idActividad).exec();
+
+                //Auth
+
+                const permisosEspeciales=["superadministrador"];
+
+                if(laActividad.idCreador!= credencialesUsuario.id && permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p))){
+                    console.log(`Usuario no autorizado`);
+                    throw new AuthenticationError("No autorizado");
+                }
+
                 var elDesarrollo = laActividad.desarrollos.id(idDesarrollo);
                 elDesarrollo.estado = nuevoEstado;
                 await laActividad.save();

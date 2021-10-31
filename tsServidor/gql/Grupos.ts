@@ -844,6 +844,8 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
+            
+
             console.log(`Eliminando eventos con idOrigen: ${idGrupo}`);
             try {
                 await Evento.deleteMany({idOrigen:idGrupo}).exec();
@@ -857,6 +859,13 @@ export const resolvers = {
             catch (error) {
                 console.log("Error guardando el trabajo creado en el grupo. E: " + error);
                 throw new ApolloError("Error introduciendo el trabajo en el grupo");
+            }
+
+            //Eliminar foro
+            try {
+                await Foro.findByIdAndDelete(elGrupo.idForo);
+            } catch (error) {
+                console.log(`Error buscando los foros para ser eliminados`);
             }
 
             console.log(`eliminado`);

@@ -1,6 +1,6 @@
 import gql from "graphql-tag"
 
-export const fragmentoResponsables = gql`
+export const fragmentoUsuarios = gql`
 fragment fragResponsables on PublicUsuario {
   id
   username

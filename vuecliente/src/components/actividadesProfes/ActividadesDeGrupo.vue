@@ -192,7 +192,7 @@ import IconoPersona from "../utilidades/IconoPersona";
 import gql from "graphql-tag";
 import {
   fragmentoActividad,
-  fragmentoResponsables,
+  fragmentoUsuarios,
 } from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 import Loading from "../utilidades/Loading.vue";
@@ -231,7 +231,7 @@ const QUERY_GRUPO = gql`
       }
     }
   }
-  ${fragmentoResponsables}
+  ${fragmentoUsuarios}
 `;
 
 //const sizePaginaActividades=5;
@@ -351,7 +351,7 @@ export default {
                 }
               }
             }
-            ${fragmentoResponsables}
+            ${fragmentoUsuarios}
           `,
           variables: {
             idGrupoEstudiantil: this.esteGrupo.id,
@@ -381,7 +381,7 @@ export default {
                 }
               }
             }
-            ${fragmentoResponsables}
+            ${fragmentoUsuarios}
           `,
           variables: {
             idGrupo: this.esteGrupo.id,

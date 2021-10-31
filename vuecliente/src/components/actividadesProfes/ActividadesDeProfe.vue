@@ -33,7 +33,7 @@
 <script>
 import gql from "graphql-tag";
 import IconoPersona from "../utilidades/IconoPersona";
-import {fragmentoResponsables} from "../utilidades/recursosGql";
+import {fragmentoUsuarios} from "../utilidades/recursosGql";
 import Actividad from "./Actividad.vue";
 import Loading from "../utilidades/Loading.vue";
 
@@ -62,7 +62,7 @@ export default {
             ...fragResponsables
           }
         }
-        ${fragmentoResponsables}
+        ${fragmentoUsuarios}
       `,
       variables() {
         return { idProfe: this.$route.params.idProfe };
