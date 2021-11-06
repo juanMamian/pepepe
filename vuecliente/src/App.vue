@@ -8,10 +8,18 @@
         alt="Menu"
         @click="mostrandoNav = !mostrandoNav"
       />
-      <div id="botonesNavEnlaces" :class="{enlacesOcultos:!mostrandoNav}" @click="mostrandoNav=false">
+      <div
+        id="botonesNavEnlaces"
+        :class="{ enlacesOcultos: !mostrandoNav }"
+        @click="mostrandoNav = false"
+      >
         <router-link
           to="/actividadesVirtuales2021"
-          v-if="usuarioLogeado == true && usuario.permisos && usuario.permisos.includes('maestraVida')"
+          v-if="
+            usuarioLogeado == true &&
+            usuario.permisos &&
+            usuario.permisos.includes('maestraVida')
+          "
         >
           <div
             class="botonNavBarra botonNav hoverNegro"
@@ -21,7 +29,14 @@
           </div>
         </router-link>
 
-        <router-link to="/foros" v-if="usuarioLogeado == true && usuario.permisos && usuario.permisos.includes('maestraVida')">
+        <router-link
+          to="/foros"
+          v-if="
+            usuarioLogeado == true &&
+            usuario.permisos &&
+            usuario.permisos.includes('maestraVida')
+          "
+        >
           <div
             class="botonNavBarra botonNav hoverNegro"
             id="navActividadesVirtuales"
@@ -30,7 +45,15 @@
           </div>
         </router-link>
 
-        <div id="bloqueGrupos" class="bloqueBotones" v-if="usuario && usuario.permisos && usuario.permisos.includes('maestraVida')">
+        <div
+          id="bloqueGrupos"
+          class="bloqueBotones"
+          v-if="
+            usuario &&
+            usuario.permisos &&
+            usuario.permisos.includes('maestraVida')
+          "
+        >
           <router-link to="/grupos" v-if="usuarioLogeado == true">
             <div class="botonNavBarra botonNav hoverNegro" id="navGrupos">
               Grupos
@@ -56,7 +79,7 @@
           </div> -->
         </div>
 
-       <div id="bloqueSolidaridad" class="bloqueBotones">
+        <div id="bloqueSolidaridad" class="bloqueBotones">
           <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
             Solidaridad
           </div>
@@ -69,7 +92,6 @@
                 Atlas de solidaridad
               </div>
             </router-link>
-            
           </div>
         </div>
 
@@ -168,7 +190,12 @@
                 <div class="botonesLogeado hoverNegro" id="Perfil">Perfil</div>
               </router-link>
               <router-link to="/calendarioPersonal">
-                <div class="botonesLogeado hoverNegro" id="botonCalendarioPersonal">Mi calendario</div>
+                <div
+                  class="botonesLogeado hoverNegro"
+                  id="botonCalendarioPersonal"
+                >
+                  Mi calendario
+                </div>
               </router-link>
               <div
                 class="botonesLogeado hoverNegro"
@@ -177,7 +204,6 @@
               >
                 Desconexion
               </div>
-              
             </div>
           </div>
         </template>
@@ -239,8 +265,6 @@ export const QUERY_YO = gql`
   }
 `;
 
-
-
 export default {
   name: "App",
   apollo: {
@@ -274,7 +298,7 @@ export default {
           }
         `,
         updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          var nuevoPreviousResult=JSON.parse(JSON.stringify(previousResult));
+          var nuevoPreviousResult = JSON.parse(JSON.stringify(previousResult));
           if (
             !nuevoPreviousResult.yo.notificaciones.some(
               (n) => n.id == data.nuevaNotificacion.id
@@ -332,8 +356,10 @@ export default {
       return {};
     },
     notificacionesOrdenadas: function () {
-      var lasNotificaciones = JSON.parse(JSON.stringify(this.yo.notificaciones));
-      
+      var lasNotificaciones = JSON.parse(
+        JSON.stringify(this.yo.notificaciones)
+      );
+
       return lasNotificaciones.sort((a, b) => {
         return new Date(b.fecha) - new Date(a.fecha);
       });
@@ -344,7 +370,7 @@ export default {
       this.$store.commit("deslogearse");
       this.$router.push("/login");
     },
-  },  
+  },
 };
 </script>
 
@@ -435,7 +461,7 @@ input {
   opacity: 0.6;
 }
 
-.botonEquis{
+.botonEquis {
   width: 20px;
   height: 20px;
   cursor: pointer;
@@ -443,10 +469,10 @@ input {
   border-radius: 50%;
   position: absolute;
 }
-.botonEquis:hover{
+.botonEquis:hover {
   background-color: rgb(196, 73, 73);
 }
-.botonEquis>.linea1{
+.botonEquis > .linea1 {
   position: absolute;
   background-color: black;
   height: 2px;
@@ -455,7 +481,7 @@ input {
   top: 50%;
   transform: translateY(-50%) rotateZ(45deg);
 }
-.botonEquis>.linea2{
+.botonEquis > .linea2 {
   position: absolute;
   background-color: black;
   height: 80%;
@@ -608,6 +634,7 @@ input {
 }
 
 @media only screen and (min-width: 768px) {
+   
   #app {
     grid-template-rows: 55px 1fr 5px;
   }
