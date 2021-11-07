@@ -85,7 +85,6 @@ exports.esquemaActividad = new mongoose_1.default.Schema({
     },
     idCreador: {
         type: String,
-        required: true
     },
     guiaGoogleDrive: {
         idArchivo: {

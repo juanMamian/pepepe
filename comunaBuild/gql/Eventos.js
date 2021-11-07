@@ -12,8 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Evento_1 = require("../model/Evento");
-const Proyecto_1 = require("../model/Proyecto");
-const Nodo_1 = require("../model/atlas/Nodo");
+const Grupo_1 = require("../model/Grupo");
+const Nodo_1 = require("../model/atlasConocimiento/Nodo");
 const Usuario_1 = require("../model/Usuario");
 exports.typeDefs = apollo_server_express_1.gql `
     
@@ -140,7 +140,7 @@ exports.resolvers = {
                 console.log(`Solicitud de eventos que se cruzarían con un nuevo evento del club ${idClub}`);
                 let credencialesUsuario = contexto.usuario;
                 try {
-                    var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idClub).exec();
+                    var elProyecto = yield Grupo_1.ModeloGrupo.findById(idClub).exec();
                     if (!elProyecto)
                         throw "Proyecto parent no encontrado";
                 }
@@ -221,7 +221,7 @@ exports.resolvers = {
                 var infoEvento = null;
                 if (elEvento.origen === 'club') {
                     try {
-                        var elParent = yield Proyecto_1.ModeloProyecto.findById(elEvento.idOrigen).exec();
+                        var elParent = yield Grupo_1.ModeloGrupo.findById(elEvento.idOrigen).exec();
                     }
                     catch (error) {
                         console.log(`Error buscando el proyecto parent del evento`);
@@ -279,7 +279,7 @@ exports.resolvers = {
                 var participantesEvento = [];
                 if (origen === "club") {
                     try {
-                        var elProyecto = yield Proyecto_1.ModeloProyecto.findById(idOrigen).exec();
+                        var elProyecto = yield Grupo_1.ModeloGrupo.findById(idOrigen).exec();
                         if (!elProyecto)
                             throw "Proyecto parent no encontrado";
                     }
@@ -377,7 +377,7 @@ exports.resolvers = {
                 var idsAutorizados = [];
                 if (elEvento.origen === "club") {
                     try {
-                        var elProyecto = yield Proyecto_1.ModeloProyecto.findById(elEvento.idOrigen).exec();
+                        var elProyecto = yield Grupo_1.ModeloGrupo.findById(elEvento.idOrigen).exec();
                         if (!elProyecto)
                             throw "Proyecto parent no encontrado";
                     }
@@ -419,7 +419,7 @@ exports.resolvers = {
                 var idsAutorizados = [];
                 if (elEvento.origen === "club") {
                     try {
-                        var elProyecto = yield Proyecto_1.ModeloProyecto.findById(elEvento.idOrigen).exec();
+                        var elProyecto = yield Grupo_1.ModeloGrupo.findById(elEvento.idOrigen).exec();
                         if (!elProyecto)
                             throw "Proyecto parent no encontrado";
                     }
@@ -471,7 +471,7 @@ exports.resolvers = {
                 var idsAutorizados = [];
                 if (elEvento.origen === "club") {
                     try {
-                        var elProyecto = yield Proyecto_1.ModeloProyecto.findById(elEvento.idOrigen).exec();
+                        var elProyecto = yield Grupo_1.ModeloGrupo.findById(elEvento.idOrigen).exec();
                         if (!elProyecto)
                             throw "Proyecto parent no encontrado";
                     }
@@ -520,7 +520,7 @@ exports.resolvers = {
                 var idsAutorizados = [];
                 if (elEvento.origen === "club") {
                     try {
-                        var elProyecto = yield Proyecto_1.ModeloProyecto.findById(elEvento.idOrigen).exec();
+                        var elProyecto = yield Grupo_1.ModeloGrupo.findById(elEvento.idOrigen).exec();
                         if (!elProyecto)
                             throw "Proyecto parent no encontrado";
                     }
@@ -594,7 +594,7 @@ exports.resolvers = {
                 var responsables = [];
                 if (parent.origen === "club") {
                     try {
-                        var elProyecto = yield Proyecto_1.ModeloProyecto.findById(parent.idOrigen).exec();
+                        var elProyecto = yield Grupo_1.ModeloGrupo.findById(parent.idOrigen).exec();
                         if (!elProyecto)
                             throw "Proyecto parent no encontrado buscando responsables de un evento";
                         responsables = elProyecto.responsables;

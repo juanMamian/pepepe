@@ -16,12 +16,12 @@ exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const mongoose_1 = __importDefault(require("mongoose"));
 const Foro_1 = require("../model/Foros/Foro");
-const Proyecto_1 = require("../model/Proyecto");
+const Grupo_1 = require("../model/Grupo");
 const Conversacion_1 = require("../model/Foros/Conversacion");
 const Usuario_1 = require("../model/Usuario");
-const Nodo_1 = require("../model/atlas/Nodo");
-const Trabajo_1 = require("../model/Trabajo");
-const Nodo = require("../model/atlas/Nodo");
+const Nodo_1 = require("../model/atlasConocimiento/Nodo");
+const Trabajo_1 = require("../model/atlasSolidaridad/Trabajo");
+const Nodo = require("../model/atlasConocimiento/Nodo");
 const Libro_1 = require("../model/cuentos/Libro");
 exports.typeDefs = apollo_server_express_1.gql `
 
@@ -335,7 +335,7 @@ exports.resolvers = {
                 console.log(`Creando notificacion para los miembros del ${parent.tipo} ${parent.nombre}`);
                 try {
                     if (parent.tipo == "proyecto") {
-                        var elParent = yield Proyecto_1.ModeloProyecto.findById(parent.id, "_id responsables").exec();
+                        var elParent = yield Grupo_1.ModeloGrupo.findById(parent.id, "_id responsables").exec();
                         var idsMiembros = elParent.responsables;
                     }
                     else if (parent.tipo == "trabajo") {
@@ -566,7 +566,7 @@ exports.resolvers = {
                 console.log(`Creando notificacion para los miembros del ${parent.tipo} ${parent.nombre}`);
                 try {
                     if (parent.tipo == "proyecto") {
-                        var elParent = yield Proyecto_1.ModeloProyecto.findById(parent.id, "_id responsables").exec();
+                        var elParent = yield Grupo_1.ModeloGrupo.findById(parent.id, "_id responsables").exec();
                         var idsMiembros = elParent.responsables;
                     }
                     else if (parent.tipo == "trabajo") {

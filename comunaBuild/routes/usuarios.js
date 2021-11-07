@@ -100,9 +100,6 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     const username = req.body.username;
     const pass = req.body.password;
-    if (username === 'SebastianHernandez') {
-        return res.status(400).send({ error: "sebastian", msjUsuario: "Usuario bloqueado" });
-    }
     console.log("loging " + JSON.stringify(req.body));
     try {
         var elUsuario = yield Usuario_1.ModeloUsuario.findOne({ username }, "username password permisos").exec();

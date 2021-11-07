@@ -14,9 +14,9 @@ const apollo_server_express_1 = require("apollo-server-express");
 const Usuario_1 = require("../model/Usuario");
 const graphql_iso_date_1 = require("graphql-iso-date");
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
-const Nodo_1 = require("../model/atlas/Nodo");
-const Objetivo_1 = require("../model/Objetivo");
-const Trabajo_1 = require("../model/Trabajo");
+const Nodo_1 = require("../model/atlasConocimiento/Nodo");
+const Objetivo_1 = require("../model/atlasSolidaridad/Objetivo");
+const Trabajo_1 = require("../model/atlasSolidaridad/Trabajo");
 exports.typeDefs = apollo_server_express_1.gql `
     scalar Date
 
@@ -58,6 +58,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     }
 
     type infoAtlas{
+        id: ID
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
         idNodoTarget:ID,
@@ -65,6 +66,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         colecciones:[ColeccionNodosAtlasConocimiento]
     }
     type InfoAtlasSolidaridad{
+        id: ID
         coordsVista:Coords, 
         idsNodosPlegados: [String]      
     }
@@ -165,6 +167,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
 
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
+        setNodoConocimientoAsCoordsVistaUsuario(idNodo:ID!):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
     }
     extend type Subscription{
@@ -545,7 +548,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 const credencialesUsuario = contexto.usuario;
                 const permisosAutorizados = ["superadministrador"];
-                if (!credencialesUsuario.permisos.some((p) => __awaiter(this, void 0, void 0, function* () { return permisosAutorizados.includes(p); }))) {
+                if (!credencialesUsuario.permisos.some((p) => permisosAutorizados.includes(p))) {
                     console.log(`El usuario no tenía los permisos correctos`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
@@ -577,7 +580,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 const credencialesUsuario = contexto.usuario;
                 const permisosAutorizados = ["superadministrador"];
-                if (!credencialesUsuario.permisos.some((p) => __awaiter(this, void 0, void 0, function* () { return permisosAutorizados.includes(p); }))) {
+                if (!credencialesUsuario.permisos.some((p) => permisosAutorizados.includes(p))) {
                     console.log(`El usuario no tenía los permisos correctos`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
@@ -908,6 +911,41 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(elNodo.coords)} del nodo ${idNodo}`);
+                return true;
+            });
+        },
+        setNodoConocimientoAsCoordsVistaUsuario(_, { idNodo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No Autenticado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "Nodo no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodo. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error en la conexión con la base de datos");
+                }
+                elUsuario.atlas.centroVista = elNodo.coords;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario con el nuevo coords de centroVista`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Nuevo coords vista en atlas de conocimiento setted en ${JSON.stringify(elNodo.coords)} del nodo ${idNodo}`);
                 return true;
             });
         }

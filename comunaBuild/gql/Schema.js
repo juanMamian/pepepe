@@ -5,13 +5,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.aServer = exports.pubsub = exports.esquema = void 0;
 const { ApolloServer, gql, PubSub } = require("apollo-server-express");
-const NodosConocimiento_1 = require("./NodosConocimiento");
+const AtlasConocimiento_1 = require("./AtlasConocimiento");
 const Usuarios_1 = require("./Usuarios");
-const Proyectos_1 = require("./Proyectos");
-const Trabajos_1 = require("./Trabajos");
+const Grupos_1 = require("./Grupos");
+const AtlasSolidaridad_1 = require("./AtlasSolidaridad");
 const Eventos_1 = require("./Eventos");
-// import { typeDefs as tdObjetivos, resolvers as rObjetivos } from "./Objetivos"
-const GruposEstudiantiles_1 = require("./GruposEstudiantiles");
+const ActividadesEstudiantiles_1 = require("./ActividadesEstudiantiles");
 const Foros_1 = require("./Foros");
 const Libro_1 = require("./cuentos/Libro");
 const merge_1 = __importDefault(require("lodash/merge"));
@@ -36,8 +35,8 @@ const globalTypeDefs = gql `
         y:Int
     }
 `;
-const typeDefs = [globalTypeDefs, NodosConocimiento_1.typeDefs, Usuarios_1.typeDefs, Proyectos_1.typeDefs, Trabajos_1.typeDefs, Eventos_1.typeDefs, GruposEstudiantiles_1.typeDefs, Foros_1.typeDefs, Libro_1.typeDefs];
-const resolvers = merge_1.default({}, NodosConocimiento_1.resolvers, Usuarios_1.resolvers, Proyectos_1.resolvers, Trabajos_1.resolvers, Eventos_1.resolvers, GruposEstudiantiles_1.resolvers, Foros_1.resolvers, Libro_1.resolvers);
+const typeDefs = [globalTypeDefs, AtlasConocimiento_1.typeDefs, Usuarios_1.typeDefs, Grupos_1.typeDefs, AtlasSolidaridad_1.typeDefs, Eventos_1.typeDefs, ActividadesEstudiantiles_1.typeDefs, Foros_1.typeDefs, Libro_1.typeDefs];
+const resolvers = merge_1.default({}, AtlasConocimiento_1.resolvers, Usuarios_1.resolvers, Grupos_1.resolvers, AtlasSolidaridad_1.resolvers, Eventos_1.resolvers, ActividadesEstudiantiles_1.resolvers, Foros_1.resolvers, Libro_1.resolvers);
 exports.esquema = apollo_server_express_1.makeExecutableSchema({
     typeDefs,
     resolvers
@@ -58,7 +57,7 @@ const context = ({ req, res, connection }) => {
         //console.log(`headers: ${JSON.stringify(headers)}`);
         if (!headers.authorization)
             return { usuario };
-        const token = headers.authorization;
+        const token = headers.authorization.substr(7);
         try {
             usuario = jwt.verify(token, process.env.JWT_SECRET);
         }
@@ -72,6 +71,7 @@ const context = ({ req, res, connection }) => {
     return { usuario: usuario, pubsub: exports.pubsub };
 };
 const onConnect = function (connectionParams, webSocket) {
+    +console.log(`Subscription`);
     var usuario = {
         id: "",
         permisos: []
@@ -90,6 +90,7 @@ const onConnect = function (connectionParams, webSocket) {
     }
     else {
         console.log(`Sin token`);
+        console.log(`Headers: ${JSON.stringify(connectionParams)}`);
     }
     return { usuario: usuario, pubsub: exports.pubsub };
 };
