@@ -290,6 +290,7 @@ export default {
               ... on Trabajo {
                 id
                 vinculos {
+                  id
                   idRef
                   tipo
                   tipoRef
@@ -303,6 +304,7 @@ export default {
               ... on Objetivo {
                 id
                 vinculos {
+                  id
                   idRef
                   tipo
                   tipoRef
@@ -337,6 +339,7 @@ export default {
               ... on Trabajo {
                 id
                 vinculos {
+                  id
                   idRef
                   tipo
                   tipoRef
@@ -350,6 +353,7 @@ export default {
               ... on Objetivo {
                 id
                 vinculos {
+                  id
                   idRef
                   tipo
                   tipoRef
@@ -383,6 +387,7 @@ export default {
               ... on Trabajo {
                 id
                 vinculos {
+                  id
                   idRef
                   tipo
                   tipoRef
@@ -396,6 +401,7 @@ export default {
               ... on Objetivo {
                 id
                 vinculos {
+                  id
                   idRef
                   tipo
                   tipoRef

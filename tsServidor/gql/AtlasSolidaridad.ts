@@ -35,7 +35,7 @@ export const typeDefs = gql`
        administradores:[String],
        descripcion:String,
        enlaces: [EnlaceNodoSolidaridad], 
-       vinculos:[VinculoNodoGrupo],
+       vinculos:[VinculoNodoSolidaridad],
        keywords:String,
        nodoParent:InfoNodoSolidaridad,
        idForoResponsables:ID,
@@ -89,7 +89,7 @@ export const typeDefs = gql`
        nodosConocimiento:[String],
        idForoResponsables:ID,
        diagramaGrupo:InfoDiagramaGrupo,
-       vinculos:[VinculoNodoGrupo],
+       vinculos:[VinculoNodoSolidaridad],
        keywords:String,       
        estadoDesarrollo:String,
        materiales:[MaterialTrabajo],
@@ -110,6 +110,13 @@ export const typeDefs = gql`
        nombre: String,
        idGrupo:ID
    }
+
+   type VinculoNodoSolidaridad{
+        id:ID,
+        idRef:ID,
+        tipo:String,
+        tipoRef:String,
+    }
 
    union NodoDeTrabajos = Trabajo | Objetivo
 

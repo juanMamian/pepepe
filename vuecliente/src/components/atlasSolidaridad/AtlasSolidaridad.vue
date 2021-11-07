@@ -100,8 +100,8 @@
       :idNodoSeleccionado="idNodoSeleccionado"
     /> -->
 
-    <div id="contenedorCanvasNodos" :style="[posContenedores]">
-      <canvas-enlaces-nodo
+    <div id="contenedorVinculosNodos" :style="[posContenedores]">
+      <enlaces-nodo
         v-for="nodo of nodosConRequerimentos"
         :yo="yo"
         :key="nodo.id"
@@ -279,7 +279,7 @@ import VentanitaObjetivo from "./VentanitaObjetivo.vue";
 import VentanitaTrabajo from "./VentanitaTrabajo.vue";
 import Loading from "../utilidades/Loading.vue";
 import Nodo from "./Nodo.vue";
-import CanvasEnlacesNodo from "./CanvasEnlacesNodo.vue";
+import EnlacesNodo from "./EnlacesNodo.vue";
 import debounce from "debounce";
 import PanelControlNodos from "./PanelControlNodos.vue";
 import Listas from "./Listas.vue";
@@ -383,6 +383,7 @@ const QUERY_TODOS_NODOS = gql`
         }
         estadoDesarrollo
         vinculos {
+          id
           idRef
           tipo
           tipoRef
@@ -417,6 +418,7 @@ const QUERY_TODOS_NODOS = gql`
         }
         estadoDesarrollo
         vinculos {
+          id
           idRef
           tipo
           tipoRef
@@ -460,7 +462,7 @@ export default {
     VentanitaTrabajo,
     Loading,
     Nodo,
-    CanvasEnlacesNodo,
+    EnlacesNodo,
     PanelControlNodos,
     Listas,
   },
@@ -511,6 +513,7 @@ export default {
                 }
                 estadoDesarrollo
                 vinculos {
+                  id
                   idRef
                   tipo
                   tipoRef
@@ -545,6 +548,7 @@ export default {
                 }
                 estadoDesarrollo
                 vinculos {
+                  id
                   idRef
                   tipo
                   tipoRef
@@ -978,6 +982,7 @@ export default {
                   }
                   estadoDesarrollo
                   vinculos {
+                    id
                     idRef
                     tipo
                     tipoRef
@@ -1012,6 +1017,7 @@ export default {
                   }
                   estadoDesarrollo
                   vinculos {
+                    id
                     idRef
                     tipo
                     tipoRef
@@ -1126,6 +1132,7 @@ export default {
                   }
                   estadoDesarrollo
                   vinculos {
+                    id
                     idRef
                     tipo
                     tipoRef
@@ -1160,6 +1167,7 @@ export default {
                   }
                   estadoDesarrollo
                   vinculos {
+                    id
                     idRef
                     tipo
                     tipoRef
@@ -1581,7 +1589,7 @@ export default {
   position: relative;
   z-index: 1;
 }
-#contenedorCanvasNodos {
+#contenedorVinculosNodos {
   position: relative;
 }
 
