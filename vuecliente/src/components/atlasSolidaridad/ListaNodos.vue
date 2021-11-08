@@ -20,7 +20,7 @@
       <nodo-vista-lista
         v-for="nodoPrimerNivel of nodosPrimerNivel"
         ref="nodosEnLista"
-        :id="'nodoEnLista'+nodoPrimerNivel.id"
+        :id="'nodoEnLista' + nodoPrimerNivel.id"
         :key="nodoPrimerNivel.id"
         :esteNodo="nodoPrimerNivel"
         :busqueda="busqueda"
@@ -38,7 +38,7 @@ export default {
   components: { NodoVistaLista },
   name: "ListaNodos",
   props: {
-    idNodoSeleccionado:String,
+    idNodoSeleccionado: String,
     todosNodos: Array,
   },
   data() {
@@ -52,15 +52,34 @@ export default {
         (n) => n.nodoParent && n.nodoParent.id === nodo.id
       );
     },
-    desplegarCascadaHaciaNodo(idNodoTarget){
-      this.$refs.nodosEnLista.forEach(nodo=>{
+    desplegarCascadaHaciaNodo(idNodoTarget) {
+      this.$refs.nodosEnLista.forEach((nodo) => {
         nodo.desplegarIfTargetChild(idNodoTarget);
-      })
-    }
+      });
+    },
+    scrollToNodo(idNodo) {
+      const domSeleccionado = document.getElementById("nodoEnLista" + idNodo);
+      // console.log(`Seleccionado: ${domSeleccionado}`);
+      const topSeleccionado =
+        domSeleccionado.getBoundingClientRect().top -
+        document.getElementById("laListaNodos").getBoundingClientRect().top;
+      document.getElementById("laListaNodos").scrollTop = topSeleccionado;
+    },
+    centrarEnItem(idNodo) {
+      this.desplegarCascadaHaciaNodo(idNodo);
+      this.$nextTick(() => {
+        console.log(`Scrolling to nodo`);
+        this.scrollToNodo(idNodo);
+        console.log(`Emitiendo nodo seleccionado`);
+        if(this.idNodoSeleccionado!=idNodo){
+          this.$emit("nodoSeleccionado", idNodo);
+        }
+      });
+    },
   },
   computed: {
-    nodosTodos(){
-      return JSON.parse(JSON.stringify(this.todosNodos))
+    nodosTodos() {
+      return JSON.parse(JSON.stringify(this.todosNodos));
     },
     nodosPrimerNivel() {
       return this.nodosNested.filter(
@@ -75,20 +94,20 @@ export default {
         return nodo;
       });
     },
+    buscando() {
+      return this.busqueda && this.busqueda.length > 2;
+    },
   },
-  watch:{
-    idNodoSeleccionado(){
-      if(!this.idNodoSeleccionado || !this.busqueda || this.busqueda.length<2)return;
+  watch: {
+    idNodoSeleccionado(valor) {
+      if (!this.idNodoSeleccionado || !this.buscando) return;
       this.desplegarCascadaHaciaNodo(this.idNodoSeleccionado);
-      this.busqueda=null;
-      this.$nextTick(()=>{
-        const domSeleccionado=document.getElementById('nodoEnLista'+this.idNodoSeleccionado);
-        console.log(`Seleccionado: ${domSeleccionado}`);
-        const topSeleccionado=domSeleccionado.getBoundingClientRect().top-document.getElementById('laListaNodos').getBoundingClientRect().top;
-        document.getElementById("laListaNodos").scrollTop=topSeleccionado;
-      })
-    }
-  }
+      this.busqueda = null;
+      this.$nextTick(() => {
+        this.scrollToNodo(valor);
+      });
+    },
+  },
 };
 </script>
 
@@ -98,10 +117,9 @@ export default {
   left: 0%;
   background-color: rgba(95, 158, 160, 0.788);
   border: 2px solid rgb(22, 88, 90);
-  position: relative;  
+  position: relative;
   border-radius: 10px;
   padding: 10px;
-  
 }
 #botonAbrir {
   cursor: pointer;
@@ -118,7 +136,7 @@ export default {
   border-radius: 10px;
   padding: 10px;
 }
-#zonaBuscar{
+#zonaBuscar {
   display: flex;
   margin-bottom: 5px;
 }

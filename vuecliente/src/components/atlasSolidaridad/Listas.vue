@@ -42,6 +42,7 @@
       <lista-nodos
         :todosNodos="todosNodos"
         class="lista"
+        ref="listaNodos"
         v-show="listaSeleccionada === 'nodos' && abierta"
         :idNodoSeleccionado="idNodoSeleccionado"
         @centrarEnNodo="$emit('centrarEnNodo', $event)"
@@ -67,6 +68,7 @@ export default {
   name: "Listas",
   props: {
     todosNodos: Array,
+    idNodoSeleccionadoAtlas:String,
     cerrar: {
       type: Number,
       default: 0,
@@ -79,6 +81,11 @@ export default {
 
       idNodoSeleccionado: null,
     };
+  },
+  methods:{
+    desplegarCascadaHaciaNodo(idNodo){
+      this.$refs.listaNodos.desplegarCascadaHaciaNodo(idNodo);
+    }
   },
   computed:{
     nodoSeleccionado(){
@@ -113,6 +120,16 @@ export default {
     cerrar() {
       this.abierta = false;
     },
+    abierta(valor){
+      if(valor){
+        if(this.idNodoSeleccionadoAtlas){        
+          console.log(`Centrando en item`);
+        this.$nextTick(()=>{
+          this.$refs.listaNodos.centrarEnItem(this.idNodoSeleccionadoAtlas)          
+        })
+        }
+      }
+    }
   },
 };
 </script>

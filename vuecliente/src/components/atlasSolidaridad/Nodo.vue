@@ -480,11 +480,21 @@ export default {
     },
   },
   computed: {    
+    sizeEfectivo(){
+      const factorAmpliacion=1.2
+      if(this.seleccionado){
+        return {
+          x:Math.round(this.size.x*factorAmpliacion),
+          y:Math.round(this.size.y*factorAmpliacion),
+        }
+      }
+      return this.size;
+    },
     estiloPosicion() {
       if (this.montado) {
         return {
-          left: (this.posicion.x - this.size.x / 2) * this.factorZoom + "px",
-          top: (this.posicion.y - this.size.y / 2) * this.factorZoom + "px",
+          left: (this.posicion.x - this.sizeEfectivo.x / 2) * this.factorZoom + "px",
+          top: (this.posicion.y - this.sizeEfectivo.y / 2) * this.factorZoom + "px",
         };
       }
       return {
@@ -506,8 +516,8 @@ export default {
     },
     estiloSize() {
       return {
-        width: Math.round(this.size.x * this.factorZoom) + "px",
-        height: Math.round(this.size.y * this.factorZoom) + "px",
+        width: Math.round(this.sizeEfectivo.x * this.factorZoom) + "px",
+        height: Math.round(this.sizeEfectivo.y * this.factorZoom) + "px",
         fontSize: Math.round(14 * this.factorZoom) + "px",
         padding: Math.round(5 * this.factorZoom) + "px",
       };
@@ -589,6 +599,9 @@ export default {
     },
     estiloBolita() {
       var elColor = "rgba(105, 199, 199, 0.9)";
+      if(this.requeridoPorSeleccionado){
+        elColor = "rgb(24 197 197)";
+      }
       if (this.seleccionado) {
         elColor = "rgb(239 114 41)";
       }

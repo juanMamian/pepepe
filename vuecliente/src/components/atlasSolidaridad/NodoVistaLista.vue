@@ -33,7 +33,9 @@
             :class="{
               deshabilitado:
                 !esteNodo.responsables || esteNodo.responsables.length < 1,
+              subrayadoMorado:esteNodo.responsables && usuarioLogeado && esteNodo.responsables.includes(usuario.id)
             }"
+            
           />
           <img
             src="@/assets/iconos/ir.png"
@@ -208,7 +210,7 @@ export default {
   display: inline-block;
   margin-right: 5px;
   transform-origin: 25% 70%;
-  transition: transform 0.2s;
+  transition: transform 0.1s;
 }
 
 .zonaNombre {
@@ -221,10 +223,10 @@ export default {
   background-color: rgb(137, 197, 199);
 }
 .seleccionado {
-  background-color: rgb(139, 87, 139);
+  background-color: rgb(239 114 41);
 }
 .seleccionado:hover {
-  background-color: rgb(153, 83, 153);
+  background-color: rgb(240, 149, 97);
 }
 #botonesRight {
   margin-left: auto;
@@ -239,6 +241,9 @@ export default {
 }
 .botonRight:hover {
   background-color: rgb(145, 209, 211);
+}
+.subrayadoMorado{
+  background-color:  rgb(147 29 147 / 55%);
 }
 #sublista {
   padding-left: 10px;

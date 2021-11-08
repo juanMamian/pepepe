@@ -31,6 +31,7 @@
     <listas
       :todosNodos="todosNodos"
       :cerrar="cerrarListas"
+      :idNodoSeleccionadoAtlas="idNodoSeleccionado"
       ref="listas"
       @centrarEnNodo="
         centrarEnNodoById($event);
@@ -1505,6 +1506,7 @@ export default {
         this.idNodoPaVentanita = null;
         this.showingNombreNodoEmergente = false;
       } else {
+        // this.$refs.listas.desplegarCascadaHaciaNodo(nuevo);
         if (this.zoom < 65) {
           this.showingNombreNodoEmergente = true;
           this.hideNombreNodoEmergente();
