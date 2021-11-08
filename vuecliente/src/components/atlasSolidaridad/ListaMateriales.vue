@@ -1,5 +1,5 @@
 <template>
-  <div id="listaMateriales">
+  <div id="listaMateriales" class="lista">
     <info-material
       v-for="material of todosMateriales"
       v-show="!idNodoSeleccionado || idNodoSeleccionado===material.idTrabajoParent || descendientesNodoSeleccionado.includes(material.idTrabajoParent)"
@@ -53,8 +53,7 @@ export default {
   max-height: 85%;
   padding: 10px 0px;
   border-radius: 10px;
-  background-color: rgba(95, 158, 160, 0.788);
-  border: 2px solid rgb(22, 88, 90);
+  
   overflow-y:scroll ;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="nodoVistaLista">
+  <div class="nodoVistaLista" v-if="mostrandoNodosCompletados || esteNodo.estadoDesarrollo!='completado'">
     <div
       class="elementoLista"
       v-show="!busqueda || busqueda.length < 2 || buscado || childrenBuscados"
@@ -78,6 +78,7 @@
           :mostrarColoresCompletado="seleccionado"
           :buscandoNodosUsuarioResponsable="buscandoNodosUsuarioResponsable"
           :buscando="buscando"
+          :mostrandoNodosCompletados="mostrandoNodosCompletados"
           @centrarEnNodo="$emit('centrarEnNodo', $event)"
           @nodoSeleccionado="$emit('nodoSeleccionado', $event)"
         />
@@ -102,6 +103,7 @@ export default {
     idNodoSeleccionado: String,
     mostrarColoresCompletado: Boolean,
     buscandoNodosUsuarioResponsable:Boolean,
+    mostrandoNodosCompletados: Boolean,
   },
   data() {
     return {

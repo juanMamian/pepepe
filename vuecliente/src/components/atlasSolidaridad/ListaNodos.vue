@@ -23,6 +23,9 @@
         "
       ></div>
     </div>
+    <div id="barraConfiguracionListaNodos">
+      <div class="botonConfiguracion" id="botonMostrarCompletados" @click="mostrandoNodosCompletados=!mostrandoNodosCompletados" :style="[{backgroundColor: mostrandoNodosCompletados?'green':'transparent'}]" :title="mostrandoNodosCompletados?'Ocultar nodos completados': 'Mostrar nodos completados'"></div>
+    </div>
     <div id="laListaNodos">
       <nodo-vista-lista
         v-for="nodoPrimerNivel of nodosPrimerNivel"
@@ -34,6 +37,7 @@
         :idNodoSeleccionado="idNodoSeleccionado"
         :buscandoNodosUsuarioResponsable="buscandoNodosUsuarioResponsable"
         :buscando="buscando"
+        :mostrandoNodosCompletados="mostrandoNodosCompletados"
         @centrarEnNodo="$emit('centrarEnNodo', $event)"
         @nodoSeleccionado="$emit('nodoSeleccionado', $event)"
       />
@@ -54,6 +58,7 @@ export default {
     return {
       busqueda: null,
       buscandoNodosUsuarioResponsable: false,
+      mostrandoNodosCompletados:false,
     };
   },
   methods: {
@@ -141,11 +146,9 @@ export default {
 #listaNodos {
   top: 1%;
   left: 0%;
-  background-color: rgba(95, 158, 160, 0.788);
-  border: 2px solid rgb(22, 88, 90);
   position: relative;
   border-radius: 10px;
-  padding: 10px;
+  padding: 10px 0px;
 }
 #botonAbrir {
   cursor: pointer;
@@ -166,6 +169,7 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 5px;
+  padding: 3px 10px;
 }
 #botonBuscar {
   cursor: pointer;
@@ -179,6 +183,17 @@ export default {
   height: 16px;
   border-radius: 50%;
   cursor: pointer;
+}
+#barraConfiguracionListaNodos{
+  padding: 3px 10px;
+}
+.botonConfiguracion{
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid green;
+  background-color: green;
+  cursor:pointer;
 }
 #laListaNodos {
   height: 85%;

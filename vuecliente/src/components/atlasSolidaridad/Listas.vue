@@ -143,6 +143,7 @@ export default {
   z-index: 50;
   height: 80%;
   padding: 10px;
+
 }
 #barraSelectoresListas {
   display: flex;
@@ -176,6 +177,8 @@ export default {
 }
 .lista {
   height: 100%;
+  background-color: rgb(184, 184, 184);
+  border: 2px solid rgb(82, 82, 82);
 }
 #botonCerrarListas{
   background-color: white;
