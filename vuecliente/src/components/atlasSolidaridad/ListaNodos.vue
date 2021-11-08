@@ -15,6 +15,13 @@
         alt="Buscar"
         width="20px"
       />
+      <div
+        id="activarNodosUsuarioResponsable"
+        :style="[estiloBotonBuscarNodosUsuario]"
+        @click="
+          buscandoNodosUsuarioResponsable = !buscandoNodosUsuarioResponsable
+        "
+      ></div>
     </div>
     <div id="laListaNodos">
       <nodo-vista-lista
@@ -25,6 +32,8 @@
         :esteNodo="nodoPrimerNivel"
         :busqueda="busqueda"
         :idNodoSeleccionado="idNodoSeleccionado"
+        :buscandoNodosUsuarioResponsable="buscandoNodosUsuarioResponsable"
+        :buscando="buscando"
         @centrarEnNodo="$emit('centrarEnNodo', $event)"
         @nodoSeleccionado="$emit('nodoSeleccionado', $event)"
       />
@@ -44,6 +53,7 @@ export default {
   data() {
     return {
       busqueda: null,
+      buscandoNodosUsuarioResponsable: false,
     };
   },
   methods: {
@@ -71,7 +81,7 @@ export default {
         console.log(`Scrolling to nodo`);
         this.scrollToNodo(idNodo);
         console.log(`Emitiendo nodo seleccionado`);
-        if(this.idNodoSeleccionado!=idNodo){
+        if (this.idNodoSeleccionado != idNodo) {
           this.$emit("nodoSeleccionado", idNodo);
         }
       });
@@ -95,7 +105,17 @@ export default {
       });
     },
     buscando() {
-      return this.busqueda && this.busqueda.length > 2;
+      return (
+        this.buscandoNodosUsuarioResponsable ||
+        (this.busqueda && this.busqueda.length > 2)
+      );
+    },
+    estiloBotonBuscarNodosUsuario() {
+      return {
+        backgroundColor: this.buscandoNodosUsuarioResponsable
+          ? "purple"
+          : "rgba(128, 0, 128, 0.327)",
+      };
     },
   },
   watch: {
@@ -103,10 +123,16 @@ export default {
       if (!this.idNodoSeleccionado || !this.buscando) return;
       this.desplegarCascadaHaciaNodo(this.idNodoSeleccionado);
       this.busqueda = null;
+      this.buscandoNodosUsuarioResponsable = false;
       this.$nextTick(() => {
         this.scrollToNodo(valor);
       });
     },
+    buscando(valor){
+      if(valor){
+        this.$emit("nodoSeleccionado", null);
+      }
+    }
   },
 };
 </script>
@@ -138,6 +164,7 @@ export default {
 }
 #zonaBuscar {
   display: flex;
+  align-items: center;
   margin-bottom: 5px;
 }
 #botonBuscar {
@@ -146,6 +173,12 @@ export default {
 }
 #botonBuscar:hover {
   background-color: rgba(128, 128, 128, 0.356);
+}
+#activarNodosUsuarioResponsable {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
 }
 #laListaNodos {
   height: 85%;

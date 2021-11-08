@@ -9,6 +9,7 @@
         :class="{ seleccionado }"
         @click="$emit('nodoSeleccionado', esteNodo.id)"
         :style="[colorNombre]"
+        v-show="!buscando || buscado"
       >
         <div
           class="trianguloBullet"
@@ -75,6 +76,8 @@
           :idNodoSeleccionado="idNodoSeleccionado"
           :id="'nodoEnLista' + nodo.id"
           :mostrarColoresCompletado="seleccionado"
+          :buscandoNodosUsuarioResponsable="buscandoNodosUsuarioResponsable"
+          :buscando="buscando"
           @centrarEnNodo="$emit('centrarEnNodo', $event)"
           @nodoSeleccionado="$emit('nodoSeleccionado', $event)"
         />
@@ -95,8 +98,10 @@ export default {
   props: {
     esteNodo: Object,
     busqueda: String,
+    buscando:Boolean,
     idNodoSeleccionado: String,
     mostrarColoresCompletado: Boolean,
+    buscandoNodosUsuarioResponsable:Boolean,
   },
   data() {
     return {
@@ -151,6 +156,16 @@ export default {
     },
     matchBusqueda() {
       var puntaje = 0;
+      if(this.buscandoNodosUsuarioResponsable){
+        if(this.esteNodo.responsables && this.usuarioLogeado && this.esteNodo.responsables.includes(this.usuario.id)){
+          if(this.palabrasBuscadas.length<1){
+            puntaje++;
+          }
+        }
+        else{
+          return 0
+        }
+      }
       this.palabrasBuscadas.forEach((palabra) => {
         let re = new RegExp(palabra, "gi");
         let puntos = (this.textoRelevanteBusqueda.match(re) || []).length;
@@ -177,12 +192,12 @@ export default {
         }
       }
       if (this.buscado) {
-        backgroundColor = "tomato";
+        backgroundColor = "#989898";
       }
       return {backgroundColor};
     },
     childrenBuscados() {
-      if (!this.busqueda || this.busqueda.trim() < 2) return false;
+      if ((!this.busqueda || this.busqueda.trim() < 2) && !this.buscandoNodosUsuarioResponsable) return false;
       if (this.$refs.nodosChildren) {
         return this.$refs.nodosChildren.some(
           (c) => c.buscado || c.childrenBuscados
