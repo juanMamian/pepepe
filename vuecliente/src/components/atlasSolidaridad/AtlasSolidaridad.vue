@@ -193,8 +193,7 @@
             !idsNodosRequeridosSeleccionado.includes(nodo.id) &&
             !idsNodosRequierenSeleccionado.includes(nodo.id)
           "
-          :childSeleccionado="nodosChildrenSeleccionado.includes(nodo.id)"
-          :parentDeSeleccionado="idNodoParentNodoSeleccionado === nodo.id"
+          :childSeleccionado="nodosChildrenSeleccionado.includes(nodo.id)"          
           :todosNodos="nodosTodos"
           v-show="idsNodosVisibles.includes(nodo.id)"
           @meMovi="redibujarEnlacesNodos++"
@@ -1369,18 +1368,7 @@ export default {
     },
     nodoSeleccionado() {
       return this.nodosTodos.find((n) => n.id === this.idNodoSeleccionado);
-    },
-    idNodoParentNodoSeleccionado() {
-      if (!this.nodoSeleccionado || !this.nodoSeleccionado.nodoParent)
-        return null;
-
-      const nodoParent = this.todosNodos.find(
-        (n) => n.id === this.nodoSeleccionado.nodoParent.idNodo
-      );
-
-      if (!nodoParent) return null;
-      return nodoParent.id;
-    },
+    },    
     usuarioAdministradorNodoSeleccionado() {
       if (!this.usuario || !this.usuario.id) return false;
       if (!this.nodoSeleccionado) return false;

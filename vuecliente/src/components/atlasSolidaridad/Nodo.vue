@@ -14,7 +14,7 @@
   >
     <div id="zonaArrastre" v-show="agarrado"></div>
 
-    <div id="bolita" :style="[estiloBolita]">
+    <div id="bolita" :style="[estiloBolita, estiloOpacidad]">
       <img
         v-if="esteNodo.__typename === 'Objetivo'"
         src="@/assets/iconos/iconoObjetivo.png"
@@ -29,12 +29,7 @@
         alt="Nodo"
         class="iconoFondo"
       />
-    </div>
-    <div
-      class="aureola"
-      id="aureolaParentSeleccionado"
-      v-show="parentDeSeleccionado"
-    ></div>
+    </div>   
     <img
       src="@/assets/iconos/archivo.png"
       v-show="plegado"
@@ -54,8 +49,7 @@
     />
     <div
       id="zonaNombre"
-      :style="[estiloCartelNombre, colorCartelNombre]"
-      :class="{ transparentoso }"
+      :style="[estiloCartelNombre, colorCartelNombre, estiloOpacidad]"      
     >
       <div id="nombre" draggable="false">
         <!-- <img
@@ -161,7 +155,6 @@ export default {
     usuarioAdministradorNodoSeleccionado: Boolean,
     usuarioResponsableNodoSeleccionado: Boolean,
     childSeleccionado: Boolean,
-    parentDeSeleccionado: Boolean,
     idsNodosPlegados: Array,
   },
   data() {
@@ -184,8 +177,8 @@ export default {
       widthBase: 150,
       heightBase: 100,
       size: {
-        x: 40,
-        y: 40,
+        x: 50,
+        y: 50,
       },
       enviandoQueryGeneral: false,
       enviandoQueryPlegar: false,
@@ -518,9 +511,13 @@ export default {
       return {
         width: Math.round(this.sizeEfectivo.x * this.factorZoom) + "px",
         height: Math.round(this.sizeEfectivo.y * this.factorZoom) + "px",
-        fontSize: Math.round(14 * this.factorZoom) + "px",
-        padding: Math.round(5 * this.factorZoom) + "px",
+        fontSize: Math.round(14 * this.factorZoom) + "px",        
       };
+    },
+    estiloOpacidad(){
+      return {
+        opacity: !this.idNodoSeleccionado || this.idNodoSeleccionado===this.esteNodo.id || this.requeridoPorSeleccionado? '1': '0.2'
+      }
     },
     seleccionado() {
       return (
@@ -607,8 +604,12 @@ export default {
       }
 
       var borde = "";
+      
       if (this.usuarioResponsable) {
         borde = Math.round(3 * this.factorZoom) + "px dotted purple";
+      }
+      if(this.requeridoPorSeleccionado){
+        borde=Math.round(3 * this.factorZoom)+"px solid rgb(239 114 41)"
       }
       return {
         backgroundColor: elColor,

@@ -1,5 +1,5 @@
 <template>
-  <div class="enlacesNodo" v-show="nodoVisible" :style="[estiloPosicion]">
+  <div class="enlacesNodo" v-show="nodoVisible" :style="[estiloPosicion, {opacity: !nodoSeleccionado || nodoSeleccionado.id===esteNodo.id?'1':'0.2'}]">
     <transition-group name="fade" tag="div">
       <div
         class="vinculo vinculoGris"
