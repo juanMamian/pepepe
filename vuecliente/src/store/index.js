@@ -1,6 +1,8 @@
 import Vue from "vue"
 import Vuex from "vuex"
-import { apolloClient } from "../apollo"
+import { apolloClient } from "../apollo";
+import { router } from "../Router"
+
 Vue.use(Vuex);
 
 function parseJwt(token) {
@@ -20,18 +22,18 @@ export default new Vuex.Store({
             username: null,
             permisos: [],
             id: null,
-            atlas:{
-                centroVista:null,
-                configuracion:{
+            atlas: {
+                centroVista: null,
+                configuracion: {
                     modo: 'estudiante'
                 }
             },
-            foros:[]
+            foros: []
         },
         token: null,
 
-        refreshActividadEspecifica:0,
-        refreshNodoVentanitaAtlasSolidaridad:0,
+        refreshActividadEspecifica: 0,
+        refreshNodoVentanitaAtlasSolidaridad: 0,
 
     },
     mutations: {
@@ -48,7 +50,7 @@ export default new Vuex.Store({
 
             localStorage.setItem("pepepe_usuario", usuarioLS);
             localStorage.setItem("token", token);
-
+            router.push("/")
         },
         deslogearse(state) {
             localStorage.clear();
@@ -59,46 +61,48 @@ export default new Vuex.Store({
 
                 state.token = null
             apolloClient.cache.data.clear();
+            router.push("/");
+
         },
 
-        refreshActividadEspecifica(state){
+        refreshActividadEspecifica(state) {
             state.refreshActividadEspecifica++;
         },
-        refreshNodoVentanitaAtlasSolidaridad(state){
+        refreshNodoVentanitaAtlasSolidaridad(state) {
             state.refreshNodoVentanitaAtlasSolidaridad++;
         },
 
-        setCentroVistaAtlas(state, nuevoCentro){
-            state.usuario.atlas.centroVista=nuevoCentro;
+        setCentroVistaAtlas(state, nuevoCentro) {
+            state.usuario.atlas.centroVista = nuevoCentro;
         },
 
-        setInfoForosUsuario(state, foros){
-            state.usuario.foros=foros;
+        setInfoForosUsuario(state, foros) {
+            state.usuario.foros = foros;
         },
 
-        setRespuestasLeidasConversacionUsuario(state, datos){
-            var infoForo=state.usuario.foros.find(f=>f.idForo==datos.idForo);
-            if(!infoForo){
-                var nuevoInfoForo={
-                    idForo:datos.idForo,
-                    conversaciones:[],
-                    __typename:"InfoForosUsuario"
+        setRespuestasLeidasConversacionUsuario(state, datos) {
+            var infoForo = state.usuario.foros.find(f => f.idForo == datos.idForo);
+            if (!infoForo) {
+                var nuevoInfoForo = {
+                    idForo: datos.idForo,
+                    conversaciones: [],
+                    __typename: "InfoForosUsuario"
                 };
                 state.usuario.foros.push(nuevoInfoForo);
-                infoForo=state.usuario.foros.find(f=>f.idForo==datos.idForo);
+                infoForo = state.usuario.foros.find(f => f.idForo == datos.idForo);
             }
-            
 
-            var infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==datos.idConversacion);
-            if(!infoConversacion){
-                var nuevoInfoConversacion={
-                    idConversacion:datos.idConversacion,                    
-                    __typename:"InfoConversacionesUsuario"
+
+            var infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == datos.idConversacion);
+            if (!infoConversacion) {
+                var nuevoInfoConversacion = {
+                    idConversacion: datos.idConversacion,
+                    __typename: "InfoConversacionesUsuario"
                 }
                 infoForo.conversaciones.push(nuevoInfoConversacion);
-                infoConversacion=infoForo.conversaciones.find(c=>c.idConversacion==datos.idConversacion);
+                infoConversacion = infoForo.conversaciones.find(c => c.idConversacion == datos.idConversacion);
             }
-            infoConversacion.respuestasLeidas=datos.respuestasLeidas;                        
+            infoConversacion.respuestasLeidas = datos.respuestasLeidas;
         }
     }
 });

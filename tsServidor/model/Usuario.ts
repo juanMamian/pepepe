@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { EsquemaVinculosNodosSolidaridad } from "./atlasSolidaridad/VinculosNodosSolidaridad";
 
 export const permisosDeUsuario = [
     "usuario",
@@ -210,7 +211,7 @@ const esquemaUsuario = new mongoose.Schema({
                 default: 0
             }
         },
-        idsNodosPlegados:{
+        idsNodosDesplegados:{
             type:[String],
             default:[]
         }
@@ -254,6 +255,68 @@ const esquemaUsuario = new mongoose.Schema({
                 default:[]                
             }
         }]
+    },
+    vinculos: {
+        type: [EsquemaVinculosNodosSolidaridad],        
+        default: []
+    },
+    coords: {
+        x: {
+            type: Number,
+            required: true,
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
+        },
+        y: {
+            type: Number,
+            required: true,
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
+        }
+    },
+    autoCoords: {
+        x: {
+            type: Number,
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
+        },
+        y: {
+            type: Number,
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
+        }
+    },
+    fuerzaCentroMasa: {
+        fuerza: {
+            type: Number,
+            default: 0
+        },
+        direccion: {
+            type: Number,
+            default: 0
+        }
+    },
+    fuerzaColision: {
+        fuerza: {
+            type: Number,
+            default: 0
+        },
+        direccion: {
+            type: Number,
+            default: 0
+        }
     }
 
 });

@@ -1,0 +1,512 @@
+<template>
+  <div class="diaCalendario" :class="{ abierto }">
+    <div id="barraSuperior">
+      <div
+        id="bloqueMovil"
+        :style="[offsetNombreDia]"
+        @click="abierto = !abierto"
+      >
+        <div
+          class="trianguloBullet"
+          :style="[
+            {
+              transform: abierto ? 'rotate(90deg)' : '',
+            },
+          ]"
+        ></div>
+        <div id="nombreDia" :class="{ hoy }">
+          {{ diaSemana }}
+        </div>
+        <div id="fechaDia">
+          {{ diaYMes }}
+        </div>
+        <div id="cantidadesEventos">
+          {{
+            cantidadEventosRelevantes
+              ? "(" + cantidadEventosRelevantes + ")"
+              : ""
+          }}
+        </div>
+      </div>
+    </div>
+    <div
+      id="contenedorEventos"
+      ref="contenedorEventos"
+      :style="[estiloSizeContenedorEventos]"
+      v-show="abierto"
+      @click.self="clickContenedorEventos"
+    >
+      <evento-publico-calendario
+        :horaPx="horaPx"
+        v-for="eventoPublico of eventosPublicosVisibles"
+        :key="eventoPublico.id"
+        :esteEventoPublico="eventoPublico"
+        :extranjero="idParent && idParent != eventoPublico.idParent"
+        :seleccionado="idEventoSeleccionado === eventoPublico.id"
+        :modoEventosPublicosExtranjeros="modoEventosPublicosExtranjeros"
+        :infoOffset="indiceOffset[eventoPublico.id]"
+        @meElimine="$emit('eventoEliminado', eventoPublico)"
+        @click.native="$emit('clickEnEvento', eventoPublico)"
+      />
+    </div>
+  </div>
+</template>
+
+<script>
+import gql from "graphql-tag";
+import { fragmentoEventoPublico } from "./fragsCalendario.js";
+import EventoPublicoCalendario from "./EventoPublicoCalendario.vue";
+
+const QUERY_EVENTOS_PUBLICOS_DIA = gql`
+  query ($dateInicioDia: Date!) {
+    eventosPublicosDia(dateInicioDia: $dateInicioDia) {
+      ...fragEventoPublico
+    }
+  }
+  ${fragmentoEventoPublico}
+`;
+
+export default {
+  components: { EventoPublicoCalendario },
+  name: "DiaCalendario",
+  apollo: {
+    eventosPublicosDia: {
+      query: QUERY_EVENTOS_PUBLICOS_DIA,
+      variables() {
+        return {
+          dateInicioDia: this.esteDia.date,
+        };
+      },
+      skip() {
+        return (
+          !this.somedayAbierto &&
+          this.esteDia.date.getTime() + 86400000 < new Date()
+        );
+      },
+    },
+  },
+  props: {
+    hoy: Boolean,
+    esteDia: Object,
+    eventoSiendoCreado: Object,
+    horaPx: Number,
+    scrollXCalendario: Number,
+    idParent: String,
+    idEventoSeleccionado: String,
+    idUsuarioTarget: String,
+    tipoParent: String,
+    enfasis: String,
+    modoEventosPublicosExtranjeros: String,
+  },
+  data() {
+    return {
+      eventosPublicosDia: [],
+      eventosPersonalesDia: [],
+
+      abierto: false,
+      somedayAbierto: false,
+
+      creandoEvento: false,
+    };
+  },
+  methods: {
+    clickContenedorEventos(e) {
+      console.log(`Click en el contenedor de eventos`);
+      if (this.eventoSiendoCreado) {
+        const margen = 60 * 60000; //60 minutos
+        var infoNuevoEvento = JSON.parse(
+          JSON.stringify(this.eventoSiendoCreado)
+        );
+        this.$emit("iniciaCreacionEvento");
+        const posContenedorEventos =
+          this.$refs.contenedorEventos.getBoundingClientRect();
+        const posX = e.pageX - posContenedorEventos.left;
+
+        const timeClicked = posX / this.horaPx;
+        var minutosClicked = Math.round(
+          (timeClicked - Math.floor(timeClicked)) * 60
+        );
+        minutosClicked = Math.floor(minutosClicked / 15) * 15; ///Set en múltiplos de 15
+
+        const timeClickedFormatted = {
+          horas: Math.floor(timeClicked),
+          minutos: minutosClicked,
+        };
+        const dateClicked =
+          Date.parse(this.esteDia.date) +
+          timeClickedFormatted.horas * 60 * 60000 +
+          timeClickedFormatted.minutos * 60000;
+        console.log(
+          `En ${posX} -> ${timeClickedFormatted.horas}: ${timeClickedFormatted.minutos}`
+        );
+
+        console.log(
+          `Date centralh: ${
+            Date.parse(this.esteDia.date) +
+            timeClickedFormatted.horas +
+            timeClickedFormatted.minutos * 60000
+          }`
+        );
+
+        var dateInicio = dateClicked;
+        var dateFinal = dateClicked + margen;
+
+        console.log(
+          `Quedará entre: ${new Date(dateInicio)} y ${new Date(dateFinal)}`
+        );
+
+        infoNuevoEvento.horarioInicio = new Date(dateInicio);
+        infoNuevoEvento.horarioFinal = new Date(dateFinal);
+        if (infoNuevoEvento.tipoEvento === "publico") {
+          delete infoNuevoEvento.tipoEvento;
+          this.crearEventoPublico(infoNuevoEvento);
+        }
+      } else if (this.idEventoSeleccionado) {
+        this.$emit("desSeleccionDeEvento");
+      }
+    },
+    addEventoCache(evento) {
+      console.log(`Dia ${this.esteDia.date} revisa si evento que empieza en ${evento.horarioInicio} le pertenece`);
+      const millisInicioEvento=new Date(evento.horarioInicio).getTime();
+      const millisInicioDia=this.esteDia.date.getTime();
+      const millisFinalDia=this.esteDia.date.getTime()+86400000;
+      
+      if(millisInicioEvento<millisInicioDia || millisInicioEvento>millisFinalDia){
+        return
+      }
+      const tipoEvento=evento.__typename.charAt(0).toLowerCase()+evento.__typename.slice(1);
+      var infoQuery = null;
+      if (tipoEvento === "eventoPublico") {
+        infoQuery = {
+          query: QUERY_EVENTOS_PUBLICOS_DIA,
+          variables: {
+            dateInicioDia: this.esteDia.date,
+          },
+        };
+      }
+      else if(tipoEvento==='eventoPersonal'){
+        console.log(`add cache eventos personales not developed`);
+        return 
+      }
+      else{
+        console.log(`Tipo evento ${tipoEvento} no reconocido`);
+        return;
+      }
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        ...infoQuery
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      var listaEventosCache=null;
+      if(tipoEvento==='eventoPublico'){
+        listaEventosCache=nuevoCache.eventosPublicosDia;
+      }
+      else if(tipoEvento==='eventoPersonal'){
+        listaEventosCache=nuevoCache.eventosPersonalesDia;
+      }
+      const indexE = listaEventosCache.findIndex(
+        (e) => e.id === evento.id
+      );
+      if (indexE === -1) {
+        listaEventosCache.push(evento);
+
+        store.writeQuery({
+          ...infoQuery,
+          data: nuevoCache,
+        });
+      }
+    },
+    crearEventoPublico(infoNuevoEvento) {
+      // console.log(`Creando un evento`);
+      this.creandoEvento = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($infoNuevoEvento: InputCrearEventoPublico) {
+              crearEventoPublico(infoNuevoEvento: $infoNuevoEvento) {
+                ...fragEventoPublico
+              }
+            }
+            ${fragmentoEventoPublico}
+          `,
+          variables: {
+            infoNuevoEvento,
+          },
+        })
+        .then(({ data: { crearEventoPublico } }) => {
+          this.creandoEvento = false;
+
+          this.$emit("eventoCreado", crearEventoPublico)
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.creandoEvento = false;
+        });
+    },
+    deleteEventoCache(evento) {
+      console.log(`Dia calendario busca evento ${evento.nombre} para eliminarlo`);
+      const tipoEvento=evento.__typename.charAt(0).toLowerCase()+evento.__typename.slice(1);
+      var infoQuery = null;
+      if (tipoEvento === "eventoPublico") {
+        infoQuery = {
+          query: QUERY_EVENTOS_PUBLICOS_DIA,
+          variables: {
+            dateInicioDia: this.esteDia.date,
+          },
+        };
+      }
+      else if(tipoEvento==='eventoPersonal'){
+        console.log(`delete cache eventos personales not developed`);
+        return 
+      }
+      else{
+        console.log(`Tipo evento ${tipoEvento} no reconocido`);
+        return;
+      }
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        ...infoQuery
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      var listaEventosCache=null;
+      if(tipoEvento==='eventoPublico'){
+        listaEventosCache=nuevoCache.eventosPublicosDia;
+      }
+      else if(tipoEvento==='eventoPersonal'){
+        listaEventosCache=nuevoCache.eventosPersonalesDia;
+      }
+      const indexE = listaEventosCache.findIndex(
+        (e) => e.id === evento.id
+      );
+      if (indexE > -1) {
+        listaEventosCache.splice(indexE, 1);
+
+        store.writeQuery({
+          ...infoQuery,
+          data: nuevoCache,
+        });
+      }
+    },
+  },
+  computed: {
+    diaSemana() {
+      const nombres = [
+        "Domingo",
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado",
+        "Domingo",
+      ];
+      return nombres[this.esteDia.date.getDay()];
+    },
+    diaYMes() {
+      const meses = [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre",
+      ];
+
+      return (
+        this.esteDia.date.getDate() +
+        " de " +
+        meses[this.esteDia.date.getMonth()]
+      );
+    },
+    eventosPublicosVisibles() {
+      if (this.modoEventosPublicosExtranjeros === "invisibles") {
+        return this.eventosPublicosDia.filter(
+          (e) => e.idParent === this.idParent
+        );
+      } else {
+        return this.eventosPublicosDia;
+      }
+    },
+    estiloSizeContenedorEventos() {
+      const alturaEventos = Object.values(this.indiceOffset).reduce(
+        (acc, a) => (a.top + a.height > acc ? a.top + a.height : acc),
+        0
+      );
+
+      return {
+        width: this.horaPx * 24 + "px",
+        height: alturaEventos + 5 + "px",
+      };
+    },
+    offsetNombreDia() {
+      const left = 10 + this.scrollXCalendario;
+      return {
+        left: left + "px",
+      };
+    },
+    cantidadEventosPublicos() {
+      return this.eventosPublicosDia.length;
+    },
+    cantidadEventosRelevantes() {
+      if (this.enfasis === "eventosPublicos") {
+        if (!this.idParent) {
+          return this.cantidadEventosPublicos;
+        } else {
+          return this.eventosPublicosDia.filter(
+            (p) => p.idParent === this.idParent
+          ).length;
+        }
+      } else if (this.enfasis === "eventosPersonales") {
+        return this.eventosPersonalesDia.length;
+      } else {
+        return 0;
+      }
+    },
+    indiceOffset() {
+      const sizeBarra = 15;
+      const sizeBloque = 100;
+      const marginRows = 5;
+      // console.log(
+      //   `%c Iniciando calculo de indice de offset`,
+      //   "background: #222; color: #bada55"
+      // );
+      var indice = {};
+
+      if (!this.usuarioLogeado) {
+        console.log(`Cancelando índice offset`);
+        return null;
+      }
+      var listaEventosPublicos = JSON.parse(
+        JSON.stringify(this.eventosPublicosVisibles)
+      );
+      listaEventosPublicos.sort((a, b) => {
+        var res = 0;
+        if (a.idAdministrador === this.usuario.id) {
+          res++;
+        } else if (
+          this.eventosPersonalesDia.some((e) => e.idEventoMarco === a.id)
+        ) {
+          res++;
+        }
+        if (b.idAdministrador === this.usuario.id) {
+          res--;
+        } else if (
+          this.eventosPersonalesDia.some((e) => e.idEventoMarco === b.id)
+        ) {
+          res--;
+        }
+        return -res;
+      });
+      // console.log(
+      //   `Eventos sorted: ${listaEventosPublicos.map((e) => e.nombre)}`
+      // );
+
+      listaEventosPublicos.forEach((ev) => {
+        // console.log(`Iterando en ${ev.nombre}`);
+        let heightEvento = sizeBloque;
+        if (
+          this.enfasis === "eventosPublicos" &&
+          ev.idParent != this.idParent &&
+          this.modoEventosPublicosExtranjeros != "full"
+        ) {
+          heightEvento = sizeBarra;
+        }
+        // console.log(
+        //   `cantidad de entries en el indice ${
+        //     Object.entries(indice).map((e) => e[1]).length
+        //   }`
+        // );
+        let eventosColision = Object.entries(indice)
+          .map((e) => e[1])
+          .filter((t) => {
+            // console.log(`Comparando con ${t.evento.nombre}`);
+            const inicioDentro =
+              t.evento.horarioInicio > ev.horarioInicio &&
+              t.evento.horarioInicio < ev.horarioFinal;
+            const finalDentro =
+              t.evento.horarioFinal > ev.horarioInicio &&
+              t.evento.horarioFinal < ev.horarioFinal;
+
+            const sobrepone =
+              t.evento.horarioInicio <= ev.horarioInicio &&
+              t.evento.horarioFinal >= ev.horarioFinal;
+
+            // console.log(`Inicio dentro: ${inicioDentro}`);
+            // console.log(`Final dentro: ${finalDentro}`);
+
+            const colision = inicioDentro || finalDentro || sobrepone;
+            // if (colision) {
+            //   console.log(`colision`);
+            // }
+            return colision;
+          });
+
+        // console.log(`${eventosColision.length} eventos en colisión`);
+
+        let bordeBotColision = eventosColision.reduce(
+          (acc, e) => (e.bordeBot > acc ? e.bordeBot : acc),
+          0
+        );
+
+        let top = bordeBotColision + marginRows;
+        // console.log(`Queda en ${top} + ${heightEvento}`);
+        indice[ev.id] = {
+          evento: ev,
+          top: top,
+          height: heightEvento,
+          bordeBot: top + heightEvento,
+        };
+      });
+      return indice;
+    },
+  },
+  watch: {
+    abierto(abierto) {
+      if (abierto) {
+        this.somedayAbierto = true;
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+#contenedorEventos {
+  min-height: 100px;
+  background-color: var(--grisHover);
+  padding: 20px 0px;
+  position: relative;
+}
+#barraSuperior {
+  display: flex;
+  font-family: Salsa, cursive;
+  align-items: center;
+  height: 25px;
+}
+#bloqueMovil {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+#nombreDia {
+  margin-right: 2vw;
+  font-size: 10px;
+}
+#nombreDia.hoy {
+  color: red;
+}
+#fechaDia {
+  font-size: 10px;
+  opacity: 0.5;
+}
+#cantidadesEventos {
+  margin-left: 10px;
+  font-size: 10px;
+}
+</style>

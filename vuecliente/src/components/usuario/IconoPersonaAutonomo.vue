@@ -166,6 +166,7 @@ export default {
   cursor: pointer;
   position: relative;
   border-radius: 50%;
+  margin-bottom: 50px;
   user-select: none;
 }
 

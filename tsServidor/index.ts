@@ -1,3 +1,4 @@
+import { PubSub } from 'graphql-subscriptions';
 import http from "http"
 import express, { Application, Request, Response, NextFunction } from "express"
 const app: Application = express();
@@ -11,6 +12,7 @@ const routesContenidosNodos=require("./routes/atlas/contenidosNodos");
 const routesCuentos=require("./routes/cuentos");
 import { iniciarMongoose } from "./mongoose";
 
+export const pubsub = new PubSub();
 
 const ejwt = require("express-jwt");
 import cors from "cors";

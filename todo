@@ -1,0 +1,7 @@
+-Que al eliminar un evento público, se actualizen los eventos personales que tenian ese evento público como marco.
+-Manejar el emit meRepetiPeriodicamente emitido por ela ventanaEventoPublico, hacer un refetch de querys de calendario.
+-Hacer un enum de graphQL type para periodoRepetir de los eventos.
+-Hacer un enum de graphQL type para tipoEvento de los eventos.
+-Verificar los sitios en donde se debe decidir qué hacer de acuerdo con el tipoEvento pasado al servidor.
+-En el mixinBasicoEventos hay demasiadas versiones de horarioLegible, depurar.
+-Restringir en el modelo de mongoose el campo horario final de los eventos para que no puedan durar mas de un límite.

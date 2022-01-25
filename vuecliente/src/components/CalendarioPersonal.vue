@@ -1,7 +1,5 @@
 <template>
   <div class="calendarioPersonal">
-    <br>
-      <div id="titulo">Mi Calendario</div>
       <calendario :configCalendario="{tipo:'personal'}"/>
   </div>
 </template>
@@ -20,10 +18,6 @@ export default{
     .calendarioPersonal{
 
     }
-    #titulo{
-        text-align: center;
-        font-size: 22px;
-        font-weight: bold;
-    }
+    
 
 </style>

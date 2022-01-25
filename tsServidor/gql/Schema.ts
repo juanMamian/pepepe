@@ -1,10 +1,10 @@
 const { ApolloServer, gql, PubSub } = require("apollo-server-express");
 import { typeDefs as tdNodos, resolvers as rNodos } from "./NodosConocimiento"
 import { typeDefs as tdUsuarios, resolvers as rUsuarios } from "./Usuarios"
-import { typeDefs as tdProyectos, resolvers as rProyectos } from "./Proyectos"
-import { typeDefs as tdTrabajos, resolvers as rTrabajos } from "./Trabajos"
 import { typeDefs as tdEventos, resolvers as rEventos } from "./Eventos"
 import { typeDefs as tdAtlases, resolvers as rAtlases } from "./Atlases"
+import { typeDefs as tdAtlasSolidaridad, resolvers as rAtlasSolidaridad } from "./AtlasSolidaridad"
+import { typeDefs as tdEspacios, resolvers as rEspacios } from "./Espacios"
 
 // import { typeDefs as tdObjetivos, resolvers as rObjetivos } from "./Objetivos"
 import { typeDefs as tdGruposEstudiantiles, resolvers as rGruposEstudiantiles } from "./GruposEstudiantiles"
@@ -43,8 +43,8 @@ const globalTypeDefs = gql`
 
 `;
 
-const typeDefs = [globalTypeDefs, tdNodos, tdUsuarios, tdProyectos, tdTrabajos, tdEventos,  tdGruposEstudiantiles, tdForos, tdCuentos, tdAtlases];
-const resolvers = merge({}, rNodos, rUsuarios, rProyectos, rTrabajos, rEventos, rGruposEstudiantiles, rForos, rCuentos, rAtlases);
+const typeDefs = [globalTypeDefs, tdNodos, tdUsuarios,  tdGruposEstudiantiles, tdForos, tdCuentos, tdAtlases, tdAtlasSolidaridad, tdEspacios, tdEventos];
+const resolvers = merge({}, rNodos, rUsuarios, rGruposEstudiantiles, rForos, rCuentos, rAtlases, rAtlasSolidaridad, rEspacios, rEventos);
 
 export const esquema = makeExecutableSchema({
     typeDefs,

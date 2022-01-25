@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-import {posicionAutomaticaSolidaridad} from "./posicionAutomaticaSolidaridad"
 import {posicionAutomaticaConocimiento} from "./posicionAutomaticaConocimiento"
 
 
@@ -25,7 +24,5 @@ db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
     console.log(`¡Base de datos conectada!`);
     dbConectada=true;
-    posicionAutomaticaSolidaridad();
-    posicionAutomaticaConocimiento();
 
 });

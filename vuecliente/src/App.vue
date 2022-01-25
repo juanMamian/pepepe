@@ -2,16 +2,27 @@
   <div id="app">
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
-      <img
-        id="botonDesplegarNav"
-        src="@/assets/iconos/menuMobile.png"
-        alt="Menu"
-        @click="mostrandoNav = !mostrandoNav"
-      />
-      <div id="botonesNavEnlaces" :class="{enlacesOcultos:!mostrandoNav}" @click="mostrandoNav=false">
-        <router-link
+      <div id="zonaIcono" @click="mostrandoNav = !mostrandoNav">
+        <img
+          id="botonDesplegarNav"
+          src="@/assets/iconos/stream.svg"
+          alt="Menu"
+          
+        />
+        <div id="logoPepepe">Pepepe</div>
+      </div>
+      <div
+        id="botonesNavEnlaces"
+        :class="{ enlacesOcultos: !mostrandoNav }"
+        @click="mostrandoNav = false"
+      >
+        <!-- <router-link
           to="/actividadesVirtuales2021"
-          v-if="usuarioLogeado == true && usuario.permisos && usuario.permisos.includes('maestraVida')"
+          v-if="
+            usuarioLogeado == true &&
+            usuario.permisos &&
+            usuario.permisos.includes('maestraVida')
+          "
         >
           <div
             class="botonNavBarra botonNav hoverNegro"
@@ -19,9 +30,16 @@
           >
             Actividades virtuales
           </div>
-        </router-link>
+        </router-link> -->
 
-        <router-link to="/foros" v-if="usuarioLogeado == true && usuario.permisos && usuario.permisos.includes('maestraVida')">
+        <router-link
+          to="/foros"
+          v-if="
+            usuarioLogeado == true &&
+            usuario.permisos &&
+            usuario.permisos.includes('maestraVida')
+          "
+        >
           <div
             class="botonNavBarra botonNav hoverNegro"
             id="navActividadesVirtuales"
@@ -30,33 +48,23 @@
           </div>
         </router-link>
 
-        <div id="bloqueProyectos" class="bloqueBotones" v-if="usuario && usuario.permisos && usuario.permisos.includes('maestraVida')">
+        <!-- <div
+          id="bloqueProyectos"
+          class="bloqueBotones"
+          v-if="
+            usuario &&
+            usuario.permisos &&
+            usuario.permisos.includes('maestraVida')
+          "
+        >
           <router-link to="/proyectos" v-if="usuarioLogeado == true">
             <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
               Grupos
             </div>
-          </router-link>
-          <!-- <div id="enlacesHijosProyectos" class="contenedorHijos">
-            <router-link to="/trabajos" v-if="usuarioLogeado == true">
-              <div
-                class="botonNavHijo botonNav hoverNegro botonNavHijo"
-                id="navTrabajos"
-              >
-                Trabajos
-              </div>
-            </router-link>
-            <router-link to="/materiales" v-if="usuarioLogeado == true">
-              <div
-                class="botonNavHijo botonNav hoverNegro botonNavHijo"
-                id="navMateriales"
-              >
-                Materiales
-              </div>
-            </router-link>
-          </div> -->
-        </div>
+          </router-link>       
+        </div> -->
 
-       <div id="bloqueSolidaridad" class="bloqueBotones">
+        <!-- <div id="bloqueSolidaridad" class="bloqueBotones">
           <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
             Solidaridad
           </div>
@@ -69,9 +77,8 @@
                 Atlas de solidaridad
               </div>
             </router-link>
-            
           </div>
-        </div>
+        </div> -->
 
         <div id="bloqueHerramientas" class="bloqueBotones">
           <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
@@ -112,7 +119,14 @@
             Personas
           </div>
         </router-link>
-
+        <router-link to="/espacios">
+          <div
+            class="botonNavBarra botonNav hoverNegro"
+            id="navActividadesVirtuales"
+          >
+            Espacios
+          </div>
+        </router-link>
         <router-link
           to="/registro"
           id="navRegistro"
@@ -168,7 +182,12 @@
                 <div class="botonesLogeado hoverNegro" id="Perfil">Perfil</div>
               </router-link>
               <router-link to="/calendarioPersonal">
-                <div class="botonesLogeado hoverNegro" id="botonCalendarioPersonal">Mi calendario</div>
+                <div
+                  class="botonesLogeado hoverNegro"
+                  id="botonCalendarioPersonal"
+                >
+                  Mi calendario
+                </div>
               </router-link>
               <div
                 class="botonesLogeado hoverNegro"
@@ -177,7 +196,6 @@
               >
                 Desconexion
               </div>
-              
             </div>
           </div>
         </template>
@@ -287,7 +305,7 @@ export default {
           }
         `,
         updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          var nuevoCache=JSON.parse(JSON.stringify(previousResult));
+          var nuevoCache = JSON.parse(JSON.stringify(previousResult));
           if (
             !nuevoCache.yo.notificaciones.some(
               (n) => n.id == data.nuevaNotificacion.id
@@ -345,7 +363,9 @@ export default {
       return {};
     },
     notificacionesOrdenadas: function () {
-      var lasNotificaciones = JSON.parse(JSON.stringify(this.yo.notificaciones));
+      var lasNotificaciones = JSON.parse(
+        JSON.stringify(this.yo.notificaciones)
+      );
       return lasNotificaciones.sort((a, b) => {
         return new Date(b.fecha) - new Date(a.fecha);
       });
@@ -354,7 +374,6 @@ export default {
   methods: {
     deslogeo() {
       this.$store.commit("deslogearse");
-      this.$router.push("/login");
     },
   },
   mounted() {
@@ -366,7 +385,7 @@ export default {
       let datosU = parseJwt(token);
       let secsActual = parseInt(Date.now() / 1000);
 
-      if(!datosU.version || datosU.version<1){
+      if (!datosU.version || datosU.version < 1) {
         console.log(`Versión de token caducada`);
         this.$store.commit("deslogearse");
         return;
@@ -384,6 +403,43 @@ export default {
 </script>
 
 <style>
+:root {
+  --mainColor: #f49e4c;
+
+  --atlasFondo: #12263a;
+  --atlasVerde: #4d8b31;
+  --atlasAmarillo: #ffc800;
+  --atlasAzul: #69c7c7;
+  --atlasFondoNodo: #a9d1d1;
+  --atlasNaranja: #ef7229;
+  --atlasMorado: #ba2c73;
+  --atlasGris: #929292;
+  --atlasParent: #3066be;
+
+  --atlasFilterFondo: invert(10%) sepia(55%) saturate(1034%) hue-rotate(174deg)
+    brightness(91%) contrast(91%);
+  --atlasFilterVerde: invert(41%) sepia(84%) saturate(349%) hue-rotate(57deg)
+    brightness(95%) contrast(89%);
+  --atlasFilterAmarillo: invert(79%) sepia(32%) saturate(4772%) hue-rotate(3deg)
+    brightness(108%) contrast(105%);
+  --atlasFilterAzul: invert(73%) sepia(20%) saturate(732%) hue-rotate(131deg)
+    brightness(92%) contrast(98%);
+  --atlasFilterNaranja: invert(53%) sepia(29%) saturate(1745%)
+    hue-rotate(340deg) brightness(96%) contrast(95%);
+  --atlasFilterMorado: invert(27%) sepia(24%) saturate(4772%) hue-rotate(301deg)
+    brightness(92%) contrast(95%);
+  --atlasFilterGris: invert(61%) sepia(0%) saturate(1316%) hue-rotate(210deg)
+    brightness(97%) contrast(81%);
+  --filterBlanco: invert(100%) sepia(100%) saturate(0%) hue-rotate(130deg)
+    brightness(106%) contrast(102%);
+
+  --paletaMain: #efae4a;
+  --paletaSelect: #cc3363;
+  --paletaFondo: #fffcf9;
+  --paletaVerde: #62c370;
+  --grisHover: rgba(128, 128, 128, 0.192);
+}
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;700&family=Salsa&display=swap");
 html {
   height: 100vh;
 }
@@ -391,14 +447,54 @@ body {
   margin: 0px;
   width: 100%;
   height: 100vh;
-
-  background: #edebe9 linear-gradient(to bottom, #dbd7d1, #edebe9 116px)
-    no-repeat;
+  background-color: #fffcf9;
   font-family: "Varela Round", sans-serif;
 }
-
+.contenedorControles {
+  display: flex;
+  padding: 5px 2%;
+  flex-direction: row-reverse;
+}
+.boton {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+.boton img {
+  height: 100%;
+}
+.boton svg {
+  height: 100%;
+}
+.contenedorBotonesCampo {
+  margin: 5px auto;
+  display: flex;
+  justify-content: center;
+}
+.botonGuardarCampo {
+  width: 15px;
+  cursor: pointer;
+  margin: 0px 5px;
+  opacity: 0.8;
+}
+#descripcion{
+  border: 2px solid var(--paletaMain);
+  border-radius: 7px;
+  padding:5px;
+}
 textarea {
   font-family: "Varela Round", sans-serif;
+  resize: vertical;
+}
+.inputNombreCosa {
+  background-color: rgba(255, 255, 255, 0.397);
+  font-family: Poppins, Helvetica, Arial, sans-serif;
+  padding: 5px;
+  border-style: solid;
+  border-color: rgb(139, 139, 139);
 }
 
 .hoverGris:hover {
@@ -470,7 +566,7 @@ input {
   opacity: 0.6;
 }
 
-.botonEquis{
+.botonEquis {
   width: 20px;
   height: 20px;
   cursor: pointer;
@@ -478,10 +574,10 @@ input {
   border-radius: 50%;
   position: absolute;
 }
-.botonEquis:hover{
+.botonEquis:hover {
   background-color: rgb(196, 73, 73);
 }
-.botonEquis>.linea1{
+.botonEquis > .linea1 {
   position: absolute;
   background-color: black;
   height: 2px;
@@ -490,7 +586,7 @@ input {
   top: 50%;
   transform: translateY(-50%) rotateZ(45deg);
 }
-.botonEquis>.linea2{
+.botonEquis > .linea2 {
   position: absolute;
   background-color: black;
   height: 80%;
@@ -498,6 +594,14 @@ input {
   top: 10%;
   left: 50%;
   transform: translateX(-50%) rotateZ(45deg);
+}
+.trianguloBullet {
+  border: 6px solid transparent;
+  border-left: 10px solid black;
+  align-self: center;
+  transform-origin: 25% 70%;
+  transition: transform 0.1s;
+  cursor: pointer;
 }
 </style>
 
@@ -509,27 +613,41 @@ input {
   grid-template-rows: 65px 1fr 5px;
 
   grid-template-columns: 1fr;
-  
+
   box-sizing: border-box;
   z-index: 0;
 }
-
+#navBar {
+  grid-column: 1/2;
+  grid-row: 1/2;
+  display: flex;
+  z-index: 100;
+  background-color: var(--mainColor);
+  position: relative;
+}
+#zonaIcono{
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
 #botonDesplegarNav {
   display: block;
   width: 35px;
   height: 35px;
   border-radius: 10px;
   padding: 10px;
-  background-color: rgb(228 129 36);
-  align-self: center;
 }
-#botonesNavEnlaces{
-  position: relative;
+#logoPepepe {
+  font-size: 18px;
+  font-family: Salsa, cursive;
+}
+#botonesNavEnlaces {
+  position: absolute;
   top: 100%;
-  left:-55px;
+  left: 0px;
   background-color: rgb(239, 174, 74);
 }
-.enlacesOcultos{
+.enlacesOcultos {
   display: none;
 }
 .router-link-active {
@@ -549,17 +667,7 @@ input {
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
     0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
-#navBar {
-  grid-column: 1/2;
-  grid-row: 1/2;
-  display: flex;
-  z-index: 100;
-  background: linear-gradient(
-    to right,
-    rgb(239, 174, 74) 0%,
-    rgb(243, 138, 58) 100%
-  );
-}
+
 #navLogged {
   position: relative;
 }
@@ -571,9 +679,9 @@ input {
   user-select: none;
   font-size: 15px;
   font-family: "Poppins", sans-serif;
-  color: white;
+  color: black;
   box-sizing: border-box;
-  background-color: rgb(239, 174, 74);
+  background-color: var(--mainColor);
 }
 .botonNavBarra {
   padding: 10px 10px;
@@ -633,33 +741,31 @@ input {
   position: relative;
 }
 
-
-.contenedorHijos {  
+.contenedorHijos {
   display: block;
-  
 }
 .botonNavHijo {
   padding-bottom: 15px;
 }
 
 @media only screen and (min-width: 768px) {
-  #app {
+  /* #app {
     grid-template-rows: 55px 1fr 5px;
   }
   #botonDesplegarNav {
     display: none;
   }
-  .enlacesOcultos{
+  .enlacesOcultos {
     display: block;
   }
-  #botonesNavEnlaces{
+  #botonesNavEnlaces {
     display: flex;
-    background-color:transparent;
+    background-color: transparent;
     top: 0px;
     left: 0px;
   }
-  .botonNav{
-    background-color:transparent;
+  .botonNav {
+    background-color: transparent;
     font-size: 18px;
     height: 100%;
   }
@@ -667,22 +773,22 @@ input {
     height: 100%;
     padding: 13px 15px;
   }
-  .botonNavHijo{
-    padding-left:15px;
+  .botonNavHijo {
+    padding-left: 15px;
   }
   .hoverNegro:hover {
-  background-color: rgba(0, 0, 0, 0.315);
+    background-color: rgba(0, 0, 0, 0.315);
   }
-  .contenedorHijos{
+  .contenedorHijos {
     display: none;
     position: absolute;
     top: 100%;
     left: 0%;
     width: 150px;
-    background-color:#f0a446 ;
+    background-color: #f0a446;
   }
   .bloqueBotones:hover > .contenedorHijos {
-  display: block;
-  }
+    display: block;
+  } */
 }
 </style>

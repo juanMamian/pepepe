@@ -5,7 +5,7 @@ import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloForo as Foro } from "../model/Foros/Foro"
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
 import { EsquemaVinculosNodosProyecto } from "../model/VinculosNodosProyecto";
-import { ModeloEvento as Evento } from "../model/Evento";
+import { ModeloEventoPublico as EventoPublico } from "../model/Evento";
 
 
 /*
@@ -57,12 +57,7 @@ type Vinculo{
     rol: String!
 }
 
-input vinculoInput{
-    id:ID,
-    tipo: String,
-    idRef: ID,
-    rol: String
-}
+
 
 type InfoArchivoContenidoNodo{
     nombre:String,
@@ -1147,9 +1142,9 @@ export const resolvers = {
             //Eliminar los eventos de esta clase
             console.log(`Eliminando eventos con idOrigen: ${idClase}`);
             try {
-                await Evento.deleteMany({idOrigen:idClase}).exec();
+                await EventoPublico.deleteMany({idOrigen:idClase}).exec();
             } catch (error) {
-                console.log(`Error buscando eventos con idOrigen: ${idClase} para eliminarlos`);
+                console.log(`Error buscando eventos publicos con idOrigen: ${idClase} para eliminarlos`);
             }
 
             try {

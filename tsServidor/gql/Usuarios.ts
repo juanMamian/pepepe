@@ -4,8 +4,6 @@ import { GraphQLDateTime } from "graphql-iso-date";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
-import { ModeloObjetivo as Objetivo } from "../model/Objetivo";
-import { ModeloTrabajo as Trabajo } from "../model/Trabajo"; 
 
 interface Usuario {
     username: string,
@@ -68,8 +66,9 @@ export const typeDefs = gql`
         colecciones:[ColeccionNodosAtlasConocimiento]
     }
     type InfoAtlasSolidaridad{
+        id:ID,
         coordsVista:Coords, 
-        idsNodosPlegados: [String]      
+        idsNodosDesplegados: [String]      
     }
     enum relacionUsuarioConocimiento{
         APRENDIENDO
@@ -105,12 +104,20 @@ export const typeDefs = gql`
         nodosConocimiento: [ConocimientoUsuario],
         atlas:infoAtlas,        
         atlasSolidaridad:InfoAtlasSolidaridad,
+        responsables:[String],
+        responsablesAmplio:[String],
+        administradores:[String],
         permisos:[String]
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
         notificaciones:[Notificacion],
         notificacionesActividadForos:[NotificacionActividadForos],
         foros:[InfoForosUsuario],
+        coords:Coords,
+        vinculos:[VinculoNodoSolidaridad],
+        fuerzaColision: FuerzaPolar,
+       fuerzaCentroMasa: FuerzaPolar,
+       nombre:String,
 
     }
     input DatosEditablesUsuario{
@@ -169,6 +176,8 @@ export const typeDefs = gql`
 
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
+        setNodosSolidaridadDesplegadosUsuario(idsNodos:[ID!]):Boolean,
+
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -222,9 +231,9 @@ export const resolvers = {
             console.log(`Enviando lista de todos los usuarios`);
             return todosUsuarios;
         },
-        publicUsuario: async function (_: any, {idUsuario}: any, context: contextoQuery) {
+        publicUsuario: async function (_: any, { idUsuario }: any, context: contextoQuery) {
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
             } catch (error) {
                 console.log(`error buscando usuario con id ${idUsuario} en la base de datos`);
                 throw new ApolloError("Error buscando usuario");
@@ -235,7 +244,7 @@ export const resolvers = {
             let credencialesUsuario = context.usuario;
 
             try {
-                var elUsuario:any = await Usuario.findById(credencialesUsuario.id);
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id);
             }
             catch (error) {
                 console.log("Error buscando el usuario en la base de datos. E: " + error);
@@ -243,7 +252,7 @@ export const resolvers = {
             }
             return elUsuario;
         },
-        
+
     },
     Mutation: {
         editarDatosUsuario: async function (_: any, { nuevosDatos }: any, context: contextoQuery) {
@@ -390,13 +399,13 @@ export const resolvers = {
             console.log(`Peticion de eliminar una notificacion con id ${idNotificacion}`);
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if(credencialesUsuario.permisos.length<1){
+            if (credencialesUsuario.permisos.length < 1) {
                 console.log(`El usuario no estaba logeado`);
                 throw new AuthenticationError("No autorizado");
             }
-            
+
             try {
-                await Usuario.findByIdAndUpdate(credencialesUsuario.id, {$pull:{notificaciones:{_id:idNotificacion}}}).exec();
+                await Usuario.findByIdAndUpdate(credencialesUsuario.id, { $pull: { notificaciones: { _id: idNotificacion } } }).exec();
             } catch (error) {
                 console.log(`Error eliminando la notificacion de la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -409,13 +418,13 @@ export const resolvers = {
             console.log(`Peticion de eliminar una notificacion de actividad en foros con id ${idParent}`);
             //Authorización
             let credencialesUsuario = contexto.usuario;
-            if(credencialesUsuario.permisos.length<1){
+            if (credencialesUsuario.permisos.length < 1) {
                 console.log(`El usuario no estaba logeado`);
                 throw new AuthenticationError("No autorizado");
             }
-            
+
             try {
-                await Usuario.findByIdAndUpdate(credencialesUsuario.id, {$pull:{notificacionesActividadForos:{idParent:idParent}}}).exec();
+                await Usuario.findByIdAndUpdate(credencialesUsuario.id, { $pull: { notificacionesActividadForos: { idParent: idParent } } }).exec();
             } catch (error) {
                 console.log(`Error eliminando la notificacion de la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -425,22 +434,22 @@ export const resolvers = {
         },
         setNodoObjetivo: async function (_: any, { idNodo, nuevoEstadoObjetivo }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
-            if(!credencialesUsuario||!credencialesUsuario.id){
+            if (!credencialesUsuario || !credencialesUsuario.id) {
                 throw new AuthenticationError("No autenticado");
             }
 
-            console.log(`Seting nodo objetivo de ${idNodo} en ${nuevoEstadoObjetivo} para el usuario ${credencialesUsuario.id}`);            
+            console.log(`Seting nodo objetivo de ${idNodo} en ${nuevoEstadoObjetivo} para el usuario ${credencialesUsuario.id}`);
 
             try {
-                var elUsuario:any= await Usuario.findById(credencialesUsuario.id).exec();
-                var indexN = elUsuario.atlas.datosNodos.findIndex(n=>n.idNodo==idNodo);
-                if(indexN>-1){
-                    elUsuario.atlas.datosNodos[indexN].objetivo=nuevoEstadoObjetivo;
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idNodo);
+                if (indexN > -1) {
+                    elUsuario.atlas.datosNodos[indexN].objetivo = nuevoEstadoObjetivo;
                 }
-                else{
+                else {
                     elUsuario.atlas.datosNodos.push({
                         idNodo,
-                        objetivo:nuevoEstadoObjetivo
+                        objetivo: nuevoEstadoObjetivo
                     });
                 }
                 await elUsuario.save();
@@ -449,26 +458,26 @@ export const resolvers = {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
-            
+
         },
         setNodoAtlasAprendidoUsuario: async function (_: any, { idNodo, nuevoEstadoAprendido }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
-            if(!credencialesUsuario||!credencialesUsuario.id){
+            if (!credencialesUsuario || !credencialesUsuario.id) {
                 throw new AuthenticationError("No autenticado");
             }
 
-            console.log(`Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);            
+            console.log(`Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);
 
             try {
-                var elUsuario:any= await Usuario.findById(credencialesUsuario.id).exec();
-                var indexN = elUsuario.atlas.datosNodos.findIndex(n=>n.idNodo==idNodo);
-                if(indexN>-1){
-                    elUsuario.atlas.datosNodos[indexN].aprendido=nuevoEstadoAprendido;
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idNodo);
+                if (indexN > -1) {
+                    elUsuario.atlas.datosNodos[indexN].aprendido = nuevoEstadoAprendido;
                 }
-                else{
+                else {
                     elUsuario.atlas.datosNodos.push({
                         idNodo,
-                        aprendido:nuevoEstadoAprendido
+                        aprendido: nuevoEstadoAprendido
                     });
                 }
                 await elUsuario.save();
@@ -477,53 +486,53 @@ export const resolvers = {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
-            
+
         },
-        setNodoAtlasTarget: async function (_: any, { idNodo}: any, contexto: contextoQuery) {
+        setNodoAtlasTarget: async function (_: any, { idNodo }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
-            if(!credencialesUsuario||!credencialesUsuario.id){
+            if (!credencialesUsuario || !credencialesUsuario.id) {
                 throw new AuthenticationError("No autenticado");
             }
 
-            console.log(`Seting nodo ${idNodo} como target para el usuario ${credencialesUsuario.id}`);            
+            console.log(`Seting nodo ${idNodo} como target para el usuario ${credencialesUsuario.id}`);
 
             try {
-                var elUsuario:any= await Usuario.findById(credencialesUsuario.id).exec();
-                elUsuario.atlas.idNodoTarget=idNodo;                
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                elUsuario.atlas.idNodoTarget = idNodo;
                 await elUsuario.save();
                 return true;
             } catch (error) {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
-            
-        },  
+
+        },
         nulificarNodoTargetUsuarioAtlas: async function (_: any, __: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
-            if(!credencialesUsuario||!credencialesUsuario.id){
+            if (!credencialesUsuario || !credencialesUsuario.id) {
                 throw new AuthenticationError("No autenticado");
             }
 
-            console.log(`Seting nodo target null para el usuario ${credencialesUsuario.id}`);            
+            console.log(`Seting nodo target null para el usuario ${credencialesUsuario.id}`);
 
             try {
-                var elUsuario:any= await Usuario.findById(credencialesUsuario.id).exec();
-                elUsuario.atlas.idNodoTarget=null;                
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                elUsuario.atlas.idNodoTarget = null;
                 await elUsuario.save();
                 return true;
             } catch (error) {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
-            
+
         },
-        setModoUsuarioAtlas: async function (_: any, { idUsuario, nuevoModo}: any, contexto: contextoQuery) {
+        setModoUsuarioAtlas: async function (_: any, { idUsuario, nuevoModo }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
-            if(!credencialesUsuario||!credencialesUsuario.id){
+            if (!credencialesUsuario || !credencialesUsuario.id) {
                 throw new AuthenticationError("No autenticado");
             }
 
-            console.log(`Seting modo ${nuevoModo} para el usuario ${idUsuario}`);            
+            console.log(`Seting modo ${nuevoModo} para el usuario ${idUsuario}`);
 
             // try {
             //     var losUsuarios:any=await Usuario.find({}).exec();
@@ -537,41 +546,41 @@ export const resolvers = {
             // }
 
             try {
-                var elUsuario:any= await Usuario.findById(idUsuario).exec();
-                
-                elUsuario.atlas.configuracion.modo=nuevoModo;                
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
+
+                elUsuario.atlas.configuracion.modo = nuevoModo;
                 // console.log(`Guardando usuario.atlas con valor: ${elUsuario.atlas}`);
                 console.log(`Guardando usuario.atlas.colecciones con valor: ${elUsuario.atlas.colecciones}`);
                 await elUsuario.save();
-            
+
             } catch (error) {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
-            
+
             return elUsuario;
-            
+
         },
 
-        async asignarPermisoTodosUsuarios(_: any, {nuevoPermiso}: any, contexto: contextoQuery){
-            const credencialesUsuario=contexto.usuario;
-            const permisosAutorizados=["superadministrador"];
+        async asignarPermisoTodosUsuarios(_: any, { nuevoPermiso }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
+            const permisosAutorizados = ["superadministrador"];
 
-            if(!credencialesUsuario.permisos.some(async (p)=>permisosAutorizados.includes(p))){
+            if (!credencialesUsuario.permisos.some(async (p) => permisosAutorizados.includes(p))) {
                 console.log(`El usuario no tenía los permisos correctos`);
                 throw new AuthenticationError("No autorizado");
             }
 
             try {
-                var losUsuarios:any=await Usuario.find({}).exec();
+                var losUsuarios: any = await Usuario.find({}).exec();
             } catch (error) {
                 console.log(`Error buscando los usuarios: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            losUsuarios.forEach(async (usuario)=>{
-                const indexP=usuario.permisos.indexOf(nuevoPermiso);
-                if(indexP>-1){
+            losUsuarios.forEach(async (usuario) => {
+                const indexP = usuario.permisos.indexOf(nuevoPermiso);
+                if (indexP > -1) {
                     usuario.permisos.splice(indexP, 1);
                 }
                 usuario.permisos.push(nuevoPermiso);
@@ -589,29 +598,29 @@ export const resolvers = {
 
 
         },
-        async togglePermisoUsuario(_:any, {permiso, idUsuario}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
-            const permisosAutorizados=["superadministrador"];
+        async togglePermisoUsuario(_: any, { permiso, idUsuario }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
+            const permisosAutorizados = ["superadministrador"];
 
-            if(!credencialesUsuario.permisos.some(async (p)=>permisosAutorizados.includes(p))){
+            if (!credencialesUsuario.permisos.some(async (p) => permisosAutorizados.includes(p))) {
                 console.log(`El usuario no tenía los permisos correctos`);
                 throw new AuthenticationError("No autorizado");
             }
 
             try {
-                var elUsuario:any=await Usuario.findById(idUsuario).exec();
-                if(!elUsuario)throw "Usuario no encontrado";
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
+                if (!elUsuario) throw "Usuario no encontrado";
             } catch (error) {
                 console.log(`Error buscando el usuario: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            const indexP=elUsuario.permisos.indexOf(permiso);
+            const indexP = elUsuario.permisos.indexOf(permiso);
 
-            if(indexP>-1){
+            if (indexP > -1) {
                 elUsuario.permisos.splice(indexP, 1);
             }
-            else{
+            else {
                 elUsuario.permisos.push(permiso)
             }
 
@@ -627,23 +636,23 @@ export const resolvers = {
 
         },
 
-        async setPlegarNodoSolidaridadUsuario(_:any, {idNodo}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
-            const idUsuario=credencialesUsuario.id;
+        async setPlegarNodoSolidaridadUsuario(_: any, { idNodo }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
+            const idUsuario = credencialesUsuario.id;
             try {
-                var elUsuario:any=await Usuario.findById(idUsuario).exec();
-                if(!elUsuario)throw "Usuario no encontrado";
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
+                if (!elUsuario) throw "Usuario no encontrado";
             } catch (error) {
                 console.log(`Error buscando el usuario: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
-            }            
+            }
 
-            const indexN=elUsuario.atlasSolidaridad.idsNodosPlegados.indexOf(idNodo);
+            const indexN = elUsuario.atlasSolidaridad.idsNodosPlegados.indexOf(idNodo);
 
-            if(indexN>-1){
+            if (indexN > -1) {
                 elUsuario.atlasSolidaridad.idsNodosPlegados.splice(indexN, 1);
             }
-            else{
+            else {
                 elUsuario.atlasSolidaridad.idsNodosPlegados.push(idNodo)
             }
 
@@ -656,22 +665,22 @@ export const resolvers = {
 
             return elUsuario;
         },
-     
-        async crearColeccionNodosAtlasConocimientoUsuario(_:any, __:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
 
-            if(!credencialesUsuario.id){
+        async crearColeccionNodosAtlasConocimientoUsuario(_: any, __: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
+
+            if (!credencialesUsuario.id) {
                 console.log(`Error: no hay id en las credenciales de usuario`);
-                throw new AuthenticationError("No logeado");                
+                throw new AuthenticationError("No logeado");
             }
 
             try {
-                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
-                if(!elUsuario){
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) {
                     throw "Usuario no encontrado";
                 }
             } catch (error) {
-                console.log(`Error buscando el usuario en la base de datos`);                  
+                console.log(`Error buscando el usuario en la base de datos`);
                 throw new ApolloError("Usuario no encontrado");
             }
 
@@ -688,30 +697,30 @@ export const resolvers = {
             return elUsuario;
 
         },
-        async eliminarColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
+        async eliminarColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
 
-            if(!credencialesUsuario.id){
+            if (!credencialesUsuario.id) {
                 console.log(`Error: no hay id en las credenciales de usuario`);
-                throw new AuthenticationError("No logeado");                
+                throw new AuthenticationError("No logeado");
             }
 
             try {
-                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
-                if(!elUsuario){
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) {
                     throw "Usuario no encontrado";
                 }
             } catch (error) {
-                console.log(`Error buscando el usuario en la base de datos`);                  
+                console.log(`Error buscando el usuario en la base de datos`);
                 throw new ApolloError("Usuario no encontrado");
             }
 
-            const indexC=elUsuario.atlas.colecciones.findIndex(c=>c.id===idColeccion);
+            const indexC = elUsuario.atlas.colecciones.findIndex(c => c.id === idColeccion);
 
-            if(indexC>-1){
+            if (indexC > -1) {
                 elUsuario.atlas.colecciones.splice(indexC, 1);
             }
-            else{
+            else {
                 throw new UserInputError("Colección no encontrada");
             }
 
@@ -725,13 +734,13 @@ export const resolvers = {
             return elUsuario;
 
         },
-        async setNombreColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, nuevoNombre}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
+        async setNombreColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion, nuevoNombre }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
 
             try {
-                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
-                if(!elUsuario){
-                    throw "Usuario no encontrado";                    
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) {
+                    throw "Usuario no encontrado";
                 }
             } catch (error) {
                 console.log(`Error buscando el usuario`);
@@ -744,12 +753,12 @@ export const resolvers = {
                 throw new UserInputError("Nombre ilegal");
             }
 
-            const indexC=elUsuario.atlas.colecciones.findIndex(c=>c.id===idColeccion);
+            const indexC = elUsuario.atlas.colecciones.findIndex(c => c.id === idColeccion);
 
-            if(indexC>-1){
-                elUsuario.atlas.colecciones[indexC].nombre=nuevoNombre;
+            if (indexC > -1) {
+                elUsuario.atlas.colecciones[indexC].nombre = nuevoNombre;
             }
-            else{
+            else {
                 throw new UserInputError("Colección no encontrada");
             }
 
@@ -763,30 +772,30 @@ export const resolvers = {
             return elUsuario;
 
         },
-        async addNodoColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, idNuevoNodo}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
+        async addNodoColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion, idNuevoNodo }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
 
             try {
-                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
-                if(!elUsuario){
-                    throw "Usuario no encontrado";                    
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) {
+                    throw "Usuario no encontrado";
                 }
             } catch (error) {
                 console.log(`Error buscando el usuario`);
                 throw new ApolloError("Usuario no encontrado");
             }
 
-            var laColeccion=elUsuario.atlas.colecciones.id(idColeccion);
-            if(!laColeccion){
+            var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+            if (!laColeccion) {
                 console.log(`Coleccion no encontrada`);
                 throw new UserInputError("Colección no encontrada");
             }
 
-            var indexN=laColeccion.idsNodos.indexOf(idNuevoNodo);
-            if(indexN===-1){
+            var indexN = laColeccion.idsNodos.indexOf(idNuevoNodo);
+            if (indexN === -1) {
                 laColeccion.idsNodos.push(idNuevoNodo);
             }
-            else{
+            else {
                 throw new UserInputError("Nodo ya existía en la colección");
             }
 
@@ -798,30 +807,30 @@ export const resolvers = {
 
             return laColeccion;
         },
-        async removeNodoColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, idNodo}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
+        async removeNodoColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion, idNodo }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
 
             try {
-                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
-                if(!elUsuario){
-                    throw "Usuario no encontrado";                    
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) {
+                    throw "Usuario no encontrado";
                 }
             } catch (error) {
                 console.log(`Error buscando el usuario`);
                 throw new ApolloError("Usuario no encontrado");
             }
 
-            var laColeccion=elUsuario.atlas.colecciones.id(idColeccion);
-            if(!laColeccion){
+            var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+            if (!laColeccion) {
                 console.log(`Coleccion no encontrada`);
                 throw new UserInputError("Colección no encontrada");
             }
 
-            var indexN=laColeccion.idsNodos.indexOf(idNodo);
-            if(indexN>-1){
+            var indexN = laColeccion.idsNodos.indexOf(idNodo);
+            if (indexN > -1) {
                 laColeccion.idsNodos.splice(indexN, 1);
             }
-            else{
+            else {
                 throw new UserInputError("Nodo no existía en la colección")
             }
 
@@ -833,13 +842,13 @@ export const resolvers = {
 
             return laColeccion;
         },
-        async toggleNodoColeccionNodosAtlasConocimientoUsuario(_:any, {idColeccion, idNodo, idUsuario}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
+        async toggleNodoColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion, idNodo, idUsuario }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
             console.log(`Toggling nodo ${idNodo} en colección ${idColeccion} para el usuario ${idUsuario}`);
             try {
-                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
-                if(!elUsuario){
-                    throw "Usuario no encontrado";                    
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) {
+                    throw "Usuario no encontrado";
                 }
             } catch (error) {
                 console.log(`Error buscando el usuario`);
@@ -847,23 +856,23 @@ export const resolvers = {
             }
 
             //Autorizacion
-            const permisosEspeciales=["superadministrador"];
-            if(!permisosEspeciales.some(p=>credencialesUsuario.permisos.includes(p)) && credencialesUsuario.id!=idUsuario){
+            const permisosEspeciales = ["superadministrador"];
+            if (!permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && credencialesUsuario.id != idUsuario) {
                 console.log(`No autorizado`);
                 throw new AuthenticationError("No autorizado");
             }
 
-            var laColeccion=elUsuario.atlas.colecciones.id(idColeccion);
-            if(!laColeccion){
+            var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+            if (!laColeccion) {
                 console.log(`Coleccion no encontrada`);
                 throw new UserInputError("Colección no encontrada");
             }
 
-            const indexN=laColeccion.idsNodos.indexOf(idNodo);
-            if(indexN===-1){
+            const indexN = laColeccion.idsNodos.indexOf(idNodo);
+            if (indexN === -1) {
                 laColeccion.idsNodos.push(idNodo);
             }
-            else{
+            else {
                 laColeccion.idsNodos.splice(indexN, 1);
             }
 
@@ -876,20 +885,20 @@ export const resolvers = {
             return laColeccion;
         },
 
-        async setCoordsVistaAtlasSolidaridadUsuario(_:any, {coords}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
+        async setCoordsVistaAtlasSolidaridadUsuario(_: any, { coords }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
 
-            if(!credencialesUsuario.id){
+            if (!credencialesUsuario.id) {
                 throw new AuthenticationError("No Autenticado");
             }
 
             try {
-                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
             } catch (error) {
                 console.log(`Error buscando el usuario`);
                 throw new ApolloError("Usuario no encontrado");
-            }            
-            elUsuario.atlasSolidaridad.coordsVista=coords;
+            }
+            elUsuario.atlasSolidaridad.coordsVista = coords;
 
             try {
                 await elUsuario.save();
@@ -901,52 +910,33 @@ export const resolvers = {
             console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(coords)}`);
             return true;
         },
-        async setNodoSolidaridadAsCoordsVistaUsuario(_:any, {idNodo}:any, contexto:contextoQuery){
-            const credencialesUsuario=contexto.usuario;
-
-            if(!credencialesUsuario.id){
-                throw new AuthenticationError("No Autenticado");
+        async setNodosSolidaridadDesplegadosUsuario(_: any, { idsNodos }: any, contexto: contextoQuery) {
+            const credencialesUsuario = contexto.usuario;
+            if (!credencialesUsuario) {
+                throw new AuthenticationError("No autorizardo")
             }
-
+            const idUsuario = credencialesUsuario.id;
             try {
-                var elUsuario:any=await Usuario.findById(credencialesUsuario.id).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
+                if (!elUsuario) throw "Usuario no encontrado";
             } catch (error) {
-                console.log(`Error buscando el usuario`);
-                throw new ApolloError("Usuario no encontrado");
-            }            
-
-            try {
-                var tipoDeNodo='trabajo'
-                var elNodo: any = await Trabajo.findById(idNodo).exec();                
-
-                if (!elNodo) {
-                    tipoDeNodo='objetivo';
-                    elNodo = await Objetivo.findById(idNodo).exec();
-                }    
-                if (!elNodo) {
-                    tipoDeNodo='';
-                    throw "Nodo no encontrado"
-                }
-                elNodo.tipoNodo=tipoDeNodo;
+                console.log(`Error buscando el usuario: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
             }
-            catch (error) {
-                console.log("Error buscando el nodo. E: " + error);
-                throw new ApolloError("Error en la conexión con la base de datos");
-            }
-            elUsuario.atlasSolidaridad.coordsVista=elNodo.coords;
+
+            elUsuario.atlasSolidaridad.idsNodosDesplegados = idsNodos;
 
             try {
                 await elUsuario.save();
             } catch (error) {
-                console.log(`Error guardando el usuario con el nuevo coords de centroVista`);
+                console.log(`Error guardando el usuario`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(elNodo.coords)} del nodo ${idNodo}`);
             return true;
-        }
-        
-        
+        },
+
+
 
     },
     Usuario: {
@@ -989,7 +979,10 @@ export const resolvers = {
                 return ""
             }
             return idGrupo;
-        }
+        },
+        nombre: function (parent: any, _: any, __: any) {
+            return parent.username;
+        },
     },
     PublicUsuario: {
         edad: function (parent: any, _: any, __: any) {
@@ -1000,21 +993,21 @@ export const resolvers = {
             let edadAños = edad / (60 * 60 * 24 * 365 * 1000);
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
-        },        
+        },
     },
     Date: {
         GraphQLDateTime
     },
-    ColeccionNodosAtlasConocimiento:{
-        nodos: async function(parent: any, _:any, __:any){
+    ColeccionNodosAtlasConocimiento: {
+        nodos: async function (parent: any, _: any, __: any) {
             console.log(`Resolviendo nodos de coleccion con parent: ${parent}`);
             try {
-                var losNodos:any=await Nodo.find({_id:{$in: parent.idsNodos}}).exec();
+                var losNodos: any = await Nodo.find({ _id: { $in: parent.idsNodos } }).exec();
             } catch (error) {
                 console.log(`Error buscando los nodos de la coleccion ${parent.id}`);
             }
             console.log(`Encontrados ${losNodos.length} nodos`);
-            if(!losNodos)losNodos=[];
+            if (!losNodos) losNodos = [];
             return losNodos;
         }
     }

@@ -2,8 +2,9 @@
   <div id="loginArea">
     <div id="ventanaCentral">
       <form>
-        <p id="tituloVentana">Iniciar sesion</p>
+        <p id="tituloVentana">¡Bienvenidx!</p>
         <br />
+        <div class="instruccion">Escribe tus datos de login</div>
         <input
           type="text"
           name="username"
@@ -18,21 +19,21 @@
           type="password"
           name="password"
           class="inputs"
-          :style="colorPassword"
           v-model="password"
           placeholder="password"          
           @input="loginFail = false"
+          @keypress.enter="iniciarSesion"
         />
         <br />
         <br />
         <loading v-show="enviandoDatos" :texto="'Conectando...'" />
-        <button
+        <div
           class="botonEnviar"
           @click.stop.prevent="iniciarSesion"
-          :class="{ loginFail, desaparecido: enviandoDatos }"
+          :class="{ loginFail, desaparecido: enviandoDatos, deshabilitado:passIlegal }"
         >
-          {{ loginFail ? loginFailMsg : "Conectarse" }}
-        </button>
+          {{ loginFail ? loginFailMsg : "Ingresar" }}
+        </div>
       </form>
     </div>
   </div>
@@ -43,7 +44,6 @@ import axios from "axios";
 import Loading from "./utilidades/Loading.vue";
 
 var charProhibidosUsername = /[^a-zA-Z0-9_ñÑ]/g;
-var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
 const minPassword = 6;
 const minUsername = 4;
 
@@ -74,29 +74,32 @@ export default {
             ? "red"
             : "black",
       };
+    },    
+    passIlegal() {
+      if (        
+        this.password.length < minPassword
+      ) {
+        return true;
+      }
+      return false;
     },
-    colorPassword() {
-      return {
-        color:
-          charProhibidosPassword.test(this.password) ||
-          this.password.length < minPassword
-            ? "red"
-            : "black",
-      };
+    usernameIlegal() {
+      if (
+        !this.username ||
+        charProhibidosUsername.test(this.username) ||         
+        this.username.length < minUsername
+      ) {
+        return true;
+      }
+      return false;
     },
   },
   methods: {
     iniciarSesion: function () {
       console.log(`Iniciando login`);
-      let dis = this;
-      //Validacion de caracteres
-      if (
-        charProhibidosUsername.test(this.username) ||
-        charProhibidosPassword.test(this.password) ||
-        this.password.length < minPassword ||
-        this.username.length < minUsername
-      )
-        return;
+      if(this.passIlegal || this.usernameIlegal)return;
+      let dis = this;      
+      
       this.enviandoDatos = true;
       axios
         .post(this.serverUrl + "/api/usuarios/login", {
@@ -108,7 +111,7 @@ export default {
 
           if (respuesta.data.username == dis.username) {
             dis.$store.commit("logearse", respuesta.data.token);            
-            window.location.href = dis.clienteUrl;
+            // window.location.href = dis.clienteUrl;
             dis.enviandoDatos = false;
           }
         })
@@ -151,30 +154,36 @@ export default {
   text-align: center;
   font-family: sans-serif;
 }
+.instruccion{
+  font-size: 18;
+  text-align: center;
+  margin: 40px 0px;
+  margin-bottom: 0px;
+}
 .inputs {
   font-size: 20px;
+  padding: 10px 20px;
+  border-radius: 10px;
   margin-right: auto;
   margin-left: auto;
   margin-top: 15px;
   display: block;
-  padding: 5px;
-  background-color: #fbe2cb;
 }
 #ventanaCentral {
   margin: 5% auto;
   padding: 20px;
   width: min(550px, 90%);  
-  box-shadow: 3px 3px grey, 3px 3px 3px 3px grey;
-  background-color: rgb(232 191 155);
 }
 .botonEnviar {
+  width: min(300px, 90vw);
+  text-align: center;
   display: block;
   margin-left: auto;
   margin-right: auto;
   font-size: 20px;
-  padding: 10px 5px;
-  background-color: #f2933e;
-  border-radius: 5px;
+  padding: 15px 5px;
+  background-color: var(--mainColor);
+  border-radius: 30px;
   cursor: pointer;
 }
 .loginFail {
