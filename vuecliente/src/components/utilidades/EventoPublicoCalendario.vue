@@ -4,8 +4,18 @@
     :style="[estiloPos]"
     :class="{ deshabilitado: eliminandose }"
   >
-    <div id="barra" v-show="modo === 'barra'" :style="estiloSize" :class="{seleccionado}"></div>
-    <div id="bloque" v-show="modo==='bloque'" :style="estiloSize" :class="{extranjero, seleccionado}">
+    <div
+      id="barra"
+      v-show="modo === 'barra'"
+      :style="estiloSize"
+      :class="{ seleccionado }"
+    ></div>
+    <div
+      id="bloque"
+      v-show="modo === 'bloque'"
+      :style="estiloSize"
+      :class="{ extranjero, seleccionado }"
+    >
       <div id="zonaNombre">
         <div
           id="elNombre"
@@ -13,25 +23,23 @@
             administrador,
           }"
         >
-          {{ esteEventoPublico.nombre }}
+          {{ esteEvento.nombre }}
         </div>
       </div>
-      <div id="contenedorControlesEvento" :class="{seleccionado}">
+      <div id="contenedorControlesEvento" :class="{ seleccionado }">
         <div
           class="boton botonControlEvento"
           title="Eliminar este evento"
           v-if="administrador || usuarioSuperadministrador"
           @click.stop="eliminarse"
-        >        
+        >
           <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
-        </div>        
+        </div>
         <div
           class="boton botonControlEvento"
           title="Expandir este evento"
           @click.stop="
-            $router.push(
-              $route.path + '/ventanaEventoPublico/' + esteEventoPublico.id
-            )
+            $router.push($route.path + '/ventanaEventoPublico/' + esteEvento.id)
           "
         >
           <img src="@/assets/iconos/expand.svg" alt="Expandir" />
@@ -43,24 +51,26 @@
 
 <script>
 import gql from "graphql-tag";
+import { MixinBasicoEventos } from "../MixinsEventos";
 
 export default {
   name: "EventoPublicoCalendario",
   components: {},
   props: {
-    esteEventoPublico: Object,
+    esteEvento: Object,
     horaPx: Number,
     extranjero: Boolean,
-    seleccionado:Boolean,
-    modoEventosPublicosExtranjeros:String,
-    infoOffset:Object,
+    seleccionado: Boolean,
+    modoEventosPublicosExtranjeros: String,
+    infoOffset: Object,
+    diaCalendarioOver: Object,
   },
+  mixins: [MixinBasicoEventos],
   data() {
     return {
       mostrando: null,
       eliminandose: false,
       recogido: false,
-      
     };
   },
   methods: {
@@ -79,13 +89,13 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation ($idEvento: ID!, $tipoEvento:String!) {
+            mutation ($idEvento: ID!, $tipoEvento: String!) {
               eliminarEvento(idEvento: $idEvento, tipoEvento: $tipoEvento)
             }
           `,
           variables: {
-            idEvento: this.esteEventoPublico.id,
-            tipoEvento:'eventoPublico'
+            idEvento: this.esteEvento.id,
+            tipoEvento: "eventoPublico",
           },
         })
         .then(() => {
@@ -98,22 +108,21 @@ export default {
   },
   computed: {
     millisFinalLocal() {
-            const fecha = new Date(this.esteEventoPublico.horarioFinal);
-            const millis = fecha.getTime();
-            const offset = fecha.getTimezoneOffset() * 60000;
-            return millis - offset;
-          },
-          millisInicioLocal() {
-            const fecha = new Date(this.esteEventoPublico.horarioInicio);
-            const millis = fecha.getTime();
-            const offset = fecha.getTimezoneOffset() * 60000;
-            return millis - offset;
-          },
-          duracionMinutos() {
-            return (this.millisFinalLocal - this.millisInicioLocal) / 60000;
-          },
+      const fecha = new Date(this.esteEvento.horarioFinal);
+      const millis = fecha.getTime();
+      const offset = fecha.getTimezoneOffset() * 60000;
+      return millis - offset;
+    },
+    millisInicioLocal() {
+      const fecha = new Date(this.esteEvento.horarioInicio);
+      const millis = fecha.getTime();
+      const offset = fecha.getTimezoneOffset() * 60000;
+      return millis - offset;
+    },
+    duracionMinutos() {
+      return (this.millisFinalLocal - this.millisInicioLocal) / 60000;
+    },
 
-    
     estiloSize() {
       const anchoPx = (this.duracionMinutos / 60) * this.horaPx;
       return {
@@ -123,25 +132,40 @@ export default {
     estiloPos() {
       const millisDia = this.millisInicioLocal % 86400000;
 
-
       return {
         left: (millisDia / 3600000) * this.horaPx + "px",
-        top: this.infoOffset.top+'px'
+        top: this.infoOffset.top + "px",
       };
     },
-    
+
     administrador() {
       if (!this.usuarioLogeado) return false;
 
-      return this.usuario.id === this.esteEventoPublico.idAdministrador;
+      return this.usuario.id === this.esteEvento.idAdministrador;
     },
 
-    modo(){
-      if(this.extranjero && this.modoEventosPublicosExtranjeros==='barra' && !this.seleccionado){
-        return 'barra'
+    modo() {
+      if (
+        this.extranjero &&
+        this.modoEventosPublicosExtranjeros === "barra" &&
+        !this.seleccionado
+      ) {
+        return "barra";
       }
-      return 'bloque'
-    }
+      return "bloque";
+    },
+  },
+  watch: {
+    dateInicio(dateInicio) {
+      console.log(`Cambio de date inicio. Ahora inicio en ${dateInicio}`);
+      if (
+        dateInicio < this.diaCalendarioOver.date ||
+        dateInicio.getTime() > this.diaCalendarioOver.date.getTime() + 86400000
+      ) {
+        console.log(`${this.esteEvento.nombre} dice: Me cambiaron de día`);
+        this.$emit("meCambiaronDia", this.esteEvento);
+      }
+    },
   },
 };
 </script>
@@ -150,7 +174,7 @@ export default {
 .eventoPublicoCalendario {
   position: absolute;
 }
-#barra{
+#barra {
   height: 15px;
   background-color: var(--paletaMain);
   opacity: 0.5;
@@ -164,29 +188,28 @@ export default {
   border-radius: 5px;
   background-color: var(--paletaMain);
 }
-#bloque.extranjero{
+#bloque.extranjero {
   opacity: 0.6;
 }
 #bloque.seleccionado {
   height: 100px;
-  border-color: var(--paletaSelect)
+  border-color: var(--paletaSelect);
 }
-#contenedorControlesEvento{
+#contenedorControlesEvento {
   display: flex;
   position: absolute;
   bottom: 10px;
   left: 50%;
   align-items: center;
   flex-direction: row-reverse;
-  transform:translateX(-50%);
+  transform: translateX(-50%);
   box-sizing: border-box;
   padding: 0px 5%;
 }
 #contenedorControlesEvento:not(.seleccionado) {
   display: none;
-
 }
-#contenedorControlesEvento.seleccionado{
+#contenedorControlesEvento.seleccionado {
   display: flex;
 }
 

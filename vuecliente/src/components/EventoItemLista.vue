@@ -1,8 +1,5 @@
 <template>
-  <div class="eventoItemLista">
-    <div id="barraInfo">
-      
-    </div>
+  <div class="eventoItemLista" :class="{deshabilitado: eliminandose}">
     <div id="barraSuperior">
       <!-- <div id="zona1">
         <div id="zonaNombre">
@@ -35,21 +32,15 @@
       </div> -->
       <div id="zonaInfoHorario" style="display: flex">
         <div id="horarioInicio" class="infoHorario">
-          {{ horarioInicioLegible }}
-        </div>
-        <div class="infoHorario">,</div>
-        <div id="infoDuracion" class="infoHorario">
-          {{ duracionLegible }}
-        </div>
+          {{ dateInicioLegible +', ' +duracionLegible}}
+        </div>        
       </div>
       <div id="zonaBotones">
         <div
           class="boton botonControlEvento"
           title="Expandir este evento"
           @click.stop="
-            $router.push(
-              $route.path + '/ventanaEventoPublico/' + esteEvento.id
-            )
+            $router.push($route.path + '/ventanaEventoPublico/' + esteEvento.id)
           "
         >
           <img src="@/assets/iconos/expand.svg" alt="Expandir" />
@@ -65,6 +56,7 @@
         <div
           class="boton"
           id="botonEliminarse"
+          style="margin-left: min(20px, 3%)"
           @click="eliminarse"
           v-show="administrador || usuarioSuperadministrador"
         >
@@ -72,7 +64,35 @@
         </div>
       </div>
     </div>
-
+    <div id="barraInfo">
+      <div id="zonaNombre">
+        <input
+          @keypress.enter.prevent="guardarNuevoNombre"
+          ref="inputNuevoNombre"
+          v-model="nuevoNombre"
+          style="width: 250px"
+          @click.stop=""
+          @blur="editandoNombre = false"
+          @keydown="keydownInputNuevoNombre"
+          v-show="editandoNombre"
+          type="text"
+          class="inputNuevoNombre inputNombreCosa"
+          :class="{ deshabilitado: enviandoNuevoNombre }"
+        />
+        <loading texto="" v-show="enviandoNuevoNombre" />
+        <div
+          id="elNombre"
+          :class="{
+            deshabilitado: enviandoNuevoNombre,
+            administrador,
+          }"
+          v-show="!editandoNombre"
+          @click="toggleEditandoNombre"
+        >
+          {{ esteEvento.nombre }}
+        </div>
+      </div>
+    </div>
     <div
       id="zonaDescripcion"
       class="zonaPrimerNivel"
@@ -132,6 +152,7 @@ export default {
   data() {
     return {
       mostrando: null,
+      eliminandose:false,
     };
   },
 };
@@ -153,12 +174,18 @@ export default {
   margin-left: max(15px, 2%);
 }
 .infoHorario {
-  font-size: 12px;
-  font-style: italic;
+  font-size: 14px;
   color: gray;
 }
 #infoDuracion {
   color: var(--paletaMain);
   font-weight: bold;
+}
+#zonaBotones .boton {
+  margin: 0px min(15px, 2%);
+}
+#elNombre{
+  font-size: 12px;
+  font-style: italic;
 }
 </style>

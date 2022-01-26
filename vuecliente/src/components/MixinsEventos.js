@@ -19,8 +19,17 @@ export const MixinEdicionEventos = {
             minRepetir: 1,
             maxRepetir: 52,
 
+            editandoFechaInicio: false,
+            editandoHoraInicio: false,
+            nuevoDuracion: null,
+
             enviandoNuevoDateInicio: false,
             enviandoNuevoDateFinal: false,
+            enviandoHorarios: false,
+            enviandoSomeHorario:false,
+
+            enviandoQueryRepetir:false,
+
 
         }
     },
@@ -148,6 +157,7 @@ export const MixinEdicionEventos = {
                 return;
             }
             console.log(`Se hara query de repetir este evento ${cantidadRepetir} veces ${periodoRepetir}`)
+            this.enviandoQueryRepetir=true;
             this.$apollo.mutate({
                 mutation: gql`
                 mutation($periodoRepetir: String, $cantidadRepetir: Int!, $idEvento:ID!, $tipoEvento:String!){
@@ -165,10 +175,15 @@ export const MixinEdicionEventos = {
                 }
             }).then(({ data: { repetirEventoPeriodicamente } }) => {
                 if (repetirEventoPeriodicamente) {
-                    this.$emit('meRepetiPeriodicamente', repetirEventoPeriodicamente)
+                    this.$emit('meRepetiPeriodicamente', repetirEventoPeriodicamente);
+                    this.mostrandoZonaRepetir=false;
                 }
+                    this.enviandoQueryRepetir=false;
+
             }).catch((error) => {
                 console.log(`Error: ${error}`);
+                this.enviandoQueryRepetir=false;
+
             })
         },
         eliminarse() {
@@ -202,6 +217,20 @@ export const MixinEdicionEventos = {
                     console.log(`Error: ${error}`);
                 });
         },
+        iniciarEdicionDuracion() {
+            this.nuevoDuracion = this.esteEvento.horarioFinal - this.esteEvento.horarioInicio;
+            this.editandoDuracion = true;
+        },
+        guardarHorariosInicioDuracion() {
+            if (!this.admiistrador && !this.usuarioSuperadministrador) {
+                return;
+            }
+
+            this.
+
+                this.$apol
+        }
+
     },
     computed: {
         nuevoNombreIlegal() {
@@ -255,6 +284,20 @@ export const MixinBasicoEventos = {
         tipoEvento() {
             return this.esteEvento.__typename.charAt(0).toLowerCase() + this.esteEvento.__typename.slice(1);
         },
+        dateInicio(){
+            return new Date(this.esteEvento.horarioInicio);
+        },  
+        fechaInicioFormateada(){
+            const dateActualString = this.dateInicio.toISOString().split('T')[0];
+            return dateActualString;
+        },
+        fechaFinalFormateada(){
+            const dateActualString = this.dateFinal.toISOString().split('T')[0];
+            return dateActualString;
+        },
+        dateFinal(){
+            return new Date(this.esteEvento.horarioFinal)
+        },
         horarioInicioFormateado() {
             return (
                 this.timesLegibles.horarioInicio.horas +
@@ -269,29 +312,54 @@ export const MixinBasicoEventos = {
                 this.timesLegibles.horarioFinal.minutos
             );
         },
-        horarioInicioLegible() {
-            const laDate = new Date(this.esteEvento.horarioInicio);
-            const diaSemana = diasSemana[laDate.getDay()];
-            const diaMes = laDate.getDate();
-            const mes = meses[laDate.getMonth()];
+        fechaInicioLegible() {
+            
+            const diaSemana = diasSemana[this.dateInicio.getDay()];
+            const diaMes = this.dateInicio.getDate();
+            const mes = meses[this.dateInicio.getMonth()];
 
-            const hora = laDate.getHours();
-            const minutos = laDate.getMinutes();
-
-            const texto = diaSemana + " " + diaMes + " de " + mes + ", " + hora + ":" + minutos;
+            const texto = diaSemana + " " + diaMes + " de " + mes;
             return texto;
-            // return laDate.toLocaleString("co-Es");
+
         },
-        horarioFinalLegible() {
-            const laDate = new Date(this.esteEvento.horarioFinal);
-            const diaSemana = diasSemana[laDate.getDay()];
-            const diaMes = laDate.getDate();
-            const mes = meses[laDate.getMonth()];
+        horaInicioLegible() {
+            var hora = this.dateInicio.getHours();
+            var minutos = this.dateInicio.getMinutes();
+            if (('' + hora).length < 2) {
+                hora = '0' + hora;
+            }
+            if (('' + minutos).length < 2) {
+                minutos = '0' + minutos;
+            }
+            return  hora + ':' + minutos
+        },
+        dateInicioLegible() {
+            const texto = this.fechaInicioLegible + ", " + this.horaInicioLegible;
+            return texto;
+        },
+        fechaFinalLegible() {
+            const diaSemana = diasSemana[this.dateFinal.getDay()];
+            const diaMes = this.dateFinal.getDate();
+            const mes = meses[this.dateFinal.getMonth()];
 
-            const hora = laDate.getHours();
-            const minutos = laDate.getMinutes();
+            const texto = diaSemana + " " + diaMes + " de " + mes;
+            return texto;
 
-            const texto = diaSemana + " " + diaMes + " de " + mes + ", " + hora + ":" + minutos;
+        },
+        horaFinalLegible() {
+            var hora = this.dateFinal.getHours();
+            var minutos = this.dateFinal.getMinutes();
+            if (('' + hora).length < 2) {
+                hora = '0' + hora;
+            }
+            if (('' + minutos).length < 2) {
+                minutos = '0' + minutos;
+            }
+            return  hora + ':' + minutos
+        },
+        dateFinalLegible() {
+
+            const texto = this.fechaFinalLegible + ", " + this.horaFinalLegible;
             return texto;
         },
         timesLegibles() {
@@ -324,26 +392,26 @@ export const MixinBasicoEventos = {
         duracionMinutos() {
             return Math.round((new Date(this.esteEvento.horarioFinal).getTime() - new Date(this.esteEvento.horarioInicio).getTime()) / 60000);
         },
-        duracionLegible(){
-            const dias=Math.floor(this.duracionMinutos/1440);
-            const horas=Math.floor((this.duracionMinutos-(dias*1440))/60);
-            const minutos=this.duracionMinutos-(dias*1440)-(horas*60);
-            
-            var texto="";
-            if(minutos>0 || this.duracionMinutos===0){
-                texto=minutos + "min";
+        duracionLegible() {
+            const dias = Math.floor(this.duracionMinutos / 1440);
+            const horas = Math.floor((this.duracionMinutos - (dias * 1440)) / 60);
+            const minutos = this.duracionMinutos - (dias * 1440) - (horas * 60);
+
+            var texto = "";
+            if (minutos > 0 || this.duracionMinutos === 0) {
+                texto = minutos + "min";
             }
-            if(horas>0){
-                if(texto.length>0){
-                    texto=", "+texto
+            if (horas > 0) {
+                if (texto.length > 0) {
+                    texto = ", " + texto
                 }
-                texto=horas + "h"+texto;
+                texto = horas + "h" + texto;
             }
-            if(dias>0){
-                if(texto.length>0){
-                    texto=", "+texto
+            if (dias > 0) {
+                if (texto.length > 0) {
+                    texto = ", " + texto
                 }
-                texto=dias + "dias"+texto;
+                texto = dias + "dias" + texto;
             }
             return texto;
         }

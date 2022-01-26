@@ -40,13 +40,15 @@
         :horaPx="horaPx"
         v-for="eventoPublico of eventosPublicosVisibles"
         :key="eventoPublico.id"
-        :esteEventoPublico="eventoPublico"
+        :esteEvento="eventoPublico"
         :extranjero="idParent && idParent != eventoPublico.idParent"
         :seleccionado="idEventoSeleccionado === eventoPublico.id"
         :modoEventosPublicosExtranjeros="modoEventosPublicosExtranjeros"
         :infoOffset="indiceOffset[eventoPublico.id]"
+        :diaCalendarioOver="esteDia"
         @meElimine="$emit('eventoEliminado', eventoPublico)"
         @click.native="$emit('clickEnEvento', eventoPublico)"
+        @meCambiaronDia="deleteEventoCache(eventoPublico); $emit('eventoCambiadoDia', $event)"
       />
     </div>
   </div>
@@ -77,12 +79,7 @@ export default {
           dateInicioDia: this.esteDia.date,
         };
       },
-      skip() {
-        return (
-          !this.somedayAbierto &&
-          this.esteDia.date.getTime() + 86400000 < new Date()
-        );
-      },
+      
     },
   },
   props: {
@@ -166,7 +163,6 @@ export default {
       }
     },
     addEventoCache(evento) {
-      console.log(`Dia ${this.esteDia.date} revisa si evento que empieza en ${evento.horarioInicio} le pertenece`);
       const millisInicioEvento=new Date(evento.horarioInicio).getTime();
       const millisInicioDia=this.esteDia.date.getTime();
       const millisFinalDia=this.esteDia.date.getTime()+86400000;
@@ -244,7 +240,6 @@ export default {
         });
     },
     deleteEventoCache(evento) {
-      console.log(`Dia calendario busca evento ${evento.nombre} para eliminarlo`);
       const tipoEvento=evento.__typename.charAt(0).toLowerCase()+evento.__typename.slice(1);
       var infoQuery = null;
       if (tipoEvento === "eventoPublico") {

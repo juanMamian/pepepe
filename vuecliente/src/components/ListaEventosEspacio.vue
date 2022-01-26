@@ -136,4 +136,11 @@ export default {
 </script>
 
 <style scoped>
+.listaEventosEspacio{
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+.eventoItemLista{
+  margin: 15px 0px;
+}
 </style>

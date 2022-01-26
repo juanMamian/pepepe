@@ -1,24 +1,28 @@
 <template>
   <div class="ventanaEventoPublico" :style="[colorVentana]">
     <div id="barraSuperior">
-      <div class="boton" title="Cerrar" style="margin-left:auto" @click="cerrarVentana">
+      <div
+        class="boton"
+        title="Cerrar"
+        style="margin-left: auto"
+        @click="cerrarVentana"
+      >
         <img src="@/assets/iconos/times.svg" alt="Salir" />
       </div>
 
       <div
         class="boton"
-        title="Repetir este evento"        
+        title="Repetir este evento"
         @click="mostrandoZonaRepetir = !mostrandoZonaRepetir"
       >
         <img src="@/assets/iconos/hourglass.svg" alt="Repetir" />
       </div>
     </div>
 
-    <div
-      id="zonaRepetir"
-      v-show="mostrandoZonaRepetir"
-    >
-      <div class="instruccion" style="margin-bottom:10px">Repetir este evento...</div>
+    <div id="zonaRepetir" v-show="mostrandoZonaRepetir">
+      <div class="instruccion" style="margin-bottom: 10px">
+        Repetir este evento...
+      </div>
 
       <select name="" id="selectFrecuenciaRepetir" v-model="periodoRepetir">
         <option value="diariamente">Diariamente</option>
@@ -35,11 +39,21 @@
           v-model="cantidadRepetir"
         />
         {{ cantidadRepetir > 1 ? "veces" : "vez" }}
-       
       </div>
-        <div class="boton" style="margin: 10px auto;" title="Aceptar" @click="repetirEvento(cantidadRepetir, periodoRepetir)">
-          <img src="@/assets/iconos/check.svg" alt="Aceptar" />
-        </div>
+      <div
+        class="boton"
+        style="margin: 10px auto"
+        title="Aceptar"
+        v-show="!enviandoQueryRepetir"
+        @click="repetirEvento(cantidadRepetir, periodoRepetir)"
+      >
+        <img src="@/assets/iconos/check.svg" alt="Aceptar" />
+      </div>
+      <loading
+        texto=""
+        v-show="enviandoQueryRepetir"
+        style="margin: 10px auto"
+      />
     </div>
     <div id="zonaNombre">
       <input
@@ -71,36 +85,61 @@
     <div id="zonaTiempos">
       <div id="bloqueHorarioInicio" class="bloqueCampo">
         <div class="nombreCampo">Inicio</div>
-        <div class="valorCampo" @click.stop="iniciarEdicionHorarioInicio">
-          <div id="horarioInicio" v-show="!editandoHorarioInicio">
-            {{ horarioInicioLegible }}
+        <div class="valorCampo">
+          <div
+            id="fechaInicio"
+            v-show="!editandoFechaInicio"
+            @click.stop="iniciarEdicionFechaInicio"
+          >
+            {{ fechaInicioLegible }}
           </div>
           <input
+            type="date"
+            id="inputFechaInicio"
+            v-show="editandoFechaInicio"
+            ref="inputFechaInicio"
+            @keypress.enter="updateFechaInicioHoldDuration($event.target.value)"
+          />
+          <div
+            id="horaInicio"
+            v-show="!editandoHoraInicio"
+            @click.stop="iniciarEdicionHoraInicio"
+          >
+            {{ horaInicioLegible }}
+          </div>
+
+          <input
             type="time"
-            id="inputHorarioInicio"
-            v-show="editandoHorarioInicio"
-            ref="inputHorarioInicio"
-            :class="{ deshabilitado: enviandoNuevoDateInicio }"
-            @blur="editandoHorarioInicio = false"
-            @change="updateHorarioInicio"
+            id="inputHoraInicio"
+            v-show="editandoHoraInicio"
+            ref="inputHoraInicio"
+            :class="{ deshabilitado: enviandoSomeHorario }"
+            @blur="editandoHoraInicio = false"
+            @keypress.enter="updateHoraInicioHoldDuration($event.target.value)"
           />
         </div>
       </div>
 
-      <div id="bloqueHorarioFinal" class="bloqueCampo">
-        <div class="nombreCampo">Final</div>
-        <div class="valorCampo" @click.stop="iniciarEdicionHorarioFinal">
-          <div id="horarioFinal" v-show="!editandoHorarioFinal">
-            {{ horarioFinalLegible }}
+      <div id="bloqueDuracion" class="bloqueCampo">
+        <div class="nombreCampo">Duracion</div>
+        <div class="valorCampo">
+          <div
+            id="duracion"
+            v-show="!editandoDuracion"
+            @click.stop="iniciarEdicionDuracion"
+          >
+            {{ duracionMinutos
+            }}{{ duracionMinutos != 1 ? " minutos" : " minuto" }}
           </div>
           <input
-            type="time"
-            id="inputHorarioFinal"
-            v-show="editandoHorarioFinal"
-            ref="inputHorarioFinal"
-            :class="{ deshabilitado: enviandoNuevoDateFinal }"
-            @blur="editandoHorarioFinal = false"
-            @change="updateHorarioFinal"
+            type="number"
+            id="inputDuracion"
+            style="width: 100px"
+            v-show="editandoDuracion"
+            ref="inputDuracion"
+            :class="{ deshabilitado: enviandoSomeHorario }"
+            @blur="editandoDuracion = false"
+            @keypress.enter="updateDuracion($event.target.value)"
           />
         </div>
       </div>
@@ -128,8 +167,7 @@
         class="boton"
         :class="{
           deshabilitado:
-            (!esteEvento.descripcion ||
-              esteEvento.descripcion.length < 1) &&
+            (!esteEvento.descripcion || esteEvento.descripcion.length < 1) &&
             !administrador,
         }"
         :style="{
@@ -211,8 +249,7 @@ import gql from "graphql-tag";
 import Loading from "./Loading.vue";
 import { fragmentoEventoPublico } from "./fragsCalendario";
 import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
-import debounce from "debounce";
-import {MixinBasicoEventos, MixinEdicionEventos} from "../MixinsEventos";
+import { MixinBasicoEventos, MixinEdicionEventos } from "../MixinsEventos";
 const QUERY_ESTE_EVENTO = gql`
   query ($idEvento: ID!) {
     eventoPublico(idEvento: $idEvento) {
@@ -241,38 +278,116 @@ export default {
     Loading,
     IconoPersonaAutonomo,
   },
-  mixins:[MixinBasicoEventos, MixinEdicionEventos],
+  mixins: [MixinBasicoEventos, MixinEdicionEventos],
   data() {
     return {
-      mostrando: null,      
-            esteEvento: {},
+      mostrando: null,
+      esteEvento: {},
 
-      editandoHorarioInicio: false,
+      editandoDateInicio: false,
       editandoHorarioFinal: false,
+      editandoDuracion: false,
 
       mostrandoZonaRepetir: false,
       periodoRepetir: "diariamente",
       cantidadRepetir: 1,
-      
     };
   },
   methods: {
-    
     cerrarVentana() {
       const indexEsteSubpath = this.$route.path.search("ventanaEventoPublico");
       const pathParent = this.$route.path.substring(0, indexEsteSubpath - 1);
       this.$router.push(pathParent);
     },
-    iniciarEdicionHorarioInicio() {
+    iniciarEdicionFechaInicio() {
       if (!this.administrador && !this.usuarioSuperadministrador) return;
 
-      this.$refs.inputHorarioInicio.value = this.horaInicioString;
-      this.editandoHorarioInicio = true;
+      console.log(
+        `Iniciando edicion de fecha inicio con ${this.fechaInicioString}`
+      );
+      this.$refs.inputFechaInicio.value = this.fechaInicioFormateada;
+      this.editandoFechaInicio = true;
       this.$nextTick(() => {
-        this.$refs.inputHorarioInicio.focus();
+        this.$refs.inputFechaInicio.focus();
       });
-    },    
-    updateHorarioInicio: debounce(function (e) {
+    },
+    iniciarEdicionHoraInicio() {
+      if (!this.administrador && !this.usuarioSuperadministrador) return;
+
+      this.$refs.inputHoraInicio.value = this.horaInicioLegible;
+      this.editandoHoraInicio = true;
+      this.$nextTick(() => {
+        this.$refs.inputHoraInicio.focus();
+      });
+    },
+    iniciarEdicionDuracion() {
+      if (!this.administrador && !this.usuarioSuperadministrador) return;
+
+      console.log(`Iniciando edicion de duración con ${this.duracionMinutos}`);
+      this.$refs.inputDuracion.value = this.duracionMinutos;
+      this.editandoDuracion = true;
+      this.$nextTick(() => {
+        this.$refs.inputDuracion.focus();
+      });
+    },
+    updateDuracion(nuevaDuracion) {
+      console.log(`Updating duración to ${nuevaDuracion} minutos`);
+      const nuevoHorarioFinal = new Date(
+        this.dateInicio.getTime() + nuevaDuracion * 60000
+      );
+      this.enviarNuevoHorarioFinal(nuevoHorarioFinal);
+    },
+    enviarNuevoHorarioFinal(dateFinal) {
+      this.enviandoNuevoDateFinal = true;
+      this.enviandoSomeHorario = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($nuevoDate: Date!, $tipoEvento: String!, $idEvento: ID!) {
+              setDateFinalEvento(
+                nuevoDate: $nuevoDate
+                tipoEvento: $tipoEvento
+                idEvento: $idEvento
+              )
+            }
+          `,
+          variables: {
+            nuevoDate: dateFinal,
+            tipoEvento: "eventoPublico",
+            idEvento: this.esteEvento.id,
+          },
+        })
+        .then(({ data: { setDateFinalEvento } }) => {
+          if (setDateFinalEvento) {
+            const store = this.$apollo.provider.defaultClient;
+            const cache = store.readQuery({
+              query: QUERY_ESTE_EVENTO,
+              variables: {
+                idEvento: this.esteEvento.id,
+              },
+            });
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+
+            nuevoCache.eventoPublico.horarioFinal = dateFinal;
+            store.writeQuery({
+              query: QUERY_ESTE_EVENTO,
+              variables: {
+                idEvento: this.esteEvento.id,
+              },
+              data: nuevoCache,
+            });
+            this.enviandoNuevoDateFinal = false;
+            this.enviandoSomeHorario = false;
+            this.editandoDuracion = false;
+          }
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoNuevoDateFinal = false;
+          this.enviandoSomeHorario = false;
+        });
+    },
+    updateHorarioInicio(e) {
       const nuevoTime = e.target.value;
       const horas = parseInt(nuevoTime.substring(0, 2));
       const minutos = parseInt(nuevoTime.substring(3));
@@ -327,7 +442,7 @@ export default {
               data: nuevoCache,
             });
             this.enviandoNuevoDateInicio = false;
-            this.editandoHorarioInicio = false;
+            this.editandoDateInicio = false;
           }
         })
         .catch((error) => {
@@ -335,7 +450,7 @@ export default {
           this.enviandoNuevoDateInicio = false;
         });
       // const nuevoDate=this.
-    }, 1000),
+    },
     iniciarEdicionHorarioFinal() {
       if (!this.administrador && !this.usuarioSuperadministrador) return;
       console.log(`Iniciando edicion`);
@@ -345,7 +460,7 @@ export default {
         this.$refs.inputHorarioFinal.focus();
       });
     },
-    updateHorarioFinal: debounce(function (e) {
+    updateHorarioFinal(e) {
       const nuevoTime = e.target.value;
       const horas = parseInt(nuevoTime.substring(0, 2));
       const minutos = parseInt(nuevoTime.substring(3));
@@ -362,60 +477,84 @@ export default {
         return;
       }
 
-      this.enviandoNuevoDateFinal = true;
+      this.enviarNuevoHorarioFinal(dateFinal);
+      // const nuevoDate=this.
+    },
+    enviarNuevaDateInicioHoldDuration(nuevaDateInicio) {
+      this.enviandoNuevoDateInicio = true;
+      this.enviandoSomeHorario = true;
       this.$apollo
         .mutate({
           mutation: gql`
             mutation ($nuevoDate: Date!, $tipoEvento: String!, $idEvento: ID!) {
-              setDateFinalEvento(
+              setDateInicioEventoHoldDuration(
                 nuevoDate: $nuevoDate
                 tipoEvento: $tipoEvento
                 idEvento: $idEvento
-              )
+              ) {
+                ...fragEventoPublico
+              }
             }
+            ${fragmentoEventoPublico}
           `,
           variables: {
-            nuevoDate: dateFinal,
+            nuevoDate: nuevaDateInicio,
             tipoEvento: "eventoPublico",
             idEvento: this.esteEvento.id,
           },
         })
-        .then(({ data: { setDateFinalEvento } }) => {
-          if (setDateFinalEvento) {
-            const store = this.$apollo.provider.defaultClient;
-            const cache = store.readQuery({
-              query: QUERY_ESTE_EVENTO,
-              variables: {
-                idEvento: this.esteEvento.id,
-              },
-            });
-            var nuevoCache = JSON.parse(JSON.stringify(cache));
-
-            nuevoCache.eventoPublico.horarioFinal = dateFinal;
-            store.writeQuery({
-              query: QUERY_ESTE_EVENTO,
-              variables: {
-                idEvento: this.esteEvento.id,
-              },
-              data: nuevoCache,
-            });
-            this.enviandoNuevoDateFinal = false;
-            this.editandoHorarioFinal = false;
-          }
+        .then(({ data: { setDateInicioEventoHoldDuration } }) => {
+          this.$emit("eventoCambioFecha", setDateInicioEventoHoldDuration);
+          this.enviandoSomeHorario = false;
+          this.enviandoNuevoDateInicio = false;
+          this.editandoFechaInicio = false;
+          this.editandoHoraInicio = false;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
-          this.enviandoNuevoDateFinal = false;
+          this.enviandoNuevoDateInicio = false;
+          this.enviandoSomeHorario = false;
         });
-      // const nuevoDate=this.
-    }, 1000),
+    },
+    updateFechaInicioHoldDuration(nuevaFechaInicioFormateada) {
+      console.log(
+        `se hara update de fecha inicio holding duration. ${nuevaFechaInicioFormateada}`
+      );
+      const datosFecha = new Date(nuevaFechaInicioFormateada);
+      const nuevoDiaInicio = datosFecha.getUTCDate();
+      const nuevoMesInicio = datosFecha.getUTCMonth();
+      const nuevoYearInicio = datosFecha.getUTCFullYear();
+
+      var nuevaDateInicio = new Date(this.esteEvento.horarioInicio);
+      nuevaDateInicio.setDate(nuevoDiaInicio);
+      nuevaDateInicio.setMonth(nuevoMesInicio);
+      nuevaDateInicio.setFullYear(nuevoYearInicio);
+
+      console.log(`Quedará: ${nuevaDateInicio}`);
+
+      this.enviarNuevaDateInicioHoldDuration(nuevaDateInicio);
+    },
+    updateHoraInicioHoldDuration(nuevaHoraInicioFormateada) {
+      console.log(
+        `se hara update de hora inicio holding duration. ${nuevaHoraInicioFormateada}`
+      );
+      const horas = nuevaHoraInicioFormateada.substring(0, 2);
+      const minutos = nuevaHoraInicioFormateada.substring(3);
+
+      var nuevaDateInicio = new Date(this.esteEvento.horarioInicio);
+      nuevaDateInicio.setHours(horas);
+      nuevaDateInicio.setMinutes(minutos);
+
+      console.log(`Quedará: ${nuevaDateInicio}`);
+      this.enviarNuevaDateInicioHoldDuration(nuevaDateInicio);
+    },
   },
-  computed: {        
+  computed: {
     colorVentana() {
       return {
         backgroundColor: "var(--paletaMain)",
       };
-    },    
+    },
     horaInicioString() {
       return new Date(this.esteEvento.horarioInicio)
         .toTimeString()
@@ -427,7 +566,6 @@ export default {
         .substring(0, 5);
     },
   },
-  
 };
 </script>
 

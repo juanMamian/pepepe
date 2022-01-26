@@ -73,6 +73,7 @@
           @desSeleccionDeEvento="idEventoSeleccionado = null"
           @eventoCreado="sendEventoCreadoToDias($event);$emit('eventoCreado', $event);"
           @eventoEliminado="sendEventoEliminadoToDias($event);$emit('eventoEliminado', $event)"
+          @eventoCambiadoDia="sendEventoCreadoToDias($event)"
         />
         <div class="boton botonCargarDias" @click="addSemanaAfter" :style="[offsetScroll]">
           <img src="@/assets/iconos/plusCircle.svg" alt="Mas">

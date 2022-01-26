@@ -73,6 +73,7 @@ export const typeDefs = gql`
         editarDescripcionEvento(idEvento:ID!, tipoEvento: String!, nuevoDescripcion: String!):EventoPublico,
         setDateFinalEvento(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Boolean,
         setDateInicioEvento(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Boolean,
+        setDateInicioEventoHoldDuration(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):EventoPublico,
         repetirEventoPeriodicamente(periodoRepetir: String, cantidadRepetir:Int!, idEvento:ID!, tipoEvento:String!):[EventoPublico],
 
 
@@ -407,8 +408,59 @@ export const resolvers = {
             console.log(`HorarioInicio cambiado`);
             return true;
         },
+        async setDateInicioEventoHoldDuration(_: any, { nuevoDate, tipoEvento, idEvento }, contexto: contextoQuery) {
+            console.log(`Query de cambiar el dateInicio del eventopublico con id ${idEvento} keeping duration`);
+            if (!contexto.usuario || !contexto.usuario.id) {
+                console.log(`Sin credenciales de usuario`);
+                throw new AuthenticationError("Login requerido");
+            }
+
+            var elEvento: any = null;
+            try {
+                if (tipoEvento === 'eventoPublico') {
+                    elEvento = await EventoPublico.findById(idEvento).exec();
+                }
+                else {
+                    throw "Tipo de evento '" + tipoEvento + "' no reconocido";
+                }
+                if (!elEvento) {
+                    throw "eventopublico no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el eventopublico a cambiar nombre en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador"];
+            const credencialesUsuario = contexto.usuario;
+            if (elEvento.idAdministrador != credencialesUsuario.id && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando nombre de eventopublico`);
+                throw new AuthenticationError("No autorizado");
+            }
+            const currentDuration=elEvento.horarioFinal - elEvento.horarioInicio;
+            console.log(`Duraba ${currentDuration}`);
+
+            elEvento.horarioInicio = nuevoDate;
+            elEvento.horarioFinal=new Date(new Date(nuevoDate).getTime()+currentDuration);
+            console.log(`Final quedará en ${elEvento.horarioFinal}`);
+
+            const nuevaDuracion = elEvento.horarioFinal - elEvento.horarioInicio;
+            console.log(`Quedará con duración: ${nuevaDuracion}`);
+
+            try {
+                await elEvento.save();
+            }
+            catch (error) {
+                console.log("Error guardando el evento. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`HorarioInicio cambiado`);
+            return elEvento;
+        },
         async setDateFinalEvento(_: any, { nuevoDate, tipoEvento, idEvento }, contexto: contextoQuery) {
-            console.log(`Query de cambiar el dateFinal del eventopublico con id ${idEvento}`);
+            console.log(`Query de cambiar el dateFinal del evento con id ${idEvento}`);
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Sin credenciales de usuario`);
                 throw new AuthenticationError("Login requerido");

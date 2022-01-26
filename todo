@@ -5,3 +5,4 @@
 -Verificar los sitios en donde se debe decidir qué hacer de acuerdo con el tipoEvento pasado al servidor.
 -En el mixinBasicoEventos hay demasiadas versiones de horarioLegible, depurar.
 -Restringir en el modelo de mongoose el campo horario final de los eventos para que no puedan durar mas de un límite.
+-revisar los sitios es que se uso Date.parse en el calendario.

@@ -11,7 +11,7 @@
             },
           ]"
         ></div> -->
-        
+
         <div id="zonaNombre">
           <input
             @keypress.enter.prevent="guardarNuevoNombre"
@@ -183,12 +183,68 @@
         <div
           class="boton"
           title="Crear nuevo evento de este espacio"
-          @click="crearEventoPublico"
-          v-show="!creandoEventoPublico"
+          @click="iniciarCuadroCrearEventoPublico"
+          v-show="!mostrandoCuadroCrearEventoPublico"
         >
           <img src="@/assets/iconos/plusCircle.svg" alt="Crear evento" />
         </div>
+        <div
+          class="boton"
+          title="Cancelar"
+          @click="mostrandoCuadroCrearEventoPublico = false"
+          v-show="mostrandoCuadroCrearEventoPublico"
+        >
+          <img src="@/assets/iconos/times.svg" alt="Cancelar" />
+        </div>
         <loading v-show="creandoEventoPublico" texto="" />
+      </div>
+      <div
+        v-show="mostrandoCuadroCrearEventoPublico"
+        id="cuadroCrearEventoPublico"
+      >
+        <div class="bloqueCampoNuevoEventoPublico">
+          <div class="nombreCampo">Nombre</div>
+          <input
+            class="inputCampo"
+            type="text"
+            name=""
+            id="inputNombreNuevoEventoPublico"
+            v-model="nombreNuevoEventoPublico"
+          />
+        </div>
+
+        <div class="bloqueCampoNuevoEventoPublico">
+          <div class="nombreCampo">Inicio</div>
+          <input
+            type="date"
+            v-model="dateInicioNuevoEventoPublico"
+            class="inputCampo"
+          />
+          <input
+            type="time"
+            v-model="horarioInicioNuevoEventoPublico"
+            class="inputCampo"
+          />
+        </div>
+
+        <div class="bloqueCampoNuevoEventoPublico">
+          <div class="nombreCampo">Final</div>
+          <input
+            type="date"
+            v-model="dateFinalNuevoEventoPublico"
+            class="inputCampo"
+          />
+          <input
+            type="time"
+            v-model="horarioFinalNuevoEventoPublico"
+            class="inputCampo"
+          />
+        </div>
+
+        <div class="boton" id="botonCrearEventoPublico" style="margin: 10px auto" title="Crear evento" v-show="!creandoEventoPublico" @click="crearEventoPublico">
+          <img src="@/assets/iconos/calendarPlus.svg" alt="CrearEvento">
+        </div>
+        <loading texto="" v-show="creandoEventoPublico" style="margin: 10px auto" />
       </div>
       <lista-eventos-espacio
         :idEspacio="this.esteEspacio.id"
@@ -233,7 +289,14 @@ export default {
       editandoDescripcion: false,
       enviandoNuevoDescripcion: false,
 
+      mostrandoCuadroCrearEventoPublico: false,
+      nombreNuevoEventoPublico: 'Sesión de '+this.esteEspacio.nombre,
+      dateInicioNuevoEventoPublico: null,
+      dateFinalNuevoEventoPublico: null,
+      horarioInicioNuevoEventoPublico:null,
+      horarioFinalNuevoEventoPublico:null,
       creandoEventoPublico: false,
+
       eliminandose: false,
     };
   },
@@ -400,10 +463,56 @@ export default {
         this.$refs.calendario.sendEventoEliminadoToDias(evento);
       }
     },
+    iniciarCuadroCrearEventoPublico() {
+      var dateActual = new Date();
+      dateActual.setHours(8);
+      dateActual.setMinutes(0);
+      dateActual.setSeconds(0);
+      dateActual.setMilliseconds(0);
+
+      dateActual = new Date(dateActual.getTime() + 86400000);
+      // const offset = dateActual.getTimezoneOffset()    
+
+      const dateActualString = dateActual.toISOString().split('T')[0];
+      const dateActualPlusHour = new Date(dateActual.getTime() + 3600000);
+      const dateActualPlusHourString = dateActualPlusHour.toISOString().split('T')[0];      
+      
+
+      this.dateInicioNuevoEventoPublico=dateActualString;
+      this.dateFinalNuevoEventoPublico=dateActualPlusHourString;
+
+      this.horarioInicioNuevoEventoPublico='08:00';
+      this.horarioFinalNuevoEventoPublico='09:00';
+      this.mostrandoCuadroCrearEventoPublico = true;
+    },
     crearEventoPublico() {
       if (!this.administrador && !this.usuarioSuperadministrador) {
         return;
-      }
+      }      
+      console.log(`Date saved: ${this.dateInicioNuevoEventoPublico}`);
+      
+      var dateInicio=new Date(this.dateInicioNuevoEventoPublico);      
+      console.log(`Date parsed: ${dateInicio}`);
+
+      const diaMesInicio=dateInicio.getUTCDate();
+      console.log(`Creando evento público el ${diaMesInicio}`);
+      const horasInicio=parseInt(this.horarioInicioNuevoEventoPublico.substring(0, 2));
+      const minutosInicio=parseInt(this.horarioInicioNuevoEventoPublico.substring(3));
+
+      dateInicio.setDate(diaMesInicio);
+      dateInicio.setHours(horasInicio);
+      dateInicio.setMinutes(minutosInicio);
+
+      var dateFinal=new Date(this.dateFinalNuevoEventoPublico);
+      const diaMesFinal=dateFinal.getUTCDate();
+      dateFinal.setDate(diaMesFinal);
+      const horasFinal=parseInt(this.horarioFinalNuevoEventoPublico.substring(0, 2));
+      const minutosFinal=parseInt(this.horarioFinalNuevoEventoPublico.substring(3));
+
+      dateFinal.setHours(horasFinal);
+      dateFinal.setMinutes(minutosFinal);
+      console.log(`Creando evento público el ${diaMesInicio}`);
+
       this.creandoEventoPublico = true;
       this.$apollo
         .mutate({
@@ -417,8 +526,8 @@ export default {
           `,
           variables: {
             infoNuevoEvento: {
-              horarioInicio: new Date(),
-              horarioFinal: new Date(Date.now() + 3600000),
+              horarioInicio: dateInicio,
+              horarioFinal: dateFinal,
               tipoParent: "espacio",
               idParent: this.esteEspacio.id,
             },
@@ -426,6 +535,7 @@ export default {
         })
         .then(({ data: { crearEventoPublico } }) => {
           this.creandoEventoPublico = false;
+          this.mostrandoCuadroCrearEventoPublico=false;
           this.responderEventoCreado(crearEventoPublico);
         })
         .catch((error) => {
@@ -433,13 +543,13 @@ export default {
           this.creandoEventoPublico = false;
         });
     },
-    checkIfMyNewEventos(eventos){
-      eventos.forEach(evento=>{
-        if(evento.idParent===this.esteEspacio.id){
+    checkIfMyNewEventos(eventos) {
+      eventos.forEach((evento) => {
+        if (evento.idParent === this.esteEspacio.id) {
           this.responderEventoCreado(evento);
         }
-      })
-    }
+      });
+    },
   },
   computed: {
     administrador() {
@@ -497,6 +607,7 @@ export default {
         this.$refs.calendario.eventoSiendoCreado = null;
       }
     },
+    
   },
 };
 </script>
@@ -557,5 +668,25 @@ export default {
 }
 .calendario {
   margin-top: 10px;
+}
+#cuadroCrearEventoPublico{
+  background-color: rgba(128, 128, 128, 0.123); 
+  padding: 20px 5px;
+
+}
+.bloqueCampoNuevoEventoPublico{
+  display: flex;
+  align-items: center;
+  margin: 10px 0px;
+  flex-wrap: wrap;
+}
+.bloqueCampoNuevoEventoPublico input{
+  margin:0px 5px;
+  font-size:11px;
+  max-width: 120px;
+}
+.listaEventosEspacio{
+  max-height: 70vh;
+  
 }
 </style>
