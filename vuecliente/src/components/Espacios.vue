@@ -142,14 +142,7 @@ export default {
   flex-direction: row-reverse;
     padding: 10px 20px;
 }
-#visorVentanaEventoPublico{
-  position: fixed;
-  width: min(600px, 95vw);
-  left: 3vw;
-  top: 12vh;
-  height: min(600px, 84vh);
-  z-index: 10;
-}
+
 .botonControl {
   width: 20px;
   height: 20px;

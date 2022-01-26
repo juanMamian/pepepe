@@ -53,7 +53,10 @@ export const esquemaEventoPersonal = new mongoose.Schema({
     },
     idEventoMarco:{
         type:String,
-    }
+    },
+    lugar:{
+        type:String,
+    },
     
 });
 

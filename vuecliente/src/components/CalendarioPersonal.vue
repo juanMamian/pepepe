@@ -1,6 +1,7 @@
 <template>
   <div class="calendarioPersonal">
-      <calendario :configCalendario="{tipo:'personal'}"/>
+      <calendario v-if="usuarioLogeado" :enfasis="'eventosPersonales'" :idUsuarioTarget="this.usuario.id"/>
+      <router-view />
   </div>
 </template>
 

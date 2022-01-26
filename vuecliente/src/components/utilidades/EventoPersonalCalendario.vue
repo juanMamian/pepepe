@@ -1,15 +1,21 @@
 <template>
   <div
-    class="eventoPublicoCalendario"
+    class="eventoPersonalCalendario"
     :style="[estiloPos, estiloZ]"
-    :class="{
-      deshabilitado: eliminandose,
-      bloque: claseOffset === 'bloque' || seleccionado,
-      barra: claseOffset === 'barra' && !seleccionado,
-    }"
+    :class="{ deshabilitado: eliminandose }"
   >
-    <div id="barra" :style="estiloSize" :class="{ seleccionado }"></div>
-    <div id="bloque" :style="estiloSize" :class="{ extranjero, seleccionado }">
+    <div
+      id="barra"
+      v-show="modo === 'barra'"
+      :style="estiloSize"
+      :class="{ seleccionado }"
+    ></div>
+    <div
+      id="bloque"
+      v-show="modo === 'bloque'"
+      :style="estiloSize"
+      :class="{ extranjero, seleccionado }"
+    >
       <div id="zonaNombre">
         <div
           id="elNombre"
@@ -23,14 +29,6 @@
       <div id="contenedorControlesEvento" :class="{ seleccionado }">
         <div
           class="boton botonControlEvento"
-          title="Asistir a este evento"
-          v-if="usuarioLogeado && !administrador"
-          @click.stop="crearEventoPersonalUnder"
-        >
-          <img src="@/assets/iconos/calendarPlus.svg" alt="Asistir" />
-        </div>
-        <div
-          class="boton botonControlEvento"
           title="Eliminar este evento"
           v-if="administrador || usuarioSuperadministrador"
           @click.stop="eliminarse"
@@ -39,11 +37,13 @@
         </div>
         <div
           class="boton botonControlEvento"
-          title="Expandir este evento"
+          title="Expandir este evento"          
           @click.stop="
-            $router.push($route.path + '/ventanaEventoPublico/' + esteEvento.id)
+            $router.push(
+              $route.path + '/ventanaEventoPersonal/' + esteEvento.id
+            )
           "
-        >
+        >          
           <img src="@/assets/iconos/expand.svg" alt="Expandir" />
         </div>
       </div>
@@ -52,30 +52,20 @@
 </template>
 
 <script>
-import {
-  MixinBasicoEventosPublicos,
-  MixinEventosPublicosUseEventosPersonalesUnder,
-  MixinBasicoEventos,
-  MixinEventoCalendario,
-} from "../MixinsEventos";
+import { MixinBasicoEventos, MixinEventoCalendario } from "../MixinsEventos";
 
 export default {
-  name: "EventoPublicoCalendario",
+  name: "eventoPersonalCalendario",
   components: {},
   props: {
     esteEvento: Object,
     horaPx: Number,
-    extranjero: Boolean,
     seleccionado: Boolean,
     infoOffset: Object,
+    extranjero: Boolean,
     diaCalendarioOver: Object,
   },
-  mixins: [
-    MixinBasicoEventos,
-    MixinBasicoEventosPublicos,
-    MixinEventoCalendario,
-    MixinEventosPublicosUseEventosPersonalesUnder,
-  ],
+  mixins: [MixinBasicoEventos, MixinEventoCalendario],
   data() {
     return {
       mostrando: null,
@@ -86,29 +76,22 @@ export default {
     administrador() {
       if (!this.usuarioLogeado) return false;
 
-      return this.usuario.id === this.esteEvento.idAdministrador;
+      return this.usuario.id === this.esteEvento.idPersona;
     },
-    claseOffset() {
-      return this.infoOffset.clase;
+    modo() {
+      return "bloque";
     },
   },
 };
 </script>
 
 <style scoped>
-.eventoPublicoCalendario {
+.eventoPersonalCalendario {
   position: absolute;
 }
-.eventoPublicoCalendario.bloque #barra {
-  display: none;
-}
-.eventoPublicoCalendario.barra #bloque {
-  display: none;
-}
-
 #barra {
   height: 15px;
-  background-color: var(--paletaMain);
+  background-color: var(--paletaVerde);
   opacity: 0.5;
 }
 #bloque {
@@ -118,7 +101,7 @@ export default {
   border-style: solid;
   border-color: transparent;
   border-radius: 5px;
-  background-color: var(--paletaMain);
+  background-color: var(--paletaVerde);
 }
 #bloque.extranjero {
   opacity: 0.6;

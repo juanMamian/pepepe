@@ -1,13 +1,13 @@
-import { fragmentoEventoPublico } from "./utilidades/fragsCalendario";
+import { fragmentoEventoPublico, fragmentoEventoPersonal } from "./utilidades/fragsCalendario";
 import { charProhibidosNombreCosa, charProhibidosTexto } from "./configs";
 import gql from "graphql-tag";
 const diasSemana = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sábado"];
 const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+
 export const MixinEdicionEventos = {
     data() {
         return {
-
-
             nuevoNombre: "Nuevo nombre",
             editandoNombre: false,
             enviandoNuevoNombre: false,
@@ -16,9 +16,6 @@ export const MixinEdicionEventos = {
             editandoDescripcion: false,
             enviandoNuevoDescripcion: false,
 
-            minRepetir: 1,
-            maxRepetir: 52,
-
             editandoFechaInicio: false,
             editandoHoraInicio: false,
             nuevoDuracion: null,
@@ -26,13 +23,9 @@ export const MixinEdicionEventos = {
             enviandoNuevoDateInicio: false,
             enviandoNuevoDateFinal: false,
             enviandoHorarios: false,
-            enviandoSomeHorario:false,
-
-            enviandoQueryRepetir:false,
-
-
+            enviandoSomeHorario: false,
         }
-    },
+    },    
     methods: {
         guardarNuevoNombre() {
             this.nuevoNombre = this.$refs.inputNuevoNombre.value;
@@ -147,45 +140,6 @@ export const MixinEdicionEventos = {
                 this.$refs.inputNuevoNombre.blur();
             }
         },
-        repetirEvento(cantidadRepetir, periodoRepetir) {
-            if (!this.usuarioSuperadministrador && !this.administrador) {
-                return;
-            }
-            cantidadRepetir = parseInt(cantidadRepetir);
-
-            if (cantidadRepetir < this.minRepetir || cantidadRepetir > this.maxRepetir) {
-                return;
-            }
-            console.log(`Se hara query de repetir este evento ${cantidadRepetir} veces ${periodoRepetir}`)
-            this.enviandoQueryRepetir=true;
-            this.$apollo.mutate({
-                mutation: gql`
-                mutation($periodoRepetir: String, $cantidadRepetir: Int!, $idEvento:ID!, $tipoEvento:String!){
-                  repetirEventoPeriodicamente(periodoRepetir:$periodoRepetir, cantidadRepetir: $cantidadRepetir, idEvento: $idEvento, tipoEvento:$tipoEvento){
-                    ...fragEventoPublico
-                  }
-                } 
-                ${fragmentoEventoPublico}       
-              `,
-                variables: {
-                    periodoRepetir: periodoRepetir,
-                    cantidadRepetir: cantidadRepetir,
-                    idEvento: this.esteEvento.id,
-                    tipoEvento: this.tipoEvento,
-                }
-            }).then(({ data: { repetirEventoPeriodicamente } }) => {
-                if (repetirEventoPeriodicamente) {
-                    this.$emit('meRepetiPeriodicamente', repetirEventoPeriodicamente);
-                    this.mostrandoZonaRepetir=false;
-                }
-                    this.enviandoQueryRepetir=false;
-
-            }).catch((error) => {
-                console.log(`Error: ${error}`);
-                this.enviandoQueryRepetir=false;
-
-            })
-        },
         eliminarse() {
             if (
                 !confirm(
@@ -221,16 +175,6 @@ export const MixinEdicionEventos = {
             this.nuevoDuracion = this.esteEvento.horarioFinal - this.esteEvento.horarioInicio;
             this.editandoDuracion = true;
         },
-        guardarHorariosInicioDuracion() {
-            if (!this.admiistrador && !this.usuarioSuperadministrador) {
-                return;
-            }
-
-            this.
-
-                this.$apol
-        }
-
     },
     computed: {
         nuevoNombreIlegal() {
@@ -268,9 +212,63 @@ export const MixinEdicionEventos = {
             }
         },
     },
+}
+
+export const MixinEdicionEventosPublicos = {
+    data() {
+        return {
+
+            minRepetir: 1,
+            maxRepetir: 52,
+
+            enviandoQueryRepetir: false,
+        }
+    },
+    methods: {
+        repetirEvento(cantidadRepetir, periodoRepetir) {
+            if (!this.usuarioSuperadministrador && !this.administrador) {
+                return;
+            }
+            cantidadRepetir = parseInt(cantidadRepetir);
+
+            if (cantidadRepetir < this.minRepetir || cantidadRepetir > this.maxRepetir) {
+                return;
+            }
+            console.log(`Se hara query de repetir este evento ${cantidadRepetir} veces ${periodoRepetir}`)
+            this.enviandoQueryRepetir = true;
+            this.$apollo.mutate({
+                mutation: gql`
+                mutation($periodoRepetir: String, $cantidadRepetir: Int!, $idEvento:ID!, $tipoEvento:String!){
+                  repetirEventoPeriodicamente(periodoRepetir:$periodoRepetir, cantidadRepetir: $cantidadRepetir, idEvento: $idEvento, tipoEvento:$tipoEvento){
+                    ...fragEventoPublico
+                  }
+                } 
+                ${fragmentoEventoPublico}       
+              `,
+                variables: {
+                    periodoRepetir: periodoRepetir,
+                    cantidadRepetir: cantidadRepetir,
+                    idEvento: this.esteEvento.id,
+                    tipoEvento: this.tipoEvento,
+                }
+            }).then(({ data: { repetirEventoPeriodicamente } }) => {
+                if (repetirEventoPeriodicamente) {
+                    this.$emit('meRepetiPeriodicamente', repetirEventoPeriodicamente);
+                    this.mostrandoZonaRepetir = false;
+                }
+                this.enviandoQueryRepetir = false;
+
+            }).catch((error) => {
+                console.log(`Error: ${error}`);
+                this.enviandoQueryRepetir = false;
+
+            })
+        },
+    },
+
 };
 
-export const MixinBasicoEventos = {
+export const MixinBasicoEventosPublicos = {
     data() {
         return {
         }
@@ -281,21 +279,86 @@ export const MixinBasicoEventos = {
 
             return this.usuario.id === this.esteEvento.idAdministrador;
         },
+
+
+    }
+}
+export const MixinBasicoEventosPersonales = {
+    data() {
+        return {
+        }
+    },
+    computed: {
+        administrador() {
+            if (!this.usuarioLogeado) return false;
+
+            return this.usuario.id === this.esteEvento.idPersona;
+        },
+
+
+    }
+}
+
+export const MixinEventosPublicosUseEventosPersonalesUnder = {
+    data() {
+        return {
+            creandoEventoPersonalUnder: false,
+        }
+    },
+    methods: {
+        crearEventoPersonalUnder() {
+            console.log(`Creando evento personal under`);
+            this.creandoEventoPersonalUnder = true;
+
+            this.$apollo.mutate({
+                mutation: gql`
+                    mutation($infoEventoPersonal: InputCrearEventoPersonal){
+                        crearEventoPersonal(infoEventoPersonal:$infoEventoPersonal){
+                            ...fragEventoPersonal
+                        }
+                    }
+                ${fragmentoEventoPersonal}
+                `,
+                variables: {
+                    infoEventoPersonal: {
+                        idPersona: this.usuario.id,
+                        idEventoMarco: this.esteEvento.id
+                    }
+                }
+            }).then(({ data: { crearEventoPersonal } }) => {
+                this.creandoEventoPersonalUnder = false;
+                this.$emit('creadoEventoPersonal', crearEventoPersonal);
+
+            }).catch((error) => {
+                console.log(`Error: ${error}`);
+                this.creandoEventoPersonalUnder = false;
+            })
+        }
+    }
+}
+
+export const MixinBasicoEventos = {
+    data() {
+        return {
+
+        }
+    },
+    computed: {
         tipoEvento() {
             return this.esteEvento.__typename.charAt(0).toLowerCase() + this.esteEvento.__typename.slice(1);
         },
-        dateInicio(){
+        dateInicio() {
             return new Date(this.esteEvento.horarioInicio);
-        },  
-        fechaInicioFormateada(){
+        },
+        fechaInicioFormateada() {
             const dateActualString = this.dateInicio.toISOString().split('T')[0];
             return dateActualString;
         },
-        fechaFinalFormateada(){
+        fechaFinalFormateada() {
             const dateActualString = this.dateFinal.toISOString().split('T')[0];
             return dateActualString;
         },
-        dateFinal(){
+        dateFinal() {
             return new Date(this.esteEvento.horarioFinal)
         },
         horarioInicioFormateado() {
@@ -313,7 +376,7 @@ export const MixinBasicoEventos = {
             );
         },
         fechaInicioLegible() {
-            
+
             const diaSemana = diasSemana[this.dateInicio.getDay()];
             const diaMes = this.dateInicio.getDate();
             const mes = meses[this.dateInicio.getMonth()];
@@ -331,7 +394,7 @@ export const MixinBasicoEventos = {
             if (('' + minutos).length < 2) {
                 minutos = '0' + minutos;
             }
-            return  hora + ':' + minutos
+            return hora + ':' + minutos
         },
         dateInicioLegible() {
             const texto = this.fechaInicioLegible + ", " + this.horaInicioLegible;
@@ -355,7 +418,7 @@ export const MixinBasicoEventos = {
             if (('' + minutos).length < 2) {
                 minutos = '0' + minutos;
             }
-            return  hora + ':' + minutos
+            return hora + ':' + minutos
         },
         dateFinalLegible() {
 
@@ -416,5 +479,364 @@ export const MixinBasicoEventos = {
             return texto;
         }
     }
+
 }
 
+export const MixinEventoCalendario = {
+    data() {
+        return {
+            eliminandose: false,
+            recogido: false,
+        }
+    },
+    computed: {
+        duracionMinutos() {
+            return (this.dateFinal.getTime() - this.dateInicio.getTime()) / 60000;
+        },
+        estiloSize() {
+            const anchoPx = (this.duracionMinutos / 60) * this.horaPx;
+            return {
+                width: anchoPx + "px",
+            };
+        },
+        estiloPos() {
+            const millisDia = (this.dateInicio.getHours() * 3600000) + (this.dateInicio.getMinutes() * 60000)
+            return {
+                left: (millisDia / 3600000) * this.horaPx + "px",
+                top: this.infoOffset ? this.infoOffset.top + 'px' : 0 + "px",
+            };
+        },
+        estiloZ(){
+            return {
+                zIndex:this.seleccionado?10:0
+            }
+        }
+    },
+    methods: {
+        eliminarse() {
+            if (
+                !confirm(
+                    "¿Confirmar la eliminación de este evento? (Esta acción no puede deshacerse)"
+                )
+            )
+                return;
+
+            if (!this.administrador && !this.usuarioSuperadministrador) {
+                return;
+            }
+            this.eliminandose = true;
+            this.$apollo
+                .mutate({
+                    mutation: gql`
+                  mutation ($idEvento: ID!, $tipoEvento: String!) {
+                    eliminarEvento(idEvento: $idEvento, tipoEvento: $tipoEvento)
+                  }
+                `,
+                    variables: {
+                        idEvento: this.esteEvento.id,
+                        tipoEvento: this.esteEvento.__typename.charAt(0).toLowerCase() + this.esteEvento.__typename.slice(1),
+                    },
+                })
+                .then(() => {
+                    this.$emit("meElimine");
+                })
+                .catch((error) => {
+                    console.log(`Error: ${error}`);
+                });
+        },
+    },
+    watch: {
+        dateInicio(dateInicio) {
+            console.log(`Cambio de date inicio. Ahora inicio en ${dateInicio}`);
+            if (
+                dateInicio < this.diaCalendarioOver.date ||
+                dateInicio.getTime() > this.diaCalendarioOver.date.getTime() + 86400000
+            ) {
+                console.log(`${this.esteEvento.nombre} dice: Me cambiaron de día`);
+                this.$emit("meCambiaronDia", this.esteEvento);
+            }
+        },
+    },
+}
+
+export const MixinVentanaEvento = {
+    data() {
+        return {
+            mostrando: null,
+            esteEvento: {},
+
+            editandoDateInicio: false,
+            editandoHorarioFinal: false,
+            editandoDuracion: false,
+        }
+
+    },
+    methods: {
+        cerrarVentana() {
+            const indexEsteSubpath=this.tipoEvento==='eventoPublico'?this.$route.path.search("ventanaEventoPublico"):this.tipoEvento==='eventoPersonal'?this.$route.path.search("ventanaEventoPersonal"):null
+            if(!indexEsteSubpath)return;
+            const pathParent = this.$route.path.substring(0, indexEsteSubpath - 1);
+            this.$router.push(pathParent);
+        },
+        iniciarEdicionFechaInicio() {
+            if (!this.administrador && !this.usuarioSuperadministrador) return;
+
+            console.log(
+                `Iniciando edicion de fecha inicio con ${this.fechaInicioString}`
+            );
+            this.$refs.inputFechaInicio.value = this.fechaInicioFormateada;
+            this.editandoFechaInicio = true;
+            this.$nextTick(() => {
+                this.$refs.inputFechaInicio.focus();
+            });
+        },
+        iniciarEdicionHoraInicio() {
+            if (!this.administrador && !this.usuarioSuperadministrador) return;
+
+            this.$refs.inputHoraInicio.value = this.horaInicioLegible;
+            this.editandoHoraInicio = true;
+            this.$nextTick(() => {
+                this.$refs.inputHoraInicio.focus();
+            });
+        },
+        iniciarEdicionDuracion() {
+            if (!this.administrador && !this.usuarioSuperadministrador) return;
+
+            console.log(`Iniciando edicion de duración con ${this.duracionMinutos}`);
+            this.$refs.inputDuracion.value = this.duracionMinutos;
+            this.editandoDuracion = true;
+            this.$nextTick(() => {
+                this.$refs.inputDuracion.focus();
+            });
+        },
+        updateDuracion(nuevaDuracion) {
+            console.log(`Updating duración to ${nuevaDuracion} minutos`);
+            const nuevoHorarioFinal = new Date(
+                this.dateInicio.getTime() + nuevaDuracion * 60000
+            );
+            this.enviarNuevoHorarioFinal(nuevoHorarioFinal);
+        },
+        enviarNuevoHorarioFinal(dateFinal) {
+            this.enviandoNuevoDateFinal = true;
+            this.enviandoSomeHorario = true;
+            console.log(`Enviando nuevo horario final: ${dateFinal}`);
+            this.$apollo
+                .mutate({
+                    mutation: gql`
+                    mutation ($nuevoDate: Date!, $tipoEvento: String!, $idEvento: ID!) {
+                        setDateFinalEvento(
+                        nuevoDate: $nuevoDate
+                        tipoEvento: $tipoEvento
+                        idEvento: $idEvento
+                        ){
+                                __typename
+                            ... on EventoPersonal{
+                                id
+                                horarioInicio
+                                horarioFinal
+                            }
+                            ... on EventoPublico{
+                                id
+                                horarioInicio
+                                horarioFinal
+                            }
+                        }
+                  }
+                `,
+                    variables: {
+                        nuevoDate: dateFinal,
+                        tipoEvento: this.esteEvento.__typename.charAt(0).toLowerCase() + this.esteEvento.__typename.slice(1),
+                        idEvento: this.esteEvento.id,
+                    },
+                })
+                .then(() => {
+
+                    this.enviandoNuevoDateFinal = false;
+                    this.enviandoSomeHorario = false;
+                    this.editandoDuracion = false;
+
+                })
+                .catch((error) => {
+                    console.log(`Error: ${error}`);
+                    this.enviandoNuevoDateFinal = false;
+                    this.enviandoSomeHorario = false;
+                });
+        },
+        updateHorarioInicio(e) {
+            const nuevoTime = e.target.value;
+            const horas = parseInt(nuevoTime.substring(0, 2));
+            const minutos = parseInt(nuevoTime.substring(3));
+            console.log(
+                `nuevoTime: ${nuevoTime}. ${horas} horas y ${minutos} minutos`
+            );
+            const actualDateFinal = new Date(this.esteEvento.horarioFinal);
+            var dateInicio = new Date(this.esteEvento.horarioInicio);
+            console.log(`Actual date: ${dateInicio}`);
+            dateInicio.setHours(horas);
+            dateInicio.setMinutes(minutos);
+            console.log(`Nueva date inicio: ${dateInicio}`);
+            if (dateInicio > actualDateFinal) {
+                return;
+            }
+
+            this.enviandoNuevoDateInicio = true;
+            this.$apollo
+                .mutate({
+                    mutation: gql`
+                  mutation ($nuevoDate: Date!, $tipoEvento: String!, $idEvento: ID!) {
+                    setDateInicioEvento(
+                      nuevoDate: $nuevoDate
+                      tipoEvento: $tipoEvento
+                      idEvento: $idEvento
+                    ){
+                        __typename
+                      ... on EventoPersonal{
+                        id
+                        horarioInicio
+                        horarioFinal
+                      }
+                      ... on EventoPublico{
+                        id
+                        horarioInicio
+                        horarioFinal
+                      }
+                    }
+                  }
+                `,
+                    variables: {
+                        nuevoDate: dateInicio,
+                        tipoEvento: this.tipoEvento,
+                        idEvento: this.esteEvento.id,
+                    },
+                })
+                .then(() => {
+                    this.enviandoNuevoDateInicio = false;
+                    this.editandoDateInicio = false;
+                })
+                .catch((error) => {
+                    console.log(`Error: ${error}`);
+                    this.enviandoNuevoDateInicio = false;
+                });
+            // const nuevoDate=this.
+        },
+        iniciarEdicionHorarioFinal() {
+            if (!this.administrador && !this.usuarioSuperadministrador) return;
+            console.log(`Iniciando edicion`);
+            this.$refs.inputHorarioFinal.value = this.horaFinalString;
+            this.editandoHorarioFinal = true;
+            this.$nextTick(() => {
+                this.$refs.inputHorarioFinal.focus();
+            });
+        },
+        updateHorarioFinal(e) {
+            const nuevoTime = e.target.value;
+            const horas = parseInt(nuevoTime.substring(0, 2));
+            const minutos = parseInt(nuevoTime.substring(3));
+            console.log(
+                `nuevoTime: ${nuevoTime}. ${horas} horas y ${minutos} minutos`
+            );
+            const actualDateInicio = new Date(this.esteEvento.horarioInicio);
+            var dateFinal = new Date(this.esteEvento.horarioFinal);
+            console.log(`Actual date: ${dateFinal}`);
+            dateFinal.setHours(horas);
+            dateFinal.setMinutes(minutos);
+            console.log(`Nueva date final: ${dateFinal}`);
+            if (dateFinal < actualDateInicio) {
+                return;
+            }
+
+            this.enviarNuevoHorarioFinal(dateFinal);
+            // const nuevoDate=this.
+        },
+        enviarNuevaDateInicioHoldDuration(nuevaDateInicio) {
+            this.enviandoNuevoDateInicio = true;
+            this.enviandoSomeHorario = true;
+            this.$apollo
+                .mutate({
+                    mutation: gql`
+                  mutation ($nuevoDate: Date!, $tipoEvento: String!, $idEvento: ID!) {
+                    setDateInicioEventoHoldDuration(
+                      nuevoDate: $nuevoDate
+                      tipoEvento: $tipoEvento
+                      idEvento: $idEvento
+                    ) {
+                      __typename
+                      ... on EventoPersonal{
+                        id
+                        horarioInicio
+                        horarioFinal
+                      }
+                      ... on EventoPublico{
+                        id
+                        horarioInicio
+                        horarioFinal
+                      }
+                      
+                    }
+                  }
+                `,
+                    variables: {
+                        nuevoDate: nuevaDateInicio,
+                        tipoEvento: this.tipoEvento,
+                        idEvento: this.esteEvento.id,
+                    },
+                })
+                .then(() => {
+                    this.$emit("eventoCambioFecha", this.esteEvento);
+                    this.enviandoSomeHorario = false;
+                    this.enviandoNuevoDateInicio = false;
+                    this.editandoFechaInicio = false;
+                    this.editandoHoraInicio = false;
+                })
+                .catch((error) => {
+                    console.log(`Error: ${error}`);
+                    this.enviandoNuevoDateInicio = false;
+                    this.enviandoSomeHorario = false;
+                });
+        },
+        updateFechaInicioHoldDuration(nuevaFechaInicioFormateada) {
+            console.log(
+                `se hara update de fecha inicio holding duration. ${nuevaFechaInicioFormateada}`
+            );
+            const datosFecha = new Date(nuevaFechaInicioFormateada);
+            const nuevoDiaInicio = datosFecha.getUTCDate();
+            const nuevoMesInicio = datosFecha.getUTCMonth();
+            const nuevoYearInicio = datosFecha.getUTCFullYear();
+
+            var nuevaDateInicio = new Date(this.esteEvento.horarioInicio);
+            nuevaDateInicio.setDate(nuevoDiaInicio);
+            nuevaDateInicio.setMonth(nuevoMesInicio);
+            nuevaDateInicio.setFullYear(nuevoYearInicio);
+
+            console.log(`Quedará: ${nuevaDateInicio}`);
+
+            this.enviarNuevaDateInicioHoldDuration(nuevaDateInicio);
+        },
+        updateHoraInicioHoldDuration(nuevaHoraInicioFormateada) {
+            console.log(
+                `se hara update de hora inicio holding duration. ${nuevaHoraInicioFormateada}`
+            );
+            const horas = nuevaHoraInicioFormateada.substring(0, 2);
+            const minutos = nuevaHoraInicioFormateada.substring(3);
+
+            var nuevaDateInicio = new Date(this.esteEvento.horarioInicio);
+            nuevaDateInicio.setHours(horas);
+            nuevaDateInicio.setMinutes(minutos);
+
+            console.log(`Quedará: ${nuevaDateInicio}`);
+            this.enviarNuevaDateInicioHoldDuration(nuevaDateInicio);
+        },
+    },
+    computed: {
+        horaInicioString() {
+            return new Date(this.esteEvento.horarioInicio)
+                .toTimeString()
+                .substring(0, 5);
+        },
+        horaFinalString() {
+            return new Date(this.esteEvento.horarioFinal)
+                .toTimeString()
+                .substring(0, 5);
+        },
+    },
+}

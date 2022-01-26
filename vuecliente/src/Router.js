@@ -21,6 +21,7 @@ import AtlasSolidaridad from "./components/atlasSolidaridad/AtlasSolidaridad"
 import CalendarioPersonal from "./components/CalendarioPersonal"
 import Espacios from "./components/Espacios"
 import VentanaEventoPublico from "./components/utilidades/VentanaEventoPublico"
+import VentanaEventoPersonal from "./components/utilidades/VentanaEventoPersonal"
 
 Vue.use(Router);
 
@@ -52,7 +53,18 @@ const routes = [
             }
         }
     },
-    { path: "/calendarioPersonal", component: CalendarioPersonal },    
+    { path: "/calendarioPersonal", component: CalendarioPersonal, children:[
+        {
+            path:"ventanaEventoPublico/:idEvento",
+            component:VentanaEventoPublico,
+            name: "VentanaEventoPublico",
+        },
+        {
+            path:"ventanaEventoPersonal/:idEvento",
+            component:VentanaEventoPersonal,
+            name: "VentanaEventoPersonal",
+        }
+    ] },    
     { path: "/atlasSolidaridad", component: AtlasSolidaridad },
     { path: "/foros", component: ForosGenerales },
     { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
@@ -92,6 +104,11 @@ const routes = [
             path:"ventanaEventoPublico/:idEvento",
             component:VentanaEventoPublico,
             name: "VentanaEventoPublico",
+        },
+        {
+            path:"ventanaEventoPersonal/:idEvento",
+            component:VentanaEventoPersonal,
+            name: "VentanaEventoPersonal",
         }
     ] },
     /////////////////////////////////////7

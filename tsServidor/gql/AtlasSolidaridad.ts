@@ -2774,7 +2774,7 @@ export const resolvers = {
 
 }
 
-const getResponsablesAmplioNodo = async function (nodo) {
+export const getResponsablesAmplioNodo = async function (nodo) {
     var responsablesAmplio: Array<string> = nodo.responsables;    
     if (responsablesAmplio.length < 1) {
         var idParent = nodo.nodoParent;

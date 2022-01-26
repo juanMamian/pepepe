@@ -140,7 +140,7 @@
 </template>
 
 <script>
-import { MixinBasicoEventos, MixinEdicionEventos } from "./MixinsEventos";
+import { MixinBasicoEventos, MixinBasicoEventosPublicos, MixinEdicionEventos, MixinEdicionEventosPublicos } from "./MixinsEventos";
 import Loading from "./utilidades/Loading.vue";
 export default {
   components: { Loading },
@@ -148,7 +148,7 @@ export default {
   props: {
     esteEvento: Object,
   },
-  mixins: [MixinEdicionEventos, MixinBasicoEventos],
+  mixins: [MixinBasicoEventos, MixinEdicionEventos, MixinEdicionEventosPublicos, MixinBasicoEventosPublicos],
   data() {
     return {
       mostrando: null,

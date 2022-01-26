@@ -3,38 +3,50 @@
     <div id="contenedorControlesCalendario" class="contenedorControles">
       <div
         class="boton"
+        v-show="enfasis === 'eventosPublicos'"
         v-if="
           usuarioLogeado &&
           usuario.permisos &&
           usuario.permisos.includes('maestraVida-profesor')
         "
+        @click="
+          modoEventosPublicosExtranjeros === 'invisibles'
+            ? (modoEventosPublicosExtranjeros = 'full')
+            : modoEventosPublicosExtranjeros === 'full'
+            ? (modoEventosPublicosExtranjeros = 'barra')
+            : (modoEventosPublicosExtranjeros = 'invisibles')
+        "
+        :style="{
+          opacity:
+            modoEventosPublicosExtranjeros === 'invisibles'
+              ? 0.4
+              : modoEventosPublicosExtranjeros === 'full'
+              ? 1
+              : 0.7,
+        }"
+        :title="
+          modoEventosPublicosExtranjeros === 'invisibles'
+            ? 'Mostrar todos los eventos públicos'
+            : modoEventosPublicosExtranjeros === 'full'
+            ? 'Minimizar otros eventos públicos'
+            : 'Ocultar otros eventos públicos'
+        "
       >
-        <img
-          src="@/assets/iconos/calendarPublic.svg"
-          alt="Evento publico"
-          :title="
-            modoEventosPublicosExtranjeros === 'invisibles'
-              ? 'Mostrar todos los eventos públicos'
-              : modoEventosPublicosExtranjeros === 'full'
-              ? 'Minimizar otros eventos públicos'
-              : 'Ocultar otros eventos públicos'
-          "
-          @click="
-            modoEventosPublicosExtranjeros === 'invisibles'
-              ? (modoEventosPublicosExtranjeros = 'full')
-              : modoEventosPublicosExtranjeros === 'full'
-              ? (modoEventosPublicosExtranjeros = 'barra')
-              : (modoEventosPublicosExtranjeros = 'invisibles')
-          "
-          :style="{
-            opacity:
-              modoEventosPublicosExtranjeros === 'invisibles'
-                ? 0.4
-                : modoEventosPublicosExtranjeros === 'full'
-                ? 1
-                : 0.7,
-          }"
-        />
+        <img src="@/assets/iconos/calendarPublic.svg" alt="Evento publico" />
+      </div>
+
+      <div
+        class="boton"
+        v-if="enfasis==='eventosPersonales'"
+        @click="usuarioVeEventosPublicos = !usuarioVeEventosPublicos"
+        :title="
+          usuarioVeEventosPublicos
+            ? 'Ocultar eventos públicos'
+            : 'Mostrar eventos públicos'
+        "
+        :style="[{opacity: usuarioVeEventosPublicos?1:0.5}]"
+      >
+        <img src="@/assets/iconos/calendarPublic.svg" alt="Evento publico" />
       </div>
     </div>
     <div id="zonaScroll" ref="zonaScroll" @scroll="scrollingCalendario">
@@ -50,8 +62,12 @@
       </div>
 
       <div id="contenedorDias" :style="[estiloAnchoTiempo]">
-        <div class="boton botonCargarDias" @click="addSemanaBefore" :style="[offsetScroll]">
-          <img src="@/assets/iconos/plusCircle.svg" alt="Mas">
+        <div
+          class="boton botonCargarDias"
+          @click="addSemanaBefore"
+          :style="[offsetScroll]"
+        >
+          <img src="@/assets/iconos/plusCircle.svg" alt="Mas" />
         </div>
         <dia-calendario
           :eventoSiendoCreado="eventoSiendoCreado"
@@ -68,15 +84,26 @@
           :tipoParent="tipoParent"
           :enfasis="enfasis"
           :modoEventosPublicosExtranjeros="modoEventosPublicosExtranjeros"
+          :usuarioVeEventosPublicos="usuarioVeEventosPublicos"
           @iniciaCreacionEvento="$emit('iniciaCreacionEvento')"
           @clickEnEvento="idEventoSeleccionado = $event.id"
           @desSeleccionDeEvento="idEventoSeleccionado = null"
-          @eventoCreado="sendEventoCreadoToDias($event);$emit('eventoCreado', $event);"
-          @eventoEliminado="sendEventoEliminadoToDias($event);$emit('eventoEliminado', $event)"
+          @eventoCreado="
+            sendEventoCreadoToDias($event);
+            $emit('eventoCreado', $event);
+          "
+          @eventoEliminado="
+            sendEventoEliminadoToDias($event);
+            $emit('eventoEliminado', $event);
+          "
           @eventoCambiadoDia="sendEventoCreadoToDias($event)"
         />
-        <div class="boton botonCargarDias" @click="addSemanaAfter" :style="[offsetScroll]">
-          <img src="@/assets/iconos/plusCircle.svg" alt="Mas">
+        <div
+          class="boton botonCargarDias"
+          @click="addSemanaAfter"
+          :style="[offsetScroll]"
+        >
+          <img src="@/assets/iconos/plusCircle.svg" alt="Mas" />
         </div>
       </div>
     </div>
@@ -120,6 +147,8 @@ export default {
       modoEventosPublicosExtranjeros: "invisibles",
 
       diasRendered: [{ date: dateHoy }],
+
+      usuarioVeEventosPublicos:false,
     };
   },
   computed: {
@@ -157,13 +186,12 @@ export default {
       this.$refs.zonaScroll.scrollLeft = minutosActualPx;
     },
     addSemanaBefore() {
-      const dateFirstDiaRendered =
-        this.diasRendered[0].date;
+      const dateFirstDiaRendered = this.diasRendered[0].date;
       const diaMillis = 86400000;
 
       var nuevosDias = [];
       for (var i = -7; i <= -1; i++) {
-        let millisNuevoDia=dateFirstDiaRendered.getTime() +( i * diaMillis);
+        let millisNuevoDia = dateFirstDiaRendered.getTime() + i * diaMillis;
         let nuevoDia = {
           date: new Date(millisNuevoDia),
         };
@@ -179,7 +207,7 @@ export default {
 
       var nuevosDias = [];
       for (var i = 1; i <= 7; i++) {
-        let millisNuevoDia=dateLastDiaRendered.getTime() +( i * diaMillis);
+        let millisNuevoDia = dateLastDiaRendered.getTime() + i * diaMillis;
         let nuevoDia = {
           date: new Date(millisNuevoDia),
         };
@@ -188,16 +216,16 @@ export default {
 
       this.diasRendered.push(...nuevosDias);
     },
-    sendEventoCreadoToDias(evento){
-      this.$refs.diasCalendario.forEach(dc=>{
+    sendEventoCreadoToDias(evento) {
+      this.$refs.diasCalendario.forEach((dc) => {
         dc.addEventoCache(evento);
-      })
+      });
     },
-    sendEventoEliminadoToDias(evento){
-      this.$refs.diasCalendario.forEach(dc=>{
+    sendEventoEliminadoToDias(evento) {
+      this.$refs.diasCalendario.forEach((dc) => {
         dc.deleteEventoCache(evento);
-      })
-    }
+      });
+    },
   },
   mounted() {
     this.addSemanaAfter();
@@ -215,7 +243,7 @@ export default {
 .calendario.eventoSiendoCreado {
   border: 1px solid var(--paletaSelect);
 }
-.botonCargarDias{
+.botonCargarDias {
   position: relative;
   width: 15px;
   height: 15px;

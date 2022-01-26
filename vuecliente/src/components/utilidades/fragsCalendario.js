@@ -15,3 +15,18 @@ fragment fragEventoPublico on EventoPublico{
   tipoParent
 }
 `
+
+export const fragmentoEventoPersonal=gql`
+fragment fragEventoPersonal on EventoPersonal{
+  id
+  idPersona
+  idParent
+  tipoParent
+  nombre
+  descripcion
+  horarioInicio
+  horarioFinal
+  idEventoMarco
+  lugar  
+}
+`
