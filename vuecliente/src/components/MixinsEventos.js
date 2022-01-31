@@ -25,7 +25,7 @@ export const MixinEdicionEventos = {
             enviandoHorarios: false,
             enviandoSomeHorario: false,
         }
-    },    
+    },
     methods: {
         guardarNuevoNombre() {
             this.nuevoNombre = this.$refs.inputNuevoNombre.value;
@@ -49,8 +49,16 @@ export const MixinEdicionEventos = {
                       tipoEvento:$tipoEvento
                       nuevoNombre: $nuevoNombre
                     ) {
-                      id
+                    __typename
+                    ... on EventoPersonal{
+                        id
                       nombre
+                    }
+                    ... on EventoPublico{
+                        id
+                        nombre
+                    }
+                    
                     }
                   }
                 `,
@@ -300,6 +308,10 @@ export const MixinBasicoEventosPersonales = {
 }
 
 export const MixinEventosPublicosUseEventosPersonalesUnder = {
+    props:{
+        idParent:String,
+        tipoParent:String,
+    },
     data() {
         return {
             creandoEventoPersonalUnder: false,
@@ -322,7 +334,9 @@ export const MixinEventosPublicosUseEventosPersonalesUnder = {
                 variables: {
                     infoEventoPersonal: {
                         idPersona: this.usuario.id,
-                        idEventoMarco: this.esteEvento.id
+                        idEventoMarco: this.esteEvento.id,
+                        idParent:this.idParent,
+                        tipoParent:this.tipoParent
                     }
                 }
             }).then(({ data: { crearEventoPersonal } }) => {
@@ -483,6 +497,15 @@ export const MixinBasicoEventos = {
 }
 
 export const MixinEventoCalendario = {
+    props: {
+        idEventoSeleccionado: String,
+        esteEvento: Object,
+        horaPx: Number,
+        seleccionado: Boolean,
+        infoOffset: Object,
+        diaCalendarioOver: Object,
+        enfasis: String,
+    },
     data() {
         return {
             eliminandose: false,
@@ -506,11 +529,14 @@ export const MixinEventoCalendario = {
                 top: this.infoOffset ? this.infoOffset.top + 'px' : 0 + "px",
             };
         },
-        estiloZ(){
+        estiloZ() {
             return {
-                zIndex:this.seleccionado?10:0
+                zIndex: this.seleccionado ? 10 : 0
             }
-        }
+        },
+        claseOffset() {
+            return this.infoOffset.clase;
+        },
     },
     methods: {
         eliminarse() {
@@ -573,8 +599,8 @@ export const MixinVentanaEvento = {
     },
     methods: {
         cerrarVentana() {
-            const indexEsteSubpath=this.tipoEvento==='eventoPublico'?this.$route.path.search("ventanaEventoPublico"):this.tipoEvento==='eventoPersonal'?this.$route.path.search("ventanaEventoPersonal"):null
-            if(!indexEsteSubpath)return;
+            const indexEsteSubpath = this.tipoEvento === 'eventoPublico' ? this.$route.path.search("ventanaEventoPublico") : this.tipoEvento === 'eventoPersonal' ? this.$route.path.search("ventanaEventoPersonal") : null
+            if (!indexEsteSubpath) return;
             const pathParent = this.$route.path.substring(0, indexEsteSubpath - 1);
             this.$router.push(pathParent);
         },

@@ -2,17 +2,19 @@
   <div
     class="eventoPersonalCalendario"
     :style="[estiloPos, estiloZ]"
-    :class="{ deshabilitado: eliminandose }"
+    :class="{
+      deshabilitado: eliminandose,
+      bloque: claseOffset === 'bloque' || seleccionado,
+      barra: claseOffset === 'barra' && !seleccionado,
+    }"
   >
     <div
       id="barra"
-      v-show="modo === 'barra'"
       :style="estiloSize"
       :class="{ seleccionado }"
     ></div>
     <div
       id="bloque"
-      v-show="modo === 'bloque'"
       :style="estiloSize"
       :class="{ extranjero, seleccionado }"
     >
@@ -37,13 +39,13 @@
         </div>
         <div
           class="boton botonControlEvento"
-          title="Expandir este evento"          
+          title="Expandir este evento"
           @click.stop="
             $router.push(
               $route.path + '/ventanaEventoPersonal/' + esteEvento.id
             )
           "
-        >          
+        >
           <img src="@/assets/iconos/expand.svg" alt="Expandir" />
         </div>
       </div>
@@ -88,11 +90,19 @@ export default {
 <style scoped>
 .eventoPersonalCalendario {
   position: absolute;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+.eventoPersonalCalendario.bloque #barra {
+  display: none;
+}
+.eventoPersonalCalendario.barra #bloque {
+  display: none;
 }
 #barra {
   height: 15px;
   background-color: var(--paletaVerde);
   opacity: 0.5;
+  
 }
 #bloque {
   height: 100px;

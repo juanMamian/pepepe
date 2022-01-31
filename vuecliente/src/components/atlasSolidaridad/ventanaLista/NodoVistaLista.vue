@@ -258,6 +258,22 @@
             >
               <img src="@/assets/iconos/link.svg" alt="Enlace" />
             </div>
+            <div
+              class="boton botonSelectorContenidoNodo botonBarraSuperior"
+              :style="{
+                borderColor: mostrando === 'calendario' ? 'white' : 'black',
+              }"
+              @click="
+                mostrando = mostrando === 'calendario' ? null : 'calendario'
+              "
+              :title="
+                mostrando === 'calendario'
+                  ? 'Ocultar calendario'
+                  : 'Mostrar en calendario'
+              "
+            >
+              <img src="@/assets/iconos/calendar.svg" alt="calendario" />
+            </div>
           </div>
           <div class="contenedorBotones" id="botonesAccionesNodo">
             <svg
@@ -558,6 +574,46 @@
             />
           </div>
         </div>
+
+        <div
+          id="zonaCalendario"
+          class="zonaPrimerNivel"
+          v-if="mostrando === 'calendario'"
+        >
+          <div
+            class="contenedorBotonesZona"
+            id="contenedorBotonesCalendario"
+            style="flex-direction: row-reverse"
+          >
+            <div
+              class="boton botonControlCalendario"
+              v-if="usuarioAdministrador"
+              v-show="mostrando === 'calendario' && !creandoEvento"
+              :title="'Programar una sesión de ' + esteNodo.nombre"
+              @click="iniciarCreacionEvento"
+            >
+              <img src="@/assets/iconos/calendarPlus.svg" alt="Calendario" />
+            </div>
+            <div
+              class="boton"
+              title="Cancelar"
+              @click="creandoEvento = false"
+              v-show="creandoEvento"
+            >
+              <img src="@/assets/iconos/times.svg" alt="Cancelar" />
+            </div>
+          </div>
+          <calendario
+            :idUsuarioTarget="usuario.id"
+            ref="calendario"
+            :idParent="esteNodo.id"
+            enfasis="eventosPersonales"
+            tipoParent="nodoSolidaridad"
+            @iniciaCreacionEvento="creandoEvento = false"
+            @eventoCreado="responderEventoCreado($event, 'calendario')"
+            @eventoEliminado="responderEventoEliminado($event, 'calendario')"
+          />
+        </div>
       </div>
       <!-- Lista de nodos children -->
       <div
@@ -618,6 +674,7 @@ import {
 } from "../ConfiguracionNodoSolidaridad";
 import Loading from "../../utilidades/Loading.vue";
 import RecursoExternoNodo from "../homeNodo/RecursoExternoNodo.vue";
+import Calendario from "../../utilidades/Calendario.vue";
 
 export default {
   name: "NodoVistaLista",
@@ -625,10 +682,11 @@ export default {
     IconoPersonaAutonomo,
     Loading,
     RecursoExternoNodo,
+    Calendario,
   },
   props: {
     idNodoOver: String,
-    tipoNodoOver:String,
+    tipoNodoOver: String,
     underNodoSeleccionado: Boolean,
     index: Number,
     usuarioResponsableAmplioNodoOver: Boolean,
@@ -664,6 +722,8 @@ export default {
       montado: false,
 
       mostrandoBotonesBarraSuperior: false,
+
+      creandoEvento: false,
     };
   },
   methods: {
@@ -721,17 +781,16 @@ export default {
         this.$emit("inicioArrastre", {
           idNodoArrastrado: this.esteNodo.id,
           idNodoSource: this.idNodoOver,
-          tipoNodoSource:this.tipoNodoOver
+          tipoNodoSource: this.tipoNodoOver,
         });
         this.grabbed = false;
         this.grabAttempt = 0;
       }
     },
     finalizarArrastre() {
-      
       this.grabbed = false;
       this.grabAttempt = 0;
-     
+
       const infoDrop = {
         idNodoTarget:
           this.recibiendoArrastradoEn === "dentro"
@@ -778,6 +837,15 @@ export default {
           n.globalSetMostrarContenido(contenido, estado)
         );
       }
+    },
+    iniciarCreacionEvento() {
+      this.creandoEvento = true;
+    },
+    responderEventoCreado() {
+      console.log(`...`);
+    },
+    responderEventoEliminado() {
+      console.log(`...`);
     },
   },
   computed: {
@@ -854,6 +922,17 @@ export default {
     nodoSiendoArrastrado(nodo) {
       if (!nodo) {
         this.recibiendoArrastradoEn = null;
+      }
+    },
+    creandoEvento(creando) {
+      if (creando) {
+        this.$refs.calendario.eventoSiendoCreado = {
+          idParent: this.esteNodo.id,
+          tipoParent: "nodoSolidaridad",
+          tipoEvento: "eventoPersonal",
+        };
+      } else {
+        this.$refs.calendario.eventoSiendoCreado = null;
       }
     },
   },

@@ -106,7 +106,6 @@ export default {
     },
     finalizarArrastre({ idNodoTarget, tipoNodoTarget, index }) {
       if (!this.idNodoEnArrastre || !this.tipoNodoSourceArrastre) {
-        console.log(`Datos de arrastre insuficientes`);
         return;
       }
 

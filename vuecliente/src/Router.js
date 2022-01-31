@@ -8,6 +8,7 @@ import Proyectos from "./components/Proyectos.vue"
 import Proyecto from "./components/Proyecto.vue"
 import Registro from "./components/Registro.vue"
 import Personas from "./components/Personas.vue"
+import HomeNodo from "./components/atlasSolidaridad/homeNodo/HomeNodo"
 
 // import ActividadesDeGrupo from "./components/actividadesProfes/ActividadesDeGrupo.vue"
 // import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
@@ -51,7 +52,19 @@ const routes = [
             else {
                 next("/login");
             }
-        }
+        },
+        children:[
+            {
+                path:"ventanaEventoPublico/:idEvento",
+                component:VentanaEventoPublico,
+                name: "VentanaEventoPublico",
+            },
+            {
+                path:"ventanaEventoPersonal/:idEvento",
+                component:VentanaEventoPersonal,
+                name: "VentanaEventoPersonal",
+            }
+        ]
     },
     { path: "/calendarioPersonal", component: CalendarioPersonal, children:[
         {
@@ -66,6 +79,7 @@ const routes = [
         }
     ] },    
     { path: "/atlasSolidaridad", component: AtlasSolidaridad },
+    { path: "/homeNodoSolidaridad/:id", component: HomeNodo },
     { path: "/foros", component: ForosGenerales },
     { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
     { path: "/proyectos", name: "proyectos", component: Proyectos },

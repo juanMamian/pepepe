@@ -201,9 +201,7 @@ export const MixinAtlasSolidaridad = {
       }
     },
     fetchRelacionesNodosNeedingFetchMore: debounce(function () {
-      console.log(
-        `Fetching nodos relacionados de ${this.infoNodosNeedingFetchMore.length} nodos ahead of despliegue`
-      );
+     
 
       this.$apollo
         .query({

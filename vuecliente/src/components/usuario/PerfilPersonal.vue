@@ -183,6 +183,9 @@
 
       <div id="zonaCalendario" v-show="seccion === 'calendario'"></div>
     </div>
+
+      <router-view />
+
   </div>
 </template>
 

@@ -36,7 +36,9 @@ export const esquemaEventoPersonal = new mongoose.Schema({
         required:true,
         validate:{
             validator:function(this:any){
-                return this.horarioFinal>this.horarioInicio
+                const duracion=this.horarioFinal-this.horarioInicio;
+                
+                return duracion>=300000;
             },
             message: props=>props.value + "No es un valor válido"
         }
@@ -46,7 +48,8 @@ export const esquemaEventoPersonal = new mongoose.Schema({
         required:true,
         validate:{
             validator:function(this:any){
-                return this.horarioFinal>this.horarioInicio
+                const duracion=this.horarioFinal-this.horarioInicio;
+                return duracion>=300000;
             },
             message: props=>props.value + "No es un valor válido"
         }
@@ -85,7 +88,9 @@ export const esquemaEventoPublico = new mongoose.Schema({
         required:true,
         validate:{
             validator:function(this:any){
-                return this.horarioFinal>this.horarioInicio
+                const duracion=this.horarioFinal-this.horarioInicio;
+                
+                return duracion>=300000;
             },
             message: props=>props.value + "No es un valor válido"
         }
@@ -95,7 +100,9 @@ export const esquemaEventoPublico = new mongoose.Schema({
         required:true,
         validate:{
             validator:function(this:any){
-                return this.horarioFinal>this.horarioInicio
+                const duracion=this.horarioFinal-this.horarioInicio;
+                
+                return duracion>=300000;
             },
             message: props=>props.value + "No es un valor válido"
         },

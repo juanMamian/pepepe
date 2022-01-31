@@ -7,6 +7,7 @@
       bloque: claseOffset === 'bloque' || seleccionado,
       barra: claseOffset === 'barra' && !seleccionado,
     }"
+    
   >
     <div id="barra" :style="estiloSize" :class="{ seleccionado }"></div>
     <div id="bloque" :style="estiloSize" :class="{ extranjero, seleccionado }">
@@ -63,12 +64,9 @@ export default {
   name: "EventoPublicoCalendario",
   components: {},
   props: {
-    esteEvento: Object,
-    horaPx: Number,
+    
     extranjero: Boolean,
-    seleccionado: Boolean,
-    infoOffset: Object,
-    diaCalendarioOver: Object,
+    
   },
   mixins: [
     MixinBasicoEventos,
@@ -88,9 +86,7 @@ export default {
 
       return this.usuario.id === this.esteEvento.idAdministrador;
     },
-    claseOffset() {
-      return this.infoOffset.clase;
-    },
+    
   },
 };
 </script>
@@ -124,8 +120,10 @@ export default {
   opacity: 0.6;
 }
 #bloque.seleccionado {
-  height: 100px;
+  
   border-color: var(--paletaSelect);
+  opacity: 1;
+
 }
 #contenedorControlesEvento {
   display: flex;

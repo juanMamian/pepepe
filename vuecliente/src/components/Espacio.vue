@@ -184,7 +184,7 @@
           class="boton"
           title="Crear nuevo evento de este espacio"
           @click="iniciarCuadroCrearEventoPublico"
-          v-show="!mostrandoCuadroCrearEventoPublico"
+          v-show="!mostrandoCuadroCrearEventoPublico && (administrador || usuarioSuperadministrador)"
         >
           <img src="@/assets/iconos/plusCircle.svg" alt="Crear evento" />
         </div>
@@ -600,7 +600,7 @@ export default {
         this.$refs.calendario.eventoSiendoCreado = {
           idParent: this.esteEspacio.id,
           tipoParent: "espacio",
-          tipoEvento: "publico",
+          tipoEvento: "eventoPublico",
           idAdministrador: this.usuario.id,
         };
       } else {

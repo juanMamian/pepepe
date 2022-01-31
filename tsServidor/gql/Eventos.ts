@@ -261,34 +261,7 @@ export const resolvers = {
                 ...infoEventoPersonal
             })
 
-            if (infoEventoPersonal.tipoParent && infoEventoPersonal.tipoParent === 'nodoSolidaridad') {
-                console.log(`Es la ejecución de un nodoSolidaridad`);
-                try {
-                    var elParent: any = await NodoSolidaridad.findById(infoEventoPersonal.idParent).exec();
-                    if (!elParent) throw "Nodo solidaridad parent no encontrado"
-                } catch (error) {
-                    console.log(`Error buscando el nodo solidaridad parent: ${error}`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
 
-
-                //Authorización nodoSolidaridad
-                const responsablesAmplioNodo = await getResponsablesAmplioNodo(elParent);
-                const permisosEspeciales = ["superadministrador"];
-                const credencialesUsuario = contexto.usuario;
-                if (!responsablesAmplioNodo.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                    console.log(`Error de autenticacion creando evento personal`);
-                    throw new AuthenticationError("No autorizado");
-                }
-
-                if (!infoEventoPersonal.nombre) {
-                    var nombreAutomatico = 'Ejecución de ' + elParent.nombre;
-                    nuevoEventoPersonal.nombre = nombreAutomatico;
-                }
-
-                nuevoEventoPersonal.idParent = elParent.id;
-                nuevoEventoPersonal.idAdministrador = elParent.idAdministrador;
-            }
 
             if (infoEventoPersonal.idEventoMarco) {
                 console.log(`Está enmarcado en el evento ${infoEventoPersonal.idEventoMarco}`);
@@ -320,6 +293,48 @@ export const resolvers = {
                     throw new UserInputError("El evento debe estar dentro del evento marco");
                 }
             }
+
+            if (infoEventoPersonal.idParent) {
+
+                var elParent: any = null;
+                try {
+                    console.log(`Es la ejecución de un nodoSolidaridad`);
+
+                    if (infoEventoPersonal.tipoParent === 'nodoSolidaridad') {
+                        elParent = await NodoSolidaridad.findById(infoEventoPersonal.idParent)
+                    }
+                    else {
+                        console.log(`Tipo ${infoEventoPersonal.tipoParent} no reconocido`);
+                        throw new UserInputError("Tipo de evento no conocido");
+                    }
+                } catch (error) {
+                    console.log(`Error buscando el parent del evento: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+
+
+                //Authorización nodoSolidaridad
+                const responsablesAmplioNodo = await getResponsablesAmplioNodo(elParent);
+                const permisosEspeciales = ["superadministrador"];
+                const credencialesUsuario = contexto.usuario;
+                if (!responsablesAmplioNodo.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion creando evento personal`);
+                    throw new AuthenticationError("No autorizado");
+                }
+
+                if (!infoEventoPersonal.nombre) {
+                    var nombreAutomatico = 'Realización de ' + elParent.nombre;
+                    nuevoEventoPersonal.nombre = nombreAutomatico;
+                }
+                if (!infoEventoPersonal.descripcion) {
+                    nuevoEventoPersonal.descripcion = elParent.descripcion
+                }
+
+                nuevoEventoPersonal.idParent = elParent.id;
+                nuevoEventoPersonal.idAdministrador = elParent.idAdministrador;
+            }
+
 
             try {
                 await nuevoEventoPersonal.save();
@@ -362,15 +377,15 @@ export const resolvers = {
             //Authorización
             const permisosEspeciales = ["superadministrador"];
             const credencialesUsuario = contexto.usuario;
-            var usuarioAdministrador=false;
-            if(tipoEvento==='eventoPublico'){
-                usuarioAdministrador= elEvento.idAdministrador === credencialesUsuario.id
+            var usuarioAdministrador = false;
+            if (tipoEvento === 'eventoPublico') {
+                usuarioAdministrador = elEvento.idAdministrador === credencialesUsuario.id
             }
-            else if(tipoEvento==='eventoPersonal'){
-                usuarioAdministrador= elEvento.idPersona === credencialesUsuario.id
-            }   
-            else{
-                throw new UserInputError("Tipo de evento no reconocido: "+tipoEvento);
+            else if (tipoEvento === 'eventoPersonal') {
+                usuarioAdministrador = elEvento.idPersona === credencialesUsuario.id
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoEvento);
             }
             if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
@@ -430,15 +445,15 @@ export const resolvers = {
             //Authorización
             const permisosEspeciales = ["superadministrador"];
             const credencialesUsuario = contexto.usuario;
-            var usuarioAdministrador=false;
-            if(tipoEvento==='eventoPublico'){
-                usuarioAdministrador= elEvento.idAdministrador === credencialesUsuario.id
+            var usuarioAdministrador = false;
+            if (tipoEvento === 'eventoPublico') {
+                usuarioAdministrador = elEvento.idAdministrador === credencialesUsuario.id
             }
-            else if(tipoEvento==='eventoPersonal'){
-                usuarioAdministrador= elEvento.idPersona === credencialesUsuario.id
-            }   
-            else{
-                throw new UserInputError("Tipo de evento no reconocido: "+tipoEvento);
+            else if (tipoEvento === 'eventoPersonal') {
+                usuarioAdministrador = elEvento.idPersona === credencialesUsuario.id
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoEvento);
             }
             if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
@@ -491,15 +506,15 @@ export const resolvers = {
             //Authorización
             const permisosEspeciales = ["superadministrador"];
             const credencialesUsuario = contexto.usuario;
-            var usuarioAdministrador=false;
-            if(tipoEvento==='eventoPublico'){
-                usuarioAdministrador= elEvento.idAdministrador === credencialesUsuario.id
+            var usuarioAdministrador = false;
+            if (tipoEvento === 'eventoPublico') {
+                usuarioAdministrador = elEvento.idAdministrador === credencialesUsuario.id
             }
-            else if(tipoEvento==='eventoPersonal'){
-                usuarioAdministrador= elEvento.idPersona === credencialesUsuario.id
-            }   
-            else{
-                throw new UserInputError("Tipo de evento no reconocido: "+tipoEvento);
+            else if (tipoEvento === 'eventoPersonal') {
+                usuarioAdministrador = elEvento.idPersona === credencialesUsuario.id
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoEvento);
             }
             if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
@@ -548,23 +563,40 @@ export const resolvers = {
             //Authorización
             const permisosEspeciales = ["superadministrador"];
             const credencialesUsuario = contexto.usuario;
-            var usuarioAdministrador=false;
-            if(tipoEvento==='eventoPublico'){
-                usuarioAdministrador= elEvento.idAdministrador === credencialesUsuario.id
+            var usuarioAdministrador = false;
+            if (tipoEvento === 'eventoPublico') {
+                usuarioAdministrador = elEvento.idAdministrador === credencialesUsuario.id
             }
-            else if(tipoEvento==='eventoPersonal'){
-                usuarioAdministrador= elEvento.idPersona === credencialesUsuario.id
-            }   
-            else{
-                throw new UserInputError("Tipo de evento no reconocido: "+tipoEvento);
+            else if (tipoEvento === 'eventoPersonal') {
+                usuarioAdministrador = elEvento.idPersona === credencialesUsuario.id
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoEvento);
             }
             if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
                 throw new AuthenticationError("No autorizado");
             }
             elEvento.horarioInicio = nuevoDate;
-            const nuevaDuracion = elEvento.horarioFinal - elEvento.horarioInicio;
-            console.log(`Quedará con duración: ${nuevaDuracion}`);
+
+            if (elEvento.idEventoMarco) {
+                console.log(`Tenia evento marco`);
+                try {
+                    var elEventoMarco: any = await EventoPublico.findById(elEvento.idEventoMarco).exec();
+                } catch (error) {
+                    console.log(`Error buscando evento marco`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Comparando ${nuevoDate} con ${elEventoMarco.horarioInicio}`);
+                if (new Date(nuevoDate) < new Date(elEventoMarco.horarioInicio) || new Date(nuevoDate) > new Date(elEventoMarco.horarioFinal)) {
+                    throw new UserInputError("El evento no puede tener horario por fuera de " + elEventoMarco.nombre);
+                }
+                if (elEvento.horarioFinal > new Date(elEventoMarco.horarioFinal)) {
+                    elEvento.horarioFinal = elEventoMarco.horarioFinal
+                }
+            }
+
+
 
             try {
                 await elEvento.save();
@@ -606,29 +638,44 @@ export const resolvers = {
             //Authorización
             const permisosEspeciales = ["superadministrador"];
             const credencialesUsuario = contexto.usuario;
-            var usuarioAdministrador=false;
-            if(tipoEvento==='eventoPublico'){
-                usuarioAdministrador= elEvento.idAdministrador === credencialesUsuario.id
+            var usuarioAdministrador = false;
+            if (tipoEvento === 'eventoPublico') {
+                usuarioAdministrador = elEvento.idAdministrador === credencialesUsuario.id
             }
-            else if(tipoEvento==='eventoPersonal'){
-                usuarioAdministrador= elEvento.idPersona === credencialesUsuario.id
-            }   
-            else{
-                throw new UserInputError("Tipo de evento no reconocido: "+tipoEvento);
+            else if (tipoEvento === 'eventoPersonal') {
+                usuarioAdministrador = elEvento.idPersona === credencialesUsuario.id
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoEvento);
             }
             if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
                 throw new AuthenticationError("No autorizado");
             }
-            const currentDuration = elEvento.horarioFinal - elEvento.horarioInicio;
-            console.log(`Duraba ${currentDuration}`);
 
+            const currentDuration = elEvento.horarioFinal - elEvento.horarioInicio;
             elEvento.horarioInicio = nuevoDate;
             elEvento.horarioFinal = new Date(new Date(nuevoDate).getTime() + currentDuration);
-            console.log(`Final quedará en ${elEvento.horarioFinal}`);
 
-            const nuevaDuracion = elEvento.horarioFinal - elEvento.horarioInicio;
-            console.log(`Quedará con duración: ${nuevaDuracion}`);
+            if (elEvento.idEventoMarco) {
+                console.log(`Tenia evento marco`);
+                try {
+                    var elEventoMarco: any = await EventoPublico.findById(elEvento.idEventoMarco).exec();
+                } catch (error) {
+                    console.log(`Error buscando evento marco`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Comparando ${nuevoDate} con ${elEventoMarco.horarioInicio}`);
+                if (new Date(nuevoDate) < new Date(elEventoMarco.horarioInicio) || new Date(nuevoDate) > new Date(elEventoMarco.horarioFinal)) {
+                    throw new UserInputError("El evento no puede tener horario por fuera de " + elEventoMarco.nombre);
+                }
+                if (elEvento.horarioFinal > new Date(elEventoMarco.horarioFinal)) {
+                    elEvento.horarioFinal = elEventoMarco.horarioFinal
+                }
+            }
+
+
+
 
             try {
                 await elEvento.save();
@@ -670,25 +717,36 @@ export const resolvers = {
             //Authorización
             const permisosEspeciales = ["superadministrador"];
             const credencialesUsuario = contexto.usuario;
-            var usuarioAdministrador=false;
-            if(tipoEvento==='eventoPublico'){
-                usuarioAdministrador= elEvento.idAdministrador === credencialesUsuario.id
+            var usuarioAdministrador = false;
+            if (tipoEvento === 'eventoPublico') {
+                usuarioAdministrador = elEvento.idAdministrador === credencialesUsuario.id
             }
-            else if(tipoEvento==='eventoPersonal'){
-                usuarioAdministrador= elEvento.idPersona === credencialesUsuario.id;
-
-                
-            }   
-            else{
-                throw new UserInputError("Tipo de evento no reconocido: "+tipoEvento);
+            else if (tipoEvento === 'eventoPersonal') {
+                usuarioAdministrador = elEvento.idPersona === credencialesUsuario.id;
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoEvento);
             }
             if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
                 throw new AuthenticationError("No autorizado");
             }
             elEvento.horarioFinal = nuevoDate;
-            const nuevaDuracion = elEvento.horarioFinal - elEvento.horarioInicio;
-            console.log(`Quedará con duración: ${nuevaDuracion}`);
+
+            if (elEvento.idEventoMarco) {
+                console.log(`Tenia evento marco`);
+                try {
+                    var elEventoMarco: any = await EventoPublico.findById(elEvento.idEventoMarco).exec();
+                } catch (error) {
+                    console.log(`Error buscando evento marco`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+
+                if (new Date(nuevoDate) < new Date(elEventoMarco.horarioInicio) || new Date(nuevoDate) > new Date(elEventoMarco.horarioFinal)) {
+                    throw new UserInputError("El evento no puede tener horario por fuera de " + elEventoMarco.nombre);
+                }
+
+            }
 
             try {
                 await elEvento.save();
@@ -741,15 +799,15 @@ export const resolvers = {
             //Authorización
             const permisosEspeciales = ["superadministrador"];
             const credencialesUsuario = contexto.usuario;
-            var usuarioAdministrador=false;
-            if(tipoEvento==='eventoPublico'){
-                usuarioAdministrador= elEvento.idAdministrador === credencialesUsuario.id
+            var usuarioAdministrador = false;
+            if (tipoEvento === 'eventoPublico') {
+                usuarioAdministrador = elEvento.idAdministrador === credencialesUsuario.id
             }
-            else if(tipoEvento==='eventoPersonal'){
-                usuarioAdministrador= elEvento.idPersona === credencialesUsuario.id
-            }   
-            else{
-                throw new UserInputError("Tipo de evento no reconocido: "+tipoEvento);
+            else if (tipoEvento === 'eventoPersonal') {
+                usuarioAdministrador = elEvento.idPersona === credencialesUsuario.id
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoEvento);
             }
             if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);

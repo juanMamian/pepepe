@@ -45,12 +45,12 @@
         :seleccionado="idEventoSeleccionado === eventoPublico.id"
         :infoOffset="indiceOffset[eventoPublico.id]"
         :diaCalendarioOver="esteDia"
+        :enfasis="enfasis"
+        :idParent="idParent"
+        :tipoParent="tipoParent"
         @meElimine="$emit('eventoEliminado', eventoPublico)"
         @click.native="$emit('clickEnEvento', eventoPublico)"
-        @meCambiaronDia="
-          deleteEventoCache(eventoPublico);
-          $emit('eventoCambiadoDia', $event);
-        "
+        @meCambiaronDia="deleteEventoCache(eventoPublico)"
         @creadoEventoPersonal="addEventoCache"
       />
       <evento-personal-calendario
@@ -61,6 +61,7 @@
         :seleccionado="idEventoSeleccionado === eventoPersonal.id"
         :infoOffset="indiceOffset[eventoPersonal.id]"
         :diaCalendarioOver="esteDia"
+        :enfasis="enfasis"
         @meElimine="$emit('eventoEliminado', eventoPersonal)"
         @click.native="$emit('clickEnEvento', eventoPersonal)"
         @meCambiaronDia="
@@ -197,9 +198,14 @@ export default {
 
         infoNuevoEvento.horarioInicio = new Date(dateInicio);
         infoNuevoEvento.horarioFinal = new Date(dateFinal);
-        if (infoNuevoEvento.tipoEvento === "publico") {
+        if (infoNuevoEvento.tipoEvento === "eventoPublico") {
           delete infoNuevoEvento.tipoEvento;
           this.crearEventoPublico(infoNuevoEvento);
+        } else if (infoNuevoEvento.tipoEvento === "eventoPersonal") {
+          delete infoNuevoEvento.tipoEvento;
+          this.crearEventoPersonal(infoNuevoEvento);
+        } else {
+          console.log(`Tipo ${infoNuevoEvento.tipoEvento} no reconocido`);
         }
       } else if (this.idEventoSeleccionado) {
         this.$emit("desSeleccionDeEvento");
@@ -260,7 +266,10 @@ export default {
       }
     },
     crearEventoPublico(infoNuevoEvento) {
-      // console.log(`Creando un evento`);
+      console.log(
+        `Creando un evento publico con info ${JSON.stringify(infoNuevoEvento)}`
+      );
+
       this.creandoEvento = true;
       this.$apollo
         .mutate({
@@ -286,6 +295,37 @@ export default {
           this.creandoEvento = false;
         });
     },
+    crearEventoPersonal(infoNuevoEvento) {
+      console.log(
+        `Creando un evento personal con info ${JSON.stringify(infoNuevoEvento)}`
+      );
+      this.creandoEvento = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($infoEventoPersonal: InputCrearEventoPersonal) {
+              crearEventoPersonal(infoEventoPersonal: $infoEventoPersonal) {
+                ...fragEventoPersonal
+              }
+            }
+            ${fragmentoEventoPersonal}
+          `,
+          variables: {
+            infoEventoPersonal: {
+              ...infoNuevoEvento,
+              idPersona: this.idUsuarioTarget,
+            },
+          },
+        })
+        .then(({ data: { crearEventoPersonal } }) => {
+          this.creandoEvento = false;
+          this.$emit("eventoCreado", crearEventoPersonal);
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.creandoEvento = false;
+        });
+    },
     deleteEventoCache(evento) {
       const tipoEvento =
         evento.__typename.charAt(0).toLowerCase() + evento.__typename.slice(1);
@@ -302,7 +342,7 @@ export default {
           query: QUERY_EVENTOS_PERSONALES_DIA,
           variables: {
             dateInicioDia: this.esteDia.date,
-            idUsuario:this.idUsuarioTarget
+            idUsuario: this.idUsuarioTarget,
           },
         };
       } else {
@@ -380,9 +420,10 @@ export default {
         if (this.usuarioVeEventosPublicos) {
           return this.eventosPublicosDia;
         } else {
-          return this.eventosPublicosDia.filter((ev) =>
-            this.eventosPersonalesDia.some((ep) => ep.idEventoMarco === ev.id)
-          );
+          // return this.eventosPublicosDia.filter((ev) =>
+          //   this.eventosPersonalesDia.some((ep) => ep.idEventoMarco === ev.id)
+          // );
+          return [];
         }
       } else {
         return [];
@@ -418,6 +459,9 @@ export default {
           ).length;
         }
       } else if (this.enfasis === "eventosPersonales") {
+        if(this.idParent){
+          return this.eventosPersonalesDia.filter(ev=>ev.idParent===this.idParent).length
+        }
         return this.eventosPersonalesDia.length;
       } else {
         return 0;
@@ -427,11 +471,11 @@ export default {
       const sizeBarra = 15;
       const sizeBloque = 100;
       const marginRows = 5;
-      const lineaEventosPublicosAsistidos=30;
-      console.log(
-        `%c Iniciando calculo de indice de offset`,
-        "background: #222; color: #bada55"
-      );
+      const lineaEventosPublicosAsistidos = 30;
+      // console.log(
+      //   `%c Iniciando calculo de indice de offset`,
+      //   "background: #222; color: #bada55"
+      // );
       var indice = {};
 
       if (!this.usuarioLogeado) {
@@ -443,7 +487,12 @@ export default {
         if (this.enfasis === "eventosPersonales") {
           let heightEvento = sizeBloque;
           let claseEvento = "bloque";
-
+          if(this.idParent){
+            if(ev.idParent!=this.idParent){
+              heightEvento=sizeBarra;
+              claseEvento='barra'
+            }
+          }
           let top = marginRows;
 
           indice[ev.id] = {
@@ -477,13 +526,15 @@ export default {
         }
         return -res;
       });
-      console.log(
-        `Eventos sorted: ${listaEventosPublicos.map((e) => e.nombre)}`
-      );
+      // console.log(
+      //   `Eventos sorted: ${listaEventosPublicos.map((e) => e.nombre)}`
+      // );
 
       listaEventosPublicos.forEach((ev) => {
-        console.log(`Iterando en ${ev.nombre}`);
-        let eventoAsisteUsuarioTarget=this.eventosPersonalesDia.some(ep=>ep.idEventoMarco===ev.id);
+        // console.log(`Iterando en ${ev.nombre}`);
+        let eventoAsisteUsuarioTarget = this.eventosPersonalesDia.some(
+          (ep) => ep.idEventoMarco === ev.id
+        );
         let heightEvento = sizeBloque;
         let claseEvento = "bloque";
         if (
@@ -493,55 +544,53 @@ export default {
         ) {
           heightEvento = sizeBarra;
           claseEvento = "barra";
-        } 
-        console.log(
-          `cantidad de entries en el indice ${
-            Object.entries(indice).map((e) => e[1]).length
-          }`
-        );
+        }
+        // console.log(
+        //   `cantidad de entries en el indice ${
+        //     Object.entries(indice).map((e) => e[1]).length
+        //   }`
+        // );
 
-        let top=0;
-        if(this.enfasis==='eventosPersonales' && eventoAsisteUsuarioTarget){
-          top=lineaEventosPublicosAsistidos;
-        }          
-        else{
-        
-        let eventosColision = Object.entries(indice)
-          .map((e) => e[1])
-          .filter((t) => {
-            console.log(`Comparando con ${t.evento.nombre}`);
-            const inicioDentro =
-              t.evento.horarioInicio > ev.horarioInicio &&
-              t.evento.horarioInicio < ev.horarioFinal;
-            const finalDentro =
-              t.evento.horarioFinal > ev.horarioInicio &&
-              t.evento.horarioFinal < ev.horarioFinal;
+        let top = 0;
+        if (this.enfasis === "eventosPersonales" && eventoAsisteUsuarioTarget) {
+          top = lineaEventosPublicosAsistidos;
+        } else {
+          let eventosColision = Object.entries(indice)
+            .map((e) => e[1])
+            .filter((t) => {
+              console.log(`Comparando con ${t.evento.nombre}`);
+              const inicioDentro =
+                t.evento.horarioInicio > ev.horarioInicio &&
+                t.evento.horarioInicio < ev.horarioFinal;
+              const finalDentro =
+                t.evento.horarioFinal > ev.horarioInicio &&
+                t.evento.horarioFinal < ev.horarioFinal;
 
-            const sobrepone =
-              t.evento.horarioInicio <= ev.horarioInicio &&
-              t.evento.horarioFinal >= ev.horarioFinal;
+              const sobrepone =
+                t.evento.horarioInicio <= ev.horarioInicio &&
+                t.evento.horarioFinal >= ev.horarioFinal;
 
-            console.log(`Inicio dentro: ${inicioDentro}`);
-            console.log(`Final dentro: ${finalDentro}`);
+              // console.log(`Inicio dentro: ${inicioDentro}`);
+              // console.log(`Final dentro: ${finalDentro}`);
 
-            const colision = inicioDentro || finalDentro || sobrepone;
-            if (colision) {
-              console.log(`colision`);
-            }
-            return colision;
-          });
+              const colision = inicioDentro || finalDentro || sobrepone;
+              if (colision) {
+                console.log(`colision`);
+              }
+              return colision;
+            });
 
-        console.log(`${eventosColision.length} eventos en colisión`);
+          // console.log(`${eventosColision.length} eventos en colisión`);
 
-        let bordeBotColision = eventosColision.reduce(
-          (acc, e) => (e.bordeBot > acc ? e.bordeBot : acc),
-          0
-        );
+          let bordeBotColision = eventosColision.reduce(
+            (acc, e) => (e.bordeBot > acc ? e.bordeBot : acc),
+            0
+          );
 
-        top = bordeBotColision + marginRows;
+          top = bordeBotColision + marginRows;
         }
 
-        console.log(`Queda en ${top} + ${heightEvento}`);
+        // console.log(`Queda en ${top} + ${heightEvento}`);
         indice[ev.id] = {
           evento: ev,
           top: top,

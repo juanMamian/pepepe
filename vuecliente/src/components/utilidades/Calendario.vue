@@ -96,7 +96,6 @@
             sendEventoEliminadoToDias($event);
             $emit('eventoEliminado', $event);
           "
-          @eventoCambiadoDia="sendEventoCreadoToDias($event)"
         />
         <div
           class="boton botonCargarDias"

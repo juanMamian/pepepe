@@ -10,3 +10,4 @@
 -Desarrollar el limite de cupos de los eventos publicos.
 -Resolver qué debe hacer un evento publico que está siendo modificado (Por ejemplo sus horarios) con los eventos personales que estaban asistiendo..
 -Resolver la apariencia de eventos publicos que aparecen en el calendario personal porque hay eventos personales dándoles vida.
+-Eliminar todas las notificaciones de usuarios

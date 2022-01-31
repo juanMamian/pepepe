@@ -1,6 +1,6 @@
 <template>
   <div class="espacios">
-    <router-view id="visorVentanaEventoPublico" @meRepetiPeriodicamente="manejarCreacionEventos">
+    <router-view id="visorVentanaEventoPublico" @meRepetiPeriodicamente="manejarCreacionEventos" @eventoCambioFecha="manejarCreacionEventos([$event])">
       
     </router-view>
     <div id="barraControles">
@@ -124,6 +124,10 @@ export default {
     manejarCreacionEventos(eventos){
       console.log(`Manejando la repeticion de los eventos de un espacio con id ${eventos[0].idParent}`);
       this.$refs.espacios.forEach(e=>e.checkIfMyNewEventos(eventos));
+    },
+    handleCambioFechaEvento(){
+      console.log(`Handling`);
+
     }
   },
   computed: {
