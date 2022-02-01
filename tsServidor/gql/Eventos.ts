@@ -54,7 +54,7 @@ export const typeDefs = gql`
         lugar: ID,
         idParent:ID,
         tipoParent:String,
-        
+        eventosEnmarcados:[EventoPersonal]
     }
 
     type EventoPersonal{
@@ -68,6 +68,7 @@ export const typeDefs = gql`
         horarioFinal: Date,        
         idEventoMarco:ID,
         lugar:ID,
+        nombresPersona:String,
     }
 
     union Evento = EventoPersonal | EventoPublico
@@ -863,6 +864,37 @@ export const resolvers = {
             }
 
             return "EventoPublico"
+
+        },        
+    },
+    EventoPublico:{
+        async eventosEnmarcados(eventoPublico:any, _:any, __:any){
+            try {
+                var losEventosEnmarcados:any=await EventoPersonal.find({idEventoMarco:eventoPublico.id}).exec();
+            } catch (error) {
+                console.log(`Error buscando eventos enmarcados: ${error}`);
+            }
+
+            //Descargar nombres
+            try {
+                var losNombres:any=await Usuario.find({"_id":{$in: losEventosEnmarcados.map(ev=>ev.idPersona)}}).select("id nombres apellidos").exec()
+            } catch (error) {
+                
+            }                        
+
+            return losEventosEnmarcados;
+
+        }
+    },
+    EventoPersonal:{
+        async nombresPersona(eventoPersonal:any, _:any, __:any){
+            try {
+                var usuario:any=await Usuario.findById(eventoPersonal.idPersona).select("nombres").exec();
+            } catch (error) {
+                console.log(`Error buscando nombres de persona de evento personal: ${error}`);
+            }        
+
+            return usuario.nombres;
 
         }
     }

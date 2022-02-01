@@ -247,7 +247,17 @@
             <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
           </div>
 
-          <div id="zonaParticipantes"></div>
+          <div id="zonaParticipantes" v-show="mostrando === 'participantes'">
+            <div id="listaParticipantes">
+              <info-participante-evento-publico
+                :estaParticipacion="participacion"
+                v-for="participacion of esteEvento.eventosEnmarcados"
+                :key="participacion.id"
+                :eventoPublico="esteEvento"
+                :duracionEventoPublico="duracionMinutos"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -259,7 +269,14 @@ import gql from "graphql-tag";
 import Loading from "./Loading.vue";
 import { fragmentoEventoPublico } from "./fragsCalendario";
 import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
-import { MixinBasicoEventos, MixinBasicoEventosPublicos, MixinEdicionEventos,  MixinEdicionEventosPublicos, MixinVentanaEvento } from "../MixinsEventos";
+import {
+  MixinBasicoEventos,
+  MixinBasicoEventosPublicos,
+  MixinEdicionEventos,
+  MixinEdicionEventosPublicos,
+  MixinVentanaEvento,
+} from "../MixinsEventos";
+import InfoParticipanteEventoPublico from "./InfoParticipanteEventoPublico.vue";
 const QUERY_ESTE_EVENTO = gql`
   query ($idEvento: ID!) {
     eventoPublico(idEvento: $idEvento) {
@@ -287,43 +304,44 @@ export default {
   components: {
     Loading,
     IconoPersonaAutonomo,
+    InfoParticipanteEventoPublico,
   },
-  mixins: [MixinBasicoEventos, MixinBasicoEventosPublicos, MixinEdicionEventos, MixinEdicionEventosPublicos, MixinVentanaEvento],
+  mixins: [
+    MixinBasicoEventos,
+    MixinBasicoEventosPublicos,
+    MixinEdicionEventos,
+    MixinEdicionEventosPublicos,
+    MixinVentanaEvento,
+  ],
   data() {
-    return {      
+    return {
       mostrandoZonaRepetir: false,
       periodoRepetir: "diariamente",
       cantidadRepetir: 1,
     };
   },
-  methods: {
-    
-    
-  },
-  computed: {    
-    
-  },
+  methods: {},
+  computed: {},
 };
 </script>
 
 <style scoped>
 .ventanaEventoPublico {
-  position:fixed;
+  position: fixed;
   top: 100px;
   left: 0px;
   width: 100vw;
   height: 100vh;
-  z-index:100;
+  z-index: 100;
 }
 #laVentana {
   box-shadow: 3px 4px 4px rgba(0, 0, 0, 0.25);
   font-family: Salsa, cursive;
   border-radius: 7px;
-  width:min(600px, 90vw);
-  height:min(800px, 90vh);
-  margin:auto auto;
+  width: min(600px, 90vw);
+  height: min(800px, 90vh);
+  margin: auto auto;
   background-color: var(--paletaMain);
-
 }
 #barraSuperior {
   padding: 10px;
@@ -389,5 +407,11 @@ export default {
   border-radius: 10px;
   padding: 15px 10px;
   margin: 10px;
+}
+
+#listaParticipantes{
+  margin: 10px min(30px, 2vw);
+  border:1px solid black;
+  padding: 10px 0px;
 }
 </style>
