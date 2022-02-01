@@ -31,13 +31,13 @@
         Crear Nodo de conocimiento
       </div>
     </div>
-     <div
+    <div
       id="botonCallingPosiciones"
       v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
-      @click.stop="togglePosicionamiento"
-      :class="{deshabilitado: enviandoQueryConfiguracionAtlas || $apollo.queries.configuracionAtlas.loading}"
+      @click.stop="iniciarCallingPosiciones"
+      :class="{ deshabilitado: callingPosiciones }"
       :style="[
-        { backgroundColor: configuracionAtlas.posicionando ? 'green' : 'transparent' },
+        { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
       ]"
     ></div>
     <buscador-nodos-conocimiento
@@ -118,54 +118,60 @@ import PanelConjuntosNodos from "./atlasConocimiento/PanelConjuntosNodos.vue";
 import PanelConfiguracionAtlas from "./atlasConocimiento/PanelConfiguracionAtlas.vue";
 const debounce = require("debounce");
 
+const fragmentoNodoConocimiento = gql`
+  fragment fragNodoConocimiento on NodoConocimiento {
+    id
+    nombre
+    descripcion
+    expertos
+    clases {
+      id
+      nombre
+      idExperto
+      interesados
+    }
+    coordsManuales {
+      x
+      y
+    }
+    coords {
+      x
+      y
+    }
+    autoCoords {
+      x
+      y
+    }
+    centroMasa {
+      x
+      y
+    }
+    stuck
+    angulo
+    puntaje
+    vinculos {
+      idRef
+      rol
+      tipo
+    }
+    fuerzaCentroMasa {
+      fuerza
+      direccion
+    }
+    fuerzaColision {
+      fuerza
+      direccion
+    }
+  }
+`;
+
 const QUERY_NODOS = gql`
   query {
     todosNodos {
-      id
-      nombre
-      descripcion
-      expertos
-      clases {
-        id
-        nombre
-        idExperto
-        interesados
-      }
-      coordsManuales {
-        x
-        y
-      }
-      coords {
-        x
-        y
-      }
-      autoCoords{
-        x
-        y
-      }
-      centroMasa {
-        x
-        y
-      }
-      stuck
-      angulo
-      puntaje
-      vinculos {
-        idRef
-        rol
-        tipo
-      }
-      fuerzaCentroMasa{
-        fuerza
-        direccion
-      }
-      fuerzaColision{
-        fuerza
-        direccion
-      }
+      ...fragNodoConocimiento
     }
-
   }
+  ${fragmentoNodoConocimiento}
 `;
 
 const QUERY_DATOS_USUARIO_NODOS = gql`
@@ -182,11 +188,11 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
           modo
         }
         idNodoTarget
-        colecciones{
+        colecciones {
           id
           nombre
           idsNodos
-          nodos{
+          nodos {
             id
             nombre
           }
@@ -217,10 +223,10 @@ export default {
       },
       update({ todosNodos }) {
         this.nodosDescargados = true;
-        var nuevoTodosNodos=JSON.parse(JSON.stringify(todosNodos))
+        var nuevoTodosNodos = JSON.parse(JSON.stringify(todosNodos));
         nuevoTodosNodos.forEach((nodo) => {
           nodo.coordsManuales = nodo.autoCoords;
-          nodo.coords=nodo.autoCoords
+          nodo.coords = nodo.autoCoords;
         });
         return nuevoTodosNodos;
       },
@@ -232,25 +238,25 @@ export default {
         return !this.usuarioLogeado || this.todosNodos.length < 1;
       },
     },
-    configuracionAtlas:{
-      query:gql`
-        query($nombreAtlas: String!){
-          configuracionAtlas(nombreAtlas: $nombreAtlas){
+    configuracionAtlas: {
+      query: gql`
+        query ($nombreAtlas: String!) {
+          configuracionAtlas(nombreAtlas: $nombreAtlas) {
             id
             posicionando
           }
         }
       `,
-      variables:{
-        nombreAtlas:"conocimiento"
+      variables: {
+        nombreAtlas: "conocimiento",
       },
       fetchPolicy: "network-only",
-    }
+    },
   },
   data() {
     return {
-      configuracionAtlas:{
-        posicionando:false,
+      configuracionAtlas: {
+        posicionando: false,
       },
       hovered: false,
       todosNodos: [],
@@ -300,8 +306,7 @@ export default {
         top: "0px",
         left: "0px",
       },
-      enviandoQueryConfiguracionAtlas:false,
-
+      enviandoQueryConfiguracionAtlas: false,
     };
   },
   computed: {
@@ -370,25 +375,60 @@ export default {
     },
   },
   methods: {
-    togglePosicionamiento(){
-      this.enviandoQueryConfiguracionAtlas=true;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($nombreAtlas:String!){
-            togglePosicionamientoAutomaticoAtlas(nombreAtlas: $nombreAtlas){
-              id
-              posicionando
+    iniciarCallingPosiciones() {
+      var ciclos = prompt("¿Cuantos ciclos?");
+      if (isNaN(ciclos)) {
+        return;
+      }
+
+      ciclos = Math.round(ciclos);
+      if (ciclos < 1) {
+        return;
+      }
+      console.log(`Enviando reposicionamiento de ${ciclos} ciclos`);
+      this.callingPosiciones = true;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($ciclos: Int!) {
+              posicionarNodosConocimientoByFuerzas(ciclos: $ciclos)
             }
-          }
-        `,
-        variables:{
-          nombreAtlas:"conocimiento"
-        }
-      }).then(()=>{
-        this.enviandoQueryConfiguracionAtlas=false;
-      }).catch(()=>{
-        this.enviandoQueryConfiguracionAtlas=false;
-      })
+          `,
+          variables: {
+            ciclos,
+          },
+        })
+        .then(() => {
+          this.callingPosiciones = false;
+        })
+        .catch((error) => {
+          this.callingPosiciones = false;
+          console.log(`Error: ${error}`);
+        });
+    },
+    togglePosicionamiento() {
+      this.enviandoQueryConfiguracionAtlas = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($nombreAtlas: String!) {
+              togglePosicionamientoAutomaticoAtlas(nombreAtlas: $nombreAtlas) {
+                id
+                posicionando
+              }
+            }
+          `,
+          variables: {
+            nombreAtlas: "conocimiento",
+          },
+        })
+        .then(() => {
+          this.enviandoQueryConfiguracionAtlas = false;
+        })
+        .catch(() => {
+          this.enviandoQueryConfiguracionAtlas = false;
+        });
     },
     abrirMenuContextual(e) {
       let posCalendario = this.$el.getBoundingClientRect();
@@ -707,6 +747,10 @@ export default {
           x: posicion.x,
           y: posicion.y,
         },
+        autoCoords: {
+          x: posicion.x,
+          y: posicion.y,
+        },
       };
       console.log(`en las coordenadas: ${posicion.x}, ${posicion.y} `);
       this.$apollo
@@ -714,38 +758,10 @@ export default {
           mutation: gql`
             mutation ($infoNodo: NodoConocimientoInput) {
               crearNodo(infoNodo: $infoNodo) {
-                nombre
-                descripcion
-                id
-                expertos
-                clases {
-                  id
-                  nombre
-                  idExperto
-                  interesados
-                }
-                coordsManuales {
-                  x
-                  y
-                }
-                coords {
-                  x
-                  y
-                }
-                centroMasa {
-                  x
-                  y
-                }
-                angulo
-                stuck
-                puntaje
-                vinculos {
-                  idRef
-                  rol
-                  tipo
-                }
+                ...fragNodoConocimiento
               }
             }
+            ${fragmentoNodoConocimiento}
           `,
           variables: {
             infoNodo,

@@ -97,8 +97,16 @@ export const MixinEdicionEventos = {
                       tipoEvento: $tipoEvento
                       nuevoDescripcion: $nuevoDescripcion
                     ) {
-                      id
-                      descripcion
+                        __typename
+                        ... on EventoPublico{
+                            id
+                            descripcion  
+                        }
+                        ... on EventoPersonal{
+                            id
+                            descripcion  
+                        }
+                      
                     }
                   }
                 `,

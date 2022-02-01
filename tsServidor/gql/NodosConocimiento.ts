@@ -6,6 +6,9 @@ import { ModeloForo as Foro } from "../model/Foros/Foro"
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
 import { EsquemaVinculosNodosProyecto } from "../model/VinculosNodosProyecto";
 import { ModeloEventoPublico as EventoPublico } from "../model/Evento";
+import { ejecutarPosicionamientoNodosConocimientoByFuerzas } from "../controlAtlasConocimiento";
+
+export const idAtlasConocimiento = "61ea0b0f17a5d80da7e94320";
 
 
 /*
@@ -111,6 +114,7 @@ input NodoConocimientoInput{
     nombre: String,
     coordsManuales:CoordsInput,
     coords:CoordsInput,
+    autoCoords:CoordsInput,
     vinculos:[vinculoInput]
 }
 
@@ -128,9 +132,13 @@ extend type Query{
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
     busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
+
+
 },
 
 extend type Mutation{
+    posicionarNodosConocimientoByFuerzas(ciclos:Int!):Boolean,
+
     setCoordsManuales(idNodo: String, coordsManuales:CoordsInput):infoNodosModificados,
     crearVinculo(tipo:String!, idSource:ID!, idTarget:ID!):infoNodosModificados,
     eliminarVinculoFromTo(idSource:ID!, idTarget:ID!):infoNodosModificados,
@@ -158,6 +166,9 @@ extend type Mutation{
 
 }
 `;
+
+export const NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS = "nodos_de_atlas_conocimiento_posicionados";
+
 
 export const resolvers = {
     Query: {
@@ -188,9 +199,10 @@ export const resolvers = {
                 console.log(`error fetching todos los nodos. e: ` + error);
                 return;
             }
-
+            // console.log(`Primero enviado: ${JSON.stringify(todosNodos[0])}`);
             // console.log(`Enviando: ${todosNodos}`);
 
+            
             return todosNodos;
         },
         nodo: async function (_: any, { idNodo }: any) {
@@ -284,6 +296,13 @@ export const resolvers = {
         }
     },
     Mutation: {
+        async posicionarNodosConocimientoByFuerzas(_: any, { ciclos }: any, contexto: contextoQuery) {
+            console.log(`Peticion de ejecutar un posicionamiento de nodos de conocimiento by fuerzas de ${ciclos} ciclos`);
+            ejecutarPosicionamientoNodosConocimientoByFuerzas(ciclos, Date.now(), true);
+            console.log(`Terminado`);
+            return true;
+        },
+
         async eliminarNodo(_: any, { idNodo }: any, contexto: contextoQuery) {
             console.log(`peticion de eliminar nodo con id ${idNodo}`);
 

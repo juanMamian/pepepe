@@ -47,7 +47,7 @@
             mostrando = mostrando === 'descripcion' ? null : 'descripcion'
           "
         >
-          <img src="@/assets/iconos/exclamationCircle.svg" alt="Informacion" />
+          <img src="@/assets/iconos/info.svg" alt="Informacion" />
         </div>
         <div
           class="boton botonMostrar"
