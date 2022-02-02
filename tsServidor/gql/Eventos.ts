@@ -92,6 +92,7 @@ export const typeDefs = gql`
         eliminarEvento(idEvento:ID!, tipoEvento:String!):Boolean,        
         editarNombreEvento(idEvento:ID!, tipoEvento: String!, nuevoNombre: String!):Evento,
         editarDescripcionEvento(idEvento:ID!, tipoEvento: String!, nuevoDescripcion: String!):Evento,
+        editarLimiteDeCuposEvento(idEvento:ID!, tipoEvento: String!, nuevoLimiteDeCupos: Int!):EventoPublico,
         setDateFinalEvento(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Evento,
         setDateInicioEvento(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Evento,
         setDateInicioEventoHoldDuration(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Evento,
@@ -531,6 +532,65 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             console.log(`Descripcion cambiado`);
+            return elEvento;
+        },
+        async editarLimiteDeCuposEvento(_: any, { idEvento, tipoEvento, nuevoLimiteDeCupos }, contexto: contextoQuery) {
+            console.log(`Query de cambiar el limitedecupos del evento con id ${idEvento}`);
+            if (!contexto.usuario || !contexto.usuario.id) {
+                console.log(`Sin credenciales de usuario`);
+                throw new AuthenticationError("Login requerido");
+            }
+            if (charProhibidosTexto.test(nuevoLimiteDeCupos)) {
+                throw new ApolloError("LimiteDeCupos ilegal");
+            }
+
+            try {
+                var elEvento: any = null;
+                if (tipoEvento === 'eventoPublico') {
+                    elEvento = await EventoPublico.findById(idEvento).exec();
+                }
+                else if (tipoEvento === 'eventoPersonal') {
+                    elEvento = await EventoPersonal.findById(idEvento).exec();
+                }
+                else {
+                    throw "Evento " + tipoEvento + " no reconocido";
+                }
+                if (!elEvento) {
+                    throw "evento no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el evento a cambiar limitedecupos en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador"];
+            const credencialesUsuario = contexto.usuario;
+            var usuarioAdministrador = false;
+            if (tipoEvento === 'eventoPublico') {
+                usuarioAdministrador = elEvento.idAdministrador === credencialesUsuario.id
+            }
+            else if (tipoEvento === 'eventoPersonal') {
+                usuarioAdministrador = elEvento.idPersona === credencialesUsuario.id
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoEvento);
+            }
+            if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion`);
+                throw new AuthenticationError("No autorizado");
+            }
+            elEvento.limiteDeCupos = nuevoLimiteDeCupos;
+
+            try {
+                await elEvento.save();
+            }
+            catch (error) {
+                console.log("Error guardando el evento con nuevo limitedecupos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log(`LimiteDeCupos cambiado`);
             return elEvento;
         },
 

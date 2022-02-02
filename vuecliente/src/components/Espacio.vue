@@ -228,20 +228,17 @@
         </div>
 
         <div class="bloqueCampoNuevoEventoPublico">
-          <div class="nombreCampo">Final</div>
+          <div class="nombreCampo">Duración</div>
           <input
-            type="date"
-            v-model="dateFinalNuevoEventoPublico"
+            type="number"
+            ref="inputDuracionNuevoEventoPublico"
+            v-model="duracionNuevoEventoPublico"
             class="inputCampo"
           />
-          <input
-            type="time"
-            v-model="horarioFinalNuevoEventoPublico"
-            class="inputCampo"
-          />
+          Minutos
         </div>
 
-        <div class="boton" id="botonCrearEventoPublico" style="margin: 10px auto" title="Crear evento" v-show="!creandoEventoPublico" @click="crearEventoPublico">
+        <div class="boton" id="botonCrearEventoPublico" :class="{deshabilitado: !duracionNuevoEventoPublico || duracionNuevoEventoPublico<5}" style="margin: 10px auto" title="Crear evento" v-show="!creandoEventoPublico" @click="crearEventoPublico">
           <img src="@/assets/iconos/calendarPlus.svg" alt="CrearEvento">
         </div>
         <loading texto="" v-show="creandoEventoPublico" style="margin: 10px auto" />
@@ -295,6 +292,7 @@ export default {
       dateFinalNuevoEventoPublico: null,
       horarioInicioNuevoEventoPublico:null,
       horarioFinalNuevoEventoPublico:null,
+      duracionNuevoEventoPublico:null,
       creandoEventoPublico: false,
 
       eliminandose: false,
@@ -490,7 +488,7 @@ export default {
         return;
       }      
       console.log(`Date saved: ${this.dateInicioNuevoEventoPublico}`);
-      
+      this.duracionNuevoEventoPublico=this.$refs.inputDuracionNuevoEventoPublico.value;
       var dateInicio=new Date(this.dateInicioNuevoEventoPublico);      
       console.log(`Date parsed: ${dateInicio}`);
 
@@ -503,14 +501,8 @@ export default {
       dateInicio.setHours(horasInicio);
       dateInicio.setMinutes(minutosInicio);
 
-      var dateFinal=new Date(this.dateFinalNuevoEventoPublico);
-      const diaMesFinal=dateFinal.getUTCDate();
-      dateFinal.setDate(diaMesFinal);
-      const horasFinal=parseInt(this.horarioFinalNuevoEventoPublico.substring(0, 2));
-      const minutosFinal=parseInt(this.horarioFinalNuevoEventoPublico.substring(3));
-
-      dateFinal.setHours(horasFinal);
-      dateFinal.setMinutes(minutosFinal);
+      var dateFinal=new Date(dateInicio.getTime()+this.duracionNuevoEventoPublico*60000);
+            
       console.log(`Creando evento público el ${diaMesInicio}`);
 
       this.creandoEventoPublico = true;

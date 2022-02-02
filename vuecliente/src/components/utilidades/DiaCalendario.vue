@@ -423,11 +423,14 @@ export default {
           // return this.eventosPublicosDia.filter((ev) =>
           //   this.eventosPersonalesDia.some((ep) => ep.idEventoMarco === ev.id)
           // );
-          return [];
+          return this.eventosPublicosDia.filter(ep=>ep.idAdministrador===this.idUsuarioTarget);
         }
       } else {
         return [];
       }
+    },
+    eventosPublicosUsuarioTarget(){
+      return this.eventosPublicosDia.filter(ev=>ev.idAdministrador===this.idUsuarioTarget);
     },
     estiloSizeContenedorEventos() {
       const alturaEventos = Object.values(this.indiceOffset).reduce(
@@ -462,7 +465,7 @@ export default {
         if(this.idParent){
           return this.eventosPersonalesDia.filter(ev=>ev.idParent===this.idParent).length
         }
-        return this.eventosPersonalesDia.length;
+        return this.eventosPersonalesDia.length + this.eventosPublicosUsuarioTarget.length;
       } else {
         return 0;
       }

@@ -248,6 +248,34 @@
           </div>
 
           <div id="zonaParticipantes" v-show="mostrando === 'participantes'">
+            <div id="bloqueMaxParticipantes" class="bloqueCampo">
+              <div class="nombreCampo">Maximo:</div>
+              <div class="valorCampo">
+                <input
+                  @keypress.enter.prevent="guardarNuevoLimiteDeCupos"
+                  ref="inputNuevoLimiteDeCupos"
+                  v-model="nuevoLimiteDeCupos"
+                  @click.stop=""
+                  @blur="editandoLimiteDeCupos = false"                  
+                  v-show="editandoLimiteDeCupos"
+                  type="number"
+                  class="inputNuevoLimiteDeCupos inputLimiteDeCuposCosa"
+                  :class="{ deshabilitado: enviandoNuevoLimiteDeCupos }"
+                />
+                <loading texto="" v-show="enviandoNuevoLimiteDeCupos" />
+                <div
+                  id="elLimiteDeCupos"
+                  :class="{
+                    deshabilitado: enviandoNuevoLimiteDeCupos,
+                    administrador,
+                  }"
+                  v-show="!editandoLimiteDeCupos"
+                  @click="toggleEditandoLimiteDeCupos"
+                >
+                  {{ esteEvento.limiteDeCupos || 'Sin límite' }}
+                </div>
+              </div>
+            </div>
             <div id="listaParticipantes">
               <info-participante-evento-publico
                 :estaParticipacion="participacion"
@@ -409,9 +437,9 @@ export default {
   margin: 10px;
 }
 
-#listaParticipantes{
+#listaParticipantes {
   margin: 10px min(30px, 2vw);
-  border:1px solid black;
+  border: 1px solid black;
   padding: 10px 0px;
 }
 </style>

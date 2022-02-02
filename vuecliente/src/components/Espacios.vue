@@ -156,6 +156,9 @@ export default {
     width: min(600px, 95vw);
     margin-bottom: 40vh;
 }
+.espacio{
+  margin:10px 0px;
+}
 .espacio:hover{
     background-color: var(--grisHover);
 }

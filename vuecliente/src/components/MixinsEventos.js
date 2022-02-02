@@ -24,6 +24,10 @@ export const MixinEdicionEventos = {
             enviandoNuevoDateFinal: false,
             enviandoHorarios: false,
             enviandoSomeHorario: false,
+
+            nuevoLimiteDeCupos: null,
+            editandoLimiteDeCupos: false,
+            enviandoNuevoLimiteDeCupos: false,
         }
     },
     methods: {
@@ -74,6 +78,48 @@ export const MixinEdicionEventos = {
                 })
                 .catch((error) => {
                     this.enviandoNuevoNombre = false;
+                    console.log(`Error. E :${error}`);
+                });
+        },
+        guardarNuevoLimiteDeCupos() {
+            this.nuevoLimiteDeCupos = this.$refs.inputNuevoLimiteDeCupos.value;
+
+            if (this.nuevoLimiteDeCuposIlegal) {
+                console.log(`No enviado`);
+                return;
+            }
+            if (this.nuevoLimiteDeCupos == this.esteEvento.limiteDeCupos) {
+                this.editandoLimiteDeCupos = false;
+                return;
+            }
+            console.log(`guardando nuevo limite de cupos`);
+            this.enviandonuevoLimiteDeCupos = true;
+            this.$apollo
+                .mutate({
+                    mutation: gql`
+                  mutation ($idEvento: ID!, $tipoEvento:String!, $nuevoLimiteDeCupos: Int!) {
+                    editarLimiteDeCuposEvento(
+                      idEvento: $idEvento
+                      tipoEvento:$tipoEvento
+                      nuevoLimiteDeCupos: $nuevoLimiteDeCupos
+                    ) {
+                        id
+                      limiteDeCupos                                      
+                    }
+                  }
+                `,
+                    variables: {
+                        idEvento: this.esteEvento.id,
+                        tipoEvento: this.tipoEvento,
+                        nuevoLimiteDeCupos: parseInt(this.nuevoLimiteDeCupos),
+                    },
+                })
+                .then(() => {
+                    this.enviandoNuevoLimiteDeCupos = false;
+                    this.editandoLimiteDeCupos = false;
+                })
+                .catch((error) => {
+                    this.enviandoNuevoLimiteDeCupos = false;
                     console.log(`Error. E :${error}`);
                 });
         },
@@ -151,6 +197,17 @@ export const MixinEdicionEventos = {
                 });
             }
         },
+        toggleEditandoLimiteDeCupos(e) {
+            if (this.administrador) {
+                e.stopPropagation();
+
+                this.editandoLimiteDeCupos = true;
+                this.nuevoLimiteDeCupos = this.esteEvento.limiteDeCupos;
+                this.$nextTick(() => {
+                    this.$refs.inputNuevoLimiteDeCupos.focus();
+                });
+            }
+        },
         keydownInputNuevoNombre(e) {
             if (e.key === "Escape") {
                 this.$refs.inputNuevoNombre.blur();
@@ -209,6 +266,13 @@ export const MixinEdicionEventos = {
             if (charProhibidosTexto.test(this.nuevoDescripcion)) {
                 return true;
             }
+            return false;
+        },
+        nuevoLimiteDeCuposIlegal() {
+            if (!this.nuevoLimiteDeCupos || this.nuevoLimiteDeCupos < 1) {
+                return true;
+            }
+
             return false;
         },
     },
@@ -316,9 +380,9 @@ export const MixinBasicoEventosPersonales = {
 }
 
 export const MixinEventosPublicosUseEventosPersonalesUnder = {
-    props:{
-        idParent:String,
-        tipoParent:String,
+    props: {
+        idParent: String,
+        tipoParent: String,
     },
     data() {
         return {
@@ -343,8 +407,8 @@ export const MixinEventosPublicosUseEventosPersonalesUnder = {
                     infoEventoPersonal: {
                         idPersona: this.usuario.id,
                         idEventoMarco: this.esteEvento.id,
-                        idParent:this.idParent,
-                        tipoParent:this.tipoParent
+                        idParent: this.idParent,
+                        tipoParent: this.tipoParent
                     }
                 }
             }).then(({ data: { crearEventoPersonal } }) => {
