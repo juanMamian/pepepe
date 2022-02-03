@@ -905,7 +905,7 @@ export const resolvers = {
 
             console.log(`eliminados`);
 
-            emitirPosicionamientoNodos();
+            // emitirPosicionamientoNodos();
             contexto.pubsub.publish(NODOS_ELIMINADOS, { nodosEliminados: idsNodosArbol });
             contexto.pubsub.publish(NODOS_FAMILY_ELIMINADOS, { nodosSolidaridadFamilyEliminados: idsNodosArbol, primerEliminado: elNodo });
 
@@ -1358,9 +1358,9 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            if (idNodoSource != idNodoTarget) {
-                emitirPosicionamientoNodos();
-            }
+            // if (idNodoSource != idNodoTarget) {
+            //     emitirPosicionamientoNodos();
+            // }
             
             return {nodosModificados, usuariosModificados};
         },
