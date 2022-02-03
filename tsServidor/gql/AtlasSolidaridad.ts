@@ -519,7 +519,7 @@ export const resolvers = {
             return losNodosSolidaridad;
         },
         nodoAtlasSolidaridadByIdAndTipo: async function (_: any, { idNodo, tipoNodo }: any, contexto: any) {
-            console.log("\x1b[32m%s\x1b[0m", `Nodo solidaridad de tipo ${tipoNodo} con id ${idNodo} solicitado`);
+            console.log(`Nodo solidaridad de tipo ${tipoNodo} con id ${idNodo} solicitado`);
             if (!contexto.usuario) {
                 console.log(`No habia info de logín`);
                 throw new AuthenticationError("Login requerido");

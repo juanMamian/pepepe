@@ -14,3 +14,4 @@
 -Reparar pubsub.
 -Solucionar el problema con refetch de los nodos de solidaridad en vistaLista.
 -Que al entrar como responsable a un nodo solidaridad, todos los eventos futuros de dicho nodo y sus children incluyan como participante al nuevo responsable.
+-Al eliminar un evento en el diaCalendario no desaparece de la lista de eventos en el espacio.

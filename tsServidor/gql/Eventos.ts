@@ -79,8 +79,9 @@ export const typeDefs = gql`
         todosEventosPublicos:[EventoPublico],
         eventosPublicosDia(dateInicioDia:Date!):[EventoPublico],
         eventosPublicosEspacio(idEspacio:ID!):[EventoPublico],
-
+        
         eventosPersonalesDia(dateInicioDia:Date!, idUsuario:ID!):[EventoPersonal],
+        eventosPersonalesDeParentDia(dateInicioDia:Date!, idParent:ID!, tipoParent:String!):[EventoPersonal],
 
         eventoPersonal(idEvento:ID!):EventoPersonal,
     }
@@ -169,12 +170,49 @@ export const resolvers = {
             }
             return losEventosPersonalesDia
         },
+        async eventosPersonalesDeParentDia(_: any, { dateInicioDia, idParent, tipoParent }: any, contexto: contextoQuery) {
+            console.log(`Query de eventos personales en el dia ${dateInicioDia} de un ${tipoParent} con id ${idParent}`);
+            dateInicioDia = new Date(dateInicioDia);
+            const millisInicioDia = dateInicioDia.getTime();
+            const millisFinalDia = millisInicioDia + 86400000;
+
+            const dateFinalDia = new Date(millisFinalDia);
+
+            // get personas relevantes del parent
+            var personasRelevantes:Array<string>=[];
+            if(tipoParent==='nodoSolidaridad'){
+
+                try {
+                    var elNodo:any=await NodoSolidaridad.findById(idParent).exec();
+                } catch (error) {
+                    console.log(`Error buscando el nodoSolidaridad parent: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                personasRelevantes=await getResponsablesAmplioNodo(elNodo);
+            }
+
+            console.log(`Se buscaran eventos personales de ${personasRelevantes}`);
+ 
+            try {
+                // var losEventosPersonalesDia: any = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInicioDia.getTime(), $lt: dateFinalDia.getTime() } }, {"idPersona":{$in:personasRelevantes} } ]).exec();
+                var losEventosPersonalesDia: any = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInicioDia.getTime(), $lt: dateFinalDia.getTime() } }, { $or: [{ idPersona: {$in: personasRelevantes} }, { idsParticipantes: {$in: personasRelevantes} }] }]).exec();
+                
+            } catch (error) {
+                console.log(`Error buscando eventos personales: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            console.log("\x1b[32m%s\x1b[0m", `Enviando ${losEventosPersonalesDia.length} eventos relevantes`);
+
+            console.log(`De ${losEventosPersonalesDia.map(e=>e.idPersona)}`);
+            console.log(`Llamados: ${losEventosPersonalesDia.map(e=>e.nombre)}`);
+            return losEventosPersonalesDia
+        },
 
         async eventoPersonal(_: any, { idEvento }: any, contexto: contextoQuery) {
-            if (!contexto.usuario || !contexto.usuario.id) {
-                console.log(`Usuario no logeado`);
-                throw new AuthenticationError("Login requerido");
-            }
+            // if (!contexto.usuario || !contexto.usuario.id) {
+            //     console.log(`Usuario no logeado`);
+            //     throw new AuthenticationError("Login requerido");
+            // }
 
             const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
             const credencialesUsuario = contexto.usuario;
@@ -186,7 +224,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            if (credencialesUsuario.id != elEventoPersonal.idPersona && !elEventoPersonal.participantes.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+            if (credencialesUsuario.id != elEventoPersonal.idPersona && !elEventoPersonal.idsParticipantes.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Usuario no tenia permisos suficientes`);
                 throw new AuthenticationError("No autorizado");
             }

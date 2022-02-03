@@ -438,6 +438,14 @@ export default {
   --paletaFondo: #fffcf9;
   --paletaVerde: #62c370;
   --grisHover: rgba(128, 128, 128, 0.192);
+
+  --calendarioUsuario: #3F88C5;
+  --calendarioUsuarioStrong: #2d608a;
+  --calendarioPublico: #499F68;
+  --calendarioPublicoStrong: #34724b;
+  --calendarioNodoSolidaridad: #593F62;
+  --calendarioNodoSolidaridadStrong: #312336;
+  --calendarioSelect: #FCAA67;
 }
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;700&family=Salsa&display=swap");
 html {

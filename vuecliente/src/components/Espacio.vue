@@ -213,6 +213,7 @@
             type="text"
             name=""
             id="inputNombreNuevoEventoPublico"
+            ref="inputNombreNuevoEventoPublico"
             v-model="nombreNuevoEventoPublico"
           />
         </div>
@@ -466,6 +467,7 @@ export default {
       }
     },
     iniciarCuadroCrearEventoPublico() {
+      this.$refs.inputNombreNuevoEventoPublico.value="Encuentro de "+this.esteEspacio.nombre;
       var dateActual = new Date();
       dateActual.setHours(8);
       dateActual.setMinutes(0);
@@ -522,6 +524,7 @@ export default {
           `,
           variables: {
             infoNuevoEvento: {
+              nombre: this.$refs.inputNombreNuevoEventoPublico.value,
               horarioInicio: dateInicio,
               horarioFinal: dateFinal,
               tipoParent: "espacio",

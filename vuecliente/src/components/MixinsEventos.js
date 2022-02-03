@@ -373,8 +373,7 @@ export const MixinBasicoEventosPersonales = {
             if (!this.usuarioLogeado) return false;
 
             return this.usuario.id === this.esteEvento.idPersona;
-        },
-
+        },        
 
     }
 }
@@ -607,6 +606,8 @@ export const MixinEventoCalendario = {
             }
         },
         claseOffset() {
+            console.log(`Computado clase offset de ${this.esteEvento.nombre}`);
+            console.log(`infoOffset: ${this.infoOffset}`);
             return this.infoOffset.clase;
         },
     },

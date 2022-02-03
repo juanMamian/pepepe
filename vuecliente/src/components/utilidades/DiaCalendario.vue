@@ -55,13 +55,14 @@
       />
       <evento-personal-calendario
         :horaPx="horaPx"
-        v-for="eventoPersonal of eventosPersonalesDia"
+        v-for="eventoPersonal of todosEventosPersonalesDia || []"
         :key="eventoPersonal.id"
         :esteEvento="eventoPersonal"
         :seleccionado="idEventoSeleccionado === eventoPersonal.id"
         :infoOffset="indiceOffset[eventoPersonal.id]"
         :diaCalendarioOver="esteDia"
         :enfasis="enfasis"
+        :extranjero="idUsuarioTarget!=eventoPersonal.idPersona && !eventoPersonal.idsParticipantes.includes(idUsuarioTarget)"        
         @meElimine="$emit('eventoEliminado', eventoPersonal)"
         @click.native="$emit('clickEnEvento', eventoPersonal)"
         @meCambiaronDia="
@@ -100,6 +101,19 @@ const QUERY_EVENTOS_PERSONALES_DIA = gql`
   ${fragmentoEventoPersonal}
 `;
 
+const QUERY_EVENTOS_COLISIONANTES_DIA = gql`
+  query ($dateInicioDia: Date!, $idParent: ID!, $tipoParent: String!) {
+    eventosPersonalesDeParentDia(
+      dateInicioDia: $dateInicioDia
+      idParent: $idParent
+      tipoParent: $tipoParent
+    ) {
+      ...fragEventoPersonal
+    }
+  }
+  ${fragmentoEventoPersonal}
+`;
+
 export default {
   components: { EventoPublicoCalendario, EventoPersonalCalendario },
   name: "DiaCalendario",
@@ -124,6 +138,19 @@ export default {
         return !this.usuarioLogeado;
       },
     },
+    eventosPersonalesDeParentDia: {
+      query: QUERY_EVENTOS_COLISIONANTES_DIA,
+      variables() {
+        return {
+          dateInicioDia: this.esteDia.date,
+          idParent: this.idParent,
+          tipoParent: this.tipoParent,
+        };
+      },
+      skip() {
+        return this.tipoParent!='nodoSolidaridad' || !this.usuarioLogeado || !this.idParent;
+      },
+    },
   },
   props: {
     hoy: Boolean,
@@ -143,6 +170,7 @@ export default {
     return {
       eventosPublicosDia: [],
       eventosPersonalesDia: [],
+      eventosPersonalesDeParentDia: [],
 
       abierto: false,
       somedayAbierto: false,
@@ -411,7 +439,7 @@ export default {
       if (this.enfasis === "eventosPublicos") {
         if (this.modoEventosPublicosExtranjeros === "invisibles") {
           return this.eventosPublicosDia.filter(
-            (e) => e.idParent === this.idParent
+            (e) => e.idParent === this.idParent || e.idAdministrador===this.idUsuarioTarget
           );
         } else {
           return this.eventosPublicosDia;
@@ -423,14 +451,18 @@ export default {
           // return this.eventosPublicosDia.filter((ev) =>
           //   this.eventosPersonalesDia.some((ep) => ep.idEventoMarco === ev.id)
           // );
-          return this.eventosPublicosDia.filter(ep=>ep.idAdministrador===this.idUsuarioTarget);
+          return this.eventosPublicosDia.filter(
+            (ep) => ep.idAdministrador === this.idUsuarioTarget
+          );
         }
       } else {
         return [];
       }
     },
-    eventosPublicosUsuarioTarget(){
-      return this.eventosPublicosDia.filter(ev=>ev.idAdministrador===this.idUsuarioTarget);
+    eventosPublicosUsuarioTarget() {
+      return this.eventosPublicosDia.filter(
+        (ev) => ev.idAdministrador === this.idUsuarioTarget
+      );
     },
     estiloSizeContenedorEventos() {
       const alturaEventos = Object.values(this.indiceOffset).reduce(
@@ -462,10 +494,15 @@ export default {
           ).length;
         }
       } else if (this.enfasis === "eventosPersonales") {
-        if(this.idParent){
-          return this.eventosPersonalesDia.filter(ev=>ev.idParent===this.idParent).length
+        if (this.idParent) {
+          return this.eventosPersonalesDia.filter(
+            (ev) => ev.idParent === this.idParent
+          ).length;
         }
-        return this.eventosPersonalesDia.length + this.eventosPublicosUsuarioTarget.length;
+        return (
+          this.eventosPersonalesDia.length +
+          this.eventosPublicosUsuarioTarget.length
+        );
       } else {
         return 0;
       }
@@ -486,26 +523,30 @@ export default {
         return null;
       }
 
-      this.eventosPersonalesDia.forEach((ev) => {
+      this.todosEventosPersonalesDia.forEach((ev) => {
+        let heightEvento = sizeBloque;
+        let claseEvento = "bloque";
+        let top = marginRows;
+
         if (this.enfasis === "eventosPersonales") {
-          let heightEvento = sizeBloque;
-          let claseEvento = "bloque";
-          if(this.idParent){
-            if(ev.idParent!=this.idParent){
-              heightEvento=sizeBarra;
-              claseEvento='barra'
+          if (this.idParent) {
+            if (ev.idParent != this.idParent) {
+              heightEvento = sizeBarra;
+              claseEvento = "barra";
             }
           }
-          let top = marginRows;
-
-          indice[ev.id] = {
-            evento: ev,
-            top,
-            height: heightEvento,
-            bordeBot: top + heightEvento,
-            clase: claseEvento,
-          };
+        } else {
+          heightEvento = sizeBarra;
+          claseEvento = "barra";
         }
+
+        indice[ev.id] = {
+          evento: ev,
+          top,
+          height: heightEvento,
+          bordeBot: top + heightEvento,
+          clase: claseEvento,
+        };
       });
 
       var listaEventosPublicos = JSON.parse(
@@ -598,12 +639,15 @@ export default {
           evento: ev,
           top: top,
           height: heightEvento,
-          bordeBot: top + heightEvento,
+          bordeBot: top + heightEvento+sizeBarra,
           clase: claseEvento,
         };
       });
       return indice;
     },
+    todosEventosPersonalesDia(){
+      return this.eventosPersonalesDia.concat(this.eventosPersonalesDeParentDia.filter(epp=>!this.eventosPersonalesDia.map(ep=>ep.id).includes(epp.id)));
+    }
   },
   watch: {
     abierto(abierto) {

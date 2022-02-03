@@ -347,6 +347,41 @@ export var MixinEdicionNodoSolidaridad = {
           console.log("error: " + error);
         });
     },
+    retirarUsuarioFromListaResponsables(idUsuario) {
+      if(!this.usuarioSuperadministrador){
+        return;
+      }
+      console.log(`Retirando usuario de este nodo`);
+      
+      this.enviandoQueryResponsables = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+                  mutation ($idNodo: ID!, $idUsuario: ID!) {
+                    removeResponsableNodoSolidaridad(
+                      idNodo: $idNodo
+                      idUsuario: $idUsuario
+                    ) {
+                      id
+                      responsables
+                      posiblesResponsables
+                      administradores
+                    }
+                  }
+                `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            idUsuario,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryResponsables = false;
+          console.log("error: " + error);
+        });
+    },
     aceptarResponsable(idPosibleResponsable) {
       console.log(
         `aceptando como responsable al usuario ${idPosibleResponsable}`

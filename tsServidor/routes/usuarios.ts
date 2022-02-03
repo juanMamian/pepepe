@@ -294,13 +294,13 @@ router.get("/fotografias/:id", async function (req, res) {
         return res.sendFile(path.join(__dirname, '../public/media/iconos/usuarioDefault.png'));
     }
     try {
-        var elUsuario: any = await Usuario.findById(idUsuario, "fotografia");
+        var elUsuario: any = await Usuario.findById(idUsuario, "fotografia").exec();
     }
     catch (error) {
         console.log(`error buscando el usuario con fotografia. e: ` + error);
         return res.status(400).send('');
     }
-    if (!elUsuario.fotografia) {
+    if (!elUsuario || !elUsuario.fotografia) {
         res.sendFile(path.join(__dirname, '../public/media/iconos/usuarioDefault.png'));
     }
     else {

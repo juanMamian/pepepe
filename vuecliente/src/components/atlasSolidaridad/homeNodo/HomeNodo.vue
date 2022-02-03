@@ -293,7 +293,7 @@
                 id="botonEntrarResponsables"
                 class="boton botonControlZona botonControlResponsables"
                 :class="{ deshabilitado: enviandoQueryResponsables }"
-                v-show="!usuarioResponsable && !usuarioPosibleResponsable"
+                v-show="!usuarioResponsable && !usuarioPosibleResponsable && !idResponsableSeleccionado"
                 @click.stop="entrarResponsables"
               />
               <img
@@ -309,6 +309,17 @@
                     idResponsableSeleccionado === usuario.id)
                 "
                 @click.stop="abandonarListaResponsables"
+              />
+              <img
+                src="@/assets/iconos/minus.svg"
+                alt="Sacar"
+                title="Retirar usuario"
+                id="botonRetirarUsuarioFromResponsables"
+                class="boton botonControlZona botonControlResponsables"
+                :class="{ deshabilitado: enviandoQueryResponsables }"
+                v-show="idResponsableSeleccionado
+                "
+                @click.stop="retirarUsuarioFromListaResponsables(idResponsableSeleccionado)"
               />
               <img
                 src="@/assets/iconos/handshake.svg"
@@ -1123,6 +1134,7 @@ function arrayUnique(array) {
 }
 #listaResponsables {
   margin-top: 10px;
+  max-height: 33vh;
 }
 .botonControlZona {
   width: 20px;
