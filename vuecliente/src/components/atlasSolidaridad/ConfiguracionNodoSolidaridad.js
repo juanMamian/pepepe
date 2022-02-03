@@ -402,6 +402,45 @@ export var MixinEdicionNodoSolidaridad = {
         this.$refs.inputNuevoNombre.blur();
       }
     },
+    addResponsableManually(){
+      if(!this.usuarioLogeado || (!this.usuario.permisos.includes("maestraVida-profesor") && !this.usuarioSuperadministrador)){
+        return
+      }
+      console.log(`Adding ${this.$refs.inputIdResponsableManual.value} a la lista de responsables`);
+      const idPosibleResponsable=this.$refs.inputIdResponsableManual.value
+      this.enviandoQueryResponsables = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+                  mutation ($idNodo: ID!, $idUsuario: ID!) {
+                    addResponsableNodoSolidaridad(
+                      idNodo: $idNodo
+                      idUsuario: $idUsuario
+                    ) {
+                      id
+                      responsables
+                      posiblesResponsables
+                      responsablesSolicitados
+                      administradores
+                    }
+                  }
+                `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            idUsuario: idPosibleResponsable,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryResponsables = false;
+          this.responsableSeleccionadoEstaAceptado = true;
+          this.versionCalendario++;
+          this.$refs.inputIdResponsableManual.value=null;
+        })
+        .catch((error) => {
+          this.enviandoQueryResponsables = false;
+          console.log("error: " + error);
+        });
+    }
 
   },
   computed: {

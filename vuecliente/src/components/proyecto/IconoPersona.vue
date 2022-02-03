@@ -14,7 +14,7 @@
       {{ estaPersona.nombres }}
     </div>
     <div id="menuCxPersona" v-show="menuContextual">
-      <div class="botonMenuCx">{{ estaPersona.username}}</div>
+      <div class="botonMenuCx">{{ estaPersona.nombres+' ' + estaPersona.apellidos}}</div>
       <div class="botonMenuCx" @click="copiarId">{{ estaPersona.id }}</div>
       <div class="botonMenuCx" v-if="usuarioSuperadministrador">
         {{ estaPersona.username }}

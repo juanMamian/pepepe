@@ -69,6 +69,7 @@ export const typeDefs = gql`
         idEventoMarco:ID,
         lugar:ID,
         nombresPersona:String,
+        idsParticipantes:[String],
     }
 
     union Evento = EventoPersonal | EventoPublico
@@ -161,7 +162,7 @@ export const resolvers = {
             const dateFinalDia = new Date(millisFinalDia);
 
             try {
-                var losEventosPersonalesDia: any = await EventoPersonal.find({ horarioInicio: { $gt: dateInicioDia.getTime(), $lt: dateFinalDia.getTime() }, idPersona: idUsuario }).exec();
+                var losEventosPersonalesDia: any = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInicioDia.getTime(), $lt: dateFinalDia.getTime() } }, { $or: [{ idPersona: idUsuario }, { idsParticipantes: idUsuario }] }]).exec();
             } catch (error) {
                 console.log(`Error buscando eventos personales: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -185,7 +186,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            if (credencialesUsuario.id != elEventoPersonal.idParent && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+            if (credencialesUsuario.id != elEventoPersonal.idPersona && !elEventoPersonal.participantes.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Usuario no tenia permisos suficientes`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -300,10 +301,12 @@ export const resolvers = {
 
                 var elParent: any = null;
                 try {
-                    console.log(`Es la ejecución de un nodoSolidaridad`);
 
                     if (infoEventoPersonal.tipoParent === 'nodoSolidaridad') {
+                        console.log(`Es la ejecución de un nodoSolidaridad`);
+
                         elParent = await NodoSolidaridad.findById(infoEventoPersonal.idParent)
+
                     }
                     else {
                         console.log(`Tipo ${infoEventoPersonal.tipoParent} no reconocido`);
@@ -314,13 +317,18 @@ export const resolvers = {
                     throw new ApolloError("Error conectando con la base de datos");
                 }
 
-
-
                 //Authorización nodoSolidaridad
-                const responsablesAmplioNodo = await getResponsablesAmplioNodo(elParent);
+                var idsResponsables: Array<any> = [];
+                if (infoEventoPersonal.tipoParent === 'nodoSolidaridad') {
+                    const responsablesAmplioNodo = await getResponsablesAmplioNodo(elParent);
+                    idsResponsables = responsablesAmplioNodo;
+                    console.log(`Los responsables amplios nodo son: ${idsResponsables}, adding ${responsablesAmplioNodo.filter(r => r != nuevoEventoPersonal.idPersona)} to participantes del evento creado`);
+                    nuevoEventoPersonal.idsParticipantes = responsablesAmplioNodo.filter(r => r != nuevoEventoPersonal.idPersona);
+
+                }
                 const permisosEspeciales = ["superadministrador"];
                 const credencialesUsuario = contexto.usuario;
-                if (!responsablesAmplioNodo.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                if (!idsResponsables.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                     console.log(`Error de autenticacion creando evento personal`);
                     throw new AuthenticationError("No autorizado");
                 }
@@ -336,8 +344,6 @@ export const resolvers = {
                 nuevoEventoPersonal.idParent = elParent.id;
                 nuevoEventoPersonal.idAdministrador = elParent.idAdministrador;
             }
-
-
             try {
                 await nuevoEventoPersonal.save();
             } catch (error) {
@@ -925,34 +931,34 @@ export const resolvers = {
 
             return "EventoPublico"
 
-        },        
+        },
     },
-    EventoPublico:{
-        async eventosEnmarcados(eventoPublico:any, _:any, __:any){
+    EventoPublico: {
+        async eventosEnmarcados(eventoPublico: any, _: any, __: any) {
             try {
-                var losEventosEnmarcados:any=await EventoPersonal.find({idEventoMarco:eventoPublico.id}).exec();
+                var losEventosEnmarcados: any = await EventoPersonal.find({ idEventoMarco: eventoPublico.id }).exec();
             } catch (error) {
                 console.log(`Error buscando eventos enmarcados: ${error}`);
             }
 
             //Descargar nombres
             try {
-                var losNombres:any=await Usuario.find({"_id":{$in: losEventosEnmarcados.map(ev=>ev.idPersona)}}).select("id nombres apellidos").exec()
+                var losNombres: any = await Usuario.find({ "_id": { $in: losEventosEnmarcados.map(ev => ev.idPersona) } }).select("id nombres apellidos").exec()
             } catch (error) {
-                
-            }                        
+
+            }
 
             return losEventosEnmarcados;
 
         }
     },
-    EventoPersonal:{
-        async nombresPersona(eventoPersonal:any, _:any, __:any){
+    EventoPersonal: {
+        async nombresPersona(eventoPersonal: any, _: any, __: any) {
             try {
-                var usuario:any=await Usuario.findById(eventoPersonal.idPersona).select("nombres").exec();
+                var usuario: any = await Usuario.findById(eventoPersonal.idPersona).select("nombres").exec();
             } catch (error) {
                 console.log(`Error buscando nombres de persona de evento personal: ${error}`);
-            }        
+            }
 
             return usuario.nombres;
 

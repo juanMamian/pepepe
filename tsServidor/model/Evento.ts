@@ -6,6 +6,10 @@ export const esquemaEventoPersonal = new mongoose.Schema({
         type: String,
         required:true,
     },
+    idsParticipantes:{
+        type:[String],
+        default:[],
+    },
     idParent:{
         type: String,
         required:function(this:any){

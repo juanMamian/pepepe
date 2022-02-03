@@ -42,32 +42,36 @@
       </div>
       <div id="zonaBotones">
         <div
-          class="boton botonMostrar"
+          class="boton botonMostrar selector"
           @click="
             mostrando = mostrando === 'descripcion' ? null : 'descripcion'
           "
+          :class="{activo:mostrando==='descripcion'}"
         >
           <img src="@/assets/iconos/info.svg" alt="Informacion" />
         </div>
         <div
-          class="boton botonMostrar"
+          class="boton botonMostrar selector"
           @click="
             mostrando = mostrando === 'administrador' ? null : 'administrador'
           "
+          :class="{activo:mostrando==='administrador'}"
         >
           <img src="@/assets/iconos/userCog.svg" alt="Administrador" />
         </div>
         <div
-          class="boton botonMostrar"
+          class="boton botonMostrar selector"
           @click="mostrando = mostrando === 'calendario' ? null : 'calendario'"
+          :class="{activo:mostrando==='calendario'}"
         >
           <img src="@/assets/iconos/calendar.svg" alt="Calendario" />
         </div>
         <div
-          class="boton botonMostrar"
+          class="boton botonMostrar selector"
           @click="
             mostrando = mostrando === 'listaEventos' ? null : 'listaEventos'
           "
+          :class="{activo:mostrando==='listaEventos'}"
         >
           <img src="@/assets/iconos/clipboardList.svg" alt="Lista de eventos" />
         </div>
@@ -618,6 +622,7 @@ export default {
 }
 #zona1 {
   display: flex;
+  flex-shrink: 1;
 }
 .trianguloBullet {
   margin-right: 10px;
@@ -627,6 +632,7 @@ export default {
 }
 #zonaBotones {
   margin-left: auto;
+  margin-right:min(10px, 1vw);
   display: flex;
   align-items: center;
 }
@@ -635,7 +641,6 @@ export default {
   margin: 0px 5px;
 }
 #botonEliminarse {
-  margin-left: max(15px, 2%);
 }
 .botonControlCalendario {
   height: 17px;

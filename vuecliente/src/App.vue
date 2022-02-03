@@ -462,6 +462,7 @@ body {
   justify-content: center;
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 .boton img {
   height: 100%;
@@ -469,13 +470,22 @@ body {
 .boton svg {
   height: 100%;
 }
+.selector{
+  border-radius: 50%;
+  border-style: solid;
+  border-width: 1px;
+  border-color: transparent;
+}
+.selector.activo{
+  border-color: white;
+}
 .contenedorBotonesCampo {
   margin: 5px auto;
   display: flex;
   justify-content: center;
 }
 .botonGuardarCampo {
-  width: 15px;
+  width: 23px;
   cursor: pointer;
   margin: 0px 5px;
   opacity: 0.8;

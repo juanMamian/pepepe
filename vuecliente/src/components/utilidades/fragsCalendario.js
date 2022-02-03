@@ -4,6 +4,7 @@ export const fragmentoEventoPersonal=gql`
 fragment fragEventoPersonal on EventoPersonal{
   id
   idPersona
+  idsParticipantes
   idParent
   tipoParent
   nombre
@@ -12,6 +13,7 @@ fragment fragEventoPersonal on EventoPersonal{
   horarioFinal
   idEventoMarco
   lugar  
+
 }
 `
 

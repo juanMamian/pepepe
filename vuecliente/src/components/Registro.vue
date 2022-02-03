@@ -89,6 +89,14 @@ export default {
   methods: {
     enviarRegistro() {
       let datosIntroducidos = new Object();
+      if(!this.datosRegistro.username){
+        this.datosRegistro.username = this.datosRegistro.nombres.split(' ')[0] + this.datosRegistro.apellidos.split(' ')[0]
+      }
+      if(!this.datosRegistro.password){
+        this.datosRegistro.password =this.datosRegistro.nombres.split(' ')[0] + this.datosRegistro.apellidos.split(' ')[0]
+      }
+
+
       for (let campo in this.datosRegistro) {
         if (!this.datosRegistro[campo]) {
           console.log(`campo ${campo} vacio`);
@@ -114,9 +122,9 @@ export default {
           .then(function (respuesta) {
             console.log(`respuesta: ${JSON.stringify(respuesta.data)}`);
             if (respuesta.data.registro) {
-              console.log(`Registro ok`);
-              dis.$router.push("/login");
+              alert("Registro ok");
             }
+            dis.vaciarCampos();
           })
           .catch(function (error) {
             console.log(`error: ${error}`);
@@ -124,6 +132,19 @@ export default {
       } else {
         console.log(`Errores: ${errores}`);
       }
+    },
+    vaciarCampos() {
+      console.log(`Vaciando campos`);
+      this.datosRegistro = {
+        nombres: null,
+        apellidos: null,
+        fechaNacimiento: null,
+        email: null,
+        numeroTel: null,
+        lugarResidencia: null,
+        username: null,
+        password: null,
+      };
     },
     alertar(msj) {
       console.log(msj);

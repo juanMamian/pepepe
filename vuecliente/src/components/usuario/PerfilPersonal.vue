@@ -369,9 +369,7 @@ export default {
 <style scoped>
 .perfilPersonal {
 }
-.loading {
-  margin-top: 100px;
-}
+
 #contenido {
   width: 100%;
 }

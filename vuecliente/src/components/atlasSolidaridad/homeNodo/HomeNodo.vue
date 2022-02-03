@@ -267,6 +267,17 @@
             class="zonaInformacion"
             v-show="mostrando === 'responsables'"
           >
+            <div id="zonaAddResponsableManual" style="flex-direction: row; display: flex">
+              <input
+                type="text"
+                name=""
+                id="inputIdResponsableManual"
+                ref="inputIdResponsableManual"
+              />
+              <div class="boton" @click="addResponsableManually">
+                <img src="@/assets/iconos/plusCircle.svg" alt="Plus" />
+              </div>
+            </div>
             <div
               class="contenedorBotonesZona"
               id="contenedorBotonesResponsables"
@@ -303,7 +314,7 @@
                 src="@/assets/iconos/handshake.svg"
                 alt="Aceptar"
                 title="Aceptar como responsable"
-                id="botonAbandonarResponsables"
+                id="botonAceptarResponsables"
                 class="boton botonControlZona botonControlResponsables"
                 :class="{ deshabilitado: enviandoQueryResponsables }"
                 v-show="
@@ -313,6 +324,7 @@
                 "
                 @click="aceptarResponsable(idResponsableSeleccionado)"
               />
+
               <loading texto="" v-show="enviandoQueryResponsables" />
             </div>
             <div
@@ -344,9 +356,7 @@
           @mouseleave="mostrandoOpcionesCrearSubNodo = false"
         >
           <div class="barraSuperiorGeneral">
-            <div class="tituloBloque">
-              Nodos              
-            </div>
+            <div class="tituloBloque">Nodos</div>
             <div class="controlesBloque" id="controlesRecursosExternos">
               <div
                 class="boton botonBarraSuperiorGeneral"
@@ -366,7 +376,7 @@
               <div
                 id="contenedorOpcionesCrear"
                 v-show="mostrandoOpcionesCrearSubNodo"
-                :class="{deshabilitado:creandoSubNodo}"
+                :class="{ deshabilitado: creandoSubNodo }"
               >
                 <img
                   src="@/assets/iconos/starSolid.svg"
@@ -391,9 +401,9 @@
               </div>
             </div>
           </div>
-          <ventana-lista    
-            ref="ventanaLista"        
-            :idNodoRoot="$route.params.id"                                                            
+          <ventana-lista
+            ref="ventanaLista"
+            :idNodoRoot="$route.params.id"
             tipoNodoRoot="nodoSolidaridad"
           />
         </div>
@@ -768,7 +778,6 @@ export default {
             });
           }
           this.creandoRecursoExterno = false;
-
         })
         .catch((error) => {
           this.creandoRecursoExterno = false;
@@ -800,11 +809,10 @@ export default {
           },
           data: nuevoCache,
         });
-      }
-      else{
+      } else {
         console.log(`El recurso externo no estaba en caché`);
       }
-    },    
+    },
     enterNodoToCacheSubnodos(nodo) {
       const idNodo = nodo.id;
       const store = this.$apollo.provider.defaultClient;
@@ -897,7 +905,7 @@ export default {
         console.log(`El movimientoDinero ya estaba presente`);
       }
     },
-    afterCrearNodoUnder(nuevoNodo){      
+    afterCrearNodoUnder(nuevoNodo) {
       this.$refs.ventanaLista.addNodoToNodosSolidaridad(nuevoNodo);
     },
     fetchChildrenNodosRendered: debounce(function () {

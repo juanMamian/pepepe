@@ -357,7 +357,6 @@ async function uploadNodos(todosNodos) {
                 nodo.fuerzaColision.fuerza=Math.round(nodo.fuerzaColision.fuerza);
                 nodo.fuerzaCentroMasa.fuerza=Math.round(nodo.fuerzaCentroMasa.fuerza);
                 nodo.posicionadoByFuerzas = true;
-                console.log(`Guardando ${nodo.nombre}`);
                 await nodo.save();
             }
             catch (error) {

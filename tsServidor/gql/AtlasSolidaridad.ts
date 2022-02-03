@@ -834,7 +834,7 @@ export const resolvers = {
                 console.log(`error guardando el nuevo nodo en la base de datos. E: ${error}`);
                 throw new ApolloError("Error guardando en base de datos");
             }
-            emitirPosicionamientoNodos();
+            // emitirPosicionamientoNodos();
             console.log(`nuevo nodo de solidaridad creado:`);
 
             var respuesta: any = null;
@@ -1824,8 +1824,11 @@ export const resolvers = {
             }
 
             //Authorización
-            if (!credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion. `);
+            const permisosEspeciales = ["superadministrador"];
+
+            var responsablesAmplio = await getResponsablesAmplioNodo(elNodo);
+            if (!responsablesAmplio.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion creando movimientoDinero de nodoSolidaridad`);
                 throw new AuthenticationError("No autorizado");
             }
 
@@ -1853,8 +1856,7 @@ export const resolvers = {
             }
             else {
                 if (elNodo.responsables.length > 0) {
-                    console.log(`Error. Se intentaba add como responsable un usuario que no estaba en la lista de posibles responsables.`);
-                    throw new UserInputError("El usuario no estaba en la lista de espera para responsables.")
+                    console.log(`Error. Se intentaba add como responsable un usuario que no estaba en la lista de posibles responsables.`);                    
                 }
             }
 
@@ -1867,6 +1869,9 @@ export const resolvers = {
                 console.log("Error guardando datos en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+
+
+           
             console.log(`NodoSolidaridad guardado`);
 
 
@@ -1874,7 +1879,7 @@ export const resolvers = {
 
         },
         usuarioEntrarResponsableNodoSolidaridad: async function (_: any, { idNodo }: any, contexto: contextoQuery) {
-            console.log(`Solicitud de un usuario para entrar cona un nodo de id ${idNodo}`);
+            console.log(`Solicitud de un usuario para entrar a ser responsable de un nodo de id ${idNodo}`);
             var credencialesUsuario = contexto.usuario;
             const idUsuario = credencialesUsuario.id;
 

@@ -52,7 +52,6 @@ export const MixinAtlasSolidaridad = {
         var personas = nodoAtlasSolidaridadByIdAndTipo.persona ? [nodoAtlasSolidaridadByIdAndTipo.persona] : []
 
         if (!this.cacheNodosInicializado) {
-          console.log(`Al descargar nodo root se subiran al cache de apollo ${nodosSolidaridad.length} nodos solidaridad y ${personas.length} personas`);
           const store = this.$apollo.provider.defaultClient;
           store.writeQuery({
             query: QUERY_NODOS_SOLIDARIDAD,
@@ -64,6 +63,7 @@ export const MixinAtlasSolidaridad = {
           });
           this.cacheNodosInicializado = true;
         }
+       
 
         if (nodoAtlasSolidaridadByIdAndTipo.nodoSolidaridad) {
           return nodoAtlasSolidaridadByIdAndTipo.nodoSolidaridad
@@ -75,7 +75,7 @@ export const MixinAtlasSolidaridad = {
           console.log(`Fallo al obtener nodoRoot`);
           return null;
         }
-      }
+      },
     },
     nodosSolidaridad: {
       query: QUERY_NODOS_SOLIDARIDAD,
@@ -201,7 +201,6 @@ export const MixinAtlasSolidaridad = {
       }
     },
     fetchRelacionesNodosNeedingFetchMore: debounce(function () {
-     
 
       this.$apollo
         .query({
@@ -222,6 +221,7 @@ export const MixinAtlasSolidaridad = {
           variables: {
             infoNodos: this.infoNodosNeedingFetchMore,
           },
+          fetchPolicy:"network-only"
         })
         .then(({ data: { relacionesNodosAtlasByIds } }) => {
           this.idsNodosEverPassedToFetchMore = arrayUnique(

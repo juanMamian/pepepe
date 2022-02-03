@@ -11,4 +11,6 @@
 -Resolver qué debe hacer un evento publico que está siendo modificado (Por ejemplo sus horarios) con los eventos personales que estaban asistiendo..
 -Resolver la apariencia de eventos publicos que aparecen en el calendario personal porque hay eventos personales dándoles vida.
 -Eliminar todas las notificaciones de usuarios.
--Reparar pubsub
+-Reparar pubsub.
+-Solucionar el problema con refetch de los nodos de solidaridad en vistaLista.
+-Que al entrar como responsable a un nodo solidaridad, todos los eventos futuros de dicho nodo y sus children incluyan como participante al nuevo responsable.
