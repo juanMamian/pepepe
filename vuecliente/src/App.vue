@@ -405,6 +405,8 @@ export default {
 <style>
 :root {
   --mainColor: #f49e4c;
+  --mainColorDark: #f49e4c;
+  --mainColorLight: #e99e58;
 
   --atlasFondo: #12263a;
   --atlasVerde: #4d8b31;
@@ -441,8 +443,8 @@ export default {
 
   --calendarioUsuario: #3F88C5;
   --calendarioUsuarioStrong: #2d608a;
-  --calendarioPublico: #499F68;
-  --calendarioPublicoStrong: #34724b;
+  --calendarioPublico: #B6C649;
+  --calendarioPublicoStrong: #7e8a33;
   --calendarioNodoSolidaridad: #593F62;
   --calendarioNodoSolidaridadStrong: #312336;
   --calendarioSelect: #FCAA67;

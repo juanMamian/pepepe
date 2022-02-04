@@ -334,7 +334,7 @@ var charProhibidosNombre = /[^ a-zA-ZÀ-žñÑ]/g;
 var charProhibidosNumeroTel = /[^0-9+-]/g;
 var emailChars = /\S+@\S+\.\S+/;
 var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
-var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
+
 
 export const validarDatosUsuario = function (datosUsuario) {
     var errores: Array<string> = [];
@@ -416,6 +416,20 @@ export const validarDatosUsuario = function (datosUsuario) {
 
     return errores;
 }
+
+
+export const charProhibidosNombresUsuario = /[^ a-zA-ZÀ-ž]/;
+export const charProhibidosUsername = /[^ a-zA-ZÀ-ž0-9_().-]/;
+export const charProhibidosPassword = /\s\s+/;
+export const emailValidator=/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  
+
+export const minLengthNombresUsuario=2;
+export const minLengthApellidosUsuario=2;
+export const minLengthPassword=6;
+export const maxLengthPassword=40;
+export const minLengthEmail=7;
+export const minLengthUsername=7;
 
 
 export const ModeloUsuario = mongoose.model("Usuario", esquemaUsuario);

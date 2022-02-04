@@ -37,75 +37,71 @@
 
       <div
         class="boton"
-        v-if="enfasis==='eventosPersonales'"
+        v-if="enfasis === 'eventosPersonales'"
         @click="usuarioVeEventosPublicos = !usuarioVeEventosPublicos"
         :title="
           usuarioVeEventosPublicos
             ? 'Ocultar eventos públicos'
             : 'Mostrar eventos públicos'
         "
-        :style="[{opacity: usuarioVeEventosPublicos?1:0.5}]"
+        :style="[{ opacity: usuarioVeEventosPublicos ? 1 : 0.5 }]"
       >
         <img src="@/assets/iconos/calendarPublic.svg" alt="Evento publico" />
       </div>
     </div>
-    <div id="zonaScroll" ref="zonaScroll" @scroll="scrollingCalendario">
-      <div id="barraHoras">
-        <div
-          class="hora"
-          :style="[estiloSizeHora]"
-          v-for="hora of 24"
-          :key="'hora' + (hora - 1)"
-        >
-          {{ hora - 1 }}:00
+
+    <div id="bloqueSelect" v-show="!diaSeleccionado">
+      <div id="barraFecha">
+        <div id="bloqueMes">
+          <div id="nombreMes">{{ nombreMesSeleccionado }}</div>
+        </div>
+
+        <div id="bloqueYear" style="margin-left: auto">
+          <div id="nombreYear">
+            {{ yearSeleccionado }}
+          </div>
         </div>
       </div>
 
-      <div id="contenedorDias" :style="[estiloAnchoTiempo]">
-        <div
-          class="boton botonCargarDias"
-          @click="addSemanaBefore"
-          :style="[offsetScroll]"
-        >
-          <img src="@/assets/iconos/plusCircle.svg" alt="Mas" />
+      <div id="barraDiasSemana">
+        <div class="diaSemana" v-for="dia of 7" :key="'diaSemana' + dia">
+          {{ nombresDiasSemana[dia - 1].charAt(0) }}
         </div>
-        <dia-calendario
-          :eventoSiendoCreado="eventoSiendoCreado"
-          ref="diasCalendario"
-          v-for="dia of diasRendered"
-          :hoy="Date.parse(dateHoy) === Date.parse(dia.date)"
-          :key="'dia' + Date.parse(dia.date)"
-          :esteDia="dia"
-          :horaPx="horaPx"
-          :scrollXCalendario="scrollX"
-          :idParent="idParent"
-          :idEventoSeleccionado="idEventoSeleccionado"
-          :idUsuarioTarget="idUsuarioTarget"
-          :tipoParent="tipoParent"
-          :enfasis="enfasis"
-          :modoEventosPublicosExtranjeros="modoEventosPublicosExtranjeros"
-          :usuarioVeEventosPublicos="usuarioVeEventosPublicos"
-          @iniciaCreacionEvento="$emit('iniciaCreacionEvento')"
-          @clickEnEvento="idEventoSeleccionado = $event.id"
-          @desSeleccionDeEvento="idEventoSeleccionado = null"
-          @eventoCreado="
-            sendEventoCreadoToDias($event);
-            $emit('eventoCreado', $event);
-          "
-          @eventoEliminado="
-            sendEventoEliminadoToDias($event);
-            $emit('eventoEliminado', $event);
-          "
-        />
+      </div>
+
+      <div id="contenedorMesh" >
+        <div id="margenInicio" :style="[estiloMargenInicio]"></div>
         <div
-          class="boton botonCargarDias"
-          @click="addSemanaAfter"
-          :style="[offsetScroll]"
+          class="selectorDia"
+          v-for="dia of lengthMonthSeleccionado"
+          :key="'selectorDia' + dia"
+          @click="numeroDiaSeleccionado = dia"
         >
-          <img src="@/assets/iconos/plusCircle.svg" alt="Mas" />
+          <div class="numeroDia">{{ dia }}</div>
         </div>
       </div>
     </div>
+
+    <dia-calendario
+      v-if="diaSeleccionado"
+      :eventoSiendoCreado="eventoSiendoCreado"
+      :hoy="Date.parse(dateHoy) === Date.parse(diaSeleccionado.date)"
+      :key="'dia' + Date.parse(diaSeleccionado.date)"
+      :esteDia="diaSeleccionado"
+      :horaPx="horaPx"
+      :scrollXCalendario="scrollX"
+      :idParent="idParent"
+      :idEventoSeleccionado="idEventoSeleccionado"
+      :idUsuarioTarget="idUsuarioTarget"
+      :tipoParent="tipoParent"
+      :enfasis="enfasis"
+      :modoEventosPublicosExtranjeros="modoEventosPublicosExtranjeros"
+      :usuarioVeEventosPublicos="usuarioVeEventosPublicos"
+      @regresar="numeroDiaSeleccionado=null"
+      @iniciaCreacionEvento="$emit('iniciaCreacionEvento')"
+      @clickEnEvento="idEventoSeleccionado = $event.id"
+      @desSeleccionDeEvento="idEventoSeleccionado = null"            
+    />
   </div>
 </template>
 
@@ -130,13 +126,40 @@ export default {
     dateHoy.setSeconds(0);
 
     return {
+      nombresDiasSemana: [
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sabado",
+        "Domingo",
+      ],
+
+      nombresMeses: [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre",
+      ],
+
       dateHoy,
       primerDia: {
         date: dateHoy,
         horaActual: new Date(Date.now()).getHours(),
       },
-      diasPrevios: 2,
-      diasPosteriores: 7,
+      numeroMesSeleccionado: dateHoy.getMonth(),
+      yearSeleccionado: dateHoy.getFullYear(),
+      numeroDiaSeleccionado: null,
+
       eventoSiendoCreado: null,
 
       horaPx: 100,
@@ -147,7 +170,7 @@ export default {
 
       diasRendered: [{ date: dateHoy }],
 
-      usuarioVeEventosPublicos:false,
+      usuarioVeEventosPublicos: false,
     };
   },
   computed: {
@@ -156,88 +179,58 @@ export default {
 
       return this.eventoSiendoCreado.tipoEvento;
     },
-    estiloSizeHora() {
-      return {
-        width: this.horaPx + "px",
-      };
-    },
-    estiloAnchoTiempo() {
-      return {
-        width: this.horaPx * 24 + "px",
-      };
-    },
     offsetScroll() {
       const left = 10 + this.scrollX;
       return {
         left: left + "px",
       };
     },
-  },
-  methods: {
-    scrollingCalendario() {
-      this.scrollX = this.$refs.zonaScroll.scrollLeft;
+    nombreMesSeleccionado() {
+      return this.nombresMeses[this.numeroMesSeleccionado];
     },
-    scrollToHoraActual() {
-      const dateActual = new Date();
-      const minutosActual =
-        dateActual.getMinutes() + dateActual.getHours() * 60;
-      const minutosActualPx = (minutosActual * this.horaPx) / 60;
-      this.$refs.zonaScroll.scrollLeft = minutosActualPx;
+    lengthMonthSeleccionado() {
+      return new Date(
+        this.yearSeleccionado,
+        this.numeroMesSeleccionado,
+        0
+      ).getDate();
     },
-    addSemanaBefore() {
-      const dateFirstDiaRendered = this.diasRendered[0].date;
-      const diaMillis = 86400000;
-
-      var nuevosDias = [];
-      for (var i = -7; i <= -1; i++) {
-        let millisNuevoDia = dateFirstDiaRendered.getTime() + i * diaMillis;
-        let nuevoDia = {
-          date: new Date(millisNuevoDia),
-        };
-        nuevosDias.push(nuevoDia);
-      }
-
-      this.diasRendered.unshift(...nuevosDias);
+    diasMargenInicio() {
+      return new Date(
+        this.yearSeleccionado,
+        this.numeroMesSeleccionado,
+        0
+      ).getDay();
     },
-    addSemanaAfter() {
-      const dateLastDiaRendered =
-        this.diasRendered[this.diasRendered.length - 1].date;
-      const diaMillis = 86400000;
-
-      var nuevosDias = [];
-      for (var i = 1; i <= 7; i++) {
-        let millisNuevoDia = dateLastDiaRendered.getTime() + i * diaMillis;
-        let nuevoDia = {
-          date: new Date(millisNuevoDia),
-        };
-        nuevosDias.push(nuevoDia);
-      }
-
-      this.diasRendered.push(...nuevosDias);
+    estiloMargenInicio() {
+      return {
+        width: this.diasMargenInicio * 14 + "%",
+      };
     },
-    sendEventoCreadoToDias(evento) {
-      this.$refs.diasCalendario.forEach((dc) => {
-        dc.addEventoCache(evento);
-      });
-    },
-    sendEventoEliminadoToDias(evento) {
-      this.$refs.diasCalendario.forEach((dc) => {
-        dc.deleteEventoCache(evento);
-      });
+    diaSeleccionado() {
+      if (!this.numeroDiaSeleccionado) return null;
+      const dateDiaSeleccionado = new Date(
+        this.yearSeleccionado,
+        this.numeroMesSeleccionado,
+        this.numeroDiaSeleccionado,
+        0
+      );
+      return {
+        date: dateDiaSeleccionado,
+      };
     },
   },
-  mounted() {
-    this.addSemanaAfter();
-  },
+  
 };
 </script>
 
 <style scoped>
 .calendario {
-  max-width: 100vw;
-
+  width: min(100vw, 600px);
+  background-color: #ecebe4;
   position: relative;
   max-height: 100vh;
+  margin: 0px auto;
 }
 .calendario.eventoSiendoCreado {
   border: 1px solid var(--paletaSelect);
@@ -247,24 +240,42 @@ export default {
   width: 15px;
   height: 15px;
 }
-#zonaScroll {
-  overflow-x: scroll;
-  overflow-y: hidden;
-  position: relative;
-}
-#barraHoras {
+#barraFecha {
   display: flex;
-  overflow: visible;
-  padding: 14px 0px;
-  position: absolute;
-  left: 0px;
+  color: #6d6d6d;
 }
-#barraHoras .hora {
-  font-size: 10px;
-  opacity: 0.4;
-  position: relative;
-  overflow: visible;
+#barraDiasSemana {
+  margin-top: 25px;
+  display: flex;
+  width: 100%;
+  color: #6d6d6d;
+}
+.diaSemana {
+  width: 14.3%;
+  text-align: center;
+}
+.numeroDia {
+  font-size: 11px;
+  color: #6d6d6d;
+}
+#contenedorMesh {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+}
+#margenInicio {
+  height: 10px;
+}
+.selectorDia {
+  width: 14%;
+  height: 12vh;
+  border: 0.5px solid rgb(204, 204, 204);
   flex-shrink: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.selectorDia:hover {
+  background-color: var(--paletaMain);
 }
 #contenedorDias {
   margin-top: 50px;

@@ -605,9 +605,7 @@ export const MixinEventoCalendario = {
                 zIndex: this.seleccionado ? 10 : 0
             }
         },
-        claseOffset() {
-            console.log(`Computado clase offset de ${this.esteEvento.nombre}`);
-            console.log(`infoOffset: ${this.infoOffset}`);
+        claseOffset() {            
             return this.infoOffset.clase;
         },
     },

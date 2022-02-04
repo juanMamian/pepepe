@@ -1,19 +1,7 @@
 <template>
   <div class="diaCalendario" :class="{ abierto }">
     <div id="barraSuperior">
-      <div
-        id="bloqueMovil"
-        :style="[offsetNombreDia]"
-        @click="abierto = !abierto"
-      >
-        <div
-          class="trianguloBullet"
-          :style="[
-            {
-              transform: abierto ? 'rotate(90deg)' : '',
-            },
-          ]"
-        ></div>
+      <div id="bloqueTituloDia" @click="$emit('regresar')">
         <div id="nombreDia" :class="{ hoy }">
           {{ diaSemana }}
         </div>
@@ -29,47 +17,64 @@
         </div>
       </div>
     </div>
-    <div
-      id="contenedorEventos"
-      ref="contenedorEventos"
-      :style="[estiloSizeContenedorEventos]"
-      v-show="abierto"
-      @click.self="clickContenedorEventos"
-    >
-      <evento-publico-calendario
-        :horaPx="horaPx"
-        v-for="eventoPublico of eventosPublicosVisibles"
-        :key="eventoPublico.id"
-        :esteEvento="eventoPublico"
-        :extranjero="idParent && idParent != eventoPublico.idParent"
-        :seleccionado="idEventoSeleccionado === eventoPublico.id"
-        :infoOffset="indiceOffset[eventoPublico.id]"
-        :diaCalendarioOver="esteDia"
-        :enfasis="enfasis"
-        :idParent="idParent"
-        :tipoParent="tipoParent"
-        @meElimine="$emit('eventoEliminado', eventoPublico)"
-        @click.native="$emit('clickEnEvento', eventoPublico)"
-        @meCambiaronDia="deleteEventoCache(eventoPublico)"
-        @creadoEventoPersonal="addEventoCache"
-      />
-      <evento-personal-calendario
-        :horaPx="horaPx"
-        v-for="eventoPersonal of todosEventosPersonalesDia || []"
-        :key="eventoPersonal.id"
-        :esteEvento="eventoPersonal"
-        :seleccionado="idEventoSeleccionado === eventoPersonal.id"
-        :infoOffset="indiceOffset[eventoPersonal.id]"
-        :diaCalendarioOver="esteDia"
-        :enfasis="enfasis"
-        :extranjero="idUsuarioTarget!=eventoPersonal.idPersona && !eventoPersonal.idsParticipantes.includes(idUsuarioTarget)"        
-        @meElimine="$emit('eventoEliminado', eventoPersonal)"
-        @click.native="$emit('clickEnEvento', eventoPersonal)"
-        @meCambiaronDia="
-          deleteEventoCache(eventoPersonal);
-          $emit('eventoCambiadoDia', $event);
-        "
-      />
+
+    <loading texto="" v-show="downloadingData" />
+    <div id="contenedorContenido">
+      <div id="barraHoras">
+        <div
+          ref="labelsHoras"
+          class="hora"
+          :style="[estiloSizeHora]"
+          v-for="hora of 24"
+          :key="'hora' + (hora - 1)"
+        >
+          {{ hora - 1 }}:00
+        </div>
+      </div>
+      <div
+        id="contenedorEventos"
+        ref="contenedorEventos"
+        v-show="!downloadingData"
+        :style="[estiloSizeContenedorEventos]"
+        @click.self="clickContenedorEventos"
+      >
+        <evento-publico-calendario
+          :horaPx="horaPx"
+          v-for="eventoPublico of eventosPublicosVisibles"
+          :key="eventoPublico.id"
+          :esteEvento="eventoPublico"
+          :extranjero="idParent && idParent != eventoPublico.idParent"
+          :seleccionado="idEventoSeleccionado === eventoPublico.id"
+          :infoOffset="indiceOffset[eventoPublico.id]"
+          :diaCalendarioOver="esteDia"
+          :enfasis="enfasis"
+          :idParent="idParent"
+          :tipoParent="tipoParent"
+          @meElimine="deleteEventoCache(eventoPublico)"
+          @click.native="$emit('clickEnEvento', eventoPublico)"
+          @meCambiaronDia="deleteEventoCache(eventoPublico)"
+          @creadoEventoPersonal="addEventoCache"
+        />
+        <evento-personal-calendario
+          :horaPx="horaPx"
+          v-for="eventoPersonal of todosEventosPersonalesDia || []"
+          :key="eventoPersonal.id"
+          :esteEvento="eventoPersonal"
+          :seleccionado="idEventoSeleccionado === eventoPersonal.id"
+          :infoOffset="indiceOffset[eventoPersonal.id]"
+          :diaCalendarioOver="esteDia"
+          :enfasis="enfasis"
+          :extranjero="
+            idUsuarioTarget != eventoPersonal.idPersona &&
+            !eventoPersonal.idsParticipantes.includes(idUsuarioTarget)
+          "
+          @meElimine="deleteEventoCache(eventoPersonal)"
+          @click.native="$emit('clickEnEvento', eventoPersonal)"
+          @meCambiaronDia="
+            deleteEventoCache(eventoPersonal);            
+          "
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -82,6 +87,7 @@ import {
 } from "./fragsCalendario.js";
 import EventoPublicoCalendario from "./EventoPublicoCalendario.vue";
 import EventoPersonalCalendario from "./EventoPersonalCalendario.vue";
+import Loading from "./Loading.vue";
 
 const QUERY_EVENTOS_PUBLICOS_DIA = gql`
   query ($dateInicioDia: Date!) {
@@ -115,7 +121,7 @@ const QUERY_EVENTOS_COLISIONANTES_DIA = gql`
 `;
 
 export default {
-  components: { EventoPublicoCalendario, EventoPersonalCalendario },
+  components: { EventoPublicoCalendario, EventoPersonalCalendario, Loading },
   name: "DiaCalendario",
   apollo: {
     eventosPublicosDia: {
@@ -125,6 +131,7 @@ export default {
           dateInicioDia: this.esteDia.date,
         };
       },
+      fetchPolicy: "cache-and-network",
     },
     eventosPersonalesDia: {
       query: QUERY_EVENTOS_PERSONALES_DIA,
@@ -137,6 +144,7 @@ export default {
       skip() {
         return !this.usuarioLogeado;
       },
+      fetchPolicy: "cache-and-network",
     },
     eventosPersonalesDeParentDia: {
       query: QUERY_EVENTOS_COLISIONANTES_DIA,
@@ -148,8 +156,13 @@ export default {
         };
       },
       skip() {
-        return this.tipoParent!='nodoSolidaridad' || !this.usuarioLogeado || !this.idParent;
+        return (
+          this.tipoParent != "nodoSolidaridad" ||
+          !this.usuarioLogeado ||
+          !this.idParent
+        );
       },
+      fetchPolicy: "cache-and-network",
     },
   },
   props: {
@@ -173,7 +186,6 @@ export default {
       eventosPersonalesDeParentDia: [],
 
       abierto: false,
-      somedayAbierto: false,
 
       creandoEvento: false,
     };
@@ -316,7 +328,7 @@ export default {
         .then(({ data: { crearEventoPublico } }) => {
           this.creandoEvento = false;
 
-          this.$emit("eventoCreado", crearEventoPublico);
+          this.addEventoCache(crearEventoPublico)
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
@@ -347,7 +359,7 @@ export default {
         })
         .then(({ data: { crearEventoPersonal } }) => {
           this.creandoEvento = false;
-          this.$emit("eventoCreado", crearEventoPersonal);
+          this.addEventoCache(crearEventoPersonal);
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
@@ -439,7 +451,9 @@ export default {
       if (this.enfasis === "eventosPublicos") {
         if (this.modoEventosPublicosExtranjeros === "invisibles") {
           return this.eventosPublicosDia.filter(
-            (e) => e.idParent === this.idParent || e.idAdministrador===this.idUsuarioTarget
+            (e) =>
+              e.idParent === this.idParent ||
+              e.idAdministrador === this.idUsuarioTarget
           );
         } else {
           return this.eventosPublicosDia;
@@ -472,13 +486,7 @@ export default {
 
       return {
         width: this.horaPx * 24 + "px",
-        height: alturaEventos + 5 + "px",
-      };
-    },
-    offsetNombreDia() {
-      const left = 10 + this.scrollXCalendario;
-      return {
-        left: left + "px",
+        height: alturaEventos + 45 + "px",
       };
     },
     cantidadEventosPublicos() {
@@ -602,7 +610,7 @@ export default {
           let eventosColision = Object.entries(indice)
             .map((e) => e[1])
             .filter((t) => {
-              console.log(`Comparando con ${t.evento.nombre}`);
+              // console.log(`Comparando con ${t.evento.nombre}`);
               const inicioDentro =
                 t.evento.horarioInicio > ev.horarioInicio &&
                 t.evento.horarioInicio < ev.horarioFinal;
@@ -618,9 +626,9 @@ export default {
               // console.log(`Final dentro: ${finalDentro}`);
 
               const colision = inicioDentro || finalDentro || sobrepone;
-              if (colision) {
-                console.log(`colision`);
-              }
+              // if (colision) {
+              //   console.log(`colision`);
+              // }
               return colision;
             });
 
@@ -639,22 +647,46 @@ export default {
           evento: ev,
           top: top,
           height: heightEvento,
-          bordeBot: top + heightEvento+sizeBarra,
+          bordeBot: top + heightEvento + sizeBarra,
           clase: claseEvento,
         };
       });
       return indice;
     },
-    todosEventosPersonalesDia(){
-      return this.eventosPersonalesDia.concat(this.eventosPersonalesDeParentDia.filter(epp=>!this.eventosPersonalesDia.map(ep=>ep.id).includes(epp.id)));
-    }
-  },
-  watch: {
-    abierto(abierto) {
-      if (abierto) {
-        this.somedayAbierto = true;
-      }
+    todosEventosPersonalesDia() {
+      return this.eventosPersonalesDia.concat(
+        this.eventosPersonalesDeParentDia.filter(
+          (epp) =>
+            !this.eventosPersonalesDia.map((ep) => ep.id).includes(epp.id)
+        )
+      );
     },
+    estiloSizeHora() {
+      return {
+        width: this.horaPx + "px",
+      };
+    },
+    downloadingData() {
+      return (
+        (this.$apollo.queries.eventosPersonalesDeParentDia &&
+          this.$apollo.queries.eventosPersonalesDeParentDia.loading) ||
+        (this.$apollo.queries.eventosPublicosDia &&
+          this.$apollo.queries.eventosPublicosDia.loading) ||
+        (this.$apollo.queries.eventosPersonalesDia &&
+          this.$apollo.queries.eventosPersonalesDia.loading)
+      );
+    },
+  },
+  watch: {},
+  mounted() {
+    const horaActual = new Date().getHours();
+    console.log(`Scrolling into ${horaActual}`);
+    this.$nextTick(() => {
+      this.$refs.labelsHoras[8].scrollIntoView({
+        block: "nearest",
+        inline: "start",
+      });
+    });
   },
 };
 </script>
@@ -672,10 +704,27 @@ export default {
   align-items: center;
   height: 25px;
 }
-#bloqueMovil {
+#contenedorContenido {
+  width: 100%;
+  overflow: scroll;
+  height: 60vh;
+}
+#barraHoras {
+  display: flex;
+  overflow: visible;
+  padding: 14px 0px;
+}
+#barraHoras .hora {
+  font-size: 10px;
+  opacity: 0.4;
+  position: relative;
+  overflow: visible;
+  flex-shrink: 0;
+}
+#bloqueTituloDia {
   display: flex;
   align-items: center;
-  position: relative;
+  margin-left: 1vw;
 }
 #nombreDia {
   margin-right: 2vw;

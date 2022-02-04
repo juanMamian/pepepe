@@ -1,11 +1,14 @@
 <template>
   <div class="listaEventosEspacio">
+    <loading texto="" v-show="$apollo.queries.eventosPublicosEspacio.loading" />
     <evento-item-lista
       :esteEvento="evento"
-      v-for="evento of eventosPublicosEspacio"
+      v-for="evento of eventosPublicosEspacioOrdenados"
       :key="evento.id"
       :seleccionado="idEventoSeleccionado === evento.id"
-      @meElimine="deleteEventoCache(evento); $emit('eventoEliminado', evento)"
+      @meElimine="
+        deleteEventoCache(evento);        
+      "
     />
   </div>
 </template>
@@ -14,6 +17,8 @@
 import gql from "graphql-tag";
 import { fragmentoEventoPublico } from "./utilidades/fragsCalendario";
 import EventoItemLista from "./EventoItemLista.vue";
+import Loading from "./utilidades/Loading.vue";
+
 const QUERY_EVENTOS_PUBLICOS_ESPACIO = gql`
   query ($idEspacio: ID!) {
     eventosPublicosEspacio(idEspacio: $idEspacio) {
@@ -24,7 +29,7 @@ const QUERY_EVENTOS_PUBLICOS_ESPACIO = gql`
 `;
 
 export default {
-  components: { EventoItemLista },
+  components: { EventoItemLista, Loading },
   props: {
     idEspacio: String,
   },
@@ -37,16 +42,19 @@ export default {
           idEspacio: this.idEspacio,
         };
       },
+      fetchPolicy: "cache-and-network",
     },
   },
   data() {
     return {
       idEventoSeleccionado: null,
+      eventosPublicosEspacio: [],
     };
   },
   methods: {
-     deleteEventoCache(evento) {
-      const tipoEvento=evento.__typename.charAt(0).toLowerCase()+evento.__typename.slice(1);      
+    deleteEventoCache(evento) {
+      const tipoEvento =
+        evento.__typename.charAt(0).toLowerCase() + evento.__typename.slice(1);
       var infoQuery = null;
       if (tipoEvento === "eventoPublico") {
         infoQuery = {
@@ -55,30 +63,25 @@ export default {
             idEspacio: this.idEspacio,
           },
         };
-      }
-      else if(tipoEvento==='eventoPersonal'){
+      } else if (tipoEvento === "eventoPersonal") {
         console.log(`add cache eventos personales not developed`);
-        return 
-      }
-      else{
+        return;
+      } else {
         console.log(`Tipo evento ${tipoEvento} no reconocido`);
         return;
       }
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
-        ...infoQuery
+        ...infoQuery,
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
-      var listaEventosCache=null;
-      if(tipoEvento==='eventoPublico'){
-        listaEventosCache=nuevoCache.eventosPublicosEspacio;
+      var listaEventosCache = null;
+      if (tipoEvento === "eventoPublico") {
+        listaEventosCache = nuevoCache.eventosPublicosEspacio;
+      } else if (tipoEvento === "eventoPersonal") {
+        listaEventosCache = nuevoCache.eventosPersonalesEspacio;
       }
-      else if(tipoEvento==='eventoPersonal'){
-        listaEventosCache=nuevoCache.eventosPersonalesEspacio;
-      }
-      const indexE = listaEventosCache.findIndex(
-        (e) => e.id === evento.id
-      );
+      const indexE = listaEventosCache.findIndex((e) => e.id === evento.id);
       if (indexE > -1) {
         listaEventosCache.splice(indexE, 1);
 
@@ -89,7 +92,8 @@ export default {
       }
     },
     addEventoCache(evento) {
-      const tipoEvento=evento.__typename.charAt(0).toLowerCase()+evento.__typename.slice(1);      
+      const tipoEvento =
+        evento.__typename.charAt(0).toLowerCase() + evento.__typename.slice(1);
       var infoQuery = null;
       if (tipoEvento === "eventoPublico") {
         infoQuery = {
@@ -98,30 +102,25 @@ export default {
             idEspacio: this.idEspacio,
           },
         };
-      }
-      else if(tipoEvento==='eventoPersonal'){
+      } else if (tipoEvento === "eventoPersonal") {
         console.log(`add cache eventos personales not developed`);
-        return 
-      }
-      else{
+        return;
+      } else {
         console.log(`Tipo evento ${tipoEvento} no reconocido`);
         return;
       }
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
-        ...infoQuery
+        ...infoQuery,
       });
       var nuevoCache = JSON.parse(JSON.stringify(cache));
-      var listaEventosCache=null;
-      if(tipoEvento==='eventoPublico'){
-        listaEventosCache=nuevoCache.eventosPublicosEspacio;
+      var listaEventosCache = null;
+      if (tipoEvento === "eventoPublico") {
+        listaEventosCache = nuevoCache.eventosPublicosEspacio;
+      } else if (tipoEvento === "eventoPersonal") {
+        listaEventosCache = nuevoCache.eventosPersonalesEspacio;
       }
-      else if(tipoEvento==='eventoPersonal'){
-        listaEventosCache=nuevoCache.eventosPersonalesEspacio;
-      }
-      const indexE = listaEventosCache.findIndex(
-        (e) => e.id === evento.id
-      );
+      const indexE = listaEventosCache.findIndex((e) => e.id === evento.id);
       if (indexE === -1) {
         listaEventosCache.push(evento);
 
@@ -132,15 +131,25 @@ export default {
       }
     },
   },
+  computed: {
+    eventosPublicosEspacioOrdenados() {
+      return [...this.eventosPublicosEspacio].sort((a, b) => {
+        return (
+          new Date(a.horarioInicio).getTime() -
+          new Date(b.horarioInicio).getTime()
+        );
+      });
+    },
+  },
 };
 </script>
 
 <style scoped>
-.listaEventosEspacio{
+.listaEventosEspacio {
   overflow-y: scroll;
   overflow-x: hidden;
 }
-.eventoItemLista{
+.eventoItemLista {
   margin: 15px 0px;
 }
 </style>

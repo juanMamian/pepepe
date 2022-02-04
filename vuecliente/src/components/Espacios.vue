@@ -4,18 +4,25 @@
       
     </router-view>
     <div id="barraControles">
+      
       <div
         class="boton botonControl"
-        v-show="usuarioProfe"
         title="Crear nuevo espacio"
+        v-show="usuarioProfe && !creandoEspacio"
         @click="crearNuevoEspacio"
       >
         <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
       </div>
+      <loading texto="" v-show="creandoEspacio" />
+
+      <div class="boton" @click="verTodos=!verTodos" style="margin-right:15px">
+        <img src="@/assets/iconos/users.svg" alt="Todos" v-show="verTodos">
+        <img src="@/assets/iconos/user.svg" alt="Usuario" v-show="!verTodos">
+      </div>
     </div>
     <div id="listaEspacios">
       <espacio
-        v-for="espacio of todosEspacios"
+        v-for="espacio of espaciosVisibles"
         ref="espacios"
         :key="espacio.id"
         :esteEspacio="espacio"
@@ -28,6 +35,7 @@
 <script>
 import gql from "graphql-tag";
 import Espacio from "./Espacio.vue";
+import Loading from './utilidades/Loading.vue';
 const fragmentoEspacio = gql`
   fragment fragEspacio on Espacio {
     id
@@ -48,7 +56,7 @@ const QUERY_ESPACIOS = gql`
 
 
 export default {
-  components: { Espacio },
+  components: { Espacio, Loading },
   apollo: {
     todosEspacios: {
       query: QUERY_ESPACIOS,
@@ -59,6 +67,7 @@ export default {
     return {
       todosEspacios: [],
 
+      verTodos:false,
       creandoEspacio: false,
     };
   },
@@ -100,8 +109,12 @@ export default {
           else{
               console.log(`El espacio ya estaba en caché`);
           }
+          this.creandoEspacio = false;
+
       }).catch((error)=>{
           console.log(`Error: ${error}`);
+          this.creandoEspacio = false;
+
       })
     },
     eliminarEspacioCache(idEspacio) {
@@ -122,8 +135,7 @@ export default {
       }
     },
     manejarCreacionEventos(eventos){
-      console.log(`Manejando la repeticion de los eventos de un espacio con id ${eventos[0].idParent}`);
-      this.$refs.espacios.forEach(e=>e.checkIfMyNewEventos(eventos));
+      console.log(`Manejando la repeticion de los eventos de un espacio con id ${eventos[0].idParent}`);      
     },
     handleCambioFechaEvento(){
       console.log(`Handling`);
@@ -136,6 +148,18 @@ export default {
 
       return this.usuario.permisos.includes("maestraVida-profesor");
     },
+    espaciosVisibles(){
+      if(this.verTodos)return this.espaciosUsuario.concat(this.espaciosNoUsuario);
+      return this.espaciosUsuario
+    },    
+    espaciosUsuario(){
+      if(!this.usuarioLogeado)return [];
+      return this.todosEspacios.filter(e=>e.idAdministrador===this.usuario.id);
+    },
+    espaciosNoUsuario(){
+      if(!this.usuarioLogeado)return this.todosEspacios;
+      return this.todosEspacios.filter(e=>e.idAdministrador!=this.usuario.id)
+    }
   },
 };
 </script>

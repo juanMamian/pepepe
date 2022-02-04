@@ -1,5 +1,5 @@
 <template>
-  <div class="espacio" :class="{ mostrando }">
+  <div class="espacio" :class="{ mostrando, deshabilitado:eliminandose }">
     <div class="barraSuperior">
       <div id="zona1">
         <!-- <div
@@ -19,7 +19,7 @@
             v-model="nuevoNombre"
             style="width: 250px"
             @click.stop=""
-            @blur="editandoNombre = false"
+            @blur="guardarNuevoNombre"
             @keydown="keydownInputNuevoNombre"
             v-show="editandoNombre"
             type="text"
@@ -84,6 +84,7 @@
         >
           <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
         </div>
+        
       </div>
     </div>
 
@@ -145,13 +146,13 @@
     <div
       id="zonaCalendario"
       class="zonaPrimerNivel"
-      v-show="mostrando === 'calendario'"
+      v-if="mostrando === 'calendario'"
     >
       <div id="contenedorControlesCalendario">
         <div
           class="boton botonControlCalendario"
           v-if="administrador"
-          v-show="mostrando === 'calendario' && !creandoEventoPublico"
+          v-show="mostrando === 'calendario' && !introduciendoEventoPublicoCalendario"
           :title="'Programar una sesión de ' + esteEspacio.nombre"
           @click="iniciarCreacionEvento"
         >
@@ -159,9 +160,9 @@
         </div>
         <div
           class="boton botonControlCalendario"
-          v-show="mostrando === 'calendario' && creandoEventoPublico"
+          v-show="mostrando === 'calendario' && introduciendoEventoPublicoCalendario"
           title="Cancelar creación de evento"
-          @click="creandoEventoPublico = false"
+          @click="introduciendoEventoPublicoCalendario = false"
         >
           <img src="@/assets/iconos/times.svg" alt="Cancelar" />
         </div>
@@ -172,16 +173,14 @@
         :idParent="esteEspacio.id"
         enfasis="eventosPublicos"
         tipoParent="espacio"
-        @iniciaCreacionEvento="creandoEventoPublico = false"
-        @eventoCreado="responderEventoCreado($event, 'calendario')"
-        @eventoEliminado="responderEventoEliminado($event, 'calendario')"
+        @iniciaCreacionEvento="introduciendoEventoPublicoCalendario = false"
       />
     </div>
 
     <div
       id="zonaListaEventos"
       class="zonaPrimerNivel"
-      v-show="mostrando === 'listaEventos'"
+      v-if="mostrando === 'listaEventos'"
     >
       <div id="controlesListaEventos" class="contenedorControles">
         <div
@@ -205,6 +204,7 @@
       <div
         v-show="mostrandoCuadroCrearEventoPublico"
         id="cuadroCrearEventoPublico"
+        :class="{deshabilitado: enviandoNuevoEventoPublico}"
       >
         <div class="bloqueCampoNuevoEventoPublico">
           <div class="nombreCampo">Nombre</div>
@@ -246,13 +246,11 @@
         <div class="boton" id="botonCrearEventoPublico" :class="{deshabilitado: !duracionNuevoEventoPublico || duracionNuevoEventoPublico<5}" style="margin: 10px auto" title="Crear evento" v-show="!creandoEventoPublico" @click="crearEventoPublico">
           <img src="@/assets/iconos/calendarPlus.svg" alt="CrearEvento">
         </div>
-        <loading texto="" v-show="creandoEventoPublico" style="margin: 10px auto" />
+        <loading texto="" v-show="enviandoNuevoEventoPublico" style="margin: 10px auto" />
       </div>
       <lista-eventos-espacio
         :idEspacio="this.esteEspacio.id"
-        ref="listaEventosEspacio"
-        @eventoCreado="responderEventoCreado($event, 'listaEventos')"
-        @eventoEliminado="responderEventoEliminado($event, 'listaEventos')"
+        ref="listaEventosEspacio"                
       />
     </div>
   </div>
@@ -292,13 +290,16 @@ export default {
       enviandoNuevoDescripcion: false,
 
       mostrandoCuadroCrearEventoPublico: false,
-      nombreNuevoEventoPublico: 'Sesión de '+this.esteEspacio.nombre,
+      nombreNuevoEventoPublico: 'Espacio de '+this.esteEspacio.nombre,
       dateInicioNuevoEventoPublico: null,
       dateFinalNuevoEventoPublico: null,
       horarioInicioNuevoEventoPublico:null,
       horarioFinalNuevoEventoPublico:null,
-      duracionNuevoEventoPublico:null,
+      duracionNuevoEventoPublico:60,
       creandoEventoPublico: false,
+      enviandoNuevoEventoPublico:false,
+
+      introduciendoEventoPublicoCalendario:false,
 
       eliminandose: false,
     };
@@ -410,11 +411,11 @@ export default {
     },
     keydownInputNuevoNombre(e) {
       if (e.key === "Escape") {
-        this.$refs.inputNuevoNombre.blur();
+        this.editandoNombre=false;
       }
     },
     iniciarCreacionEvento() {
-      this.creandoEventoPublico = true;
+      this.introduciendoEventoPublicoCalendario = true;
     },
     eliminarse() {
       if (
@@ -445,29 +446,9 @@ export default {
         .catch((error) => {
           console.log(`Error: ${error}`);
         });
-    },
-    responderEventoCreado(evento, origen) {
-      console.log(`Un evento fue creado en el ${origen}`);
-      if (origen != "listaEventos") {
-        this.$refs.listaEventosEspacio.addEventoCache(evento);
-      }
-      if (origen != "calendario") {
-        this.$refs.calendario.sendEventoCreadoToDias(evento);
-      }
-    },
-    responderEventoEliminado(evento, origen) {
-      console.log(`Un evento fue eliminado en el ${origen}`);
-      if (origen != "listaEventos") {
-        console.log(`Sending info to listaEventosEspacio`);
-        this.$refs.listaEventosEspacio.deleteEventoCache(evento);
-      }
-      if (origen != "calendario") {
-        console.log(`Sending info to calendario`);
-        this.$refs.calendario.sendEventoEliminadoToDias(evento);
-      }
-    },
+    },       
     iniciarCuadroCrearEventoPublico() {
-      this.$refs.inputNombreNuevoEventoPublico.value="Encuentro de "+this.esteEspacio.nombre;
+      this.nombreNuevoEventoPublico="Espacio de "+this.esteEspacio.nombre;
       var dateActual = new Date();
       dateActual.setHours(8);
       dateActual.setMinutes(0);
@@ -511,7 +492,7 @@ export default {
             
       console.log(`Creando evento público el ${diaMesInicio}`);
 
-      this.creandoEventoPublico = true;
+      this.enviandoNuevoEventoPublico = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -533,22 +514,16 @@ export default {
           },
         })
         .then(({ data: { crearEventoPublico } }) => {
-          this.creandoEventoPublico = false;
+          this.enviandoNuevoEventoPublico = false;
+          this.$refs.listaEventosEspacio.addEventoCache(crearEventoPublico);
           this.mostrandoCuadroCrearEventoPublico=false;
-          this.responderEventoCreado(crearEventoPublico);
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
-          this.creandoEventoPublico = false;
+          this.enviandoNuevoEventoPublico = false;
         });
     },
-    checkIfMyNewEventos(eventos) {
-      eventos.forEach((evento) => {
-        if (evento.idParent === this.esteEspacio.id) {
-          this.responderEventoCreado(evento);
-        }
-      });
-    },
+    
   },
   computed: {
     administrador() {
@@ -588,14 +563,10 @@ export default {
             this.toggleEditandoDescripcion();
           }
         }
-      } else if (mostrando === "calendario") {
-        this.$nextTick(() => {
-          this.$refs.calendario.scrollToHoraActual();
-        });
-      }
+      } 
     },
-    creandoEventoPublico(creando) {
-      if (creando) {
+    introduciendoEventoPublicoCalendario(introduciendo) {
+      if (introduciendo) {
         this.$refs.calendario.eventoSiendoCreado = {
           idParent: this.esteEspacio.id,
           tipoParent: "espacio",
@@ -665,9 +636,11 @@ export default {
 }
 #zonaCalendario {
   padding: 0px 0px;
+  width: 100%;
 }
 .calendario {
   margin-top: 10px;
+  width:100%;
 }
 #cuadroCrearEventoPublico{
   background-color: rgba(128, 128, 128, 0.123); 

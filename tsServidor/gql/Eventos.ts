@@ -209,6 +209,7 @@ export const resolvers = {
         },
 
         async eventoPersonal(_: any, { idEvento }: any, contexto: contextoQuery) {
+           
             // if (!contexto.usuario || !contexto.usuario.id) {
             //     console.log(`Usuario no logeado`);
             //     throw new AuthenticationError("Login requerido");

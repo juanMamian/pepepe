@@ -2,288 +2,296 @@
   <div class="ventanaEventoPublico">
     <div id="zonaCobertura">
       <div id="laVentana">
-        <div id="barraSuperior">
-          <div
-            class="boton"
-            title="Cerrar"
-            style="margin-left: auto"
-            @click="cerrarVentana"
-          >
-            <img src="@/assets/iconos/times.svg" alt="Salir" />
-          </div>
+        <loading texto="" v-show="$apollo.queries.esteEvento.loading"/>
+        <div id="contenido" v-show="!$apollo.queries.esteEvento.loading">
+          <div id="barraSuperior">
+            <div
+              class="boton"
+              title="Cerrar"
+              style="margin-left: auto"
+              @click="cerrarVentana"
+            >
+              <img src="@/assets/iconos/times.svg" alt="Salir" />
+            </div>
 
-          <div
-            class="boton"
-            v-if="administrador || usuarioSuperadministrador"
-            title="Repetir este evento"
-            @click="mostrandoZonaRepetir = !mostrandoZonaRepetir"
-          >
-            <img src="@/assets/iconos/hourglass.svg" alt="Repetir" />
-          </div>
-        </div>
-
-        <div id="zonaRepetir" v-show="mostrandoZonaRepetir">
-          <div class="instruccion" style="margin-bottom: 10px">
-            Repetir este evento...
-          </div>
-
-          <select name="" id="selectFrecuenciaRepetir" v-model="periodoRepetir">
-            <option value="diariamente">Diariamente</option>
-            <option value="semanalmente">Semanalmente</option>
-          </select>
-          <div id="bloqueCantidadRepetir" style="margin: 10px auto">
-            <input
-              type="number"
-              :min="minRepetir"
-              :max="maxRepetir"
-              style="width: 50px; margin-right: 20px"
-              name=""
-              id="inputCantidadRepetir"
-              v-model="cantidadRepetir"
-            />
-            {{ cantidadRepetir > 1 ? "veces" : "vez" }}
-          </div>
-          <div
-            class="boton"
-            style="margin: 10px auto"
-            title="Aceptar"
-            v-show="!enviandoQueryRepetir"
-            @click="repetirEvento(cantidadRepetir, periodoRepetir)"
-          >
-            <img src="@/assets/iconos/check.svg" alt="Aceptar" />
-          </div>
-          <loading
-            texto=""
-            v-show="enviandoQueryRepetir"
-            style="margin: 10px auto"
-          />
-        </div>
-        <div id="zonaNombre">
-          <input
-            @keypress.enter.prevent="guardarNuevoNombre"
-            ref="inputNuevoNombre"
-            v-model="nuevoNombre"
-            @click.stop=""
-            @blur="editandoNombre = false"
-            @keydown="keydownInputNuevoNombre"
-            v-show="editandoNombre"
-            type="text"
-            class="inputNuevoNombre inputNombreCosa"
-            :class="{ deshabilitado: enviandoNuevoNombre }"
-          />
-          <loading texto="" v-show="enviandoNuevoNombre" />
-          <div
-            id="elNombre"
-            :class="{
-              deshabilitado: enviandoNuevoNombre,
-              administrador,
-            }"
-            v-show="!editandoNombre"
-            @click="toggleEditandoNombre"
-          >
-            {{ esteEvento.nombre }}
-          </div>
-        </div>
-
-        <div id="zonaTiempos">
-          <div id="bloqueHorarioInicio" class="bloqueCampo">
-            <div class="nombreCampo">Inicio</div>
-            <div class="valorCampo">
-              <div
-                id="fechaInicio"
-                v-show="!editandoFechaInicio"
-                @click.stop="iniciarEdicionFechaInicio"
-              >
-                {{ fechaInicioLegible }}
-              </div>
-              <input
-                type="date"
-                id="inputFechaInicio"
-                v-show="editandoFechaInicio"
-                ref="inputFechaInicio"
-                @keypress.enter="
-                  updateFechaInicioHoldDuration($event.target.value)
-                "
-              />
-              <div
-                id="horaInicio"
-                v-show="!editandoHoraInicio"
-                @click.stop="iniciarEdicionHoraInicio"
-              >
-                {{ horaInicioLegible }}
-              </div>
-
-              <input
-                type="time"
-                id="inputHoraInicio"
-                v-show="editandoHoraInicio"
-                ref="inputHoraInicio"
-                :class="{ deshabilitado: enviandoSomeHorario }"
-                @blur="editandoHoraInicio = false"
-                @keypress.enter="
-                  updateHoraInicioHoldDuration($event.target.value)
-                "
-              />
+            <div
+              class="boton"
+              v-if="administrador || usuarioSuperadministrador"
+              title="Repetir este evento"
+              @click="mostrandoZonaRepetir = !mostrandoZonaRepetir"
+            >
+              <img src="@/assets/iconos/hourglass.svg" alt="Repetir" />
             </div>
           </div>
 
-          <div id="bloqueDuracion" class="bloqueCampo">
-            <div class="nombreCampo">Duracion</div>
-            <div class="valorCampo">
-              <div
-                id="duracion"
-                v-show="!editandoDuracion"
-                @click.stop="iniciarEdicionDuracion"
-              >
-                {{ duracionMinutos
-                }}{{ duracionMinutos != 1 ? " minutos" : " minuto" }}
-              </div>
+          <div id="zonaRepetir" v-show="mostrandoZonaRepetir">
+            <div class="instruccion" style="margin-bottom: 10px">
+              Repetir este evento...
+            </div>
+
+            <select
+              name=""
+              id="selectFrecuenciaRepetir"
+              v-model="periodoRepetir"
+            >
+              <option value="diariamente">Diariamente</option>
+              <option value="semanalmente">Semanalmente</option>
+            </select>
+            <div id="bloqueCantidadRepetir" style="margin: 10px auto">
               <input
                 type="number"
-                id="inputDuracion"
-                style="width: 100px"
-                v-show="editandoDuracion"
-                ref="inputDuracion"
-                :class="{ deshabilitado: enviandoSomeHorario }"
-                @blur="editandoDuracion = false"
-                @keypress.enter="updateDuracion($event.target.value)"
+                :min="minRepetir"
+                :max="maxRepetir"
+                style="width: 50px; margin-right: 20px"
+                name=""
+                id="inputCantidadRepetir"
+                v-model="cantidadRepetir"
               />
+              {{ cantidadRepetir > 1 ? "veces" : "vez" }}
             </div>
-          </div>
-        </div>
-
-        <div id="bloqueLugar" v-if="esteEvento.lugar" class="bloqueCampo">
-          <div class="nombreCampo">Lugar</div>
-          <div class="valorCampo">
-            {{ esteEvento.lugar }}
-          </div>
-        </div>
-
-        <div class="bloqueAdministrador bloqueCampo">
-          <div class="nombreCampo">Administra</div>
-          <div class="valorCampo" style="opacity: 0.9">
-            <icono-persona-autonomo
-              :factorEscala="'0.5'"
-              :idPersona="esteEvento.idAdministrador"
-            />
-          </div>
-        </div>
-
-        <div id="contenedorSelectoresMostrar">
-          <div
-            class="boton"
-            :class="{
-              deshabilitado:
-                (!esteEvento.descripcion ||
-                  esteEvento.descripcion.length < 1) &&
-                !administrador,
-            }"
-            :style="{
-              borderColor: mostrando === 'descripcion' ? 'white' : 'black',
-            }"
-            @click="mostrando = 'descripcion'"
-            :title="mostrando === 'descripcion' ? '' : 'Mostrar descripción'"
-          >
-            <img src="@/assets/iconos/info.svg" alt="Descripción" />
-          </div>
-          <div
-            class="boton"
-            :style="{
-              borderColor: mostrando === 'participantes' ? 'white' : 'black',
-            }"
-            @click="mostrando = 'participantes'"
-            :title="
-              mostrando === 'participantes'
-                ? ''
-                : 'Mostrar participantes del evento'
-            "
-          >
-            <img src="@/assets/iconos/user.svg" alt="Participantes" />
-          </div>
-        </div>
-
-        <div id="zonaContenidoMostrando">
-          <div
-            id="zonaDescripcion"
-            class="zonaInformacion"
-            v-show="mostrando === 'descripcion'"
-          >
             <div
-              id="descripcion"
-              class="contenidoTexto"
-              ref="descripcion"
-              v-show="!editandoDescripcion"
-              @click="toggleEditandoDescripcion"
+              class="boton"
+              style="margin: 10px auto"
+              title="Aceptar"
+              v-show="!enviandoQueryRepetir"
+              @click="repetirEvento(cantidadRepetir, periodoRepetir)"
             >
-              {{ esteEvento.descripcion }}
+              <img src="@/assets/iconos/check.svg" alt="Aceptar" />
             </div>
-
-            <textarea
-              id="inputNuevoDescripcion"
-              class="inputTexto"
-              ref="inputNuevoDescripcion"
-              :class="{ letrasRojas: nuevoDescripcionIlegal }"
-              v-model="nuevoDescripcion"
-              v-show="editandoDescripcion"
+            <loading
+              texto=""
+              v-show="enviandoQueryRepetir"
+              style="margin: 10px auto"
             />
-            <div class="contenedorBotonesCampo" v-show="editandoDescripcion">
-              <img
-                src="@/assets/iconos/save.svg"
-                class="boton botonGuardarCampo"
-                alt="Guardar"
-                title="Guardar descripción"
-                id="botonGuardarDescripcion"
-                @click="guardarNuevoDescripcion"
-              />
-              <img
-                src="@/assets/iconos/equis.svg"
-                class="boton botonGuardarCampo"
-                alt="Cancelar"
-                title="Cancelar edición"
-                id="botonCancelarEdicionDescripcion"
-                @click="editandoDescripcion = false"
-              />
+          </div>
+          <div id="zonaNombre">
+            <input
+              @keypress.enter.prevent="guardarNuevoNombre"
+              ref="inputNuevoNombre"
+              v-model="nuevoNombre"
+              @click.stop=""
+              @blur="guardarNuevoNombre"
+              @keydown="keydownInputNuevoNombre"
+              v-show="editandoNombre"
+              type="text"
+              class="inputNuevoNombre inputNombreCosa"
+              :class="{ deshabilitado: enviandoNuevoNombre }"
+            />
+            <loading texto="" v-show="enviandoNuevoNombre" />
+            <div
+              id="elNombre"
+              :class="{
+                deshabilitado: enviandoNuevoNombre,
+                administrador,
+              }"
+              v-show="!editandoNombre"
+              @click="toggleEditandoNombre"
+            >
+              {{ esteEvento.nombre }}
             </div>
-            <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
           </div>
 
-          <div id="zonaParticipantes" v-show="mostrando === 'participantes'">
-            <div id="bloqueMaxParticipantes" class="bloqueCampo">
-              <div class="nombreCampo">Maximo:</div>
+          <div id="zonaTiempos">
+            <div id="bloqueHorarioInicio" class="bloqueCampo">
+              <div class="nombreCampo">Inicio</div>
               <div class="valorCampo">
-                <input
-                  @keypress.enter.prevent="guardarNuevoLimiteDeCupos"
-                  ref="inputNuevoLimiteDeCupos"
-                  v-model="nuevoLimiteDeCupos"
-                  @click.stop=""
-                  @blur="editandoLimiteDeCupos = false"                  
-                  v-show="editandoLimiteDeCupos"
-                  type="number"
-                  class="inputNuevoLimiteDeCupos inputLimiteDeCuposCosa"
-                  :class="{ deshabilitado: enviandoNuevoLimiteDeCupos }"
-                />
-                <loading texto="" v-show="enviandoNuevoLimiteDeCupos" />
                 <div
-                  id="elLimiteDeCupos"
-                  :class="{
-                    deshabilitado: enviandoNuevoLimiteDeCupos,
-                    administrador,
-                  }"
-                  v-show="!editandoLimiteDeCupos"
-                  @click="toggleEditandoLimiteDeCupos"
+                  id="fechaInicio"
+                  v-show="!editandoFechaInicio"
+                  @click.stop="iniciarEdicionFechaInicio"
                 >
-                  {{ esteEvento.limiteDeCupos || 'Sin límite' }}
+                  {{ fechaInicioLegible }}
                 </div>
+                <input
+                  type="date"
+                  id="inputFechaInicio"
+                  v-show="editandoFechaInicio"
+                  ref="inputFechaInicio"
+                  @keypress.enter="
+                    updateFechaInicioHoldDuration($event.target.value)
+                  "
+                  @blur="updateFechaInicioHoldDuration($event.target.value)"
+                />
+                <div
+                  id="horaInicio"
+                  v-show="!editandoHoraInicio"
+                  @click.stop="iniciarEdicionHoraInicio"
+                >
+                  {{ horaInicioLegible }}
+                </div>
+
+                <input
+                  type="time"
+                  id="inputHoraInicio"
+                  v-show="editandoHoraInicio"
+                  ref="inputHoraInicio"
+                  :class="{ deshabilitado: enviandoSomeHorario }"
+                  @blur="updateHoraInicioHoldDuration($event.target.value)"
+                  @keypress.enter="
+                    updateHoraInicioHoldDuration($event.target.value)
+                  "
+                />
               </div>
             </div>
-            <div id="listaParticipantes">
-              <info-participante-evento-publico
-                :estaParticipacion="participacion"
-                v-for="participacion of esteEvento.eventosEnmarcados"
-                :key="participacion.id"
-                :eventoPublico="esteEvento"
-                :duracionEventoPublico="duracionMinutos"
+
+            <div id="bloqueDuracion" class="bloqueCampo">
+              <div class="nombreCampo">Duracion</div>
+              <div class="valorCampo">
+                <div
+                  id="duracion"
+                  v-show="!editandoDuracion"
+                  @click.stop="iniciarEdicionDuracion"
+                >
+                  {{ duracionMinutos
+                  }}{{ duracionMinutos != 1 ? " minutos" : " minuto" }}
+                </div>
+                <input
+                  type="number"
+                  id="inputDuracion"
+                  style="width: 100px"
+                  v-show="editandoDuracion"
+                  ref="inputDuracion"
+                  :class="{ deshabilitado: enviandoSomeHorario }"
+                  @blur="updateDuracion($event.target.value)"
+                  @keypress.enter="updateDuracion($event.target.value)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div id="bloqueLugar" v-if="esteEvento.lugar" class="bloqueCampo">
+            <div class="nombreCampo">Lugar</div>
+            <div class="valorCampo">
+              {{ esteEvento.lugar }}
+            </div>
+          </div>
+
+          <div class="bloqueAdministrador bloqueCampo">
+            <div class="nombreCampo">Administra</div>
+            <div class="valorCampo" style="opacity: 0.9">
+              <icono-persona-autonomo
+                :factorEscala="'0.5'"
+                :idPersona="esteEvento.idAdministrador"
               />
+            </div>
+          </div>
+
+          <div id="contenedorSelectoresMostrar">
+            <div
+              class="boton"
+              :class="{
+                deshabilitado:
+                  (!esteEvento.descripcion ||
+                    esteEvento.descripcion.length < 1) &&
+                  !administrador,
+              }"
+              :style="{
+                borderColor: mostrando === 'descripcion' ? 'white' : 'black',
+              }"
+              @click="mostrando = 'descripcion'"
+              :title="mostrando === 'descripcion' ? '' : 'Mostrar descripción'"
+            >
+              <img src="@/assets/iconos/info.svg" alt="Descripción" />
+            </div>
+            <div
+              class="boton"
+              :style="{
+                borderColor: mostrando === 'participantes' ? 'white' : 'black',
+              }"
+              @click="mostrando = 'participantes'"
+              :title="
+                mostrando === 'participantes'
+                  ? ''
+                  : 'Mostrar participantes del evento'
+              "
+            >
+              <img src="@/assets/iconos/user.svg" alt="Participantes" />
+            </div>
+          </div>
+
+          <div id="zonaContenidoMostrando">
+            <div
+              id="zonaDescripcion"
+              class="zonaInformacion"
+              v-show="mostrando === 'descripcion'"
+            >
+              <div
+                id="descripcion"
+                class="contenidoTexto"
+                ref="descripcion"
+                v-show="!editandoDescripcion"
+                @click="toggleEditandoDescripcion"
+              >
+                {{ esteEvento.descripcion }}
+              </div>
+
+              <textarea
+                id="inputNuevoDescripcion"
+                class="inputTexto"
+                ref="inputNuevoDescripcion"
+                :class="{ letrasRojas: nuevoDescripcionIlegal }"
+                v-model="nuevoDescripcion"
+                v-show="editandoDescripcion"
+              />
+              <div class="contenedorBotonesCampo" v-show="editandoDescripcion">
+                <img
+                  src="@/assets/iconos/save.svg"
+                  class="boton botonGuardarCampo"
+                  alt="Guardar"
+                  title="Guardar descripción"
+                  id="botonGuardarDescripcion"
+                  @click="guardarNuevoDescripcion"
+                />
+                <img
+                  src="@/assets/iconos/equis.svg"
+                  class="boton botonGuardarCampo"
+                  alt="Cancelar"
+                  title="Cancelar edición"
+                  id="botonCancelarEdicionDescripcion"
+                  @click="editandoDescripcion = false"
+                />
+              </div>
+              <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
+            </div>
+
+            <div id="zonaParticipantes" v-show="mostrando === 'participantes'">
+              <div id="bloqueMaxParticipantes" class="bloqueCampo">
+                <div class="nombreCampo">Maximo:</div>
+                <div class="valorCampo">
+                  <input
+                    @keypress.enter.prevent="guardarNuevoLimiteDeCupos"
+                    ref="inputNuevoLimiteDeCupos"
+                    v-model="nuevoLimiteDeCupos"
+                    @click.stop=""
+                    @blur="guardarNuevoLimiteDeCupos"
+                    v-show="editandoLimiteDeCupos"
+                    type="number"
+                    class="inputNuevoLimiteDeCupos inputLimiteDeCuposCosa"
+                    :class="{ deshabilitado: enviandoNuevoLimiteDeCupos }"
+                  />
+                  <loading texto="" v-show="enviandoNuevoLimiteDeCupos" />
+                  <div
+                    id="elLimiteDeCupos"
+                    :class="{
+                      deshabilitado: enviandoNuevoLimiteDeCupos,
+                      administrador,
+                    }"
+                    v-show="!editandoLimiteDeCupos"
+                    @click="toggleEditandoLimiteDeCupos"
+                  >
+                    {{ esteEvento.limiteDeCupos || "Sin límite" }}
+                  </div>
+                </div>
+              </div>
+              <div id="listaParticipantes">
+                <info-participante-evento-publico
+                  :estaParticipacion="participacion"
+                  v-for="participacion of esteEvento.eventosEnmarcados"
+                  :key="participacion.id"
+                  :eventoPublico="esteEvento"
+                  :duracionEventoPublico="duracionMinutos"
+                />
+              </div>
             </div>
           </div>
         </div>

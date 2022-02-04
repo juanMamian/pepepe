@@ -1,9 +1,13 @@
 import { ApolloError, AuthenticationError, gql, UserInputError, withFilter } from "apollo-server-express";
-import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario } from "../model/Usuario"
+// import { ModeloUsuario as Usuario, permisosDeUsuario,  validarDatosUsuario} from "../model/Usuario"
+import { ModeloUsuario as Usuario, permisosDeUsuario,validarDatosUsuario, charProhibidosNombresUsuario, charProhibidosUsername, minLengthNombresUsuario, minLengthApellidosUsuario, minLengthUsername, minLengthEmail, minLengthPassword, maxLengthPassword, charProhibidosPassword, emailValidator } from "../model/Usuario"
+
 import { GraphQLDateTime } from "graphql-iso-date";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
+const bcrypt = require("bcryptjs");
+
 
 interface Usuario {
     username: string,
@@ -177,6 +181,9 @@ export const typeDefs = gql`
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
         setNodosSolidaridadDesplegadosUsuario(idsNodos:[ID!]):Boolean,
+
+        cambiarPassword(dizqueCurrentPassword: String!, newPassword: String!) :Boolean,
+
 
     }
     extend type Subscription{
@@ -934,6 +941,55 @@ export const resolvers = {
             }
 
             return true;
+        },
+
+        async cambiarPassword(_: any, { dizqueCurrentPassword, newPassword }, context: contextoQuery) {
+            if (!context.usuario) {
+                throw new AuthenticationError("Login necesario");
+            }
+            const usuario = context.usuario;
+
+            console.log(`Solicitud de cambio de password del usuario ${usuario.id}`);
+
+            try {
+                var elUsuario: any = await Usuario.findById(usuario.id).exec();
+                if (!elUsuario) throw "Usuario no encontrado";
+            } catch (error) {
+                console.log(`Error descargando el usuario: ${error}`);
+                throw new UserInputError("Datos inválidos");
+            }
+
+            //Validar currentPass
+
+            if (!await bcrypt.compare(dizqueCurrentPassword, elUsuario.password)) {
+                throw new UserInputError("Datos inválidos");
+            }
+
+            //Validar nuevo pass
+
+            if(charProhibidosPassword.test(newPassword)){
+                console.log(`El nuevo password contenía caracteres ilegales`);
+                throw new UserInputError("Caracteres ilegales");
+            }
+
+
+            if (newPassword.length < minLengthPassword || newPassword.length > maxLengthPassword) {
+                console.log(`Longitud inválida del nuevo pass`);
+                throw new UserInputError("Nuevo password no válido");
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashPassword = await bcrypt.hash(newPassword, salt);
+
+            elUsuario.password = hashPassword;
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando el usuario con el nuevo pass: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return true;
+
         },
 
 

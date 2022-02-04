@@ -2,181 +2,186 @@
   <div class="ventanaEventoPersonal">
     <div id="zonaCobertura">
       <div id="laVentana">
-        <div id="barraSuperior">
-          <div
-            class="boton"
-            title="Cerrar"
-            style="margin-left: auto"
-            @click="cerrarVentana"
-          >
-            <img src="@/assets/iconos/times.svg" alt="Salir" />
-          </div>          
-        </div>
-        
-        <div id="zonaNombre">
-          <input
-            @keypress.enter.prevent="guardarNuevoNombre"
-            ref="inputNuevoNombre"
-            v-model="nuevoNombre"
-            @click.stop=""
-            @blur="editandoNombre = false"
-            @keydown="keydownInputNuevoNombre"
-            v-show="editandoNombre"
-            type="text"
-            class="inputNuevoNombre inputNombreCosa"
-            :class="{ deshabilitado: enviandoNuevoNombre }"
-          />
-          <loading texto="" v-show="enviandoNuevoNombre" />
-          <div
-            id="elNombre"
-            :class="{
-              deshabilitado: enviandoNuevoNombre,
-              administrador,
-            }"
-            v-show="!editandoNombre"
-            @click="toggleEditandoNombre"
-          >
-            {{ esteEvento.nombre }}
-          </div>
-        </div>
+        <loading texto="" v-show="$apollo.queries.esteEvento.loading" />
 
-        <div id="zonaTiempos">
-          <div id="bloqueHorarioInicio" class="bloqueCampo">
-            <div class="nombreCampo">Inicio</div>
-            <div class="valorCampo">
-              <div
-                id="fechaInicio"
-                v-show="!editandoFechaInicio"
-                @click.stop="iniciarEdicionFechaInicio"
-              >
-                {{ fechaInicioLegible }}
-              </div>
-              <input
-                type="date"
-                id="inputFechaInicio"
-                v-show="editandoFechaInicio"
-                ref="inputFechaInicio"
-                @keypress.enter="
-                  updateFechaInicioHoldDuration($event.target.value)
-                "
-              />
-              <div
-                id="horaInicio"
-                v-show="!editandoHoraInicio"
-                @click.stop="iniciarEdicionHoraInicio"
-              >
-                {{ horaInicioLegible }}
-              </div>
-
-              <input
-                type="time"
-                id="inputHoraInicio"
-                v-show="editandoHoraInicio"
-                ref="inputHoraInicio"
-                :class="{ deshabilitado: enviandoSomeHorario }"
-                @blur="editandoHoraInicio = false"
-                @keypress.enter="
-                  updateHoraInicioHoldDuration($event.target.value)
-                "
-              />
-            </div>
-          </div>
-
-          <div id="bloqueDuracion" class="bloqueCampo">
-            <div class="nombreCampo">Duracion</div>
-            <div class="valorCampo">
-              <div
-                id="duracion"
-                v-show="!editandoDuracion"
-                @click.stop="iniciarEdicionDuracion"
-              >
-                {{ duracionMinutos
-                }}{{ duracionMinutos != 1 ? " minutos" : " minuto" }}
-              </div>
-              <input
-                type="number"
-                id="inputDuracion"
-                style="width: 100px"
-                v-show="editandoDuracion"
-                ref="inputDuracion"
-                :class="{ deshabilitado: enviandoSomeHorario }"
-                @blur="editandoDuracion = false"
-                @keypress.enter="updateDuracion($event.target.value)"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div id="bloqueLugar" v-if="esteEvento.lugar" class="bloqueCampo">
-          <div class="nombreCampo">Lugar</div>
-          <div class="valorCampo">
-            {{ esteEvento.lugar }}
-          </div>
-        </div>        
-
-        <div id="contenedorSelectoresMostrar">
-          <div
-            class="boton"
-            :class="{
-              deshabilitado:
-                (!esteEvento.descripcion ||
-                  esteEvento.descripcion.length < 1) &&
-                !administrador,
-            }"
-            :style="{
-              borderColor: mostrando === 'descripcion' ? 'white' : 'black',
-            }"
-            @click="mostrando = 'descripcion'"
-            :title="mostrando === 'descripcion' ? '' : 'Mostrar descripción'"
-          >
-            <img src="@/assets/iconos/info.svg" alt="Descripción" />
-          </div>         
-        </div>
-
-        <div id="zonaContenidoMostrando">
-          <div
-            id="zonaDescripcion"
-            class="zonaInformacion"
-            v-show="mostrando === 'descripcion'"
-          >
+        <div id="contenido" v-show="!$apollo.queries.esteEvento.loading">
+          <div id="barraSuperior">
             <div
-              id="descripcion"
-              class="contenidoTexto"
-              ref="descripcion"
-              v-show="!editandoDescripcion"
-              @click="toggleEditandoDescripcion"
+              class="boton"
+              title="Cerrar"
+              style="margin-left: auto"
+              @click="cerrarVentana"
             >
-              {{ esteEvento.descripcion }}
+              <img src="@/assets/iconos/times.svg" alt="Salir" />
+            </div>
+          </div>
+
+          <div id="zonaNombre">
+            <input
+              @keypress.enter.prevent="guardarNuevoNombre"
+              ref="inputNuevoNombre"
+              v-model="nuevoNombre"
+              @click.stop=""
+              @blur="guardarNuevoNombre"
+              @keydown="keydownInputNuevoNombre"
+              v-show="editandoNombre"
+              type="text"
+              class="inputNuevoNombre inputNombreCosa"
+              :class="{ deshabilitado: enviandoNuevoNombre }"
+            />
+            <loading texto="" v-show="enviandoNuevoNombre" />
+            <div
+              id="elNombre"
+              :class="{
+                deshabilitado: enviandoNuevoNombre,
+                administrador,
+              }"
+              v-show="!editandoNombre"
+              @click="toggleEditandoNombre"
+            >
+              {{ esteEvento.nombre }}
+            </div>
+          </div>
+
+          <div id="zonaTiempos">
+            <div id="bloqueHorarioInicio" class="bloqueCampo">
+              <div class="nombreCampo">Inicio</div>
+              <div class="valorCampo">
+                <div
+                  id="fechaInicio"
+                  v-show="!editandoFechaInicio"
+                  @click.stop="iniciarEdicionFechaInicio"
+                >
+                  {{ fechaInicioLegible }}
+                </div>
+                <input
+                  type="date"
+                  id="inputFechaInicio"
+                  v-show="editandoFechaInicio"
+                  ref="inputFechaInicio"
+                  @keypress.enter="
+                    updateFechaInicioHoldDuration($event.target.value)
+                  "
+                  @blur="updateFechaInicioHoldDuration($event.target.value)"
+                />
+                <div
+                  id="horaInicio"
+                  v-show="!editandoHoraInicio"
+                  @click.stop="iniciarEdicionHoraInicio"
+                >
+                  {{ horaInicioLegible }}
+                </div>
+
+                <input
+                  type="time"
+                  id="inputHoraInicio"
+                  v-show="editandoHoraInicio"
+                  ref="inputHoraInicio"
+                  :class="{ deshabilitado: enviandoSomeHorario }"
+                  @blur="updateHoraInicioHoldDuration($event.target.value)"
+                  @keypress.enter="
+                    updateHoraInicioHoldDuration($event.target.value)
+                  "
+                />
+              </div>
             </div>
 
-            <textarea
-              id="inputNuevoDescripcion"
-              class="inputTexto"
-              ref="inputNuevoDescripcion"
-              :class="{ letrasRojas: nuevoDescripcionIlegal }"
-              v-model="nuevoDescripcion"
-              v-show="editandoDescripcion"
-            />
-            <div class="contenedorBotonesCampo" v-show="editandoDescripcion">
-              <img
-                src="@/assets/iconos/save.svg"
-                class="boton botonGuardarCampo"
-                alt="Guardar"
-                title="Guardar descripción"
-                id="botonGuardarDescripcion"
-                @click="guardarNuevoDescripcion"
-              />
-              <img
-                src="@/assets/iconos/equis.svg"
-                class="boton botonGuardarCampo"
-                alt="Cancelar"
-                title="Cancelar edición"
-                id="botonCancelarEdicionDescripcion"
-                @click="editandoDescripcion = false"
-              />
+            <div id="bloqueDuracion" class="bloqueCampo">
+              <div class="nombreCampo">Duracion</div>
+              <div class="valorCampo">
+                <div
+                  id="duracion"
+                  v-show="!editandoDuracion"
+                  @click.stop="iniciarEdicionDuracion"
+                >
+                  {{ duracionMinutos
+                  }}{{ duracionMinutos != 1 ? " minutos" : " minuto" }}
+                </div>
+                <input
+                  type="number"
+                  id="inputDuracion"
+                  style="width: 100px"
+                  v-show="editandoDuracion"
+                  ref="inputDuracion"
+                  :class="{ deshabilitado: enviandoSomeHorario }"
+                  @blur="updateDuracion($event.target.value)"
+                  @keypress.enter="updateDuracion($event.target.value)"
+                />
+              </div>
             </div>
-            <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
-          </div>          
+          </div>
+
+          <div id="bloqueLugar" v-if="esteEvento.lugar" class="bloqueCampo">
+            <div class="nombreCampo">Lugar</div>
+            <div class="valorCampo">
+              {{ esteEvento.lugar }}
+            </div>
+          </div>
+
+          <div id="contenedorSelectoresMostrar">
+            <div
+              class="boton"
+              :class="{
+                deshabilitado:
+                  (!esteEvento.descripcion ||
+                    esteEvento.descripcion.length < 1) &&
+                  !administrador,
+              }"
+              :style="{
+                borderColor: mostrando === 'descripcion' ? 'white' : 'black',
+              }"
+              @click="mostrando = 'descripcion'"
+              :title="mostrando === 'descripcion' ? '' : 'Mostrar descripción'"
+            >
+              <img src="@/assets/iconos/info.svg" alt="Descripción" />
+            </div>
+          </div>
+
+          <div id="zonaContenidoMostrando">
+            <div
+              id="zonaDescripcion"
+              class="zonaInformacion"
+              v-show="mostrando === 'descripcion'"
+            >
+              <div
+                id="descripcion"
+                class="contenidoTexto"
+                ref="descripcion"
+                v-show="!editandoDescripcion"
+                @click="toggleEditandoDescripcion"
+              >
+                {{ esteEvento.descripcion }}
+              </div>
+
+              <textarea
+                id="inputNuevoDescripcion"
+                class="inputTexto"
+                ref="inputNuevoDescripcion"
+                :class="{ letrasRojas: nuevoDescripcionIlegal }"
+                v-model="nuevoDescripcion"
+                v-show="editandoDescripcion"
+              />
+              <div class="contenedorBotonesCampo" v-show="editandoDescripcion">
+                <img
+                  src="@/assets/iconos/save.svg"
+                  class="boton botonGuardarCampo"
+                  alt="Guardar"
+                  title="Guardar descripción"
+                  id="botonGuardarDescripcion"
+                  @click="guardarNuevoDescripcion"
+                />
+                <img
+                  src="@/assets/iconos/equis.svg"
+                  class="boton botonGuardarCampo"
+                  alt="Cancelar"
+                  title="Cancelar edición"
+                  id="botonCancelarEdicionDescripcion"
+                  @click="editandoDescripcion = false"
+                />
+              </div>
+              <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -187,7 +192,12 @@
 import gql from "graphql-tag";
 import Loading from "./Loading.vue";
 import { fragmentoEventoPersonal } from "./fragsCalendario";
-import { MixinBasicoEventos, MixinBasicoEventosPersonales, MixinEdicionEventos, MixinVentanaEvento } from "../MixinsEventos";
+import {
+  MixinBasicoEventos,
+  MixinBasicoEventosPersonales,
+  MixinEdicionEventos,
+  MixinVentanaEvento,
+} from "../MixinsEventos";
 const QUERY_ESTE_EVENTO = gql`
   query ($idEvento: ID!) {
     eventoPersonal(idEvento: $idEvento) {
@@ -210,45 +220,46 @@ export default {
       update({ eventoPersonal }) {
         return eventoPersonal;
       },
+      fetchPolicy: "cache-and-network",
     },
   },
   components: {
     Loading,
   },
-  mixins: [MixinBasicoEventos, MixinBasicoEventosPersonales, MixinEdicionEventos, MixinVentanaEvento],
+  mixins: [
+    MixinBasicoEventos,
+    MixinBasicoEventosPersonales,
+    MixinEdicionEventos,
+    MixinVentanaEvento,
+  ],
   data() {
-    return {      
+    return {
       mostrandoZonaRepetir: false,
       periodoRepetir: "diariamente",
       cantidadRepetir: 1,
     };
   },
-  methods: {
-    
-    
-  },
-  computed: {    
-    
-  },
+  methods: {},
+  computed: {},
 };
 </script>
 
 <style scoped>
 .ventanaEventoPersonal {
-  position:fixed;
+  position: fixed;
   top: 100px;
   left: 0px;
   width: 100vw;
   height: 100vh;
-  z-index:100;
+  z-index: 100;
 }
 #laVentana {
   box-shadow: 3px 4px 4px rgba(0, 0, 0, 0.25);
   font-family: Salsa, cursive;
   border-radius: 7px;
-  width:min(600px, 90vw);
-  height:min(800px, 90vh);
-  margin:auto auto;
+  width: min(600px, 90vw);
+  height: min(800px, 90vh);
+  margin: auto auto;
   background-color: var(--paletaVerde);
 }
 #barraSuperior {

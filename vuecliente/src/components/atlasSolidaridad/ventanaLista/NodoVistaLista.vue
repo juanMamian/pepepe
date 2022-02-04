@@ -1112,6 +1112,9 @@ export default {
   position: relative;
   left: -1px;
 }
+.calendario{
+  width: 100%;
+}
 @media only screen and (max-width: 1300px) {
   .elementoLista.mostrandoBotonesBarraSuperior {
     background-color: rgba(128, 128, 128, 0.233);
@@ -1183,6 +1186,7 @@ export default {
     width: 22px;
     height: 22px;
   }
+  
 }
 
 @media (hover: none) and (pointer: coarse) {
