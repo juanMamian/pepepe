@@ -72,6 +72,13 @@ export const typeDefs = gql`
         idsParticipantes:[String],
     }
 
+    type infoDiaEventos{
+        year:Int,
+        mes:Int,
+        dia: Int,
+        cantidadEventos:Int,
+    }
+
     union Evento = EventoPersonal | EventoPublico
 
     extend type Query{
@@ -84,6 +91,8 @@ export const typeDefs = gql`
         eventosPersonalesDeParentDia(dateInicioDia:Date!, idParent:ID!, tipoParent:String!):[EventoPersonal],
 
         eventoPersonal(idEvento:ID!):EventoPersonal,
+
+        cantidadEventosRelevantesMes(year:Int!, mes: Int!, idParent:ID!, tipoParent:String!):[infoDiaEventos],
     }
 
     extend type Mutation{
@@ -231,6 +240,70 @@ export const resolvers = {
             }
 
             return elEventoPersonal
+        },
+
+        async cantidadEventosRelevantesMes(_: any, { year, mes, idParent, tipoParent }: any, contexto: contextoQuery) {
+            console.log(`Query for cantidad de eventos relevantes de ${mes} de ${year} para ${tipoParent} con id ${idParent}`);
+
+            const dateInit=new Date(year, mes, 0);
+            const dateFin=new Date(year, mes<11?mes+1:0, 0);
+
+            var losEventosRelevantesMes:any=null;
+            var eventosPersonalesRelevantesMes:any=null;
+            var eventosPublicosRelevantesMes:any=null;
+
+            try {
+                if(tipoParent==='usuario'){
+                    eventosPersonalesRelevantesMes=await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, {idPersona:idParent}]).select("horarioInicio").exec();
+                    eventosPublicosRelevantesMes = await EventoPublico.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, {idAdministrador:idParent}]).select("horarioInicio").exec();                    
+                    losEventosRelevantesMes=eventosPersonalesRelevantesMes.concat(eventosPublicosRelevantesMes);
+                }
+                else if(tipoParent==='nodoSolidaridad'){
+                    losEventosRelevantesMes = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, {idParent:idParent}]).select("horarioInicio").exec();
+                }
+                else if(tipoParent==='espacio'){
+                    losEventosRelevantesMes = await EventoPublico.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, {idParent:idParent}]).select("horarioInicio").exec();
+                }
+                else{
+                    console.log(`Tipo ${tipoParent} no reconocido`);
+                    throw new UserInputError("Tipo inválido");
+                }
+            } catch (error) {
+                console.log(`Error buscando eventos personales: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var objetoDias:any={};
+
+            losEventosRelevantesMes.forEach(ev=>{
+                let dia=new Date(ev.horarioInicio).getDate();
+                if(!objetoDias[dia]){
+                    objetoDias[dia]=1;
+                }
+                else{
+                    objetoDias[dia]++
+                }
+            });
+
+            console.log(`Objeto dias: ${JSON.stringify(objetoDias)}`);
+
+            var arrayDias:any=[];
+
+            Object.entries(objetoDias).forEach((pair:any)=>{
+                arrayDias.push({
+                    year,
+                    mes,
+                    dia:pair[0],
+                    cantidadEventos:pair[1],
+                });
+            });
+
+            console.log(`arrayDias:`);
+            arrayDias.forEach(item=>{
+                console.log(`${JSON.stringify(item)}`);
+            })
+
+            return arrayDias
         },
 
     },

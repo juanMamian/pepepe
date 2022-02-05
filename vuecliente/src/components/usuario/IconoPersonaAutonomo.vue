@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="iconoPersonaAutonomo"
-    :class="{ yo: soyYo }"
-  >
+  <div class="iconoPersonaAutonomo" :class="{ yo: soyYo }" :style="[offsetIcono]">
     <img
       class="fotografia"
       :src="this.serverUrl + '/api/usuarios/fotografias/' + idPersona"
@@ -10,12 +7,15 @@
       v-show="fotografiaEnabled"
       @load="fotografiaEnabled = true"
       alt="Usuario"
-
     />
     <div id="contenedorAlertas">
       <slot name="alertas"></slot>
     </div>
-    <div class="nombres" :class="{ nombreSeleccionado: seleccionado }" :style="[{fontSize: basicFontSizeNombre*factor+'px'}]">
+    <div
+      class="nombres"
+      :class="{ nombreSeleccionado: seleccionado }"
+      :style="[{ fontSize: basicFontSizeNombre * factor + 'px' }]"
+    >
       {{ estaPersona.nombres }}
     </div>
     <div id="menuCxPersona" v-show="menuContextual">
@@ -42,7 +42,7 @@ import gql from "graphql-tag";
 import { fragmentoMinimoPersona } from "../utilidades/recursosGql";
 
 const QUERY_PERSONA = gql`
-  query($idUsuario: ID!) {
+  query ($idUsuario: ID!) {
     publicUsuario(idUsuario: $idUsuario) {
       ...fragMinimoPersona
     }
@@ -60,34 +60,34 @@ export default {
           idUsuario: this.idPersona,
         };
       },
-      update({publicUsuario}){
-        return publicUsuario
+      update({ publicUsuario }) {
+        return publicUsuario;
       },
-      skip(){
-        return !this.idPersona
-      }
+      skip() {
+        return !this.idPersona;
+      },
     },
   },
   data() {
     return {
       estaPersona: {
-        permisos:[]
+        permisos: [],
       },
       nuevoPermiso: null,
       mounted: false,
       fotografiaEnabled: false,
 
-      basicWidthFoto:70,
-      basicFontSizeNombre:15,
+      basicWidthFoto: 70,
+      basicFontSizeNombre: 15,
     };
   },
   props: {
     idPersona: String,
     seleccionado: Boolean,
     menuContextual: Boolean,
-    factorEscala:{
+    factorEscala: {
       type: String,
-      default: "1"
+      default: "1",
     },
     opcionesMenuCx: {
       type: Array,
@@ -100,16 +100,20 @@ export default {
       }
       return false;
     },
-    offsetFoto(){
-
+    offsetFoto() {
       return {
-        width: this.basicWidthFoto*this.factor+"px",
-        height: this.basicWidthFoto*this.factor+"px"
-      }
+        width: this.basicWidthFoto * this.factor + "px",
+        height: this.basicWidthFoto * this.factor + "px",
+      };
     },
-    factor(){
-      return Number(this.factorEscala)
-    }
+    offsetIcono() {
+      return {
+        width: this.basicWidthFoto * this.factor + "px",
+      };
+    },
+    factor() {
+      return Number(this.factorEscala);
+    },
   },
   methods: {
     addPermisos() {
@@ -119,7 +123,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($nuevoPermiso: String!, $idUsuario: ID!) {
+            mutation ($nuevoPermiso: String!, $idUsuario: ID!) {
               addPermisoUsuario(
                 nuevoPermiso: $nuevoPermiso
                 idUsuario: $idUsuario
@@ -170,10 +174,8 @@ export default {
   user-select: none;
 }
 
-
 .fotografia {
-   
-  border-radius: 50%;  
+  border-radius: 50%;
   pointer-events: none;
 }
 

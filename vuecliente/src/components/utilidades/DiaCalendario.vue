@@ -43,7 +43,8 @@
           v-for="eventoPublico of eventosPublicosVisibles"
           :key="eventoPublico.id"
           :esteEvento="eventoPublico"
-          :extranjero="idParent && idParent != eventoPublico.idParent"
+          :extranjero="(!idParent || idParent != eventoPublico.idParent)"
+          :idUsuarioTarget="idUsuarioTarget"
           :seleccionado="idEventoSeleccionado === eventoPublico.id"
           :infoOffset="indiceOffset[eventoPublico.id]"
           :diaCalendarioOver="esteDia"
@@ -67,7 +68,7 @@
           :extranjero="
             idUsuarioTarget != eventoPersonal.idPersona &&
             !eventoPersonal.idsParticipantes.includes(idUsuarioTarget)
-          "
+          "          
           @meElimine="deleteEventoCache(eventoPersonal)"
           @click.native="$emit('clickEnEvento', eventoPersonal)"
           @meCambiaronDia="
@@ -707,7 +708,7 @@ export default {
 #contenedorContenido {
   width: 100%;
   overflow: scroll;
-  height: 60vh;
+  height: 80vh;
 }
 #barraHoras {
   display: flex;

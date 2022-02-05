@@ -423,6 +423,7 @@ export const MixinEventosPublicosUseEventosPersonalesUnder = {
 }
 
 export const MixinBasicoEventos = {
+    
     data() {
         return {
 
@@ -576,6 +577,7 @@ export const MixinEventoCalendario = {
         infoOffset: Object,
         diaCalendarioOver: Object,
         enfasis: String,
+        idUsuarioTarget:String,
     },
     data() {
         return {

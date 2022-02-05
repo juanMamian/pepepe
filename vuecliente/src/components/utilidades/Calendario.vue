@@ -69,15 +69,26 @@
         </div>
       </div>
 
-      <div id="contenedorMesh" >
+      <div id="contenedorMesh">
         <div id="margenInicio" :style="[estiloMargenInicio]"></div>
         <div
           class="selectorDia"
           v-for="dia of lengthMonthSeleccionado"
           :key="'selectorDia' + dia"
+          :class="{hoy: dateHoy.getFullYear()===yearSeleccionado && dateHoy.getMonth()===numeroMesSeleccionado && dateHoy.getDate()===dia}"
           @click="numeroDiaSeleccionado = dia"
         >
           <div class="numeroDia">{{ dia }}</div>
+          <div
+            class="bolitaCantidadEventosRelevantes"
+            v-if="cantidadEventosRelevantesMes.some((info) => info.dia === dia)"
+          >
+            <div class="laCantidad">
+              {{
+                cantidadEventosRelevantesMes.find((info) => info.dia === dia).cantidadEventos
+              }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -97,15 +108,16 @@
       :enfasis="enfasis"
       :modoEventosPublicosExtranjeros="modoEventosPublicosExtranjeros"
       :usuarioVeEventosPublicos="usuarioVeEventosPublicos"
-      @regresar="numeroDiaSeleccionado=null"
+      @regresar="numeroDiaSeleccionado = null"
       @iniciaCreacionEvento="$emit('iniciaCreacionEvento')"
       @clickEnEvento="idEventoSeleccionado = $event.id"
-      @desSeleccionDeEvento="idEventoSeleccionado = null"            
+      @desSeleccionDeEvento="idEventoSeleccionado = null"
     />
   </div>
 </template>
 
 <script>
+import gql from "graphql-tag";
 // import gql from 'graphql-tag';
 import DiaCalendario from "./DiaCalendario.vue";
 
@@ -118,7 +130,35 @@ export default {
     tipoParent: String,
     enfasis: String,
   },
-  apollo: {},
+  apollo: {
+    cantidadEventosRelevantesMes: {
+      query: gql`
+        query ($year: Int!, $mes: Int!, $idParent: ID!, $tipoParent: String!) {
+          cantidadEventosRelevantesMes(
+            year: $year
+            mes: $mes
+            idParent: $idParent
+            tipoParent: $tipoParent
+          ) {
+            dia
+            cantidadEventos
+          }
+        }
+      `,
+      variables() {
+        return {
+          year: this.yearSeleccionado,
+          mes: this.numeroMesSeleccionado,
+          idParent:
+            this.idParent
+              ? this.idParent
+              : this.idUsuarioTarget,
+          tipoParent:
+            this.tipoParent?this.tipoParent:'usuario'
+        };
+      },
+    },
+  },
   data() {
     const dateHoy = new Date(Date.now());
     dateHoy.setHours(0);
@@ -126,6 +166,7 @@ export default {
     dateHoy.setSeconds(0);
 
     return {
+      cantidadEventosRelevantesMes:[],
       nombresDiasSemana: [
         "Lunes",
         "Martes",
@@ -220,13 +261,12 @@ export default {
       };
     },
   },
-  
 };
 </script>
 
 <style scoped>
 .calendario {
-  width: min(100vw, 600px);
+  width: min(100vw, 900px);
   background-color: #ecebe4;
   position: relative;
   max-height: 100vh;
@@ -273,9 +313,28 @@ export default {
   flex-shrink: 0;
   cursor: pointer;
   box-sizing: border-box;
+  position:relative
 }
 .selectorDia:hover {
   background-color: var(--paletaMain);
+}
+.selectorDia.hoy{
+  background-color: var(--paletaMain);
+
+}
+
+.bolitaCantidadEventosRelevantes{
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  background-color: var(--mainColor);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #contenedorDias {
   margin-top: 50px;

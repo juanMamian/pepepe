@@ -10,7 +10,7 @@
     }"
   >
     <div id="barra" :style="estiloSize" :class="{ seleccionado, administrador }"></div>
-    <div id="bloque" :style="estiloSize" :class="{ extranjero, seleccionado }">
+    <div id="bloque" :style="estiloSize" :class="{ extranjero, seleccionado }" style="position:relative">
       <div id="zonaNombre">
         <div
           id="elNombre"
@@ -21,6 +21,7 @@
           {{ esteEvento.nombre }}
         </div>
       </div>
+      <icono-persona-autonomo :class="{seleccionado}" style="margin: 0px auto" v-if="idUsuarioTarget!=esteEvento.idAdministrador" :idPersona="esteEvento.idAdministrador" :factorEscala="'0.5'" />
       <div id="contenedorControlesEvento" :class="{ seleccionado }">
         <div
           class="boton botonControlEvento"
@@ -59,10 +60,11 @@ import {
   MixinBasicoEventos,
   MixinEventoCalendario,
 } from "../MixinsEventos";
+import IconoPersonaAutonomo from '../usuario/IconoPersonaAutonomo.vue';
 
 export default {
   name: "EventoPublicoCalendario",
-  components: {},
+  components: {IconoPersonaAutonomo},
   props: {
     extranjero: Boolean,
   },
@@ -124,6 +126,9 @@ export default {
 }
 #bloque.seleccionado {
   opacity: 1;
+}
+.iconoPersonaAutonomo.seleccionado{
+  opacity: 0.4;
 }
 #contenedorControlesEvento {
   display: flex;

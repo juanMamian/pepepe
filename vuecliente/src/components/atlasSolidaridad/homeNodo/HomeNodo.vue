@@ -267,7 +267,7 @@
             class="zonaInformacion"
             v-show="mostrando === 'responsables'"
           >
-            <div id="zonaAddResponsableManual" style="flex-direction: row; display: flex">
+            <div id="zonaAddResponsableManual" v-if="usuarioLogeado && usuarioSuperadministrador" style="flex-direction: row; display: flex">
               <input
                 type="text"
                 name=""
