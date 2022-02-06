@@ -54,6 +54,10 @@
       <div id="barraFecha">
         <div id="bloqueMes">
           <div id="nombreMes">{{ nombreMesSeleccionado }}</div>
+          <select name="" id="selectMes" v-model="numeroMesSeleccionado">
+            <option :value="index" v-for="(mes, index) of nombresMeses" :key="'selector'+mes">{{mes}}</option>
+            
+          </select>
         </div>
 
         <div id="bloqueYear" style="margin-left: auto">
@@ -75,7 +79,7 @@
           class="selectorDia"
           v-for="dia of lengthMonthSeleccionado"
           :key="'selectorDia' + dia"
-          :class="{hoy: dateHoy.getFullYear()===yearSeleccionado && dateHoy.getMonth()===numeroMesSeleccionado && dateHoy.getDate()===dia}"
+          :class="{hoy: dateHoy.getFullYear()===yearSeleccionado && dateHoy.getMonth()===parseInt(numeroMesSeleccionado) && dateHoy.getDate()===dia}"
           @click="numeroDiaSeleccionado = dia"
         >
           <div class="numeroDia">{{ dia }}</div>
@@ -133,12 +137,13 @@ export default {
   apollo: {
     cantidadEventosRelevantesMes: {
       query: gql`
-        query ($year: Int!, $mes: Int!, $idParent: ID!, $tipoParent: String!) {
+        query ($year: Int!, $mes: Int!, $idParent: ID!, $tipoParent: String!, $timeZoneOffset:Int!,) {
           cantidadEventosRelevantesMes(
             year: $year
             mes: $mes
             idParent: $idParent
             tipoParent: $tipoParent
+            timeZoneOffset: $timeZoneOffset
           ) {
             dia
             cantidadEventos
@@ -148,15 +153,17 @@ export default {
       variables() {
         return {
           year: this.yearSeleccionado,
-          mes: this.numeroMesSeleccionado,
+          mes: parseInt(this.numeroMesSeleccionado),
           idParent:
             this.idParent
               ? this.idParent
               : this.idUsuarioTarget,
           tipoParent:
-            this.tipoParent?this.tipoParent:'usuario'
+            this.tipoParent?this.tipoParent:'usuario',
+          timeZoneOffset:new Date().getTimezoneOffset(),
         };
       },
+      fetchPolicy: "cache-and-network"
     },
   },
   data() {
@@ -227,19 +234,19 @@ export default {
       };
     },
     nombreMesSeleccionado() {
-      return this.nombresMeses[this.numeroMesSeleccionado];
+      return this.nombresMeses[parseInt(this.numeroMesSeleccionado)];
     },
     lengthMonthSeleccionado() {
       return new Date(
         this.yearSeleccionado,
-        this.numeroMesSeleccionado,
+        parseInt(this.numeroMesSeleccionado+1),
         0
       ).getDate();
     },
     diasMargenInicio() {
       return new Date(
         this.yearSeleccionado,
-        this.numeroMesSeleccionado,
+        parseInt(this.numeroMesSeleccionado),
         0
       ).getDay();
     },
@@ -252,7 +259,7 @@ export default {
       if (!this.numeroDiaSeleccionado) return null;
       const dateDiaSeleccionado = new Date(
         this.yearSeleccionado,
-        this.numeroMesSeleccionado,
+        parseInt(this.numeroMesSeleccionado),
         this.numeroDiaSeleccionado,
         0
       );

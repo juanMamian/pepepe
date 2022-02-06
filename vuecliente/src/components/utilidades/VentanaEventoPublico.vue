@@ -282,6 +282,10 @@
                     {{ esteEvento.limiteDeCupos || "Sin límite" }}
                   </div>
                 </div>
+
+                <div class="boton" style="margin-left:20px" @click="broadcastAFuturoMaximoParticipantes" title="Fijar este valor para todos los eventos futuros de este espacio">
+                  <img src="@/assets/iconos/broadcastTower.svg" alt="Todos">
+                </div>
               </div>
               <div id="listaParticipantes">
                 <info-participante-evento-publico
@@ -335,6 +339,7 @@ export default {
       update({ eventoPublico }) {
         return eventoPublico;
       },
+      fetchPolicy: "cache-and-network"
     },
   },
   components: {
@@ -351,12 +356,36 @@ export default {
   ],
   data() {
     return {
-      mostrandoZonaRepetir: false,
-      periodoRepetir: "diariamente",
-      cantidadRepetir: 1,
+      
     };
   },
-  methods: {},
+  methods: {
+    broadcastAFuturoMaximoParticipantes(){
+      console.log(`Se fijará que todos los eventos futuros de este espacio tengan ${this.esteEvento.limiteDeCupos}`);
+
+      if(!confirm('Se fijará que todos los eventos de este espacio (Posteriores a este) tendrán un límite de cupos de '+this.esteEvento.limiteDeCupos+'. ¿Continuar?')){
+        return
+      }
+
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idEspacio: ID!, $dateFrom: Date!, $limiteDeCupos: Int!){
+            setLimiteDeCuposEventosPublicosEspacioFromDate(idEspacio: $idEspacio, dateFrom: $dateFrom, limiteDeCupos: $limiteDeCupos)                        
+          }
+        `,
+        variables:{
+          idEspacio: this.esteEvento.idParent,
+          dateFrom: this.dateInicio,
+          limiteDeCupos: this.esteEvento.limiteDeCupos,
+
+        }
+      }).then(()=>{
+
+      }).catch((error)=>{
+        console.log(`Error: ${error}`);
+      })
+    }
+  },
   computed: {},
 };
 </script>

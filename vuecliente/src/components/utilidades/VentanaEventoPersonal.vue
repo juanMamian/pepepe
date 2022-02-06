@@ -14,8 +14,55 @@
             >
               <img src="@/assets/iconos/times.svg" alt="Salir" />
             </div>
+            <div
+              class="boton"
+              title="Cerrar"
+              style="margin-left: auto"
+              @click="cerrarVentana"
+            >
+              <img src="@/assets/iconos/times.svg" alt="Salir" />
+            </div>
           </div>
+          <div id="zonaRepetir" v-show="mostrandoZonaRepetir">
+            <div class="instruccion" style="margin-bottom: 10px">
+              Repetir este evento...
+            </div>
 
+            <select
+              name=""
+              id="selectFrecuenciaRepetir"
+              v-model="periodoRepetir"
+            >
+              <option value="diariamente">Diariamente</option>
+              <option value="semanalmente">Semanalmente</option>
+            </select>
+            <div id="bloqueCantidadRepetir" style="margin: 10px auto">
+              <input
+                type="number"
+                :min="minRepetir"
+                :max="maxRepetir"
+                style="width: 50px; margin-right: 20px"
+                name=""
+                id="inputCantidadRepetir"
+                v-model="cantidadRepetir"
+              />
+              {{ cantidadRepetir > 1 ? "veces" : "vez" }}
+            </div>
+            <div
+              class="boton"
+              style="margin: 10px auto"
+              title="Aceptar"
+              v-show="!enviandoQueryRepetir"
+              @click="repetirEvento(cantidadRepetir, periodoRepetir)"
+            >
+              <img src="@/assets/iconos/check.svg" alt="Aceptar" />
+            </div>
+            <loading
+              texto=""
+              v-show="enviandoQueryRepetir"
+              style="margin: 10px auto"
+            />
+          </div>
           <div id="zonaNombre">
             <input
               @keypress.enter.prevent="guardarNuevoNombre"
@@ -135,6 +182,21 @@
             >
               <img src="@/assets/iconos/info.svg" alt="Descripción" />
             </div>
+
+            <div
+              class="boton"
+              :title="
+                mostrando === 'participantes'
+                  ? 'Ocultar participantes'
+                  : 'Mostrar participantes'
+              "
+              @click="
+                mostrando =
+                  mostrando === 'participantes' ? null : 'participantes'
+              "
+            >
+              <img src="@/assets/iconos/users.svg" alt="Participantes" />
+            </div>
           </div>
 
           <div id="zonaContenidoMostrando">
@@ -181,6 +243,23 @@
               </div>
               <loading v-show="enviandoNuevoDescripcion" texto="Enviando..." />
             </div>
+
+            <div
+              id="zonaParticipantes"
+              class="zonaInformacion"
+              v-show="mostrando === 'participantes'"
+            >
+              <div id="listaParticipantes">
+                <icono-persona-autonomo
+                  v-for="idParticipante of [esteEvento.idPersona].concat(
+                    esteEvento.idsParticipantes
+                  )"
+                  :key="'participante' + idParticipante"
+                  :idPersona="idParticipante"
+                  :factorEscala="'0.7'"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -198,6 +277,7 @@ import {
   MixinEdicionEventos,
   MixinVentanaEvento,
 } from "../MixinsEventos";
+import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
 const QUERY_ESTE_EVENTO = gql`
   query ($idEvento: ID!) {
     eventoPersonal(idEvento: $idEvento) {
@@ -225,6 +305,7 @@ export default {
   },
   components: {
     Loading,
+    IconoPersonaAutonomo,
   },
   mixins: [
     MixinBasicoEventos,
@@ -326,5 +407,17 @@ export default {
   border-radius: 10px;
   padding: 15px 10px;
   margin: 10px;
+}
+#listaParticipantes {
+  border: 1px solid white;
+  border-radius: 10px;
+  padding: 15px 10px;
+  margin: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  padding-bottom: 60px;
+}
+.iconoPersonaAutonomo {
+  margin: 10px 15px;
 }
 </style>

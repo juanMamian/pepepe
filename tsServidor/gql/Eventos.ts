@@ -92,7 +92,7 @@ export const typeDefs = gql`
 
         eventoPersonal(idEvento:ID!):EventoPersonal,
 
-        cantidadEventosRelevantesMes(year:Int!, mes: Int!, idParent:ID!, tipoParent:String!):[infoDiaEventos],
+        cantidadEventosRelevantesMes(year:Int!, mes: Int!, idParent:ID!, tipoParent:String!, timeZoneOffset:Int!):[infoDiaEventos],
     }
 
     extend type Mutation{
@@ -109,6 +109,7 @@ export const typeDefs = gql`
         setDateInicioEventoHoldDuration(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Evento,
         repetirEventoPeriodicamente(periodoRepetir: String, cantidadRepetir:Int!, idEvento:ID!, tipoEvento:String!):[EventoPublico],
 
+        setLimiteDeCuposEventosPublicosEspacioFromDate(idEspacio:ID!, dateFrom: Date!, limiteDeCupos:Int!):Boolean,
 
     }
 `;
@@ -242,15 +243,21 @@ export const resolvers = {
             return elEventoPersonal
         },
 
-        async cantidadEventosRelevantesMes(_: any, { year, mes, idParent, tipoParent }: any, contexto: contextoQuery) {
-            console.log(`Query for cantidad de eventos relevantes de ${mes} de ${year} para ${tipoParent} con id ${idParent}`);
+        async cantidadEventosRelevantesMes(_: any, { year, mes, idParent, tipoParent, timeZoneOffset }: any, contexto: contextoQuery) {
+            console.log(`Query for cantidad de eventos relevantes de ${mes} de ${year} para ${tipoParent} con id ${idParent}. timeZoneOffset: ${timeZoneOffset}`);
 
-            const dateInit=new Date(year, mes, 0);
-            const dateFin=new Date(year, mes<11?mes+1:0, 0);
+            var dateInit=new Date(year, mes, 1);
+            var dateFin=new Date(year, mes<11?mes+1:0, 1);
 
             var losEventosRelevantesMes:any=null;
             var eventosPersonalesRelevantesMes:any=null;
             var eventosPublicosRelevantesMes:any=null;
+
+            timeZoneOffset=timeZoneOffset*60000;
+            
+            dateInit=new Date(dateInit.getTime());
+            dateFin=new Date(dateFin.getTime());
+            console.log(`Buscando entre ${dateInit} y ${dateFin}`);
 
             try {
                 if(tipoParent==='usuario'){
@@ -658,9 +665,7 @@ export const resolvers = {
                 console.log(`Sin credenciales de usuario`);
                 throw new AuthenticationError("Login requerido");
             }
-            if (charProhibidosTexto.test(nuevoLimiteDeCupos)) {
-                throw new ApolloError("LimiteDeCupos ilegal");
-            }
+            
 
             try {
                 var elEvento: any = null;
@@ -1032,6 +1037,49 @@ export const resolvers = {
             console.log(`Evento repetido, enviando ${eventosCreados.length} repeticiones: `);
             console.log(`${eventosCreados}`);
             return eventosCreados;
+        },
+
+        async setLimiteDeCuposEventosPublicosEspacioFromDate(_: any, { idEspacio, dateFrom, limiteDeCupos }, contexto: contextoQuery) {
+            console.log(`Query de cambiar el limitedecupos de todos los eventos from ${dateFrom} del espacio ${idEspacio}`);
+            if (!contexto.usuario || !contexto.usuario.id) {
+                console.log(`Sin credenciales de usuario`);
+                throw new AuthenticationError("Login requerido");
+            }            
+
+            try {
+                var elEspacio:any=await Espacio.findById(idEspacio).exec();
+            }catch (error) {
+                console.log("Error buscando el espacio: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador"];
+            const credencialesUsuario = contexto.usuario;
+           
+            if (elEspacio.idAdministrador!=credencialesUsuario.id && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var losEventosFuturos:any=await EventoPublico.find({idParent:idEspacio, horarioInicio:{$gt:new Date(dateFrom).getTime()}}).exec();
+            } catch (error) {
+                console.log(`Error buscando los eventos futuros: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            losEventosFuturos.forEach(async (ev)=>{
+                try {
+                    ev.limiteDeCupos=limiteDeCupos;
+                    await ev.save();
+                } catch (error) {
+                    console.log(`Error guardando evento con nuevo límite de cupos: ${error}`);                    
+                    throw new ApolloError("Error guardando en la base de datos");
+                }
+            })
+
+            console.log(`Nuevo límite de cupos fijado en ${losEventosFuturos.length} eventos públicos.`);
+            return true;
         },
     },
 

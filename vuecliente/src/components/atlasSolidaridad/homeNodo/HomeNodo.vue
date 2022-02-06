@@ -1,5 +1,6 @@
 <template>
   <div class="homeNodo" :key="$route.params.id">
+    
     <div id="barraSuperior">
       <a
         :href="clienteUrl + '/#/homeNodoSolidaridad/' + esteNodo.nodoParent"
@@ -560,6 +561,9 @@
         </div>
       </div>
     </div>
+
+    <router-view />
+
   </div>
 </template>
 

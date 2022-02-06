@@ -45,7 +45,7 @@ const routes = [
         path: "/miperfil",
         name: "perfilPersonal",
         component: perfilPersonal,
-        beforeEnter: function (to, from, next) {            
+        beforeEnter: function (to, from, next) {
             if (store.state.usuario.id != null) {
                 next();
             }
@@ -53,33 +53,49 @@ const routes = [
                 next("/login");
             }
         },
-        children:[
+        children: [
             {
-                path:"ventanaEventoPublico/:idEvento",
-                component:VentanaEventoPublico,
+                path: "ventanaEventoPublico/:idEvento",
+                component: VentanaEventoPublico,
                 name: "VentanaEventoPublico",
             },
             {
-                path:"ventanaEventoPersonal/:idEvento",
-                component:VentanaEventoPersonal,
+                path: "ventanaEventoPersonal/:idEvento",
+                component: VentanaEventoPersonal,
                 name: "VentanaEventoPersonal",
             }
         ]
     },
-    { path: "/calendarioPersonal", component: CalendarioPersonal, children:[
-        {
-            path:"ventanaEventoPublico/:idEvento",
-            component:VentanaEventoPublico,
-            name: "VentanaEventoPublico",
-        },
-        {
-            path:"ventanaEventoPersonal/:idEvento",
-            component:VentanaEventoPersonal,
-            name: "VentanaEventoPersonal",
-        }
-    ] },    
+    {
+        path: "/calendarioPersonal", component: CalendarioPersonal, children: [
+            {
+                path: "ventanaEventoPublico/:idEvento",
+                component: VentanaEventoPublico,
+                name: "VentanaEventoPublico",
+            },
+            {
+                path: "ventanaEventoPersonal/:idEvento",
+                component: VentanaEventoPersonal,
+                name: "VentanaEventoPersonal",
+            }
+        ]
+    },
     { path: "/atlasSolidaridad", component: AtlasSolidaridad },
-    { path: "/homeNodoSolidaridad/:id", component: HomeNodo },
+    {
+        path: "/homeNodoSolidaridad/:id", component: HomeNodo,
+        children: [
+            {
+                path: "ventanaEventoPublico/:idEvento",
+                component: VentanaEventoPublico,
+                name: "VentanaEventoPublico",
+            },
+            {
+                path: "ventanaEventoPersonal/:idEvento",
+                component: VentanaEventoPersonal,
+                name: "VentanaEventoPersonal",
+            }
+        ]
+    },
     { path: "/foros", component: ForosGenerales },
     { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
     { path: "/proyectos", name: "proyectos", component: Proyectos },
@@ -113,18 +129,20 @@ const routes = [
             return "/miPerfil"
         }
     },
-    { path: "/espacios", name: "espacios", component: Espacios, children:[
-        {
-            path:"ventanaEventoPublico/:idEvento",
-            component:VentanaEventoPublico,
-            name: "VentanaEventoPublico",
-        },
-        {
-            path:"ventanaEventoPersonal/:idEvento",
-            component:VentanaEventoPersonal,
-            name: "VentanaEventoPersonal",
-        }
-    ] },
+    {
+        path: "/espacios", name: "espacios", component: Espacios, children: [
+            {
+                path: "ventanaEventoPublico/:idEvento",
+                component: VentanaEventoPublico,
+                name: "VentanaEventoPublico",
+            },
+            {
+                path: "ventanaEventoPersonal/:idEvento",
+                component: VentanaEventoPersonal,
+                name: "VentanaEventoPersonal",
+            }
+        ]
+    },
     /////////////////////////////////////7
     // {
     //     path: "/*", redirect() {

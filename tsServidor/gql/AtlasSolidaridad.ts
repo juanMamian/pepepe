@@ -7,6 +7,7 @@ import { NUEVA_NOTIFICACION_PERSONAL } from "./Usuarios";
 import { ejecutarPosicionamientoNodosSolidaridadByFuerzas } from "../control"
 import { ModeloNodoSolidaridad as NodoSolidaridad, charProhibidosNombreRecursoExterno } from "../model/atlasSolidaridad/NodoSolidaridad";
 import { isContext } from "vm";
+import { ModeloEventoPersonal as EventoPersonal } from "../model/Evento";
 const charProhibidosDescripcion = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
 const charProhibidosTexto = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
 
@@ -1870,7 +1871,55 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
+            console.log(`Buscando todos los nodos de solidaridad del árbol de este nodo`);
+            var actualesIdsParents=[elNodo.id];            
+            var todosIdsArbol=[elNodo.id]
+            while(actualesIdsParents.length>0){
+                try {
+                    var actualesChildren:any=await NodoSolidaridad.find({nodoParent: {$in: actualesIdsParents}}).exec();                    
+                } catch (error) {
+                    console.log(`Error buscando childrens: ${error}`);
+                }
+                console.log(`encontrados:`);
+                actualesChildren.forEach(c=>{
+                    console.log(`${c.nombre}`);
+                })
 
+                let idsChildren=actualesChildren.map(c=>c.id);
+                todosIdsArbol.push(...idsChildren);
+
+                actualesIdsParents=idsChildren
+            }
+
+            console.log(`Resultado: ${todosIdsArbol}`);
+
+            console.log(`Buscando todos los eventos personales futuros de estos nodos`);
+
+            const dateActual=new Date();
+            try {
+                var losEventosFuturos:any=await EventoPersonal.find({horarioInicio:{$gt: dateActual.getTime()}, idParent: {$in:todosIdsArbol}}).exec();
+            } catch (error) {
+                console.log(`Error buscando los eventos de este árbol: ${error}`);                    
+            }
+
+            console.log(`Eventos futuros:`);
+
+
+            losEventosFuturos.forEach(ev=>{
+                console.log(`${ev.nombre}`);
+            })
+
+            losEventosFuturos.forEach(async (ev)=>{
+                let indexP=ev.idsParticipantes.indexOf(idUsuario);
+                if(indexP===-1){
+                    ev.idsParticipantes.push(idUsuario);
+                    try {
+                        await ev.save();
+                    } catch (error) {
+                        console.log(`Error guardando el evento con el nuevo participante: ${error}`);
+                    }
+                }
+            })
            
             console.log(`NodoSolidaridad guardado`);
 
@@ -2047,6 +2096,56 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             console.log(`NodoSolidaridad guardado`);
+
+            console.log(`Buscando todos los nodos de solidaridad del árbol de este nodo`);
+            var actualesIdsParents=[elNodo.id];            
+            var todosIdsArbol=[elNodo.id]
+            while(actualesIdsParents.length>0){
+                try {
+                    var actualesChildren:any=await NodoSolidaridad.find({nodoParent: {$in: actualesIdsParents}}).exec();                    
+                } catch (error) {
+                    console.log(`Error buscando childrens: ${error}`);
+                }
+                console.log(`encontrados:`);
+                actualesChildren.forEach(c=>{
+                    console.log(`${c.nombre}`);
+                })
+
+                let idsChildren=actualesChildren.map(c=>c.id);
+                todosIdsArbol.push(...idsChildren);
+
+                actualesIdsParents=idsChildren
+            }
+
+            console.log(`Resultado: ${todosIdsArbol}`);
+
+            console.log(`Buscando todos los eventos personales futuros de estos nodos para sacar al usuario de la lista de participantes`);
+
+            const dateActual=new Date();
+            try {
+                var losEventosFuturos:any=await EventoPersonal.find({horarioInicio:{$gt: dateActual.getTime()}, idParent: {$in:todosIdsArbol}}).exec();
+            } catch (error) {
+                console.log(`Error buscando los eventos de este árbol: ${error}`);                    
+            }
+
+            console.log(`Eventos futuros:`);
+
+
+            losEventosFuturos.forEach(ev=>{
+                console.log(`${ev.nombre}`);
+            })
+
+            losEventosFuturos.forEach(async (ev)=>{
+                let indexP=ev.idsParticipantes.indexOf(idUsuario);
+                if(indexP>-1){
+                    ev.idsParticipantes.splice(indexP, 1);
+                    try {
+                        await ev.save();
+                    } catch (error) {
+                        console.log(`Error guardando el evento con el nuevo participante: ${error}`);
+                    }
+                }
+            })
 
             return elNodo;
         },
