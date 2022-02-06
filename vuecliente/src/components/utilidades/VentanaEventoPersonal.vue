@@ -14,13 +14,14 @@
             >
               <img src="@/assets/iconos/times.svg" alt="Salir" />
             </div>
+
             <div
               class="boton"
-              title="Cerrar"
-              style="margin-left: auto"
-              @click="cerrarVentana"
+              v-if="administrador || usuarioSuperadministrador"
+              title="Repetir este evento"
+              @click="mostrandoZonaRepetir = !mostrandoZonaRepetir"
             >
-              <img src="@/assets/iconos/times.svg" alt="Salir" />
+              <img src="@/assets/iconos/hourglass.svg" alt="Repetir" />
             </div>
           </div>
           <div id="zonaRepetir" v-show="mostrandoZonaRepetir">
@@ -249,7 +250,7 @@
               class="zonaInformacion"
               v-show="mostrando === 'participantes'"
             >
-              <div id="listaParticipantes">
+              <div id="listaParticipantes" v-if="esteEvento.idPersona">
                 <icono-persona-autonomo
                   v-for="idParticipante of [esteEvento.idPersona].concat(
                     esteEvento.idsParticipantes
@@ -288,7 +289,7 @@ const QUERY_ESTE_EVENTO = gql`
 `;
 
 export default {
-  name: "VentanaEvento",
+  name: "VentanaEventoPersonal",
   apollo: {
     esteEvento: {
       query: QUERY_ESTE_EVENTO,
@@ -318,6 +319,9 @@ export default {
       mostrandoZonaRepetir: false,
       periodoRepetir: "diariamente",
       cantidadRepetir: 1,
+      esteEvento:{
+        idsParticipantes:[]
+      }
     };
   },
   methods: {},
@@ -415,9 +419,9 @@ export default {
   margin: 10px;
   display: flex;
   flex-wrap: wrap;
-  padding-bottom: 60px;
 }
 .iconoPersonaAutonomo {
   margin: 10px 15px;
+  margin-bottom: 60px;
 }
 </style>

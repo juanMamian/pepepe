@@ -7,6 +7,7 @@ import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { ModeloNodoSolidaridad as NodoSolidaridad } from "../model/atlasSolidaridad/NodoSolidaridad";
 import { getResponsablesAmplioNodo } from "./AtlasSolidaridad";
 
+var mongoose = require('mongoose');
 
 export const typeDefs = gql`
     
@@ -107,7 +108,9 @@ export const typeDefs = gql`
         setDateFinalEvento(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Evento,
         setDateInicioEvento(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Evento,
         setDateInicioEventoHoldDuration(nuevoDate:Date!, tipoEvento: String!, idEvento:ID!):Evento,
-        repetirEventoPeriodicamente(periodoRepetir: String, cantidadRepetir:Int!, idEvento:ID!, tipoEvento:String!):[EventoPublico],
+        repetirEventoPeriodicamente(periodoRepetir: String, cantidadRepetir:Int!, idEvento:ID!, tipoEvento:String!):[Evento],
+        repetirEventosTroughInterval(idParent: ID!, tipoParent:String, idUsuario: ID!, numRepeticiones:Int!, dateFrom: Date!, dateTo:Date!):Boolean,
+        deleteEventosTroughInterval(idParent: ID!, tipoParent:String, idUsuario: ID!, dateFrom: Date!, dateTo:Date!):Boolean,
 
         setLimiteDeCuposEventosPublicosEspacioFromDate(idEspacio:ID!, dateFrom: Date!, limiteDeCupos:Int!):Boolean,
 
@@ -189,37 +192,37 @@ export const resolvers = {
             const dateFinalDia = new Date(millisFinalDia);
 
             // get personas relevantes del parent
-            var personasRelevantes:Array<string>=[];
-            if(tipoParent==='nodoSolidaridad'){
+            var personasRelevantes: Array<string> = [];
+            if (tipoParent === 'nodoSolidaridad') {
 
                 try {
-                    var elNodo:any=await NodoSolidaridad.findById(idParent).exec();
+                    var elNodo: any = await NodoSolidaridad.findById(idParent).exec();
                 } catch (error) {
                     console.log(`Error buscando el nodoSolidaridad parent: ${error}`);
                     throw new ApolloError("Error conectando con la base de datos");
                 }
-                personasRelevantes=await getResponsablesAmplioNodo(elNodo);
+                personasRelevantes = await getResponsablesAmplioNodo(elNodo);
             }
 
             console.log(`Se buscaran eventos personales de ${personasRelevantes}`);
- 
+
             try {
                 // var losEventosPersonalesDia: any = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInicioDia.getTime(), $lt: dateFinalDia.getTime() } }, {"idPersona":{$in:personasRelevantes} } ]).exec();
-                var losEventosPersonalesDia: any = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInicioDia.getTime(), $lt: dateFinalDia.getTime() } }, { $or: [{ idPersona: {$in: personasRelevantes} }, { idsParticipantes: {$in: personasRelevantes} }] }]).exec();
-                
+                var losEventosPersonalesDia: any = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInicioDia.getTime(), $lt: dateFinalDia.getTime() } }, { $or: [{ idPersona: { $in: personasRelevantes } }, { idsParticipantes: { $in: personasRelevantes } }] }]).exec();
+
             } catch (error) {
                 console.log(`Error buscando eventos personales: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
             console.log("\x1b[32m%s\x1b[0m", `Enviando ${losEventosPersonalesDia.length} eventos relevantes`);
 
-            console.log(`De ${losEventosPersonalesDia.map(e=>e.idPersona)}`);
-            console.log(`Llamados: ${losEventosPersonalesDia.map(e=>e.nombre)}`);
+            console.log(`De ${losEventosPersonalesDia.map(e => e.idPersona)}`);
+            console.log(`Llamados: ${losEventosPersonalesDia.map(e => e.nombre)}`);
             return losEventosPersonalesDia
         },
 
         async eventoPersonal(_: any, { idEvento }: any, contexto: contextoQuery) {
-           
+
             // if (!contexto.usuario || !contexto.usuario.id) {
             //     console.log(`Usuario no logeado`);
             //     throw new AuthenticationError("Login requerido");
@@ -244,34 +247,34 @@ export const resolvers = {
         },
 
         async cantidadEventosRelevantesMes(_: any, { year, mes, idParent, tipoParent, timeZoneOffset }: any, contexto: contextoQuery) {
-            console.log(`Query for cantidad de eventos relevantes de ${mes} de ${year} para ${tipoParent} con id ${idParent}. timeZoneOffset: ${timeZoneOffset}`);
+            console.log('\x1b[35m%s\x1b[0m', `Query for cantidad de eventos relevantes de ${mes} de ${year} para ${tipoParent} con id ${idParent}. timeZoneOffset: ${timeZoneOffset}`);
 
-            var dateInit=new Date(year, mes, 1);
-            var dateFin=new Date(year, mes<11?mes+1:0, 1);
+            var dateInit = new Date(year, mes, 1);
+            var dateFin = new Date(year, mes < 11 ? mes + 1 : 0, 1
+            );
 
-            var losEventosRelevantesMes:any=null;
-            var eventosPersonalesRelevantesMes:any=null;
-            var eventosPublicosRelevantesMes:any=null;
+            var losEventosRelevantesMes: any = null;
+            var eventosPersonalesRelevantesMes: any = null;
+            var eventosPublicosRelevantesMes: any = null;
 
-            timeZoneOffset=timeZoneOffset*60000;
-            
-            dateInit=new Date(dateInit.getTime());
-            dateFin=new Date(dateFin.getTime());
-            console.log(`Buscando entre ${dateInit} y ${dateFin}`);
+            timeZoneOffset = timeZoneOffset * 60000;
+
+            dateInit = new Date(dateInit.getTime());
+            dateFin = new Date(dateFin.getTime());
 
             try {
-                if(tipoParent==='usuario'){
-                    eventosPersonalesRelevantesMes=await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, {idPersona:idParent}]).select("horarioInicio").exec();
-                    eventosPublicosRelevantesMes = await EventoPublico.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, {idAdministrador:idParent}]).select("horarioInicio").exec();                    
-                    losEventosRelevantesMes=eventosPersonalesRelevantesMes.concat(eventosPublicosRelevantesMes);
+                if (tipoParent === 'usuario') {
+                    eventosPersonalesRelevantesMes = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, { idPersona: idParent }]).select("horarioInicio").exec();
+                    eventosPublicosRelevantesMes = await EventoPublico.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, { idAdministrador: idParent }]).select("horarioInicio").exec();
+                    losEventosRelevantesMes = eventosPersonalesRelevantesMes.concat(eventosPublicosRelevantesMes);
                 }
-                else if(tipoParent==='nodoSolidaridad'){
-                    losEventosRelevantesMes = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, {idParent:idParent}]).select("horarioInicio").exec();
+                else if (tipoParent === 'nodoSolidaridad') {
+                    losEventosRelevantesMes = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, { idParent: idParent }]).select("horarioInicio").exec();
                 }
-                else if(tipoParent==='espacio'){
-                    losEventosRelevantesMes = await EventoPublico.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, {idParent:idParent}]).select("horarioInicio").exec();
+                else if (tipoParent === 'espacio') {
+                    losEventosRelevantesMes = await EventoPublico.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, { idParent: idParent }]).select("horarioInicio").exec();
                 }
-                else{
+                else {
                     console.log(`Tipo ${tipoParent} no reconocido`);
                     throw new UserInputError("Tipo inválido");
                 }
@@ -280,33 +283,33 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var objetoDias:any={};
+            var objetoDias: any = {};
 
-            losEventosRelevantesMes.forEach(ev=>{
-                let dia=new Date(ev.horarioInicio).getDate();
-                if(!objetoDias[dia]){
-                    objetoDias[dia]=1;
+            losEventosRelevantesMes.forEach(ev => {
+                let dia = new Date(ev.horarioInicio).getDate();
+                if (!objetoDias[dia]) {
+                    objetoDias[dia] = 1;
                 }
-                else{
+                else {
                     objetoDias[dia]++
                 }
             });
 
             console.log(`Objeto dias: ${JSON.stringify(objetoDias)}`);
 
-            var arrayDias:any=[];
+            var arrayDias: any = [];
 
-            Object.entries(objetoDias).forEach((pair:any)=>{
+            Object.entries(objetoDias).forEach((pair: any) => {
                 arrayDias.push({
                     year,
                     mes,
-                    dia:pair[0],
-                    cantidadEventos:pair[1],
+                    dia: pair[0],
+                    cantidadEventos: pair[1],
                 });
             });
 
             console.log(`arrayDias:`);
-            arrayDias.forEach(item=>{
+            arrayDias.forEach(item => {
                 console.log(`${JSON.stringify(item)}`);
             })
 
@@ -317,7 +320,7 @@ export const resolvers = {
 
     Mutation: {
         async crearEventoPublico(_: any, { infoNuevoEvento }: any, contexto: contextoQuery) {
-            console.log(`Query de crear un nuevo evento público`);
+            console.log('\x1b[35m%s\x1b[0m', `Query de crear un nuevo evento público`);
             console.log(`Datos: ${JSON.stringify(infoNuevoEvento)}`);
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Usuario no logeado`);
@@ -371,7 +374,7 @@ export const resolvers = {
         },
 
         async crearEventoPersonal(_: any, { infoEventoPersonal }: any, contexto: contextoQuery) {
-            console.log(`Query de crear un nuevo evento personal`);
+            console.log('\x1b[35m%s\x1b[0m', `Query de crear un nuevo evento personal`);
             console.log(`Datos: ${JSON.stringify(infoEventoPersonal)}`);
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Usuario no logeado`);
@@ -479,7 +482,7 @@ export const resolvers = {
                 throw new AuthenticationError("Login requerido");
             }
 
-            console.log(`Query de eliminar evento con id ${idEvento}`);
+            console.log('\x1b[35m%s\x1b[0m', `Query de eliminar evento con id ${idEvento}`);
 
             try {
                 var elEvento: any = null;
@@ -519,6 +522,13 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
+            if (tipoEvento === 'eventoPublico') {
+                //Buscando eventos personales que tengan como marco este evento publico
+                await reScheduleEventosEnmarcadosEnEventoPublicoEliminado(elEvento);
+
+            }
+
+
             try {
                 if (tipoEvento === 'eventoPublico') {
                     await EventoPublico.findByIdAndRemove(idEvento).exec();
@@ -533,6 +543,9 @@ export const resolvers = {
                 console.log(`Error removiendo el evento: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+
+
+
             console.log(`Evento eliminado`);
             return true
         },
@@ -665,7 +678,7 @@ export const resolvers = {
                 console.log(`Sin credenciales de usuario`);
                 throw new AuthenticationError("Login requerido");
             }
-            
+
 
             try {
                 var elEvento: any = null;
@@ -968,6 +981,9 @@ export const resolvers = {
                 if (tipoEvento === 'eventoPublico') {
                     elEvento = await EventoPublico.findById(idEvento).exec();
                 }
+                else if (tipoEvento === 'eventoPersonal') {
+                    elEvento = await EventoPersonal.findById(idEvento).exec();
+                }
                 else {
                     throw "Tipo de evento '" + tipoEvento + "' no reconocido";
                 }
@@ -999,11 +1015,9 @@ export const resolvers = {
             }
 
             var arrayNuevosEventos: Array<any> = [];
-            var infoNuevosEventos = {
+            var infoNuevosEventos: any = {
                 nombre: elEvento.nombre,
                 descripcion: elEvento.descripcion,
-                idAdministrador: elEvento.idAdministrador,
-                limiteDeCupos: elEvento.limiteDeCupos,
                 horarioInicio: elEvento.horarioInicio,
                 horarioFinal: elEvento.horarioFinal,
                 lugar: elEvento.lugar,
@@ -1011,6 +1025,16 @@ export const resolvers = {
                 tipoParent: elEvento.tipoParent,
 
             }
+            if (tipoEvento === 'eventoPublico') {
+                infoNuevosEventos.idAdministrador = elEvento.idAdministrador;
+                infoNuevosEventos.limiteDeCupos = elEvento.limiteDeCupos;
+            }
+            else if (tipoEvento === 'eventoPersonal') {
+                infoNuevosEventos.idPersona = elEvento.idPersona;
+                infoNuevosEventos.idsParticipantes = elEvento.idsParticipantes;
+                infoNuevosEventos.idEventoMarco = elEvento.idEventoMarco;
+            }
+
 
 
             for (var i = 1; i <= cantidadRepetir; i++) {
@@ -1029,6 +1053,12 @@ export const resolvers = {
                 if (tipoEvento === 'eventoPublico') {
                     eventosCreados = await EventoPublico.create(arrayNuevosEventos);
                 }
+                else if (tipoEvento === 'eventoPersonal') {
+                    eventosCreados = await EventoPersonal.create(arrayNuevosEventos);
+                }
+                else {
+                    console.log(`Tipo ${tipoEvento} not developed`);
+                }
             }
             catch (error) {
                 console.log("Error guardando los eventos repetidos. E: " + error);
@@ -1038,17 +1068,206 @@ export const resolvers = {
             console.log(`${eventosCreados}`);
             return eventosCreados;
         },
+        async repetirEventosTroughInterval(_: any, { idParent, tipoParent, idUsuario, numRepeticiones, dateFrom, dateTo }, contexto: contextoQuery) {
+            console.log('\x1b[35m%s\x1b[0m', `Query de repetir ${numRepeticiones} veces los eventos entre ${dateFrom} y ${dateTo} de tipo ${tipoParent} con idParent ${idParent}`);
+            if (!contexto.usuario || !contexto.usuario.id) {
+                console.log(`Sin credenciales de usuario`);
+                throw new AuthenticationError("Login requerido");
+            }
+
+            if (numRepeticiones < 1 || numRepeticiones > 52) {
+                throw new UserInputError("Cantidad de repeticiones inválida");
+            }
+            dateFrom = new Date(dateFrom);
+            dateTo = new Date(dateTo);
+            var periodoMillis = dateTo.getTime() - dateFrom.getTime();
+
+            var losEventos: any = null;
+            try {
+                if (tipoParent === 'nodoSolidaridad') {
+                    losEventos = await EventoPersonal.find({ idParent, idPersona: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
+                }
+                else if (tipoParent === 'usuario') {
+                    var losEventosPersonales = await EventoPersonal.find({ idPersona: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
+                    var losEventosPublicos = await EventoPublico.find({ idAdministrador: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();                    
+                    losEventos=losEventosPersonales.concat(losEventosPublicos);
+                }
+                else if (tipoParent === 'espacio') {
+                    losEventos = await EventoPublico.find({ idAdministrador: idUsuario, idParent, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
+                }
+                else {
+                    throw "Tipo de evento '" + tipoParent + "' no reconocido";
+                }
+
+                if (!losEventos) {
+                    throw "eventos no encontrados"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando los eventos a repetir en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador"];
+            const credencialesUsuario = contexto.usuario;
+            var usuarioAdministrador = false;
+            if (tipoParent === 'espacio') {
+                try {
+                    var elEspacio: any = await Espacio.findById(idParent).exec();
+                } catch (error) {
+                    console.log(`Error buscando el espacio parent: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                usuarioAdministrador = elEspacio.idAdministrador === credencialesUsuario.id
+            }
+            else if (tipoParent === 'usuario') {
+                usuarioAdministrador = idUsuario === credencialesUsuario.id
+            }
+            else if (tipoParent === 'nodoSolidaridad') {
+                try {
+                    var elNodo: any = await NodoSolidaridad.findById(idParent).exec();
+                } catch (error) {
+                    console.log(`Error buscando el espacio parent: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                usuarioAdministrador = (await getResponsablesAmplioNodo(elNodo)).includes(credencialesUsuario.id);
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoParent);
+            }
+            if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var eventosEnmarcados=losEventos.filter(e=>e.idEventoMarco);
+            console.log(`${eventosEnmarcados.length} eventos no se repetirán pues no se tiene seguridad de que exista una instancia del evento marco en el horario nuevo`);
+
+            losEventos=losEventos.filter(e=>!e.idEventoMarco);
+            console.log(`Se multiplicara un set de ${losEventos.length} eventos`);
+
+
+            losEventos.forEach(async (evento) => {
+                var dateInicioOriginal=new Date(evento.horarioInicio);
+                var dateFinalOriginal=new Date(evento.horarioFinal);
+                console.log(`Inicio original: ${dateInicioOriginal}`);
+                for (var i = 1; i <= numRepeticiones; i++) {
+                    evento._id=mongoose.Types.ObjectId()
+                    evento.isNew = true;
+                    let desplazamiento=periodoMillis*i;
+                    console.log(`Desplazando ${desplazamiento}`);
+                    evento.horarioInicio = new Date(dateInicioOriginal.getTime() + desplazamiento);
+                    evento.horarioFinal = new Date(dateFinalOriginal.getTime() + desplazamiento);
+                    try {
+                        console.log(`Guardando con id ${evento.id} y inicio ${evento.horarioInicio}`);
+                        await evento.save();
+                    } catch (error) {
+                        console.log(`Error guardando repeticion del evento ${evento.nombre}: ${error}`);
+                    }
+                }
+
+            })
+
+            return true
+        },
+        async deleteEventosTroughInterval(_: any, { idParent, tipoParent, idUsuario, dateFrom, dateTo }, contexto: contextoQuery) {
+            console.log('\x1b[35m%s\x1b[0m', `Query de eliminar los eventos entre ${dateFrom} y ${dateTo} de tipo ${tipoParent} con idParent ${idParent}`);
+            if (!contexto.usuario || !contexto.usuario.id) {
+                console.log(`Sin credenciales de usuario`);
+                throw new AuthenticationError("Login requerido");
+            }
+
+            
+            dateFrom = new Date(dateFrom);
+            dateTo = new Date(dateTo);
+            var periodoMillis = dateTo.getTime() - dateFrom.getTime();
+
+            var losEventos: any = null;
+            try {
+                if (tipoParent === 'nodoSolidaridad') {
+                    losEventos = await EventoPersonal.find({ idParent, idPersona: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
+                }
+                else if (tipoParent === 'usuario') {
+                    var losEventosPersonales = await EventoPersonal.find({ idPersona: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
+                    var losEventosPublicos = await EventoPublico.find({ idAdministrador: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();                    
+                    losEventos=losEventosPersonales.concat(losEventosPublicos);
+                }
+                else if (tipoParent === 'espacio') {
+                    losEventos = await EventoPublico.find({ idAdministrador: idUsuario, idParent, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
+                }
+                else {
+                    throw "Tipo de evento '" + tipoParent + "' no reconocido";
+                }
+
+                if (!losEventos) {
+                    throw "eventos no encontrados"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando los eventos a repetir en la base de datos. E: " + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador"];
+            const credencialesUsuario = contexto.usuario;
+            var usuarioAdministrador = false;
+            if (tipoParent === 'espacio') {
+                try {
+                    var elEspacio: any = await Espacio.findById(idParent).exec();
+                } catch (error) {
+                    console.log(`Error buscando el espacio parent: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                usuarioAdministrador = elEspacio.idAdministrador === credencialesUsuario.id
+            }
+            else if (tipoParent === 'usuario') {
+                usuarioAdministrador = idUsuario === credencialesUsuario.id
+            }
+            else if (tipoParent === 'nodoSolidaridad') {
+                try {
+                    var elNodo: any = await NodoSolidaridad.findById(idParent).exec();
+                } catch (error) {
+                    console.log(`Error buscando el espacio parent: ${error}`);
+                    throw new ApolloError("Error conectando con la base de datos");
+                }
+                usuarioAdministrador = (await getResponsablesAmplioNodo(elNodo)).includes(credencialesUsuario.id);
+            }
+            else {
+                throw new UserInputError("Tipo de evento no reconocido: " + tipoParent);
+            }
+            if (!usuarioAdministrador && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            console.log(`Se eliminará un set de ${losEventos.length} eventos`);
+
+            const idsEliminar=losEventos.map(e=>e.id);
+
+            try {
+                await EventoPersonal.deleteMany({_id:{$in:idsEliminar}}).exec();
+                await EventoPublico.deleteMany({_id:{$in:idsEliminar}}).exec();
+            } catch (error) {
+                console.log(`Error eliminando eventos: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return true
+        },
+
 
         async setLimiteDeCuposEventosPublicosEspacioFromDate(_: any, { idEspacio, dateFrom, limiteDeCupos }, contexto: contextoQuery) {
             console.log(`Query de cambiar el limitedecupos de todos los eventos from ${dateFrom} del espacio ${idEspacio}`);
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Sin credenciales de usuario`);
                 throw new AuthenticationError("Login requerido");
-            }            
+            }
 
             try {
-                var elEspacio:any=await Espacio.findById(idEspacio).exec();
-            }catch (error) {
+                var elEspacio: any = await Espacio.findById(idEspacio).exec();
+            } catch (error) {
                 console.log("Error buscando el espacio: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
@@ -1056,24 +1275,24 @@ export const resolvers = {
             //Authorización
             const permisosEspeciales = ["superadministrador"];
             const credencialesUsuario = contexto.usuario;
-           
-            if (elEspacio.idAdministrador!=credencialesUsuario.id && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+
+            if (elEspacio.idAdministrador != credencialesUsuario.id && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
                 throw new AuthenticationError("No autorizado");
             }
 
             try {
-                var losEventosFuturos:any=await EventoPublico.find({idParent:idEspacio, horarioInicio:{$gt:new Date(dateFrom).getTime()}}).exec();
+                var losEventosFuturos: any = await EventoPublico.find({ idParent: idEspacio, horarioInicio: { $gt: new Date(dateFrom).getTime() } }).exec();
             } catch (error) {
                 console.log(`Error buscando los eventos futuros: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-            losEventosFuturos.forEach(async (ev)=>{
+            losEventosFuturos.forEach(async (ev) => {
                 try {
-                    ev.limiteDeCupos=limiteDeCupos;
+                    ev.limiteDeCupos = limiteDeCupos;
                     await ev.save();
                 } catch (error) {
-                    console.log(`Error guardando evento con nuevo límite de cupos: ${error}`);                    
+                    console.log(`Error guardando evento con nuevo límite de cupos: ${error}`);
                     throw new ApolloError("Error guardando en la base de datos");
                 }
             })
@@ -1127,3 +1346,26 @@ export const resolvers = {
 
 }
 
+export const reScheduleEventosEnmarcadosEnEventoPublicoEliminado = async function(eventoPublico){
+    try {
+        var losEventosEnmarcados: any = await EventoPersonal.find({ idEventoMarco: eventoPublico.id }).exec();
+    } catch (error) {
+        console.log(`Error buscando los eventos enmarcados: ${error}`);
+        throw new ApolloError("Error conectando con la base de datos");
+    }
+    console.log(`Se encontraron ${losEventosEnmarcados.length} eventos enmarcados`);
+
+    const idsEliminar = losEventosEnmarcados.filter(e => !e.idParent).map(e => e.id);
+    const idsUpdate = losEventosEnmarcados.filter(e => e.idParent).map(e => e.id);
+    console.log(`IDS a eliminar: ${idsEliminar}`);
+    console.log(`IDS remove idParent, tipoParent: ${idsUpdate}`);
+    try {
+        var res = await EventoPersonal.deleteMany({ "_id": { $in: idsEliminar } }).exec();
+        await EventoPersonal.updateMany({ "_id": { $in: idsUpdate } }, { $set: { "idEventoMarco": null } }).exec();
+    } catch (error) {
+        console.log(`Error eliminando eventos enmarcados: ${error}`);
+        throw new ApolloError("Error conectando con la base de datos");
+    }
+
+    console.log(`Res: ${res.ok}. Eventos enmarcados eliminados: ${res.n}`);
+}

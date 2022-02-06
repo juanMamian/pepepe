@@ -19,7 +19,6 @@ import HomeNodo from "./components/atlasSolidaridad/homeNodo/HomeNodo"
 import store from "./store/index"
 import ForosGenerales from "./components/ForosGenerales"
 import AtlasSolidaridad from "./components/atlasSolidaridad/AtlasSolidaridad"
-import CalendarioPersonal from "./components/CalendarioPersonal"
 import Espacios from "./components/Espacios"
 import VentanaEventoPublico from "./components/utilidades/VentanaEventoPublico"
 import VentanaEventoPersonal from "./components/utilidades/VentanaEventoPersonal"
@@ -65,21 +64,7 @@ const routes = [
                 name: "VentanaEventoPersonal",
             }
         ]
-    },
-    {
-        path: "/calendarioPersonal", component: CalendarioPersonal, children: [
-            {
-                path: "ventanaEventoPublico/:idEvento",
-                component: VentanaEventoPublico,
-                name: "VentanaEventoPublico",
-            },
-            {
-                path: "ventanaEventoPersonal/:idEvento",
-                component: VentanaEventoPersonal,
-                name: "VentanaEventoPersonal",
-            }
-        ]
-    },
+    },   
     { path: "/atlasSolidaridad", component: AtlasSolidaridad },
     {
         path: "/homeNodoSolidaridad/:id", component: HomeNodo,

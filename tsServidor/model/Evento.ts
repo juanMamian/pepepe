@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import { validatorNombreCosa, validatorTexto } from "./config";
 
+const maxDuracionEventos=1000*60*60*10; //10 horas
+const minDuracionEventos=1000*60*5 //5 minutos
+
 export const esquemaEventoPersonal = new mongoose.Schema({
     idPersona:{
         type: String,
@@ -42,7 +45,7 @@ export const esquemaEventoPersonal = new mongoose.Schema({
             validator:function(this:any){
                 const duracion=this.horarioFinal-this.horarioInicio;
                 
-                return duracion>=300000;
+                return duracion>=minDuracionEventos && duracion<=maxDuracionEventos;
             },
             message: props=>props.value + "No es un valor válido"
         }
@@ -53,7 +56,7 @@ export const esquemaEventoPersonal = new mongoose.Schema({
         validate:{
             validator:function(this:any){
                 const duracion=this.horarioFinal-this.horarioInicio;
-                return duracion>=300000;
+                return duracion>=minDuracionEventos && duracion<=maxDuracionEventos;
             },
             message: props=>props.value + "No es un valor válido"
         }
@@ -94,7 +97,7 @@ export const esquemaEventoPublico = new mongoose.Schema({
             validator:function(this:any){
                 const duracion=this.horarioFinal-this.horarioInicio;
                 
-                return duracion>=300000;
+                return duracion>=minDuracionEventos && duracion<=maxDuracionEventos;
             },
             message: props=>props.value + "No es un valor válido"
         }
@@ -106,7 +109,7 @@ export const esquemaEventoPublico = new mongoose.Schema({
             validator:function(this:any){
                 const duracion=this.horarioFinal-this.horarioInicio;
                 
-                return duracion>=300000;
+                return duracion>=minDuracionEventos && duracion<=maxDuracionEventos;
             },
             message: props=>props.value + "No es un valor válido"
         },

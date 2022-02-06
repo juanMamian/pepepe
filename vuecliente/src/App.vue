@@ -180,15 +180,7 @@
             <div id="botonesLogeado" v-if="accionesLogeado">
               <router-link to="/miperfil">
                 <div class="botonesLogeado hoverNegro" id="Perfil">Perfil</div>
-              </router-link>
-              <router-link to="/calendarioPersonal">
-                <div
-                  class="botonesLogeado hoverNegro"
-                  id="botonCalendarioPersonal"
-                >
-                  Mi calendario
-                </div>
-              </router-link>
+              </router-link>             
               <div
                 class="botonesLogeado hoverNegro"
                 id="desconexion"

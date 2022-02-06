@@ -3,6 +3,7 @@ import { charProhibidosNombreCosa, charProhibidosTexto } from "../model/config";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { contextoQuery } from "./tsObjetos";
 import { ModeloEventoPublico as EventoPublico, ModeloEventoPersonal as EventoPersonal } from "../model/Evento";
+import { reScheduleEventosEnmarcadosEnEventoPublicoEliminado } from "./Eventos";
 
 export const typeDefs = gql`
     type Espacio{
@@ -116,6 +117,10 @@ export const resolvers = {
             console.log(`Había ${losEventosAsociados.length} eventos publicos asociados a este espacio. Se eliminarán`);
             console.log(`${losEventosAsociados.map(e=>e.horarioInicio)}`);
             const listaIds=losEventosAsociados.map(e=>e._id);
+
+            losEventosAsociados.forEach(async(eventoPublico)=>{
+                await reScheduleEventosEnmarcadosEnEventoPublicoEliminado(eventoPublico);
+            })
 
             try {
                 await EventoPublico.deleteMany({_id:{$in:listaIds}})

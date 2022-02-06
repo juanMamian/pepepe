@@ -51,10 +51,10 @@
           :enfasis="enfasis"
           :idParent="idParent"
           :tipoParent="tipoParent"
-          @meElimine="deleteEventoCache(eventoPublico)"
+          @meElimine="deleteEventoCache(eventoPublico); $emit('cambioEventos')"
           @click.native="$emit('clickEnEvento', eventoPublico)"
-          @meCambiaronDia="deleteEventoCache(eventoPublico)"
-          @creadoEventoPersonal="addEventoCache"
+          @meCambiaronDia="deleteEventoCache(eventoPublico);$emit('cambioEventos')"
+          @creadoEventoPersonal="addEventoCache($event);$emit('cambioEventos');"
         />
         <evento-personal-calendario
           :horaPx="horaPx"
@@ -69,10 +69,10 @@
             idUsuarioTarget != eventoPersonal.idPersona &&
             !eventoPersonal.idsParticipantes.includes(idUsuarioTarget)
           "          
-          @meElimine="deleteEventoCache(eventoPersonal)"
+          @meElimine="deleteEventoCache(eventoPersonal);$emit('cambioEventos')"
           @click.native="$emit('clickEnEvento', eventoPersonal)"
           @meCambiaronDia="
-            deleteEventoCache(eventoPersonal);            
+            deleteEventoCache(eventoPersonal);$emit('cambioEventos');            
           "
         />
       </div>
@@ -215,7 +215,7 @@ export default {
           minutos: minutosClicked,
         };
         const dateClicked =
-          Date.parse(this.esteDia.date) +
+          this.esteDia.date.getTime() +
           timeClickedFormatted.horas * 60 * 60000 +
           timeClickedFormatted.minutos * 60000;
         console.log(
@@ -224,7 +224,7 @@ export default {
 
         console.log(
           `Date centralh: ${
-            Date.parse(this.esteDia.date) +
+            this.esteDia.date.getTime() +
             timeClickedFormatted.horas +
             timeClickedFormatted.minutos * 60000
           }`
@@ -329,7 +329,9 @@ export default {
         .then(({ data: { crearEventoPublico } }) => {
           this.creandoEvento = false;
 
-          this.addEventoCache(crearEventoPublico)
+          this.addEventoCache(crearEventoPublico);
+           this.$emit("cambioEventos");
+
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
@@ -361,6 +363,8 @@ export default {
         .then(({ data: { crearEventoPersonal } }) => {
           this.creandoEvento = false;
           this.addEventoCache(crearEventoPersonal);
+           this.$emit("cambioEventos");
+
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
@@ -370,6 +374,9 @@ export default {
     deleteEventoCache(evento) {
       const tipoEvento =
         evento.__typename.charAt(0).toLowerCase() + evento.__typename.slice(1);
+
+      console.log(`Deleting ${tipoEvento} ${evento.nombre} from cache`);
+
       var infoQuery = null;
       if (tipoEvento === "eventoPublico") {
         infoQuery = {
@@ -404,7 +411,6 @@ export default {
       const indexE = listaEventosCache.findIndex((e) => e.id === evento.id);
       if (indexE > -1) {
         listaEventosCache.splice(indexE, 1);
-
         store.writeQuery({
           ...infoQuery,
           data: nuevoCache,

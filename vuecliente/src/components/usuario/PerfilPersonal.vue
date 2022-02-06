@@ -28,6 +28,14 @@
           
         />
       </div>
+      <div class="boton"
+      title="Mi calendario"
+          @click="seccion = 'calendario'">
+        <img
+          src="@/assets/iconos/calendar.svg"
+          alt="Calendario"          
+        />
+      </div>
     </div>
     <div id="contenido" v-if="!$apollo.queries.esteUsuario.loading">
       <div
@@ -181,7 +189,9 @@
         />
       </div>
 
-      <div id="zonaCalendario" v-show="seccion === 'calendario'"></div>
+      <div id="zonaCalendario" v-if="seccion === 'calendario'">
+          <calendario v-if="usuarioLogeado" :enfasis="'eventosPersonales'" :idUsuarioTarget="this.usuario.id"/>
+      </div>
     </div>
 
       <router-view />
@@ -203,8 +213,9 @@ import {
   fragmentoNodoSolidaridad,
   fragmentoPersonaAtlas,
 } from "../atlasSolidaridad/frags";
+import Calendario from '../utilidades/Calendario.vue';
 export default {
-  components: { Loading, VentanaLista },
+  components: { Loading, VentanaLista, Calendario },
   name: "PerfilPersonal",
   apollo: {
     esteUsuario: {

@@ -204,6 +204,11 @@ export const MixinEdicionEventos = {
             nuevoLimiteDeCupos: null,
             editandoLimiteDeCupos: false,
             enviandoNuevoLimiteDeCupos: false,
+
+            minRepetir: 1,
+            maxRepetir: 52,
+
+            enviandoQueryRepetir: false,
         }
     },
     methods: {
@@ -439,10 +444,17 @@ export const MixinEdicionEventos = {
                 mutation: gql`
                 mutation($periodoRepetir: String, $cantidadRepetir: Int!, $idEvento:ID!, $tipoEvento:String!){
                   repetirEventoPeriodicamente(periodoRepetir:$periodoRepetir, cantidadRepetir: $cantidadRepetir, idEvento: $idEvento, tipoEvento:$tipoEvento){
-                    ...fragEventoPublico
+                    __typename
+                    ...on EventoPublico{
+                        ...fragEventoPublico
+                    }
+                    ...on EventoPersonal{
+                        ...fragEventoPersonal
+                    }
                   }
                 } 
-                ${fragmentoEventoPublico}       
+                ${fragmentoEventoPublico}
+                ${fragmentoEventoPersonal}
               `,
                 variables: {
                     periodoRepetir: periodoRepetir,
@@ -512,10 +524,7 @@ export const MixinEdicionEventosPublicos = {
     data() {
         return {
 
-            minRepetir: 1,
-            maxRepetir: 52,
-
-            enviandoQueryRepetir: false,
+           
         }
     },
     methods: {
@@ -619,7 +628,9 @@ export const MixinVentanaEvento = {
     data() {
         return {
             mostrando: null,
-            esteEvento: {},
+            esteEvento: {
+                
+            },
 
             editandoDateInicio: false,
             editandoHorarioFinal: false,
