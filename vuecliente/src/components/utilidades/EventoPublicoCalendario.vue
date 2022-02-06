@@ -98,6 +98,7 @@ export default {
   border-style: solid;
   box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
   border-color: white;
+  color: rgb(48, 48, 48);
 }
 .eventoPublicoCalendario.seleccionado {
   border-color: var(--calendarioSelect);

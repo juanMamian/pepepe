@@ -51,6 +51,7 @@
 
       <div
         class="boton"
+        v-show="usuario && usuario.id===idUsuarioTarget || usuarioSuperadministrador"
         :title="
           tomandoAccion === 'semana'
             ? 'Cancelar'

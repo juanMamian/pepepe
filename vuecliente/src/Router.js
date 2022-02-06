@@ -64,7 +64,7 @@ const routes = [
                 name: "VentanaEventoPersonal",
             }
         ]
-    },   
+    },
     { path: "/atlasSolidaridad", component: AtlasSolidaridad },
     {
         path: "/homeNodoSolidaridad/:id", component: HomeNodo,
@@ -105,7 +105,21 @@ const routes = [
     //     ]
     // },
     // { path: "/actividad/:idActividad", name: "actividadEspecifica", component: ActividadEspecifica },
-    { path: "/personas", name: "personas", component: Personas },
+    {
+        path: "/personas", name: "personas", component: Personas,
+        children: [
+            {
+                path: "ventanaEventoPublico/:idEvento",
+                component: VentanaEventoPublico,
+                name: "VentanaEventoPublico",
+            },
+            {
+                path: "ventanaEventoPersonal/:idEvento",
+                component: VentanaEventoPersonal,
+                name: "VentanaEventoPersonal",
+            }
+        ]
+    },
     {
         path: "/", redirect() {
             if (!store.state.usuario || !store.state.usuario.id) {

@@ -1,57 +1,64 @@
 <template>
   <div class="personas">
-    <div id="controlesPersonas">
-      <div class="controlPersonas">
-        <div id="zonaPermisos" v-if="usuarioSuperadministrador">
-          <input type="text" id="inputPermiso" v-model="permisoInput"/>
-          <img src="@/assets/iconos/ir.png" alt="AsignarTodos" title="Asignar permiso a todos" width="20px" class="botonPermisos" id="botonAsignarPermisoTodos" @click="asignarPermisoTodos">
-          <img src="@/assets/iconos/cancelar.png" alt="RetirarTodos" title="Retirar permiso a todos" width="20px" class="botonPermisos" id="botonRetirarPermisoTodos">
+    <router-view>
+    </router-view>
 
-        </div>
+    <div id="controlesPersonas" class="contenedorControles">
+      <div
+        class="boton"
+        @click="
+          mostrarPersonas = mostrarPersonas === 'todos' ? 'profes' : 'todos'
+        "
+      >
+        <img
+          src="@/assets/iconos/users.svg"
+          alt="Todos"
+          v-show="mostrarPersonas === 'todos'"
+        />
+        <img
+          src="@/assets/iconos/teacher.svg"
+          alt="Profes"
+          v-show="mostrarPersonas === 'profes'"
+        />
       </div>
     </div>
     <div id="listaPersonas" @click="idPersonaMenuCx = null">
       <loading v-show="loadingPersonas" texto="Cargando lista de personas..." />
-      <icono-persona
-        v-for="persona of personas"
-        :key="persona.id"
+      <persona-vista-lista
+        :seleccionado="idPersonaSeleccionada === persona.id"
+        @click.native="idPersonaSeleccionada = persona.id"
         :estaPersona="persona"
-        :seleccionado="idPersonaSeleccionada == persona.id"
-        :opcionesMenuCx="opcionesEspecialesPersona"
-        :menuContextual="idPersonaMenuCx == persona.id"
-        @click.native.right.stop.prevent="idPersonaMenuCx = persona.id"
-        @click.left.native="idPersonaSeleccionada = persona.id"
-        @eliminandoseDeDatabase="eliminarPersonaDeDatabase(persona.id)"
-        @reseteandoPass="resetearPassUsuario(persona.id)"
-      >
-      </icono-persona>
+        v-for="persona of personasVisibles"
+        :key="persona.id"
+      />
     </div>
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
-import { fragmentoResponsables } from "./utilidades/recursosGql";
-import IconoPersona from "./proyecto/IconoPersona";
 import Loading from "./utilidades/Loading.vue";
 import axios from "axios";
+import PersonaVistaLista from "./usuario/personaVistaLista.vue";
 
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
 
 const QUERY_PERSONAS = gql`
   query {
     todosUsuarios {
-      ...fragResponsables
+      id
+      nombres
+      apellidos
+      permisos
     }
   }
-  ${fragmentoResponsables}
 `;
 
 export default {
   name: "Personas",
   components: {
-    IconoPersona,
     Loading,
+    PersonaVistaLista,
   },
   apollo: {
     personas: {
@@ -68,8 +75,9 @@ export default {
       idPersonaMenuCx: null,
       idPersonaSeleccionada: null,
       loadingPersonas: true,
+      mostrarPersonas: "todos",
 
-      permisoInput:""
+      permisoInput: "",
     };
   },
   methods: {
@@ -91,7 +99,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idUsuario: ID!) {
+            mutation ($idUsuario: ID!) {
               eliminarUsuario(idUsuario: $idUsuario)
             }
           `,
@@ -138,49 +146,55 @@ export default {
     },
     resetearPassUsuario(idUsuario) {
       console.log(`Evento de resetear pass de ${idUsuario}`);
-      let datos={
-        idUsuario
-      }
+      let datos = {
+        idUsuario,
+      };
       axios({
         method: "post",
         url: this.serverUrl + "/api/usuarios/resetearPassUsuario",
         data: datos,
-        headers: {          
+        headers: {
           Authorization: "Bearer " + this.$store.state.token,
         },
-      }).then(({data})=>{
-        console.log(`Respuesta: ${data}`);
-      }).catch((error)=>{
-        console.log(`Error reseteando password. E:${error}`);
       })
+        .then(({ data }) => {
+          console.log(`Respuesta: ${data}`);
+        })
+        .catch((error) => {
+          console.log(`Error reseteando password. E:${error}`);
+        });
     },
-    asignarPermisoTodos(){
+    asignarPermisoTodos() {
       if (this.permisoIlegal) {
         console.log(`No enviado`);
         return;
       }
 
-      if(!confirm("¿Asignar este permiso a todas las personas?"))return
+      if (!confirm("¿Asignar este permiso a todas las personas?")) return;
 
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($nuevoPermiso: String!){
-            asignarPermisoTodosUsuarios(nuevoPermiso: $nuevoPermiso)
-          }
-        `,
-        variables:{
-          nuevoPermiso:this.permisoInput
-        }
-      }).then(()=>{
-        alert("Permiso "+ this.permisoInput+" asignado para todos los usuarios");
-      })
-    }
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($nuevoPermiso: String!) {
+              asignarPermisoTodosUsuarios(nuevoPermiso: $nuevoPermiso)
+            }
+          `,
+          variables: {
+            nuevoPermiso: this.permisoInput,
+          },
+        })
+        .then(() => {
+          alert(
+            "Permiso " + this.permisoInput + " asignado para todos los usuarios"
+          );
+        });
+    },
   },
   computed: {
     opcionesEspecialesPersona: function () {
       let opciones = [];
       if (this.usuarioSuperadministrador) {
-        opciones=opciones.concat([
+        opciones = opciones.concat([
           {
             textoVisible: "Eliminar de la base de datos",
             evento: "eliminandoseDeDatabase",
@@ -202,6 +216,14 @@ export default {
       }
       return false;
     },
+    personasVisibles() {
+      if (this.mostrarPersonas === "profes") {
+        return this.personas.filter((p) =>
+          p.permisos.includes("maestraVida-profesor")
+        );
+      }
+      return this.personas;
+    },
   },
 };
 </script>
@@ -209,20 +231,19 @@ export default {
 <style scoped>
 #listaPersonas {
   display: flex;
-  padding: 20px 20px;
   padding-bottom: 50px;
-  border: 2px solid purple;
   flex-flow: row wrap;
 }
-.iconoPersona {
-  margin-left: 25px;
-  margin-right: 25px;
-  margin-bottom: 60px;
+.personaVistaLista {
 }
+.personaVistaLista:hover {
+  background-color: rgba(128, 128, 128, 0.178);
+}
+
 .loading {
   margin: 20px auto;
 }
-.botonPermisos{
+.botonPermisos {
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -230,7 +251,7 @@ export default {
   cursor: pointer;
 }
 
-.botonPermisos:hover{
-  background-color:rgba(128, 128, 128, 0.726);
+.botonPermisos:hover {
+  background-color: rgba(128, 128, 128, 0.726);
 }
 </style>

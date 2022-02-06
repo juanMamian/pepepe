@@ -110,7 +110,7 @@
 
         <router-link
           to="/personas"
-          v-if="usuarioAdministrador || usuarioSuperadministrador"
+          v-if="usuarioAdministrador || usuarioSuperadministrador || usuarioProfe"
         >
           <div
             class="botonNavBarra botonNav hoverNegro"
@@ -456,6 +456,10 @@ body {
   display: flex;
   padding: 5px 2%;
   flex-direction: row-reverse;
+  margin-right: 5px;
+}
+.contenedorControles .boton{
+  margin: 0px 5px;
 }
 .boton {
   cursor: pointer;

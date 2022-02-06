@@ -96,6 +96,7 @@ export default {
   border-width: 2px;
   border-style: solid;
   border-color: white;
+  color: rgb(27, 27, 27);
 }
 .eventoPersonalCalendario.seleccionado {
   border-color: var(--calendarioSelect);

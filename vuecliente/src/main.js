@@ -52,7 +52,7 @@ Vue.mixin({
     usuarioProfe: function () {
       if (!this.$store.state.usuario.permisos) return false;
       return this.$store.state.usuario.permisos.includes(
-        "actividadesEstudiantiles-profe"
+        "maestraVida-profesor"
       );
     },
   },

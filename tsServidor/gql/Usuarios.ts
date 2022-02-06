@@ -229,7 +229,7 @@ export const resolvers = {
             console.log(`Solicitud de la lista de todos los usuarios`);
 
             try {
-                var todosUsuarios = await Usuario.find({}).exec();
+                var todosUsuarios = await Usuario.find({}).select("nombres apellidos permisos fechaNacimiento email username numeroTel email").exec();
             }
             catch (error) {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
