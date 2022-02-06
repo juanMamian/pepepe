@@ -1,8 +1,23 @@
 <template>
   <div class="personas">
-    <router-view>
-    </router-view>
+    <router-view> </router-view>
+    <div id="zonaBuscar">
+      <div class="barraSuperior">
+        <input
+          type="text"
+          ref="inputBuscar"
+          v-model="textoBuscar"
+          v-show="mostrandoInputBuscar"
+        />
+        <div class="boton" @click="iniciarBuscar" v-show="!mostrandoInputBuscar">
+          <img src="@/assets/iconos/search.svg" alt="Lupa" />
+        </div>
 
+        <div class="boton" title="Cancelar" @click="cancelarBusqueda" v-show="mostrandoInputBuscar">
+          <img src="@/assets/iconos/equis.svg" alt="Equis">
+        </div>
+      </div>
+    </div>
     <div id="controlesPersonas" class="contenedorControles">
       <div
         class="boton"
@@ -40,6 +55,8 @@ import gql from "graphql-tag";
 import Loading from "./utilidades/Loading.vue";
 import axios from "axios";
 import PersonaVistaLista from "./usuario/personaVistaLista.vue";
+import debounce from "debounce";
+import { similarity } from "./utilidades/funciones";
 
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
 
@@ -78,6 +95,12 @@ export default {
       mostrarPersonas: "todos",
 
       permisoInput: "",
+      textoBuscar: null,
+      textoBusquedaUsado:null,
+      mostrandoInputBuscar: false,
+      buscados: [],
+
+      debouncingBusqueda: false,
     };
   },
   methods: {
@@ -189,6 +212,43 @@ export default {
           );
         });
     },
+    iniciarBuscar() {
+      this.mostrandoInputBuscar = true;
+      this.$nextTick(() => {
+        this.$refs.inputBuscar.focus();
+      });
+    },
+    cancelarBusqueda() {
+      this.buscados = [];
+      this.textoBuscar = null;
+      this.mostrandoInputBuscar = false;
+      this.textoBusquedaUsado=null;
+    },
+    calcularBuscados: debounce(function () {
+      console.log(`Setting textoBusquedaUsado`);
+      this.textoBusquedaUsado = this.textoBuscar;
+      // console.log(`Calculando buscados`);
+      // if (!this.textoBuscar) return;
+      // var lista = [];
+      // var texto = this.textoBuscar.trim();
+      // var campoPersonas =
+      //   this.mostrarPersonas === "profes"
+      //     ? this.personas.filter((p) =>
+      //         p.permisos.includes("maestraVida-profesor")
+      //       )
+      //     : this.personas;
+
+      // campoPersonas.forEach((persona) => {
+      //   // console.log(`Buscando ${texto} en ${nombreLargo}`);
+      //   var puntajeSimilaridad=similarity(texto, nombreLargo);
+      //   var obj={};
+      //   obj[persona.id]=puntajeSimilaridad;
+      //   lista.push({obj});
+      //   console.log(`BINGO`);
+      // });
+
+      // this.buscados=lista;
+    }, 800),
   },
   computed: {
     opcionesEspecialesPersona: function () {
@@ -217,12 +277,30 @@ export default {
       return false;
     },
     personasVisibles() {
+      var visibles = JSON.parse(JSON.stringify(this.personas));
       if (this.mostrarPersonas === "profes") {
-        return this.personas.filter((p) =>
+        visibles = visibles.filter((p) =>
           p.permisos.includes("maestraVida-profesor")
         );
       }
-      return this.personas;
+      if (this.textoBusquedaUsado) {
+        console.log(`Sorting acording to texto ${this.textoBusquedaUsado}`);
+
+        visibles.sort(
+          (a, b) =>
+            -similarity(this.textoBusquedaUsado, a.nombres + " " + a.apellidos) +
+            similarity(this.textoBusquedaUsado, b.nombres + " " + b.apellidos)
+        );
+      }
+
+      return visibles;
+    },
+  },
+  watch: {
+    textoBuscar() {
+     
+      this.debouncingBusqueda = true;
+      this.calcularBuscados();
     },
   },
 };
@@ -234,6 +312,22 @@ export default {
   padding-bottom: 50px;
   flex-flow: row wrap;
 }
+
+#zonaBuscar {
+  padding: 10px 5px;
+}
+#zonaBuscar .barraSuperior {
+  display: flex;
+  align-items: center;
+}
+#zonaBuscar .barraSuperior input {
+  font-size: 20px;
+  border: 2px solid gray;
+  border-radius: 5px;
+  padding: 5px;
+  margin-right: 10px;
+}
+
 .personaVistaLista {
 }
 .personaVistaLista:hover {
