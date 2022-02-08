@@ -99,16 +99,19 @@ var esquemaNodo = new mongoose.Schema({
         type:[{
             nombre: {
                 type:String,
-                required:true,
                 max:40,
                 min:2,
                 default: "Nueva sección"                
             },
             idCarpeta:{
                 type:String,
+            },
+            modo:{
+                type:String,
+                default:"archivo",
+                enum: ["archivo", "enlace"]
             }
         }],
-        required:true,
         default:[]
     },
     fuerzaCentroMasa:{

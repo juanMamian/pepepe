@@ -21,16 +21,22 @@
           {{ esteEvento.nombre }}
         </div>
       </div>
+      <div id="cantidadAsistentes" v-if="esteEvento.eventosEnmarcados && esteEvento.eventosEnmarcados.length>0">
+        <img src="@/assets/iconos/user.svg" alt="User" style="height:13px; margin-right: 6px">
+        {{esteEvento.eventosEnmarcados.length}}{{esteEvento.limiteDeCupos?'/'+esteEvento.limiteDeCupos:''}}
+      </div>
       <icono-persona-autonomo :class="{seleccionado}" style="margin: 0px auto" v-if="idUsuarioTarget!=esteEvento.idAdministrador" :idPersona="esteEvento.idAdministrador" :factorEscala="'0.5'" />
       <div id="contenedorControlesEvento" :class="{ seleccionado }">
         <div
           class="boton botonControlEvento"
           title="Asistir a este evento"
           v-if="usuarioLogeado && !administrador"
+          v-show="!creandoEventoPersonalUnder"
           @click.stop="crearEventoPersonalUnder"
         >
           <img src="@/assets/iconos/calendarPlus.svg" alt="Asistir" />
         </div>
+        <loading v-show="creandoEventoPersonalUnder" />
         <div
           class="boton botonControlEvento"
           title="Eliminar este evento"
@@ -61,10 +67,11 @@ import {
   MixinEventoCalendario,
 } from "../MixinsEventos";
 import IconoPersonaAutonomo from '../usuario/IconoPersonaAutonomo.vue';
+import Loading from './Loading.vue';
 
 export default {
   name: "EventoPublicoCalendario",
-  components: {IconoPersonaAutonomo},
+  components: {IconoPersonaAutonomo, Loading},
   props: {
     extranjero: Boolean,
   },
@@ -127,6 +134,12 @@ export default {
 }
 #bloque.seleccionado {
   opacity: 1;
+}
+#cantidadAsistentes{
+  display: flex;
+  font-size: 11px;
+  align-items: center;
+  justify-content: center;
 }
 .iconoPersonaAutonomo.seleccionado{
   opacity: 0.4;

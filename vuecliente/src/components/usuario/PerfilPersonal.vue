@@ -9,32 +9,22 @@
       >
         <img src="@/assets/iconos/info.svg" alt="Informacion" />
       </div>
-      <div class="boton"
-      title="Cambiar contraseña"
-          @click="seccion = 'cambiarPass'"
+      <div
+        class="boton"
+        title="Cambiar contraseña"
+        @click="seccion = 'cambiarPass'"
       >
-        <img
-          src="@/assets/iconos/key.svg"
-          alt="Pass"
-          
-        />
+        <img src="@/assets/iconos/key.svg" alt="Pass" />
       </div>
-      <div class="boton"
-      title="Mis objetivos y trabajos"
-          @click="seccion = 'misNodos'">
-        <img
-          src="@/assets/iconos/starSolid.svg"
-          alt="Estrella"
-          
-        />
+      <div
+        class="boton"
+        title="Mis objetivos y trabajos"
+        @click="seccion = 'misNodos'"
+      >
+        <img src="@/assets/iconos/starSolid.svg" alt="Estrella" />
       </div>
-      <div class="boton"
-      title="Mi calendario"
-          @click="seccion = 'calendario'">
-        <img
-          src="@/assets/iconos/calendar.svg"
-          alt="Calendario"          
-        />
+      <div class="boton" title="Mi calendario" @click="seccion = 'calendario'">
+        <img src="@/assets/iconos/calendar.svg" alt="Calendario" />
       </div>
     </div>
     <div id="contenido" v-if="!$apollo.queries.esteUsuario.loading">
@@ -42,10 +32,16 @@
         id="zonaInformacionPersonal"
         v-show="seccion === 'informacionPersonal'"
       >
-        <div id="fotografia">
+        <div id="fotografia" @click="$refs.inputFotoUsuario.click()">
           <img
-            :src="this.serverUrl + '/api/usuarios/fotografias/' + usuario.id"
+            :src="this.serverUrl + '/api/usuarios/fotografias/' + usuario.id+'?v='+versionFoto"
             alt="Fotografía"
+          />
+          <input
+            type="file"
+            ref="inputFotoUsuario"
+            v-show="false"
+            @change="uploadNuevaFoto"
           />
         </div>
         <div id="zonaCamposEditablesInformacionPersonal">
@@ -190,12 +186,15 @@
       </div>
 
       <div id="zonaCalendario" v-if="seccion === 'calendario'">
-          <calendario v-if="usuarioLogeado" :enfasis="'eventosPersonales'" :idUsuarioTarget="this.usuario.id"/>
+        <calendario
+          v-if="usuarioLogeado"
+          :enfasis="'eventosPersonales'"
+          :idUsuarioTarget="this.usuario.id"
+        />
       </div>
     </div>
 
-      <router-view />
-
+    <router-view />
   </div>
 </template>
 
@@ -205,7 +204,7 @@ import {
   maxLengthPassword,
   charProhibidosPassword,
 } from "./configuracion";
-
+import axios from "axios";
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 import VentanaLista from "../atlasSolidaridad/ventanaLista/ventanaLista.vue";
@@ -213,7 +212,7 @@ import {
   fragmentoNodoSolidaridad,
   fragmentoPersonaAtlas,
 } from "../atlasSolidaridad/frags";
-import Calendario from '../utilidades/Calendario.vue';
+import Calendario from "../utilidades/Calendario.vue";
 export default {
   components: { Loading, VentanaLista, Calendario },
   name: "PerfilPersonal",
@@ -252,6 +251,7 @@ export default {
 
       mostrandoOpcionesCrearSubNodo: false,
       creandoSubNodo: false,
+      versionFoto:0,
     };
   },
   computed: {
@@ -373,6 +373,35 @@ export default {
           console.log(`Error: ${error}`);
         });
     },
+    uploadNuevaFoto(e) {
+      console.log(`Uploading foto`);
+      const inputArchivo = e.target;
+      var datos = new FormData();
+      const nuevoArchivo = inputArchivo.files[0];
+
+      datos.append("nuevaFoto", nuevoArchivo);
+      this.subiendoNuevaFoto = true;
+      axios({
+        method: "post",
+        url: this.serverUrl + "/api/usuarios/updateFoto",
+        data: datos,
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: "Bearer " + this.$store.state.token,
+        },
+      })
+        .then(({ data: { resultado } }) => {
+          this.subiendoNuevaFoto = false;          
+          if(resultado){
+            console.log(`Foto actualizada`);
+            this.versionFoto++;
+          }
+        })
+        .catch((error) => {
+          this.subiendoNuevaFoto = false;          
+          console.log(`Error subiendo archivo. E: ${error}`);
+        });
+    },
   },
 };
 </script>
@@ -424,9 +453,7 @@ export default {
 
 #zonaSelectores .boton {
   margin: 0px min(10px, 2%);
-  
 }
-
 
 .tituloSeccion {
   font-size: 22px;

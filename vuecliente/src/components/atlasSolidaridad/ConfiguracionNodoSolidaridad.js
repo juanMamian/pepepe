@@ -341,6 +341,7 @@ export var MixinEdicionNodoSolidaridad = {
         })
         .then(() => {
           this.enviandoQueryResponsables = false;
+          this.idResponsableSeleccionado=null;
         })
         .catch((error) => {
           this.enviandoQueryResponsables = false;
@@ -348,7 +349,7 @@ export var MixinEdicionNodoSolidaridad = {
         });
     },
     retirarUsuarioFromListaResponsables(idUsuario) {
-      if(!this.usuarioSuperadministrador){
+      if(!this.usuarioSuperadministrador && !this.usuarioParent){
         return;
       }
       console.log(`Retirando usuario de este nodo`);
@@ -376,6 +377,7 @@ export var MixinEdicionNodoSolidaridad = {
         })
         .then(() => {
           this.enviandoQueryResponsables = false;
+          this.idResponsableSeleccionado=null;
         })
         .catch((error) => {
           this.enviandoQueryResponsables = false;
@@ -437,12 +439,12 @@ export var MixinEdicionNodoSolidaridad = {
         this.$refs.inputNuevoNombre.blur();
       }
     },
-    addResponsableManually(){
+    addResponsableManually(idUsuario){
       if(!this.usuarioLogeado || (!this.usuario.permisos.includes("maestraVida-profesor") && !this.usuarioSuperadministrador)){
         return
       }
-      console.log(`Adding ${this.$refs.inputIdResponsableManual.value} a la lista de responsables`);
-      const idPosibleResponsable=this.$refs.inputIdResponsableManual.value
+      console.log(`Adding ${idUsuario} a la lista de responsables`);
+      const idPosibleResponsable=idUsuario
       this.enviandoQueryResponsables = true;
       this.$apollo
         .mutate({
@@ -467,9 +469,7 @@ export var MixinEdicionNodoSolidaridad = {
         })
         .then(() => {
           this.enviandoQueryResponsables = false;
-          this.responsableSeleccionadoEstaAceptado = true;
           this.versionCalendario++;
-          this.$refs.inputIdResponsableManual.value=null;
         })
         .catch((error) => {
           this.enviandoQueryResponsables = false;
@@ -569,6 +569,10 @@ export var MixinPermisosUsuarioNodoSolidaridad = {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteNodo.administradores.includes(this.usuario.id);
     },
+    usuarioParent(){
+      if(!this.usuarioLogeado)return false;
+      return this.esteNodo.tipoParent==='usuario' && this.esteNodo.nodoParent===this.usuario.id;
+    }
   }
 }
 

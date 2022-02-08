@@ -53,7 +53,6 @@
 <script>
 import gql from "graphql-tag";
 import Loading from "./utilidades/Loading.vue";
-import axios from "axios";
 import PersonaVistaLista from "./usuario/personaVistaLista.vue";
 import debounce from "debounce";
 import { similarity } from "./utilidades/funciones";
@@ -67,6 +66,7 @@ const QUERY_PERSONAS = gql`
       nombres
       apellidos
       permisos
+      username
     }
   }
 `;
@@ -166,27 +166,7 @@ export default {
         .catch((error) => {
           console.log(`Error eliminando usuario: E: ${error}`);
         });
-    },
-    resetearPassUsuario(idUsuario) {
-      console.log(`Evento de resetear pass de ${idUsuario}`);
-      let datos = {
-        idUsuario,
-      };
-      axios({
-        method: "post",
-        url: this.serverUrl + "/api/usuarios/resetearPassUsuario",
-        data: datos,
-        headers: {
-          Authorization: "Bearer " + this.$store.state.token,
-        },
-      })
-        .then(({ data }) => {
-          console.log(`Respuesta: ${data}`);
-        })
-        .catch((error) => {
-          console.log(`Error reseteando password. E:${error}`);
-        });
-    },
+    },    
     asignarPermisoTodos() {
       if (this.permisoIlegal) {
         console.log(`No enviado`);

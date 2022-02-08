@@ -98,6 +98,7 @@
             </option>
           </select>
         </div>
+        <loading texto="" v-show="$apollo.queries.cantidadEventosRelevantesMes.loading" />
 
         <div id="bloqueYear" style="margin-left: auto">
           <div id="nombreYear">
@@ -126,7 +127,9 @@
           }"
           @click="numeroDiaSeleccionado = dia"
         >
-          <div class="numeroDia" >{{ dia }}</div>
+          <div class="numeroDia" >{{ dia }}{{dateHoy.getFullYear() === yearSeleccionado &&
+              dateHoy.getMonth() === parseInt(numeroMesSeleccionado) &&
+              dateHoy.getDate() === dia?' Hoy':''}}</div>
           <div
             class="bolitaCantidadEventosRelevantes"
             v-if="cantidadEventosRelevantesMes.some((info) => info.dia === dia)"
@@ -204,9 +207,10 @@ import gql from "graphql-tag";
 // import gql from 'graphql-tag';
 import DiaCalendario from "./DiaCalendario.vue";
 import debounce from "debounce";
+import Loading from './Loading.vue';
 
 export default {
-  components: { DiaCalendario },
+  components: { DiaCalendario, Loading },
   name: "Calendario",
   props: {
     idParent: String,
@@ -361,18 +365,19 @@ export default {
         1
       ).getDay();
       console.log(`Dia semana inicio de mes: ${diaSemana}`);
+      const diaSemanaCorregido=diaSemana===0?7:diaSemana;
       const semanasCompletas = Math.floor(this.lengthMonthSeleccionado / 7);
       console.log(`${semanasCompletas} semanas completas`);
       const diasSobrantes = this.lengthMonthSeleccionado - semanasCompletas * 7;
       console.log(`${diasSobrantes} dias sobrantes`);
       var semanasTotales = semanasCompletas;
-      if (diaSemana > 1) {
+      if (diaSemanaCorregido > 1) {
         semanasTotales++;
       }
 
       if (
-        diasSobrantes + diaSemana > 7 ||
-        (diasSobrantes > 0 && diaSemana === 1)
+        diasSobrantes + diaSemanaCorregido > 7 ||
+        (diasSobrantes > 0 && diaSemanaCorregido === 1)
       ) {
         semanasTotales++;
       }
@@ -403,6 +408,8 @@ export default {
         1
       ).getDay();
       console.log(`Primer dia mes: ${primerDiaMes}`);
+      const primerDiaMesCorregido=primerDiaMes===0?7:primerDiaMes;
+
       const dateFrom = new Date(
         new Date(
           this.yearSeleccionado,
@@ -410,7 +417,7 @@ export default {
           1
         ).getTime() +
           millisDia * 7 * numSemana -
-          (primerDiaMes - 1) * millisDia
+          (primerDiaMesCorregido - 1) * millisDia
       );
       const dateTo = new Date(dateFrom.getTime() + millisDia * 7);
       this.repetirEventosInterval(
@@ -489,6 +496,9 @@ export default {
         1
       ).getDay();
       console.log(`Primer dia mes: ${primerDiaMes}`);
+      const primerDiaMesCorregido=primerDiaMes===0?7:primerDiaMes;
+      console.log(`Primer dia mes corregido: ${primerDiaMesCorregido}`);
+
       const dateFrom = new Date(
         new Date(
           this.yearSeleccionado,
@@ -496,7 +506,7 @@ export default {
           1
         ).getTime() +
           millisDia * 7 * numSemana -
-          (primerDiaMes - 1) * millisDia
+          (primerDiaMesCorregido - 1) * millisDia
       );
       const dateTo = new Date(dateFrom.getTime() + millisDia * 7);
       this.deleteEventosInterval(
@@ -617,7 +627,10 @@ margin: 0px 10px;
   background-color: var(--paletaMain);
 }
 .selectorDia.hoy {
-  background-color: var(--paletaMain);
+  background-color: var(--paletaSelect);
+}
+.selectorDia.hoy .numeroDia{
+  color: white;
 }
 
 .bolitaCantidadEventosRelevantes {

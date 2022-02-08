@@ -513,14 +513,14 @@
               src="@/assets/iconos/mas.svg"
               alt="Entrar"
               :title="
-                esteNodo.responsables.length < 1
+                (esteNodo.responsables.length < 1 && esteNodo.tipoParent !='usuario') || usuarioParent
                   ? 'Asumir'
                   : 'Solicitar participación'
               "
               id="botonEntrarResponsables"
               class="botonControlZona botonControlResponsables"
               :class="{ deshabilitado: enviandoQueryResponsables }"
-              v-show="!usuarioResponsable && !usuarioPosibleResponsable"
+              v-show="!usuarioResponsable && !usuarioPosibleResponsable && !idResponsableSeleccionado"
               @click.stop="entrarResponsables"
             />
             <img
@@ -532,11 +532,20 @@
               :class="{ deshabilitado: enviandoQueryResponsables }"
               v-show="
                 (usuarioResponsable || usuarioPosibleResponsable) &&
-                (!idResponsableSeleccionado ||
-                  idResponsableSeleccionado === usuario.id)
+                !idResponsableSeleccionado
               "
               @click.stop="abandonarListaResponsables"
             />
+            <img
+                src="@/assets/iconos/minus.svg"
+                alt="Sacar"
+                title="Retirar usuario"
+                id="botonRetirarUsuarioFromResponsables"
+                class="boton botonControlZona botonControlResponsables"
+                :class="{ deshabilitado: enviandoQueryResponsables }"
+                v-show="idResponsableSeleccionado && (usuarioSuperadministrador || usuarioParent)"
+                @click.stop="retirarUsuarioFromListaResponsables(idResponsableSeleccionado)"
+              />
             <img
               src="@/assets/iconos/handshake.svg"
               alt="Aceptar"
@@ -545,7 +554,7 @@
               class="botonControlZona botonControlResponsables"
               :class="{ deshabilitado: enviandoQueryResponsables }"
               v-show="
-                usuarioResponsable &&
+                usuarioResponsableAmplio &&
                 idResponsableSeleccionado &&
                 !esteNodo.responsables.includes(idResponsableSeleccionado)
               "

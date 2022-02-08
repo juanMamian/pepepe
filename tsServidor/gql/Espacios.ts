@@ -219,6 +219,15 @@ export const resolvers = {
                 throw new ApolloError("Error de conexión con la base de datos");
             }
             console.log(`Descripcion cambiado`);
+
+            //Dar esta descripcion a los eventos públicos de este espacio que no la tengan.
+
+            try {
+                await EventoPublico.updateMany({idParent:elEspacio.id, descripcion:null}, {$set:{descripcion:elEspacio.descripcion}})
+            } catch (error) {
+                console.log(`Error updating los eventos publicos children.`);                
+            }
+
             return elEspacio;
         },
     }

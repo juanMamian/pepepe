@@ -110,7 +110,7 @@
 
         <router-link
           to="/personas"
-          v-if="usuarioAdministrador || usuarioSuperadministrador || usuarioProfe"
+          v-if="usuarioLogeado"
         >
           <div
             class="botonNavBarra botonNav hoverNegro"
@@ -483,7 +483,7 @@ body {
   border-color: transparent;
 }
 .selector.activo{
-  border-color: white;
+  border-color: var(--paletaMain);
 }
 .contenedorBotonesCampo {
   margin: 5px auto;

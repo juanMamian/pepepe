@@ -70,7 +70,8 @@ export const typeDefs = gql`
        posiblesResponsables:[String],
        administradores:[String],
        responsablesSolicitados:Int,
-       nodoParent:ID,       
+       nodoParent:ID,
+       tipoParent:String,   
        idForoResponsables:ID,       
        vinculos:[VinculoNodoSolidaridad],
        keywords:String,       
@@ -1950,11 +1951,16 @@ export const resolvers = {
                 throw new UserInputError("El usuario ya estaba incluido");
             }
 
-            if (elNodo.responsables.length > 0) {
-                elNodo.posiblesResponsables.push(idUsuario);
+            const usuarioParent=elNodo.tipoParent==='usuario' && elNodo.nodoParent===idUsuario;
+
+            if ((elNodo.responsables.length === 0 && elNodo.tipoParent!='usuario') || usuarioParent) {
+                console.log(`Entra a responsables`);
+                elNodo.responsables.push(idUsuario);
             }
             else {
-                elNodo.responsables.push(idUsuario);
+                console.log(`Entra a posibles responsables`);
+
+                elNodo.posiblesResponsables.push(idUsuario);
             }
 
             try {
@@ -2046,13 +2052,7 @@ export const resolvers = {
             console.log(`Solicitud de remove un usuario con id ${idUsuario} de un nodo de id ${idNodo}`);
             const credencialesUsuario = contexto.usuario;
 
-            //Authorización
-
-            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador")) {
-                console.log(`Error de autenticacion editando nombre de grupo`);
-                throw new AuthenticationError("No autorizado");
-            }
-
+            
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
@@ -2071,6 +2071,15 @@ export const resolvers = {
             } catch (error) {
                 console.log('Error buscando el nodo . E: ' + error);
                 throw new ApolloError('Error conectando con la base de datos');
+            }
+
+            //Authorización
+
+            const usuarioParent=elNodo.tipoParent==='usuario' && elNodo.nodoParent===credencialesUsuario.id;
+
+            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador") && !usuarioParent) {
+                console.log(`Error de autenticacion`);
+                throw new AuthenticationError("No autorizado");
             }
 
             const indexPosibleResponsable = elNodo.posiblesResponsables.indexOf(idUsuario);

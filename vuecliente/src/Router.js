@@ -3,7 +3,7 @@ import Router from "vue-router"
 import atlasConocimiento from "./components/AtlasConocimiento.vue"
 import loginArea from "./components/LoginArea.vue"
 import perfilPersonal from "./components/usuario/PerfilPersonal.vue"
-import VisorNodoConocimiento from "./components/VisorNodoConocimiento.vue"
+import VisorNodoConocimiento from "./components/visorNodoConocimiento/VisorNodoConocimiento.vue"
 import Proyectos from "./components/Proyectos.vue"
 import Proyecto from "./components/Proyecto.vue"
 import Registro from "./components/Registro.vue"
@@ -26,6 +26,7 @@ import VentanaEventoPersonal from "./components/utilidades/VentanaEventoPersonal
 Vue.use(Router);
 
 const routes = [
+
     { path: "/atlas", name: "atlas", component: atlasConocimiento },
     {
         path: "/login", name: "loginArea",
@@ -121,14 +122,6 @@ const routes = [
         ]
     },
     {
-        path: "/", redirect() {
-            if (!store.state.usuario || !store.state.usuario.id) {
-                return "/login"
-            }
-            return "/miPerfil"
-        }
-    },
-    {
         path: "/espacios", name: "espacios", component: Espacios, children: [
             {
                 path: "ventanaEventoPublico/:idEvento",
@@ -142,6 +135,16 @@ const routes = [
             }
         ]
     },
+    {
+        path: "/", redirect() {
+            console.log(`Redirecting`);
+            if (!store.state.usuario || !store.state.usuario.id) {
+                return "/login"
+            }
+            return "/miPerfil"
+        }
+    },
+
     /////////////////////////////////////7
     // {
     //     path: "/*", redirect() {

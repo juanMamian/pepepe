@@ -267,18 +267,7 @@
             id="zonaResponsables"
             class="zonaInformacion"
             v-show="mostrando === 'responsables'"
-          >
-            <div id="zonaAddResponsableManual" v-if="usuarioLogeado && usuarioSuperadministrador" style="flex-direction: row; display: flex">
-              <input
-                type="text"
-                name=""
-                id="inputIdResponsableManual"
-                ref="inputIdResponsableManual"
-              />
-              <div class="boton" @click="addResponsableManually">
-                <img src="@/assets/iconos/plusCircle.svg" alt="Plus" />
-              </div>
-            </div>
+          >            
             <div
               class="contenedorBotonesZona"
               id="contenedorBotonesResponsables"
@@ -287,7 +276,7 @@
                 src="@/assets/iconos/mas.svg"
                 alt="Entrar"
                 :title="
-                  esteNodo.responsables.length < 1
+                  esteNodo.responsables.length < 1 || usuarioParent
                     ? 'Asumir'
                     : 'Solicitar participación'
                 "
@@ -318,8 +307,7 @@
                 id="botonRetirarUsuarioFromResponsables"
                 class="boton botonControlZona botonControlResponsables"
                 :class="{ deshabilitado: enviandoQueryResponsables }"
-                v-show="idResponsableSeleccionado
-                "
+                v-show="idResponsableSeleccionado && (usuarioSuperadministrador || usuarioParent)"
                 @click.stop="retirarUsuarioFromListaResponsables(idResponsableSeleccionado)"
               />
               <img
@@ -330,7 +318,7 @@
                 class="boton botonControlZona botonControlResponsables"
                 :class="{ deshabilitado: enviandoQueryResponsables }"
                 v-show="
-                  usuarioResponsable &&
+                  usuarioResponsableAmplio &&
                   idResponsableSeleccionado &&
                   !esteNodo.responsables.includes(idResponsableSeleccionado)
                 "
@@ -358,6 +346,8 @@
                 :factorEscala="'0.7'"
                 @click.native.stop="idResponsableSeleccionado = idResponsable"
               />
+
+              <buscador-personas v-show="(usuarioParent && usuarioProfe) || usuarioSuperadministrador" @clickEnResultado="addResponsableManually($event)" />
             </div>
           </div>
         </div>
@@ -583,6 +573,7 @@ import {
 } from "../ConfiguracionNodoSolidaridad";
 import TablaDato from "./TablaDato.vue";
 import TablaAdministracion from "./tablaAdministracion/TablaAdministracion.vue";
+import BuscadorPersonas from '../../usuario/BuscadorPersonas.vue';
 
 const configuracionDatos = {
   gastos: {
@@ -624,6 +615,7 @@ export default {
     RecursoExternoNodo,
     TablaDato,
     TablaAdministracion,
+    BuscadorPersonas,
   },
   apollo: {
     esteNodo: {
@@ -1139,6 +1131,7 @@ function arrayUnique(array) {
 #listaResponsables {
   margin-top: 10px;
   max-height: 33vh;
+  overflow-y:scroll
 }
 .botonControlZona {
   width: 20px;
@@ -1187,7 +1180,9 @@ function arrayUnique(array) {
 .recursoExternoNodo {
   padding: 1%;
 }
-
+.buscadorPersonas{
+  width:100%;
+}
 @media only screen and (max-width: 950px) {
   .homeNodo {
   }

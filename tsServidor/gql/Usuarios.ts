@@ -152,6 +152,7 @@ export const typeDefs = gql`
         usuariosProfe:[PublicUsuario],
         yo:Usuario,
         publicUsuario(idUsuario:ID!): PublicUsuario,
+        buscarPersonas(textoBuscar:String!):[Usuario]
     }
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
@@ -183,6 +184,7 @@ export const typeDefs = gql`
         setNodosSolidaridadDesplegadosUsuario(idsNodos:[ID!]):Boolean,
 
         cambiarPassword(dizqueCurrentPassword: String!, newPassword: String!) :Boolean,
+        resetearPasswordUsuario(idUsuario:ID!):Boolean,
 
 
     }
@@ -258,6 +260,23 @@ export const resolvers = {
                 throw new ApolloError("Error accediendo a los datos de usuario");
             }
             return elUsuario;
+        },
+        buscarPersonas: async function (_: any, {textoBuscar}: any, context: contextoQuery) {
+            console.log(`Solicitud de la lista de todos los usuarios`);
+            textoBuscar=textoBuscar.trim();
+            textoBuscar = new RegExp(textoBuscar, "i");
+
+            try {
+                var todosUsuarios = await Usuario.find({}).select("nombres apellidos permisos fechaNacimiento email username numeroTel email").exec();
+            }
+            catch (error) {
+                console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
+                throw new ApolloError("Error de conexión a la base de datos");
+            }
+
+            var usuariosMatch=todosUsuarios.filter((u:any)=>(u.nombres+u.apellidos).search(textoBuscar)>-1);
+            console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
+            return usuariosMatch;
         },
 
     },
@@ -965,6 +984,57 @@ export const resolvers = {
                 throw new UserInputError("Datos inválidos");
             }
 
+            //Validar nuevo pass
+
+            if(charProhibidosPassword.test(newPassword)){
+                console.log(`El nuevo password contenía caracteres ilegales`);
+                throw new UserInputError("Caracteres ilegales");
+            }
+
+
+            if (newPassword.length < minLengthPassword || newPassword.length > maxLengthPassword) {
+                console.log(`Longitud inválida del nuevo pass`);
+                throw new UserInputError("Nuevo password no válido");
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashPassword = await bcrypt.hash(newPassword, salt);
+
+            elUsuario.password = hashPassword;
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando el usuario con el nuevo pass: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            return true;
+
+        },
+        async resetearPasswordUsuario(_: any, { idUsuario }, context: contextoQuery) {
+            if (!context.usuario) {
+                throw new AuthenticationError("Login necesario");
+            }
+            const usuario = context.usuario;
+
+            console.log(`Solicitud de reset de password del usuario ${usuario.id}`);
+
+            //Authorization
+            const permisosEspeciales=["superadministrador"];
+
+            if(!usuario.permisos.some(p=>permisosEspeciales.includes(p))){
+                console.log(`Sin permisos suficientes`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
+                if (!elUsuario) throw "Usuario no encontrado";
+            } catch (error) {
+                console.log(`Error descargando el usuario: ${error}`);
+                throw new UserInputError("Datos inválidos");
+            }
+                        
+            const newPassword="123456";
             //Validar nuevo pass
 
             if(charProhibidosPassword.test(newPassword)){

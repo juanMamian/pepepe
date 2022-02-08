@@ -77,6 +77,7 @@ export const fragmentoNodoSolidaridad = gql`
     responsablesSolicitados
     administradores
     keywords
+    tipoParent
     nodoParent
     recursosExternos{
       ...fragRecursoExterno

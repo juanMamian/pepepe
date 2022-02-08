@@ -63,6 +63,7 @@ type Vinculo{
 
 
 type InfoArchivoContenidoNodo{
+    
     nombre:String,
     primario:Boolean,
     mimetype:String,
@@ -73,6 +74,7 @@ type SeccionContenidoNodo{
     nombre:String,
     archivos:[InfoArchivoContenidoNodo],
     tipoPrimario:String,
+    modo:String,
 }
 
 type ClaseNodoConocimiento{
@@ -155,7 +157,7 @@ extend type Mutation{
     eliminarArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean
     marcarPrimarioArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean,
 
-    crearNuevaSeccionNodoConocimiento(idNodo:ID!, nombreNuevaSeccion:String!):SeccionContenidoNodo,
+    crearNuevaSeccionNodoConocimiento(idNodo:ID!):SeccionContenidoNodo,
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
     moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):Boolean,
 
@@ -947,9 +949,12 @@ export const resolvers = {
             return encontrado;
         },
 
-        crearNuevaSeccionNodoConocimiento: async function (_: any, { idNodo, nombreNuevaSeccion }: any, contexto: contextoQuery) {
+        crearNuevaSeccionNodoConocimiento: async function (_: any, { idNodo }: any, contexto: contextoQuery) {
+            if(!contexto.usuario){
+                throw new AuthenticationError("Login requerido");
+            }
             let credencialesUsuario = contexto.usuario;
-
+            
             try {
                 var elNodo:any=await Nodo.findById(idNodo).exec();
                 if(!elNodo){
@@ -960,28 +965,16 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
             //Authorización
-
-            if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador") && !elNodo.expertos.includes(credencialesUsuario.id) ) {
+            const permisosEspeciales=["superadministrador, atlasAdministrador"];
+            if (!credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p)) && !elNodo.expertos.includes(credencialesUsuario.id) ) {
                 console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador o un experto`);
                 throw new AuthenticationError("No autorizado");
-            }
-
+            }    
             
-
-            const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
-            if (charProhibidosNombreNuevaSeccion.test(nombreNuevaSeccion) || nombreNuevaSeccion.length>30) {
-                throw new ApolloError("Nombre ilegal");
-            }
+            var nuevaSeccion=elNodo.secciones.create({});
             
-            var nuevaSeccion=elNodo.secciones.create({
-                nombre:nombreNuevaSeccion
-            });
-            console.log(`Secciones: ${elNodo.secciones}`);
-            console.log(`Nueva Seccion: ${nuevaSeccion}`);
             elNodo.secciones.push(nuevaSeccion);
-            console.log(`Secciones: ${elNodo.secciones}`);
-
-
+            
             try {
                await elNodo.save();
             } catch (error) {

@@ -44,6 +44,8 @@ const depurar = async function () {
     losUsuarios.forEach(async (usuario)=>{
         try{
             usuario.notificaciones=[];
+            usuario.notificacionesActividadForos=[];
+            usuario.notificacionesAtlasSolidaridad=[];
             await usuario.save();
         }
         catch(error){

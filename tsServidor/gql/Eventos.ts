@@ -399,6 +399,10 @@ export const resolvers = {
                     throw new ApolloError("Error conectando con la base de datos");
                 }
 
+                if(elEventoMarco.horarioFinal<new Date().getTime()){
+                    throw new UserInputError("No es posible asistir a eventos ya finalizados");
+                }
+
                 if (!infoEventoPersonal.nombre) {
                     var nombreAutomatico = 'Asistir a ' + elEventoMarco.nombre;
                     nuevoEventoPersonal.nombre = nombreAutomatico;
@@ -420,7 +424,6 @@ export const resolvers = {
             }
 
             if (infoEventoPersonal.idParent) {
-
                 var elParent: any = null;
                 try {
 
@@ -428,7 +431,6 @@ export const resolvers = {
                         console.log(`Es la ejecución de un nodoSolidaridad`);
 
                         elParent = await NodoSolidaridad.findById(infoEventoPersonal.idParent)
-
                     }
                     else {
                         console.log(`Tipo ${infoEventoPersonal.tipoParent} no reconocido`);
