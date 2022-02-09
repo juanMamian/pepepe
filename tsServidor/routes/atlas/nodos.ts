@@ -112,7 +112,6 @@ router.post("/subirArchivoContenidoSeccionNodo", upload.single("nuevoArchivo"), 
             console.log(`Error buscando carpeta. E: ${error}`);
         }
     }
-
     if (!carpetaExiste) {
         console.log(`Carpeta no existía. Creando`);
 
@@ -135,11 +134,15 @@ router.post("/subirArchivoContenidoSeccionNodo", upload.single("nuevoArchivo"), 
 
     //Subir arhivo a la carpeta.
 
-    const nuevoArchivo=laCarpeta.archivos.create({
+    var nuevoArchivo=laCarpeta.archivos.create({
         nombre:req.file.originalname,
         payload:req.file.buffer,
         mimetype: req.file.mimetype,
     })
+
+    if(!laCarpeta.archivos || laCarpeta.archivos.length<1){
+        nuevoArchivo.primario=true;
+    }
 
     try {
         laCarpeta.archivos.push(nuevoArchivo);

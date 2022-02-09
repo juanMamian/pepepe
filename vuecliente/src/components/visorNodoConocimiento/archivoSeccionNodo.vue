@@ -15,9 +15,10 @@
         <div class="boton" title="Eliminar" @click="eliminarse">
           <img src="@/assets/iconos/trash.svg" alt="Basura" />
         </div>
-        <div class="boton">
+        <div class="boton" @click="marcarPrimario" v-show="!esteArchivo.primario && !marcandoPrimario">
           <img src="@/assets/iconos/arrowUp.svg" alt="Subir" />
         </div>
+        <loading texto="" v-show="marcandoPrimario" />
       </div>
     </div>
   </div>
@@ -25,7 +26,9 @@
 
 <script>
 import gql from "graphql-tag";
+import Loading from '../utilidades/Loading.vue';
 export default {
+  components: { Loading },
   name: "ArchivoSeccionNodo",
   props: {
     esteArchivo: Object,
@@ -36,6 +39,7 @@ export default {
   data() {
     return {
       eliminandose: false,
+      marcandoPrimario:false,
     };
   },
   methods: {
@@ -79,6 +83,26 @@ export default {
           console.log(`Error. E: ${error}`);
         });
     },
+    marcarPrimario(){
+      this.marcandoPrimario=true;
+      this.$apollo.mutate({
+        mutation:gql`
+          mutation($idNodo:ID!, $idSeccion: ID!, $nombreArchivo:String!){
+            marcarPrimarioArchivoSeccionNodo(idNodo:$idNodo, idSeccion:$idSeccion, nombreArchivo: $nombreArchivo)
+          }
+        `,
+        variables:{
+          idNodo: this.idNodo,
+          idSeccion:this.idSeccion,
+          nombreArchivo:this.esteArchivo.nombre
+        }
+      }).then(()=>{
+        this.marcandoPrimario=false;
+        this.$emit('soyPrimario');
+      }).catch(()=>{
+        this.marcandoPrimario=false;
+      })
+    }
   },
 };
 </script>

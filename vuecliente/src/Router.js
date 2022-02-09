@@ -9,7 +9,6 @@ import Proyecto from "./components/Proyecto.vue"
 import Registro from "./components/Registro.vue"
 import Personas from "./components/Personas.vue"
 import HomeNodo from "./components/atlasSolidaridad/homeNodo/HomeNodo"
-
 // import ActividadesDeGrupo from "./components/actividadesProfes/ActividadesDeGrupo.vue"
 // import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
 // import ActividadesEstudiantiles from "./components/ActividadesEstudiantiles.vue"
@@ -159,6 +158,7 @@ const routes = [
 ];
 
 export const router = new Router({
+    mode: "history",
     routes
 });
 

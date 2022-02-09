@@ -5,17 +5,37 @@
         <img src="@/assets/iconos/edit.svg" alt="Editar" />
       </div>
     </div>
-    <div id="zonaFront" v-show="!editando">
+    <div id="zonaFront" v-show="!editando" :key="versionArchivo">
       <iframe
         id="iframeSeccion"
-        :src="direccionNodo + '/' + estaSeccion.id + '/'"
+        :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
         frameborder="0"
       ></iframe>
     </div>
 
     <div id="zonaAdministracion" v-if="usuarioExperto" v-show="editando">
+      <div id="nombre" v-show="!editandoNombre" @click="iniciarEdicionNombre">
+        {{ estaSeccion.nombre }}
+      </div>
+      <input
+        v-show="editandoNombre"
+        type="text"
+        name=""
+        :value="estaSeccion.nombre"
+        id="inputNuevoNombre"
+        ref="inputNuevoNombre"
+        :class="{deshabilitado: enviandoNuevoNombre}"
+        @blur="guardarNuevoNombre"
+        @keypress.enter="guardarNuevoNombre"
+      />
+      <loading texto="" v-show="enviandoNuevoNombre"/>
       <div class="contenedorControles">
-        <div class="boton" title="Subir un archivo" @click="$refs.inputArchivoContenido.click()" v-show="!subiendoArchivo">
+        <div
+          class="boton"
+          title="Subir un archivo"
+          @click="$refs.inputArchivoContenido.click()"
+          v-show="!subiendoArchivo"
+        >
           <img src="@/assets/iconos/plusCircle.svg" alt="Plus" />
         </div>
         <loading texto="" v-show="subiendoArchivo" />
@@ -54,9 +74,13 @@
           :usuarioExperto="usuarioExperto"
           :idNodo="idNodo"
           :idSeccion="estaSeccion.id"
-          v-for="archivo of estaSeccion.archivos"
+          v-for="archivo of archivosOrdenados"
           :key="archivo.id"
-          @meElimine="$emit('archivoEliminado', archivo.id)"
+          @meElimine="$emit('archivoEliminado', archivo.nombre)"
+          @soyPrimario="
+            $emit('tengoNuevoPrimario', archivo.nombre);
+            versionArchivo++;
+          "
         />
       </div>
     </div>
@@ -67,15 +91,15 @@
 import axios from "axios";
 
 import ArchivoSeccionNodo from "./archivoSeccionNodo.vue";
-import Loading from '../utilidades/Loading.vue';
-
+import Loading from "../utilidades/Loading.vue";
+import { charProhibidosNombreCosa } from "../configs";
+import gql from "graphql-tag";
 
 export default {
   props: {
     estaSeccion: Object,
     idNodo: String,
     usuarioExperto: Boolean,
-    
   },
   components: {
     ArchivoSeccionNodo,
@@ -86,6 +110,10 @@ export default {
     return {
       editando: false,
       subiendoArchivo: false,
+      versionArchivo: 0,
+
+      editandoNombre: false,
+      enviandoNuevoNombre: false,
     };
   },
   methods: {
@@ -109,8 +137,8 @@ export default {
       })
         .then(({ data: { infoArchivo } }) => {
           this.subiendoArchivo = false;
-
-          this.$emit('subiArchivo', infoArchivo);
+          this.versionArchivo++;
+          this.$emit("subiArchivo", infoArchivo);
         })
         .catch((error) => {
           this.subiendoArchivo = false;
@@ -118,10 +146,73 @@ export default {
           console.log(`Error subiendo archivo. E: ${error}`);
         });
     },
+    iniciarEdicionNombre() {
+      this.$refs.inputNuevoNombre.value = this.estaSeccion.nombre;
+      this.editandoNombre = true;
+    },
+    guardarNuevoNombre() {
+      var nuevoNombre = this.$refs.inputNuevoNombre.value.trim();
+      if (nuevoNombre == this.estaSeccion.nombre) {
+        this.editandoNombre = false;
+        return;
+      }
+
+      if (nuevoNombre.length < 1) {
+        return;
+      }
+      if (charProhibidosNombreCosa.test(nuevoNombre)) {
+        console.log(`Caracteres ilegales`);
+        return;
+      }
+
+      console.log(`guardando nuevo nombre`);
+      this.enviandoNuevoNombre = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idNodo: ID!
+              $idSeccion: ID!
+              $nuevoNombre: String!
+            ) {
+              editarNombreSeccionNodoConocimiento(
+                idNodo: $idNodo
+                idSeccion: $idSeccion
+                nuevoNombre: $nuevoNombre
+              ) {
+                id
+                nombre
+              }
+            }
+          `,
+          variables: {
+            idNodo: this.idNodo,
+            idSeccion: this.estaSeccion.id,
+            nuevoNombre: nuevoNombre,
+          },
+        })
+        .then((data) => {
+          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
+          this.enviandoNuevoNombre = false;
+          this.editandoNombre = false;
+        })
+        .catch((error) => {
+          this.enviandoNuevoNombre = false;
+          console.log(`Error. E :${error}`);
+        });
+    },
   },
   computed: {
     direccionNodo: function () {
       return this.serverUrl + "/assetsAtlas/contenidosNodos/" + this.idNodo;
+    },
+    archivosOrdenados() {
+      var archivos = JSON.parse(JSON.stringify(this.estaSeccion.archivos));
+      archivos.sort((a) => {
+        if (a.primario) return -1;
+        return 0;
+      });
+      return archivos;
     },
   },
 };
@@ -142,5 +233,16 @@ export default {
   background-color: var(--paletaMain);
   padding: 10px 0px;
   min-height: 300px;
+}
+#nombre {
+  text-align: center;
+}
+#inputNuevoNombre {
+  display: block;
+  margin: 15px auto;
+  padding: 5px;
+  border-radius: 5px;
+  font-size: 16px;
+  color: rgb(48, 48, 48);
 }
 </style>

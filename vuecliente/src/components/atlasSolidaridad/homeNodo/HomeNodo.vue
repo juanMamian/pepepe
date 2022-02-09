@@ -1,7 +1,8 @@
 <template>
   <div class="homeNodo" :key="$route.params.id">
     
-    <div id="barraSuperior">
+    <loading v-show="$apollo.queries.esteNodo.loading" />
+    <div id="barraSuperior" v-show="!$apollo.queries.esteNodo.loading">
       <a
         :href="clienteUrl + '/#/homeNodoSolidaridad/' + esteNodo.nodoParent"
         v-if="esteNodo.nodoParent"
@@ -121,7 +122,7 @@
         <loading texto="" v-show="togglingEstado" />
       </div>
     </div>
-    <div id="contenidoNodo">
+    <div id="contenidoNodo" v-show="!$apollo.queries.esteNodo.loading">
       <div id="primeraRow">
         <div class="bloqueContenido" id="bloqueInformacion">
           <div class="barraSuperiorGeneral">

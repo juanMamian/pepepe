@@ -512,7 +512,10 @@ textarea {
   border-style: solid;
   border-color: rgb(139, 139, 139);
 }
-
+.iconoPersonaAutonomo{
+  margin: 10px 15px;
+  margin-bottom: 60px;
+}
 .hoverGris:hover {
   background-color: rgb(201, 201, 201);
 }

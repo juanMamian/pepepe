@@ -23,7 +23,8 @@ const esquemaArchivo=new mongoose.Schema({
 });
 
 const esquemaCarpetaArchivos=new mongoose.Schema({
-    archivos:[esquemaArchivo]
+    archivos:[esquemaArchivo],
+    default:[],
 });
 
 export const ModeloCarpetaArchivos=mongoose.model("carpetasArchivosContenidosNodos", esquemaCarpetaArchivos, "carpetasArchivosContenidosNodos");
