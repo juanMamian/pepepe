@@ -40,17 +40,17 @@ export default new Vuex.Store({
         logearse: function (state, token) {
 
             let usuario = parseJwt(token);
-
             state.token = token;
             state.usuario.username = usuario.username;
             state.usuario.permisos = usuario.permisos;
             state.usuario.id = usuario.id;
-
             let usuarioLS = JSON.stringify(state.usuario);
 
             localStorage.setItem("pepepe_usuario", usuarioLS);
             localStorage.setItem("token", token);
-            router.push("/")
+
+            apolloClient.refetchQueries({include:'all'})
+            
         },
         deslogearse(state) {
             localStorage.clear();

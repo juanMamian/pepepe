@@ -419,7 +419,7 @@ export const validarDatosUsuario = function (datosUsuario) {
 
 
 export const charProhibidosNombresUsuario = /[^ a-zA-ZÀ-ž]/;
-export const charProhibidosUsername = /[^ a-zA-ZÀ-ž0-9_().-]/;
+export const charProhibidosUsername = /[^ a-zA-ZÀ-ž0-9_-]/;
 export const charProhibidosPassword = /\s\s+/;
 export const emailValidator=/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   

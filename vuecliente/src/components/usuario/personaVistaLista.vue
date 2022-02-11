@@ -59,6 +59,9 @@
         >
           <img src="@/assets/iconos/cog.svg" alt="Cog" />
         </div>
+        <div class="boton" @click="alienar" title="alienar" v-show="usuarioProfe || usuarioAdministrador">
+          <img src="@/assets/iconos/alienar.svg" alt="Virus">
+        </div>
          <div
           class="boton selector"
           v-if="usuarioLogeado"
@@ -134,6 +137,7 @@ export default {
     return {
       mostrando: null,
       reseteandoPassword: false,
+      alienando:false,
     };
   },
   methods: {
@@ -166,6 +170,31 @@ export default {
           this.reseteandoPassword = false;
         });
     },
+    alienar(){
+      if(!this.usuarioProfe && !this.usuarioSuperadministrador){
+        return;
+      }
+
+      this.alienando=true;
+      this.$apollo.query({
+        query:gql`
+          query($idAlienado:ID!){
+            alienarUsuario(idAlienado: $idAlienado)          
+          }
+        `,
+        variables:{
+          idAlienado:this.estaPersona.id
+        }
+      }).then(({data:{alienarUsuario}})=>{
+        console.log(`Alienando`);
+        this.alienando=true;
+        this.$store.commit("logearse", alienarUsuario);     
+        this.$router.push("/miPerfil");
+      }).catch((error)=>{
+        console.log(`Error: ${error}`);
+        this.alienando=false;
+      })
+    }
   },
   watch: {
     seleccionado(seleccionado) {

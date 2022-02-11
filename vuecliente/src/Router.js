@@ -31,7 +31,9 @@ const routes = [
         path: "/login", name: "loginArea",
         component: loginArea,
         beforeEnter: function (to, from, next) {
-            if (store.state.usuario.id != null) {
+            console.log(`Before enter login`);
+            console.log(`State: ${JSON.stringify(store.state.usuario)}`);
+            if (localStorage.getItem("token") != null) {
                 next("/miperfil");
             }
             else {
@@ -45,11 +47,12 @@ const routes = [
         name: "perfilPersonal",
         component: perfilPersonal,
         beforeEnter: function (to, from, next) {
-            if (store.state.usuario.id != null) {
+            if (localStorage.getItem("token") != null) {
                 next();
             }
             else {
-                next("/login");
+                next("/miperfil");
+
             }
         },
         children: [
@@ -137,7 +140,16 @@ const routes = [
     {
         path: "/", redirect() {
             console.log(`Redirecting`);
-            if (!store.state.usuario || !store.state.usuario.id) {
+            if (!localStorage.getItem("token")) {
+                return "/login"
+            }
+            return "/miPerfil"
+        }
+    },
+    {
+        path: "/*", redirect() {
+            console.log(`Redirecting`);
+            if (!localStorage.getItem("token")) {
                 return "/login"
             }
             return "/miPerfil"
@@ -162,13 +174,14 @@ export const router = new Router({
     routes
 });
 
-// router.beforeEach((to, from, next) => {
-//     console.log(`Guarda before ${to.path}`);
-//     if(to.path!='/login' && (!store.state.usuario || !store.state.usuario.id)){
-//         next("/login");
-//     }
-//     else{
-//         next();
-//     }
+router.beforeEach((to, from, next) => {
+    console.log(`Guarda before ${to.path}`);
+    
+    if(to.path!='/login' && !localStorage.getItem("token")){
+        next("/login");
+    }
+    else{
+        next();
+    }
 
-//   })
+  })

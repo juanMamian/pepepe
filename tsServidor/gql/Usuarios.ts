@@ -1,11 +1,13 @@
 import { ApolloError, AuthenticationError, gql, UserInputError, withFilter } from "apollo-server-express";
 // import { ModeloUsuario as Usuario, permisosDeUsuario,  validarDatosUsuario} from "../model/Usuario"
-import { ModeloUsuario as Usuario, permisosDeUsuario,validarDatosUsuario, charProhibidosNombresUsuario, charProhibidosUsername, minLengthNombresUsuario, minLengthApellidosUsuario, minLengthUsername, minLengthEmail, minLengthPassword, maxLengthPassword, charProhibidosPassword, emailValidator } from "../model/Usuario"
+import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario, charProhibidosNombresUsuario, charProhibidosUsername, minLengthNombresUsuario, minLengthApellidosUsuario, minLengthUsername, minLengthEmail, minLengthPassword, maxLengthPassword, charProhibidosPassword, emailValidator } from "../model/Usuario"
 
 import { GraphQLDateTime } from "graphql-iso-date";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
+const jwt = require("jsonwebtoken");
+
 const bcrypt = require("bcryptjs");
 
 
@@ -153,6 +155,9 @@ export const typeDefs = gql`
         yo:Usuario,
         publicUsuario(idUsuario:ID!): PublicUsuario,
         buscarPersonas(textoBuscar:String!):[Usuario]
+
+        login(username: String!, password:String!):String,
+        alienarUsuario(idAlienado: ID!):String!,
     }
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
@@ -261,9 +266,9 @@ export const resolvers = {
             }
             return elUsuario;
         },
-        buscarPersonas: async function (_: any, {textoBuscar}: any, context: contextoQuery) {
+        buscarPersonas: async function (_: any, { textoBuscar }: any, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
-            textoBuscar=textoBuscar.trim();
+            textoBuscar = textoBuscar.trim();
             textoBuscar = new RegExp(textoBuscar, "i");
 
             try {
@@ -274,10 +279,90 @@ export const resolvers = {
                 throw new ApolloError("Error de conexión a la base de datos");
             }
 
-            var usuariosMatch=todosUsuarios.filter((u:any)=>(u.nombres+u.apellidos).search(textoBuscar)>-1);
+            var usuariosMatch = todosUsuarios.filter((u: any) => (u.nombres + u.apellidos).search(textoBuscar) > -1);
             console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
             return usuariosMatch;
         },
+        login: async function (_: any, { username, password }: any, context: contextoQuery) {
+            let credencialesUsuario = context.usuario;
+
+            username = username.trim();
+            if (charProhibidosUsername.test(username)) {
+                console.log(`Username inválido`);
+                throw new UserInputError("Datos inválidos");
+            }
+
+            try {
+                var elUsuario: any = await Usuario.findOne({ username }, "username password permisos").exec();
+            } catch (error) {
+                console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+
+            }
+            const correctLogin = await bcrypt.compare(password, elUsuario.password);
+            if (!correctLogin) {
+                console.log(`Contraseña errada. Rechazando`);
+                throw new UserInputError("Datos incorrectos");
+            }
+
+            console.log(`login correcto de ${username}. Enviando JWT`);
+            const  datosToken = {
+                id: elUsuario._id,
+                permisos: elUsuario.permisos,
+                username: elUsuario.username,
+                version: 1,
+            }
+            const  token = jwt.sign(datosToken, process.env.JWT_SECRET,);
+            const respuesta = {
+                username: elUsuario.username,
+                permisos: elUsuario.permisos,
+                token
+            }
+            
+            return token;
+        },
+        alienarUsuario: async function (_: any, { idAlienado }: any, context: contextoQuery) {
+            console.log('\x1b[35m%s\x1b[0m', `Query de alienar usuario con id ${idAlienado}`);
+            
+            if(!context.usuario){
+                console.log(`Login requerido`);
+                throw new AuthenticationError("Login requerido");
+            }
+
+            const credencialesUsuario = context.usuario;
+
+            
+
+            const permisosEspeciales=["superadministrador", "maestraVida-profesor"];
+            const permisosNoAlienables=["superadministrador", "maestraVida-profesor", "atlasAdministrador"];
+
+            if(!credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p))){
+                throw new AuthenticationError("No autorizado");
+            }
+            
+            try {
+                var elUsuario: any = await Usuario.findById( idAlienado , "username password permisos").exec();
+            } catch (error) {
+                console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            if(elUsuario.permisos.some(p=>permisosNoAlienables.includes(p))){
+                console.log(`El usuario no podía ser alienado`);
+                throw new UserInputError("No permitido");
+            }
+            
+            const  datosToken = {
+                id: elUsuario._id,
+                permisos: elUsuario.permisos,
+                username: elUsuario.username,
+                version: 1,
+            }
+            const  token = jwt.sign(datosToken, process.env.JWT_SECRET,);            
+            
+            return token;
+        },
+
 
     },
     Mutation: {
@@ -986,7 +1071,7 @@ export const resolvers = {
 
             //Validar nuevo pass
 
-            if(charProhibidosPassword.test(newPassword)){
+            if (charProhibidosPassword.test(newPassword)) {
                 console.log(`El nuevo password contenía caracteres ilegales`);
                 throw new UserInputError("Caracteres ilegales");
             }
@@ -1019,9 +1104,9 @@ export const resolvers = {
             console.log(`Solicitud de reset de password del usuario ${usuario.id}`);
 
             //Authorization
-            const permisosEspeciales=["superadministrador"];
+            const permisosEspeciales = ["superadministrador"];
 
-            if(!usuario.permisos.some(p=>permisosEspeciales.includes(p))){
+            if (!usuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Sin permisos suficientes`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -1033,11 +1118,11 @@ export const resolvers = {
                 console.log(`Error descargando el usuario: ${error}`);
                 throw new UserInputError("Datos inválidos");
             }
-                        
-            const newPassword="123456";
+
+            const newPassword = "123456";
             //Validar nuevo pass
 
-            if(charProhibidosPassword.test(newPassword)){
+            if (charProhibidosPassword.test(newPassword)) {
                 console.log(`El nuevo password contenía caracteres ilegales`);
                 throw new UserInputError("Caracteres ilegales");
             }

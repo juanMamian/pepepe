@@ -10,6 +10,7 @@
           name="username"
           :style="colorUsername"
           v-model="username"
+          ref="inputUsername"
           placeholder="Nombre de usuario"
           class="inputs"
           @input="loginFail = false"
@@ -18,9 +19,10 @@
         <input
           type="password"
           name="password"
+          ref="inputPassword"
           class="inputs"
           v-model="password"
-          placeholder="password"          
+          placeholder="password"
           @input="loginFail = false"
           @keypress.enter="iniciarSesion"
         />
@@ -30,7 +32,11 @@
         <div
           class="botonEnviar"
           @click.stop.prevent="iniciarSesion"
-          :class="{ loginFail, desaparecido: enviandoDatos, deshabilitado:passIlegal }"
+          :class="{
+            loginFail,
+            desaparecido: enviandoDatos,
+            deshabilitado: passIlegal,
+          }"
         >
           {{ loginFail ? loginFailMsg : "Ingresar" }}
         </div>
@@ -40,8 +46,8 @@
 </template>
 
 <script>
-import axios from "axios";
 import Loading from "./utilidades/Loading.vue";
+import gql from 'graphql-tag';
 
 var charProhibidosUsername = /[^a-zA-Z0-9_ñÑ]/g;
 const minPassword = 6;
@@ -74,11 +80,9 @@ export default {
             ? "red"
             : "black",
       };
-    },    
+    },
     passIlegal() {
-      if (        
-        this.password.length < minPassword
-      ) {
+      if (this.password.length < minPassword) {
         return true;
       }
       return false;
@@ -86,7 +90,7 @@ export default {
     usernameIlegal() {
       if (
         !this.username ||
-        charProhibidosUsername.test(this.username) ||         
+        charProhibidosUsername.test(this.username) ||
         this.username.length < minUsername
       ) {
         return true;
@@ -97,43 +101,83 @@ export default {
   methods: {
     iniciarSesion: function () {
       console.log(`Iniciando login`);
-      if(this.passIlegal || this.usernameIlegal)return;
-      let dis = this;      
-      
+      let dis = this;
+
+      var password = this.$refs.inputPassword.value;
+      var username = this.$refs.inputUsername.value;
+
+      if (this.password.length < minPassword) {
+        console.log(`Password ilegal`);
+        return;
+      }
+
+      if (
+        charProhibidosUsername.test(this.username) ||
+        this.username.length < minUsername
+      ) {
+        console.log(`Username ilegal`);
+        return;
+      }
+
       this.enviandoDatos = true;
-      axios
-        .post(this.serverUrl + "/api/usuarios/login", {
-          username: this.username,
-          password: this.password,
-        })
-        .then(function (respuesta) {
-          console.log(`Logeado`);
 
-          if (respuesta.data.username == dis.username) {
-            dis.$store.commit("logearse", respuesta.data.token);            
-            // window.location.href = dis.clienteUrl;
-            dis.enviandoDatos = false;
-          }
+      this.$apollo
+        .query({
+          query: gql`
+            query ($username: String!, $password: String!) {
+              login(username: $username, password: $password)
+            }
+          `,
+          variables: {
+            username,
+            password,
+          },
         })
-        .catch(function (error) {
-          dis.enviandoDatos = false;
-          dis.$store.commit("deslogearse");
+        .then(({ data: { login } }) => {
+          this.$store.commit("logearse", login);
+          dis.$router.push("/");
 
-          if (error.response && error.response.data.error) {
-            if (error.response.data.error == "badLogin") {
-              dis.loginFail = true;
-              dis.loginFailMsg = "Datos inválidos";
-              return;
-            }
-            if (error.response.data.error == "sebastian") {
-              console.log(`Usuario bloqueado temporalmente`);
-            }
-          }
-          if (error.response && error.response.data.msjUsuario) {
-            alert(error.response.data.msjUsuario);
-          }
-          console.log(`error: ${error}`);
+          this.enviandoDatos = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoDatos = false;
         });
+
+      // axios
+      //   .post(this.serverUrl + "/api/usuarios/login", {
+      //     username: this.username,
+      //     password: this.password,
+      //   })
+      //   .then(function (respuesta) {
+      //     console.log(`Logeado`);
+
+      //     if (respuesta.data.username == dis.username) {
+      //       dis.$store.commit("logearse", respuesta.data.token);
+      //       // window.location.href = dis.clienteUrl;
+      //       dis.enviandoDatos = false;
+      //       dis.$router.push("/");
+      //     }
+      //   })
+      //   .catch(function (error) {
+      //     dis.enviandoDatos = false;
+      //     dis.$store.commit("deslogearse");
+
+      //     if (error.response && error.response.data.error) {
+      //       if (error.response.data.error == "badLogin") {
+      //         dis.loginFail = true;
+      //         dis.loginFailMsg = "Datos inválidos";
+      //         return;
+      //       }
+      //       if (error.response.data.error == "sebastian") {
+      //         console.log(`Usuario bloqueado temporalmente`);
+      //       }
+      //     }
+      //     if (error.response && error.response.data.msjUsuario) {
+      //       alert(error.response.data.msjUsuario);
+      //     }
+      //     console.log(`error: ${error}`);
+      //   });
     },
     deslogearse: function () {
       //Logout en vuex y en apollo
@@ -143,7 +187,6 @@ export default {
       /////////
     },
   },
- 
 };
 </script>
 
@@ -154,7 +197,7 @@ export default {
   text-align: center;
   font-family: sans-serif;
 }
-.instruccion{
+.instruccion {
   font-size: 18;
   text-align: center;
   margin: 40px 0px;
@@ -172,7 +215,7 @@ export default {
 #ventanaCentral {
   margin: 5% auto;
   padding: 20px;
-  width: min(550px, 90%);  
+  width: min(550px, 90%);
 }
 .botonEnviar {
   width: min(300px, 90vw);

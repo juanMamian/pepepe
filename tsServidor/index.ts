@@ -10,6 +10,7 @@ const routesActividadesProfes = require("./routes/actividadesProfes");
 const routesForos = require("./routes/foros");
 const routesContenidosNodos=require("./routes/atlas/contenidosNodos");
 const routesCuentos=require("./routes/cuentos");
+import history from 'connect-history-api-fallback';
 import { iniciarMongoose } from "./mongoose";
 
 export const pubsub = new PubSub();
@@ -21,6 +22,10 @@ import { aServer } from "./gql/Schema";
 //Rutas pepepe
 console.log(`Carpeta estatica en ${__dirname + '/pepepe'}`);
 app.use("/assetsAtlas/contenidosNodos/:idNodo/:nombreCategoria/default", express.static(__dirname + '/assetsAtlas/contenidosNodos/default/'));
+app.use("/pepepe", history({
+  index: "/pepepe",
+  verbose: true,
+}));
 app.use("/pepepe", express.static(__dirname + '/clientes/pepepe'));
 app.get("/pepepe", function (req: Request, res: Response) {
   res.sendFile(__dirname + "/clientes/pepepe/index.html");
