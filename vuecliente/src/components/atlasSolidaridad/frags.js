@@ -79,6 +79,7 @@ export const fragmentoNodoSolidaridad = gql`
     keywords
     tipoParent
     nodoParent
+    publicitado
     recursosExternos{
       ...fragRecursoExterno
     }

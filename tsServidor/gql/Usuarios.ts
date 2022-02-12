@@ -738,7 +738,7 @@ export const resolvers = {
             try {
                 await elUsuario.save();
             } catch (error) {
-                console.log(`Error guardando el usuario`);
+                console.log(`Error guardando el usuario: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 

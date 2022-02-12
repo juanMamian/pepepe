@@ -160,8 +160,6 @@ export const MixinBasicoEventosPublicos = {
 
             return this.usuario.id === this.esteEvento.idAdministrador;
         },
-
-
     }
 }
 export const MixinBasicoEventosPersonales = {
@@ -402,7 +400,7 @@ export const MixinEdicionEventos = {
             )
                 return;
 
-            if (!this.administrador && !this.usuarioSuperadministrador) {
+            if (!this.administrador && !this.usuarioSuperadministrador && !this.usuarioProfe) {
                 return;
             }
             this.eliminandose = true;
@@ -425,7 +423,7 @@ export const MixinEdicionEventos = {
                     console.log(`Error: ${error}`);
                 });
         },
-        iniciarEdicionDuracion() {
+        iniciarEdicionDuracion() {            
             this.nuevoDuracion = this.esteEvento.horarioFinal - this.esteEvento.horarioInicio;
             this.editandoDuracion = true;
         },
@@ -579,37 +577,7 @@ export const MixinEventoCalendario = {
         },
     },
     methods: {
-        eliminarse() {
-            if (
-                !confirm(
-                    "¿Confirmar la eliminación de este evento? (Esta acción no puede deshacerse)"
-                )
-            )
-                return;
-
-            if (!this.administrador && !this.usuarioSuperadministrador) {
-                return;
-            }
-            this.eliminandose = true;
-            this.$apollo
-                .mutate({
-                    mutation: gql`
-                  mutation ($idEvento: ID!, $tipoEvento: String!) {
-                    eliminarEvento(idEvento: $idEvento, tipoEvento: $tipoEvento)
-                  }
-                `,
-                    variables: {
-                        idEvento: this.esteEvento.id,
-                        tipoEvento: this.esteEvento.__typename.charAt(0).toLowerCase() + this.esteEvento.__typename.slice(1),
-                    },
-                })
-                .then(() => {
-                    this.$emit("meElimine");
-                })
-                .catch((error) => {
-                    console.log(`Error: ${error}`);
-                });
-        },
+       
     },
     watch: {
         dateInicio(dateInicio) {
@@ -650,7 +618,7 @@ export const MixinVentanaEvento = {
             this.$router.push(pathParent);
         },
         iniciarEdicionFechaInicio() {
-            if (!this.administrador && !this.usuarioSuperadministrador) return;
+            if (!this.administrador && !this.usuarioSuperadministrador && !this.usuarioProfe) return;
 
             console.log(
                 `Iniciando edicion de fecha inicio con ${this.fechaInicioString}`
@@ -662,7 +630,7 @@ export const MixinVentanaEvento = {
             });
         },
         iniciarEdicionHoraInicio() {
-            if (!this.administrador && !this.usuarioSuperadministrador) return;
+            if (!this.administrador && !this.usuarioSuperadministrador && !this.usuarioProfe) return;
 
             this.$refs.inputHoraInicio.value = this.horaInicioLegible;
             this.editandoHoraInicio = true;
@@ -671,7 +639,7 @@ export const MixinVentanaEvento = {
             });
         },
         iniciarEdicionDuracion() {
-            if (!this.administrador && !this.usuarioSuperadministrador) return;
+            if (!this.administrador && !this.usuarioSuperadministrador && !this.usuarioProfe) return;
 
             console.log(`Iniciando edicion de duración con ${this.duracionMinutos}`);
             this.$refs.inputDuracion.value = this.duracionMinutos;
@@ -791,7 +759,7 @@ export const MixinVentanaEvento = {
             // const nuevoDate=this.
         },
         iniciarEdicionHorarioFinal() {
-            if (!this.administrador && !this.usuarioSuperadministrador) return;
+            if (!this.administrador && !this.usuarioSuperadministrador && !this.usuarioProfe) return;
             console.log(`Iniciando edicion`);
             this.$refs.inputHorarioFinal.value = this.horaFinalString;
             this.editandoHorarioFinal = true;
@@ -939,7 +907,7 @@ export const MixinEventosPublicosUseEventosPersonalesUnder = {
                 `,
                 variables: {
                     infoEventoPersonal: {
-                        idPersona: this.usuario.id,
+                        idPersona: this.idUsuarioTarget,
                         idEventoMarco: this.esteEvento.id,
                         idParent: this.idParent,
                         tipoParent: this.tipoParent

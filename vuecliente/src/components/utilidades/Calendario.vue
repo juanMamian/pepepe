@@ -51,7 +51,7 @@
 
       <div
         class="boton"
-        v-show="usuario && usuario.id===idUsuarioTarget || usuarioSuperadministrador"
+        v-show="(usuario && usuario.id===idUsuarioTarget) || usuarioSuperadministrador || usuarioProfe"
         :title="
           tomandoAccion === 'semana'
             ? 'Cancelar'

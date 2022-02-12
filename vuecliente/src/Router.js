@@ -15,7 +15,6 @@ import HomeNodo from "./components/atlasSolidaridad/homeNodo/HomeNodo"
 // import PortadaActividadesEstudiantiles from "./components/actividadesProfes/PortadaActividadesEstudiantiles";
 // import ActividadEspecifica from "./components/actividadesProfes/ActividadEspecifica"
 
-import store from "./store/index"
 import ForosGenerales from "./components/ForosGenerales"
 import AtlasSolidaridad from "./components/atlasSolidaridad/AtlasSolidaridad"
 import Espacios from "./components/Espacios"
@@ -31,8 +30,6 @@ const routes = [
         path: "/login", name: "loginArea",
         component: loginArea,
         beforeEnter: function (to, from, next) {
-            console.log(`Before enter login`);
-            console.log(`State: ${JSON.stringify(store.state.usuario)}`);
             if (localStorage.getItem("token") != null) {
                 next("/miperfil");
             }

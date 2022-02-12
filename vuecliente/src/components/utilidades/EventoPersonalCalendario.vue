@@ -33,7 +33,7 @@
         <div
           class="boton botonControlEvento"
           title="Eliminar este evento"
-          v-if="administrador || usuarioSuperadministrador"
+          v-if="administrador || usuarioSuperadministrador || usuarioProfe"
           @click.stop="eliminarse"
         >
           <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import { MixinBasicoEventos, MixinEventoCalendario } from "../MixinsEventos";
+import { MixinBasicoEventos, MixinEdicionEventos, MixinEventoCalendario } from "../MixinsEventos";
 
 export default {
   name: "eventoPersonalCalendario",
@@ -68,7 +68,7 @@ export default {
     extranjero: Boolean,
     diaCalendarioOver: Object,
   },
-  mixins: [MixinBasicoEventos, MixinEventoCalendario],
+  mixins: [MixinBasicoEventos, MixinEventoCalendario, MixinEdicionEventos],
   data() {
     return {
       mostrando: null,

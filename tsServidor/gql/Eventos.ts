@@ -265,8 +265,9 @@ export const resolvers = {
             try {
                 if (tipoParent === 'usuario') {
                     eventosPersonalesRelevantesMes = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, { idPersona: idParent }]).select("horarioInicio").exec();
+                    var eventosParticipadosRelevantesMes=await EventoPersonal.find({horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() }, idsParticipantes: idParent}).exec();
                     eventosPublicosRelevantesMes = await EventoPublico.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, { idAdministrador: idParent }]).select("horarioInicio").exec();
-                    losEventosRelevantesMes = eventosPersonalesRelevantesMes.concat(eventosPublicosRelevantesMes);
+                    losEventosRelevantesMes = eventosPersonalesRelevantesMes.concat(eventosPublicosRelevantesMes).concat(eventosParticipadosRelevantesMes);
                 }
                 else if (tipoParent === 'nodoSolidaridad') {
                     losEventosRelevantesMes = await EventoPersonal.find().and([{ horarioInicio: { $gt: dateInit.getTime(), $lt: dateFin.getTime() } }, { idParent: idParent }]).select("horarioInicio").exec();
@@ -399,7 +400,7 @@ export const resolvers = {
                     throw new ApolloError("Error conectando con la base de datos");
                 }
 
-                if(elEventoMarco.horarioFinal<new Date().getTime()){
+                if (elEventoMarco.horarioFinal < new Date().getTime()) {
                     throw new UserInputError("No es posible asistir a eventos ya finalizados");
                 }
 
@@ -468,6 +469,8 @@ export const resolvers = {
                 nuevoEventoPersonal.idParent = elParent.id;
                 nuevoEventoPersonal.idAdministrador = elParent.idAdministrador;
             }
+
+
             try {
                 await nuevoEventoPersonal.save();
             } catch (error) {
@@ -506,8 +509,10 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
+
+
             //Authorización
-            const permisosEspeciales = ["superadministrador"];
+            const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
             const credencialesUsuario = contexto.usuario;
             var usuarioAdministrador = false;
             if (tipoEvento === 'eventoPublico') {
@@ -760,7 +765,7 @@ export const resolvers = {
             }
 
             //Authorización
-            const permisosEspeciales = ["superadministrador"];
+            const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
             const credencialesUsuario = contexto.usuario;
             var usuarioAdministrador = false;
             if (tipoEvento === 'eventoPublico') {
@@ -835,7 +840,7 @@ export const resolvers = {
             }
 
             //Authorización
-            const permisosEspeciales = ["superadministrador"];
+            const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
             const credencialesUsuario = contexto.usuario;
             var usuarioAdministrador = false;
             if (tipoEvento === 'eventoPublico') {
@@ -914,7 +919,7 @@ export const resolvers = {
             }
 
             //Authorización
-            const permisosEspeciales = ["superadministrador"];
+            const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
             const credencialesUsuario = contexto.usuario;
             var usuarioAdministrador = false;
             if (tipoEvento === 'eventoPublico') {
@@ -1091,8 +1096,8 @@ export const resolvers = {
                 }
                 else if (tipoParent === 'usuario') {
                     var losEventosPersonales = await EventoPersonal.find({ idPersona: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
-                    var losEventosPublicos = await EventoPublico.find({ idAdministrador: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();                    
-                    losEventos=losEventosPersonales.concat(losEventosPublicos);
+                    var losEventosPublicos = await EventoPublico.find({ idAdministrador: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
+                    losEventos = losEventosPersonales.concat(losEventosPublicos);
                 }
                 else if (tipoParent === 'espacio') {
                     losEventos = await EventoPublico.find({ idAdministrador: idUsuario, idParent, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
@@ -1111,7 +1116,7 @@ export const resolvers = {
             }
 
             //Authorización
-            const permisosEspeciales = ["superadministrador"];
+            const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
             const credencialesUsuario = contexto.usuario;
             var usuarioAdministrador = false;
             if (tipoParent === 'espacio') {
@@ -1143,24 +1148,46 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
 
-            var eventosEnmarcados=losEventos.filter(e=>e.idEventoMarco);
-            console.log(`${eventosEnmarcados.length} eventos no se repetirán pues no se tiene seguridad de que exista una instancia del evento marco en el horario nuevo`);
-
-            losEventos=losEventos.filter(e=>!e.idEventoMarco);
-            console.log(`Se multiplicara un set de ${losEventos.length} eventos`);
 
 
+            var eventosEnmarcados = losEventos.filter(e => e.idEventoMarco);
+            console.log(`${eventosEnmarcados.length} eventos están enmarcados y no se tiene seguridad de que exista una instancia del evento marco en el horario nuevo`);
+        
             losEventos.forEach(async (evento) => {
-                var dateInicioOriginal=new Date(evento.horarioInicio);
-                var dateFinalOriginal=new Date(evento.horarioFinal);
-                console.log(`Inicio original: ${dateInicioOriginal}`);
+                var dateInicioOriginal = new Date(evento.horarioInicio);
+                var dateFinalOriginal = new Date(evento.horarioFinal);
+                const idEventoMarcoOriginal = evento.idEventoMarco;
+                var idParentOriginal: any = null;
+                if (idEventoMarcoOriginal) {                    
+                    try {
+                        var eventoPublicoParent: any = await EventoPublico.findById(idEventoMarcoOriginal).select("id nombre idParent").exec();
+                    } catch (error) {
+                        console.log(`Error buscando nuevo eventoMarco para buscar nuevos eventos públicos que reciban los eventos repetidos: ${error}`);
+                        throw new ApolloError("Error configurando la base de datos");
+                    }
+                    idParentOriginal = eventoPublicoParent.idParent;
+                }
                 for (var i = 1; i <= numRepeticiones; i++) {
-                    evento._id=mongoose.Types.ObjectId()
+                    evento._id = mongoose.Types.ObjectId()
                     evento.isNew = true;
-                    let desplazamiento=periodoMillis*i;
-                    console.log(`Desplazando ${desplazamiento}`);
+                    let desplazamiento = periodoMillis * i;
                     evento.horarioInicio = new Date(dateInicioOriginal.getTime() + desplazamiento);
                     evento.horarioFinal = new Date(dateFinalOriginal.getTime() + desplazamiento);
+
+                    if (idEventoMarcoOriginal) {
+                    //Averiguar si hay un evento marco del mismo espacio para recibir este eventoPersonal.
+                        try {
+                            console.log(`Buscando un nuevo evento publico con idParent: ${idParentOriginal} `);
+                            var nuevoEventoReceptor: any = await EventoPublico.findOne({ idParent: idParentOriginal, horarioInicio: { $lte: evento.horarioInicio }, horarioFinal: { $gte: evento.horarioFinal } }).exec();
+                            if (!nuevoEventoReceptor) {
+                                throw "no había evento receptor"
+                            }
+                        } catch (error) {
+                            console.log(`Error buscando nuevo eventoPublico del mismo espacio: ${error}`);
+                            continue;
+                        }
+                        evento.idEventoMarco=nuevoEventoReceptor.id;
+                    }
                     try {
                         console.log(`Guardando con id ${evento.id} y inicio ${evento.horarioInicio}`);
                         await evento.save();
@@ -1180,7 +1207,7 @@ export const resolvers = {
                 throw new AuthenticationError("Login requerido");
             }
 
-            
+
             dateFrom = new Date(dateFrom);
             dateTo = new Date(dateTo);
             var periodoMillis = dateTo.getTime() - dateFrom.getTime();
@@ -1192,8 +1219,8 @@ export const resolvers = {
                 }
                 else if (tipoParent === 'usuario') {
                     var losEventosPersonales = await EventoPersonal.find({ idPersona: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
-                    var losEventosPublicos = await EventoPublico.find({ idAdministrador: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();                    
-                    losEventos=losEventosPersonales.concat(losEventosPublicos);
+                    var losEventosPublicos = await EventoPublico.find({ idAdministrador: idUsuario, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
+                    losEventos = losEventosPersonales.concat(losEventosPublicos);
                 }
                 else if (tipoParent === 'espacio') {
                     losEventos = await EventoPublico.find({ idAdministrador: idUsuario, idParent, horarioInicio: { $gt: dateFrom.getTime(), $lt: dateTo.getTime() } }).exec();
@@ -1212,7 +1239,7 @@ export const resolvers = {
             }
 
             //Authorización
-            const permisosEspeciales = ["superadministrador"];
+            const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
             const credencialesUsuario = contexto.usuario;
             var usuarioAdministrador = false;
             if (tipoParent === 'espacio') {
@@ -1246,11 +1273,11 @@ export const resolvers = {
 
             console.log(`Se eliminará un set de ${losEventos.length} eventos`);
 
-            const idsEliminar=losEventos.map(e=>e.id);
+            const idsEliminar = losEventos.map(e => e.id);
 
             try {
-                await EventoPersonal.deleteMany({_id:{$in:idsEliminar}}).exec();
-                await EventoPublico.deleteMany({_id:{$in:idsEliminar}}).exec();
+                await EventoPersonal.deleteMany({ _id: { $in: idsEliminar } }).exec();
+                await EventoPublico.deleteMany({ _id: { $in: idsEliminar } }).exec();
             } catch (error) {
                 console.log(`Error eliminando eventos: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -1348,7 +1375,7 @@ export const resolvers = {
 
 }
 
-export const reScheduleEventosEnmarcadosEnEventoPublicoEliminado = async function(eventoPublico){
+export const reScheduleEventosEnmarcadosEnEventoPublicoEliminado = async function (eventoPublico) {
     try {
         var losEventosEnmarcados: any = await EventoPersonal.find({ idEventoMarco: eventoPublico.id }).exec();
     } catch (error) {

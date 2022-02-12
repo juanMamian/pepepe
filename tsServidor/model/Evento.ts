@@ -11,6 +11,12 @@ export const esquemaEventoPersonal = new mongoose.Schema({
     },
     idsParticipantes:{
         type:[String],
+        validate:{
+            validator: function(this:any, ids){
+                return !ids.includes(this.idPersona)
+            },  
+            message: props=>"idsParticipantes (" + props.value+ ") no puede contener a la persona que creó el evento",
+        },        
         default:[],
     },
     idParent:{

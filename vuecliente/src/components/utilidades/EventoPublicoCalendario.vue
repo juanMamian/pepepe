@@ -30,7 +30,7 @@
         <div
           class="boton botonControlEvento"
           title="Asistir a este evento"
-          v-if="usuarioLogeado && !administrador"
+          v-if="usuarioLogeado && idUsuarioTarget!=esteEvento.idAdministrador"
           v-show="!creandoEventoPersonalUnder"
           @click.stop="crearEventoPersonalUnder"
         >
@@ -88,11 +88,7 @@ export default {
   },
   methods: {},
   computed: {
-    administrador() {
-      if (!this.usuarioLogeado) return false;
-
-      return this.usuario.id === this.esteEvento.idAdministrador;
-    },
+    
   },
 };
 </script>

@@ -7,14 +7,24 @@
           type="text"
           ref="inputBuscar"
           v-model="textoBuscar"
+          @input="calcularBuscados"
           v-show="mostrandoInputBuscar"
         />
-        <div class="boton" @click="iniciarBuscar" v-show="!mostrandoInputBuscar">
+        <div
+          class="boton"
+          @click="iniciarBuscar"
+          v-show="!mostrandoInputBuscar"
+        >
           <img src="@/assets/iconos/search.svg" alt="Lupa" />
         </div>
 
-        <div class="boton" title="Cancelar" @click="cancelarBusqueda" v-show="mostrandoInputBuscar">
-          <img src="@/assets/iconos/equis.svg" alt="Equis">
+        <div
+          class="boton"
+          title="Cancelar"
+          @click="cancelarBusqueda"
+          v-show="mostrandoInputBuscar"
+        >
+          <img src="@/assets/iconos/equis.svg" alt="Equis" />
         </div>
       </div>
     </div>
@@ -43,6 +53,7 @@
         :seleccionado="idPersonaSeleccionada === persona.id"
         @click.native="idPersonaSeleccionada = persona.id"
         :estaPersona="persona"
+        :nodosSolidaridadPublicitados="nodosSolidaridadPublicitados"
         v-for="persona of personasVisibles"
         :key="persona.id"
       />
@@ -55,7 +66,7 @@ import gql from "graphql-tag";
 import Loading from "./utilidades/Loading.vue";
 import PersonaVistaLista from "./usuario/personaVistaLista.vue";
 import debounce from "debounce";
-import { similarity } from "./utilidades/funciones";
+// import { similarity } from "./utilidades/funciones";
 
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
 
@@ -85,10 +96,22 @@ export default {
         return todosUsuarios;
       },
     },
+    nodosSolidaridadPublicitados:{
+      query:gql`
+        query{
+          nodosSolidaridadPublicitados{
+            id
+            nombre       
+            responsables     
+          }
+        }
+      `,
+    }
   },
   data() {
     return {
       personas: [],
+      nodosSolidaridadPublicitados:[],
       idPersonaMenuCx: null,
       idPersonaSeleccionada: null,
       loadingPersonas: true,
@@ -96,7 +119,7 @@ export default {
 
       permisoInput: "",
       textoBuscar: null,
-      textoBusquedaUsado:null,
+      textoBusquedaUsado: null,
       mostrandoInputBuscar: false,
       buscados: [],
 
@@ -166,7 +189,7 @@ export default {
         .catch((error) => {
           console.log(`Error eliminando usuario: E: ${error}`);
         });
-    },    
+    },
     asignarPermisoTodos() {
       if (this.permisoIlegal) {
         console.log(`No enviado`);
@@ -202,7 +225,7 @@ export default {
       this.buscados = [];
       this.textoBuscar = null;
       this.mostrandoInputBuscar = false;
-      this.textoBusquedaUsado=null;
+      this.textoBusquedaUsado = null;
     },
     calcularBuscados: debounce(function () {
       console.log(`Setting textoBusquedaUsado`);
@@ -264,25 +287,30 @@ export default {
         );
       }
       if (this.textoBusquedaUsado) {
-        console.log(`Sorting acording to texto ${this.textoBusquedaUsado}`);
+        const textoBusquedaStripped=this.textoBusquedaUsado.normalize("NFD").replace(/\p{Diacritic}/gu, "");
 
-        visibles.sort(
-          (a, b) =>
-            -similarity(this.textoBusquedaUsado, a.nombres + " " + a.apellidos) +
-            similarity(this.textoBusquedaUsado, b.nombres + " " + b.apellidos)
-        );
+        visibles.sort((a, b) => {
+          var res = 0;
+          var aStripped=(a.nombres + " " + a.apellidos).normalize("NFD").replace(/\p{Diacritic}/gu, "");
+          var bStripped=(b.nombres + " " + b.apellidos).normalize("NFD").replace(/\p{Diacritic}/gu, "");
+          if (
+            (aStripped).toLowerCase().search(textoBusquedaStripped.toLowerCase()) > -1
+          ) {
+            res++;
+          }
+          if (
+            (bStripped).toLowerCase().search(textoBusquedaStripped.toLowerCase()) > -1
+          ) {
+            res--;
+          }
+          return -res;
+        });
       }
 
       return visibles;
     },
   },
-  watch: {
-    textoBuscar() {
-     
-      this.debouncingBusqueda = true;
-      this.calcularBuscados();
-    },
-  },
+  watch: {},
 };
 </script>
 

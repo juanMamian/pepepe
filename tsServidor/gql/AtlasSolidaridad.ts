@@ -72,6 +72,7 @@ export const typeDefs = gql`
        responsablesSolicitados:Int,
        nodoParent:ID,
        tipoParent:String,   
+       publicitado:Boolean,
        idForoResponsables:ID,       
        vinculos:[VinculoNodoSolidaridad],
        keywords:String,       
@@ -131,6 +132,7 @@ export const typeDefs = gql`
    
    extend type Query{    
     nodosSolidaridad:[NodoSolidaridad],
+    nodosSolidaridadPublicitados:[NodoSolidaridad],
     personas:[Usuario],        
     nodoSolidaridad(idNodo: ID!):NodoSolidaridad,
     nodosSolidaridadUsuario(idUsuario:ID!, incluirCompletados: Boolean):[NodoSolidaridad],    
@@ -172,6 +174,7 @@ export const typeDefs = gql`
     crearRequerimentoEntreNodosAtlasSolidaridad(idNodoRequiriente:ID!, tipoRequiriente:String!, idNodoRequerido:ID!):ResultadoOperacionNodosAtlas,
     crearParentingEntreNodosAtlasSolidaridad(idNodoRequiriente:ID!, tipoRequiriente: String!, idNodoRequerido:ID!):ResultadoOperacionNodosAtlas,
     transferirRequerimentoBetweenNodosSolidaridad(idNodoRequerido: ID!, idNodoSource: ID!, tipoNodoSource: String, idNodoTarget: ID!, tipoNodoTarget: String!, index: Int):ResultadoOperacionNodosAtlas
+    setPublicitadoNodoSolidaridad(idNodo:ID!, nuevoEstado:Boolean!):NodoSolidaridad,
 
     crearRecursoExternoNodoSolidaridad(idNodo:ID!):RecursoExternoNodoSolidaridad,
     eliminarRecursoExternoNodoSolidaridad(idNodo:ID!, idRecursoExterno:ID!):Boolean,
@@ -387,6 +390,17 @@ export const resolvers = {
             }
 
             return elNodo;
+        },
+        nodosSolidaridadPublicitados: async function (_: any, __: any, context: contextoQuery) {
+
+            try {
+                var losNodos: any = await NodoSolidaridad.find({publicitado:true}).exec();                
+            } catch (error) {
+                console.log(`error buscando nodos. E: ${error}`);
+                throw new ApolloError("");
+            }
+
+            return losNodos;
         },
         nodosSolidaridadUsuario: async function (_: any, { idUsuario, incluirCompletados }: any, contexto: contextoQuery) {
             console.log('Peticion de nodos de solidaridad de los cuales es responsable el usuario con id ' + idUsuario);
@@ -1825,15 +1839,6 @@ export const resolvers = {
                 throw new ApolloError('Error conectando con la base de datos');
             }
 
-            //Authorización
-            const permisosEspeciales = ["superadministrador"];
-
-            var responsablesAmplio = await getResponsablesAmplioNodo(elNodo);
-            if (!responsablesAmplio.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
-                console.log(`Error de autenticacion creando movimientoDinero de nodoSolidaridad`);
-                throw new AuthenticationError("No autorizado");
-            }
-
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
@@ -1845,6 +1850,17 @@ export const resolvers = {
                 console.log("Error buscando al usuario en la base de datos. E: " + error);
                 throw new ApolloError("Error conectando con la base de datos");
             }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
+
+            var responsablesAmplio = await getResponsablesAmplioNodo(elNodo);
+            if (!responsablesAmplio.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion `);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            
 
             if (elNodo.responsables.includes(idUsuario)) {
                 console.log(`El usuario ya era responsable de este nodo`);
@@ -1872,6 +1888,8 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
+
+            //Actualización en eventos
             console.log(`Buscando todos los nodos de solidaridad del árbol de este nodo`);
             var actualesIdsParents=[elNodo.id];            
             var todosIdsArbol=[elNodo.id]
@@ -2076,8 +2094,9 @@ export const resolvers = {
             //Authorización
 
             const usuarioParent=elNodo.tipoParent==='usuario' && elNodo.nodoParent===credencialesUsuario.id;
+            const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
 
-            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador") && !usuarioParent) {
+            if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !usuarioParent) {
                 console.log(`Error de autenticacion`);
                 throw new AuthenticationError("No autorizado");
             }
@@ -2182,6 +2201,43 @@ export const resolvers = {
 
             try {
                 elNodo.estadoDesarrollo = nuevoEstado;
+                console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
+                await elNodo.save();
+            } catch (error) {
+                console.log(`error guardando el nodoSolidaridad modificado: ${error}`);
+                throw new ApolloError("Error guardando información en la base de datos");
+
+            }
+            console.log(`Estado guardado`);
+
+            return elNodo;
+        },
+        async setPublicitadoNodoSolidaridad(_: any, { idNodo, nuevoEstado }, contexto: contextoQuery) {
+            console.log('\x1b[35m%s\x1b[0m', `Query de set en ${nuevoEstado} el publicitado de nodo solidaridad ${idNodo}`);
+
+            const credencialesUsuario = contexto.usuario;
+            try {
+                var elNodo: any = await NodoSolidaridad.findById(idNodo).exec();
+                if (!elNodo) {
+                    throw "Nodo no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el nodo. E: " + error);
+                throw new ApolloError("Error en la conexión con la base de datos");
+            }
+
+            var administradores = await getAdministradoresNodo(elNodo);
+            const permisosEspeciales=["superadministrador"];
+            const tienePermisosEspeciales=credencialesUsuario.permisos.some(p=>permisosEspeciales.includes(p));
+            //Authorización
+            if (!administradores.includes(credencialesUsuario.id) && !tienePermisosEspeciales) {
+                console.log(`Error de autenticacion editando nombre de nodoSolidaridad`);
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                elNodo.publicitado = nuevoEstado;
                 console.log(`guardando nuevo estado ${nuevoEstado} en la base de datos`);
                 await elNodo.save();
             } catch (error) {

@@ -115,7 +115,7 @@
                 <div
                   id="horaInicio"
                   v-show="!editandoHoraInicio"
-                  @click.stop="iniciarEdicionHoraInicio"
+                  @click.stop="iniciarEdicionHoraInicio"                  
                 >
                   {{ horaInicioLegible }}
                 </div>
@@ -386,7 +386,9 @@ export default {
       })
     }
   },
-  computed: {},
+  computed: {
+    
+  },
 };
 </script>
 
