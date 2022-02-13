@@ -107,7 +107,7 @@
       </div>
       <template
         v-if="
-          nodoSeleccionado.id != -1 &&
+          nodoSeleccionado &&
           nodoSeleccionado.id != esteNodo.id &&
           (usuarioSuperadministrador == true ||
             usuarioAdministradorAtlas == true)
@@ -230,20 +230,13 @@ export default {
     centroVista: Object,
     idNodoMenuCx: String,
     idsNodosAprendidos: Array,
-    nodoSeleccionado: {
-      type: Object,
-      default() {
-        return {
-          id: "-1",
-          nombre: "ninguno",
-        };
-      },
-    },
+    nodoSeleccionado: Object,
+    seleccionado:Boolean,
     usuarioAdministradorAtlas: {
       type: Boolean,
       default: false,
     },
-
+    esquinasDiagrama: Object,
     callingPosiciones: Boolean,
     factorZoom: Number,
     configuracionAtlas:Object,
@@ -261,21 +254,18 @@ export default {
         fSize.y = Math.round(baseY * 1.1);
       }
       return { ...fSize };
-    },
-    seleccionado() {
-      let sel = false;
-      if (this.nodoSeleccionado.id == this.esteNodo.id) {
-        sel = true;
-      }
-      return sel;
-    },
+    },    
     estiloPosicion() {
+      //Posicion ajustada a las esquinas del diagrama:
+      const posXAjustada=this.posicion.x-this.esquinasDiagrama.x1;
+      const posYAjustada=this.posicion.y-this.esquinasDiagrama.y1;
+
       //Posicion absoluta
-      let posY = Math.round(
-        (this.posicion.y - this.size.y / 2) * this.factorZoom
+      const posY = Math.round(
+        (posYAjustada - this.size.y / 2) * this.factorZoom
       );
-      let posX = Math.round(
-        (this.posicion.x - this.size.x / 2) * this.factorZoom
+      const posX = Math.round(
+        (posXAjustada - this.size.x / 2) * this.factorZoom
       );
 
       //Ajustar respecto del centro de la vista
@@ -418,7 +408,7 @@ export default {
         this.yo.atlas.configuracion.modo === "estudiante"
       )
         return alert("¡Aún no puedes estudiar este nodo!");
-      this.$router.push("/nodoConocimiento/" + this.esteNodo.id);
+      this.$router.push(this.$route.path+"/nodoConocimiento/" + this.esteNodo.id);
     },
     copiarId(e) {
       let str = e.target.innerText.trim();

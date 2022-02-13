@@ -375,7 +375,7 @@ function setNodosConectados(nodo, todosNodos) {
     var idsRequeridos = nodo.vinculos.map(v => v.idRef);
 
     var idsRequirientes = todosNodos.filter(n => {
-        var idsRequeridos = n.vinculos.filter(v => v.tipo = "requiere").map(v => v.idRef);
+        var idsRequeridos = n.vinculos.map(v => v.idRef);
         return idsRequeridos.includes(nodo.id);
     }).map(n => n.id);
     nodo.idsRequeridos = idsRequeridos;

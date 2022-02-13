@@ -11,7 +11,7 @@
         </div>
         <input
           @keypress.enter.prevent="guardarNuevoNombre"
-          ref="inputNuevoNombre"          
+          ref="inputNuevoNombre"
           style="width: 250px"
           @blur="guardarNuevoNombre"
           v-show="editandoNombre"
@@ -108,8 +108,40 @@
           id="zonaDescripcion"
           v-show="!seccionSeleccionada && !mostrandoMenuSecciones"
         >
-          <div id="descripcion">
+          <div
+            id="descripcion"
+            class="contenidoTexto"
+            ref="descripcion"
+            v-show="!editandoDescripcion"
+            @click="toggleEditandoDescripcion"
+          >
             {{ esteNodo.descripcion }}
+          </div>
+
+          <textarea
+            id="inputNuevoDescripcion"
+            ref="inputNuevoDescripcion"
+            class="inputTextoNodo"
+            v-model="nuevoDescripcion"
+            v-show="editandoDescripcion"
+          />
+          <div class="contenedorBotonesCampo" v-show="editandoDescripcion">
+            <img
+              src="@/assets/iconos/save.svg"
+              class="botonGuardarCampo"
+              alt="Guardar"
+              title="Guardar descripción"
+              id="botonGuardarDescripcion"
+              @click="guardarNuevoDescripcion"
+            />
+            <img
+              src="@/assets/iconos/equis.svg"
+              class="botonGuardarCampo"
+              alt="Cancelar"
+              title="Cancelar edición"
+              id="botonCancelarEdicionDescripcion"
+              @click="editandoDescripcion = false"
+            />
           </div>
         </div>
         <seccion-nodo-conocimiento
@@ -220,7 +252,7 @@ import SeccionNodoConocimiento from "./SeccionNodoConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
 import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
 import Foro from "../Foro.vue";
-import { charProhibidosNombreCosa } from '../configs';
+import { charProhibidosNombreCosa } from "../configs";
 
 const QUERY_NODO = gql`
   query ($idNodo: ID!) {
@@ -291,8 +323,11 @@ export default {
       idExpertoSeleccionado: null,
       enviandoQueryExpertos: false,
 
-      editandoNombre:false,
-      enviandoNuevoNombre:false,
+      editandoNombre: false,
+      enviandoNuevoNombre: false,
+
+      nuevoDescripcion: null,
+      editandoDescripcion: false,
     };
   },
   methods: {
@@ -551,14 +586,18 @@ export default {
         });
     },
     iniciarEdicionNombre() {
-      if(!this.usuarioExperto && !this.usuarioAdministradorAtlas && !this.usuarioSuperadministrador){
+      if (
+        !this.usuarioExperto &&
+        !this.usuarioAdministradorAtlas &&
+        !this.usuarioSuperadministrador
+      ) {
         return;
       }
       this.$refs.inputNuevoNombre.value = this.esteNodo.nombre;
       this.editandoNombre = true;
     },
-    guardarNuevoNombre() {      
-      var nuevoNombre=this.$refs.inputNuevoNombre.value.trim();
+    guardarNuevoNombre() {
+      var nuevoNombre = this.$refs.inputNuevoNombre.value.trim();
       if (nuevoNombre == this.esteNodo.nombre) {
         this.editandoNombre = false;
         return;
@@ -597,6 +636,63 @@ export default {
         })
         .catch((error) => {
           this.enviandoNuevoNombre = false;
+          console.log(`Error. E :${error}`);
+        });
+    },
+    toggleEditandoDescripcion() {
+      if (
+        !this.usuarioExperto &&
+        !this.usuarioSuperadministrador &&
+        !this.usuarioAdministradorAtlas
+      ) {
+        return;
+      }
+      this.$refs.inputNuevoDescripcion.style.height =
+        this.$refs.descripcion.offsetHeight + "px";
+      this.editandoDescripcion = !this.editandoDescripcion;
+      this.nuevoDescripcion = this.esteNodo.descripcion;
+
+      if (this.editandoDescripcion) {
+        this.$nextTick(() => {
+          this.$refs.inputNuevoDescripcion.focus();
+        });
+      }
+    },
+    guardarNuevoDescripcion() {      
+      var nuevoDescripcion=this.$refs.inputNuevoDescripcion.value;
+      if (nuevoDescripcion == this.esteNodo.descripcion) {
+        this.editandoDescripcion = false;
+        return;
+      }
+      console.log(`guardando nuevo descripcion`);
+      this.enviandoNuevoDescripcion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idNodo: ID!
+              $nuevoDescripcion: String!
+            ) {
+              editarDescripcionNodoConocimiento(
+                idNodo: $idNodo
+                nuevoDescripcion: $nuevoDescripcion
+              ) {
+                id
+                descripcion
+              }
+            }
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            nuevoDescripcion: nuevoDescripcion,
+          },
+        })
+        .then(() => {
+          this.enviandoNuevoDescripcion = false;
+          this.editandoDescripcion = false;
+        })
+        .catch((error) => {
+          this.enviandoNuevoDescripcion = false;
           console.log(`Error. E :${error}`);
         });
     },

@@ -1,6 +1,6 @@
 import Vue from "vue"
 import Router from "vue-router"
-import atlasConocimiento from "./components/AtlasConocimiento.vue"
+import atlasConocimiento from "./components/atlasConocimiento/AtlasConocimiento.vue"
 import loginArea from "./components/LoginArea.vue"
 import perfilPersonal from "./components/usuario/PerfilPersonal.vue"
 import VisorNodoConocimiento from "./components/visorNodoConocimiento/VisorNodoConocimiento.vue"
@@ -25,7 +25,11 @@ Vue.use(Router);
 
 const routes = [
 
-    { path: "/atlas", name: "atlas", component: atlasConocimiento },
+    {
+        path: "/atlas", name: "atlas", component: atlasConocimiento, children: [
+            { path: "nodoConocimiento/:idNodo", component: VisorNodoConocimiento, name:"visorNodoConocimiento" }
+        ]
+    },
     {
         path: "/login", name: "loginArea",
         component: loginArea,
@@ -173,12 +177,12 @@ export const router = new Router({
 
 router.beforeEach((to, from, next) => {
     console.log(`Guarda before ${to.path}`);
-    
-    if(to.path!='/login' && !localStorage.getItem("token")){
+
+    if (to.path != '/login' && !localStorage.getItem("token")) {
         next("/login");
     }
-    else{
+    else {
         next();
     }
 
-  })
+})

@@ -5,16 +5,11 @@
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
     @click="
-      idNodoMenuCx = '-1';
+      idNodoMenuCx = null;
       cerrarBusqueda++;
     "
-    @mousemove="panVista($event)"
-    @mouseup.left="clickFondoAtlas"
-    @touchmove.prevent.stop="movimientoMobile"
-    @touchstart="iniciaMovimientoTouch"
-    @touchend="finTouch"
-    @contextmenu.self.exact.prevent="abrirMenuContextual"
   >
+    <router-view />
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
@@ -26,6 +21,7 @@
       <div
         class="botonMenuContextual"
         id="botonCrearNuevoNodo"
+        :class="{ deshabilitado: posicionCreandoNodo }"
         @click="crearNodoEnMenuContextual"
       >
         Crear Nodo de conocimiento
@@ -55,49 +51,73 @@
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
     />
     <panel-configuracion-atlas ref="panelConfiguracionAtlas" :yo="yo" />
-    <canvases
-      :todosNodos="todosNodos"
-      :nodoSeleccionado="nodoSeleccionado"
-      :idNodoTarget="idNodoTarget"
-      :idsNecesariosParaTarget="idsNecesariosParaTarget"
-      :centroVista="centroVista"
-      :callingPosiciones="callingPosiciones"
-      :factorZoom="factorZoom"
-      :style="[offsetContenedorNodos]"
-      ref="canvases"
-      v-if="todosNodos.length > 1"
-    />
-    <div id="contenedorNodos" :style="[offsetContenedorNodos]">
-      <nodo-conocimiento
-        :nodoSeleccionado="nodoSeleccionado"
-        :todosNodos="todosNodos"
-        :idNodoMenuCx="idNodoMenuCx"
-        :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
-        :yo="yo"
-        :key="nodo.id"
-        v-for="nodo of todosNodos"
-        :esteNodo="nodo"
-        :centroVista="centroVista"
-        :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
-        :esTarget="idNodoTarget == nodo.id"
-        :idsNodosAprendidos="idsNodosAprendidos"
-        :factorZoom="factorZoom"
-        :escondido="
-          idNodoTarget &&
-          !idsNecesariosParaTarget.includes(nodo.id) &&
-          idNodoTarget != nodo.id
-        "
-        :configuracionAtlas="configuracionAtlas"
-        :callingPosiciones="callingPosiciones"
-        @click.right.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
-        @click.native.stop="seleccionNodo(nodo)"
-        @creacionVinculo="crearVinculo"
-        @eliminacionVinculo="eliminarVinculo"
-        @cambioDePosicionManual="cambiarCoordsManualesNodo"
-        @eliminar="eliminarNodo"
-        @cambieEstadoObjetivo="setEstadoObjetivoNodoCache($event, nodo.id)"
-        @tengoNuevoValorAprendido="setNodoAprendidoCache($event, nodo.id)"
-      />
+
+    <div
+      id="contenedorDiagrama"
+      ref="contenedorDiagrama"
+      @contextmenu.self.exact.prevent="abrirMenuContextual"
+      @mouseup.left.self="clickFondoAtlas"
+    >
+      <div id="contenedorVinculosNodos" :style="[offsetContenedorNodos]">
+        <enlaces-nodo-conocimiento
+          v-for="nodo of nodosConRequerimentos"
+          :key="nodo.id"
+          :yo="yo"
+          :idNodoSeleccionado="idNodoSeleccionado"
+          :esteNodo="nodo"
+          :todosNodos="todosNodos"
+          :factorZoom="factorZoom"
+          :esquinasDiagrama="esquinasDiagrama"
+          :nodoSeleccionado="nodoSeleccionado"
+          :redibujarEnlaces="redibujarEnlacesNodos"
+          :idsTodosNodosRender="idsTodosNodosRender"
+          :callingPosiciones="callingPosiciones"
+        />
+      </div>
+      <div
+        id="contenedorNodos"
+        ref="contenedorNodos"
+        :style="[offsetContenedorNodos]"
+      >
+        <loading
+          texto=""
+          v-show="posicionCreandoNodo"
+          style="position: absolute"
+          :style="[offsetLoadingCreandoNodo]"
+        />
+        <nodo-conocimiento
+          :nodoSeleccionado="nodoSeleccionado"
+          :todosNodos="todosNodos"
+          :idNodoMenuCx="idNodoMenuCx"
+          :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
+          :yo="yo"
+          :key="nodo.id"
+          v-for="nodo of todosNodos"
+          :esteNodo="nodo"
+          :esquinasDiagrama="esquinasDiagrama"
+          :centroVista="centroVista"
+          :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
+          :esTarget="idNodoTarget == nodo.id"
+          :idsNodosAprendidos="idsNodosAprendidos"
+          :factorZoom="factorZoom"
+          :seleccionado="idNodoSeleccionado === nodo.id"
+          :escondido="
+            idNodoTarget &&
+            !idsNecesariosParaTarget.includes(nodo.id) &&
+            idNodoTarget != nodo.id
+          "
+          :configuracionAtlas="configuracionAtlas"
+          :callingPosiciones="callingPosiciones"
+          @click.right.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
+          @click.native.stop="seleccionNodo(nodo)"
+          @creacionVinculo="crearVinculo"
+          @eliminacionVinculo="eliminarVinculo"
+          @cambioDePosicionManual="cambiarCoordsManualesNodo"
+          @eliminar="eliminarNodo"
+          @cambieEstadoObjetivo="setEstadoObjetivoNodoCache($event, nodo.id)"
+          @tengoNuevoValorAprendido="setNodoAprendidoCache($event, nodo.id)"
+        />
+      </div>
     </div>
 
     <loading
@@ -110,12 +130,12 @@
 
 <script>
 import gql from "graphql-tag";
-import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
-import Canvases from "./atlasConocimiento/Canvases.vue";
-import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
-import Loading from "./utilidades/Loading.vue";
-import PanelConjuntosNodos from "./atlasConocimiento/PanelConjuntosNodos.vue";
-import PanelConfiguracionAtlas from "./atlasConocimiento/PanelConfiguracionAtlas.vue";
+import NodoConocimiento from "./NodoConocimiento.vue";
+import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
+import Loading from "../utilidades/Loading.vue";
+import PanelConjuntosNodos from "./PanelConjuntosNodos.vue";
+import PanelConfiguracionAtlas from "./PanelConfiguracionAtlas.vue";
+import EnlacesNodoConocimiento from "./EnlacesNodoConocimiento.vue";
 const debounce = require("debounce");
 
 const fragmentoNodoConocimiento = gql`
@@ -150,6 +170,7 @@ const fragmentoNodoConocimiento = gql`
     angulo
     puntaje
     vinculos {
+      id
       idRef
       rol
       tipo
@@ -166,7 +187,7 @@ const fragmentoNodoConocimiento = gql`
 `;
 
 const QUERY_NODOS = gql`
-  query {
+  query todosNodos {
     todosNodos {
       ...fragNodoConocimiento
     }
@@ -205,11 +226,11 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
 export default {
   components: {
     NodoConocimiento,
-    Canvases,
     BuscadorNodosConocimiento,
     Loading,
     PanelConjuntosNodos,
     PanelConfiguracionAtlas,
+    EnlacesNodoConocimiento,
   },
   name: "AtlasConocimiento",
   apollo: {
@@ -261,9 +282,12 @@ export default {
       hovered: false,
       todosNodos: [],
       nodosDescargados: false,
-      idNodoSeleccionado: "-1",
-      idNodoMenuCx: "-1",
+      posicionCreandoNodo: null,
+      idNodoSeleccionado: null,
+      idNodoMenuCx: null,
       idsNecesariosParaTarget: [],
+
+      redibujarEnlacesNodos: 0,
 
       yo: {
         atlas: {
@@ -325,20 +349,10 @@ export default {
       );
     },
     nodoSeleccionado: function () {
-      if (!this.todosNodos) {
-        console.log(`NO HAY NODOS`);
-        return false;
+      if (!this.idNodoSeleccionado) {
+        return null;
       }
-      if (this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
-        let indexSeleccionado = this.todosNodos.findIndex(
-          (n) => n.id == this.idNodoSeleccionado
-        );
-        return this.todosNodos[indexSeleccionado];
-      }
-      return {
-        id: "-1",
-        vinculos: [],
-      };
+      return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
     idUsuario: function () {
       return this.$store.state.usuario.id;
@@ -367,10 +381,66 @@ export default {
     factorZoom() {
       return Number((this.zoom / 100).toFixed(2));
     },
-    offsetContenedorNodos() {
+    esquinasDiagrama() {
+      const maxX = this.todosNodos.reduce(
+        (acc, n) => (n.autoCoords.x > acc ? n.autoCoords.x : acc),
+        0
+      );
+      const maxY = this.todosNodos.reduce(
+        (acc, n) => (n.autoCoords.y > acc ? n.autoCoords.y : acc),
+        0
+      );
+      const minX = this.todosNodos.reduce(
+        (acc, n) => (n.autoCoords.x < acc ? n.autoCoords.x : acc),
+        0
+      );
+      const minY = this.todosNodos.reduce(
+        (acc, n) => (n.autoCoords.y < acc ? n.autoCoords.y : acc),
+        0
+      );
+
       return {
-        left: -(this.centroVista.x * this.factorZoom) + "px",
-        top: -(this.centroVista.y * this.factorZoom) + "px",
+        x1: minX,
+        y1: minY,
+
+        x2: maxX,
+        y2: maxY,
+      };
+    },
+    offsetContenedorNodos() {
+      const ancho = this.esquinasDiagrama.x2 - this.esquinasDiagrama.x1;
+      const alto = this.esquinasDiagrama.y2 - this.esquinasDiagrama.y1;
+      return {
+        // left: -(this.centroVista.x * this.factorZoom) + "px",
+        // top: -(this.centroVista.y * this.factorZoom) + "px",
+
+        width: ancho * this.factorZoom + "px",
+        height: alto * this.factorZoom + "px",
+      };
+    },
+    nodosConRequerimentos() {
+      var nr = this.todosNodos.filter(
+        (n) => n.vinculos.length > 0
+      );
+
+      return nr;
+    },
+    idsTodosNodosRender() {
+      return this.todosNodos.map((n) => n.id);
+    },
+    offsetLoadingCreandoNodo() {
+      if (!this.posicionCreandoNodo) {
+        return null;
+      }
+      const left =
+        (this.posicionCreandoNodo.x - this.esquinasDiagrama.x1) *
+        this.factorZoom;
+      const top =
+        (this.posicionCreandoNodo.y - this.esquinasDiagrama.y1) *
+        this.factorZoom;
+      return {
+        left: left + "px",
+        top: top + "px",
       };
     },
   },
@@ -431,10 +501,10 @@ export default {
         });
     },
     abrirMenuContextual(e) {
-      let posCalendario = this.$el.getBoundingClientRect();
+      let posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();
 
-      let topClick = Math.round(e.pageY - posCalendario.top);
-      let leftClick = Math.round(e.pageX - posCalendario.left);
+      let topClick = Math.round(e.pageY - posDiagrama.top);
+      let leftClick = Math.round(e.pageX - posDiagrama.left);
 
       this.$set(this.offsetMenuContextual, "top", topClick + "px");
       this.$set(this.offsetMenuContextual, "left", leftClick + "px");
@@ -442,22 +512,33 @@ export default {
       //this.crearNodo({x: leftClick, y: topClick});
     },
     crearNodoEnMenuContextual() {
-      let posContenedor = document
-        .getElementById("contenedorNodos")
-        .getBoundingClientRect();
+      const posContenedorNodos =
+        this.$refs.contenedorNodos.getBoundingClientRect();
+      const distanciaLeftPx =
+        parseInt(this.offsetMenuContextual.left) -
+        parseInt(posContenedorNodos.left);
+      const distanciaTopPx =
+        parseInt(this.offsetMenuContextual.top) -
+        (parseInt(posContenedorNodos.top) - parseInt(this.$el.offsetTop));
 
-      console.log(`Offset menú cx: ${this.offsetMenuContextual.top}`);
-      console.log(`Offset menú cx: ${parseInt(this.offsetMenuContextual.top)}`);
+      const posPxX = distanciaLeftPx;
+      const posPxY = distanciaTopPx;
+
+      console.log(`xPix: ${parseInt(this.offsetMenuContextual.left)}`);
+      console.log(
+        `posXContenedorNodos: ${parseInt(posContenedorNodos.left)}, ${
+          posContenedorNodos.top
+        }`
+      );
+      console.log(`distanciaLeftPx: ${distanciaLeftPx}`);
+      console.log(`distanciaTopPx: ${distanciaTopPx}`);
+      console.log(
+        `Scroll x contenedorDiagrama: ${this.$refs.contenedorDiagrama.scrollLeft}`
+      );
 
       var posicionNuevoNodo = {
-        x: parseInt(
-          (parseInt(this.offsetMenuContextual.left) - posContenedor.left) /
-            this.factorZoom
-        ),
-        y: parseInt(
-          (parseInt(this.offsetMenuContextual.top) - posContenedor.top) /
-            this.factorZoom
-        ),
+        x: parseInt(posPxX / this.factorZoom + this.esquinasDiagrama.x1),
+        y: parseInt(posPxY / this.factorZoom + this.esquinasDiagrama.y1),
       };
 
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
@@ -485,7 +566,7 @@ export default {
     },
     clickFondoAtlas() {
       console.log(`Click en el fondo del atlas`);
-      if (!this.vistaPanned) this.idNodoSeleccionado = "-1";
+      if (!this.vistaPanned) this.idNodoSeleccionado = null;
       this.panningVista = false;
       this.vistaPanned = false;
       this.$refs.panelConjuntosNodos.abierto = false;
@@ -591,58 +672,6 @@ export default {
       this.ultimoTouchX = e.changedTouches[0].clientX;
       this.ultimoTouchY = e.changedTouches[0].clientY;
     },
-    movimientoMobile(e) {
-      if (this.pinching) {
-        var contenedor = this.$el;
-        let posContenedor = contenedor.getBoundingClientRect();
-
-        const posZoom = {
-          x:
-            Math.round(posContenedor.width / 2 / this.factorZoom) +
-            this.centroVista.x,
-          y:
-            Math.round(posContenedor.height / 2 / this.factorZoom) +
-            this.centroVista.y,
-        };
-
-        const proporciones = {
-          x:
-            (posZoom.x - this.centroVistaDecimal.x) /
-            (posContenedor.width / this.factorZoom),
-          y:
-            (posZoom.y - this.centroVistaDecimal.y) /
-            (posContenedor.height / this.factorZoom),
-        };
-
-        var dist = Math.hypot(
-          e.touches[0].pageX - e.touches[1].pageX,
-          e.touches[0].pageY - e.touches[1].pageY
-        );
-        var pinch = dist - this.lastPinchDistance;
-        pinch = pinch * 0.5;
-        this.zoomVista(pinch);
-        this.lastPinchDistance = dist;
-
-        this.$set(
-          this.centroVistaDecimal,
-          "x",
-          posZoom.x - (posContenedor.width / this.factorZoom) * proporciones.x
-        );
-        this.$set(
-          this.centroVistaDecimal,
-          "y",
-          posZoom.y - (posContenedor.height / this.factorZoom) * proporciones.y
-        );
-        return;
-      }
-
-      const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
-      const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
-      this.ultimoTouchX = e.changedTouches[0].clientX;
-      this.ultimoTouchY = e.changedTouches[0].clientY;
-
-      this.desplazarVista(deltaX, deltaY);
-    },
     finTouch() {
       this.pinching = false;
     },
@@ -705,6 +734,7 @@ export default {
             idNodo,
           },
           update(store, { data: { eliminarNodo } }) {
+            console.log(`QUERY: ${JSON.stringify(QUERY_NODOS)}`);
             if (!eliminarNodo) {
               console.log(`Nodo no fue eliminado`);
               return;
@@ -712,6 +742,7 @@ export default {
             const cache = store.readQuery({
               query: QUERY_NODOS,
             });
+            console.log(`Cache QUERY_NODOS: ${JSON.stringify(cache)}`);
             var nuevoCache = JSON.parse(JSON.stringify(cache));
             const indexN = nuevoCache.todosNodos.findIndex(
               (n) => n.id == idNodo
@@ -753,6 +784,10 @@ export default {
         },
       };
       console.log(`en las coordenadas: ${posicion.x}, ${posicion.y} `);
+      this.posicionCreandoNodo = {
+        x: posicion.x,
+        y: posicion.y,
+      };
       this.$apollo
         .mutate({
           mutation: gql`
@@ -774,7 +809,10 @@ export default {
             query: QUERY_NODOS,
           });
           var nuevoCache = JSON.parse(JSON.stringify(cache));
+          console.log(`1`);
           var losNodos = nuevoCache.todosNodos;
+          console.log(`2`);
+
           const indexN = losNodos.findIndex((n) => n.id === crearNodo.id);
           if (indexN > -1) {
             console.log(`El nodo ya estaba en caché`);
@@ -785,10 +823,11 @@ export default {
               data: nuevoCache,
             });
           }
-
+          this.posicionCreandoNodo = null;
           //this.$router.push("/nodoConocimiento/"+crearNodo.id);
         })
         .catch((error) => {
+          this.posicionCreandoNodo = null;
           console.log(`Error. E: ${error}`);
         });
     },
@@ -823,31 +862,6 @@ export default {
         .catch(function (error) {
           console.log(`error fetching centro vista: ${error}`);
         });
-    },
-    desplazarVista(deltaX, deltaY) {
-      this.$set(
-        this.centroVistaDecimal,
-        "x",
-        Math.round(this.centroVistaDecimal.x - deltaX / this.factorZoom)
-      );
-      this.$set(
-        this.centroVistaDecimal,
-        "y",
-        Math.round(this.centroVistaDecimal.y - deltaY / this.factorZoom)
-      );
-      this.actualizarTrazos++;
-    },
-    panVista(e) {
-      if (!this.panningVista) {
-        return;
-      }
-      this.desplazarVista(e.movementX, e.movementY);
-      e.preventDefault();
-      this.vistaPanned = true;
-
-      /*this.centroVista.x -= e.movementX;
-      this.centroVista.y -= e.movementY;
-      */
     },
     seleccionNodo(nodo) {
       this.idNodoSeleccionado = nodo.id;
@@ -1027,31 +1041,20 @@ export default {
           this.centroVista.y,
       };
 
-      const proporciones = {
-        x:
-          (posZoom.x - this.centroVistaDecimal.x) /
-          (posContenedor.width / this.factorZoom),
-        y:
-          (posZoom.y - this.centroVistaDecimal.y) /
-          (posContenedor.height / this.factorZoom),
-      };
+      // const proporciones = {
+      //   x:
+      //     (posZoom.x - this.centroVistaDecimal.x) /
+      //     (posContenedor.width / this.factorZoom),
+      //   y:
+      //     (posZoom.y - this.centroVistaDecimal.y) /
+      //     (posContenedor.height / this.factorZoom),
+      // };
 
       const factorZoom = 0.2;
       this.zoomVista(-Math.round(e.deltaY * factorZoom), {
         x: posZoom.x,
         y: posZoom.y,
       });
-
-      this.$set(
-        this.centroVistaDecimal,
-        "x",
-        posZoom.x - (posContenedor.width / this.factorZoom) * proporciones.x
-      );
-      this.$set(
-        this.centroVistaDecimal,
-        "y",
-        posZoom.y - (posContenedor.height / this.factorZoom) * proporciones.y
-      );
     },
     hideZoomInfo: debounce(function () {
       this.showingZoomInfo = false;
@@ -1129,7 +1132,13 @@ export default {
   // },
 };
 </script>
-
+<style>
+:root {
+  --atlasConocimientoFondo: #f3eff5;
+  --atlasConocimientoCheck: #3f7d20;
+  --atlasConocimientoAvailable: #e2c044;
+}
+</style>
 <style scoped>
 .atlasConocimiento {
   position: relative;
@@ -1149,15 +1158,27 @@ export default {
 .botonMenuContextual:hover {
   background-color: rgb(68, 68, 68);
 }
-
-#canvases {
+#contenedorDiagrama {
+  position: relative;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  overflow: scroll;
+  z-index: 0;
+}
+#contenedorVinculosNodos {
   position: absolute;
+  top: 50px;
+  left: 50px;
+  user-select: none;
+
   pointer-events: none;
 }
 #contenedorNodos {
   position: absolute;
-  width: 100%;
-  height: 100%;
+  top: 50px;
+  left: 50px;
   user-select: none;
 
   pointer-events: none;
@@ -1205,6 +1226,7 @@ export default {
   top: 1%;
   right: 1%;
   cursor: pointer;
+  z-index:1;
 }
 
 #simboloDescargandoNodos {
@@ -1213,6 +1235,16 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 100;
+}
+
+.visorNodoConocimiento {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 1000;
+  background-color: whitesmoke;
 }
 
 .fadeOut-leave-to {

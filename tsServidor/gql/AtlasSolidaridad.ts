@@ -1754,7 +1754,7 @@ export const resolvers = {
                 }
             }
             catch (error) {
-                console.log("Error buscando el nodo. E: " + error);
+                console.log("Error buscando el nodo "+idNodo+". E: " + error);
                 throw new ApolloError("Error en la conexión con la base de datos");
             }
 
