@@ -79,12 +79,8 @@ export default {
               busquedaAmplia(palabrasBuscadas: $palabrasBuscadas) {
                 id
                 nombre
-                resumen
-                coordsManuales {
-                  x
-                  y
-                }
-                coords{
+                resumen                
+                autoCoords{
                   x
                   y
                 }

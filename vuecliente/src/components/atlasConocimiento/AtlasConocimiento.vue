@@ -92,7 +92,7 @@
           :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
           :yo="yo"
           :key="nodo.id"
-          v-for="nodo of todosNodos"
+          v-for="nodo of nodosRender"
           :esteNodo="nodo"
           :esquinasDiagrama="esquinasDiagrama"
           :centroVista="centroVista"
@@ -419,14 +419,20 @@ export default {
       };
     },
     nodosConRequerimentos() {
-      var nr = this.todosNodos.filter(
-        (n) => n.vinculos.length > 0
-      );
+      var nr = this.todosNodos.filter((n) => n.vinculos.length > 0);
 
       return nr;
     },
+    nodosRender() {
+      if (this.idNodoTarget) {
+        return this.todosNodos
+          .filter((n) => this.idsNecesariosParaTarget.includes(n.id))
+          .concat([this.todosNodos.find((n) => this.idNodoTarget === n.id)]);
+      }
+      return this.todosNodos;
+    },
     idsTodosNodosRender() {
-      return this.todosNodos.map((n) => n.id);
+      return this.nodosRender.map((n) => n.id);
     },
     offsetLoadingCreandoNodo() {
       if (!this.posicionCreandoNodo) {
@@ -645,16 +651,24 @@ export default {
     },
 
     centrarEnNodo(n) {
-      this.$set(
-        this.centroVistaDecimal,
-        "x",
-        n.coords.x - this.$el.offsetWidth / (2 * this.factorZoom)
-      );
-      this.$set(
-        this.centroVistaDecimal,
-        "y",
-        n.coords.y - this.$el.offsetHeight / (2 * this.factorZoom)
-      );
+      const posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();
+      const posNodo = {
+        x: (n.autoCoords.x - this.esquinasDiagrama.x1) * this.factorZoom,
+        y: (n.autoCoords.y - this.esquinasDiagrama.y1) * this.factorZoom,
+      };
+
+      console.log(`posNodo: ${JSON.stringify(posNodo)}`);
+
+      const posIdealScroll = {
+        x: parseInt(posNodo.x - posDiagrama.width / 2),
+        y: parseInt(posNodo.y - posDiagrama.height / 2),
+      };
+
+      console.log(`Pos ideal scroll: ${JSON.stringify(posIdealScroll)}`);
+
+      this.$refs.contenedorDiagrama.scrollLeft = posIdealScroll.x;
+      this.$refs.contenedorDiagrama.scrollTop = posIdealScroll.y;
+
       this.seleccionNodo(n);
       //this.centroVista=e;
     },
@@ -1226,7 +1240,7 @@ export default {
   top: 1%;
   right: 1%;
   cursor: pointer;
-  z-index:1;
+  z-index: 1;
 }
 
 #simboloDescargandoNodos {
