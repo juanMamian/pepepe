@@ -222,6 +222,12 @@ export default {
 .seccionNodoConocimiento {
   width: 100%;
 }
+#zonaFront{
+  height: 100vh;
+}
+#zonaFront iframe{
+  height: 100%;
+}
 #iframeSeccion {
   width: 100%;
   height: 100vh;
