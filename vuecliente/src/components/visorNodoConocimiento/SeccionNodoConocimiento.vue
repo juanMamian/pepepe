@@ -224,9 +224,11 @@ export default {
 }
 #zonaFront{
   height: 100vh;
+  width: 100vw;
 }
 #zonaFront iframe{
   height: 100%;
+  width: 100%;
 }
 #iframeSeccion {
   width: 100%;
