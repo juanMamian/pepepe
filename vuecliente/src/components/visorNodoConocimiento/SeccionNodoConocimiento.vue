@@ -5,7 +5,7 @@
         <img src="@/assets/iconos/edit.svg" alt="Editar" />
       </div>
     </div>
-    <div id="zonaFront" v-show="!editando" :key="versionArchivo">
+    <div id="zonaFront" class="frontDeSeccion" v-show="!editando" :key="versionArchivo">
       <iframe
         id="iframeSeccion"
         :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
