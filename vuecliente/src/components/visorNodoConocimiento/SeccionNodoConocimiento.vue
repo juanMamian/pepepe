@@ -225,10 +225,10 @@ export default {
 
 <style scoped>
 .seccionNodoConocimiento {
-  width: 100%;
+  width: 100%;  
 }
 #zonaFront{
-  height: 100vh;
+  
   max-width:100vw;
   margin: 5px auto;
 }
@@ -238,6 +238,7 @@ export default {
 }
 #zonaFront img{
   max-width: 100%;
+  margin: 0px auto;
   display:block;
 }
 #iframeSeccion {

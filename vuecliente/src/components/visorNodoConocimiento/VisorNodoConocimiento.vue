@@ -732,6 +732,7 @@ export default {
 <style scoped>
 .visorNodoConocimiento {
   font-family: Salsa, cursive;
+  
 }
 #zonaTitulo {
   display: flex;

@@ -1,6 +1,7 @@
 <template>
   <div
     class="atlasConocimiento"
+    :style="{overflowY: nodoAbierto? 'scroll':'hidden' }"
     @mousedown.left.exact.stop="panningVista = true"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
@@ -449,6 +450,12 @@ export default {
         top: top + "px",
       };
     },
+    nodoAbierto(){
+      console.log("Verificando path name")
+      console.log(this.$route.name);
+
+      return this.$route.name==='visorNodoConocimiento'
+    }
   },
   methods: {
     iniciarCallingPosiciones() {
@@ -1156,7 +1163,7 @@ export default {
 <style scoped>
 .atlasConocimiento {
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 #menuContextual {
   position: absolute;
