@@ -227,13 +227,12 @@ export default {
 .seccionNodoConocimiento {
   width: 100%;  
 }
-#zonaFront{
-  
+#zonaFront{  
   max-width:100vw;
   margin: 5px auto;
 }
 #zonaFront iframe{
-  height: 100%;
+  
   width: 100%;
 }
 #zonaFront img{
