@@ -9,8 +9,13 @@
       <iframe
         id="iframeSeccion"
         :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
+        v-if="estaSeccion.tipoPrimario.substring(0,5)!='image'"
         frameborder="0"
       ></iframe>
+      <img
+      :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
+      v-if="estaSeccion.tipoPrimario.substring(0,5)==='image'"
+      />
     </div>
 
     <div id="zonaAdministracion" v-if="usuarioExperto" v-show="editando">
@@ -224,11 +229,16 @@ export default {
 }
 #zonaFront{
   height: 100vh;
-  width: 100vw;
+  max-width:100vw;
+  margin: 5px auto;
 }
 #zonaFront iframe{
   height: 100%;
   width: 100%;
+}
+#zonaFront img{
+  max-width: 100%;
+  display:block;
 }
 #iframeSeccion {
   width: 100%;
