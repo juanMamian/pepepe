@@ -395,7 +395,7 @@ export default {
 <style scoped>
 .ventanaEventoPublico {
   position: fixed;
-  top: 100px;
+  top: 0px;
   left: 0px;
   width: 100vw;
   height: 100vh;
