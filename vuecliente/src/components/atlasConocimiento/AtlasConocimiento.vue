@@ -23,6 +23,7 @@
         class="botonMenuContextual"
         id="botonCrearNuevoNodo"
         :class="{ deshabilitado: posicionCreandoNodo }"
+        v-if="usuarioAdministradorAtlas || usuarioProfe"
         @click="crearNodoEnMenuContextual"
       >
         Crear Nodo de conocimiento
@@ -1260,7 +1261,7 @@ export default {
 
 .visorNodoConocimiento {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   position: absolute;
   top: 0px;
   left: 0px;

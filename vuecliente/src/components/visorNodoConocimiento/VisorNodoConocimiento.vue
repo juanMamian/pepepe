@@ -54,7 +54,7 @@
 
     <div id="zonaContenidos" v-show="!$apollo.queries.esteNodo.loading">
       <div id="zonaSecciones" v-show="mostrandoContenido === 'estudiar'">
-        <div id="zonaTituloSeccion">
+        <div id="zonaTituloSeccion" v-show="!mostrandoMenuSecciones">
           <div
             id="nombreSeccionSeleccionada"
             @click="mostrandoMenuSecciones = true"
@@ -97,7 +97,7 @@
             <div
               class="boton"
               title="Eliminar"
-              v-show="usuarioExperto"
+              v-show="usuarioExperto || usuarioSuperadministrador"
               @click.stop="eliminarSeccion(seccion.id)"
             >
               <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
@@ -385,7 +385,7 @@ export default {
       });
     },
     eliminarSeccion(idSeccion) {
-      if (!this.usuarioExperto) {
+      if (!this.usuarioExperto && !this.usuarioSuperadministrador) {
         return;
       }
       if (
@@ -444,7 +444,7 @@ export default {
         });
     },
     crearNuevaSeccion() {
-      if (!this.usuarioExperto) {
+      if (!this.usuarioExperto && !this.usuarioSuperadministrador) {
         return;
       }
       this.creandoNuevaSeccion = true;
@@ -772,7 +772,7 @@ export default {
 }
 #contenedorSelectoresSeccion {
   width: min(400px, 90vw);
-  margin: 0px auto;
+  margin: 20px auto;
   background-color: var(--paletaMain);
   border-radius: 10px;
   position: relative;

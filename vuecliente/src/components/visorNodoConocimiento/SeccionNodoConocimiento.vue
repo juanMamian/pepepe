@@ -1,7 +1,7 @@
 <template>
   <div class="seccionNodoConocimiento">
     <div class="contenedorControles">
-      <div class="boton" v-if="usuarioExperto" @click="editando = !editando">
+      <div class="boton" v-if="usuarioExperto || usuarioSuperadministrador" @click="editando = !editando">
         <img src="@/assets/iconos/edit.svg" alt="Editar" />
       </div>
     </div>
@@ -9,16 +9,16 @@
       <iframe
         id="iframeSeccion"
         :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
-        v-if="estaSeccion.tipoPrimario.substring(0,5)!='image'"
+        v-if="estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0,5)!='image'"
         frameborder="0"
       ></iframe>
       <img
       :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
-      v-if="estaSeccion.tipoPrimario.substring(0,5)==='image'"
+      v-if="estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0,5)==='image'"
       />
     </div>
 
-    <div id="zonaAdministracion" v-if="usuarioExperto" v-show="editando">
+    <div id="zonaAdministracion" v-if="usuarioExperto || usuarioSuperadministrador" v-show="editando">
       <div id="nombre" v-show="!editandoNombre" @click="iniciarEdicionNombre">
         {{ estaSeccion.nombre }}
       </div>
