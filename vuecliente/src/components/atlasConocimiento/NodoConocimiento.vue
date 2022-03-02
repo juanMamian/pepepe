@@ -21,7 +21,7 @@
         fantasmeado:
           usuarioLogeado &&
           !aprendible &&
-          yo.atlas.configuracion.modo === 'estudiante' &&
+          modoAtlas === 'estudiante' &&
           !callingPosiciones,
         deNodoSeleccionado: seleccionado,
       }"
@@ -33,7 +33,7 @@
       src="@/assets/iconos/success.png"
       alt="Completado"
       title="Aprendizaje de este tema completado"
-      v-show="nodoAprendido && yo.atlas.configuracion.modo === 'estudiante'"
+      v-show="nodoAprendido && modoAtlas === 'estudiante'"
       :style="[
         {
           width: parseInt(20 * factorZoom) + 'px',
@@ -142,17 +142,17 @@
       :class="{
         nombreSeleccionado: seleccionado,
         nombreNodoAprendido:
-          nodoAprendido && yo.atlas.configuracion.modo === 'estudiante',
+          nodoAprendido && modoAtlas === 'estudiante',
         nombreNodoOutreach:
           !aprendible &&
           !callingPosiciones &&
-          yo.atlas.configuracion.modo === 'estudiante',
+          modoAtlas === 'estudiante',
         nombreNodoAprendible:
           aprendible &&
           !nodoAprendido &&
-          yo.atlas.configuracion.modo === 'estudiante',
+          modoAtlas === 'estudiante',
         nombreNodoExperto:
-          usuarioExpertoNodo && yo.atlas.configuracion.modo === 'experto',
+          usuarioExpertoNodo && modoAtlas === 'experto',
         nodoStuck: esteNodo.stuck && callingPosiciones,
         deNodoSeleccionado: seleccionado,
       }"
@@ -226,6 +226,7 @@ export default {
     esNodoObjetivo: Boolean,
     esTarget: Boolean,
     yo: Object,
+    modoAtlas:String,
     escondido: Boolean,
     centroVista: Object,
     idNodoMenuCx: String,
@@ -405,7 +406,7 @@ export default {
       if (
         !this.aprendible &&
         !this.usuarioSuperadministrador &&
-        this.yo.atlas.configuracion.modo === "estudiante"
+        this.modoAtlas === "estudiante"
       )
         return alert("¡Aún no puedes estudiar este nodo!");
       this.$router.push(this.$route.path+"/nodoConocimiento/" + this.esteNodo.id);

@@ -1,7 +1,7 @@
 <template>
   <div
     class="atlasConocimiento"
-    :style="{overflowY: nodoAbierto? 'scroll':'hidden' }"
+    :style="{ overflowY: nodoAbierto ? 'scroll' : 'hidden' }"
     @mousedown.left.exact.stop="panningVista = true"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
@@ -29,6 +29,29 @@
         Crear Nodo de conocimiento
       </div>
     </div>
+
+    <div id="zonaNodoTarget">
+      <div
+        class="boton"
+        @click="configurarNodoTarget(nodoSeleccionado?nodoSeleccionado.id:null)"
+        v-show="!enviandoQueryTarget && (nodoSeleccionado || nodoTarget)"
+        :title="
+          nodoSeleccionado
+            ? 'Rastrear ' + nodoSeleccionado.nombre
+            : yo.atlas.idNodoTarget
+            ? 'Dejar de rastrear'
+            : ''
+        "
+        :class="{deshabilitado: enviandoQueryTarget}"
+      >
+        <img src="@/assets/iconos/target.png" alt="Target" />
+      </div>
+      <loading texto="" v-show="enviandoQueryTarget"/>
+      <div id="nombreNodoTarget" v-if="nodoTarget" @click="centrarEnNodo(nodoTarget)">
+        {{ nodoTarget.nombre }}
+      </div>
+    </div>
+
     <div
       id="botonCallingPosiciones"
       v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
@@ -48,11 +71,11 @@
       ref="panelConjuntosNodos"
       :yo="yo"
       :todosNodos="todosNodos"
+      :modoAtlas="modoAtlas"
       :idNodoTarget="idNodoTarget"
       @targetSeleccionado="setNodoTargetCache"
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
     />
-    <panel-configuracion-atlas ref="panelConfiguracionAtlas" :yo="yo" />
 
     <div
       id="contenedorDiagrama"
@@ -93,6 +116,7 @@
           :idNodoMenuCx="idNodoMenuCx"
           :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
           :yo="yo"
+          :modoAtlas="modoAtlas"
           :key="nodo.id"
           v-for="nodo of nodosRender"
           :esteNodo="nodo"
@@ -122,6 +146,36 @@
       </div>
     </div>
 
+    <div id="barraInferior">
+      <div
+        class="boton"
+        title="Mostrar colecciones"
+        @click="$refs.panelConjuntosNodos.abierto = true"
+      >
+        <img src="@/assets/iconos/userNodes.png" alt="Nodos de usuario" />
+      </div>
+
+      <div
+        class="boton"
+        :title="
+          'Cambiar a modo ' + modoAtlas === 'experto' ? 'estudiante' : 'experto'
+        "
+        :class="{ deshabilitado: enviandoQueryModo }"
+        @click="setModo(modoAtlas === 'estudiante' ? 'experto' : 'estudiante')"
+      >
+        <img
+          src="@/assets/iconos/teacher.svg"
+          v-if="modoAtlas === 'experto'"
+          alt="Experto"
+        />
+        <img
+          src="@/assets/iconos/estudiante.png"
+          v-if="modoAtlas === 'estudiante'"
+          alt="Estudiante"
+        />
+      </div>
+    </div>
+
     <loading
       id="simboloDescargandoNodos"
       v-show="!nodosDescargados"
@@ -136,7 +190,6 @@ import NodoConocimiento from "./NodoConocimiento.vue";
 import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
 import PanelConjuntosNodos from "./PanelConjuntosNodos.vue";
-import PanelConfiguracionAtlas from "./PanelConfiguracionAtlas.vue";
 import EnlacesNodoConocimiento from "./EnlacesNodoConocimiento.vue";
 const debounce = require("debounce");
 
@@ -231,7 +284,6 @@ export default {
     BuscadorNodosConocimiento,
     Loading,
     PanelConjuntosNodos,
-    PanelConfiguracionAtlas,
     EnlacesNodoConocimiento,
   },
   name: "AtlasConocimiento",
@@ -253,7 +305,6 @@ export default {
         });
         return nuevoTodosNodos;
       },
-      fetchPolicy: "cache-and-network",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
@@ -288,6 +339,9 @@ export default {
       idNodoSeleccionado: null,
       idNodoMenuCx: null,
       idsNecesariosParaTarget: [],
+      enviandoQueryModo: false,
+      modoAtlas: "estudiante",
+      enviandoQueryTarget:false,
 
       redibujarEnlacesNodos: 0,
 
@@ -313,11 +367,7 @@ export default {
       actualizarTrazos: 0,
       panningVista: false,
       vistaPanned: false,
-      nodosConectadosAlSeleccionado: {
-        listaCompleta: [],
-        listaPorNiveles: [],
-      },
-      profundidadNodosConectadosAlSeleccionado: 1,
+      
       actualizarVinculosGrises: 0,
 
       ultimoTouchX: 0,
@@ -368,6 +418,10 @@ export default {
     idNodoTarget() {
       if (!this.yo || !this.yo.atlas) return null;
       return this.yo.atlas.idNodoTarget;
+    },
+    nodoTarget() {
+      if (!this.idNodoTarget) return null;
+      return this.todosNodos.find((n) => n.id === this.idNodoTarget);
     },
     idsNodosAprendidos() {
       return this.yo.atlas.datosNodos
@@ -451,11 +505,15 @@ export default {
         top: top + "px",
       };
     },
-    nodoAbierto(){
-      console.log("Verificando path name")
+    nodoAbierto() {
+      console.log("Verificando path name");
       console.log(this.$route.name);
 
-      return this.$route.name==='visorNodoConocimiento'
+      return this.$route.name === "visorNodoConocimiento";
+    },
+    nodosConectadosAlSeleccionado(){
+      if(!this.nodoSeleccionado)return [];
+      return this.todosNodos.filter(n=> this.nodoSeleccionado.vinculos.some(v=>v.idRef===n.id));
     }
   },
   methods: {
@@ -584,7 +642,6 @@ export default {
       this.panningVista = false;
       this.vistaPanned = false;
       this.$refs.panelConjuntosNodos.abierto = false;
-      this.$refs.panelConfiguracionAtlas.abierto = false;
       this.mostrandoMenuContextual = false;
     },
     setEstadoObjetivoNodoCache(nuevoEstado, idNodo) {
@@ -657,7 +714,104 @@ export default {
         data: nuevoCache,
       });
     },
+    setModo(modo) {
+      if (!this.usuarioLogeado) return;
+      this.modoAtlas = modo;
+      // this.enviandoQueryModo = true;
 
+      // this.$apollo
+      //   .mutate({
+      //     mutation: gql`
+      //       mutation ($idUsuario: ID!, $nuevoModo: String!) {
+      //         setModoUsuarioAtlas(idUsuario: $idUsuario, nuevoModo: $nuevoModo){
+      //             id
+      //             atlas{
+      //                 configuracion{
+      //                     modo
+      //                 }
+      //             }
+      //         }
+      //       }
+      //     `,
+      //     variables: {
+      //       idUsuario: this.usuario.id,
+      //       nuevoModo: modo,
+      //     },
+      //   })
+      //   .then(() => {
+      //     this.enviandoQueryModo = false;
+
+      //   })
+      //   .catch((error) => {
+      //     this.enviandoQueryModo = false;
+      //     console.log(`Error: ${error}`);
+      //   });
+    },
+    configurarNodoTarget(idNodo){
+      console.log(`Configurando nodo target`);
+      if(!idNodo || idNodo===this.idNodoTarget){
+        console.log(`Nulificando`);
+        this.nulificarNodoTarget();
+        return;
+      }
+      else{
+        this.setNodoTarget(idNodo);
+      }
+    },
+    setNodoTarget(idNodo) {
+      if (!idNodo) return;
+      if (this.idNodoTarget == idNodo) {        
+        return;
+      }
+
+      this.enviandoQueryTarget = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!) {
+              setNodoAtlasTarget(idNodo: $idNodo){
+                id
+                atlas{
+                  idNodoTarget
+                }
+              }
+            }
+          `,
+          variables: {
+            idNodo,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryTarget = false;          
+        })
+        .catch((error) => {
+          this.enviandoQueryTarget = false;
+          console.log(`Error: ${error}`);
+        });
+    },
+    nulificarNodoTarget() {
+      this.enviandoQueryTarget = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation {
+              nulificarNodoTargetUsuarioAtlas{
+                id
+                atlas{
+                  idNodoTarget
+                }
+              }
+            }
+          `,
+        })
+        .then(() => {
+          this.enviandoQueryTarget = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryTarget = false;
+          console.log(`Error: ${error}`);
+        });
+    },
     centrarEnNodo(n) {
       const posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();
       const posNodo = {
@@ -886,35 +1040,7 @@ export default {
         });
     },
     seleccionNodo(nodo) {
-      this.idNodoSeleccionado = nodo.id;
-      if (!this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
-        console.log(`No encontrado`);
-        return null;
-      }
-
-      let profundidad = parseInt(this.profundidadNodosConectadosAlSeleccionado);
-      let listaPorNiveles = [];
-      let idNodoSel = this.idNodoSeleccionado;
-      let listaCompleta = [idNodoSel];
-      if (profundidad > 0) {
-        for (let i = 0; i < profundidad; i++) {
-          listaPorNiveles[i] = [];
-        }
-        ({ listaCompleta, listaPorNiveles } =
-          this.encontrarNodosConectadosRecursivamente(
-            idNodoSel,
-            ["target", "source"],
-            ["continuacion"],
-            listaCompleta,
-            listaPorNiveles,
-            0,
-            profundidad
-          ));
-      }
-      this.nodosConectadosAlSeleccionado = {
-        listaCompleta,
-        listaPorNiveles,
-      };
+      this.idNodoSeleccionado = nodo.id;     
     },
     async eliminarVinculo(args) {
       if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
@@ -993,46 +1119,7 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    encontrarNodosConectadosRecursivamente(
-      idNodo,
-      roles,
-      tipos,
-      listaCompleta,
-      listaPorNiveles,
-      nivel,
-      profundidad
-    ) {
-      // Rol debe ser un array que incluye los roles validos en esta búsqueda.
-      // Tipo deber ser un array que incluye todos los tipos válidos en esta búsqueda
-      let nodo = this.todosNodos.find((n) => n.id == idNodo);
-      for (let vinculo of nodo.vinculos) {
-        if (
-          this.todosNodos.some((n) => n.id == vinculo.idRef) &&
-          roles.some((r) => r == vinculo.rol) &&
-          tipos.some((t) => t == vinculo.tipo) &&
-          !listaCompleta.some((idN) => idN == vinculo.idRef)
-        ) {
-          listaPorNiveles[nivel].push(vinculo.idRef);
-          listaCompleta.push(vinculo.idRef);
-
-          if (nivel + 1 < profundidad) {
-            ({ listaCompleta, listaPorNiveles } =
-              this.encontrarNodosConectadosRecursivamente(
-                vinculo.idRef,
-                roles,
-                tipos,
-                listaCompleta,
-                listaPorNiveles,
-                nivel + 1,
-                profundidad
-              ));
-          }
-        } else {
-          console.log(`No`);
-        }
-      }
-      return { listaCompleta, listaPorNiveles };
-    },
+    
     zoomVista(deltaZoom) {
       var nuevoZoom = this.zoom + deltaZoom;
       if (nuevoZoom < this.minZoom) {
@@ -1166,6 +1253,19 @@ export default {
   position: relative;
   overflow-x: hidden;
 }
+#zonaNodoTarget {
+  position:absolute;
+  top: 0px;
+  left: 0px;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  z-index:100;
+}
+#zonaNodoTarget .boton {
+  width: 25px;
+  height: 25px;
+}
 #menuContextual {
   position: absolute;
   background-color: gray;
@@ -1208,16 +1308,15 @@ export default {
 #buscadorNodosConocimiento {
   position: absolute;
   top: 1%;
-  left: 1%;
+  right: 1%;
   /* transform: translateX(-50%); */
   z-index: 1;
+  width: min(100vh, 350px);
 }
 #panelConjuntosNodos {
   z-index: 100;
 }
-#panelConfiguracionAtlas {
-  z-index: 100;
-}
+
 #panelObjetivos {
   position: absolute;
   top: 2%;
@@ -1267,6 +1366,22 @@ export default {
   left: 0px;
   z-index: 1000;
   background-color: whitesmoke;
+}
+
+#barraInferior {
+  position: absolute;
+  bottom: 0px;
+  padding: 10px;
+  display: flex;
+  flex-direction: row-reverse;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#barraInferior .boton {
+  height: 30px;
+  width: 30px;
+  margin: 0px 5px;
 }
 
 .fadeOut-leave-to {

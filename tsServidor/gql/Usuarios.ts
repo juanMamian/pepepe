@@ -168,8 +168,8 @@ export const typeDefs = gql`
         eliminarNotificacionActividadForos(idParent:ID!):Boolean,
         setNodoObjetivo(idNodo:ID!, nuevoEstadoObjetivo:Boolean):Boolean
         setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):Boolean        
-        setNodoAtlasTarget(idNodo:ID!):Boolean,
-        nulificarNodoTargetUsuarioAtlas:Boolean,
+        setNodoAtlasTarget(idNodo:ID!):Usuario,
+        nulificarNodoTargetUsuarioAtlas:Usuario,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 
         asignarPermisoTodosUsuarios(nuevoPermiso:String!):Boolean,
@@ -611,11 +611,12 @@ export const resolvers = {
                 var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
                 elUsuario.atlas.idNodoTarget = idNodo;
                 await elUsuario.save();
-                return true;
             } catch (error) {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
+
+            return elUsuario;
 
         },
         nulificarNodoTargetUsuarioAtlas: async function (_: any, __: any, contexto: contextoQuery) {
@@ -630,12 +631,11 @@ export const resolvers = {
                 var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
                 elUsuario.atlas.idNodoTarget = null;
                 await elUsuario.save();
-                return true;
             } catch (error) {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
-
+            return elUsuario;
         },
         setModoUsuarioAtlas: async function (_: any, { idUsuario, nuevoModo }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
