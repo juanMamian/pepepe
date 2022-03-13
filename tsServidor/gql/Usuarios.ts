@@ -1481,8 +1481,7 @@ export const resolvers = {
                 var losNodos: any = await Nodo.find({ _id: { $in: parent.idsNodos } }).exec();
             } catch (error) {
                 console.log(`Error buscando los nodos de la coleccion ${parent.id}`);
-            }
-            console.log(`Encontrados ${losNodos.length} nodos`);
+            }            
             if (!losNodos) losNodos = [];
             return losNodos;
         }
@@ -1491,9 +1490,12 @@ export const resolvers = {
         nombreNodo: async function (parent: any, _: any, __: any) {
             try {
                 var elNodo: any = await Nodo.findById(parent.idNodo).select("nombre").exec();
+                if(!elNodo)throw "Nodo no encontrado resolviendo nombre de dato nodo"
             } catch (error) {
-                console.log(`DatoNodo huerfano en usuario`);
+                console.log(`error: ${error}`);
+                return "";
             }
+            
             return elNodo.nombre;
         }
     }
