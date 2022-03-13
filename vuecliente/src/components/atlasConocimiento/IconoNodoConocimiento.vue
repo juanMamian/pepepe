@@ -1,11 +1,5 @@
 <template>
-  <div class="iconoNodoConocimiento">
-    <img
-      src="@/assets/iconos/target.png"
-      alt="Objetivo"
-      v-show="esTarget"
-      class="imagenTarget"
-    />
+  <div class="iconoNodoConocimiento">    
     <img
       :src="this.serverUrl + '/api/atlas/iconos/' + esteNodo.id"
       alt=""
@@ -26,7 +20,6 @@ export default {
   },
   props:{
       esteNodo:Object,
-      esTarget:Boolean,
       seleccionado:Boolean
   }
 };
@@ -102,15 +95,5 @@ export default {
 }
 .botonMenuCx:hover {
   background-color: gray;
-}
-
-.imagenTarget{
-  width: 180%;
-  position:absolute;
-  top: -40%;
-  left: -40%;
-  z-index: 10;
-  opacity: 0.86;
-
 }
 </style>

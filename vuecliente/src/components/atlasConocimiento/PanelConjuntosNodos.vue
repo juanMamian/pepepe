@@ -92,7 +92,6 @@
         v-show="conjuntoSeleccionado"
         :key="nodo.id"
         :seleccionado="nodo.id === idNodoSeleccionado"
-        :esTarget="idNodoTarget === nodo.id"
         @click.native.stop="idNodoSeleccionado = nodo.id"
         @dblclick.native.stop="$emit('centrarEnNodo', nodo.id)"
       />
@@ -142,7 +141,6 @@ export default {
   props: {
     yo: Object,
     todosNodos: Array,
-    idNodoTarget: String,
     modoAtlas:String,
   },
   data() {
@@ -153,7 +151,6 @@ export default {
 
       idNodoSeleccionado: null,
 
-      enviandoQueryTarget: false,
       enviandoQueryColecciones: false,
       enviandoQueryNodosSeccion: false,
     };

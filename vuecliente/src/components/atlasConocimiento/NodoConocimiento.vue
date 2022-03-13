@@ -12,8 +12,24 @@
   >
     <div id="zonaArrastre" v-show="arrastrandoNodo"></div>
 
-    <div v-if="usuarioSuperadministrador" v-show="configuracionAtlas.posicionando" id="fuerzaCentroMasa" class="fuerzaMovimiento" :style="[estiloFuerzaCentroMasa]"><div class="flechitaFuerza"></div></div>
-    <div v-if="usuarioSuperadministrador" v-show="configuracionAtlas.posicionando" id="fuerzaColision" class="fuerzaMovimiento" :style="[estiloFuerzaColision]"><div class="flechitaFuerza"></div></div>
+    <div
+      v-if="usuarioSuperadministrador"
+      v-show="configuracionAtlas.posicionando"
+      id="fuerzaCentroMasa"
+      class="fuerzaMovimiento"
+      :style="[estiloFuerzaCentroMasa]"
+    >
+      <div class="flechitaFuerza"></div>
+    </div>
+    <div
+      v-if="usuarioSuperadministrador"
+      v-show="configuracionAtlas.posicionando"
+      id="fuerzaColision"
+      class="fuerzaMovimiento"
+      :style="[estiloFuerzaColision]"
+    >
+      <div class="flechitaFuerza"></div>
+    </div>
 
     <img
       src="@/assets/iconos/nodoConocimientoDefault.png"
@@ -31,8 +47,8 @@
     />
     <img
       src="@/assets/iconos/success.png"
-      alt="Completado"
-      title="Aprendizaje de este tema completado"
+      alt="Aprendido"
+      title="Este tema ya ha sido aprendido"
       v-show="nodoAprendido && modoAtlas === 'estudiante'"
       :style="[
         {
@@ -75,11 +91,27 @@
       >
         {{ esteNodo.id }}
       </div>
-      <div class="botonMenuCx selectorSubseccionMenuCx" v-show="yo.atlas && yo.atlas.colecciones && yo.atlas.colecciones.length>0">
+      <div
+        class="botonMenuCx selectorSubseccionMenuCx"
+        v-show="
+          yo.atlas && yo.atlas.colecciones && yo.atlas.colecciones.length > 0
+        "
+      >
+        <img
+          src="@/assets/iconos/userNodes.png"
+          alt="nodos"
+          class="iconoMenuCx"
+        />
         Colecciones
         <div class="subseccionMenuCx">
-          <div class="botonMenuCx" v-for="coleccion of yo.atlas.colecciones" :key="coleccion.id" @click.stop="toggleNodoEnColeccion(coleccion.id)" :class="{enColeccion:coleccion.idsNodos.includes(esteNodo.id)}">
-            {{coleccion.nombre}}
+          <div
+            class="botonMenuCx"
+            v-for="coleccion of yo.atlas.colecciones"
+            :key="coleccion.id"
+            @click.stop="toggleNodoEnColeccion(coleccion.id)"
+            :class="{ enColeccion: coleccion.idsNodos.includes(esteNodo.id) }"
+          >
+            {{ coleccion.nombre }}
           </div>
         </div>
       </div>
@@ -101,9 +133,48 @@
         class="botonMenuCx"
         v-if="usuarioLogeado"
         @click.stop="toggleAprendido"
-        v-show="aprendible"
       >
+        <img
+          src="@/assets/iconos/check.svg"
+          alt="check"
+          class="iconoMenuCx"
+          style="border-radius: 50%"
+          v-show="!togglingAprendido"
+          :style="[
+            {
+              backgroundColor: nodoAprendido
+                ? 'var(--atlasConocimientoCheck)'
+                : '',
+            },
+          ]"
+        />
+        <loading v-show="togglingAprendido" texto=""/>
         {{ nodoAprendido ? "Desm" : "M" }}arcar como aprendido
+      </div>
+      <div
+        class="botonMenuCx"
+        v-if="usuarioLogeado"
+        @click.stop="marcarEstudiado"
+        v-show="aprendible"
+        :class="{ deshabilitado: enviandoFechaEstudiado }"
+      >
+        <img src="@/assets/iconos/readme.svg" alt="Read" class="iconoMenuCx" v-show="!enviandoFechaEstudiado" />
+        <loading v-show="enviandoFechaEstudiado" texto="" />
+        Estudiado
+      </div>
+      <div
+        class="botonMenuCx"
+        v-if="usuarioLogeado"
+        @click.stop="iniciarGestionRepasos"
+        v-show="nodoEstudiado && !nodoAprendido"
+        :class="{ deshabilitado: creandoIteracionRepaso }"
+      >
+        <img
+          src="@/assets/iconos/clock.svg"
+          alt="Reloj"
+          class="iconoMenuCx"
+        />Repasos
+        <loading texto="" v-show="creandoIteracionRepaso" />
       </div>
       <template
         v-if="
@@ -135,28 +206,7 @@
         </div>
       </template>
     </div>
-    <div
-      id="nombre"
-      :style="[estiloCartelNombre]"
-      ref="nombre"
-      :class="{
-        nombreSeleccionado: seleccionado,
-        nombreNodoAprendido:
-          nodoAprendido && modoAtlas === 'estudiante',
-        nombreNodoOutreach:
-          !aprendible &&
-          !callingPosiciones &&
-          modoAtlas === 'estudiante',
-        nombreNodoAprendible:
-          aprendible &&
-          !nodoAprendido &&
-          modoAtlas === 'estudiante',
-        nombreNodoExperto:
-          usuarioExpertoNodo && modoAtlas === 'experto',
-        nodoStuck: esteNodo.stuck && callingPosiciones,
-        deNodoSeleccionado: seleccionado,
-      }"
-    >
+    <div id="nombre" :style="[estiloCartelNombre]" ref="nombre">
       {{ callingPosiciones ? esteNodo.puntaje : esteNodo.nombre }}
     </div>
 
@@ -189,8 +239,11 @@
 
 <script>
 import gql from "graphql-tag";
-
+import Loading from "../utilidades/Loading.vue";
+import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
+import { QUERY_DATOS_USUARIO_NODOS } from "./AtlasConocimiento.vue";
 export default {
+  components: { Loading },
   name: "NodoConocimiento",
   data() {
     return {
@@ -216,6 +269,10 @@ export default {
         borderRadius: 4,
       },
       mostrarDescripcion: true,
+      creandoIteracionRepaso: false,
+
+      enviandoFechaEstudiado: false,
+      togglingAprendido:false,
     };
   },
   props: {
@@ -226,13 +283,16 @@ export default {
     esNodoObjetivo: Boolean,
     esTarget: Boolean,
     yo: Object,
-    modoAtlas:String,
+    modoAtlas: String,
     escondido: Boolean,
     centroVista: Object,
     idNodoMenuCx: String,
     idsNodosAprendidos: Array,
+    idsNodosEstudiados: Array,
+    idsNodosFrescos: Array,
+    idsNodosPresentesCabeza: Array,
     nodoSeleccionado: Object,
-    seleccionado:Boolean,
+    seleccionado: Boolean,
     usuarioAdministradorAtlas: {
       type: Boolean,
       default: false,
@@ -240,7 +300,7 @@ export default {
     esquinasDiagrama: Object,
     callingPosiciones: Boolean,
     factorZoom: Number,
-    configuracionAtlas:Object,
+    configuracionAtlas: Object,
   },
   computed: {
     menuCx() {
@@ -255,11 +315,11 @@ export default {
         fSize.y = Math.round(baseY * 1.1);
       }
       return { ...fSize };
-    },    
+    },
     estiloPosicion() {
       //Posicion ajustada a las esquinas del diagrama:
-      const posXAjustada=this.posicion.x-this.esquinasDiagrama.x1;
-      const posYAjustada=this.posicion.y-this.esquinasDiagrama.y1;
+      const posXAjustada = this.posicion.x - this.esquinasDiagrama.x1;
+      const posYAjustada = this.posicion.y - this.esquinasDiagrama.y1;
 
       //Posicion absoluta
       const posY = Math.round(
@@ -299,32 +359,60 @@ export default {
       return this.$store.state.usuario.permisos;
     },
     aprendible() {
+      if (!this.esteNodo.vinculos.some((v) => v.rol == "target")) {
+        return true;
+      }
       var idsNecesarios = this.esteNodo.vinculos
         .filter((v) => v.rol == "target")
         .map((v) => v.idRef);
-      return (
-        idsNecesarios.every((id) => this.idsNodosAprendidos.includes(id)) ||
-        this.idsNodosAprendidos.includes(this.esteNodo.id) ||
-        !this.esteNodo.vinculos.some((v) => v.rol == "target")
+      return idsNecesarios.every((id) =>
+        this.idsNodosPresentesCabeza.includes(id)
       );
     },
     fantasmeado() {
-      if (
-        this.esteNodo.vinculos
-          .filter((v) => v.rol == "target")
-          .some((v) => this.idsNodosAprendidos.includes(v.idRef)) ||
-        this.esteNodoAprendido ||
-        !this.esteNodo.vinculos.some((v) => v.rol == "target")
-      ) {
-        return false;
-      }
-      return true;
+      return !this.aprendible;
     },
     nodoAprendido() {
       return this.idsNodosAprendidos.includes(this.esteNodo.id);
     },
+    nodoEstudiado(){
+      return this.idsNodosEstudiados.includes(this.esteNodo.id);
+    },
+    nodoRepasar(){
+      return !this.idNodoAprendido && this.nodoEstudiado && !this.idsNodosFrescos.includes(this.esteNodo.id);
+    },
+    nodoPresenteCabeza() {
+      return this.idsNodosPresentesCabeza.includes(this.esteNodo.id);
+    },
     estiloCartelNombre() {
+      var color = "var(--atlasConocimientoOff)";
+      var opacity = 0.4;
+
+      if (this.modoAtlas === "estudiante") {
+        if (this.nodoPresenteCabeza) {
+          color = "var(--atlasConocimientoCheck)";
+          opacity = 1;
+        }
+        else if(this.nodoRepasar){
+          color="var(--atlasConocimientoRepaso)";
+          opacity=1;
+        } 
+        else if (this.aprendible) {
+          color = "var(--atlasConocimientoAvailable)";
+          opacity = 1;
+        }
+        
+      } else if (this.modoAtlas === "experto") {
+        opacity = 0.7;
+        if (this.usuarioExpertoNodo) {
+          color = "var(--atlasConocimientoCheck)";
+          opacity = 1;
+        }
+      }
+
       return {
+        backgroundColor: color,
+        opacity,
         minWidth:
           parseInt(this.estiloNombreBase.minWidth * this.factorZoom) + "px",
         fontSize:
@@ -341,24 +429,30 @@ export default {
       if (!this.usuario || !this.usuario.id) return false;
       return this.esteNodo.expertos.includes(this.usuario.id);
     },
-    estiloFuerzaCentroMasa(){
+    estiloFuerzaCentroMasa() {
       return {
-        width: Math.round(this.esteNodo.fuerzaCentroMasa.fuerza*this.factorZoom)+'px',
-        height: Math.round(3*this.factorZoom)+"px",
-        transform: "rotate("+this.esteNodo.fuerzaCentroMasa.direccion+"rad)"
-        }
+        width:
+          Math.round(this.esteNodo.fuerzaCentroMasa.fuerza * this.factorZoom) +
+          "px",
+        height: Math.round(3 * this.factorZoom) + "px",
+        transform:
+          "rotate(" + this.esteNodo.fuerzaCentroMasa.direccion + "rad)",
+      };
     },
-    estiloFuerzaColision(){
+    estiloFuerzaColision() {
       return {
-        width: Math.round(this.factorZoom*this.esteNodo.fuerzaColision.fuerza)+'px',
-        height: Math.round(3*this.factorZoom)+"px",
-        transform: "rotate("+this.esteNodo.fuerzaColision.direccion+"rad)"
-        }
-    }
+        width:
+          Math.round(this.factorZoom * this.esteNodo.fuerzaColision.fuerza) +
+          "px",
+        height: Math.round(3 * this.factorZoom) + "px",
+        transform: "rotate(" + this.esteNodo.fuerzaColision.direccion + "rad)",
+      };
+    },
   },
   methods: {
     toggleAprendido() {
       var nuevoEstadoAprendido = this.nodoAprendido ? false : true;
+      this.togglingAprendido=true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -366,8 +460,12 @@ export default {
               setNodoAtlasAprendidoUsuario(
                 idNodo: $idNodo
                 nuevoEstadoAprendido: $nuevoEstadoAprendido
-              )
+              ){
+                ...fragDatoNodoConocimiento
+                
+              }
             }
+            ${fragmentoDatoNodoConocimiento}
           `,
           variables: {
             idNodo: this.esteNodo.id,
@@ -375,10 +473,13 @@ export default {
           },
         })
         .then(({ data: { setNodoAtlasAprendidoUsuario } }) => {
-          if (setNodoAtlasAprendidoUsuario) {
-            this.$emit("tengoNuevoValorAprendido", nuevoEstadoAprendido);
-          }
-        });
+          console.log(`${setNodoAtlasAprendidoUsuario.length} nodos modificados`);
+          this.togglingAprendido=false;
+
+        }).catch((error)=>{
+          console.log(`Error: ${error}`);
+          this.togglingAprendido=false;
+        })
     },
     // setNodoObjetivo(nuevoEstadoObjetivo) {
     //   this.$apollo
@@ -409,7 +510,9 @@ export default {
         this.modoAtlas === "estudiante"
       )
         return alert("¡Aún no puedes estudiar este nodo!");
-      this.$router.push(this.$route.path+"/nodoConocimiento/" + this.esteNodo.id);
+      this.$router.push(
+        this.$route.path + "/nodoConocimiento/" + this.esteNodo.id
+      );
     },
     copiarId(e) {
       let str = e.target.innerText.trim();
@@ -483,30 +586,155 @@ export default {
       console.log(`Stopping`);
       e.stopPropagation();
     },
-    toggleNodoEnColeccion(idColeccion){
-      if(!this.usuario || !this.usuario.id){
-        return ;
+    toggleNodoEnColeccion(idColeccion) {
+      if (!this.usuario || !this.usuario.id) {
+        return;
       }
       this.$apollo.mutate({
-        mutation:gql`
-          mutation($idNodo:ID!, $idColeccion:ID!, $idUsuario:ID!){
-            toggleNodoColeccionNodosAtlasConocimientoUsuario(idNodo: $idNodo, idColeccion:$idColeccion, idUsuario: $idUsuario){
+        mutation: gql`
+          mutation ($idNodo: ID!, $idColeccion: ID!, $idUsuario: ID!) {
+            toggleNodoColeccionNodosAtlasConocimientoUsuario(
+              idNodo: $idNodo
+              idColeccion: $idColeccion
+              idUsuario: $idUsuario
+            ) {
               id
               idsNodos
-              nodos{
+              nodos {
                 id
                 nombre
               }
             }
           }
         `,
-        variables:{
+        variables: {
           idNodo: this.esteNodo.id,
           idColeccion,
           idUsuario: this.usuario.id,
-        }
-      })
-    }
+        },
+      });
+    },
+    iniciarGestionRepasos() {
+      var elDatoNodo = this.yo.atlas.datosNodos.find(
+        (dn) =>
+          dn.idNodo === this.esteNodo.id && dn.iteracionesRepaso.length > 0
+      );
+      if (elDatoNodo) {
+        console.log(`Este nodo ya tenía repasos`);
+        this.$router.push({
+          name: "ventanaRepasos",
+          params: { idRepaso: elDatoNodo.id },
+        });
+      } else {
+        console.log(`Este nodo no tenía repasos. Creando`);
+        this.addIteracionRepaso();
+      }
+    },
+    addIteracionRepaso() {
+      console.log(`Enviando para add to lista repasos`);
+      this.creandoIteracionRepaso = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idUsuario: ID!, $idNodo: ID!) {
+              crearIteracionRepasoNodoConocimientoUsuario(
+                idUsuario: $idUsuario
+                idNodo: $idNodo
+              ) {
+                id
+                iteracionesRepaso {
+                  id
+                  intervalo
+                }
+              }
+            }
+          `,
+          variables: {
+            idUsuario: this.usuario.id,
+            idNodo: this.esteNodo.id,
+          },
+        })
+        .then(({ data: { crearIteracionRepasoNodoConocimientoUsuario } }) => {
+          this.creandoIteracionRepaso = false;
+          this.$router.push({
+            name: "ventanaRepasos",
+            params: {
+              idRepaso: crearIteracionRepasoNodoConocimientoUsuario.id,
+            },
+          });
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.creandoIteracionRepaso = false;
+        });
+    },
+    marcarEstudiado() {
+      if (!this.usuarioLogeado) {
+        return;
+      }
+
+      var fechaEstudiado = new Date();
+      // fechaEstudiado.setDate(7);
+
+
+      // fechaEstudiado.setHours(0);
+      // fechaEstudiado.setMinutes(0);
+      // fechaEstudiado.setSeconds(0);
+      // fechaEstudiado.setMilliseconds(0);
+
+      this.enviandoFechaEstudiado = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idUsuario: ID!, $idNodo: ID!, $fecha: Date!) {
+              setDateNodoConocimientoEstudiadoUsuario(
+                idUsuario: $idUsuario
+                idNodo: $idNodo
+                fecha: $fecha
+              ) {
+                ...fragDatoNodoConocimiento
+              }
+            }
+            ${fragmentoDatoNodoConocimiento}
+          `,
+          variables: {
+            idUsuario: this.usuario.id,
+            idNodo: this.esteNodo.id,
+            fecha: fechaEstudiado,
+          },
+        })
+        .then(({ data: { setDateNodoConocimientoEstudiadoUsuario } }) => {
+          this.enviandoFechaEstudiado = false;
+          if (
+            !this.yo.atlas.datosNodos.some(
+              (dn) => dn.id === setDateNodoConocimientoEstudiadoUsuario.id
+            )
+          ) {
+            console.log(
+              `No estaba en caché. Pushing ${JSON.stringify(
+                setDateNodoConocimientoEstudiadoUsuario
+              )}`
+            );
+            const store = this.$apollo.provider.defaultClient;
+            const cache = store.readQuery({
+              query: QUERY_DATOS_USUARIO_NODOS,
+            });
+            var nuevoCache = JSON.parse(JSON.stringify(cache));
+
+            nuevoCache.yo.atlas.datosNodos.push(
+              setDateNodoConocimientoEstudiadoUsuario
+            );
+            store.writeQuery({
+              query: QUERY_DATOS_USUARIO_NODOS,
+              data: nuevoCache,
+            });
+          }
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoFechaEstudiado = false;
+        });
+    },
   },
   watch: {
     esteNodo() {
@@ -575,41 +803,13 @@ export default {
   border-style: solid;
 }
 
-.nombreNodoOutreach {
-  background-color: rgb(127, 190, 192);
-  border-color: rgb(53, 110, 112);
-  opacity: 0.4;
-}
-.nombreNodoOutreach:hover {
-  opacity: 0.6;
-}
-.nombreNodoOutreach.deNodoSeleccionado {
-  opacity: 0.8;
-}
-
-.nombreNodoAprendible {
-  background-color: rgb(221, 236, 91);
-  border-color: rgb(189, 120, 16);
-}
-
-.nombreNodoAprendido {
-  background-color: rgb(135, 199, 135);
-  border-color: rgb(24, 92, 24);
-}
-
-#nombre.nodoStuck {
-  background-color: rgb(206, 94, 94);
-}
-.nombreNodoExperto {
-  background-color: rgb(150, 101, 150);
-}
 #menuContextual {
   position: absolute;
   top: 110%;
   left: 110%;
   min-width: 140px;
   padding: 5px 0px;
-  z-index: 10;
+  z-index: 110;
   background-color: rgb(177, 177, 159);
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
     0 1px 5px 0 rgba(0, 0, 0, 0.12);
@@ -617,35 +817,41 @@ export default {
 .botonMenuCx {
   cursor: pointer;
   font-size: 14px;
-  padding: 3px 6px;
+  padding: 13px 10px;
+  display: flex;
+  align-items: center;
+}
+.iconoMenuCx {
+  height: 13px;
+  margin: 0px 5px;
 }
 .seccionMenuCx {
   font-size: 15px;
   color: rgb(71, 71, 71);
+  padding: 5px;
 }
 .botonMenuCx:hover {
   background-color: gray;
 }
-.selectorSubseccionMenuCx{
+.selectorSubseccionMenuCx {
   position: relative;
 }
 
-.subseccionMenuCx{
+.subseccionMenuCx {
   position: absolute;
   left: 100%;
   top: 0%;
   display: none;
   background-color: rgb(177, 177, 159);
 }
-.selectorSubseccionMenuCx:hover>.subseccionMenuCx{
+.selectorSubseccionMenuCx:hover > .subseccionMenuCx {
   display: block;
 }
-.enColeccion{
+.enColeccion {
   background-color: rgb(117, 182, 117);
 }
-.enColeccion:hover{
-    background-color: rgb(136, 168, 136);
-
+.enColeccion:hover {
+  background-color: rgb(136, 168, 136);
 }
 .cuadritoDescripcionNodo {
   position: absolute;
@@ -700,7 +906,7 @@ export default {
   width: 15px;
   height: 15px;
 }
-.fuerzaMovimiento{  
+.fuerzaMovimiento {
   background-color: black;
   position: absolute;
   top: 50%;
@@ -708,13 +914,13 @@ export default {
   transform-origin: 0% 0%;
   z-index: 200;
 }
-#fuerzaCentroMasa{
+#fuerzaCentroMasa {
   background-color: blue;
 }
-#fuerzaColision{
+#fuerzaColision {
   background-color: red;
 }
-.flechitaFuerza{
+.flechitaFuerza {
   position: absolute;
   top: 50%;
   left: 100%;

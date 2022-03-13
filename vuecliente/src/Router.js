@@ -9,6 +9,7 @@ import Proyecto from "./components/Proyecto.vue"
 import Registro from "./components/Registro.vue"
 import Personas from "./components/Personas.vue"
 import HomeNodo from "./components/atlasSolidaridad/homeNodo/HomeNodo"
+import VentanaRepasos from "./components/atlasConocimiento/VentanaRepasos"
 // import ActividadesDeGrupo from "./components/actividadesProfes/ActividadesDeGrupo.vue"
 // import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
 // import ActividadesEstudiantiles from "./components/ActividadesEstudiantiles.vue"
@@ -27,7 +28,16 @@ const routes = [
 
     {
         path: "/atlas", name: "atlas", component: atlasConocimiento, children: [
-            { path: "nodoConocimiento/:idNodo", component: VisorNodoConocimiento, name:"visorNodoConocimiento" }
+            {
+                path: "nodoConocimiento/:idNodo",
+                component: VisorNodoConocimiento,
+                name: "visorNodoConocimiento"
+            },
+            {
+                path: "repasos",
+                component: VentanaRepasos,
+                name: "ventanaRepasos"
+            }
         ]
     },
     {
@@ -82,7 +92,8 @@ const routes = [
                 path: "ventanaEventoPersonal/:idEvento",
                 component: VentanaEventoPersonal,
                 name: "VentanaEventoPersonal",
-            }
+            },
+
         ]
     },
     { path: "/foros", component: ForosGenerales },
@@ -176,7 +187,6 @@ export const router = new Router({
 });
 
 router.beforeEach((to, from, next) => {
-    console.log(`Guarda before ${to.path}`);
 
     if (to.path != '/login' && !localStorage.getItem("token")) {
         next("/login");

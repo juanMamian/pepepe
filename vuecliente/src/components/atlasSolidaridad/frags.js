@@ -6,7 +6,7 @@ export const fragmentoPersonaAtlas = gql`
     id
     nombre
     username
-    nombres
+    nombres    
     apellidos
     vinculos {
       id

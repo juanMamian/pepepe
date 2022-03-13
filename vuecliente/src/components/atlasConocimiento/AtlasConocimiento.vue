@@ -10,7 +10,12 @@
       cerrarBusqueda++;
     "
   >
-    <router-view />
+    <router-view
+      :yo="yo"
+      :datosNodosRepasar="datosNodosRepasar"
+      :datosNodosUrgentes="datosNodosUrgentes"
+      @centrarEnNodo="centrarEnNodoById($event)"
+    />
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
@@ -33,7 +38,9 @@
     <div id="zonaNodoTarget">
       <div
         class="boton"
-        @click="configurarNodoTarget(nodoSeleccionado?nodoSeleccionado.id:null)"
+        @click="
+          configurarNodoTarget(nodoSeleccionado ? nodoSeleccionado.id : null)
+        "
         v-show="!enviandoQueryTarget && (nodoSeleccionado || nodoTarget)"
         :title="
           nodoSeleccionado
@@ -42,12 +49,16 @@
             ? 'Dejar de rastrear'
             : ''
         "
-        :class="{deshabilitado: enviandoQueryTarget}"
+        :class="{ deshabilitado: enviandoQueryTarget }"
       >
         <img src="@/assets/iconos/target.png" alt="Target" />
       </div>
-      <loading texto="" v-show="enviandoQueryTarget"/>
-      <div id="nombreNodoTarget" v-if="nodoTarget" @click="centrarEnNodo(nodoTarget)">
+      <loading texto="" v-show="enviandoQueryTarget" />
+      <div
+        id="nombreNodoTarget"
+        v-if="nodoTarget"
+        @click="centrarEnNodo(nodoTarget)"
+      >
         {{ nodoTarget.nombre }}
       </div>
     </div>
@@ -72,8 +83,6 @@
       :yo="yo"
       :todosNodos="todosNodos"
       :modoAtlas="modoAtlas"
-      :idNodoTarget="idNodoTarget"
-      @targetSeleccionado="setNodoTargetCache"
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
     />
 
@@ -125,6 +134,9 @@
           :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
           :esTarget="idNodoTarget == nodo.id"
           :idsNodosAprendidos="idsNodosAprendidos"
+          :idsNodosEstudiados="idsNodosEstudiados"
+          :idsNodosFrescos="idsNodosFrescos"
+          :idsNodosPresentesCabeza="idsNodosPresentesCabeza"
           :factorZoom="factorZoom"
           :seleccionado="idNodoSeleccionado === nodo.id"
           :escondido="
@@ -174,6 +186,23 @@
           alt="Estudiante"
         />
       </div>
+
+      <div
+        class="boton"
+        title="Mostrar temas para repasar"
+        @click="$router.push({ name: 'ventanaRepasos' })"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+          <path
+            d="M256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256C512 397.4 397.4 512 256 512zM232 256C232 264 236 271.5 242.7 275.1L338.7 339.1C349.7 347.3 364.6 344.3 371.1 333.3C379.3 322.3 376.3 307.4 365.3 300L280 243.2V120C280 106.7 269.3 96 255.1 96C242.7 96 231.1 106.7 231.1 120L232 256z"
+            :fill="
+              datosNodosUrgentes.length > 0
+                ? 'var(--atlasConocimientoRepaso)'
+                : ''
+            "
+          />
+        </svg>
+      </div>
     </div>
 
     <loading
@@ -191,6 +220,7 @@ import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
 import PanelConjuntosNodos from "./PanelConjuntosNodos.vue";
 import EnlacesNodoConocimiento from "./EnlacesNodoConocimiento.vue";
+import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
 const debounce = require("debounce");
 
 const fragmentoNodoConocimiento = gql`
@@ -250,15 +280,13 @@ const QUERY_NODOS = gql`
   ${fragmentoNodoConocimiento}
 `;
 
-const QUERY_DATOS_USUARIO_NODOS = gql`
+export const QUERY_DATOS_USUARIO_NODOS = gql`
   query {
     yo {
       id
       atlas {
         datosNodos {
-          idNodo
-          objetivo
-          aprendido
+          ...fragDatoNodoConocimiento
         }
         configuracion {
           modo
@@ -276,6 +304,7 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
       }
     }
   }
+  ${fragmentoDatoNodoConocimiento}
 `;
 
 export default {
@@ -304,6 +333,13 @@ export default {
           nodo.coords = nodo.autoCoords;
         });
         return nuevoTodosNodos;
+      },
+      fetchPolicy() {
+        if (process.env.NODE_ENV === "production") {
+          return "cache-first";
+        } else {
+          return "cache-and-network";
+        }
       },
     },
     yo: {
@@ -341,7 +377,7 @@ export default {
       idsNecesariosParaTarget: [],
       enviandoQueryModo: false,
       modoAtlas: "estudiante",
-      enviandoQueryTarget:false,
+      enviandoQueryTarget: false,
 
       redibujarEnlacesNodos: 0,
 
@@ -367,7 +403,7 @@ export default {
       actualizarTrazos: 0,
       panningVista: false,
       vistaPanned: false,
-      
+
       actualizarVinculosGrises: 0,
 
       ultimoTouchX: 0,
@@ -427,6 +463,55 @@ export default {
       return this.yo.atlas.datosNodos
         .filter((n) => n.aprendido == true)
         .map((n) => n.idNodo);
+    },
+    datosNodosEstudiados() {
+      return this.yo.atlas.datosNodos.filter(
+        (n) => !n.aprendido && n.estudiado
+      );
+    },
+    idsNodosEstudiados() {
+      return this.datosNodosEstudiados.map((ne) => ne.idNodo);
+    },
+    datosNodosRepasar() {
+      if (!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos) {
+        return [];
+      }
+
+      return this.yo.atlas.datosNodos.filter(
+        (dn) =>
+          !dn.aprendido &&
+          dn.estudiado &&
+          dn.iteracionesRepaso &&
+          dn.iteracionesRepaso.length > 0
+      );
+    },
+    datosNodosUrgentes() {
+      return this.datosNodosRepasar.filter((dn) => {
+        const pasado =
+          new Date(dn.estudiado).getTime() + dn.iteracionesRepaso[0].intervalo <
+          Date.now();
+        return pasado;
+      });
+    },
+    datosNodosFrescos() {
+      return this.datosNodosEstudiados.filter((dn) => {
+        const dateEstudiado = new Date(dn.estudiado);
+        if (!dn.iteracionesRepaso || dn.iteracionesRepaso.length < 1) {
+          return true;
+        }
+        return (
+          Date.now() <
+          dateEstudiado.getTime() + dn.iteracionesRepaso[0].intervalo
+        );
+      });
+    },
+    idsNodosFrescos() {
+      return this.datosNodosFrescos.map((nf) => nf.idNodo);
+    },
+    idsNodosPresentesCabeza() {
+      return this.idsNodosFrescos
+        .filter((idNe) => !this.idsNodosAprendidos.includes(idNe))
+        .concat(this.idsNodosAprendidos);
     },
     centroVista() {
       return {
@@ -511,10 +596,12 @@ export default {
 
       return this.$route.name === "visorNodoConocimiento";
     },
-    nodosConectadosAlSeleccionado(){
-      if(!this.nodoSeleccionado)return [];
-      return this.todosNodos.filter(n=> this.nodoSeleccionado.vinculos.some(v=>v.idRef===n.id));
-    }
+    nodosConectadosAlSeleccionado() {
+      if (!this.nodoSeleccionado) return [];
+      return this.todosNodos.filter((n) =>
+        this.nodoSeleccionado.vinculos.some((v) => v.idRef === n.id)
+      );
+    },
   },
   methods: {
     iniciarCallingPosiciones() {
@@ -637,7 +724,11 @@ export default {
       return listaTotal;
     },
     clickFondoAtlas() {
-      console.log(`Click en el fondo del atlas`);
+      // console.log(`Click en el fondo del atlas. Route name: ${this.$route.name}`);
+      if (this.$route.name != "atlas") {
+        this.$router.push({ name: "atlas" });
+        return;
+      }
       if (!this.vistaPanned) this.idNodoSeleccionado = null;
       this.panningVista = false;
       this.vistaPanned = false;
@@ -747,34 +838,44 @@ export default {
       //     console.log(`Error: ${error}`);
       //   });
     },
-    configurarNodoTarget(idNodo){
+    configurarNodoTarget(idNodo) {
+      this.enviandoQueryTarget = true;
+
       console.log(`Configurando nodo target`);
-      if(!idNodo || idNodo===this.idNodoTarget){
+      if (!idNodo || idNodo === this.idNodoTarget) {
         console.log(`Nulificando`);
+        setTimeout(()=>{
         this.nulificarNodoTarget();
-        return;
-      }
-      else{
+
+        }, 100);
+      } else {
+        setTimeout(()=>{
+
         this.setNodoTarget(idNodo);
+        }, 100);
       }
     },
     setNodoTarget(idNodo) {
       if (!idNodo) return;
-      if (this.idNodoTarget == idNodo) {        
+      if (this.idNodoTarget == idNodo) {
         return;
       }
 
-      this.enviandoQueryTarget = true;
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      nuevoCache.yo.atlas.idNodoTarget = idNodo;
+      store.writeQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+        data: nuevoCache,
+      });
       this.$apollo
         .mutate({
           mutation: gql`
             mutation ($idNodo: ID!) {
-              setNodoAtlasTarget(idNodo: $idNodo){
-                id
-                atlas{
-                  idNodoTarget
-                }
-              }
+              setNodoAtlasTarget(idNodo: $idNodo)
             }
           `,
           variables: {
@@ -782,7 +883,7 @@ export default {
           },
         })
         .then(() => {
-          this.enviandoQueryTarget = false;          
+          this.enviandoQueryTarget = false;
         })
         .catch((error) => {
           this.enviandoQueryTarget = false;
@@ -790,17 +891,25 @@ export default {
         });
     },
     nulificarNodoTarget() {
+      console.log(`Nulificando nodo target`);
       this.enviandoQueryTarget = true;
+
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      nuevoCache.yo.atlas.idNodoTarget = null;
+      // nuevoCache.yo.atlas.centroVista = {x:100, y:100};
+      store.writeQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+        data: nuevoCache,
+      });
       this.$apollo
         .mutate({
           mutation: gql`
             mutation {
-              nulificarNodoTargetUsuarioAtlas{
-                id
-                atlas{
-                  idNodoTarget
-                }
-              }
+              nulificarNodoTargetUsuarioAtlas
             }
           `,
         })
@@ -819,20 +928,48 @@ export default {
         y: (n.autoCoords.y - this.esquinasDiagrama.y1) * this.factorZoom,
       };
 
-      console.log(`posNodo: ${JSON.stringify(posNodo)}`);
-
       const posIdealScroll = {
         x: parseInt(posNodo.x - posDiagrama.width / 2),
         y: parseInt(posNodo.y - posDiagrama.height / 2),
       };
-
-      console.log(`Pos ideal scroll: ${JSON.stringify(posIdealScroll)}`);
 
       this.$refs.contenedorDiagrama.scrollLeft = posIdealScroll.x;
       this.$refs.contenedorDiagrama.scrollTop = posIdealScroll.y;
 
       this.seleccionNodo(n);
       //this.centroVista=e;
+    },
+    centrarEnNodoById(idNodo) {
+      console.log(`Centrando en nodo con id ${idNodo}`);
+      var elNodo = this.todosNodos.find((n) => n.id === idNodo);
+      if (elNodo) {
+        this.centrarEnNodo(elNodo);
+        return;
+      }
+      this.$apollo
+        .query({
+          query: gql`
+            query ($idNodo: ID!) {
+              nodo(idNodo: $idNodo) {
+                id
+                autoCoords {
+                  x
+                  y
+                }
+              }
+            }
+          `,
+          variables: {
+            idNodo,
+          },
+        })
+        .then(({ data: { nodo } }) => {
+          console.log(`Recibido nodo así: ${JSON.stringify(nodo)}`);
+          this.centrarEnNodo(nodo);
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+        });
     },
     iniciaMovimientoTouch(e) {
       if (e.touches.length === 2) {
@@ -1040,7 +1177,7 @@ export default {
         });
     },
     seleccionNodo(nodo) {
-      this.idNodoSeleccionado = nodo.id;     
+      this.idNodoSeleccionado = nodo.id;
     },
     async eliminarVinculo(args) {
       if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
@@ -1119,7 +1256,7 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    
+
     zoomVista(deltaZoom) {
       var nuevoZoom = this.zoom + deltaZoom;
       if (nuevoZoom < this.minZoom) {
@@ -1246,6 +1383,8 @@ export default {
   --atlasConocimientoFondo: #f3eff5;
   --atlasConocimientoCheck: #3f7d20;
   --atlasConocimientoAvailable: #e2c044;
+  --atlasConocimientoRepaso: #ff5f5f;
+  --atlasConocimientoOff: #dbfcff;
 }
 </style>
 <style scoped>
@@ -1253,14 +1392,22 @@ export default {
   position: relative;
   overflow-x: hidden;
 }
+.ventanaRepasos {
+  z-index: 100;
+  position: absolute;
+  top: 0px;
+  left: 0%;
+  background-color: rgb(255 252 249);
+  box-shadow: 3px 4px 4px rgba(0, 0, 0, 0.25);
+}
 #zonaNodoTarget {
-  position:absolute;
+  position: absolute;
   top: 0px;
   left: 0px;
   display: flex;
   align-items: center;
   padding: 10px;
-  z-index:100;
+  z-index: 50;
 }
 #zonaNodoTarget .boton {
   width: 25px;
@@ -1269,7 +1416,7 @@ export default {
 #menuContextual {
   position: absolute;
   background-color: gray;
-  z-index: 100;
+  z-index: 110;
 }
 .botonMenuContextual {
   font-size: 12px;
@@ -1370,7 +1517,7 @@ export default {
 
 #barraInferior {
   position: absolute;
-  bottom: 0px;
+  bottom: 12px;
   padding: 10px;
   display: flex;
   flex-direction: row-reverse;
@@ -1382,6 +1529,7 @@ export default {
   height: 30px;
   width: 30px;
   margin: 0px 5px;
+  z-index: 0;
 }
 
 .fadeOut-leave-to {
