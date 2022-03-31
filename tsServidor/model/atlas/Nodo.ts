@@ -44,7 +44,8 @@ var esquemaNodo = new mongoose.Schema({
                 tipo: {
                     type: String,
                     required: true,
-                    default: "continuacion"
+                    default: "continuacion",
+                    
                 }
             }
         ],

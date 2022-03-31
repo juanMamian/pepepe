@@ -1,6 +1,6 @@
 import Vue from "vue"
 import Router from "vue-router"
-import atlasConocimiento from "./components/AtlasConocimiento.vue"
+import atlasConocimiento from "./components/atlasConocimiento/AtlasConocimiento.vue"
 import loginArea from "./components/LoginArea.vue"
 import perfilPersonal from "./components/usuario/PerfilPersonal.vue"
 import VisorNodoConocimiento from "./components/visorNodoConocimiento/VisorNodoConocimiento.vue"
@@ -9,13 +9,13 @@ import Proyecto from "./components/Proyecto.vue"
 import Registro from "./components/Registro.vue"
 import Personas from "./components/Personas.vue"
 import HomeNodo from "./components/atlasSolidaridad/homeNodo/HomeNodo"
+import VentanaRepasos from "./components/atlasConocimiento/VentanaRepasos"
 // import ActividadesDeGrupo from "./components/actividadesProfes/ActividadesDeGrupo.vue"
 // import ActividadesDeProfe from "./components/actividadesProfes/ActividadesDeProfe.vue"
 // import ActividadesEstudiantiles from "./components/ActividadesEstudiantiles.vue"
 // import PortadaActividadesEstudiantiles from "./components/actividadesProfes/PortadaActividadesEstudiantiles";
 // import ActividadEspecifica from "./components/actividadesProfes/ActividadEspecifica"
 
-import store from "./store/index"
 import ForosGenerales from "./components/ForosGenerales"
 import AtlasSolidaridad from "./components/atlasSolidaridad/AtlasSolidaridad"
 import Espacios from "./components/Espacios"
@@ -26,13 +26,24 @@ Vue.use(Router);
 
 const routes = [
 
-    { path: "/atlas", name: "atlas", component: atlasConocimiento },
+    {
+        path: "/atlas", name: "atlas", component: atlasConocimiento, children: [
+            {
+                path: "nodoConocimiento/:idNodo",
+                component: VisorNodoConocimiento,
+                name: "visorNodoConocimiento"
+            },
+            {
+                path: "repasos",
+                component: VentanaRepasos,
+                name: "ventanaRepasos"
+            }
+        ]
+    },
     {
         path: "/login", name: "loginArea",
         component: loginArea,
         beforeEnter: function (to, from, next) {
-            console.log(`Before enter login`);
-            console.log(`State: ${JSON.stringify(store.state.usuario)}`);
             if (localStorage.getItem("token") != null) {
                 next("/miperfil");
             }
@@ -81,7 +92,8 @@ const routes = [
                 path: "ventanaEventoPersonal/:idEvento",
                 component: VentanaEventoPersonal,
                 name: "VentanaEventoPersonal",
-            }
+            },
+
         ]
     },
     { path: "/foros", component: ForosGenerales },
@@ -170,18 +182,17 @@ const routes = [
 ];
 
 export const router = new Router({
-    // mode: "history",
+    //mode: "history",
     routes
 });
 
 router.beforeEach((to, from, next) => {
-    console.log(`Guarda before ${to.path}`);
-    
-    if(to.path!='/login' && !localStorage.getItem("token")){
+
+    if (to.path != '/login' && !localStorage.getItem("token")) {
         next("/login");
     }
-    else{
+    else {
         next();
     }
 
-  })
+})

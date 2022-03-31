@@ -115,7 +115,7 @@
                 <div
                   id="horaInicio"
                   v-show="!editandoHoraInicio"
-                  @click.stop="iniciarEdicionHoraInicio"
+                  @click.stop="iniciarEdicionHoraInicio"                  
                 >
                   {{ horaInicioLegible }}
                 </div>
@@ -386,14 +386,16 @@ export default {
       })
     }
   },
-  computed: {},
+  computed: {
+    
+  },
 };
 </script>
 
 <style scoped>
 .ventanaEventoPublico {
   position: fixed;
-  top: 100px;
+  top: 0px;
   left: 0px;
   width: 100vw;
   height: 100vh;

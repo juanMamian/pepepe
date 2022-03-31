@@ -1,18 +1,11 @@
 <template>
   <div
     id="panelConjuntosNodos"
-    :style="[offset]"
     @mouseup.left.stop=""
     @mousedown.left.stop=""
     @touchmove.stop=""
-  >
-    <img
-      src="@/assets/iconos/userNodes.png"
-      alt="Nodos de usuario"
-      title="Mis nodos"
-      id="grabber"
-      @click.stop="abierto = !abierto"
-    />
+    v-show="abierto"
+  >   
     <div id="barraConjuntos">
       <div
         class="selectorConjunto"      
@@ -76,17 +69,7 @@
         @click.stop="$emit('centrarEnNodo', idNodoSeleccionado)"
       >
         Centrar
-      </div>
-      <img
-        src="@/assets/iconos/target.png"
-        alt="Rastrear"
-        title="Rastrear nodo"
-        class="controlListaNodos"
-        :class="{ deshabilitado: enviandoQueryTarget }"
-        id="botonRastrearNodo"
-        v-show="idConjuntoSeleccionado != 1"
-        @click.stop="toggleNodoTarget(idNodoSeleccionado)"
-      />
+      </div>      
       <img
         src="@/assets/iconos/delete.png"
         alt="Eliminar"
@@ -109,7 +92,6 @@
         v-show="conjuntoSeleccionado"
         :key="nodo.id"
         :seleccionado="nodo.id === idNodoSeleccionado"
-        :esTarget="idNodoTarget === nodo.id"
         @click.native.stop="idNodoSeleccionado = nodo.id"
         @dblclick.native.stop="$emit('centrarEnNodo', nodo.id)"
       />
@@ -159,7 +141,7 @@ export default {
   props: {
     yo: Object,
     todosNodos: Array,
-    idNodoTarget: String,
+    modoAtlas:String,
   },
   data() {
     return {
@@ -169,62 +151,11 @@ export default {
 
       idNodoSeleccionado: null,
 
-      enviandoQueryTarget: false,
       enviandoQueryColecciones: false,
       enviandoQueryNodosSeccion: false,
     };
   },
-  methods: {
-    toggleNodoTarget(idNodo) {
-      if (!idNodo) return;
-      if (this.idNodoTarget == idNodo) {
-        this.nulificarNodoTarget();
-        return;
-      }
-
-      this.enviandoQueryTarget = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idNodo: ID!) {
-              setNodoAtlasTarget(idNodo: $idNodo)
-            }
-          `,
-          variables: {
-            idNodo,
-          },
-        })
-        .then(({ data: { setNodoAtlasTarget } }) => {
-          this.enviandoQueryTarget = false;
-
-          if (setNodoAtlasTarget) {
-            this.$emit("targetSeleccionado", idNodo);
-          }
-        })
-        .catch((error) => {
-          this.enviandoQueryTarget = false;
-          console.log(`Error: ${error}`);
-        });
-    },
-    nulificarNodoTarget() {
-      this.enviandoQueryTarget = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation {
-              nulificarNodoTargetUsuarioAtlas
-            }
-          `,
-        })
-        .then(() => {
-          this.enviandoQueryTarget = false;
-          this.$emit("targetSeleccionado", null);
-        })
-        .catch((error) => {
-          this.enviandoQueryTarget = false;
-          console.log(`Error: ${error}`);
-        });
-    },
+  methods: {    
     abrirPaginaNodo(idNodo) {
       if (!idNodo) return;
       this.$router.push("/nodoConocimiento/" + idNodo);
@@ -402,17 +333,7 @@ export default {
         });
     },    
   },
-  computed: {
-    offset() {
-      if (this.abierto) {
-        return {
-          right: "0px",
-        };
-      }
-      return {
-        left: "100%",
-      };
-    },
+  computed: {    
     idsNodosObjetivos() {
       if (!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos) {
         return [];
@@ -452,7 +373,7 @@ export default {
       return clasesDictadas;
     },
     conjuntos() {
-      if(this.yo.atlas.configuracion.modo==='experto'){
+      if(this.modoAtlas==='experto'){
         return this.conjuntosUsuario.concat([{
           nombre: "nodosConClaseDictada",
           titulo: "Mis clases",
@@ -505,7 +426,8 @@ export default {
   min-height: 100px;
   max-height: 80%;
   background-color: whitesmoke;
-  width: min(80%, 650px);
+  width: min(90%, 650px);
+  right:0px;
 }
 #grabber {
   width: 30px;

@@ -276,6 +276,16 @@
             </div>
           </div>
           <div class="contenedorBotones" id="botonesAccionesNodo">
+            <div
+              class="boton botonBarraSuperior"
+              v-show="usuarioAdministrador || usuarioSuperadministrador"
+              :title="esteNodo.publicitado ? 'No publicitar' : 'Publicitar'"
+              :style="[{filter:esteNodo.publicitado?'var(--atlasFilterVerde)':''}]"
+              @click="togglePublicitado"
+              
+            >
+              <img src="@/assets/iconos/productHunt.svg" alt="P" />
+            </div>
             <svg
               aria-hidden="true"
               focusable="false"
@@ -513,14 +523,20 @@
               src="@/assets/iconos/mas.svg"
               alt="Entrar"
               :title="
-                (esteNodo.responsables.length < 1 && esteNodo.tipoParent !='usuario') || usuarioParent
+                (esteNodo.responsables.length < 1 &&
+                  esteNodo.tipoParent != 'usuario') ||
+                usuarioParent
                   ? 'Asumir'
                   : 'Solicitar participación'
               "
               id="botonEntrarResponsables"
               class="botonControlZona botonControlResponsables"
               :class="{ deshabilitado: enviandoQueryResponsables }"
-              v-show="!usuarioResponsable && !usuarioPosibleResponsable && !idResponsableSeleccionado"
+              v-show="
+                !usuarioResponsable &&
+                !usuarioPosibleResponsable &&
+                !idResponsableSeleccionado
+              "
               @click.stop="entrarResponsables"
             />
             <img
@@ -537,15 +553,20 @@
               @click.stop="abandonarListaResponsables"
             />
             <img
-                src="@/assets/iconos/minus.svg"
-                alt="Sacar"
-                title="Retirar usuario"
-                id="botonRetirarUsuarioFromResponsables"
-                class="boton botonControlZona botonControlResponsables"
-                :class="{ deshabilitado: enviandoQueryResponsables }"
-                v-show="idResponsableSeleccionado && (usuarioSuperadministrador || usuarioParent)"
-                @click.stop="retirarUsuarioFromListaResponsables(idResponsableSeleccionado)"
-              />
+              src="@/assets/iconos/minus.svg"
+              alt="Sacar"
+              title="Retirar usuario"
+              id="botonRetirarUsuarioFromResponsables"
+              class="boton botonControlZona botonControlResponsables"
+              :class="{ deshabilitado: enviandoQueryResponsables }"
+              v-show="
+                idResponsableSeleccionado &&
+                (usuarioSuperadministrador || usuarioParent)
+              "
+              @click.stop="
+                retirarUsuarioFromListaResponsables(idResponsableSeleccionado)
+              "
+            />
             <img
               src="@/assets/iconos/handshake.svg"
               alt="Aceptar"
@@ -684,6 +705,7 @@ import {
 import Loading from "../../utilidades/Loading.vue";
 import RecursoExternoNodo from "../homeNodo/RecursoExternoNodo.vue";
 import Calendario from "../../utilidades/Calendario.vue";
+import gql from 'graphql-tag';
 
 export default {
   name: "NodoVistaLista",
@@ -733,6 +755,7 @@ export default {
       mostrandoBotonesBarraSuperior: false,
 
       creandoEvento: false,
+      settingPublicitado:false,
     };
   },
   methods: {
@@ -856,6 +879,32 @@ export default {
     responderEventoEliminado() {
       console.log(`...`);
     },
+    togglePublicitado(){
+      const nuevoEstado=!this.esteNodo.publicitado;
+      console.log(`Setting publicitado en ${nuevoEstado}`);
+      
+      this.settingPublicitado=true;
+
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodo:ID!, $nuevoEstado: Boolean!){
+            setPublicitadoNodoSolidaridad(idNodo: $idNodo, nuevoEstado:$nuevoEstado){
+              id
+              publicitado
+            }
+          } 
+        `,
+        variables:{
+          idNodo:this.esteNodo.id,
+          nuevoEstado
+        }
+      }).then(()=>{
+        this.settingPublicitado=false;
+      }).catch((error)=>{
+        console.log(`Error: ${error}`);
+        this.settingPublicitado=false;        
+      })
+    }
   },
   computed: {
     siendoArrastrado() {
@@ -1121,7 +1170,7 @@ export default {
   position: relative;
   left: -1px;
 }
-.calendario{
+.calendario {
   width: 100%;
 }
 @media only screen and (max-width: 1300px) {
@@ -1195,7 +1244,6 @@ export default {
     width: 22px;
     height: 22px;
   }
-  
 }
 
 @media (hover: none) and (pointer: coarse) {

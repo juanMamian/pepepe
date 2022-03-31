@@ -180,6 +180,10 @@ esquemaNodoSolidaridad.add({
         enum: ["nodoSolidaridad", "usuario"],
         default: "nodoSolidaridad"
     },
+    publicitado:{
+        type: Boolean,
+        default:false,
+    },
     propietario:{
         type:String,        
     },

@@ -1,20 +1,21 @@
 <template>
   <div
     class="atlasConocimiento"
+    :style="{ overflowY: nodoAbierto ? 'scroll' : 'hidden' }"
     @mousedown.left.exact.stop="panningVista = true"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
     @click="
-      idNodoMenuCx = '-1';
+      idNodoMenuCx = null;
       cerrarBusqueda++;
     "
-    @mousemove="panVista($event)"
-    @mouseup.left="clickFondoAtlas"
-    @touchmove.prevent.stop="movimientoMobile"
-    @touchstart="iniciaMovimientoTouch"
-    @touchend="finTouch"
-    @contextmenu.self.exact.prevent="abrirMenuContextual"
   >
+    <router-view
+      :yo="yo"
+      :datosNodosRepasar="datosNodosRepasar"
+      :datosNodosUrgentes="datosNodosUrgentes"
+      @centrarEnNodo="centrarEnNodoById($event)"
+    />
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
@@ -26,11 +27,42 @@
       <div
         class="botonMenuContextual"
         id="botonCrearNuevoNodo"
+        :class="{ deshabilitado: posicionCreandoNodo }"
+        v-if="usuarioAdministradorAtlas || usuarioProfe"
         @click="crearNodoEnMenuContextual"
       >
         Crear Nodo de conocimiento
       </div>
     </div>
+
+    <div id="zonaNodoTarget">
+      <div
+        class="boton"
+        @click="
+          configurarNodoTarget(nodoSeleccionado ? nodoSeleccionado.id : null)
+        "
+        v-show="!enviandoQueryTarget && (nodoSeleccionado || nodoTarget)"
+        :title="
+          nodoSeleccionado
+            ? 'Rastrear ' + nodoSeleccionado.nombre
+            : yo.atlas.idNodoTarget
+            ? 'Dejar de rastrear'
+            : ''
+        "
+        :class="{ deshabilitado: enviandoQueryTarget }"
+      >
+        <img src="@/assets/iconos/target.png" alt="Target" />
+      </div>
+      <loading texto="" v-show="enviandoQueryTarget" />
+      <div
+        id="nombreNodoTarget"
+        v-if="nodoTarget"
+        @click="centrarEnNodo(nodoTarget)"
+      >
+        {{ nodoTarget.nombre }}
+      </div>
+    </div>
+
     <div
       id="botonCallingPosiciones"
       v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
@@ -50,54 +82,127 @@
       ref="panelConjuntosNodos"
       :yo="yo"
       :todosNodos="todosNodos"
-      :idNodoTarget="idNodoTarget"
-      @targetSeleccionado="setNodoTargetCache"
+      :modoAtlas="modoAtlas"
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
     />
-    <panel-configuracion-atlas ref="panelConfiguracionAtlas" :yo="yo" />
-    <canvases
-      :todosNodos="todosNodos"
-      :nodoSeleccionado="nodoSeleccionado"
-      :idNodoTarget="idNodoTarget"
-      :idsNecesariosParaTarget="idsNecesariosParaTarget"
-      :centroVista="centroVista"
-      :callingPosiciones="callingPosiciones"
-      :factorZoom="factorZoom"
-      :style="[offsetContenedorNodos]"
-      ref="canvases"
-      v-if="todosNodos.length > 1"
-    />
-    <div id="contenedorNodos" :style="[offsetContenedorNodos]">
-      <nodo-conocimiento
-        :nodoSeleccionado="nodoSeleccionado"
-        :todosNodos="todosNodos"
-        :idNodoMenuCx="idNodoMenuCx"
-        :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
-        :yo="yo"
-        :key="nodo.id"
-        v-for="nodo of todosNodos"
-        :esteNodo="nodo"
-        :centroVista="centroVista"
-        :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
-        :esTarget="idNodoTarget == nodo.id"
-        :idsNodosAprendidos="idsNodosAprendidos"
-        :factorZoom="factorZoom"
-        :escondido="
-          idNodoTarget &&
-          !idsNecesariosParaTarget.includes(nodo.id) &&
-          idNodoTarget != nodo.id
+
+    <div
+      id="contenedorDiagrama"
+      ref="contenedorDiagrama"
+      @contextmenu.self.exact.prevent="abrirMenuContextual"
+      @mouseup.left.self="clickFondoAtlas"
+    >
+      <div id="contenedorVinculosNodos" :style="[offsetContenedorNodos]">
+        <enlaces-nodo-conocimiento
+          v-for="nodo of nodosConRequerimentos"
+          :key="nodo.id"
+          :yo="yo"
+          :idNodoSeleccionado="idNodoSeleccionado"
+          :esteNodo="nodo"
+          :todosNodos="todosNodos"
+          :factorZoom="factorZoom"
+          :esquinasDiagrama="esquinasDiagrama"
+          :nodoSeleccionado="nodoSeleccionado"
+          :redibujarEnlaces="redibujarEnlacesNodos"
+          :idsTodosNodosRender="idsTodosNodosRender"
+          :callingPosiciones="callingPosiciones"
+        />
+      </div>
+      <div
+        id="contenedorNodos"
+        ref="contenedorNodos"
+        :style="[offsetContenedorNodos]"
+      >
+        <loading
+          texto=""
+          v-show="posicionCreandoNodo"
+          style="position: absolute"
+          :style="[offsetLoadingCreandoNodo]"
+        />
+        <nodo-conocimiento
+          :nodoSeleccionado="nodoSeleccionado"
+          :todosNodos="todosNodos"
+          :idNodoMenuCx="idNodoMenuCx"
+          :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
+          :yo="yo"
+          :modoAtlas="modoAtlas"
+          :key="nodo.id"
+          v-for="nodo of nodosRender"
+          :esteNodo="nodo"
+          :esquinasDiagrama="esquinasDiagrama"
+          :centroVista="centroVista"
+          :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
+          :esTarget="idNodoTarget == nodo.id"
+          :idsNodosAprendidos="idsNodosAprendidos"
+          :idsNodosEstudiados="idsNodosEstudiados"
+          :idsNodosFrescos="idsNodosFrescos"
+          :idsNodosPresentesCabeza="idsNodosPresentesCabeza"
+          :factorZoom="factorZoom"
+          :seleccionado="idNodoSeleccionado === nodo.id"
+          :escondido="
+            idNodoTarget &&
+            !idsNecesariosParaTarget.includes(nodo.id) &&
+            idNodoTarget != nodo.id
+          "
+          :configuracionAtlas="configuracionAtlas"
+          :callingPosiciones="callingPosiciones"
+          @click.right.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
+          @click.native.stop="seleccionNodo(nodo)"
+          @creacionVinculo="crearVinculo"
+          @eliminacionVinculo="eliminarVinculo"
+          @cambioDePosicionManual="cambiarCoordsManualesNodo"
+          @eliminar="eliminarNodo"
+          @cambieEstadoObjetivo="setEstadoObjetivoNodoCache($event, nodo.id)"
+          @tengoNuevoValorAprendido="setNodoAprendidoCache($event, nodo.id)"
+        />
+      </div>
+    </div>
+
+    <div id="barraInferior">
+      <div
+        class="boton"
+        title="Mostrar colecciones"
+        @click="$refs.panelConjuntosNodos.abierto = true"
+      >
+        <img src="@/assets/iconos/userNodes.png" alt="Nodos de usuario" />
+      </div>
+
+      <div
+        class="boton"
+        :title="
+          'Cambiar a modo ' + modoAtlas === 'experto' ? 'estudiante' : 'experto'
         "
-        :configuracionAtlas="configuracionAtlas"
-        :callingPosiciones="callingPosiciones"
-        @click.right.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
-        @click.native.stop="seleccionNodo(nodo)"
-        @creacionVinculo="crearVinculo"
-        @eliminacionVinculo="eliminarVinculo"
-        @cambioDePosicionManual="cambiarCoordsManualesNodo"
-        @eliminar="eliminarNodo"
-        @cambieEstadoObjetivo="setEstadoObjetivoNodoCache($event, nodo.id)"
-        @tengoNuevoValorAprendido="setNodoAprendidoCache($event, nodo.id)"
-      />
+        :class="{ deshabilitado: enviandoQueryModo }"
+        @click="setModo(modoAtlas === 'estudiante' ? 'experto' : 'estudiante')"
+      >
+        <img
+          src="@/assets/iconos/teacher.svg"
+          v-if="modoAtlas === 'experto'"
+          alt="Experto"
+        />
+        <img
+          src="@/assets/iconos/estudiante.png"
+          v-if="modoAtlas === 'estudiante'"
+          alt="Estudiante"
+        />
+      </div>
+
+      <div
+        class="boton"
+        title="Mostrar temas para repasar"
+        @click="$router.push({ name: 'ventanaRepasos' })"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+          <path
+            d="M256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256C512 397.4 397.4 512 256 512zM232 256C232 264 236 271.5 242.7 275.1L338.7 339.1C349.7 347.3 364.6 344.3 371.1 333.3C379.3 322.3 376.3 307.4 365.3 300L280 243.2V120C280 106.7 269.3 96 255.1 96C242.7 96 231.1 106.7 231.1 120L232 256z"
+            :fill="
+              datosNodosUrgentes.length > 0
+                ? 'var(--atlasConocimientoRepaso)'
+                : ''
+            "
+          />
+        </svg>
+      </div>
     </div>
 
     <loading
@@ -110,12 +215,12 @@
 
 <script>
 import gql from "graphql-tag";
-import NodoConocimiento from "./atlasConocimiento/NodoConocimiento.vue";
-import Canvases from "./atlasConocimiento/Canvases.vue";
-import BuscadorNodosConocimiento from "./atlasConocimiento/BuscadorNodosConocimiento.vue";
-import Loading from "./utilidades/Loading.vue";
-import PanelConjuntosNodos from "./atlasConocimiento/PanelConjuntosNodos.vue";
-import PanelConfiguracionAtlas from "./atlasConocimiento/PanelConfiguracionAtlas.vue";
+import NodoConocimiento from "./NodoConocimiento.vue";
+import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
+import Loading from "../utilidades/Loading.vue";
+import PanelConjuntosNodos from "./PanelConjuntosNodos.vue";
+import EnlacesNodoConocimiento from "./EnlacesNodoConocimiento.vue";
+import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
 const debounce = require("debounce");
 
 const fragmentoNodoConocimiento = gql`
@@ -150,6 +255,7 @@ const fragmentoNodoConocimiento = gql`
     angulo
     puntaje
     vinculos {
+      id
       idRef
       rol
       tipo
@@ -166,7 +272,7 @@ const fragmentoNodoConocimiento = gql`
 `;
 
 const QUERY_NODOS = gql`
-  query {
+  query todosNodos {
     todosNodos {
       ...fragNodoConocimiento
     }
@@ -174,15 +280,13 @@ const QUERY_NODOS = gql`
   ${fragmentoNodoConocimiento}
 `;
 
-const QUERY_DATOS_USUARIO_NODOS = gql`
+export const QUERY_DATOS_USUARIO_NODOS = gql`
   query {
     yo {
       id
       atlas {
         datosNodos {
-          idNodo
-          objetivo
-          aprendido
+          ...fragDatoNodoConocimiento
         }
         configuracion {
           modo
@@ -200,16 +304,16 @@ const QUERY_DATOS_USUARIO_NODOS = gql`
       }
     }
   }
+  ${fragmentoDatoNodoConocimiento}
 `;
 
 export default {
   components: {
     NodoConocimiento,
-    Canvases,
     BuscadorNodosConocimiento,
     Loading,
     PanelConjuntosNodos,
-    PanelConfiguracionAtlas,
+    EnlacesNodoConocimiento,
   },
   name: "AtlasConocimiento",
   apollo: {
@@ -230,7 +334,13 @@ export default {
         });
         return nuevoTodosNodos;
       },
-      fetchPolicy: "cache-and-network",
+      fetchPolicy() {
+        if (process.env.NODE_ENV === "production") {
+          return "cache-first";
+        } else {
+          return "cache-and-network";
+        }
+      },
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
@@ -261,9 +371,15 @@ export default {
       hovered: false,
       todosNodos: [],
       nodosDescargados: false,
-      idNodoSeleccionado: "-1",
-      idNodoMenuCx: "-1",
+      posicionCreandoNodo: null,
+      idNodoSeleccionado: null,
+      idNodoMenuCx: null,
       idsNecesariosParaTarget: [],
+      enviandoQueryModo: false,
+      modoAtlas: "estudiante",
+      enviandoQueryTarget: false,
+
+      redibujarEnlacesNodos: 0,
 
       yo: {
         atlas: {
@@ -287,11 +403,7 @@ export default {
       actualizarTrazos: 0,
       panningVista: false,
       vistaPanned: false,
-      nodosConectadosAlSeleccionado: {
-        listaCompleta: [],
-        listaPorNiveles: [],
-      },
-      profundidadNodosConectadosAlSeleccionado: 1,
+
       actualizarVinculosGrises: 0,
 
       ultimoTouchX: 0,
@@ -325,20 +437,10 @@ export default {
       );
     },
     nodoSeleccionado: function () {
-      if (!this.todosNodos) {
-        console.log(`NO HAY NODOS`);
-        return false;
+      if (!this.idNodoSeleccionado) {
+        return null;
       }
-      if (this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
-        let indexSeleccionado = this.todosNodos.findIndex(
-          (n) => n.id == this.idNodoSeleccionado
-        );
-        return this.todosNodos[indexSeleccionado];
-      }
-      return {
-        id: "-1",
-        vinculos: [],
-      };
+      return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
     },
     idUsuario: function () {
       return this.$store.state.usuario.id;
@@ -353,10 +455,63 @@ export default {
       if (!this.yo || !this.yo.atlas) return null;
       return this.yo.atlas.idNodoTarget;
     },
+    nodoTarget() {
+      if (!this.idNodoTarget) return null;
+      return this.todosNodos.find((n) => n.id === this.idNodoTarget);
+    },
     idsNodosAprendidos() {
       return this.yo.atlas.datosNodos
         .filter((n) => n.aprendido == true)
         .map((n) => n.idNodo);
+    },
+    datosNodosEstudiados() {
+      return this.yo.atlas.datosNodos.filter(
+        (n) => !n.aprendido && n.estudiado
+      );
+    },
+    idsNodosEstudiados() {
+      return this.datosNodosEstudiados.map((ne) => ne.idNodo);
+    },
+    datosNodosRepasar() {
+      if (!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos) {
+        return [];
+      }
+
+      return this.yo.atlas.datosNodos.filter(
+        (dn) =>
+          !dn.aprendido &&
+          dn.estudiado &&
+          dn.iteracionesRepaso &&
+          dn.iteracionesRepaso.length > 0
+      );
+    },
+    datosNodosUrgentes() {
+      return this.datosNodosRepasar.filter((dn) => {
+        const pasado =
+          new Date(dn.estudiado).getTime() + dn.iteracionesRepaso[0].intervalo <
+          Date.now();
+        return pasado;
+      });
+    },
+    datosNodosFrescos() {
+      return this.datosNodosEstudiados.filter((dn) => {
+        const dateEstudiado = new Date(dn.estudiado);
+        if (!dn.iteracionesRepaso || dn.iteracionesRepaso.length < 1) {
+          return true;
+        }
+        return (
+          Date.now() <
+          dateEstudiado.getTime() + dn.iteracionesRepaso[0].intervalo
+        );
+      });
+    },
+    idsNodosFrescos() {
+      return this.datosNodosFrescos.map((nf) => nf.idNodo);
+    },
+    idsNodosPresentesCabeza() {
+      return this.idsNodosFrescos
+        .filter((idNe) => !this.idsNodosAprendidos.includes(idNe))
+        .concat(this.idsNodosAprendidos);
     },
     centroVista() {
       return {
@@ -367,11 +522,85 @@ export default {
     factorZoom() {
       return Number((this.zoom / 100).toFixed(2));
     },
-    offsetContenedorNodos() {
+    esquinasDiagrama() {
+      const maxX = this.todosNodos.reduce(
+        (acc, n) => (n.autoCoords.x > acc ? n.autoCoords.x : acc),
+        0
+      );
+      const maxY = this.todosNodos.reduce(
+        (acc, n) => (n.autoCoords.y > acc ? n.autoCoords.y : acc),
+        0
+      );
+      const minX = this.todosNodos.reduce(
+        (acc, n) => (n.autoCoords.x < acc ? n.autoCoords.x : acc),
+        0
+      );
+      const minY = this.todosNodos.reduce(
+        (acc, n) => (n.autoCoords.y < acc ? n.autoCoords.y : acc),
+        0
+      );
+
       return {
-        left: -(this.centroVista.x * this.factorZoom) + "px",
-        top: -(this.centroVista.y * this.factorZoom) + "px",
+        x1: minX,
+        y1: minY,
+
+        x2: maxX,
+        y2: maxY,
       };
+    },
+    offsetContenedorNodos() {
+      const ancho = this.esquinasDiagrama.x2 - this.esquinasDiagrama.x1;
+      const alto = this.esquinasDiagrama.y2 - this.esquinasDiagrama.y1;
+      return {
+        // left: -(this.centroVista.x * this.factorZoom) + "px",
+        // top: -(this.centroVista.y * this.factorZoom) + "px",
+
+        width: ancho * this.factorZoom + "px",
+        height: alto * this.factorZoom + "px",
+      };
+    },
+    nodosConRequerimentos() {
+      var nr = this.todosNodos.filter((n) => n.vinculos.length > 0);
+
+      return nr;
+    },
+    nodosRender() {
+      if (this.idNodoTarget) {
+        return this.todosNodos
+          .filter((n) => this.idsNecesariosParaTarget.includes(n.id))
+          .concat([this.todosNodos.find((n) => this.idNodoTarget === n.id)]);
+      }
+      return this.todosNodos;
+    },
+    idsTodosNodosRender() {
+      return this.nodosRender.map((n) => n.id);
+    },
+    offsetLoadingCreandoNodo() {
+      if (!this.posicionCreandoNodo) {
+        return null;
+      }
+      const left =
+        (this.posicionCreandoNodo.x - this.esquinasDiagrama.x1) *
+        this.factorZoom;
+      const top =
+        (this.posicionCreandoNodo.y - this.esquinasDiagrama.y1) *
+        this.factorZoom;
+      return {
+        left: left + "px",
+        top: top + "px",
+      };
+    },
+    nodoAbierto() {
+      console.log("Verificando path name");
+      console.log(this.$route.name);
+
+      return this.$route.name === "visorNodoConocimiento";
+    },
+    nodosConectadosAlSeleccionado() {
+      if (!this.nodoSeleccionado) return [];
+      return this.todosNodos.filter((n) =>
+        this.nodoSeleccionado.vinculos.some((v) => v.idRef === n.id)
+      );
     },
   },
   methods: {
@@ -431,10 +660,10 @@ export default {
         });
     },
     abrirMenuContextual(e) {
-      let posCalendario = this.$el.getBoundingClientRect();
+      let posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();
 
-      let topClick = Math.round(e.pageY - posCalendario.top);
-      let leftClick = Math.round(e.pageX - posCalendario.left);
+      let topClick = Math.round(e.pageY - posDiagrama.top);
+      let leftClick = Math.round(e.pageX - posDiagrama.left);
 
       this.$set(this.offsetMenuContextual, "top", topClick + "px");
       this.$set(this.offsetMenuContextual, "left", leftClick + "px");
@@ -442,22 +671,33 @@ export default {
       //this.crearNodo({x: leftClick, y: topClick});
     },
     crearNodoEnMenuContextual() {
-      let posContenedor = document
-        .getElementById("contenedorNodos")
-        .getBoundingClientRect();
+      const posContenedorNodos =
+        this.$refs.contenedorNodos.getBoundingClientRect();
+      const distanciaLeftPx =
+        parseInt(this.offsetMenuContextual.left) -
+        parseInt(posContenedorNodos.left);
+      const distanciaTopPx =
+        parseInt(this.offsetMenuContextual.top) -
+        (parseInt(posContenedorNodos.top) - parseInt(this.$el.offsetTop));
 
-      console.log(`Offset menú cx: ${this.offsetMenuContextual.top}`);
-      console.log(`Offset menú cx: ${parseInt(this.offsetMenuContextual.top)}`);
+      const posPxX = distanciaLeftPx;
+      const posPxY = distanciaTopPx;
+
+      console.log(`xPix: ${parseInt(this.offsetMenuContextual.left)}`);
+      console.log(
+        `posXContenedorNodos: ${parseInt(posContenedorNodos.left)}, ${
+          posContenedorNodos.top
+        }`
+      );
+      console.log(`distanciaLeftPx: ${distanciaLeftPx}`);
+      console.log(`distanciaTopPx: ${distanciaTopPx}`);
+      console.log(
+        `Scroll x contenedorDiagrama: ${this.$refs.contenedorDiagrama.scrollLeft}`
+      );
 
       var posicionNuevoNodo = {
-        x: parseInt(
-          (parseInt(this.offsetMenuContextual.left) - posContenedor.left) /
-            this.factorZoom
-        ),
-        y: parseInt(
-          (parseInt(this.offsetMenuContextual.top) - posContenedor.top) /
-            this.factorZoom
-        ),
+        x: parseInt(posPxX / this.factorZoom + this.esquinasDiagrama.x1),
+        y: parseInt(posPxY / this.factorZoom + this.esquinasDiagrama.y1),
       };
 
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
@@ -484,12 +724,15 @@ export default {
       return listaTotal;
     },
     clickFondoAtlas() {
-      console.log(`Click en el fondo del atlas`);
-      if (!this.vistaPanned) this.idNodoSeleccionado = "-1";
+      // console.log(`Click en el fondo del atlas. Route name: ${this.$route.name}`);
+      if (this.$route.name != "atlas") {
+        this.$router.push({ name: "atlas" });
+        return;
+      }
+      if (!this.vistaPanned) this.idNodoSeleccionado = null;
       this.panningVista = false;
       this.vistaPanned = false;
       this.$refs.panelConjuntosNodos.abierto = false;
-      this.$refs.panelConfiguracionAtlas.abierto = false;
       this.mostrandoMenuContextual = false;
     },
     setEstadoObjetivoNodoCache(nuevoEstado, idNodo) {
@@ -562,20 +805,171 @@ export default {
         data: nuevoCache,
       });
     },
+    setModo(modo) {
+      if (!this.usuarioLogeado) return;
+      this.modoAtlas = modo;
+      // this.enviandoQueryModo = true;
 
+      // this.$apollo
+      //   .mutate({
+      //     mutation: gql`
+      //       mutation ($idUsuario: ID!, $nuevoModo: String!) {
+      //         setModoUsuarioAtlas(idUsuario: $idUsuario, nuevoModo: $nuevoModo){
+      //             id
+      //             atlas{
+      //                 configuracion{
+      //                     modo
+      //                 }
+      //             }
+      //         }
+      //       }
+      //     `,
+      //     variables: {
+      //       idUsuario: this.usuario.id,
+      //       nuevoModo: modo,
+      //     },
+      //   })
+      //   .then(() => {
+      //     this.enviandoQueryModo = false;
+
+      //   })
+      //   .catch((error) => {
+      //     this.enviandoQueryModo = false;
+      //     console.log(`Error: ${error}`);
+      //   });
+    },
+    configurarNodoTarget(idNodo) {
+      this.enviandoQueryTarget = true;
+
+      console.log(`Configurando nodo target`);
+      if (!idNodo || idNodo === this.idNodoTarget) {
+        console.log(`Nulificando`);
+        setTimeout(()=>{
+        this.nulificarNodoTarget();
+
+        }, 100);
+      } else {
+        setTimeout(()=>{
+
+        this.setNodoTarget(idNodo);
+        }, 100);
+      }
+    },
+    setNodoTarget(idNodo) {
+      if (!idNodo) return;
+      if (this.idNodoTarget == idNodo) {
+        return;
+      }
+
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      nuevoCache.yo.atlas.idNodoTarget = idNodo;
+      store.writeQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+        data: nuevoCache,
+      });
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!) {
+              setNodoAtlasTarget(idNodo: $idNodo)
+            }
+          `,
+          variables: {
+            idNodo,
+          },
+        })
+        .then(() => {
+          this.enviandoQueryTarget = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryTarget = false;
+          console.log(`Error: ${error}`);
+        });
+    },
+    nulificarNodoTarget() {
+      console.log(`Nulificando nodo target`);
+      this.enviandoQueryTarget = true;
+
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      nuevoCache.yo.atlas.idNodoTarget = null;
+      // nuevoCache.yo.atlas.centroVista = {x:100, y:100};
+      store.writeQuery({
+        query: QUERY_DATOS_USUARIO_NODOS,
+        data: nuevoCache,
+      });
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation {
+              nulificarNodoTargetUsuarioAtlas
+            }
+          `,
+        })
+        .then(() => {
+          this.enviandoQueryTarget = false;
+        })
+        .catch((error) => {
+          this.enviandoQueryTarget = false;
+          console.log(`Error: ${error}`);
+        });
+    },
     centrarEnNodo(n) {
-      this.$set(
-        this.centroVistaDecimal,
-        "x",
-        n.coords.x - this.$el.offsetWidth / (2 * this.factorZoom)
-      );
-      this.$set(
-        this.centroVistaDecimal,
-        "y",
-        n.coords.y - this.$el.offsetHeight / (2 * this.factorZoom)
-      );
+      const posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();
+      const posNodo = {
+        x: (n.autoCoords.x - this.esquinasDiagrama.x1) * this.factorZoom,
+        y: (n.autoCoords.y - this.esquinasDiagrama.y1) * this.factorZoom,
+      };
+
+      const posIdealScroll = {
+        x: parseInt(posNodo.x - posDiagrama.width / 2),
+        y: parseInt(posNodo.y - posDiagrama.height / 2),
+      };
+
+      this.$refs.contenedorDiagrama.scrollLeft = posIdealScroll.x;
+      this.$refs.contenedorDiagrama.scrollTop = posIdealScroll.y;
+
       this.seleccionNodo(n);
       //this.centroVista=e;
+    },
+    centrarEnNodoById(idNodo) {
+      console.log(`Centrando en nodo con id ${idNodo}`);
+      var elNodo = this.todosNodos.find((n) => n.id === idNodo);
+      if (elNodo) {
+        this.centrarEnNodo(elNodo);
+        return;
+      }
+      this.$apollo
+        .query({
+          query: gql`
+            query ($idNodo: ID!) {
+              nodo(idNodo: $idNodo) {
+                id
+                autoCoords {
+                  x
+                  y
+                }
+              }
+            }
+          `,
+          variables: {
+            idNodo,
+          },
+        })
+        .then(({ data: { nodo } }) => {
+          console.log(`Recibido nodo así: ${JSON.stringify(nodo)}`);
+          this.centrarEnNodo(nodo);
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+        });
     },
     iniciaMovimientoTouch(e) {
       if (e.touches.length === 2) {
@@ -590,58 +984,6 @@ export default {
 
       this.ultimoTouchX = e.changedTouches[0].clientX;
       this.ultimoTouchY = e.changedTouches[0].clientY;
-    },
-    movimientoMobile(e) {
-      if (this.pinching) {
-        var contenedor = this.$el;
-        let posContenedor = contenedor.getBoundingClientRect();
-
-        const posZoom = {
-          x:
-            Math.round(posContenedor.width / 2 / this.factorZoom) +
-            this.centroVista.x,
-          y:
-            Math.round(posContenedor.height / 2 / this.factorZoom) +
-            this.centroVista.y,
-        };
-
-        const proporciones = {
-          x:
-            (posZoom.x - this.centroVistaDecimal.x) /
-            (posContenedor.width / this.factorZoom),
-          y:
-            (posZoom.y - this.centroVistaDecimal.y) /
-            (posContenedor.height / this.factorZoom),
-        };
-
-        var dist = Math.hypot(
-          e.touches[0].pageX - e.touches[1].pageX,
-          e.touches[0].pageY - e.touches[1].pageY
-        );
-        var pinch = dist - this.lastPinchDistance;
-        pinch = pinch * 0.5;
-        this.zoomVista(pinch);
-        this.lastPinchDistance = dist;
-
-        this.$set(
-          this.centroVistaDecimal,
-          "x",
-          posZoom.x - (posContenedor.width / this.factorZoom) * proporciones.x
-        );
-        this.$set(
-          this.centroVistaDecimal,
-          "y",
-          posZoom.y - (posContenedor.height / this.factorZoom) * proporciones.y
-        );
-        return;
-      }
-
-      const deltaX = e.changedTouches[0].clientX - this.ultimoTouchX;
-      const deltaY = e.changedTouches[0].clientY - this.ultimoTouchY;
-      this.ultimoTouchX = e.changedTouches[0].clientX;
-      this.ultimoTouchY = e.changedTouches[0].clientY;
-
-      this.desplazarVista(deltaX, deltaY);
     },
     finTouch() {
       this.pinching = false;
@@ -705,6 +1047,7 @@ export default {
             idNodo,
           },
           update(store, { data: { eliminarNodo } }) {
+            console.log(`QUERY: ${JSON.stringify(QUERY_NODOS)}`);
             if (!eliminarNodo) {
               console.log(`Nodo no fue eliminado`);
               return;
@@ -712,6 +1055,7 @@ export default {
             const cache = store.readQuery({
               query: QUERY_NODOS,
             });
+            console.log(`Cache QUERY_NODOS: ${JSON.stringify(cache)}`);
             var nuevoCache = JSON.parse(JSON.stringify(cache));
             const indexN = nuevoCache.todosNodos.findIndex(
               (n) => n.id == idNodo
@@ -753,6 +1097,10 @@ export default {
         },
       };
       console.log(`en las coordenadas: ${posicion.x}, ${posicion.y} `);
+      this.posicionCreandoNodo = {
+        x: posicion.x,
+        y: posicion.y,
+      };
       this.$apollo
         .mutate({
           mutation: gql`
@@ -774,7 +1122,10 @@ export default {
             query: QUERY_NODOS,
           });
           var nuevoCache = JSON.parse(JSON.stringify(cache));
+          console.log(`1`);
           var losNodos = nuevoCache.todosNodos;
+          console.log(`2`);
+
           const indexN = losNodos.findIndex((n) => n.id === crearNodo.id);
           if (indexN > -1) {
             console.log(`El nodo ya estaba en caché`);
@@ -785,10 +1136,11 @@ export default {
               data: nuevoCache,
             });
           }
-
+          this.posicionCreandoNodo = null;
           //this.$router.push("/nodoConocimiento/"+crearNodo.id);
         })
         .catch((error) => {
+          this.posicionCreandoNodo = null;
           console.log(`Error. E: ${error}`);
         });
     },
@@ -824,61 +1176,8 @@ export default {
           console.log(`error fetching centro vista: ${error}`);
         });
     },
-    desplazarVista(deltaX, deltaY) {
-      this.$set(
-        this.centroVistaDecimal,
-        "x",
-        Math.round(this.centroVistaDecimal.x - deltaX / this.factorZoom)
-      );
-      this.$set(
-        this.centroVistaDecimal,
-        "y",
-        Math.round(this.centroVistaDecimal.y - deltaY / this.factorZoom)
-      );
-      this.actualizarTrazos++;
-    },
-    panVista(e) {
-      if (!this.panningVista) {
-        return;
-      }
-      this.desplazarVista(e.movementX, e.movementY);
-      e.preventDefault();
-      this.vistaPanned = true;
-
-      /*this.centroVista.x -= e.movementX;
-      this.centroVista.y -= e.movementY;
-      */
-    },
     seleccionNodo(nodo) {
       this.idNodoSeleccionado = nodo.id;
-      if (!this.todosNodos.some((n) => n.id == this.idNodoSeleccionado)) {
-        console.log(`No encontrado`);
-        return null;
-      }
-
-      let profundidad = parseInt(this.profundidadNodosConectadosAlSeleccionado);
-      let listaPorNiveles = [];
-      let idNodoSel = this.idNodoSeleccionado;
-      let listaCompleta = [idNodoSel];
-      if (profundidad > 0) {
-        for (let i = 0; i < profundidad; i++) {
-          listaPorNiveles[i] = [];
-        }
-        ({ listaCompleta, listaPorNiveles } =
-          this.encontrarNodosConectadosRecursivamente(
-            idNodoSel,
-            ["target", "source"],
-            ["continuacion"],
-            listaCompleta,
-            listaPorNiveles,
-            0,
-            profundidad
-          ));
-      }
-      this.nodosConectadosAlSeleccionado = {
-        listaCompleta,
-        listaPorNiveles,
-      };
     },
     async eliminarVinculo(args) {
       if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
@@ -957,46 +1256,7 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    encontrarNodosConectadosRecursivamente(
-      idNodo,
-      roles,
-      tipos,
-      listaCompleta,
-      listaPorNiveles,
-      nivel,
-      profundidad
-    ) {
-      // Rol debe ser un array que incluye los roles validos en esta búsqueda.
-      // Tipo deber ser un array que incluye todos los tipos válidos en esta búsqueda
-      let nodo = this.todosNodos.find((n) => n.id == idNodo);
-      for (let vinculo of nodo.vinculos) {
-        if (
-          this.todosNodos.some((n) => n.id == vinculo.idRef) &&
-          roles.some((r) => r == vinculo.rol) &&
-          tipos.some((t) => t == vinculo.tipo) &&
-          !listaCompleta.some((idN) => idN == vinculo.idRef)
-        ) {
-          listaPorNiveles[nivel].push(vinculo.idRef);
-          listaCompleta.push(vinculo.idRef);
 
-          if (nivel + 1 < profundidad) {
-            ({ listaCompleta, listaPorNiveles } =
-              this.encontrarNodosConectadosRecursivamente(
-                vinculo.idRef,
-                roles,
-                tipos,
-                listaCompleta,
-                listaPorNiveles,
-                nivel + 1,
-                profundidad
-              ));
-          }
-        } else {
-          console.log(`No`);
-        }
-      }
-      return { listaCompleta, listaPorNiveles };
-    },
     zoomVista(deltaZoom) {
       var nuevoZoom = this.zoom + deltaZoom;
       if (nuevoZoom < this.minZoom) {
@@ -1027,31 +1287,20 @@ export default {
           this.centroVista.y,
       };
 
-      const proporciones = {
-        x:
-          (posZoom.x - this.centroVistaDecimal.x) /
-          (posContenedor.width / this.factorZoom),
-        y:
-          (posZoom.y - this.centroVistaDecimal.y) /
-          (posContenedor.height / this.factorZoom),
-      };
+      // const proporciones = {
+      //   x:
+      //     (posZoom.x - this.centroVistaDecimal.x) /
+      //     (posContenedor.width / this.factorZoom),
+      //   y:
+      //     (posZoom.y - this.centroVistaDecimal.y) /
+      //     (posContenedor.height / this.factorZoom),
+      // };
 
       const factorZoom = 0.2;
       this.zoomVista(-Math.round(e.deltaY * factorZoom), {
         x: posZoom.x,
         y: posZoom.y,
       });
-
-      this.$set(
-        this.centroVistaDecimal,
-        "x",
-        posZoom.x - (posContenedor.width / this.factorZoom) * proporciones.x
-      );
-      this.$set(
-        this.centroVistaDecimal,
-        "y",
-        posZoom.y - (posContenedor.height / this.factorZoom) * proporciones.y
-      );
     },
     hideZoomInfo: debounce(function () {
       this.showingZoomInfo = false;
@@ -1129,16 +1378,45 @@ export default {
   // },
 };
 </script>
-
+<style>
+:root {
+  --atlasConocimientoFondo: #f3eff5;
+  --atlasConocimientoCheck: #3f7d20;
+  --atlasConocimientoAvailable: #e2c044;
+  --atlasConocimientoRepaso: #ff5f5f;
+  --atlasConocimientoOff: #dbfcff;
+}
+</style>
 <style scoped>
 .atlasConocimiento {
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+}
+.ventanaRepasos {
+  z-index: 100;
+  position: absolute;
+  top: 0px;
+  left: 0%;
+  background-color: rgb(255 252 249);
+  box-shadow: 3px 4px 4px rgba(0, 0, 0, 0.25);
+}
+#zonaNodoTarget {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  z-index: 50;
+}
+#zonaNodoTarget .boton {
+  width: 25px;
+  height: 25px;
 }
 #menuContextual {
   position: absolute;
   background-color: gray;
-  z-index: 100;
+  z-index: 110;
 }
 .botonMenuContextual {
   font-size: 12px;
@@ -1149,15 +1427,27 @@ export default {
 .botonMenuContextual:hover {
   background-color: rgb(68, 68, 68);
 }
-
-#canvases {
+#contenedorDiagrama {
+  position: relative;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  overflow: scroll;
+  z-index: 0;
+}
+#contenedorVinculosNodos {
   position: absolute;
+  top: 50px;
+  left: 50px;
+  user-select: none;
+
   pointer-events: none;
 }
 #contenedorNodos {
   position: absolute;
-  width: 100%;
-  height: 100%;
+  top: 50px;
+  left: 50px;
   user-select: none;
 
   pointer-events: none;
@@ -1165,16 +1455,15 @@ export default {
 #buscadorNodosConocimiento {
   position: absolute;
   top: 1%;
-  left: 1%;
+  right: 1%;
   /* transform: translateX(-50%); */
   z-index: 1;
+  width: min(100vh, 350px);
 }
 #panelConjuntosNodos {
   z-index: 100;
 }
-#panelConfiguracionAtlas {
-  z-index: 100;
-}
+
 #panelObjetivos {
   position: absolute;
   top: 2%;
@@ -1205,6 +1494,7 @@ export default {
   top: 1%;
   right: 1%;
   cursor: pointer;
+  z-index: 1;
 }
 
 #simboloDescargandoNodos {
@@ -1213,6 +1503,33 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 100;
+}
+
+.visorNodoConocimiento {
+  width: 100%;
+  min-height: 100%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 1000;
+  background-color: whitesmoke;
+}
+
+#barraInferior {
+  position: absolute;
+  bottom: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: row-reverse;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#barraInferior .boton {
+  height: 30px;
+  width: 30px;
+  margin: 0px 5px;
+  z-index: 0;
 }
 
 .fadeOut-leave-to {

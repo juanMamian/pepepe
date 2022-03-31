@@ -1,19 +1,24 @@
 <template>
   <div class="seccionNodoConocimiento">
     <div class="contenedorControles">
-      <div class="boton" v-if="usuarioExperto" @click="editando = !editando">
+      <div class="boton" v-if="usuarioExperto || usuarioSuperadministrador" @click="editando = !editando">
         <img src="@/assets/iconos/edit.svg" alt="Editar" />
       </div>
     </div>
-    <div id="zonaFront" v-show="!editando" :key="versionArchivo">
+    <div id="zonaFront" class="frontDeSeccion" v-show="!editando" :key="versionArchivo">
       <iframe
         id="iframeSeccion"
         :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
+        v-if="estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0,5)!='image'"
         frameborder="0"
       ></iframe>
+      <img
+      :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
+      v-if="estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0,5)==='image'"
+      />
     </div>
 
-    <div id="zonaAdministracion" v-if="usuarioExperto" v-show="editando">
+    <div id="zonaAdministracion" v-if="usuarioExperto || usuarioSuperadministrador" v-show="editando">
       <div id="nombre" v-show="!editandoNombre" @click="iniciarEdicionNombre">
         {{ estaSeccion.nombre }}
       </div>
@@ -220,7 +225,20 @@ export default {
 
 <style scoped>
 .seccionNodoConocimiento {
+  width: 100%;  
+}
+#zonaFront{  
+  max-width:100vw;
+  margin: 5px auto;
+}
+#zonaFront iframe{
+  
   width: 100%;
+}
+#zonaFront img{
+  max-width: 100%;
+  margin: 0px auto;
+  display:block;
 }
 #iframeSeccion {
   width: 100%;

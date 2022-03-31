@@ -1,26 +1,28 @@
 <template>
-  <div id="buscadorNodosConocimiento">
-    <img
-      src="@/assets/iconos/search.png"
-      alt="Lupa"
-      title="Buscar nodos de conocimiento"
-      id="imagenLupa"
-      :class="{ opaco: !mostrandoInput }"
-      @click.stop="mostrandoInput = true"
-    />
-    <transition name="unfold">
-      <input
-        type="text"
-        placeholder="Buscar"
-        v-model="textoBusqueda"
-        id="inputBuscador"
-        v-show="mostrandoInput"
-        autocomplete="off"
-        @click.stop=""
-        @keypress.enter="buscarDatabase"
+  <div id="buscadorNodosConocimiento" :style="[{width: mostrandoInput?'min(100vh, 350px)':'30px'}]">
+    <div id="barraSuperior">
+      <img
+        src="@/assets/iconos/search.png"
+        alt="Lupa"
+        title="Buscar nodos de conocimiento"
+        id="imagenLupa"
+        :class="{ opaco: !mostrandoInput }"
+        @click.stop="mostrandoInput = true"
       />
-    </transition>
-
+      <transition name="unfold">
+        <input
+          type="text"
+          placeholder="Buscar"
+          v-model="textoBusqueda"
+          id="inputBuscador"
+          v-show="mostrandoInput"
+          autocomplete="off"
+          @click.stop=""
+          @keypress.enter="buscarDatabase"
+        />
+      </transition>
+      
+    </div>
     <loading texto="Buscando" v-show="esperandoResultados" />
 
     <div id="listaResultados" v-show="mostrandoLista">
@@ -42,10 +44,9 @@
 
 <script>
 import gql from "graphql-tag";
-import Loading from '../utilidades/Loading.vue';
+import Loading from "../utilidades/Loading.vue";
 // import throttle from "lodash/throttle";
 // import debounce from "lodash/debounce"
-
 
 export default {
   components: { Loading },
@@ -57,9 +58,9 @@ export default {
       resultados: [],
 
       mostrandoInput: false,
-      mostrandoLista:false,
+      mostrandoLista: false,
 
-      esperandoResultados:false,
+      esperandoResultados: false,
     };
   },
   props: {
@@ -71,20 +72,16 @@ export default {
     },
     buscarDatabase() {
       console.log(`******Descargando resultados de búsqueda`);
-      this.esperandoResultados=true;
+      this.esperandoResultados = true;
       this.$apollo
         .query({
           query: gql`
-            query($palabrasBuscadas: String!) {
+            query ($palabrasBuscadas: String!) {
               busquedaAmplia(palabrasBuscadas: $palabrasBuscadas) {
                 id
                 nombre
                 resumen
-                coordsManuales {
-                  x
-                  y
-                }
-                coords{
+                autoCoords {
                   x
                   y
                 }
@@ -98,29 +95,35 @@ export default {
         })
         .then(({ data: { busquedaAmplia } }) => {
           this.resultados = busquedaAmplia;
-          this.esperandoResultados=false;
-          this.mostrandoLista=true;
+          this.esperandoResultados = false;
+          this.mostrandoLista = true;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
-          this.esperandoResultados=false;
-
+          this.esperandoResultados = false;
         });
     },
   },
   watch: {
-    textoBusqueda: function () {      
-      this.mostrandoLista=false;      
+    textoBusqueda: function () {
+      this.mostrandoLista = false;
     },
     cerrarBusqueda() {
       this.mostrandoInput = false;
-      this.mostrandoLista=false;
+      this.mostrandoLista = false;
     },
   },
 };
 </script>
 
 <style scoped>
+#barraSuperior{
+  display:flex;
+  align-items: center;
+  flex-direction: row-reverse;
+  
+}
+
 #inputBuscador {
   font-size: 20px;
   border-radius: 4px;
@@ -132,11 +135,9 @@ export default {
   cursor: pointer;
   border-radius: 50%;
   padding: 3px;
-  background-color: rgba(128, 128, 128, 0.144);
 }
 
 #imagenLupa:hover {
-  background-color: rgb(128, 128, 128);
   opacity: 1;
 }
 .opaco {
@@ -144,7 +145,7 @@ export default {
 }
 #listaResultados {
   margin: 2px auto;
-  width: 280px;
+  width: 100%;
 }
 
 .resultado {
