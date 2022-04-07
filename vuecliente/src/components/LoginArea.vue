@@ -105,7 +105,7 @@ export default {
 
       var password = this.$refs.inputPassword.value;
       var username = this.$refs.inputUsername.value;
-
+      console.log("Con pass length: "+this.password.length)
       if (this.password.length < minPassword) {
         console.log(`Password ilegal`);
         return;
@@ -120,7 +120,7 @@ export default {
       }
 
       this.enviandoDatos = true;
-
+      console.log("query");
       this.$apollo
         .query({
           query: gql`

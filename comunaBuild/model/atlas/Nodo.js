@@ -48,7 +48,7 @@ var esquemaNodo = new mongoose_1.default.Schema({
                 tipo: {
                     type: String,
                     required: true,
-                    default: "continuacion"
+                    default: "continuacion",
                 }
             }
         ],
@@ -103,16 +103,19 @@ var esquemaNodo = new mongoose_1.default.Schema({
         type: [{
                 nombre: {
                     type: String,
-                    required: true,
                     max: 40,
                     min: 2,
                     default: "Nueva sección"
                 },
                 idCarpeta: {
                     type: String,
+                },
+                modo: {
+                    type: String,
+                    default: "archivo",
+                    enum: ["archivo", "enlace"]
                 }
             }],
-        required: true,
         default: []
     },
     fuerzaCentroMasa: {

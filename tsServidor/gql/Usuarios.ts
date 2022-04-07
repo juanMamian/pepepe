@@ -303,6 +303,7 @@ export const resolvers = {
         },
         login: async function (_: any, { username, password }: any, context: contextoQuery) {
             let credencialesUsuario = context.usuario;
+            console.log(`Solicitud de login con username ${username} y pass: ${password}`);
 
             username = username.trim();
             if (charProhibidosUsername.test(username)) {
@@ -312,11 +313,13 @@ export const resolvers = {
 
             try {
                 var elUsuario: any = await Usuario.findOne({ username }, "username password permisos").exec();
+                if(!elUsuario)throw "Usuario no encontrado"
             } catch (error) {
                 console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
 
             }
+            
             const correctLogin = await bcrypt.compare(password, elUsuario.password);
             if (!correctLogin) {
                 console.log(`Contraseña errada. Rechazando`);

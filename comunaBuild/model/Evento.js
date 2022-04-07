@@ -3,52 +3,135 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloEvento = exports.esquemaEvento = void 0;
+exports.ModeloEventoPublico = exports.ModeloEventoPersonal = exports.esquemaEventoPublico = exports.esquemaEventoPersonal = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
-exports.esquemaEvento = new mongoose_1.default.Schema({
-    nombre: {
+const config_1 = require("./config");
+const maxDuracionEventos = 1000 * 60 * 60 * 10; //10 horas
+const minDuracionEventos = 1000 * 60 * 5; //5 minutos
+exports.esquemaEventoPersonal = new mongoose_1.default.Schema({
+    idPersona: {
         type: String,
         required: true,
-        min: 3,
-        max: 1024,
+    },
+    idsParticipantes: {
+        type: [String],
+        validate: {
+            validator: function (ids) {
+                return !ids.includes(this.idPersona);
+            },
+            message: props => "idsParticipantes (" + props.value + ") no puede contener a la persona que creó el evento",
+        },
+        default: [],
+    },
+    idParent: {
+        type: String,
+        required: function () {
+            return this.tipoParent;
+        }
+    },
+    tipoParent: {
+        type: String,
+        enum: ["nodoSolidaridad"],
+        required: function () {
+            return this.idParent;
+        }
+    },
+    nombre: {
+        type: String,
+        minLength: 3,
+        maxLength: 1024,
+        validate: config_1.validatorNombreCosa,
         default: "Nuevo evento"
-    },
-    responsables: {
-        type: [String],
-        default: []
-    },
-    posiblesResponsables: {
-        type: [String],
-        default: []
-    },
-    participantes: {
-        type: [String],
-        default: []
-    },
-    responsablesSolicitados: {
-        type: Number,
-        default: 0,
     },
     descripcion: {
         type: String,
-        default: "Sin descripcion",
-        required: true,
-        max: 2000
+        validate: config_1.validatorTexto,
+        maxLength: 2000
     },
     horarioInicio: {
-        type: Date
+        type: Date,
+        required: true,
+        validate: {
+            validator: function () {
+                const duracion = this.horarioFinal - this.horarioInicio;
+                return duracion >= minDuracionEventos && duracion <= maxDuracionEventos;
+            },
+            message: props => props.value + "No es un valor válido"
+        }
     },
     horarioFinal: {
-        type: Date
+        type: Date,
+        required: true,
+        validate: {
+            validator: function () {
+                const duracion = this.horarioFinal - this.horarioInicio;
+                return duracion >= minDuracionEventos && duracion <= maxDuracionEventos;
+            },
+            message: props => props.value + "No es un valor válido"
+        }
     },
-    origen: {
+    idEventoMarco: {
         type: String,
     },
-    idOrigen: {
-        type: String
+    lugar: {
+        type: String,
     },
-    idNodo: {
-        type: String
+});
+exports.esquemaEventoPublico = new mongoose_1.default.Schema({
+    nombre: {
+        type: String,
+        minLength: 3,
+        maxLength: 1024,
+        validate: config_1.validatorNombreCosa,
+        default: "Nuevo evento"
+    },
+    descripcion: {
+        type: String,
+        validate: config_1.validatorTexto,
+        maxLength: 2000
+    },
+    idAdministrador: {
+        type: String,
+        required: true,
+    },
+    limiteDeCupos: {
+        type: Number,
+    },
+    horarioInicio: {
+        type: Date,
+        required: true,
+        validate: {
+            validator: function () {
+                const duracion = this.horarioFinal - this.horarioInicio;
+                return duracion >= minDuracionEventos && duracion <= maxDuracionEventos;
+            },
+            message: props => props.value + "No es un valor válido"
+        }
+    },
+    horarioFinal: {
+        type: Date,
+        required: true,
+        validate: {
+            validator: function () {
+                const duracion = this.horarioFinal - this.horarioInicio;
+                return duracion >= minDuracionEventos && duracion <= maxDuracionEventos;
+            },
+            message: props => props.value + "No es un valor válido"
+        },
+    },
+    lugar: {
+        type: String,
+    },
+    idParent: {
+        type: String,
+    },
+    tipoParent: {
+        type: String,
+        enum: ["espacio"],
+        required: function () {
+            return this.idParent != null;
+        }
     }
 });
-exports.ModeloEvento = mongoose_1.default.model("Evento", exports.esquemaEvento);
+exports.ModeloEventoPersonal = mongoose_1.default.model("EventoPersonal", exports.esquemaEventoPersonal);
+exports.ModeloEventoPublico = mongoose_1.default.model("EventoPublico", exports.esquemaEventoPublico);

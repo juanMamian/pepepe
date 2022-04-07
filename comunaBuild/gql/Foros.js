@@ -16,11 +16,9 @@ exports.resolvers = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const mongoose_1 = __importDefault(require("mongoose"));
 const Foro_1 = require("../model/Foros/Foro");
-const Proyecto_1 = require("../model/Proyecto");
 const Conversacion_1 = require("../model/Foros/Conversacion");
 const Usuario_1 = require("../model/Usuario");
 const Nodo_1 = require("../model/atlas/Nodo");
-const Trabajo_1 = require("../model/Trabajo");
 const Nodo = require("../model/atlas/Nodo");
 const Libro_1 = require("../model/cuentos/Libro");
 exports.typeDefs = apollo_server_express_1.gql `
@@ -334,15 +332,7 @@ exports.resolvers = {
                 //Crear notificacion para los miembros del parent.
                 console.log(`Creando notificacion para los miembros del ${parent.tipo} ${parent.nombre}`);
                 try {
-                    if (parent.tipo == "proyecto") {
-                        var elParent = yield Proyecto_1.ModeloProyecto.findById(parent.id, "_id responsables").exec();
-                        var idsMiembros = elParent.responsables;
-                    }
-                    else if (parent.tipo == "trabajo") {
-                        var elParent = yield Trabajo_1.ModeloTrabajo.findById(parent.id, "_id responsables").exec();
-                        var idsMiembros = elParent.responsables;
-                    }
-                    else if (parent.tipo == "nodoConocimiento") {
+                    if (parent.tipo == "nodoConocimiento") {
                         var elParent = yield Nodo_1.ModeloNodo.findById(parent.id, "_id expertos").exec();
                         var idsMiembros = elParent.expertos;
                     }
@@ -354,7 +344,7 @@ exports.resolvers = {
                         var idsMiembros = [];
                     }
                     else {
-                        console.log(`Error: tipo de parent no reconocido`);
+                        console.log(`Error: tipo de parent ${parent.tipo} no reconocido`);
                     }
                 }
                 catch (error) {
@@ -565,15 +555,7 @@ exports.resolvers = {
                 //Crear notificacion para los miembros del parent.
                 console.log(`Creando notificacion para los miembros del ${parent.tipo} ${parent.nombre}`);
                 try {
-                    if (parent.tipo == "proyecto") {
-                        var elParent = yield Proyecto_1.ModeloProyecto.findById(parent.id, "_id responsables").exec();
-                        var idsMiembros = elParent.responsables;
-                    }
-                    else if (parent.tipo == "trabajo") {
-                        var elParent = yield Trabajo_1.ModeloTrabajo.findById(parent.id, "_id responsables").exec();
-                        var idsMiembros = elParent.responsables;
-                    }
-                    else if (parent.tipo == "nodoConocimiento") {
+                    if (parent.tipo == "nodoConocimiento") {
                         var elParent = yield Nodo_1.ModeloNodo.findById(parent.id, "_id expertos").exec();
                         var idsMiembros = elParent.expertos;
                     }

@@ -6,8 +6,7 @@
         <img
           id="botonDesplegarNav"
           src="@/assets/iconos/stream.svg"
-          alt="Menu"
-          
+          alt="Menu"          
         />
         <div id="logoPepepe">Pepepe</div>
       </div>

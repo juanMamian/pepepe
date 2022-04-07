@@ -7,10 +7,10 @@ exports.aServer = exports.pubsub = exports.esquema = void 0;
 const { ApolloServer, gql, PubSub } = require("apollo-server-express");
 const NodosConocimiento_1 = require("./NodosConocimiento");
 const Usuarios_1 = require("./Usuarios");
-const Proyectos_1 = require("./Proyectos");
-const Trabajos_1 = require("./Trabajos");
 const Eventos_1 = require("./Eventos");
 const Atlases_1 = require("./Atlases");
+const AtlasSolidaridad_1 = require("./AtlasSolidaridad");
+const Espacios_1 = require("./Espacios");
 // import { typeDefs as tdObjetivos, resolvers as rObjetivos } from "./Objetivos"
 const GruposEstudiantiles_1 = require("./GruposEstudiantiles");
 const Foros_1 = require("./Foros");
@@ -43,8 +43,8 @@ const globalTypeDefs = gql `
 
 
 `;
-const typeDefs = [globalTypeDefs, NodosConocimiento_1.typeDefs, Usuarios_1.typeDefs, Proyectos_1.typeDefs, Trabajos_1.typeDefs, Eventos_1.typeDefs, GruposEstudiantiles_1.typeDefs, Foros_1.typeDefs, Libro_1.typeDefs, Atlases_1.typeDefs];
-const resolvers = merge_1.default({}, NodosConocimiento_1.resolvers, Usuarios_1.resolvers, Proyectos_1.resolvers, Trabajos_1.resolvers, Eventos_1.resolvers, GruposEstudiantiles_1.resolvers, Foros_1.resolvers, Libro_1.resolvers, Atlases_1.resolvers);
+const typeDefs = [globalTypeDefs, NodosConocimiento_1.typeDefs, Usuarios_1.typeDefs, GruposEstudiantiles_1.typeDefs, Foros_1.typeDefs, Libro_1.typeDefs, Atlases_1.typeDefs, AtlasSolidaridad_1.typeDefs, Espacios_1.typeDefs, Eventos_1.typeDefs];
+const resolvers = merge_1.default({}, NodosConocimiento_1.resolvers, Usuarios_1.resolvers, GruposEstudiantiles_1.resolvers, Foros_1.resolvers, Libro_1.resolvers, Atlases_1.resolvers, AtlasSolidaridad_1.resolvers, Espacios_1.resolvers, Eventos_1.resolvers);
 exports.esquema = apollo_server_express_1.makeExecutableSchema({
     typeDefs,
     resolvers

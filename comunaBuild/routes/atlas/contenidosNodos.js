@@ -70,7 +70,7 @@ router.get("/:idNodo/:idSeccion/:nombreArchivo", function (req, res) {
 });
 router.get("/:idNodo/:idSeccion", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(`(2)Acceso a un archivo primario de contenido de sección ${req.params.idSeccion} de nodo`);
+        console.log('\x1b[35m%s\x1b[0m', `(2)Acceso a un archivo primario de contenido de sección ${req.params.idSeccion} de nodo`);
         const idNodo = req.params.idNodo;
         const idSeccion = req.params.idSeccion;
         const nombreArchivo = req.params.nombreArchivo;
@@ -93,6 +93,7 @@ router.get("/:idNodo/:idSeccion", function (req, res) {
             console.log(`Carpeta no existente`);
             return res.sendFile(pathDefault);
         }
+        console.log(`idCarpeta: ${laSeccion.idCarpeta}`);
         try {
             var laCarpeta = yield CarpetaArchivos_1.ModeloCarpetaArchivos.findById(laSeccion.idCarpeta).exec();
             if (!laCarpeta)

@@ -9,13 +9,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolvers = exports.typeDefs = void 0;
+exports.resolvers = exports.NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS = exports.typeDefs = exports.idAtlasConocimiento = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Nodo_1 = require("../model/atlas/Nodo");
 const Usuario_1 = require("../model/Usuario");
 const Foro_1 = require("../model/Foros/Foro");
 const CarpetaArchivos_1 = require("../model/CarpetaArchivos");
 const Evento_1 = require("../model/Evento");
+const controlAtlasConocimiento_1 = require("../controlAtlasConocimiento");
+const config_1 = require("../model/config");
+exports.idAtlasConocimiento = "61ea0b0f17a5d80da7e94320";
 exports.typeDefs = apollo_server_express_1.gql `
 type Vinculo{
     id:ID!,
@@ -24,14 +27,10 @@ type Vinculo{
     rol: String!
 }
 
-input vinculoInput{
-    id:ID,
-    tipo: String,
-    idRef: ID,
-    rol: String
-}
+
 
 type InfoArchivoContenidoNodo{
+    
     nombre:String,
     primario:Boolean,
     mimetype:String,
@@ -42,6 +41,7 @@ type SeccionContenidoNodo{
     nombre:String,
     archivos:[InfoArchivoContenidoNodo],
     tipoPrimario:String,
+    modo:String,
 }
 
 type ClaseNodoConocimiento{
@@ -83,6 +83,7 @@ input NodoConocimientoInput{
     nombre: String,
     coordsManuales:CoordsInput,
     coords:CoordsInput,
+    autoCoords:CoordsInput,
     vinculos:[vinculoInput]
 }
 
@@ -100,9 +101,13 @@ extend type Query{
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
     busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
+
+
 },
 
 extend type Mutation{
+    posicionarNodosConocimientoByFuerzas(ciclos:Int!):Boolean,
+
     setCoordsManuales(idNodo: String, coordsManuales:CoordsInput):infoNodosModificados,
     crearVinculo(tipo:String!, idSource:ID!, idTarget:ID!):infoNodosModificados,
     eliminarVinculoFromTo(idSource:ID!, idTarget:ID!):infoNodosModificados,
@@ -119,9 +124,10 @@ extend type Mutation{
     eliminarArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean
     marcarPrimarioArchivoSeccionNodo(idNodo:ID!, idSeccion:ID!, nombreArchivo:String!):Boolean,
 
-    crearNuevaSeccionNodoConocimiento(idNodo:ID!, nombreNuevaSeccion:String!):SeccionContenidoNodo,
+    crearNuevaSeccionNodoConocimiento(idNodo:ID!):SeccionContenidoNodo,
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
     moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):Boolean,
+    editarNombreSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, nuevoNombre: String!):SeccionContenidoNodo,
 
     crearClaseNodoConocimiento(idNodo:ID!, idExperto: ID!):ClaseNodoConocimiento,
     eliminarClaseNodoConocimiento(idNodo:ID!, idClase: ID!):Boolean,
@@ -130,6 +136,7 @@ extend type Mutation{
 
 }
 `;
+exports.NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS = "nodos_de_atlas_conocimiento_posicionados";
 exports.resolvers = {
     Query: {
         busquedaAmplia: function (_, { palabrasBuscadas }, __) {
@@ -140,7 +147,7 @@ exports.resolvers = {
                     console.log(`No habia palabras buscadas`);
                 }
                 try {
-                    var opciones = yield Nodo_1.ModeloNodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion coordsManuales coords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
+                    var opciones = yield Nodo_1.ModeloNodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
                 }
                 catch (error) {
                     console.log(". E: " + error);
@@ -161,6 +168,7 @@ exports.resolvers = {
                     console.log(`error fetching todos los nodos. e: ` + error);
                     return;
                 }
+                // console.log(`Primero enviado: ${JSON.stringify(todosNodos[0])}`);
                 // console.log(`Enviando: ${todosNodos}`);
                 return todosNodos;
             });
@@ -169,7 +177,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Buscando el nodo con id ${idNodo}`);
                 try {
-                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre vinculos coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos secciones clases").exec();
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo, "nombre vinculos autoCoords coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos secciones clases").exec();
                     if (!elNodo)
                         throw "Nodo no encontrado";
                 }
@@ -257,6 +265,14 @@ exports.resolvers = {
         }
     },
     Mutation: {
+        posicionarNodosConocimientoByFuerzas(_, { ciclos }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Peticion de ejecutar un posicionamiento de nodos de conocimiento by fuerzas de ${ciclos} ciclos`);
+                controlAtlasConocimiento_1.ejecutarPosicionamientoNodosConocimientoByFuerzas(ciclos, Date.now(), true);
+                console.log(`Terminado`);
+                return true;
+            });
+        },
         eliminarNodo(_, { idNodo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`peticion de eliminar nodo con id ${idNodo}`);
@@ -565,8 +581,11 @@ exports.resolvers = {
         },
         addExpertoNodo: function (_, { idNodo, idUsuario }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Solicitud de add un usuario con id ${idUsuario} a un nodo con id ${idNodo}`);
-                let credencialesUsuario = contexto.usuario;
+                console.log('\x1b[35m%s\x1b[0m', `Solicitud de add un usuario con id ${idUsuario} como experto a un nodo con id ${idNodo}`);
+                if (!contexto.usuario) {
+                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                }
+                const credencialesUsuario = contexto.usuario;
                 try {
                     var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
                     if (!elNodo) {
@@ -578,9 +597,10 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error de conexión con la base de datos");
                 }
                 //Authorización
-                const primerExpertoAsumiendo = elNodo.expertos.length === 0 && credencialesUsuario.id === idUsuario;
-                if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador") && !primerExpertoAsumiendo) {
-                    console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador o cuando es el primer experto. Primer experto: ${primerExpertoAsumiendo}`);
+                const permisosEspeciales = ["superadministrador", "atlasAdministrador"];
+                const usuarioExperto = elNodo.expertos.includes(credencialesUsuario.id);
+                if (idUsuario != credencialesUsuario.id && !usuarioExperto && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !elNodo.expertos.includes(credencialesUsuario.id)) {
+                    console.log(`Error de autenticacion.`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
@@ -598,12 +618,22 @@ exports.resolvers = {
                     console.log(`El usuario ya era experto de este nodo`);
                     throw new apollo_server_express_1.ApolloError("El usuario ya estaba incluido");
                 }
-                elNodo.expertos.push(idUsuario);
-                console.log(`Usuario añadido a la lista de expertos`);
                 let indexPosibleExperto = elNodo.posiblesExpertos.indexOf(idUsuario);
-                if (indexPosibleExperto > -1) {
-                    console.log(`sacando al usuario ${idUsuario} de la lista de posibles expertos`);
-                    elNodo.posiblesExpertos.splice(indexPosibleExperto, 1);
+                //Entrar a expertos
+                if (elNodo.expertos.length === 0 || (usuarioExperto && indexPosibleExperto > -1)) {
+                    elNodo.expertos.push(idUsuario);
+                    console.log(`Usuario añadido a la lista de expertos`);
+                    if (indexPosibleExperto > -1) {
+                        console.log(`sacando al usuario ${idUsuario} de la lista de posibles expertos`);
+                        elNodo.posiblesExpertos.splice(indexPosibleExperto, 1);
+                    }
+                }
+                else if (credencialesUsuario.id === idUsuario && indexPosibleExperto === -1) {
+                    elNodo.posiblesExpertos.push(idUsuario);
+                    console.log(`Usuario añadido a la lista de posibles expertos`);
+                }
+                else {
+                    throw new apollo_server_express_1.UserInputError("El usuario no podía ser added to expertos");
                 }
                 try {
                     yield elNodo.save();
@@ -672,8 +702,12 @@ exports.resolvers = {
         },
         removeExpertoNodo: function (_, { idNodo, idUsuario }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Solicitud de remover un usuario con id ${idUsuario} a un nodo con id ${idNodo}`);
-                let credencialesUsuario = contexto.usuario;
+                console.log('\x1b[35m%s\x1b[0m', `Solicitud de remover un usuario con id ${idUsuario} de la lista de expertos de un nodo con id ${idNodo}`);
+                if (!contexto.usuario || !contexto.usuario.id) {
+                    console.log(`Usuario no logeado`);
+                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                }
+                const credencialesUsuario = contexto.usuario;
                 try {
                     var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
                     if (!elNodo) {
@@ -801,8 +835,8 @@ exports.resolvers = {
                     console.log(`error buscando el nodo. E: ` + error);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                let credencialesUsuario = contexto.usuario;
-                let permisosEspeciales = ["atlasAdministrador", "superadministrador"];
+                const credencialesUsuario = contexto.usuario;
+                const permisosEspeciales = ["atlasAdministrador", "superadministrador"];
                 if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                     console.log(`El usuario no tenia permisos para efectuar esta operación`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
@@ -828,10 +862,12 @@ exports.resolvers = {
                 var encontrado = false;
                 laCarpeta.archivos.forEach(archivo => {
                     if (archivo.nombre == nombreArchivo) {
+                        console.log(`Marcando ${archivo.nombre} como primario`);
                         archivo.primario = true;
                         encontrado = true;
                     }
                     else {
+                        console.log(`Marcando ${archivo.nombre} como secundario`);
                         archivo.primario = false;
                     }
                 });
@@ -846,8 +882,11 @@ exports.resolvers = {
                 return encontrado;
             });
         },
-        crearNuevaSeccionNodoConocimiento: function (_, { idNodo, nombreNuevaSeccion }, contexto) {
+        crearNuevaSeccionNodoConocimiento: function (_, { idNodo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
+                if (!contexto.usuario) {
+                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                }
                 let credencialesUsuario = contexto.usuario;
                 try {
                     var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
@@ -860,21 +899,13 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 //Authorización
-                if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador") && !elNodo.expertos.includes(credencialesUsuario.id)) {
+                const permisosEspeciales = ["superadministrador, atlasAdministrador"];
+                if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !elNodo.expertos.includes(credencialesUsuario.id)) {
                     console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador o un experto`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
-                const charProhibidosNombreNuevaSeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
-                if (charProhibidosNombreNuevaSeccion.test(nombreNuevaSeccion) || nombreNuevaSeccion.length > 30) {
-                    throw new apollo_server_express_1.ApolloError("Nombre ilegal");
-                }
-                var nuevaSeccion = elNodo.secciones.create({
-                    nombre: nombreNuevaSeccion
-                });
-                console.log(`Secciones: ${elNodo.secciones}`);
-                console.log(`Nueva Seccion: ${nuevaSeccion}`);
+                var nuevaSeccion = elNodo.secciones.create({});
                 elNodo.secciones.push(nuevaSeccion);
-                console.log(`Secciones: ${elNodo.secciones}`);
                 try {
                     yield elNodo.save();
                 }
@@ -975,6 +1006,56 @@ exports.resolvers = {
                 return true;
             });
         },
+        editarNombreSeccionNodoConocimiento(_, { idNodo, idSeccion, nuevoNombre }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`cambiando el nombre del seccion con id ${idSeccion} del nodoConocimiento con id ${idNodo}`);
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodoConocimiento no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodoConocimiento. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Erro en la conexión con la base de datos");
+                }
+                //Authorización
+                const permisosEspeciales = ["superadministrador", "atlasAdministrador"];
+                const credencialesUsuario = contexto.usuario;
+                if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando artículo de seccion de nodoConocimiento`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
+                if (config_1.charProhibidosNombreCosa.test(nuevoNombre)) {
+                    throw new apollo_server_express_1.ApolloError("Nombre ilegal");
+                }
+                nuevoNombre = nuevoNombre.trim();
+                nuevoNombre.replace(/  +/g, ' ');
+                nuevoNombre = nuevoNombre.replace(/[\n\r]/g, "");
+                try {
+                    var laSeccion = elNodo.secciones.id(idSeccion);
+                    if (!laSeccion) {
+                        console.log(`Seccion no encontrado en el nodoConocimiento`);
+                        throw "No existía el seccion";
+                    }
+                    laSeccion.nombre = nuevoNombre;
+                }
+                catch (error) {
+                    console.log("Error cambiando el artículo en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error guardando el artículo en la base de datos");
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el seccion creado en el nodoConocimiento. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el seccion en el nodoConocimiento");
+                }
+                console.log(`Artículo cambiado`);
+                return laSeccion;
+            });
+        },
         crearClaseNodoConocimiento: function (_, { idNodo, idExperto }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 let credencialesUsuario = contexto.usuario;
@@ -1043,10 +1124,10 @@ exports.resolvers = {
                 //Eliminar los eventos de esta clase
                 console.log(`Eliminando eventos con idOrigen: ${idClase}`);
                 try {
-                    yield Evento_1.ModeloEvento.deleteMany({ idOrigen: idClase }).exec();
+                    yield Evento_1.ModeloEventoPublico.deleteMany({ idOrigen: idClase }).exec();
                 }
                 catch (error) {
-                    console.log(`Error buscando eventos con idOrigen: ${idClase} para eliminarlos`);
+                    console.log(`Error buscando eventos publicos con idOrigen: ${idClase} para eliminarlos`);
                 }
                 try {
                     yield elNodo.save();

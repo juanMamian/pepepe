@@ -3,8 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloUsuario = exports.validarDatosUsuario = exports.ModeloNotificacion = exports.permisosDeUsuario = void 0;
+exports.ModeloUsuario = exports.minLengthUsername = exports.minLengthEmail = exports.maxLengthPassword = exports.minLengthPassword = exports.minLengthApellidosUsuario = exports.minLengthNombresUsuario = exports.emailValidator = exports.charProhibidosPassword = exports.charProhibidosUsername = exports.charProhibidosNombresUsuario = exports.validarDatosUsuario = exports.ModeloNotificacion = exports.permisosDeUsuario = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
+const VinculosNodosSolidaridad_1 = require("./atlasSolidaridad/VinculosNodosSolidaridad");
 exports.permisosDeUsuario = [
     "usuario",
     "administrador",
@@ -20,6 +21,12 @@ exports.permisosDeUsuario = [
     "maestraVida-acompañante",
     "comunere"
 ];
+const esquemaIteracionRepaso = new mongoose_1.default.Schema({
+    intervalo: {
+        type: Number,
+        default: 86400000
+    },
+});
 const esquemaColeccionNodosAtlasConocimiento = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -91,6 +98,34 @@ const esquemaNotificacionActividadForo = new mongoose_1.default.Schema({
         required: true,
         default: 1
     }
+});
+const esquemaDatoNodo = new mongoose_1.default.Schema({
+    idNodo: { type: String, required: true },
+    objetivo: { type: Boolean, default: false },
+    aprendido: { type: Boolean, default: false },
+    estudiado: { type: Date },
+    iteracionesRepaso: {
+        type: [esquemaIteracionRepaso],
+        default: []
+    },
+});
+esquemaDatoNodo.pre("save", function (next) {
+    if (this.aprendido) {
+        this.iteracionesRepaso = [];
+    }
+    else if (this.estudiado) {
+        if (!this.iteracionesRepaso)
+            this.iteracionesRepaso = [];
+        if (this.iteracionesRepaso.length < 1) {
+            this.iteracionesRepaso.push({
+                intervalo: 172800000
+            });
+        }
+    }
+    else {
+        this.iteracionesRepaso = [];
+    }
+    next();
 });
 exports.ModeloNotificacion = mongoose_1.default.model("Notificacion", esquemaNotificacion);
 const esquemaUsuario = new mongoose_1.default.Schema({
@@ -170,13 +205,7 @@ const esquemaUsuario = new mongoose_1.default.Schema({
             }
         },
         datosNodos: {
-            type: [
-                {
-                    idNodo: String,
-                    objetivo: Boolean,
-                    aprendido: Boolean,
-                }
-            ],
+            type: [esquemaDatoNodo],
             default: []
         },
         configuracion: {
@@ -203,7 +232,7 @@ const esquemaUsuario = new mongoose_1.default.Schema({
                 default: 0
             }
         },
-        idsNodosPlegados: {
+        idsNodosDesplegados: {
             type: [String],
             default: []
         }
@@ -247,6 +276,68 @@ const esquemaUsuario = new mongoose_1.default.Schema({
                     default: []
                 }
             }]
+    },
+    vinculos: {
+        type: [VinculosNodosSolidaridad_1.EsquemaVinculosNodosSolidaridad],
+        default: []
+    },
+    coords: {
+        x: {
+            type: Number,
+            required: true,
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
+        },
+        y: {
+            type: Number,
+            required: true,
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
+        }
+    },
+    autoCoords: {
+        x: {
+            type: Number,
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
+        },
+        y: {
+            type: Number,
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
+        }
+    },
+    fuerzaCentroMasa: {
+        fuerza: {
+            type: Number,
+            default: 0
+        },
+        direccion: {
+            type: Number,
+            default: 0
+        }
+    },
+    fuerzaColision: {
+        fuerza: {
+            type: Number,
+            default: 0
+        },
+        direccion: {
+            type: Number,
+            default: 0
+        }
     }
 });
 esquemaUsuario.methods.getEdad = function () {
@@ -261,7 +352,6 @@ var charProhibidosNombre = /[^ a-zA-ZÀ-žñÑ]/g;
 var charProhibidosNumeroTel = /[^0-9+-]/g;
 var emailChars = /\S+@\S+\.\S+/;
 var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
-var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
 const validarDatosUsuario = function (datosUsuario) {
     var errores = [];
     for (let dato in datosUsuario) {
@@ -321,7 +411,7 @@ const validarDatosUsuario = function (datosUsuario) {
             if (datosUsuario.password.length < 6 || datosUsuario.password.length > 32) {
                 errores.push("Tu contraseña debe contener entre 6 y 32 caracteres");
             }
-            if (charProhibidosPassword.test(datosUsuario.password)) {
+            if (exports.charProhibidosPassword.test(datosUsuario.password)) {
                 errores.push("Tu password contiene caracteres no permitidos");
             }
         }
@@ -332,4 +422,14 @@ const validarDatosUsuario = function (datosUsuario) {
     return errores;
 };
 exports.validarDatosUsuario = validarDatosUsuario;
+exports.charProhibidosNombresUsuario = /[^ a-zA-ZÀ-ž]/;
+exports.charProhibidosUsername = /[^ a-zA-ZÀ-ž0-9_-]/;
+exports.charProhibidosPassword = /\s\s+/;
+exports.emailValidator = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+exports.minLengthNombresUsuario = 2;
+exports.minLengthApellidosUsuario = 2;
+exports.minLengthPassword = 6;
+exports.maxLengthPassword = 40;
+exports.minLengthEmail = 7;
+exports.minLengthUsername = 7;
 exports.ModeloUsuario = mongoose_1.default.model("Usuario", esquemaUsuario);

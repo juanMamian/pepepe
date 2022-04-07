@@ -19,9 +19,7 @@ const cache= new InMemoryCache({
 let getToken = ()=> localStorage.getItem('token');
 
 
-export const serverUrl=process.env.NODE_ENV === 'production'
-? 'https://pe-pe-pe.herokuapp.com'
-: 'http://192.168.1.105:3000'
+export const serverUrl='http://192.168.3.101:3000';
 
 
 

@@ -11,8 +11,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.iniciarMongoose = exports.dbConectada = void 0;
 const mongoose = require("mongoose");
-const posicionAutomaticaSolidaridad_1 = require("./posicionAutomaticaSolidaridad");
-const posicionAutomaticaConocimiento_1 = require("./posicionAutomaticaConocimiento");
 exports.dbConectada = false;
 mongoose.set('useFindAndModify', false);
 const iniciarMongoose = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -32,6 +30,4 @@ db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
     console.log(`¡Base de datos conectada!`);
     exports.dbConectada = true;
-    posicionAutomaticaSolidaridad_1.posicionAutomaticaSolidaridad();
-    posicionAutomaticaConocimiento_1.posicionAutomaticaConocimiento();
 });

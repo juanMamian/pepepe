@@ -135,11 +135,14 @@ router.post("/subirArchivoContenidoSeccionNodo", upload.single("nuevoArchivo"), 
         }
         //Purgar
         //Subir arhivo a la carpeta.
-        const nuevoArchivo = laCarpeta.archivos.create({
+        var nuevoArchivo = laCarpeta.archivos.create({
             nombre: req.file.originalname,
             payload: req.file.buffer,
             mimetype: req.file.mimetype,
         });
+        if (!laCarpeta.archivos || laCarpeta.archivos.length < 1) {
+            nuevoArchivo.primario = true;
+        }
         try {
             laCarpeta.archivos.push(nuevoArchivo);
             // console.log(`Guardando archivos de la carpeta así: ${laCarpeta.archivos}`);

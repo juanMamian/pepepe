@@ -11,12 +11,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = exports.NUEVA_NOTIFICACION_PERSONAL = exports.typeDefs = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
+// import { ModeloUsuario as Usuario, permisosDeUsuario,  validarDatosUsuario} from "../model/Usuario"
 const Usuario_1 = require("../model/Usuario");
 const graphql_iso_date_1 = require("graphql-iso-date");
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
 const Nodo_1 = require("../model/atlas/Nodo");
-const Objetivo_1 = require("../model/Objetivo");
-const Trabajo_1 = require("../model/Trabajo");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 exports.typeDefs = apollo_server_express_1.gql `
     scalar Date   
 
@@ -45,9 +46,13 @@ exports.typeDefs = apollo_server_express_1.gql `
     }  
 
     type DatoNodoUsuario{
+        id: ID,
         idNodo:ID,
+        nombreNodo: String,
         objetivo:Boolean,
-        aprendido:Boolean
+        aprendido:Boolean,
+        estudiado: Date,
+        iteracionesRepaso: [IteracionRepasoNodoConocimiento]
     }
 
     type ColeccionNodosAtlasConocimiento{
@@ -57,16 +62,22 @@ exports.typeDefs = apollo_server_express_1.gql `
         nodos:[NodoConocimiento],
     }
 
-    type infoAtlas{
+    type IteracionRepasoNodoConocimiento{
+        id: ID,
+        intervalo: Float,
+    }    
+
+    type InfoAtlas{
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
         idNodoTarget:ID,
         configuracion: ConfiguracionAtlasUsuario,
-        colecciones:[ColeccionNodosAtlasConocimiento]
+        colecciones:[ColeccionNodosAtlasConocimiento],
     }
     type InfoAtlasSolidaridad{
+        id:ID,
         coordsVista:Coords, 
-        idsNodosPlegados: [String]      
+        idsNodosDesplegados: [String]      
     }
     enum relacionUsuarioConocimiento{
         APRENDIENDO
@@ -100,14 +111,22 @@ exports.typeDefs = apollo_server_express_1.gql `
         numeroTel:String,
         username:String,
         nodosConocimiento: [ConocimientoUsuario],
-        atlas:infoAtlas,        
+        atlas:InfoAtlas,        
         atlasSolidaridad:InfoAtlasSolidaridad,
+        responsables:[String],
+        responsablesAmplio:[String],
+        administradores:[String],
         permisos:[String]
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
         notificaciones:[Notificacion],
         notificacionesActividadForos:[NotificacionActividadForos],
         foros:[InfoForosUsuario],
+        coords:Coords,
+        vinculos:[VinculoNodoSolidaridad],
+        fuerzaColision: FuerzaPolar,
+       fuerzaCentroMasa: FuerzaPolar,
+       nombre:String,
 
     }
     input DatosEditablesUsuario{
@@ -138,6 +157,10 @@ exports.typeDefs = apollo_server_express_1.gql `
         usuariosProfe:[PublicUsuario],
         yo:Usuario,
         publicUsuario(idUsuario:ID!): PublicUsuario,
+        buscarPersonas(textoBuscar:String!):[Usuario]
+
+        login(username: String!, password:String!):String,
+        alienarUsuario(idAlienado: ID!):String!,
     }
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
@@ -147,7 +170,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         eliminarNotificacion(idNotificacion:ID!):Boolean,
         eliminarNotificacionActividadForos(idParent:ID!):Boolean,
         setNodoObjetivo(idNodo:ID!, nuevoEstadoObjetivo:Boolean):Boolean
-        setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):Boolean        
+        setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):[DatoNodoUsuario]        
         setNodoAtlasTarget(idNodo:ID!):Boolean,
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
@@ -163,9 +186,21 @@ exports.typeDefs = apollo_server_express_1.gql `
         addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):ColeccionNodosAtlasConocimiento,
         removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):ColeccionNodosAtlasConocimiento,
         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
+        
+        crearIteracionRepasoNodoConocimientoUsuario(idUsuario: ID!, idNodo: ID!, intervalo: Int):DatoNodoUsuario,
+        eliminarIteracionRepaso(idUsuario: ID!, idNodo: ID!, idIteracion:ID!):Boolean,
+        setIntervaloIteracionRepaso(idUsuario: ID!, idNodo: ID!, idIteracion:ID!, nuevoIntervalo:Float!):IteracionRepasoNodoConocimiento,
+
+        setDateNodoConocimientoEstudiadoUsuario(idUsuario: ID!, idNodo: ID!, fecha:Date!):DatoNodoUsuario,
 
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
+        setNodosSolidaridadDesplegadosUsuario(idsNodos:[ID!]):Boolean,
+
+        cambiarPassword(dizqueCurrentPassword: String!, newPassword: String!) :Boolean,
+        resetearPasswordUsuario(idUsuario:ID!):Boolean,
+
+
     }
     extend type Subscription{
         nuevaNotificacion:Notificacion
@@ -207,7 +242,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Solicitud de la lista de todos los usuarios`);
                 try {
-                    var todosUsuarios = yield Usuario_1.ModeloUsuario.find({}).exec();
+                    var todosUsuarios = yield Usuario_1.ModeloUsuario.find({}).select("nombres apellidos permisos fechaNacimiento email username numeroTel email").exec();
                 }
                 catch (error) {
                     console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
@@ -232,6 +267,7 @@ exports.resolvers = {
         yo: function (_, __, context) {
             return __awaiter(this, void 0, void 0, function* () {
                 let credencialesUsuario = context.usuario;
+                console.log('\x1b[35m%s\x1b[0m', `Query for yo de ${context.usuario.id}`);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id);
                 }
@@ -240,6 +276,93 @@ exports.resolvers = {
                     throw new apollo_server_express_1.ApolloError("Error accediendo a los datos de usuario");
                 }
                 return elUsuario;
+            });
+        },
+        buscarPersonas: function (_, { textoBuscar }, context) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Solicitud de la lista de todos los usuarios`);
+                textoBuscar = textoBuscar.trim();
+                textoBuscar = new RegExp(textoBuscar, "i");
+                try {
+                    var todosUsuarios = yield Usuario_1.ModeloUsuario.find({}).select("nombres apellidos permisos fechaNacimiento email username numeroTel email").exec();
+                }
+                catch (error) {
+                    console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error de conexión a la base de datos");
+                }
+                var usuariosMatch = todosUsuarios.filter((u) => (u.nombres + u.apellidos).search(textoBuscar) > -1);
+                console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
+                return usuariosMatch;
+            });
+        },
+        login: function (_, { username, password }, context) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = context.usuario;
+                username = username.trim();
+                if (Usuario_1.charProhibidosUsername.test(username)) {
+                    console.log(`Username inválido`);
+                    throw new apollo_server_express_1.UserInputError("Datos inválidos");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findOne({ username }, "username password permisos").exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                const correctLogin = yield bcrypt.compare(password, elUsuario.password);
+                if (!correctLogin) {
+                    console.log(`Contraseña errada. Rechazando`);
+                    throw new apollo_server_express_1.UserInputError("Datos incorrectos");
+                }
+                console.log(`login correcto de ${username}. Enviando JWT`);
+                const datosToken = {
+                    id: elUsuario._id,
+                    permisos: elUsuario.permisos,
+                    username: elUsuario.username,
+                    version: 1,
+                };
+                const token = jwt.sign(datosToken, process.env.JWT_SECRET);
+                const respuesta = {
+                    username: elUsuario.username,
+                    permisos: elUsuario.permisos,
+                    token
+                };
+                return token;
+            });
+        },
+        alienarUsuario: function (_, { idAlienado }, context) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Query de alienar usuario con id ${idAlienado}`);
+                if (!context.usuario) {
+                    console.log(`Login requerido`);
+                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                }
+                const credencialesUsuario = context.usuario;
+                const permisosEspeciales = ["superadministrador", "maestraVida-profesor"];
+                const permisosNoAlienables = ["superadministrador", "maestraVida-profesor", "atlasAdministrador"];
+                if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idAlienado, "username password permisos").exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                if (elUsuario.permisos.some(p => permisosNoAlienables.includes(p))) {
+                    console.log(`El usuario no podía ser alienado`);
+                    throw new apollo_server_express_1.UserInputError("No permitido");
+                }
+                const datosToken = {
+                    id: elUsuario._id,
+                    permisos: elUsuario.permisos,
+                    username: elUsuario.username,
+                    version: 1,
+                };
+                const token = jwt.sign(datosToken, process.env.JWT_SECRET);
+                return token;
             });
         },
     },
@@ -451,26 +574,64 @@ exports.resolvers = {
                 if (!credencialesUsuario || !credencialesUsuario.id) {
                     throw new apollo_server_express_1.AuthenticationError("No autenticado");
                 }
-                console.log(`Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);
+                console.log('\x1b[35m%s\x1b[0m', `Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
-                    var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idNodo);
+                }
+                catch (error) {
+                    console.log(`error buscando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+                var todosNodosAfectados = [];
+                var tipoRol = null;
+                if (nuevoEstadoAprendido) {
+                    tipoRol = "target";
+                }
+                else {
+                    tipoRol = "source";
+                }
+                console.log(`Setting este y todos los nodos de conocimiento encadenados como aprendidos: ${nuevoEstadoAprendido}`);
+                var currentIds = [idNodo];
+                var currentNodos = [];
+                var cuenta = 0;
+                while (currentIds && currentIds.length > 0 && cuenta < 200) {
+                    cuenta++;
+                    try {
+                        currentNodos = yield Nodo_1.ModeloNodo.find({ _id: { $in: currentIds } }).select("nombre vinculos").exec();
+                    }
+                    catch (error) {
+                        console.log(`Error buscando current nodos: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error ejecutando operación");
+                    }
+                    console.log(`Encontrados ${currentNodos.length} nodos current`);
+                    todosNodosAfectados.push(...currentNodos);
+                    currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.tipo === 'requiere' && v.rol === tipoRol).map(v => v.idRef)), []);
+                    console.log(`Current ids queda en ${currentIds} con length ${currentIds.length}`);
+                }
+                console.log(`Encontrados ${todosNodosAfectados.length} nodos encadenados: ${todosNodosAfectados.map(n => n.nombre)}`);
+                var idsNodosAfectados = todosNodosAfectados.map(na => na.id);
+                idsNodosAfectados.forEach((idN) => {
+                    var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idN);
                     if (indexN > -1) {
                         elUsuario.atlas.datosNodos[indexN].aprendido = nuevoEstadoAprendido;
                     }
                     else {
-                        elUsuario.atlas.datosNodos.push({
-                            idNodo,
-                            aprendido: nuevoEstadoAprendido
-                        });
+                        if (nuevoEstadoAprendido) {
+                            elUsuario.atlas.datosNodos.push({
+                                idNodo: idN,
+                                aprendido: nuevoEstadoAprendido
+                            });
+                        }
                     }
+                });
+                try {
                     yield elUsuario.save();
-                    return true;
                 }
                 catch (error) {
                     console.log(`error guardando usuario en la base de datos: ${error}`);
                     throw new apollo_server_express_1.ApolloError("");
                 }
+                return elUsuario.atlas.datosNodos.filter(dn => idsNodosAfectados.includes(dn.idNodo));
             });
         },
         setNodoAtlasTarget: function (_, { idNodo }, contexto) {
@@ -484,12 +645,12 @@ exports.resolvers = {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
                     elUsuario.atlas.idNodoTarget = idNodo;
                     yield elUsuario.save();
-                    return true;
                 }
                 catch (error) {
                     console.log(`error guardando usuario en la base de datos: ${error}`);
                     throw new apollo_server_express_1.ApolloError("");
                 }
+                return true;
             });
         },
         nulificarNodoTargetUsuarioAtlas: function (_, __, contexto) {
@@ -503,12 +664,12 @@ exports.resolvers = {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
                     elUsuario.atlas.idNodoTarget = null;
                     yield elUsuario.save();
-                    return true;
                 }
                 catch (error) {
                     console.log(`error guardando usuario en la base de datos: ${error}`);
                     throw new apollo_server_express_1.ApolloError("");
                 }
+                return true;
             });
         },
         setModoUsuarioAtlas: function (_, { idUsuario, nuevoModo }, contexto) {
@@ -601,7 +762,7 @@ exports.resolvers = {
                     yield elUsuario.save();
                 }
                 catch (error) {
-                    console.log(`Error guardando el usuario`);
+                    console.log(`Error guardando el usuario: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 return elUsuario;
@@ -844,6 +1005,188 @@ exports.resolvers = {
                 return laColeccion;
             });
         },
+        crearIteracionRepasoNodoConocimientoUsuario(_, { idUsuario, idNodo, intervalo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Mutation for crear iteracion de repaso para nodo ${idNodo} con intervalo ${intervalo}`);
+                if (!contexto.usuario) {
+                    console.log(`No había credenciales`);
+                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                //Authentication
+                const permisosEspeciales = ["superadministrador"];
+                if (credencialesUsuario.id != idUsuario && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elDatoNodo = elUsuario.atlas.datosNodos.find(dn => dn.idNodo === idNodo);
+                if (!elDatoNodo) {
+                    elDatoNodo = elUsuario.atlas.datosNodos.create({
+                        idNodo: idNodo
+                    });
+                    elUsuario.atlas.datosNodos.push(elDatoNodo);
+                }
+                var nuevaIteracion = elDatoNodo.iteracionesRepaso.create();
+                if (intervalo) {
+                    nuevaIteracion.intervalo = intervalo;
+                }
+                elDatoNodo.iteracionesRepaso.push(nuevaIteracion);
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                console.log(`Creado`);
+                return elDatoNodo;
+            });
+        },
+        eliminarIteracionRepaso(_, { idUsuario, idNodo, idIteracion }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Query for eliminar iteracion de repaso con id ${idIteracion} del nodo ${idNodo} del usuario ${idUsuario}`);
+                if (!contexto.usuario) {
+                    console.log(`No había credenciales`);
+                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                //Authentication
+                const permisosEspeciales = ["superadministrador"];
+                if (credencialesUsuario.id != idUsuario && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elDatoNodo = elUsuario.atlas.datosNodos.find(dn => dn.idNodo === idNodo);
+                if (!elDatoNodo) {
+                    console.log(`Dato nodo no encontrado`);
+                    throw new apollo_server_express_1.UserInputError("Datos inválidos");
+                }
+                const indexI = elDatoNodo.iteracionesRepaso.findIndex(i => i.id === idIteracion);
+                if (indexI > -1) {
+                    elDatoNodo.iteracionesRepaso.splice(indexI, 1);
+                }
+                else {
+                    throw new apollo_server_express_1.UserInputError("Iteración no existía");
+                }
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
+            });
+        },
+        setIntervaloIteracionRepaso(_, { idUsuario, idNodo, idIteracion, nuevoIntervalo }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Query for set intervalo de iteracionRepaso con id ${idIteracion} del nodo ${idNodo} del usuario ${idUsuario} en valor ${nuevoIntervalo}`);
+                if (!contexto.usuario) {
+                    console.log(`No había credenciales`);
+                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                //Authentication
+                const permisosEspeciales = ["superadministrador"];
+                if (credencialesUsuario.id != idUsuario && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elDatoNodo = elUsuario.atlas.datosNodos.find(dn => dn.idNodo === idNodo);
+                if (!elDatoNodo) {
+                    throw new apollo_server_express_1.UserInputError("Datos de nodo no encontrados");
+                }
+                var laIteracion = elDatoNodo.iteracionesRepaso.find(i => i.id === idIteracion);
+                if (!laIteracion) {
+                    throw new apollo_server_express_1.UserInputError("Iteracion no encontrado");
+                }
+                laIteracion.intervalo = nuevoIntervalo;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return laIteracion;
+            });
+        },
+        setDateNodoConocimientoEstudiadoUsuario(_, { idUsuario, idNodo, fecha }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Query for set nodo ${idNodo} estudiado en ${fecha} por el usuario ${idUsuario}`);
+                if (!contexto.usuario) {
+                    console.log(`No había credenciales`);
+                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario) {
+                        throw "Usuario no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log(`Error buscando el usuario en la base de datos`);
+                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                }
+                //Authentication
+                const permisosEspeciales = ["superadministrador"];
+                if (credencialesUsuario.id != idUsuario && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var elDatoNodo = elUsuario.atlas.datosNodos.find(dn => dn.idNodo === idNodo);
+                if (!elDatoNodo) {
+                    console.log(`Datos de nodo no encontrados. Creando`);
+                    elDatoNodo = elUsuario.atlas.datosNodos.create({ idNodo });
+                    elUsuario.atlas.datosNodos.push(elDatoNodo);
+                }
+                if (elDatoNodo.iteracionesRepaso.length > 0) {
+                    elDatoNodo.iteracionesRepaso.shift();
+                }
+                if (elDatoNodo.iteracionesRepaso.legth < 1) {
+                    var nuevaIteracion = elDatoNodo.iteracionesRepaso.create({
+                        intervalo: 172800000,
+                    });
+                    elDatoNodo.iteracionesRepaso.push(nuevaIteracion);
+                }
+                elDatoNodo.estudiado = fecha;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elDatoNodo;
+            });
+        },
         setCoordsVistaAtlasSolidaridadUsuario(_, { coords }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 const credencialesUsuario = contexto.usuario;
@@ -869,48 +1212,120 @@ exports.resolvers = {
                 return true;
             });
         },
-        setNodoSolidaridadAsCoordsVistaUsuario(_, { idNodo }, contexto) {
+        setNodosSolidaridadDesplegadosUsuario(_, { idsNodos }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 const credencialesUsuario = contexto.usuario;
-                if (!credencialesUsuario.id) {
-                    throw new apollo_server_express_1.AuthenticationError("No Autenticado");
+                if (!credencialesUsuario) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizardo");
                 }
+                const idUsuario = credencialesUsuario.id;
                 try {
-                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado";
                 }
                 catch (error) {
-                    console.log(`Error buscando el usuario`);
-                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
+                    console.log(`Error buscando el usuario: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                try {
-                    var tipoDeNodo = 'trabajo';
-                    var elNodo = yield Trabajo_1.ModeloTrabajo.findById(idNodo).exec();
-                    if (!elNodo) {
-                        tipoDeNodo = 'objetivo';
-                        elNodo = yield Objetivo_1.ModeloObjetivo.findById(idNodo).exec();
-                    }
-                    if (!elNodo) {
-                        tipoDeNodo = '';
-                        throw "Nodo no encontrado";
-                    }
-                    elNodo.tipoNodo = tipoDeNodo;
-                }
-                catch (error) {
-                    console.log("Error buscando el nodo. E: " + error);
-                    throw new apollo_server_express_1.ApolloError("Error en la conexión con la base de datos");
-                }
-                elUsuario.atlasSolidaridad.coordsVista = elNodo.coords;
+                elUsuario.atlasSolidaridad.idsNodosDesplegados = idsNodos;
                 try {
                     yield elUsuario.save();
                 }
                 catch (error) {
-                    console.log(`Error guardando el usuario con el nuevo coords de centroVista`);
+                    console.log(`Error guardando el usuario`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                console.log(`Nuevo coords vista en atlas solidaridad setted en ${JSON.stringify(elNodo.coords)} del nodo ${idNodo}`);
                 return true;
             });
-        }
+        },
+        cambiarPassword(_, { dizqueCurrentPassword, newPassword }, context) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!context.usuario) {
+                    throw new apollo_server_express_1.AuthenticationError("Login necesario");
+                }
+                const usuario = context.usuario;
+                console.log(`Solicitud de cambio de password del usuario ${usuario.id}`);
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(usuario.id).exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error descargando el usuario: ${error}`);
+                    throw new apollo_server_express_1.UserInputError("Datos inválidos");
+                }
+                //Validar currentPass
+                if (!(yield bcrypt.compare(dizqueCurrentPassword, elUsuario.password))) {
+                    throw new apollo_server_express_1.UserInputError("Datos inválidos");
+                }
+                //Validar nuevo pass
+                if (Usuario_1.charProhibidosPassword.test(newPassword)) {
+                    console.log(`El nuevo password contenía caracteres ilegales`);
+                    throw new apollo_server_express_1.UserInputError("Caracteres ilegales");
+                }
+                if (newPassword.length < Usuario_1.minLengthPassword || newPassword.length > Usuario_1.maxLengthPassword) {
+                    console.log(`Longitud inválida del nuevo pass`);
+                    throw new apollo_server_express_1.UserInputError("Nuevo password no válido");
+                }
+                const salt = yield bcrypt.genSalt(10);
+                const hashPassword = yield bcrypt.hash(newPassword, salt);
+                elUsuario.password = hashPassword;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario con el nuevo pass: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
+            });
+        },
+        resetearPasswordUsuario(_, { idUsuario }, context) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!context.usuario) {
+                    throw new apollo_server_express_1.AuthenticationError("Login necesario");
+                }
+                const usuario = context.usuario;
+                console.log(`Solicitud de reset de password del usuario ${usuario.id}`);
+                //Authorization
+                const permisosEspeciales = ["superadministrador"];
+                if (!usuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Sin permisos suficientes`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error descargando el usuario: ${error}`);
+                    throw new apollo_server_express_1.UserInputError("Datos inválidos");
+                }
+                const newPassword = "123456";
+                //Validar nuevo pass
+                if (Usuario_1.charProhibidosPassword.test(newPassword)) {
+                    console.log(`El nuevo password contenía caracteres ilegales`);
+                    throw new apollo_server_express_1.UserInputError("Caracteres ilegales");
+                }
+                if (newPassword.length < Usuario_1.minLengthPassword || newPassword.length > Usuario_1.maxLengthPassword) {
+                    console.log(`Longitud inválida del nuevo pass`);
+                    throw new apollo_server_express_1.UserInputError("Nuevo password no válido");
+                }
+                const salt = yield bcrypt.genSalt(10);
+                const hashPassword = yield bcrypt.hash(newPassword, salt);
+                elUsuario.password = hashPassword;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario con el nuevo pass: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return true;
+            });
+        },
     },
     Usuario: {
         edad: function (parent, _, __) {
@@ -958,7 +1373,10 @@ exports.resolvers = {
                 }
                 return idGrupo;
             });
-        }
+        },
+        nombre: function (parent, _, __) {
+            return parent.username;
+        },
     },
     PublicUsuario: {
         edad: function (parent, _, __) {
@@ -977,17 +1395,32 @@ exports.resolvers = {
     ColeccionNodosAtlasConocimiento: {
         nodos: function (parent, _, __) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Resolviendo nodos de coleccion con parent: ${parent}`);
+                // console.log(`Resolviendo nodos de coleccion con parent: ${parent}`);
                 try {
                     var losNodos = yield Nodo_1.ModeloNodo.find({ _id: { $in: parent.idsNodos } }).exec();
                 }
                 catch (error) {
                     console.log(`Error buscando los nodos de la coleccion ${parent.id}`);
                 }
-                console.log(`Encontrados ${losNodos.length} nodos`);
                 if (!losNodos)
                     losNodos = [];
                 return losNodos;
+            });
+        }
+    },
+    DatoNodoUsuario: {
+        nombreNodo: function (parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(parent.idNodo).select("nombre").exec();
+                    if (!elNodo)
+                        throw "Nodo no encontrado resolviendo nombre de dato nodo";
+                }
+                catch (error) {
+                    console.log(`error: ${error}`);
+                    return "";
+                }
+                return elNodo.nombre;
             });
         }
     }

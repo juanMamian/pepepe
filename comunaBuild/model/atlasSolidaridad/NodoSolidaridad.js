@@ -3,11 +3,82 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloNodoSolidaridad = exports.esquemaNodoSolidaridad = void 0;
+exports.ModeloNodoSolidaridad = exports.esquemaNodoSolidaridad = exports.charProhibidosNombreRecursoExterno = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const VinculosNodosSolidaridad_1 = require("./VinculosNodosSolidaridad");
-const Schema_1 = require("../../gql/Schema");
+const index_1 = require("../../index");
 const AtlasSolidaridad_1 = require("../../gql/AtlasSolidaridad");
+const Misc_1 = require("../Misc");
+const EsquemaEvento = new mongoose_1.default.Schema({
+    fecha: {
+        type: Date,
+        required: true,
+        default: Date.now
+    },
+    nombre: {
+        type: String,
+        required: true,
+        min: 2,
+        maxLength: 50,
+        default: "Nuevo evento",
+    },
+    tipo: {
+        type: String,
+        required: true,
+        min: 2,
+        maxLength: 50,
+        default: "Default",
+    },
+    descripcion: {
+        type: String,
+        maxLength: 500,
+    },
+});
+const esquemaMovimientoDinero = new mongoose_1.default.Schema({
+    fecha: {
+        type: Date,
+        required: true,
+        default: Date.now
+    },
+    articulo: {
+        type: String,
+        required: true,
+        min: 2,
+        maxLength: 150,
+        default: "Artículo",
+    },
+    unidad: {
+        type: String,
+        default: "Unidad",
+        min: 2,
+        maxLength: 50,
+    },
+    cantidad: {
+        type: Number,
+        default: 1,
+        min: 0,
+    },
+    movimientoUnitario: {
+        type: Number,
+        default: 1000,
+    },
+    movimientoTotal: {
+        type: Number,
+        default: 1000,
+    },
+    informacion: {
+        type: String,
+        maxLength: 500,
+    },
+    realizado: {
+        type: Boolean,
+        default: false,
+    },
+    adjuntos: {
+        type: [Misc_1.esquemaArchivo],
+        default: []
+    }
+});
 const esquemaMaterial = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -31,7 +102,8 @@ const esquemaMaterial = new mongoose_1.default.Schema({
         default: 0,
     }
 });
-const esquemaEnlace = new mongoose_1.default.Schema({
+exports.charProhibidosNombreRecursoExterno = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+const esquemaRecursoExterno = new mongoose_1.default.Schema({
     nombre: {
         type: String,
         min: 2,
@@ -41,8 +113,7 @@ const esquemaEnlace = new mongoose_1.default.Schema({
     },
     descripcion: {
         type: String,
-        max: 1000,
-        default: "Sin descripción",
+        max: 200,
     },
     link: {
         type: String,
@@ -51,8 +122,8 @@ const esquemaEnlace = new mongoose_1.default.Schema({
     },
     tipo: {
         type: String,
-        enum: ["enlace", "hojaCalculo", "documentoTexto"],
-        default: "enlace",
+        enum: ["vacio", "enlace", "hojaCalculo", "documentoTexto", "archivo"],
+        default: "vacio",
     }
 });
 exports.esquemaNodoSolidaridad = new mongoose_1.default.Schema();
@@ -67,17 +138,15 @@ exports.esquemaNodoSolidaridad.add({
     descripcion: {
         type: String,
         max: 10000,
-        default: "Sin descripcion",
-        required: true
     },
-    tipoNodo:{
-        type:String,
-        required:true,
-        default:"trabajo",
+    tipoNodo: {
+        type: String,
+        required: true,
+        default: "trabajo",
         enum: ["trabajo", "objetivo"]
     },
-    enlaces: {
-        type: [esquemaEnlace],
+    recursosExternos: {
+        type: [esquemaRecursoExterno],
         default: []
     },
     estadoDesarrollo: {
@@ -101,41 +170,72 @@ exports.esquemaNodoSolidaridad.add({
     nodoParent: {
         type: String,
     },
+    tipoParent: {
+        type: String,
+        enum: ["nodoSolidaridad", "usuario"],
+        default: "nodoSolidaridad"
+    },
+    publicitado: {
+        type: Boolean,
+        default: false,
+    },
+    propietario: {
+        type: String,
+    },
     idForoResponsables: {
         type: String,
     },
     vinculos: {
         type: [VinculosNodosSolidaridad_1.EsquemaVinculosNodosSolidaridad],
-        required: true,
         default: []
     },
     keywords: {
         type: String,
     },
-    materiales: {
-        type: [esquemaMaterial],
-        default: [],
+    movimientosDinero: {
+        type: [esquemaMovimientoDinero],
+        default: []
+    },
+    eventos: {
+        type: [EsquemaEvento],
+        default: []
     },
     coords: {
         x: {
             type: Number,
             required: true,
-            default: 0
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
         },
         y: {
             type: Number,
             required: true,
-            default: 0
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
         }
     },
     autoCoords: {
         x: {
             type: Number,
-            default: 0
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
         },
         y: {
             type: Number,
-            default: 0
+            default: 0,
+            validate: {
+                validator: Number.isInteger,
+                message: '{VALUE} is not an integer value'
+            }
         }
     },
     angulo: {
@@ -191,8 +291,23 @@ exports.esquemaNodoSolidaridad.add({
         }
     }
 });
+esquemaMovimientoDinero.pre("save", function (next) {
+    if (this.movimientoUnitario * this.cantidad != this.movimientoTotal) {
+        throw new Error("El gasto total(" + this.movimientoTotal + ") no coincidía con el gasto unitario (" + this.movimientoUnitario + ") y la cantidad (" + this.cantidad + ")");
+        return;
+    }
+    next();
+});
 exports.esquemaNodoSolidaridad.post("save", function (nodo) {
-    Schema_1.pubsub.publish(AtlasSolidaridad_1.NODO_EDITADO, { nodoEditado: nodo });
+    if (!nodo.posicionadoByFuerzas) {
+        index_1.pubsub.publish(AtlasSolidaridad_1.NODO_EDITADO, { nodoEditado: nodo });
+        index_1.pubsub.publish(AtlasSolidaridad_1.NODO_FAMILY_EDITADO, { nodoSolidaridadFamilyEditado: nodo });
+    }
+});
+exports.esquemaNodoSolidaridad.post("remove", function (nodo) {
+    console.log(`Publicando la removida de un nodo`);
+    index_1.pubsub.publish(AtlasSolidaridad_1.NODO_ELIMINADO, { nodoEliminado: nodo.id, elNodoEliminado: nodo });
+    index_1.pubsub.publish(AtlasSolidaridad_1.NODO_FAMILY_ELIMINADO, { nodoSolidaridadFamilyEliminado: nodo.id, elNodoEliminado: nodo });
 });
 exports.esquemaNodoSolidaridad.index({ nombre: "text", keywords: "text", descripcion: "text" });
 exports.ModeloNodoSolidaridad = mongoose_1.default.model("NodoSolidaridad", exports.esquemaNodoSolidaridad);
