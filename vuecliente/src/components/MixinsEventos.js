@@ -146,6 +146,39 @@ export const MixinBasicoEventos = {
             }
             return texto;
         }
+    },
+    methods: {
+        eliminarse() {
+            if (
+                !confirm(
+                    "¿Confirmar la eliminación de este evento? (Esta acción no puede deshacerse)"
+                )
+            )
+                return;
+
+            if (!this.administrador && !this.usuarioSuperadministrador && !this.usuarioProfe) {
+                return;
+            }
+            this.eliminandose = true;
+            this.$apollo
+                .mutate({
+                    mutation: gql`
+                  mutation ($idEvento: ID!, $tipoEvento:String!) {
+                    eliminarEvento(idEvento: $idEvento, tipoEvento:$tipoEvento)
+                  }
+                `,
+                    variables: {
+                        idEvento: this.esteEvento.id,
+                        tipoEvento: this.tipoEvento,
+                    },
+                })
+                .then(() => {
+                    this.$emit("meElimine");
+                })
+                .catch((error) => {
+                    console.log(`Error: ${error}`);
+                });
+        },
     }
 
 }
@@ -392,38 +425,145 @@ export const MixinEdicionEventos = {
                 this.$refs.inputNuevoNombre.blur();
             }
         },
-        eliminarse() {
-            if (
-                !confirm(
-                    "¿Confirmar la eliminación de este evento? (Esta acción no puede deshacerse)"
-                )
-            )
-                return;
+        setHoraFinal() {
+            var nuevaHoraFinalInput = prompt("Introducir nueva hora de finalización", "hh:mm");
 
-            if (!this.administrador && !this.usuarioSuperadministrador && !this.usuarioProfe) {
+            const indexPuntos = nuevaHoraFinalInput.indexOf(":");
+
+            const horasInput = parseInt(nuevaHoraFinalInput.substr(0, indexPuntos));
+            const minutosInput = parseInt(nuevaHoraFinalInput.substr(indexPuntos + 1));
+
+            if (horasInput >= 0 && horasInput < 24 && minutosInput >= 0 && minutosInput < 60) {
+                var nuevaDateFinal = new Date(this.diaCalendarioOver.date);
+                nuevaDateFinal.setHours(horasInput);
+                nuevaDateFinal.setMinutes(minutosInput);
+
+
+                console.log("Se fijará la nueva hora de final en " + nuevaDateFinal);
+                this.enviarNuevoHorarioFinal(nuevaDateFinal);
+            }
+            else {
+                console.log("Hora inválida");
                 return;
             }
-            this.eliminandose = true;
+        },
+        setHoraInicio() {
+            var nuevaHoraInicioInput = prompt("Introducir nueva hora de inicio", "hh:mm");
+
+            const indexPuntos = nuevaHoraInicioInput.indexOf(":");
+
+            const horasInput = parseInt(nuevaHoraInicioInput.substr(0, indexPuntos));
+            const minutosInput = parseInt(nuevaHoraInicioInput.substr(indexPuntos + 1));
+
+            if (horasInput >= 0 && horasInput < 24 && minutosInput >= 0 && minutosInput < 60) {
+                var nuevaDateInicio = new Date(this.diaCalendarioOver.date);
+                nuevaDateInicio.setHours(horasInput);
+                nuevaDateInicio.setMinutes(minutosInput);
+
+
+                console.log("Se fijará la nueva hora de inicio en " + nuevaDateInicio);
+                this.enviarNuevaDateInicioHoldDuration(nuevaDateInicio);
+            }
+            else {
+                console.log("Hora inválida");
+                return;
+            }
+
+
+        },
+        enviarNuevaDateInicioHoldDuration(nuevaDateInicio) {
+            this.enviandoNuevoDateInicio = true;
+            this.enviandoSomeHorario = true;
             this.$apollo
                 .mutate({
                     mutation: gql`
-                  mutation ($idEvento: ID!, $tipoEvento:String!) {
-                    eliminarEvento(idEvento: $idEvento, tipoEvento:$tipoEvento)
+                  mutation ($nuevoDate: Date!, $tipoEvento: String!, $idEvento: ID!) {
+                    setDateInicioEventoHoldDuration(
+                      nuevoDate: $nuevoDate
+                      tipoEvento: $tipoEvento
+                      idEvento: $idEvento
+                    ) {
+                      __typename
+                      ... on EventoPersonal{
+                        id
+                        horarioInicio
+                        horarioFinal
+                      }
+                      ... on EventoPublico{
+                        id
+                        horarioInicio
+                        horarioFinal
+                      }
+                      
+                    }
                   }
                 `,
                     variables: {
-                        idEvento: this.esteEvento.id,
+                        nuevoDate: nuevaDateInicio,
                         tipoEvento: this.tipoEvento,
+                        idEvento: this.esteEvento.id,
                     },
                 })
                 .then(() => {
-                    this.$emit("meElimine");
+                    this.$emit("eventoCambioFecha", this.esteEvento);
+                    this.enviandoSomeHorario = false;
+                    this.enviandoNuevoDateInicio = false;
+                    this.editandoFechaInicio = false;
+                    this.editandoHoraInicio = false;
                 })
                 .catch((error) => {
                     console.log(`Error: ${error}`);
+                    this.enviandoNuevoDateInicio = false;
+                    this.enviandoSomeHorario = false;
                 });
         },
-        iniciarEdicionDuracion() {            
+        enviarNuevoHorarioFinal(dateFinal) {
+            this.enviandoNuevoDateFinal = true;
+            this.enviandoSomeHorario = true;
+            console.log(`Enviando nuevo horario final: ${dateFinal}`);
+            this.$apollo
+                .mutate({
+                    mutation: gql`
+                    mutation ($nuevoDate: Date!, $tipoEvento: String!, $idEvento: ID!) {
+                        setDateFinalEvento(
+                        nuevoDate: $nuevoDate
+                        tipoEvento: $tipoEvento
+                        idEvento: $idEvento
+                        ){
+                                __typename
+                            ... on EventoPersonal{
+                                id
+                                horarioInicio
+                                horarioFinal
+                            }
+                            ... on EventoPublico{
+                                id
+                                horarioInicio
+                                horarioFinal
+                            }
+                        }
+                  }
+                `,
+                    variables: {
+                        nuevoDate: dateFinal,
+                        tipoEvento: this.esteEvento.__typename.charAt(0).toLowerCase() + this.esteEvento.__typename.slice(1),
+                        idEvento: this.esteEvento.id,
+                    },
+                })
+                .then(() => {
+
+                    this.enviandoNuevoDateFinal = false;
+                    this.enviandoSomeHorario = false;
+                    this.editandoDuracion = false;
+
+                })
+                .catch((error) => {
+                    console.log(`Error: ${error}`);
+                    this.enviandoNuevoDateFinal = false;
+                    this.enviandoSomeHorario = false;
+                });
+        },
+        iniciarEdicionDuracion() {
             this.nuevoDuracion = this.esteEvento.horarioFinal - this.esteEvento.horarioInicio;
             this.editandoDuracion = true;
         },
@@ -522,7 +662,7 @@ export const MixinEdicionEventosPublicos = {
     data() {
         return {
 
-           
+
         }
     },
     methods: {
@@ -577,7 +717,7 @@ export const MixinEventoCalendario = {
         },
     },
     methods: {
-       
+
     },
     watch: {
         dateInicio(dateInicio) {
@@ -597,7 +737,7 @@ export const MixinVentanaEvento = {
         return {
             mostrando: null,
             esteEvento: {
-                
+
             },
 
             editandoDateInicio: false,

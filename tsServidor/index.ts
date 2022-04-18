@@ -52,6 +52,8 @@ aServer.applyMiddleware({ app });
 
 app.use("/assetsAtlas/contenidosNodos", routesContenidosNodos);
 app.use("/assetsAtlas", express.static(__dirname + '/assetsAtlas'));
+console.log("Dirname: "+__dirname);
+app.use("/public", cors(), express.static(__dirname + '/public'));
 
 
 const rutaFotografias = /api\/usuarios\/fotografias\/\S+/;

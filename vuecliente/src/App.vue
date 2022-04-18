@@ -275,41 +275,7 @@ export default {
       },
       skip() {
         return !this.usuarioLogeado;
-      },
-      subscribeToMore: {
-        document: gql`
-          subscription {
-            nuevaNotificacion {
-              id
-              fecha
-              texto
-              elementoTarget {
-                tipo
-                id
-                nombre
-              }
-              causante {
-                id
-                tipo
-              }
-            }
-          }
-        `,
-        updateQuery: (previousResult, { subscriptionData: { data } }) => {
-          var nuevoCache = JSON.parse(JSON.stringify(previousResult));
-          if (
-            !nuevoCache.yo.notificaciones.some(
-              (n) => n.id == data.nuevaNotificacion.id
-            )
-          ) {
-            nuevoCache.yo.notificaciones.push(data.nuevaNotificacion);
-          }
-          return nuevoCache;
-        },
-        skip() {
-          return !this.usuarioLogeado;
-        },
-      },
+      },      
     },
   },
   components: { Notificacion, NotificacionActividadForos },
@@ -440,7 +406,11 @@ export default {
   --calendarioNodoSolidaridadStrong: #312336;
   --calendarioSelect: #FCAA67;
 }
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;700&family=Salsa&display=swap");
+@font-face{
+    font-family: 'Salsa';
+    src: url("http://192.168.1.100:3000/public/resources/fonts/Salsa/Salsa-Regular.ttf");
+    font-style:normal ;
+}
 html {
   height: 100vh;
 }
@@ -449,7 +419,7 @@ body {
   width: 100%;
   height: 100vh;
   background-color: #fffcf9;
-  font-family: "Varela Round", sans-serif;
+  font-family: "Salsa", sans-serif;
 }
 .contenedorControles {
   display: flex;

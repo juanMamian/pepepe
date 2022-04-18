@@ -298,6 +298,7 @@ exports.resolvers = {
         login: function (_, { username, password }, context) {
             return __awaiter(this, void 0, void 0, function* () {
                 let credencialesUsuario = context.usuario;
+                console.log(`Solicitud de login`);
                 username = username.trim();
                 if (Usuario_1.charProhibidosUsername.test(username)) {
                     console.log(`Username inválido`);
@@ -305,6 +306,8 @@ exports.resolvers = {
                 }
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findOne({ username }, "username password permisos").exec();
+                    if (!elUsuario)
+                        throw "Usuario no encontrado";
                 }
                 catch (error) {
                     console.log(`Error buscando el usuario en la base de datos. E: ${error}`);

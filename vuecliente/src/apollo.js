@@ -1,9 +1,9 @@
-import { ApolloClient, HttpLink, InMemoryCache, split } from '@apollo/client/core'
+import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client/core'
 import { createApolloProvider } from '@vue/apollo-option'
 
-import {WebSocketLink} from "@apollo/client/link/ws"
+// import {WebSocketLink} from "@apollo/client/link/ws"
 
-import {getMainDefinition} from "@apollo/client/utilities"
+// import {getMainDefinition} from "@apollo/client/utilities"
 import {setContext} from "@apollo/client/link/context"
 import { onError } from '@apollo/client/link/error'
 
@@ -19,13 +19,13 @@ const cache= new InMemoryCache({
 let getToken = ()=> localStorage.getItem('token');
 
 
-export const serverUrl='http://192.168.3.101:3000';
+export const serverUrl='http://192.168.1.100:3000';
 
 
 
-export const wsServerUrl=process.env.NODE_ENV === 'production'
-? 'wss://'+serverUrl.substr(7)+'/subscripciones'
-: 'ws://'+serverUrl.substr(7)+'/subscripciones'
+// export const wsServerUrl=process.env.NODE_ENV === 'production'
+// ? 'wss://'+serverUrl.substr(7)+'/subscripciones'
+// : 'ws://'+serverUrl.substr(7)+'/subscripciones'
 
 
 const httpLink = new HttpLink({
@@ -34,17 +34,17 @@ const httpLink = new HttpLink({
 
 //console.log(`Direccion subscripciones ${wsServerUrl}`);
 
-const wsLink = new WebSocketLink({
-  uri: wsServerUrl,
-  options: {
-    reconnect: true,
-    connectionParams: {
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      }
-    }
-  },
-})
+// const wsLink = new WebSocketLink({
+//   uri: wsServerUrl,
+//   options: {
+//     reconnect: true,
+//     connectionParams: {
+//       headers: {
+//         Authorization: `Bearer ${getToken()}`
+//       }
+//     }
+//   },
+// })
 
 const authLink=setContext((_, {headers})=>{    
     return {
@@ -71,19 +71,19 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 const link=errorLink.concat(authLink).concat(httpLink);
 
 
-const finalLink = split(
-  // split based on operation type
-  ({ query }) => {
-    const definition = getMainDefinition(query)
-    return definition.kind === 'OperationDefinition' &&
-      definition.operation === 'subscription'
-  },
-  wsLink,
-  link
-)
+// const finalLink = split(
+//   // split based on operation type
+//   ({ query }) => {
+//     const definition = getMainDefinition(query)
+//     return definition.kind === 'OperationDefinition' &&
+//       definition.operation === 'subscription'
+//   },
+//   wsLink,
+//   link
+// )
 
 export const apolloClient=new ApolloClient({
-  link:finalLink,
+  link,
   cache,
   typeDefs,
   resolvers,

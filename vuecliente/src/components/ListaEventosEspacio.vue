@@ -135,7 +135,7 @@ export default {
     eventosPublicosEspacioOrdenados() {
       return [...this.eventosPublicosEspacio].sort((a, b) => {
         return (
-          new Date(a.horarioInicio).getTime() -
+          -new Date(a.horarioInicio).getTime() +
           new Date(b.horarioInicio).getTime()
         );
       });

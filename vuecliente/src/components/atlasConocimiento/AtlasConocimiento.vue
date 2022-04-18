@@ -1521,7 +1521,7 @@ export default {
   padding: 10px;
   display: flex;
   flex-direction: row-reverse;
-  width: 100%;
+  right: 0px;
   box-sizing: border-box;
 }
 

@@ -47,6 +47,8 @@ Schema_1.aServer.applyMiddleware({ app });
 //Carpetas publicas
 app.use("/assetsAtlas/contenidosNodos", routesContenidosNodos);
 app.use("/assetsAtlas", express_1.default.static(__dirname + '/assetsAtlas'));
+console.log("Dirname: " + __dirname);
+app.use("/public", cors_1.default(), express_1.default.static(__dirname + '/public'));
 const rutaFotografias = /api\/usuarios\/fotografias\/\S+/;
 const rutaGuias = /api\/actividadesProfes\/guia\/\S+/;
 const rutaEvidencias = /api\/actividadesProfes\/evidencia\/\S+/;

@@ -303,7 +303,7 @@ export const resolvers = {
         },
         login: async function (_: any, { username, password }: any, context: contextoQuery) {
             let credencialesUsuario = context.usuario;
-            console.log(`Solicitud de login con username ${username} y pass: ${password}`);
+            console.log(`Solicitud de login`);
 
             username = username.trim();
             if (charProhibidosUsername.test(username)) {

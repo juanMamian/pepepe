@@ -51,6 +51,11 @@
         </div>
       </div>
     </div>
+
+    <div id="contenedorMarcasTiempo" v-show="seleccionado">
+      <div class="marcaTiempo" id="marcaTiempoInicio" @click="setHoraInicio">{{horaInicioLegible}}</div>
+      <div class="marcaTiempo" id="marcaTiempoFinal" @click="setHoraFinal">{{horaFinalLegible}}</div>
+    </div>
   </div>
 </template>
 
@@ -159,5 +164,25 @@ export default {
   width: 100%;
   box-sizing: border-box;
   font-size: 11px;
+}
+#contenedorMarcasTiempo{
+  position: absolute;
+  width: 100%;
+  top:102%;
+  
+}
+.marcaTiempo{
+  font-size: 13px;
+  color: orange;
+  position: absolute;
+  cursor:pointer;
+}
+#marcaTiempoInicio{
+  right: 100%;
+  transform: translateX(50%);
+}
+#marcaTiempoFinal{
+  left: 100%;
+  transform: translateX(-50%);
 }
 </style>
