@@ -8,13 +8,13 @@
     <div id="zonaFront" class="frontDeSeccion" v-show="!editando" :key="versionArchivo">
       <iframe
         id="iframeSeccion"
-        :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
-        v-if="estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0,5)!='image'"
+        :src="srcIframe"
+        v-if="estaSeccion.modo==='enlace' || (estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0,5)!='image')"
         frameborder="0"
       ></iframe>
       <img
       :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
-      v-if="estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0,5)==='image'"
+      v-if="estaSeccion.modo==='archivo' && estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0,5)==='image'"
       />
     </div>
 
@@ -39,6 +39,7 @@
           class="boton"
           title="Subir un archivo"
           @click="$refs.inputArchivoContenido.click()"
+          v-if="modo==='archivo'"
           v-show="!subiendoArchivo"
         >
           <img src="@/assets/iconos/plusCircle.svg" alt="Plus" />
@@ -52,21 +53,22 @@
               ? 'Cambiar modo a enlace'
               : 'Cambiar modo a archivo'
           "
+          @click.stop="toggleModo"
         >
           <img
             src="@/assets/iconos/file.svg"
-            v-show="estaSeccion.modo === 'archivo'"
+            v-show="modo === 'archivo'"
             alt="Archivo"
           />
           <img
             src="@/assets/iconos/link.svg"
-            v-show="estaSeccion.modo === 'enlace'"
+            v-show="modo === 'enlace'"
             alt="Archivo"
           />
         </div>
       </div>
 
-      <div id="listaArchivos" v-show="estaSeccion.modo === 'archivo'">
+      <div id="listaArchivos" v-show="modo === 'archivo'">
         <input
           type="file"
           class="inputArchivoContenido"
@@ -87,6 +89,11 @@
             versionArchivo++;
           "
         />
+      </div>
+
+      <div id="zonaEnlace" v-show="modo==='enlace'">
+        
+        <input type="text" id="inputNuevoEnlace" ref="inputNuevoEnlace" v-model="inputNuevoEnlace" @blur="guardarNuevoEnlace" placeholder="Enlace al recurso" @keypress.enter="guardarNuevoEnlace">
       </div>
     </div>
   </div>
@@ -119,6 +126,9 @@ export default {
 
       editandoNombre: false,
       enviandoNuevoNombre: false,
+      guardandoNuevoEnlace:false,
+      inputNuevoEnlace:this.estaSeccion.enlace,
+      modo:"",
     };
   },
   methods: {
@@ -206,6 +216,49 @@ export default {
           console.log(`Error. E :${error}`);
         });
     },
+    toggleModo(){
+      const nuevoModo=this.modo==='archivo'?'enlace':'archivo';
+      console.log("Cambiando a "+nuevoModo);
+      this.modo=nuevoModo;
+    },
+    guardarNuevoEnlace(){
+      console.log("guardar nuevo enlace");
+      var nuevoEnlace=this.$refs.inputNuevoEnlace.value.trim();
+      console.log(nuevoEnlace);
+
+      if(nuevoEnlace===this.estaSeccion.enlace || !nuevoEnlace || nuevoEnlace.length<5){
+        return 
+      }
+
+      if(!this.usuarioExperto && !this.usuarioSuperadministrador){
+        return
+      }
+      this.guardandoNuevoEnlace=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodo: ID!, $idSeccion:ID!, $nuevoEnlace:String!){
+            setNuevoEnlaceSeccionNodo(idNodo: $idNodo, idSeccion: $idSeccion, nuevoEnlace: $nuevoEnlace){
+              id
+              modo
+              enlace
+            }
+          }
+        `,
+        variables:{
+          idNodo:this.idNodo,
+          idSeccion: this.estaSeccion.id,
+          nuevoEnlace,
+        }
+
+      }).then(()=>{
+        this.guardandoNuevoEnlace=false;
+      }).catch((error)=>{
+        console.log("Error: "+error);
+        this.guardandoNuevoEnlace=true;
+
+      })
+
+    }
   },
   computed: {
     direccionNodo: function () {
@@ -219,7 +272,22 @@ export default {
       });
       return archivos;
     },
+    srcIframe(){
+      if(this.estaSeccion.modo==='enlace' && this.estaSeccion.enlace){
+        return this.estaSeccion.enlace;
+      }
+      return this.direccionNodo + '/' + this.estaSeccion.id + '/?v=' + this.versionArchivo;
+    },
+    
   },
+  watch:{
+    'estaSeccion.modo':{
+      handler: function(){
+        this.modo=this.estaSeccion.modo
+      },
+      immediate: true,
+    }
+  }
 };
 </script>
 
@@ -239,6 +307,10 @@ export default {
   max-width: 100%;
   margin: 0px auto;
   display:block;
+}
+#inputNuevoEnlace{
+  margin: 10px auto;
+  display: block;
 }
 #iframeSeccion {
   width: 100%;

@@ -53,8 +53,8 @@
     </div>
 
     <div id="contenedorMarcasTiempo" v-show="seleccionado">
-      <div class="marcaTiempo" id="marcaTiempoInicio" @click="setHoraInicio">{{horaInicioLegible}}</div>
-      <div class="marcaTiempo" id="marcaTiempoFinal" @click="setHoraFinal">{{horaFinalLegible}}</div>
+      <div class="marcaTiempo" id="marcaTiempoInicio" @click="setHoraInicio" :class="{deshabilitado: enviandoNuevoDateInicio}">{{horaInicioLegible}}</div>
+      <div class="marcaTiempo" id="marcaTiempoFinal" @click="setHoraFinal" :class="{deshabilitado: enviandoNuevoDateFinal}">{{horaFinalLegible}}</div>
     </div>
   </div>
 </template>

@@ -426,14 +426,19 @@ export const MixinEdicionEventos = {
             }
         },
         setHoraFinal() {
-            var nuevaHoraFinalInput = prompt("Introducir nueva hora de finalización", "hh:mm");
+            var textoActual="hh:mm";
+            if(this.horaFinalLegible){                
+                textoActual=this.horaFinalLegible;
+            }
+            
+            var nuevaHoraFinalInput = prompt("Introducir nueva hora de finalización", textoActual);
 
             const indexPuntos = nuevaHoraFinalInput.indexOf(":");
 
             const horasInput = parseInt(nuevaHoraFinalInput.substr(0, indexPuntos));
             const minutosInput = parseInt(nuevaHoraFinalInput.substr(indexPuntos + 1));
 
-            if (horasInput >= 0 && horasInput < 24 && minutosInput >= 0 && minutosInput < 60) {
+            if (horasInput && minutosInput && horasInput >= 0 && horasInput < 24 && minutosInput >= 0 && minutosInput < 60) {
                 var nuevaDateFinal = new Date(this.diaCalendarioOver.date);
                 nuevaDateFinal.setHours(horasInput);
                 nuevaDateFinal.setMinutes(minutosInput);
@@ -448,14 +453,18 @@ export const MixinEdicionEventos = {
             }
         },
         setHoraInicio() {
-            var nuevaHoraInicioInput = prompt("Introducir nueva hora de inicio", "hh:mm");
+            var textoActual="hh:mm";
+            if(this.horaInicioLegible){                
+                textoActual=this.horaInicioLegible;
+            }
+            var nuevaHoraInicioInput = prompt("Introducir nueva hora de inicio",textoActual);
 
             const indexPuntos = nuevaHoraInicioInput.indexOf(":");
 
             const horasInput = parseInt(nuevaHoraInicioInput.substr(0, indexPuntos));
             const minutosInput = parseInt(nuevaHoraInicioInput.substr(indexPuntos + 1));
 
-            if (horasInput >= 0 && horasInput < 24 && minutosInput >= 0 && minutosInput < 60) {
+            if (horasInput && minutosInput && horasInput >= 0 && horasInput < 24 && minutosInput >= 0 && minutosInput < 60) {
                 var nuevaDateInicio = new Date(this.diaCalendarioOver.date);
                 nuevaDateInicio.setHours(horasInput);
                 nuevaDateInicio.setMinutes(minutosInput);

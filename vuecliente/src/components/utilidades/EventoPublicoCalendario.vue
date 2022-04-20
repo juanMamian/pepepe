@@ -56,6 +56,10 @@
         </div>
       </div>
     </div>
+    <div id="contenedorMarcasTiempo" v-show="seleccionado">
+      <div class="marcaTiempo" id="marcaTiempoInicio" @click="setHoraInicio" :class="{deshabilitado: enviandoNuevoDateInicio}">{{horaInicioLegible}}</div>
+      <div class="marcaTiempo" id="marcaTiempoFinal" @click="setHoraFinal" :class="{deshabilitado: enviandoNuevoDateFinal}">{{horaFinalLegible}}</div>
+    </div>
   </div>
 </template>
 
@@ -65,6 +69,7 @@ import {
   MixinEventosPublicosUseEventosPersonalesUnder,
   MixinBasicoEventos,
   MixinEventoCalendario,
+  MixinEdicionEventos,
 } from "../MixinsEventos";
 import IconoPersonaAutonomo from '../usuario/IconoPersonaAutonomo.vue';
 import Loading from './Loading.vue';
@@ -80,6 +85,7 @@ export default {
     MixinBasicoEventosPublicos,
     MixinEventoCalendario,
     MixinEventosPublicosUseEventosPersonalesUnder,
+    MixinEdicionEventos
   ],
   data() {
     return {
@@ -171,5 +177,28 @@ export default {
   width: 100%;
   box-sizing: border-box;
   font-size: 11px;
+}
+
+#contenedorMarcasTiempo{
+  position: absolute;
+  width: 100%;
+  top:102%;
+  
+}
+.marcaTiempo{
+  font-size: 13px;
+  color: orange;
+  position: absolute;
+  cursor:pointer;
+  background-color: rgba(0, 0, 0, 0.349);
+  padding: 5px;
+}
+#marcaTiempoInicio{
+  right: 100%;
+  transform: translateX(50%);
+}
+#marcaTiempoFinal{
+  left: 100%;
+  transform: translateX(-50%);
 }
 </style>

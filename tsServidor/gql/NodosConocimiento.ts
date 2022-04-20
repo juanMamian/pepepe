@@ -76,6 +76,7 @@ type SeccionContenidoNodo{
     archivos:[InfoArchivoContenidoNodo],
     tipoPrimario:String,
     modo:String,
+    enlace:String
 }
 
 type ClaseNodoConocimiento{
@@ -162,6 +163,7 @@ extend type Mutation{
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
     moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):Boolean,
     editarNombreSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, nuevoNombre: String!):SeccionContenidoNodo,
+    setNuevoEnlaceSeccionNodo(idNodo: ID!, idSeccion:ID!, nuevoEnlace:String!):SeccionContenidoNodo,
 
     crearClaseNodoConocimiento(idNodo:ID!, idExperto: ID!):ClaseNodoConocimiento,
     eliminarClaseNodoConocimiento(idNodo:ID!, idClase: ID!):Boolean,
@@ -937,6 +939,7 @@ export const resolvers = {
                 console.log(`Carpeta no especificada`);
                 throw new ApolloError("Informacion de la seccion inesperada");
             }
+            laSeccion.modo="archivo";
 
             try {
                 var laCarpeta: any = await CarpetasArchivos.findById(laSeccion.idCarpeta).exec();
@@ -965,6 +968,12 @@ export const resolvers = {
                 await laCarpeta.save();
             } catch (error) {
                 console.log(`Error guardando carpeta. E: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+            try {
+                await elNodo.save();
+            } catch (error) {
+                console.log(`Error guardando nodo. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
@@ -1155,7 +1164,54 @@ export const resolvers = {
                 console.log("Error guardando el seccion creado en el nodoConocimiento. E: " + error);
                 throw new ApolloError("Error introduciendo el seccion en el nodoConocimiento");
             }
-            console.log(`Artículo cambiado`);
+            console.log(`Nombre de sección cambiado`);
+            return laSeccion;
+        },
+        async setNuevoEnlaceSeccionNodo(_: any, { idNodo, idSeccion, nuevoEnlace }, contexto: contextoQuery) {
+            console.log(`cambiando el enlace de seccion con id ${idSeccion} del nodoConocimiento con id ${idNodo}`);
+            
+            try {
+                var elNodo: any = await Nodo.findById(idNodo).exec();
+                if (!elNodo) {
+                    throw "nodoConocimiento no encontrado"
+                }
+            }
+            catch (error) {
+                console.log("Error buscando el nodoConocimiento. E: " + error);
+                throw new ApolloError("Erro en la conexión con la base de datos");
+            }
+
+            //Authorización
+            const permisosEspeciales = ["superadministrador", "atlasAdministrador"];
+
+            const credencialesUsuario = contexto.usuario;
+            
+            if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                console.log(`Error de autenticacion editando artículo de seccion de nodoConocimiento`);
+                throw new AuthenticationError("No autorizado");
+            }        
+            
+            try {
+                var laSeccion = elNodo.secciones.id(idSeccion);
+                if (!laSeccion) {
+                    console.log(`Seccion no encontrado en el nodoConocimiento`);
+                    throw "No existía el seccion";
+                }
+                laSeccion.enlace = nuevoEnlace;
+                laSeccion.modo="enlace"
+            }
+            catch (error) {
+                console.log("Error cambiando el artículo en la base de datos. E: " + error);
+                throw new ApolloError("Error guardando el artículo en la base de datos");
+            }
+            try {
+                await elNodo.save();
+            }
+            catch (error) {
+                console.log("Error guardando el seccion creado en el nodoConocimiento. E: " + error);
+                throw new ApolloError("Error introduciendo el seccion en el nodoConocimiento");
+            }
+            console.log(`Enlace cambiado`);
             return laSeccion;
         },
 

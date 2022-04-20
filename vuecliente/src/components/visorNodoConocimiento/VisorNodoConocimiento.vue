@@ -279,6 +279,7 @@ const QUERY_NODO = gql`
         id
         nombre
         modo
+        enlace
         archivos {
           nombre
           primario
