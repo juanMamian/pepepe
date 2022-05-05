@@ -43,7 +43,7 @@ import { fragmentoMinimoPersona } from "../utilidades/recursosGql";
 
 const QUERY_PERSONA = gql`
   query ($idUsuario: ID!) {
-    publicUsuario(idUsuario: $idUsuario) {
+    Usuario(idUsuario: $idUsuario) {
       ...fragMinimoPersona
     }
   }
@@ -60,8 +60,8 @@ export default {
           idUsuario: this.idPersona,
         };
       },
-      update({ publicUsuario }) {
-        return publicUsuario;
+      update({ Usuario }) {
+        return Usuario;
       },
       skip() {
         return !this.idPersona;

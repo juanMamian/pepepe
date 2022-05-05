@@ -40,7 +40,7 @@ import gql from "graphql-tag";
 
 const QUERY_PERSONA = gql`
   query($idUsuario: ID!) {
-    publicUsuario(idUsuario: $idUsuario) {
+    Usuario(idUsuario: $idUsuario) {
       id
       nombres
       apellidos
@@ -59,8 +59,8 @@ export default {
           idUsuario: this.idPersona,
         };
       },
-      update({ publicUsuario }) {
-        return publicUsuario;
+      update({ Usuario }) {
+        return Usuario;
       },
       skip() {
         return !this.idPersona;

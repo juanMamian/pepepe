@@ -78,6 +78,14 @@ const QUERY_PERSONAS = gql`
       apellidos
       permisos
       username
+      informesMaestraVida{
+        id
+        year
+        periodo
+        idProfe
+        categoria
+        texto
+      }
     }
   }
 `;

@@ -81,8 +81,8 @@ export const typeDefs = gql`
         mensaje:String,
         interpolaciones:[Interpolacion]
         enlaceAdjunto:[String],
-        autor: PublicUsuario,
-        infoAutor:PublicUsuario,
+        autor: Usuario,
+        infoAutor:Usuario,
     }
 
     type InfoRespuestasPaginasConversacion{
@@ -98,7 +98,7 @@ export const typeDefs = gql`
     }
 
     type InfoUltimaRespuesta{
-        autor:PublicUsuario,
+        autor:Usuario,
         fecha:Date
     }
 
@@ -106,7 +106,7 @@ export const typeDefs = gql`
         id:ID,
         titulo: String,
         estado:String,
-        creador: PublicUsuario,
+        creador: Usuario,
         acceso:String,
         cantidadRespuestas:Int,
         infoUltimaRespuesta:InfoUltimaRespuesta,        

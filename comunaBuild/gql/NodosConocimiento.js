@@ -42,6 +42,7 @@ type SeccionContenidoNodo{
     archivos:[InfoArchivoContenidoNodo],
     tipoPrimario:String,
     modo:String,
+    enlace:String
 }
 
 type ClaseNodoConocimiento{
@@ -128,6 +129,7 @@ extend type Mutation{
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
     moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):Boolean,
     editarNombreSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, nuevoNombre: String!):SeccionContenidoNodo,
+    setNuevoEnlaceSeccionNodo(idNodo: ID!, idSeccion:ID!, nuevoEnlace:String!):SeccionContenidoNodo,
 
     crearClaseNodoConocimiento(idNodo:ID!, idExperto: ID!):ClaseNodoConocimiento,
     eliminarClaseNodoConocimiento(idNodo:ID!, idClase: ID!):Boolean,
@@ -161,7 +163,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`enviando todos los nombres, vinculos y coordenadas`);
                 try {
-                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre descripcion expertos vinculos coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
+                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
                     console.log(`encontrados ${todosNodos.length} nodos`);
                 }
                 catch (error) {
@@ -850,6 +852,7 @@ exports.resolvers = {
                     console.log(`Carpeta no especificada`);
                     throw new apollo_server_express_1.ApolloError("Informacion de la seccion inesperada");
                 }
+                laSeccion.modo = "archivo";
                 try {
                     var laCarpeta = yield CarpetaArchivos_1.ModeloCarpetaArchivos.findById(laSeccion.idCarpeta).exec();
                     if (!laCarpeta)
@@ -876,6 +879,13 @@ exports.resolvers = {
                 }
                 catch (error) {
                     console.log(`Error guardando carpeta. E: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando nodo. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
                 console.log(`Archivo seteado`);
@@ -1052,7 +1062,51 @@ exports.resolvers = {
                     console.log("Error guardando el seccion creado en el nodoConocimiento. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error introduciendo el seccion en el nodoConocimiento");
                 }
-                console.log(`Artículo cambiado`);
+                console.log(`Nombre de sección cambiado`);
+                return laSeccion;
+            });
+        },
+        setNuevoEnlaceSeccionNodo(_, { idNodo, idSeccion, nuevoEnlace }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`cambiando el enlace de seccion con id ${idSeccion} del nodoConocimiento con id ${idNodo}`);
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo) {
+                        throw "nodoConocimiento no encontrado";
+                    }
+                }
+                catch (error) {
+                    console.log("Error buscando el nodoConocimiento. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Erro en la conexión con la base de datos");
+                }
+                //Authorización
+                const permisosEspeciales = ["superadministrador", "atlasAdministrador"];
+                const credencialesUsuario = contexto.usuario;
+                if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
+                    console.log(`Error de autenticacion editando artículo de seccion de nodoConocimiento`);
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var laSeccion = elNodo.secciones.id(idSeccion);
+                    if (!laSeccion) {
+                        console.log(`Seccion no encontrado en el nodoConocimiento`);
+                        throw "No existía el seccion";
+                    }
+                    laSeccion.enlace = nuevoEnlace;
+                    laSeccion.modo = "enlace";
+                }
+                catch (error) {
+                    console.log("Error cambiando el artículo en la base de datos. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error guardando el artículo en la base de datos");
+                }
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log("Error guardando el seccion creado en el nodoConocimiento. E: " + error);
+                    throw new apollo_server_express_1.ApolloError("Error introduciendo el seccion en el nodoConocimiento");
+                }
+                console.log(`Enlace cambiado`);
                 return laSeccion;
             });
         },

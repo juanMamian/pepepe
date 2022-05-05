@@ -114,6 +114,9 @@ var esquemaNodo = new mongoose_1.default.Schema({
                     type: String,
                     default: "archivo",
                     enum: ["archivo", "enlace"]
+                },
+                enlace: {
+                    type: String,
                 }
             }],
         default: []

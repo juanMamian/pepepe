@@ -57,7 +57,7 @@ export const typeDefs = gql`
         fechaUpload:Date,
         comentario:String,
         archivo:InfoArchivo,        
-        infoAutor:PublicUsuario,
+        infoAutor:Usuario,
         enlaceAdjunto:[String],
     }
 
@@ -71,7 +71,7 @@ export const typeDefs = gql`
         estado:String,
         participaciones: [ParticipacionActividadGrupoEstudiantil],
         leidoPorProfe:Boolean,
-        infoEstudiante:PublicUsuario
+        infoEstudiante:Usuario
     }
 
     type ActividadGrupoEstudiantil{        
@@ -79,7 +79,7 @@ export const typeDefs = gql`
         nombre: String,
         fechaUpload:Date,
         desarrollos:[DesarrolloActividadGrupoEstudiantil],
-        infoCreador:PublicUsuario
+        infoCreador:Usuario
         hayGuia: String,
         idGrupo:ID,
     }
@@ -98,7 +98,7 @@ export const typeDefs = gql`
     type GrupoEstudiantil{
         id:ID!,
         nombre:String,        
-        estudiantes:[PublicUsuario],
+        estudiantes:[Usuario],
     }
 
     extend type Query{

@@ -1,6 +1,7 @@
 import Vue from "vue"
 import Router from "vue-router"
 import atlasConocimiento from "./components/atlasConocimiento/AtlasConocimiento.vue"
+import adminNodosConocimiento from "./components/atlasConocimiento/adminNodosConocimiento.vue"
 import loginArea from "./components/LoginArea.vue"
 import perfilPersonal from "./components/usuario/PerfilPersonal.vue"
 import VisorNodoConocimiento from "./components/visorNodoConocimiento/VisorNodoConocimiento.vue"
@@ -40,6 +41,7 @@ const routes = [
             }
         ]
     },
+    {path:"/adminNodosConocimiento", name: "adminNodosConocimiento", component: adminNodosConocimiento},
     {
         path: "/login", name: "loginArea",
         component: loginArea,

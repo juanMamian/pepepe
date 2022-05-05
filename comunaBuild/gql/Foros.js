@@ -90,8 +90,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         mensaje:String,
         interpolaciones:[Interpolacion]
         enlaceAdjunto:[String],
-        autor: PublicUsuario,
-        infoAutor:PublicUsuario,
+        autor: Usuario,
+        infoAutor:Usuario,
     }
 
     type InfoRespuestasPaginasConversacion{
@@ -107,7 +107,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     }
 
     type InfoUltimaRespuesta{
-        autor:PublicUsuario,
+        autor:Usuario,
         fecha:Date
     }
 
@@ -115,7 +115,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         id:ID,
         titulo: String,
         estado:String,
-        creador: PublicUsuario,
+        creador: Usuario,
         acceso:String,
         cantidadRespuestas:Int,
         infoUltimaRespuesta:InfoUltimaRespuesta,        

@@ -102,8 +102,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         participantes: [String],
         posiblesResponsables:[String],
         responsablesSolicitados:Int,
-        personasResponsables:[PublicUsuario]
-        personasPosiblesResponsables:[PublicUsuario],
+        personasResponsables:[Usuario]
+        personasPosiblesResponsables:[Usuario],
         bienes:[BienProyecto],
         servicios:[ServicioProyecto],
         trabajos: [TrabajoDeProyecto],

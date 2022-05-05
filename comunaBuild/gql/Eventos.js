@@ -24,7 +24,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         id:ID,
         tipoParent:String,
         nombreParent:String,
-        participantes:PublicUsuario
+        participantes:Usuario
     }
 
     input InputCrearEventoPublico{

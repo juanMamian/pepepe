@@ -23,6 +23,32 @@ const esquemaIteracionRepaso = new mongoose.Schema({
     },
 });
 
+const EsquemaInformeUsuario=new mongoose.Schema({
+    year: {
+        type: Number, 
+        required:true,
+    },
+    periodo:{
+        type: String,
+        required: true,
+        enum: ["primero", "segundo", "tercero"],        
+    },
+    idProfe:{
+        type: String,
+        required:true,
+    },
+    categoria:{
+        type: String,
+        required: true,
+        enum: ["objetivos", "comentario", "espacios", "proyectos"],
+    },
+    texto:{
+        type: String,        
+    }
+
+
+}); 
+
 const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({
     nombre: {
         type: String,
@@ -159,6 +185,10 @@ const esquemaUsuario = new mongoose.Schema({
         max: Date.now,
         min: new Date('1890-01-01'),
         default: Date.now
+    },
+    informesMaestraVida:{
+        type:[EsquemaInformeUsuario],
+        default:[],
     },
     fotografia: {
         type: Buffer,

@@ -15,7 +15,7 @@ export const fragmentoEvento = gql`
 `;
 
 export const fragmentoResponsables = gql`
-fragment fragResponsables on PublicUsuario {
+fragment fragResponsables on Usuario {
   id
   username
   nombres
@@ -28,7 +28,7 @@ fragment fragResponsables on PublicUsuario {
 `;
 
 export const fragmentoMinimoPersona = gql`
-fragment fragMinimoPersona on PublicUsuario {
+fragment fragMinimoPersona on Usuario {
   id
   nombres
   apellidos

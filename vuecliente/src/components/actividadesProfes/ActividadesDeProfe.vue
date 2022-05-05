@@ -58,7 +58,7 @@ export default {
     esteProfe: {
       query: gql`
         query($idProfe: ID!) {
-          publicUsuario(idUsuario: $idProfe) {
+          Usuario(idUsuario: $idProfe) {
             ...fragResponsables
           }
         }
@@ -67,7 +67,7 @@ export default {
       variables() {
         return { idProfe: this.$route.params.idProfe };
       },
-      update: ({ publicUsuario }) => publicUsuario,
+      update: ({ Usuario }) => Usuario,
     },
     actividades: {
       query: QUERY_MIS_ACTIVIDADES_PROFE,

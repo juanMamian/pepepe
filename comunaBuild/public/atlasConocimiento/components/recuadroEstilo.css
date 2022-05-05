@@ -17,6 +17,10 @@
     background-color: var(--paletaActual);
     color: whitesmoke;
 }
+.recuadro.instruccion{
+    background-color: var(--paletaActual);
+    color: whitesmoke;
+}
 .recuadro.instruccionPointer{
     background-color: var(--paletaActual);
     color: whitesmoke;

@@ -15,7 +15,7 @@ export const typeDefs = gql`
         id:ID,
         tipoParent:String,
         nombreParent:String,
-        participantes:PublicUsuario
+        participantes:Usuario
     }
 
     input InputCrearEventoPublico{

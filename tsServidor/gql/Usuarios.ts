@@ -107,6 +107,15 @@ export const typeDefs = gql`
         conversaciones:[InfoConversacionesUsuario]
     }
 
+    type InformeEstudianteMaestraVida{
+        id: ID,
+        year: Int,
+        periodo:String,
+        idProfe:ID,
+        categoria:String,
+        texto:String
+    }
+
     type Usuario{
         id: ID,
         nombres:String,
@@ -118,6 +127,7 @@ export const typeDefs = gql`
         numeroTel:String,
         username:String,
         nodosConocimiento: [ConocimientoUsuario],
+        informesMaestraVida: [InformeEstudianteMaestraVida],
         atlas:InfoAtlas,        
         atlasSolidaridad:InfoAtlasSolidaridad,
         responsables:[String],
@@ -144,26 +154,13 @@ export const typeDefs = gql`
         email:String,
         numeroTel:String,
         username:String
-    }
-    type PublicUsuario{
-        id: ID,
-        username:String, 
-        nombres:String,
-        apellidos:String,
-        email:String,
-        numeroTel:String,
-        permisos:[String],
-        lugarResidencia:String,
-        edad:Int,
-        idGrupoEstudiantil:String,       
-        nombreGrupoEstudiantil:String,
-    }
+    }    
 
     extend type Query {
-        todosUsuarios:[PublicUsuario],
-        usuariosProfe:[PublicUsuario],
+        todosUsuarios:[Usuario],
+        usuariosProfe:[Usuario],
         yo:Usuario,
-        publicUsuario(idUsuario:ID!): PublicUsuario,
+        Usuario(idUsuario:ID!): Usuario,
         buscarPersonas(textoBuscar:String!):[Usuario]
 
         login(username: String!, password:String!):String,
@@ -182,8 +179,10 @@ export const typeDefs = gql`
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 
+        guardarInformeEstudianteMaestraVida(idUsuario:ID!, year: Int!, periodo: String!, idProfe: ID!, categoria: String!, texto: String!):InformeEstudianteMaestraVida,
+
         asignarPermisoTodosUsuarios(nuevoPermiso:String!):Boolean,
-        togglePermisoUsuario(permiso:String!, idUsuario:ID!):PublicUsuario,
+        togglePermisoUsuario(permiso:String!, idUsuario:ID!):Usuario,
 
         setPlegarNodoSolidaridadUsuario(idNodo:ID!):Usuario,
 
@@ -252,16 +251,17 @@ export const resolvers = {
             console.log(`Solicitud de la lista de todos los usuarios`);
 
             try {
-                var todosUsuarios = await Usuario.find({}).select("nombres apellidos permisos fechaNacimiento email username numeroTel email").exec();
+                var todosUsuarios = await Usuario.find({}).select("nombres informesMaestraVida apellidos permisos fechaNacimiento email username numeroTel email").exec();
             }
             catch (error) {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
                 throw new ApolloError("Error de conexión a la base de datos");
             }
+            
             console.log(`Enviando lista de todos los usuarios`);
             return todosUsuarios;
         },
-        publicUsuario: async function (_: any, { idUsuario }: any, context: contextoQuery) {
+        Usuario: async function (_: any, { idUsuario }: any, context: contextoQuery) {
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
             } catch (error) {
@@ -733,6 +733,64 @@ export const resolvers = {
 
             return elUsuario;
 
+        },
+
+        guardarInformeEstudianteMaestraVida: async function (_: any, { idUsuario, year, periodo, idProfe, categoria, texto}: any, contexto: contextoQuery) {
+            console.log(`|||||||||||||||||||`);
+            console.log(`Solicitud de guardar informe maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
+            try {
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
+                if (!elUsuario) {
+                    throw "usuario no encontrado"
+                }
+
+                var elProfe: any = await Usuario.findById(idProfe).exec();
+                if (!elProfe) {
+                    throw "profe no encontrado"
+                }
+            }
+            catch (error) {
+                console.log(`error buscando usuarios. E: ` + error);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            var esProfe=false;
+            if(elProfe.permisos.includes("maestraVida-profesor")){
+                esProfe=true;
+            }
+
+            let credencialesUsuario = contexto.usuario;
+
+            let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
+
+            if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !esProfe) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                throw new AuthenticationError("No autorizado");
+            }
+            
+            texto = texto.trim();
+
+            var elInforme:any=elUsuario.informesMaestraVida.find(i=>i.year==year && i.periodo===periodo && i.idProfe===idProfe && i.categoria===categoria)
+            if(!elInforme){
+                console.log("Informe no existía, creando.");
+                elInforme=elUsuario.informesMaestraVida.create({
+                    year, periodo, idProfe, categoria, texto,
+                })
+                elUsuario.informesMaestraVida.push(elInforme);
+            }
+            else{
+                console.log("El informe ya existía");
+                elInforme.texto=texto;
+            }
+
+            try {
+                console.log(`guardando nuevo texto en la base de datos`);
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`error guardando el nodo: ${error}`);
+            }
+            console.log(`Descripcion guardado`);
+            return elInforme;
         },
 
         async asignarPermisoTodosUsuarios(_: any, { nuevoPermiso }: any, contexto: contextoQuery) {
@@ -1462,18 +1520,7 @@ export const resolvers = {
         nombre: function (parent: any, _: any, __: any) {
             return parent.username;
         },
-    },
-    PublicUsuario: {
-        edad: function (parent: any, _: any, __: any) {
-            if (!parent.fechaNacimiento) {
-                return 0;
-            }
-            let edad = Date.now() - parent.fechaNacimiento;
-            let edadAños = edad / (60 * 60 * 24 * 365 * 1000);
-            edadAños = parseInt(edadAños.toFixed());
-            return edadAños;
-        },
-    },
+    },   
     Date: {
         GraphQLDateTime
     },

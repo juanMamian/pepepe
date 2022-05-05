@@ -104,6 +104,19 @@
         </div>
         <div
           class="boton selector"
+          v-if="usuarioLogeado && usuarioProfe"
+          style="width:100px"
+          :title="
+            mostrando === 'informe' ? 'Ocultar informe' : 'Mostrar informe'
+          "
+          @click="mostrando = mostrando === 'informe' ? null : 'informe'"
+          :class="{ activo: mostrando === 'informe' }"
+        >
+        Informe I
+          
+        </div>
+        <div
+          class="boton selector"
           v-if="usuarioLogeado"
           :title="
             mostrando === 'objetivos'
@@ -162,6 +175,49 @@
           </div>
         </div>
       </div>
+      <div id="zonaInforme" v-show="mostrando === 'informe'">
+        <div class="contenedorSeccionInforme">
+          <div class="tituloSeccionInforme">Sobre objetivos</div>
+          <textarea
+            id="textAreaInformeObjetivos"
+            @blur="guardarInforme('objetivos')"
+            ref="inputInformeCategoriaObjetivos"
+            class="seccionInforme"
+            :value="misInformesActivos.objetivos"
+            :class="{deshabilitado: guardandoInformeObjetivos}"
+          ></textarea>
+
+          <div class="tituloSeccionInforme">Sobre proyectos</div>
+          <textarea
+            id="textAreaInformeProyectos"
+            @blur="guardarInforme('proyectos')"
+            ref="inputInformeCategoriaProyectos"
+            class="seccionInforme"
+            :value="misInformesActivos.proyectos"
+            :class="{deshabilitado: guardandoInformeProyectos}"
+          ></textarea>
+
+          <div class="tituloSeccionInforme">Sobre espacios</div>
+          <textarea
+            id="textAreaInformeProyectos"
+            @blur="guardarInforme('espacios')"
+            ref="inputInformeCategoriaEspacios"
+            class="seccionInforme"
+            :class="{deshabilitado: guardandoInformeEspacios}"
+            :value="misInformesActivos.espacios"
+          ></textarea>
+
+          <div class="tituloSeccionInforme">Comentario</div>
+          <textarea
+            id="textAreaInformeComentario"
+            @blur="guardarInforme('comentario')"
+            ref="inputInformeCategoriaComentario"
+            class="seccionInforme"
+            :class="{deshabilitado: guardandoInformeComentario}"
+            :value="misInformesActivos.comentario"
+          ></textarea>
+        </div>
+      </div>
       <div
         v-show="mostrando === 'nodosSolidaridadPublicitados'"
         id="zonaNodosSolidaridadPublicitados"
@@ -169,7 +225,12 @@
       >
         <div
           class="selectorNodoSolidaridad"
-          :class="{ deshabilitado: settingPresenciaNodoSolidaridad, activo: nodoSolidaridadPublicitado.responsables.includes(estaPersona.id) }"
+          :class="{
+            deshabilitado: settingPresenciaNodoSolidaridad,
+            activo: nodoSolidaridadPublicitado.responsables.includes(
+              estaPersona.id
+            ),
+          }"
           @click="toggleResponsableNodoSolidaridad(nodoSolidaridadPublicitado)"
           v-for="nodoSolidaridadPublicitado of nodosSolidaridadPublicitados"
           :key="nodoSolidaridadPublicitado.id"
@@ -237,6 +298,12 @@ export default {
       togglingPermiso: false,
 
       settingPresenciaNodoSolidaridad: false,
+
+      guardandoInformeObjetivos: false,
+      guardandoInformeEspacios: false,
+      guardandoInformeComentario: false,
+      guardandoInformeProyectos: false,
+      
     };
   },
   methods: {
@@ -393,6 +460,124 @@ export default {
           });
       }
     },
+    guardarInforme(categoria) {
+      console.log("Guardando informe");
+      var texto=null;
+      if (categoria === "objetivos") {
+        this.guardandoInformeObjetivos = true;
+        texto=this.$refs.inputInformeCategoriaObjetivos.value;
+      }
+      if (categoria === "espacios") {
+        this.guardandoInformeEspacios = true;
+        texto=this.$refs.inputInformeCategoriaEspacios.value;
+      }
+      if (categoria === "comentario") {
+        this.guardandoInformeComentario = true;
+        texto=this.$refs.inputInformeCategoriaComentario.value;
+      }
+      if (categoria === "proyectos") {
+        this.guardandoInformeProyectos = true;
+        texto=this.$refs.inputInformeCategoriaProyectos.value;
+      }
+
+      if(!texto || texto.lenght<5){
+        console.log("Cancelando");
+        this.guardandoInformeObjetivos = false;
+        this.guardandoInformeEspacios = false;
+        this.guardandoInformeComentario = false;
+        this.guardandoInformeProyectos = false;
+
+        return;
+      }
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idUsuario: ID!
+              $year: Int!
+              $periodo: String!
+              $idProfe: ID!
+              $categoria: String!
+              $texto: String!
+            ) {
+              guardarInformeEstudianteMaestraVida(
+                idUsuario: $idUsuario
+                year: $year
+                periodo: $periodo
+                idProfe: $idProfe
+                categoria: $categoria
+                texto: $texto
+              ) {
+                id
+                year
+                periodo
+                idProfe
+                categoria
+                texto
+              }
+            }
+          `,
+          variables: {
+            idUsuario: this.estaPersona.id,
+            year: 2022,
+            periodo: "primero",
+            idProfe: this.usuario.id,
+            categoria,
+            texto,
+          },
+        })
+        .then(() => {
+          if (categoria === "objetivos") {
+            this.guardandoInformeObjetivos = false;
+          }
+          if (categoria === "espacios") {
+            this.guardandoInformeEspacios = false;
+          }
+          if (categoria === "comentario") {
+            this.guardandoInformeComentario = false;
+          }
+          if (categoria === "proyectos") {
+            this.guardandoInformeProyectos = false;
+          }
+        })
+        .catch(() => {
+          console.log("error");
+          if (categoria === "objetivos") {
+            this.guardandoInformeObjetivos = false;
+          }
+          if (categoria === "espacios") {
+            this.guardandoInformeEspacios = false;
+          }
+          if (categoria === "comentario") {
+            this.guardandoInformeComentario = false;
+          }
+          if (categoria === "proyectos") {
+            this.guardandoInformeProyectos = false;
+          }
+        });
+    },
+  },
+  computed:{
+    misInformesActivos(){
+      if(!this.estaPersona.informesMaestraVida){
+        return {
+          objetivos: null,
+          espacios:null,
+          comentario: null,
+          proyectos:null,
+        }
+      }
+      var miInformeObjetivos=this.estaPersona.informesMaestraVida.find(i=>i.year===2022 && i.periodo==='primero' && i.idProfe===this.usuario.id && i.categoria==='objetivos');
+      var miInformeEspacios=this.estaPersona.informesMaestraVida.find(i=>i.year===2022 && i.periodo==='primero' && i.idProfe===this.usuario.id && i.categoria==='espacios');
+      var miInformeComentario=this.estaPersona.informesMaestraVida.find(i=>i.year===2022 && i.periodo==='primero' && i.idProfe===this.usuario.id && i.categoria==='comentario');
+      var miInformeProyectos=this.estaPersona.informesMaestraVida.find(i=>i.year===2022 && i.periodo==='primero' && i.idProfe===this.usuario.id && i.categoria==='proyectos');
+      return {
+        objetivos: miInformeObjetivos?miInformeObjetivos.texto:"",
+        espacios: miInformeEspacios?miInformeEspacios.texto:"",
+        comentario: miInformeComentario?miInformeComentario.texto:"",
+        proyectos: miInformeProyectos?miInformeProyectos.texto:"",
+      }
+    }
   },
   watch: {
     seleccionado(seleccionado) {
@@ -456,5 +641,16 @@ export default {
 .selectorNodoSolidaridad.activo {
   background-color: var(--paletaSelect);
   color: white;
+}
+
+.seccionInforme{
+  height: 150px;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.tituloSeccionInforme{
+  font-weight: bold;
+  
 }
 </style>

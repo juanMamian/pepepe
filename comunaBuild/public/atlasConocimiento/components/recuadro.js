@@ -13,6 +13,9 @@ const recuadroComponent={
         descubrimiento(){
             return this.tipo==='descubrimiento'
         },
+                instruccion(){
+            return this.tipo==='instruccion'
+        },
         instruccionPointer(){
             return this.tipo==='instruccionPointer'
         },
@@ -21,17 +24,17 @@ const recuadroComponent={
         },
         srcIcono(){
             if(this.descubrimiento){
-                return "http://192.168.3.101:3000/public/resources/nodosConocimiento/iconos/circle-exclamation-solid.svg";
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/circle-exclamation-solid.svg";
             }
             else if(this.instruccionPointer){
-                return "http://192.168.3.101:3000/public/resources/nodosConocimiento/iconos/handPointer.svg";
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/handPointer.svg";
             }
             else if(this.instruccionTeclado){
-                return "http://192.168.3.101:3000/public/resources/nodosConocimiento/iconos/iconoInstruccionTeclado.svg";
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoInstruccionTeclado.svg";
             }
-            return "http://192.168.3.101:3000/public/resources/nodosConocimiento/iconos/bombillo.png";
+            return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/bombillo.png";
 
         }
     },
-    template:'<div class="recuadro" :class="{datoPrevio, datoNuevo, descubrimiento, instruccionPointer, instruccionTeclado}"> <img class="iconoRecuadro" :src="srcIcono" /> <div class="textoRecuadro"> <slot></slot> </div> </div>',    
+    template:'<div class="recuadro" :class="{datoPrevio, datoNuevo, descubrimiento, instruccion, instruccionPointer, instruccionTeclado}"> <img class="iconoRecuadro" :src="srcIcono" /> <div class="textoRecuadro"> <slot></slot> </div> </div>',    
 }

@@ -38,11 +38,109 @@ body{
     opacity: 0.4;
     pointer-events: none;
 }
-
+.listaEjemplos{
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+}
 .itemEjemplo {
     border: 3px dotted gray;
     border-spacing: 10px;
     padding: 5%;
-    margin: 15px 0px;
+    margin: 15px 10px;
+}
+
+.fadeIn-enter-active{
+	animation: fadeIn 0.8s;
+	animation-iteration-count: 1;
+}
+.fadeIn-leave-active{
+	animation: fadeIn 0.8s;
+	animation-iteration-count: 1;
+	animation-direction:reverse;
+}
+
+@keyframes fadeIn{
+	0%{opacity: 0}	
+	100%{opacity :1}
+}
+
+.travelRight-enter-active{
+animation: travelRight;
+animation-duration: 1s;
+animation-iteration-count: 1;
+pointer-events:none;
+}
+
+.travelRight-leave-active{
+animation: travelRight;
+animation-duration: 1s;
+animation-iteration-count: 1;
+animation-direction: reverse;
+pointer-events:none;
+}
+
+@keyframes travelRight{
+	0%{left:100%; opacity: 0}	
+	100%{left :0%; opacity: 1}
+}
+
+.travelLeft-enter-active{
+animation: travelLeft;
+animation-duration: 1s;
+animation-iteration-count: 1;
+pointer-events:none;
+}
+
+.travelLeft-leave-active{
+animation: travelLeft;
+animation-duration: 1s;
+animation-iteration-count: 1;
+animation-direction: reverse;
+pointer-events:none;
+}
+
+
+@keyframes travelLeft{
+	0%{left:-100%; opacity: 0}	
+	100%{left :0%; opacity: 1}
+}
+
+.travelTop-enter-active{
+animation: travelTop;
+animation-duration: 1s;
+animation-iteration-count: 1;
+pointer-events:none;
+}
+
+.travelTop-leave-active{
+animation: travelTop;
+animation-duration: 1s;
+animation-iteration-count: 1;
+animation-direction: reverse;
+pointer-events:none;
+}
+@keyframes travelTop{
+	0%{top:-100%; opacity: 0}	
+	100%{top: 0%; opacity: 1}
+}
+
+.travelBottom-enter-active{
+animation: travelLeft;
+animation-duration: 1s;
+animation-iteration-count: 1;
+pointer-events:none;
+}
+
+.travelBottom-leave-active{
+animation: travelLeft;
+animation-duration: 1s;
+animation-iteration-count: 1;
+animation-direction: reverse;
+pointer-events:none;
+}
+@keyframes travelBottom{
+	0%{top:100%; opacity: 0}	
+	100%{top :0%; opacity: 1}
 }
 
