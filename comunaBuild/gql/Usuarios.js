@@ -13,6 +13,7 @@ exports.resolvers = exports.NUEVA_NOTIFICACION_PERSONAL = exports.typeDefs = voi
 const apollo_server_express_1 = require("apollo-server-express");
 // import { ModeloUsuario as Usuario, permisosDeUsuario,  validarDatosUsuario} from "../model/Usuario"
 const Usuario_1 = require("../model/Usuario");
+const NodoSolidaridad_1 = require("../model/atlasSolidaridad/NodoSolidaridad");
 const graphql_iso_date_1 = require("graphql-iso-date");
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
 const Nodo_1 = require("../model/atlas/Nodo");
@@ -137,6 +138,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         fuerzaColision: FuerzaPolar,
        fuerzaCentroMasa: FuerzaPolar,
        nombre:String,
+       objetivosEstudiante: [NodoSolidaridad],
 
     }
     input DatosEditablesUsuario{
@@ -1431,6 +1433,18 @@ exports.resolvers = {
         nombre: function (parent, _, __) {
             return parent.username;
         },
+        objetivosEstudiante: function (parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    var losObjetivos = yield NodoSolidaridad_1.ModeloNodoSolidaridad.find({ nodoParent: parent.id }).exec();
+                }
+                catch (error) {
+                    console.log(`Error buscando nodos objetivo estudiantil de usaurio con id ${parent.id}: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return losObjetivos;
+            });
+        }
     },
     Date: {
         GraphQLDateTime: graphql_iso_date_1.GraphQLDateTime

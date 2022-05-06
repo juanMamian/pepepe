@@ -32,7 +32,7 @@
       <div
         class="boton"
         @click="
-          mostrarPersonas = mostrarPersonas === 'todos' ? 'profes' : 'todos'
+          mostrarPersonas = mostrarPersonas === 'todos' ? 'profes' : mostrarPersonas==='profes'?'estudiantes': 'todos'
         "
       >
         <img
@@ -44,6 +44,11 @@
           src="@/assets/iconos/teacher.svg"
           alt="Profes"
           v-show="mostrarPersonas === 'profes'"
+        />
+        <img
+          src="@/assets/iconos/graduationCap.svg"
+          alt="Estudiantes"
+          v-show="mostrarPersonas === 'estudiantes'"
         />
       </div>
     </div>
@@ -70,7 +75,7 @@ import debounce from "debounce";
 
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
 
-const QUERY_PERSONAS = gql`
+export const QUERY_PERSONAS = gql`
   query {
     todosUsuarios {
       id
@@ -85,6 +90,11 @@ const QUERY_PERSONAS = gql`
         idProfe
         categoria
         texto
+      }
+      objetivosEstudiante{
+        id
+        nombre
+        estadoDesarrollo
       }
     }
   }
@@ -292,6 +302,11 @@ export default {
       if (this.mostrarPersonas === "profes") {
         visibles = visibles.filter((p) =>
           p.permisos.includes("maestraVida-profesor")
+        );
+      }
+      else if(this.mostrarPersonas==='estudiantes'){
+        visibles = visibles.filter((p) =>
+          p.permisos.includes("maestraVida-estudiante")
         );
       }
       if (this.textoBusquedaUsado) {

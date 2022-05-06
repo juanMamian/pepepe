@@ -1,6 +1,7 @@
 import { ApolloError, AuthenticationError, gql, UserInputError, withFilter } from "apollo-server-express";
 // import { ModeloUsuario as Usuario, permisosDeUsuario,  validarDatosUsuario} from "../model/Usuario"
 import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario, charProhibidosNombresUsuario, charProhibidosUsername, minLengthNombresUsuario, minLengthApellidosUsuario, minLengthUsername, minLengthEmail, minLengthPassword, maxLengthPassword, charProhibidosPassword, emailValidator } from "../model/Usuario"
+import { ModeloNodoSolidaridad as NodoSolidaridad} from "../model/atlasSolidaridad/NodoSolidaridad";
 
 import { GraphQLDateTime } from "graphql-iso-date";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
@@ -144,6 +145,7 @@ export const typeDefs = gql`
         fuerzaColision: FuerzaPolar,
        fuerzaCentroMasa: FuerzaPolar,
        nombre:String,
+       objetivosEstudiante: [NodoSolidaridad],
 
     }
     input DatosEditablesUsuario{
@@ -1520,6 +1522,16 @@ export const resolvers = {
         nombre: function (parent: any, _: any, __: any) {
             return parent.username;
         },
+        objetivosEstudiante:async function(parent: any, _:any, __:any){
+            try {
+                var losObjetivos:any=await NodoSolidaridad.find({nodoParent:parent.id}).exec();
+            } catch (error) {
+                console.log(`Error buscando nodos objetivo estudiantil de usaurio con id ${parent.id}: ${error}`);
+                throw new ApolloError("Error conectando con la base de datos");
+            }
+
+            return losObjetivos;
+        }
     },   
     Date: {
         GraphQLDateTime
