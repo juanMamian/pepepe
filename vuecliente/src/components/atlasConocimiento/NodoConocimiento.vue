@@ -385,34 +385,31 @@ export default {
       return this.idsNodosPresentesCabeza.includes(this.esteNodo.id);
     },
     estiloCartelNombre() {
-      var color = "var(--atlasConocimientoOff)";
-      var opacity = 0.4;
-
+      var bColor = "var(--atlasConocimientoOff)";      
+      var color="black";
       if (this.modoAtlas === "estudiante") {
         if (this.nodoPresenteCabeza) {
-          color = "var(--atlasConocimientoCheck)";
-          opacity = 1;
+          bColor = "var(--atlasConocimientoCheck)";          
         }
         else if(this.nodoRepasar){
-          color="var(--atlasConocimientoRepaso)";
-          opacity=1;
+          bColor="var(--atlasConocimientoRepaso)";          
         } 
         else if (this.aprendible) {
-          color = "var(--atlasConocimientoAvailable)";
-          opacity = 1;
+          bColor = "var(--atlasConocimientoAvailable)";          
+        }
+        else{
+          color= "#313131"
         }
         
-      } else if (this.modoAtlas === "experto") {
-        opacity = 0.7;
+      } else if (this.modoAtlas === "experto") {        
         if (this.usuarioExpertoNodo) {
-          color = "var(--atlasConocimientoCheck)";
-          opacity = 1;
+          bColor = "var(--atlasConocimientoCheck)";          
         }
       }
 
       return {
-        backgroundColor: color,
-        opacity,
+        backgroundColor: bColor,  
+        color,      
         minWidth:
           parseInt(this.estiloNombreBase.minWidth * this.factorZoom) + "px",
         fontSize:
@@ -448,6 +445,7 @@ export default {
         transform: "rotate(" + this.esteNodo.fuerzaColision.direccion + "rad)",
       };
     },
+    
   },
   methods: {
     toggleAprendido() {
@@ -785,10 +783,10 @@ export default {
   z-index: 10;
 }
 .fantasmeado {
-  opacity: 0.2;
+  filter: saturate(50%);
 }
 .fantasmeado.imgSeleccionado {
-  opacity: 0.5;
+  filter: saturate(10%);
 }
 .escondido {
   visibility: hidden;
@@ -905,6 +903,7 @@ export default {
   bottom: 101%;
   width: 15px;
   height: 15px;
+  
 }
 .fuerzaMovimiento {
   background-color: black;

@@ -106,6 +106,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         year: Int,
         periodo:String,
         idProfe:ID,
+        nombreProfe:String,
         categoria:String,
         texto:String
     }
@@ -355,7 +356,7 @@ exports.resolvers = {
                     console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                if (elUsuario.permisos.some(p => permisosNoAlienables.includes(p))) {
+                if (elUsuario.permisos.some(p => permisosNoAlienables.includes(p)) && !credencialesUsuario.permisos.includes("superadministrador")) {
                     console.log(`El usuario no podía ser alienado`);
                     throw new apollo_server_express_1.UserInputError("No permitido");
                 }
@@ -709,7 +710,7 @@ exports.resolvers = {
         guardarInformeEstudianteMaestraVida: function (_, { idUsuario, year, periodo, idProfe, categoria, texto }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`|||||||||||||||||||`);
-                console.log(`Solicitud de guardar informe maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
+                console.log(`Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
                     if (!elUsuario) {
@@ -1480,5 +1481,21 @@ exports.resolvers = {
                 return elNodo.nombre;
             });
         }
-    }
+    },
+    InformeEstudianteMaestraVida: {
+        nombreProfe: function (parent) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    var elProfe = yield Usuario_1.ModeloUsuario.findById(parent.idProfe).select("nombres apellidos").exec();
+                    if (!elProfe)
+                        throw "Profe no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error buscando el nombre del profe de un informe: ${error}`);
+                    return "Error";
+                }
+                return elProfe.nombres + " " + elProfe.apellidos;
+            });
+        }
+    },
 };

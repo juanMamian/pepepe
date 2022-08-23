@@ -348,7 +348,7 @@ export default {
           console.log(`Error. E: ${error}`);
         });
     },
-  },
+  },  
 };
 </script>
 

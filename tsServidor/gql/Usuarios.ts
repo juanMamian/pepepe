@@ -113,6 +113,7 @@ export const typeDefs = gql`
         year: Int,
         periodo:String,
         idProfe:ID,
+        nombreProfe:String,
         categoria:String,
         texto:String
     }
@@ -370,7 +371,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            if (elUsuario.permisos.some(p => permisosNoAlienables.includes(p))) {
+            if (elUsuario.permisos.some(p => permisosNoAlienables.includes(p)) && !credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`El usuario no podía ser alienado`);
                 throw new UserInputError("No permitido");
             }
@@ -739,7 +740,7 @@ export const resolvers = {
 
         guardarInformeEstudianteMaestraVida: async function (_: any, { idUsuario, year, periodo, idProfe, categoria, texto}: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||`);
-            console.log(`Solicitud de guardar informe maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
+            console.log(`Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
@@ -1560,5 +1561,17 @@ export const resolvers = {
             
             return elNodo.nombre;
         }
-    }
+    },
+    InformeEstudianteMaestraVida:{
+        nombreProfe: async function(parent:any){
+            try {
+                var elProfe:any=await Usuario.findById(parent.idProfe).select("nombres apellidos").exec();
+                if(!elProfe)throw "Profe no encontrado";
+            } catch (error) {
+                console.log(`Error buscando el nombre del profe de un informe: ${error}`);
+                return "Error"
+            }
+            return elProfe.nombres+" "+elProfe.apellidos;
+        }
+    },
 }

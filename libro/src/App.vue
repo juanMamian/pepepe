@@ -122,7 +122,7 @@ export default {
     },
     URLLibrosolo() {
       return process.env.NODE_ENV === "production"
-        ? "https://pe-pe-pe.herokuapp.com/libro"
+        ? "http://192.168.1.100:3000/libro"
         : "http://localhost:8082";
     },
   },
@@ -189,7 +189,21 @@ body {
 .tituloZona{
   padding-left:15px ;
 }
-
+.boton {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.boton img {
+  height: 100%;
+}
+.boton svg {
+  height: 100%;
+}
 .portadaLibro {
   padding: 5px 10px;
   font-size: inherit;

@@ -92,8 +92,8 @@
                 Atlas de conocimientos
               </div>
             </router-link>
-            <a
-              target="_blank"
+            <a     
+              target="_blank"         
               :href="tallerCuentosUrl + '?t=' + $store.state.token"
               v-show="usuarioLogeado"
             >
@@ -295,7 +295,7 @@ export default {
   computed: {
     tallerCuentosUrl() {
       return process.env.NODE_ENV === "production"
-        ? "https://pe-pe-pe.herokuapp.com/tallerCuentos"
+        ? "http://192.168.1.100:3000/tallerCuentos"
         : "http://localhost:8081";
     },
     username: function () {

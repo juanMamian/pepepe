@@ -660,6 +660,7 @@ export const resolvers = {
             }
             return true;
         },
+        
 
         async crearCuadroImagenPaginaLibro(_: any, { idLibro, idPagina, datosPosicion, datosSize }: any, contexto: contextoQuery) {
             console.log(`Solicitud de crear un cuadro imágen en la pagina ${idPagina} del libro ${idLibro}`);

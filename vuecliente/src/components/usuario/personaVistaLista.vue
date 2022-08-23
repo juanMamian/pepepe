@@ -112,7 +112,7 @@
           @click="mostrando = mostrando === 'informe' ? null : 'informe'"
           :class="{ activo: mostrando === 'informe' }"
         >
-          Informe I
+          Informe II
         </div>
         <div
           class="boton selector"
@@ -177,9 +177,10 @@
       <div id="zonaInforme" v-show="mostrando === 'informe'">
         <div class="contenedorSeccionInforme">
           <div class="contenedorControles">
-            <div class="boton" @click="descargarArchivoInforme">
+            <div class="boton" @click="descargarArchivoInforme" v-show="!creandoDocumentoInforme">
               <img src="@/assets/iconos/file.svg" alt="archivo" />
             </div>
+            <loading texto="" v-show="creandoDocumentoInforme" />
           </div>
           <div class="tituloSeccionInforme">Sobre objetivos</div>
           <textarea
@@ -286,7 +287,18 @@ import Calendario from "../utilidades/Calendario.vue";
 import Loading from "../utilidades/Loading.vue";
 import VentanaLista from "../atlasSolidaridad/ventanaLista/ventanaLista.vue";
 import { QUERY_PERSONAS } from "../Personas.vue";
-import { AlignmentType, Document, HeadingLevel, Packer, Paragraph } from "docx";
+import {
+  AlignmentType,
+  Document,
+  HeadingLevel,
+  Packer,
+  Paragraph,
+  TableRow,
+  TableCell,
+  Table,
+  WidthType,
+  TextRun,
+} from "docx";
 import { saveAs } from "file-saver";
 
 export default {
@@ -295,7 +307,7 @@ export default {
     estaPersona: Object,
     seleccionado: Boolean,
     nodosSolidaridadPublicitados: Array,
-  },  
+  },
   name: "PersonaVistaLista",
   data() {
     return {
@@ -323,6 +335,7 @@ export default {
       guardandoInformeEspacios: false,
       guardandoInformeComentario: false,
       guardandoInformeProyectos: false,
+      creandoDocumentoInforme:false,
 
       nuevoInformeObjetivos: null,
       nuevoInformeProyectos: null,
@@ -553,7 +566,7 @@ export default {
           variables: {
             idUsuario: this.estaPersona.id,
             year: 2022,
-            periodo: "primero",
+            periodo: "segundo",
             idProfe: this.usuario.id,
             categoria,
             texto,
@@ -613,150 +626,390 @@ export default {
             this.guardandoInformeProyectos = false;
           }
         });
-    },    
-    descargarArchivoInforme() {      
-
+    },
+    descargarArchivoInforme() {
       console.log(
         "Creando documento docx de informe para " + this.estaPersona.nombres
       );
 
+      this.creandoDocumentoInforme=true;
+
+      var filaObjetivos = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: "Acerca de los objetivos",
+                style: "nombreSeccion",
+                alignment: AlignmentType.CENTER,
+
+              }),
+            ],
+            width:{
+              size: 300,
+              type: WidthType.DXA
+            }
+          }),
+          new TableCell({
+            children: [
+              ...this.estaPersona.informesMaestraVida
+                .filter(
+                  (i) =>
+                    i.year == 2022 &&
+                    i.periodo === "segundo" &&
+                    i.categoria === "objetivos" &&
+                    i.texto &&
+                    i.texto.length > 10
+                )
+                .reduce((acc, informe) => {
+                  return acc.concat([
+                    new Paragraph({
+                      text: informe.texto,
+                      style: "textoProfe",
+                    }),
+                    new Paragraph({
+                      text: informe.nombreProfe,
+                      style: "firmaProfe",
+                    }),
+                  ]);
+                }, []),
+            ],
+            width:{
+              size: 700,
+              type: WidthType.DXA
+            }
+          }),
+        ],        
+      });
+
+      var filaProyectos = new TableRow({
+        children: [
+          new TableCell({
+            width:{
+              size: 3000,
+              type: WidthType.DXA
+            },
+            children: [
+              new Paragraph({
+                text: "Proyectos pedagógicos productivos",
+                style: "nombreSeccion",
+                alignment: AlignmentType.CENTER,
+
+              }),
+            ],
+            
+          }),
+          new TableCell({
+            width:{
+              size: 2700,
+              type: WidthType.DXA
+            },
+            children: [
+              ...this.estaPersona.informesMaestraVida
+                .filter(
+                  (i) =>
+                    i.year == 2022 &&
+                    i.periodo === "segundo" &&
+                    i.categoria === "proyectos" &&
+                    i.texto &&
+                    i.texto.length > 10
+                )
+                .reduce((acc, informe) => {
+                  return acc.concat([
+                    new Paragraph({
+                      text: informe.texto,
+                      style: "textoProfe",
+                    }),
+                    new Paragraph({
+                      text: informe.nombreProfe,
+                      style: "firmaProfe",
+                    }),
+                  ]);
+                }, []),
+            ],            
+          }),
+        ],
+       
+      });
+
+      var filaEspacios = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: "Acerca de los espacios",
+                style: "nombreSeccion",
+                alignment: AlignmentType.CENTER,
+
+              }),
+            ],
+            width:{
+              size: 300,
+              type: WidthType.DXA
+            }
+          }),
+          new TableCell({
+            children: [
+              ...this.estaPersona.informesMaestraVida
+                .filter(
+                  (i) =>
+                    i.year == 2022 &&
+                    i.periodo === "segundo" &&
+                    i.categoria === "espacios" &&
+                    i.texto &&
+                    i.texto.length > 10
+                )
+                .reduce((acc, informe) => {
+                  return acc.concat([
+                    new Paragraph({
+                      text: informe.texto,
+                      style: "textoProfe",
+                    }),
+                    new Paragraph({
+                      text: informe.nombreProfe,
+                      style: "firmaProfe",
+                    }),
+                  ]);
+                }, []),
+            ],
+            width:{
+              size: 700,
+              type: WidthType.DXA
+            }
+          }),
+        ],        
+      });
+
+      var filaComentario = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: "Comentario",
+                style: "nombreSeccion",
+                alignment: AlignmentType.CENTER,
+
+              }),
+            ],
+            width:{
+              size: 300,
+              type: WidthType.DXA
+            }
+          }),
+          new TableCell({
+            children: [
+              ...this.estaPersona.informesMaestraVida
+                .filter(
+                  (i) =>
+                    i.year == 2022 &&
+                    i.periodo === "segundo" &&
+                    i.categoria === "comentario" &&
+                    i.texto &&
+                    i.texto.length > 10
+                )
+                .reduce((acc, informe) => {
+                  return acc.concat([
+                    new Paragraph({
+                      text: informe.texto,
+                      style: "textoProfe",
+                    }),
+                    new Paragraph({
+                      text: informe.nombreProfe,
+                      style: "firmaProfe",
+                    }),
+                  ]);
+                }, []),
+            ],
+            width:{
+              size: 700,
+              type: WidthType.DXA
+            }
+          }),
+        ],        
+      });
+
+      var tablaFinal=new Table({
+        rows: [
+          filaObjetivos,
+          filaProyectos,
+          filaEspacios,
+          filaComentario
+        ],
+        width:{
+          size: 8500,
+          type: WidthType.DXA
+        }
+      })
+
       var archivo = new Document({
-        styles: {          
+        styles: {
           paragraphStyles: [
+            {
+              id:"estiloGlobal",
+              name:"Estilo global",
+              run:{
+                font: "Maiandra GD"
+              }
+            },
             {
               id: "titulos",
               name: "titulos",
-              basedOn: "Normal",
+              basedOn: "estiloGlobal",
               run: {
                 bold: true,
                 size: 24,
               },
               paragraph: {
-                spacing:{
-                  after: 200
-                }
+                spacing: {
+                  after: 200,
+                },
               },
             },
             {
               id: "nombreEstudiante",
               name: "nombre del estudiante",
-              basedOn:"Normal",
-              run:{
-                bold:true,
-              },
-              paragraph:{
-                spacing:{
-                  after:120.
-                }
-              }
-            },
-            {
-              id:"nombreSeccion",
-              name: "nombre de seccion",
-              basedOn: "Normal",
+              basedOn: "estiloGlobal",
               run: {
                 bold: true,
+                allCaps: true,
               },
-              paragraph:{
-                spacing:{
+              paragraph: {
+                spacing: {
                   after: 120,
-                }
-
-              }
+                },
+              },
+            },
+            {
+              id: "nombreSeccion",
+              name: "nombre de seccion",
+              basedOn: "estiloGlobal",
+              run: {
+                bold: true,
+                size: 24
+              },
+              paragraph: {
+                spacing: {
+                  after: 120,
+                },
+              },
             },
             {
               id: "objetivo",
               name: "Objetivo del estudiante",
-              basedOn: "Normal",
-              run:{
-
-              }
+              basedOn: "estiloGlobal",
+              run: {size: 24},
             },
             {
               id: "textoProfe",
               name: "Texto escrito por un profe",
-              basedOn: "Normal",
-              run:{
-
-              },
-              paragraph:{
-                spacing:{
+              basedOn: "estiloGlobal",
+              run: {size: 24},
+              paragraph: {
+                spacing: {
                   after: 30,
-                }
-              }
+                },
+              },
             },
             {
               id: "firmaProfe",
               name: "Firma del profe",
-              basedOn: "Normal",
-              run:{
-                italics:true,
-                size: 20,
+              basedOn: "estiloGlobal",
+              run: {
+                italics: true,
+                size: 18,
               },
-              paragraph:{
-                spacing:{
+              paragraph: {
+                spacing: {
                   after: 100,
-                }
-              }
-            }
-
+                },
+              },
+            },
           ],
         },
         sections: [
           {
             children: [
               new Paragraph({
-                text: "Informe primer periodo 2022",
+                text: "INSTITUCIÓN EDUCATIVA MAESTRA VIDA",
                 heading: HeadingLevel.TITLE,
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
-                text: "Corporación Maestra Vida",
+                text: "RESOLUCIÓN DE APROBACIÓN N° 5549 DE JUNIO DE 2013",
+                heading: HeadingLevel.TITLE,
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
-
               }),
               new Paragraph({
-                text: this.estaPersona.nombres + " " + this.estaPersona.apellidos,
-                style: "nombreEstudiante",                
+                text: "EVALUACIÓN DE CONOCIMIENTO Y DESEMPEÑO",
+                heading: HeadingLevel.TITLE,
+                style: "titulos",
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({
+                text: "PERIODO MAYO - JULIO DE 2022",
+                style: "titulos",
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({
+                text:
+                  "Nombre:  " +this.estaPersona.nombres + " " + this.estaPersona.apellidos,
+                style: "nombreEstudiante",
               }),
               new Paragraph({
                 text: "Objetivos",
-                style: "nombreSeccion",                
+                style: "nombreSeccion",
               }),
-              ...this.estaPersona.objetivosEstudiante.map(objetivo=>{
+              
+              ...this.estaPersona.objetivosEstudiante.map((objetivo) => {
                 return new Paragraph({
                   text: objetivo.nombre,
                   style: "objetivo",
                   bullet: {
-                    level: 0
-                  }
-                })
+                    level: 0,
+                  },
+                });
               }),
+
               new Paragraph({
-                text: "Informe",
-                heading: HeadingLevel.TITLE,
-                style: "nombreSeccion",   
-                alignement: AlignmentType.CENTER
-              }),
-              new Paragraph({
-                text: "Acerca de los objetivos",                
-                style: "nombreSeccion",                   
-              }),
-              ...this.estaPersona.informesMaestraVida.filter(i=>i.year==2022 && i.periodo==='primero' && i.categoria==='objetivos').map(informe=>{
-                return new Paragraph({
-                  text: informe.texto,
-                  style: "textoProfe"
-                })
+                text: "",
+                spacing:{
+                  after:200,
+                }
               }),
               
+              tablaFinal,
+
+              new Paragraph({                
+                children: [
+                  new TextRun({
+                    text: "EQUIPO PEDAGÓGICO",
+                    bold: true,                    
+                  })
+                ],                              
+                alignment: AlignmentType.CENTER,
+                style:"estiloGlobal",
+                spacing:{
+                  before: 1500,
+                }
+              }),
+              new Paragraph({
+                text: "Corporación Maestra Vida",
+                heading: HeadingLevel.TITLE,
+                style: "titulos",
+                alignment: AlignmentType.CENTER,
+              }),
+              
+
+              
             ],
-          },          
+          },
         ],
       });
 
       saveDocumentToFile(archivo, `informe${this.estaPersona.username}.docx`);
+      this.creandoDocumentoInforme=false;
     },
   },
   computed: {
@@ -772,28 +1025,28 @@ export default {
       var miInformeObjetivos = this.estaPersona.informesMaestraVida.find(
         (i) =>
           i.year === 2022 &&
-          i.periodo === "primero" &&
+          i.periodo === "segundo" &&
           i.idProfe === this.usuario.id &&
           i.categoria === "objetivos"
       );
       var miInformeEspacios = this.estaPersona.informesMaestraVida.find(
         (i) =>
           i.year === 2022 &&
-          i.periodo === "primero" &&
+          i.periodo === "segundo" &&
           i.idProfe === this.usuario.id &&
           i.categoria === "espacios"
       );
       var miInformeComentario = this.estaPersona.informesMaestraVida.find(
         (i) =>
           i.year === 2022 &&
-          i.periodo === "primero" &&
+          i.periodo === "segundo" &&
           i.idProfe === this.usuario.id &&
           i.categoria === "comentario"
       );
       var miInformeProyectos = this.estaPersona.informesMaestraVida.find(
         (i) =>
           i.year === 2022 &&
-          i.periodo === "primero" &&
+          i.periodo === "segundo" &&
           i.idProfe === this.usuario.id &&
           i.categoria === "proyectos"
       );
@@ -952,15 +1205,23 @@ function saveDocumentToFile(doc, fileName) {
   color: white;
 }
 
+.contenedorSeccionInforme{
+  padding: 15px 2vw;
+}
+
 .seccionInforme {
   height: 150px;
   width: 100%;
   margin-bottom: 30px;
+  border-radius: 10px;
+  padding: 5px;
+  border: 2px solid #4f4f4f;
 }
 .seccionInforme.guardado {
-  background-color: rgba(0, 128, 0, 0.267);
+  background-color: rgba(26, 172, 21, 0.46);
 }
 .tituloSeccionInforme {
   font-weight: bold;
+  color: #2f2f2f;
 }
 </style>

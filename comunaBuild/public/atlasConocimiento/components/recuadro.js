@@ -24,7 +24,7 @@ const recuadroComponent={
         },
         srcIcono(){
             if(this.descubrimiento){
-                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/circle-exclamation-solid.svg";
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoDescubrimiento.png";
             }
             else if(this.instruccionPointer){
                 return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/handPointer.svg";

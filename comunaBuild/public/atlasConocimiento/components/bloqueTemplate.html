@@ -5,6 +5,8 @@
         <div class="textoCabecera">
             {{textocabecera}}
         </div>
+        <slot name="cabecera">
+        </slot>
     </div>
     <div class="boton" v-on:click="desplegado=!desplegado">
         {{desplegado?textoCerrarBoton:textoBoton}}

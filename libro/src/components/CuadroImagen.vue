@@ -13,14 +13,29 @@
       :src="urlImagen + '?v=' + versionImagen"
       alt="ilustracion"
       class="imagenContenido"
-      @load="imagenLoaded=true"
+      @load="imagenLoaded = true"
     />
 
-    <img src="@/assets/iconos/loading.png" alt="Cargando" class="simboloLoading" v-if="!imagenLoaded">
+    <img
+      src="@/assets/iconos/loading.png"
+      alt="Cargando"
+      class="simboloLoading"
+      v-if="!imagenLoaded"
+    />
 
     <div id="zHandlers" v-show="seleccionado">
-      <div class="zHandler" id="bSendBack" title="Mover hacia atrás" @click="posicionZeta=posicionZeta>0?posicionZeta-1:0"></div>
-      <div class="zHandler" id="bBringFront" title="Mover hacia adelante" @click="posicionZeta++"></div>
+      <div
+        class="zHandler"
+        id="bSendBack"
+        title="Mover hacia atrás"
+        @click="posicionZeta = posicionZeta > 0 ? posicionZeta - 1 : 0"
+      ></div>
+      <div
+        class="zHandler"
+        id="bBringFront"
+        title="Mover hacia adelante"
+        @click="posicionZeta++"
+      ></div>
     </div>
 
     <div
@@ -31,7 +46,13 @@
       @mousemove="drag"
       @mouseup="finDrag"
     >
-      <div id="bolitaDragHandle" :class="{enDuda:posicionZeta!=esteCuadroImagen.posicionZeta}" title="arrastrar">{{posicionZeta}}</div>
+      <div
+        id="bolitaDragHandle"
+        :class="{ enDuda: posicionZeta != esteCuadroImagen.posicionZeta }"
+        title="arrastrar"
+      >
+        {{ posicionZeta }}
+      </div>
     </div>
 
     <div
@@ -45,14 +66,41 @@
       <div id="bolitaResizeHandle"></div>
     </div>
 
-    <img
-      src="@/assets/iconos/delete.png"
-      alt="Eliminar"
-      title="Eliminar cuadro de imagen"
-      id="bEliminarCuadroImagen"
-      v-show="seleccionado"
-      @click="eliminarse"
-    />
+    <div
+      class="boton"
+      id="botonMostrarAcciones"
+      v-show="seleccionado && !mostrandoAcciones"
+      @click="toggleMostrandoAcciones"
+    >
+      <img src="@/assets/iconos/editar.png" alt="Editar" />
+    </div>
+
+    <div id="zonaAcciones" v-show="mostrandoAcciones && seleccionado">
+      <div class="boton botonAccion" title="Eliminar cuadro de texto">
+        <img
+          src="@/assets/iconos/delete.png"
+          alt="Eliminar"
+          @click="eliminarse"
+        />
+      </div>
+
+      <div
+        class="boton"
+        v-show="!uploadingAudio"
+        :class="{ deshabilitado: uploadingAudio }"
+        @click="$refs.inputAudio.click()"
+      >
+        <img src="@/assets/iconos/audioFile.svg" alt="Audio" />
+      </div>
+      <loading v-show="uploadingAudio" />
+      <input
+        type="file"
+        @change="uploadAudio"
+        ref="inputAudio"
+        id="inputAudio"
+        v-show="false"
+      />
+    </div>
 
     <input
       type="file"
@@ -82,11 +130,11 @@ export default {
     seleccionado: Boolean,
     archivoCuadroImagenPagina: Object,
     paginaSeleccionada: Boolean,
-    zBase:Number,
+    zBase: Number,
   },
   data() {
     return {
-      posicionZeta:0,
+      posicionZeta: 0,
       resizing: false,
       dragging: false,
       posicion: {
@@ -99,7 +147,11 @@ export default {
       },
       updatingInfo: false,
       versionImagen: 0,
-      imagenLoaded:false,
+      imagenLoaded: false,
+
+      mostrandoAcciones: false,
+
+      uploadingAudio: false,
     };
   },
   computed: {
@@ -111,8 +163,9 @@ export default {
         width: this.size.x + "%",
         height: this.size.y + "%",
 
-        zIndex:this.seleccionado?this.zBase+this.posicionZeta+100:this.zBase+this.posicionZeta,
-
+        zIndex: this.seleccionado
+          ? this.zBase + this.posicionZeta + 100
+          : this.zBase + this.posicionZeta,
       };
     },
     urlImagen() {
@@ -185,7 +238,7 @@ export default {
 
       this.$apollo.mutate({
         mutation: gql`
-          mutation(
+          mutation (
             $idLibro: ID!
             $idPagina: ID!
             $idCuadroImagen: ID!
@@ -257,7 +310,7 @@ export default {
       this.dragging = false;
       this.$apollo.mutate({
         mutation: gql`
-          mutation(
+          mutation (
             $idLibro: ID!
             $idPagina: ID!
             $idCuadroImagen: ID!
@@ -284,6 +337,10 @@ export default {
           nuevoPosicion: this.posicion,
         },
       });
+    },
+
+    toggleMostrandoAcciones() {
+      this.mostrandoAcciones = !this.mostrandoAcciones;
     },
 
     uploadArchivoCuadroImagen() {
@@ -314,26 +371,66 @@ export default {
           console.log(`Error uploading archivo de cuadroImagen. E: ${error}`);
         });
     },
-    guardarPosicionZeta: debounce(function(){
-      if(this.posicionZeta==this.esteCuadroImagen.posicionZeta)return;
+    uploadAudio() {
+      var datos = new FormData();
+      if (!this.$refs.inputAudio.value) {
+        console.log(`No había archivo seleccionado`);
+        return;
+      }
+      datos.append("idLibro", this.idLibro);
+      datos.append("idPagina", this.idPagina);
+      datos.append("idCuadroImagen", this.esteCuadroImagen.id);
+      datos.append("audio", this.$refs.inputAudio.files[0]);
+
+      this.uploadingAudio = true;
+      axios({
+        method: "post",
+        url: this.serverUrl + "/apiCuentos/subirArchivoAudioCuadroImagen",
+        data: datos,
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: "Bearer " + this.$store.state.token,
+        },
+      })
+        .then(({ res }) => {
+          console.log(`Resultado de upload archivo de audio: ${res}`);
+          this.uploadingAudio = false;
+        })
+        .catch((error) => {
+          this.uploadingAudio = false;
+          console.log(`Error uploading archivo de audio. E: ${error}`);
+        });
+    },
+    guardarPosicionZeta: debounce(function () {
+      if (this.posicionZeta == this.esteCuadroImagen.posicionZeta) return;
       console.log(`Guardando posición zeta`);
       this.$apollo.mutate({
-        mutation:gql`
-          mutation($idLibro:ID!, $idPagina:ID!, $idCuadroImagen:ID!, $nuevoPosicionZ:Int!){
-            setPosicionZCuadroImagen(idLibro:$idLibro, idPagina:$idPagina, idCuadroImagen:$idCuadroImagen, nuevoPosicionZ:$nuevoPosicionZ){
+        mutation: gql`
+          mutation (
+            $idLibro: ID!
+            $idPagina: ID!
+            $idCuadroImagen: ID!
+            $nuevoPosicionZ: Int!
+          ) {
+            setPosicionZCuadroImagen(
+              idLibro: $idLibro
+              idPagina: $idPagina
+              idCuadroImagen: $idCuadroImagen
+              nuevoPosicionZ: $nuevoPosicionZ
+            ) {
               id
               posicionZeta
             }
           }
         `,
-        variables:{
-          idLibro:this.idLibro,
-          idPagina:this.idPagina,
-          idCuadroImagen:this.esteCuadroImagen.id,
-          nuevoPosicionZ:this.posicionZeta,
-        }
+        variables: {
+          idLibro: this.idLibro,
+          idPagina: this.idPagina,
+          idCuadroImagen: this.esteCuadroImagen.id,
+          nuevoPosicionZ: this.posicionZeta,
+        },
       });
-    },3000),
+    }, 3000),
 
     eliminarse() {
       if (
@@ -348,7 +445,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idLibro: ID!, $idPagina: ID!, $idCuadroImagen: ID!) {
+            mutation ($idLibro: ID!, $idPagina: ID!, $idCuadroImagen: ID!) {
               eliminarCuadroImagenLibro(
                 idLibro: $idLibro
                 idPagina: $idPagina
@@ -374,11 +471,11 @@ export default {
         });
     },
   },
-  watch:{
-    posicionZeta(){
+  watch: {
+    posicionZeta() {
       console.log(`Cambio de posicion zeta`);
       this.guardarPosicionZeta();
-    }
+    },
   },
   mounted() {
     console.log(`Montado`);
@@ -388,7 +485,7 @@ export default {
     this.$set(this.size, "x", this.esteCuadroImagen.size.x);
     this.$set(this.size, "y", this.esteCuadroImagen.size.y);
 
-    this.posicionZeta=this.esteCuadroImagen.posicionZeta;
+    this.posicionZeta = this.esteCuadroImagen.posicionZeta;
 
     if (this.esteCuadroImagen.sinArchivo) {
       console.log(`Abriendo el input de archivo`);
@@ -414,6 +511,21 @@ export default {
   width: 100%;
   height: 100%;
   z-index: 0;
+}
+#botonMostrarAcciones {
+  position: absolute;
+  top: 0px;
+  left: calc(100%+5px);
+}
+#zonaAcciones {
+  position: absolute;
+  top: -0px;
+  left: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
 }
 #resizeHandle {
   position: absolute;
@@ -476,9 +588,9 @@ export default {
   background-color: rgba(128, 0, 128, 0.637);
 }
 
-#zHandlers{
+#zHandlers {
   position: absolute;
-  top:-33px;
+  top: -33px;
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(104, 7, 104, 0.534);
@@ -488,39 +600,37 @@ export default {
   grid-template-columns: 16px 30px 16px;
 }
 
-.zHandler{
+.zHandler {
   border-radius: 50%;
   width: 15px;
   height: 15px;
-  cursor: pointer;    
+  cursor: pointer;
 }
-#bSendBack{
+#bSendBack {
   background-color: rgba(8, 83, 8, 0.377);
   grid-column: 1/2;
 }
-#bSendBack:hover{
-  background-color: rgba(8, 83, 8, 0.61); 
+#bSendBack:hover {
+  background-color: rgba(8, 83, 8, 0.61);
 }
-#bBringFront{
+#bBringFront {
   background-color: rgb(8, 83, 8);
   grid-column: 3/4;
 }
-#bBringFront:hover{
+#bBringFront:hover {
   background-color: rgb(4, 56, 4);
-
 }
-.enDuda{
+.enDuda {
   color: purple;
 }
 
-
-.simboloLoading{
+.simboloLoading {
   width: 50px;
   height: 50px;
-  
+
   position: absolute;
-  top:50%;
-  left:50%;
+  top: 50%;
+  left: 50%;
   transform: translate(-50% -50%);
   z-index: -1;
 }

@@ -31,6 +31,8 @@
             swipePagina($event, index % 2 > 0 ? 'atras' : 'adelante', index)
           "
           @mouseleave.native="endSwipe"
+          @touchstart.native.prevent="iniciaTouch"
+          @touchend.native.prevent="endTouch"
         />
       </div>
     </div>
@@ -145,6 +147,10 @@ export default {
 
       swipingPagina: false,
       swipeAcumulado: 0,
+      inicioDeTouch:{
+        x:null,
+        y:null,
+      }
     };
   },
   methods: {
@@ -185,6 +191,40 @@ export default {
         this.hojaMovida=this.centroHojas-0.5;
       }
     },
+
+    iniciaTouch(e){
+      console.log("Inicio de touch")
+      this.$set(this.inicioDeTouch, "x", e.changedTouches[0].screenX);
+      this.$set(this.inicioDeTouch, "y", e.changedTouches[0].screenY);
+      
+    },
+    endTouch(e){
+      console.log("End touch");
+      if(!this.inicioDeTouch.x || !this.inicioDeTouch.y){
+        return 
+      }
+      const umbralSwipe=20;
+      var currentX=e.changedTouches[0].screenX;
+      var currentY=e.changedTouches[0].screenY;
+
+      var deltaX=currentX-this.inicioDeTouch.x;
+      var deltaY=currentY-this.inicioDeTouch.y;
+
+      console.log(`Fin de touch con deltax ${deltaX} y deltaY: ${deltaY}`);
+
+      if(deltaX<-umbralSwipe){
+        console.log("Navegar hacia atrás");
+        this.navegarHojas(-1);
+      }
+      else if(deltaX>umbralSwipe){
+        this.navegarHojas(1);
+        console.log("Navegar hacia adelante");
+
+      }
+
+      this.$set(this.inicioDeTouch, "x", null );
+      this.$set(this.inicioDeTouch, "y", null );
+    }
   },
 };
 </script>

@@ -88,6 +88,7 @@ export const QUERY_PERSONAS = gql`
         year
         periodo
         idProfe
+        nombreProfe
         categoria
         texto
       }

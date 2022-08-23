@@ -14,7 +14,9 @@
       :style="[estiloFormato, estiloFontSize, estiloVisibilidadTexto]"
       ref="texto"
       @click="iniciarEdicionTexto"
-    >{{ esteCuadroTexto.texto }}</div>
+    >
+      {{ esteCuadroTexto.texto }}
+    </div>
     <textarea
       ref="inputNuevoTexto"
       id="inputNuevoTexto"
@@ -40,14 +42,36 @@
       @click.stop="guardarNuevoTexto"
     />
 
-    <img
-      src="@/assets/iconos/delete.png"
-      alt="Eliminar"
-      title="Eliminar cuadro de texto"
-      id="bEliminarCuadroTexto"
-      v-show="seleccionado"
-      @click="eliminarse"
-    />
+    <div
+      class="boton"
+      id="botonMostrarAcciones"
+      v-show="seleccionado && !mostrandoAcciones"
+      @click="toggleMostrandoAcciones"
+    >
+      <img src="@/assets/iconos/editar.png" alt="Editar" />
+    </div>
+
+    <div id="zonaAcciones" v-show="mostrandoAcciones && seleccionado">
+      <div class="boton botonAccion" title="Eliminar cuadro de texto">
+        <img
+          src="@/assets/iconos/delete.png"
+          alt="Eliminar"
+          @click="eliminarse"
+        />
+      </div>
+
+      <div class="boton" v-show="!uploadingAudio" :class="{deshabilitado:uploadingAudio}" @click="$refs.inputAudio.click()">
+        <img src="@/assets/iconos/audioFile.svg" alt="Audio" />
+      </div>
+      <loading v-show="uploadingAudio" />
+      <input
+        type="file"
+        @change="uploadAudio"
+        ref="inputAudio"
+        id="inputAudio"
+        v-show="false"
+      />
+    </div>
 
     <div
       class="textoDummy"
@@ -57,8 +81,18 @@
       {{ esteCuadroTexto.texto }}
     </div>
     <div id="zHandlers" v-show="seleccionado">
-      <div class="zHandler" id="bSendBack" title="Mover hacia atrás" @click="posicionZeta=posicionZeta>0?posicionZeta-1:0"></div>
-      <div class="zHandler" id="bBringFront" title="Mover hacia adelante" @click="posicionZeta++"></div>
+      <div
+        class="zHandler"
+        id="bSendBack"
+        title="Mover hacia atrás"
+        @click="posicionZeta = posicionZeta > 0 ? posicionZeta - 1 : 0"
+      ></div>
+      <div
+        class="zHandler"
+        id="bBringFront"
+        title="Mover hacia adelante"
+        @click="posicionZeta++"
+      ></div>
     </div>
 
     <div
@@ -69,10 +103,15 @@
       @mousemove="drag"
       @mouseup="finDrag"
     >
-      <div id="bolitaDragHandle" :class="{enDuda:posicionZeta!=esteCuadroTexto.posicionZeta}" title="Arrastrar">{{ posicionZeta }}</div>
+      <div
+        id="bolitaDragHandle"
+        :class="{ enDuda: posicionZeta != esteCuadroTexto.posicionZeta }"
+        title="Arrastrar"
+      >
+        {{ posicionZeta }}
+      </div>
     </div>
 
-    
     <div
       id="resizeHandle"
       :style="[sizeResizeHandle]"
@@ -92,8 +131,11 @@
 
 <script>
 import { gql } from "apollo-server-core";
-import debounce from "debounce"
+import debounce from "debounce";
+import axios from "axios";
+import Loading from './utilidades/Loading.vue';
 export default {
+  components: { Loading },
   name: "CuadroTexto",
   props: {
     idLibro: String,
@@ -102,7 +144,7 @@ export default {
     sizePagina: Object,
     seleccionado: Boolean,
     paginaSeleccionada: Boolean,
-    zBase:Number,
+    zBase: Number,
   },
   data() {
     return {
@@ -114,7 +156,7 @@ export default {
       resizing: false,
       dragging: false,
 
-      posicionZeta:0,
+      posicionZeta: 0,
       posicion: {
         x: null,
         y: null,
@@ -127,6 +169,9 @@ export default {
 
       nuevoTexto: null,
       editandoTexto: false,
+      mostrandoAcciones: false,
+
+      uploadingAudio:false,
     };
   },
   computed: {
@@ -138,7 +183,9 @@ export default {
         width: this.size.x + "%",
         height: this.size.y + "%",
 
-        zIndex:this.seleccionado?this.zBase+this.posicionZeta+100:this.zBase+this.posicionZeta,
+        zIndex: this.seleccionado
+          ? this.zBase + this.posicionZeta + 100
+          : this.zBase + this.posicionZeta,
       };
     },
     estiloFormato() {
@@ -255,7 +302,7 @@ export default {
 
         this.$apollo.mutate({
           mutation: gql`
-            mutation(
+            mutation (
               $idLibro: ID!
               $idPagina: ID!
               $idCuadroTexto: ID!
@@ -330,7 +377,7 @@ export default {
             this.fontSizeDummy > 100
           ) {
             this.fontSizeDummy = this.fontSizeDummy - 2;
-            
+
             this.fontSizeTexto = this.fontSizeDummy;
             this.fontSizeInput = this.fontSizeDummy;
 
@@ -403,7 +450,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation(
+            mutation (
               $idLibro: ID!
               $idPagina: ID!
               $idCuadroTexto: ID!
@@ -491,7 +538,7 @@ export default {
       this.dragging = false;
       this.$apollo.mutate({
         mutation: gql`
-          mutation(
+          mutation (
             $idLibro: ID!
             $idPagina: ID!
             $idCuadroTexto: ID!
@@ -520,6 +567,40 @@ export default {
       });
     },
 
+    uploadAudio() {
+      var datos = new FormData();
+      if (!this.$refs.inputAudio.value) {
+        console.log(`No había archivo seleccionado`);
+        return;
+      }
+      datos.append("idLibro", this.idLibro);
+      datos.append("idPagina", this.idPagina);
+      datos.append("idCuadroTexto", this.esteCuadroTexto.id);
+      datos.append("audio", this.$refs.inputAudio.files[0]);
+
+      this.uploadingAudio = true;
+      axios({
+        method: "post",
+        url: this.serverUrl + "/apiCuentos/subirArchivoAudioCuadroTexto",
+        data: datos,
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: "Bearer " + this.$store.state.token,
+        },
+      })
+        .then(({ res }) => {
+          console.log(`Resultado de upload archivo de audio: ${res}`);
+          this.uploadingAudio = false;
+        })
+        .catch((error) => {
+          this.uploadingAudio = false;
+          console.log(`Error uploading archivo de audio. E: ${error}`);
+        });
+    },
+
+    toggleMostrandoAcciones() {
+      this.mostrandoAcciones = !this.mostrandoAcciones;
+    },
     eliminarse() {
       if (
         !confirm(
@@ -533,7 +614,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation($idLibro: ID!, $idPagina: ID!, $idCuadroTexto: ID!) {
+            mutation ($idLibro: ID!, $idPagina: ID!, $idCuadroTexto: ID!) {
               eliminarCuadroTextoLibro(
                 idLibro: $idLibro
                 idPagina: $idPagina
@@ -559,26 +640,36 @@ export default {
         });
     },
 
-    guardarPosicionZeta: debounce(function(){
+    guardarPosicionZeta: debounce(function () {
       console.log(`Guardando posición zeta`);
-      if(this.posicionZeta==this.esteCuadroTexto.posicionZeta)return;
+      if (this.posicionZeta == this.esteCuadroTexto.posicionZeta) return;
       this.$apollo.mutate({
-        mutation:gql`
-          mutation($idLibro:ID!, $idPagina:ID!, $idCuadroTexto:ID!, $nuevoPosicionZ:Int!){
-            setPosicionZCuadroTexto(idLibro:$idLibro, idPagina:$idPagina, idCuadroTexto:$idCuadroTexto, nuevoPosicionZ:$nuevoPosicionZ){
+        mutation: gql`
+          mutation (
+            $idLibro: ID!
+            $idPagina: ID!
+            $idCuadroTexto: ID!
+            $nuevoPosicionZ: Int!
+          ) {
+            setPosicionZCuadroTexto(
+              idLibro: $idLibro
+              idPagina: $idPagina
+              idCuadroTexto: $idCuadroTexto
+              nuevoPosicionZ: $nuevoPosicionZ
+            ) {
               id
               posicionZeta
             }
           }
         `,
-        variables:{
-          idLibro:this.idLibro,
-          idPagina:this.idPagina,
-          idCuadroTexto:this.esteCuadroTexto.id,
-          nuevoPosicionZ:this.posicionZeta,
-        }
+        variables: {
+          idLibro: this.idLibro,
+          idPagina: this.idPagina,
+          idCuadroTexto: this.esteCuadroTexto.id,
+          nuevoPosicionZ: this.posicionZeta,
+        },
       });
-    },3000),
+    }, 3000),
   },
   watch: {
     nuevoTexto() {
@@ -594,11 +685,12 @@ export default {
     seleccionado(nuevo) {
       if (nuevo == false) {
         this.guardarNuevoTexto();
+        this.mostrandoAcciones = false;
       }
     },
-    posicionZeta(){      
+    posicionZeta() {
       this.guardarPosicionZeta();
-    }
+    },
   },
   mounted() {
     this.$set(this.posicion, "x", this.esteCuadroTexto.posicion.x);
@@ -607,7 +699,7 @@ export default {
     this.$set(this.size, "x", this.esteCuadroTexto.size.x);
     this.$set(this.size, "y", this.esteCuadroTexto.size.y);
 
-    this.posicionZeta=this.esteCuadroTexto.posicionZeta;
+    this.posicionZeta = this.esteCuadroTexto.posicionZeta;
     this.$nextTick(() => {
       this.findFontSize();
     });
@@ -636,6 +728,12 @@ export default {
 }
 .enPaginaSeleccionada {
   border-color: purple;
+}
+
+#botonMostrarAcciones {
+  position: absolute;
+  top: 0px;
+  left: calc(100%+5px);
 }
 .textoDummy {
   width: 99%;
@@ -744,7 +842,16 @@ export default {
 #bGuardarTexto:hover {
   background-color: rgba(128, 0, 128, 0.637);
 }
-
+#zonaAcciones {
+  position: absolute;
+  top: -0px;
+  left: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+}
 #bEliminarCuadroTexto {
   width: 30px;
   height: 30px;
@@ -752,17 +859,14 @@ export default {
   border-radius: 50%;
   cursor: pointer;
   background-color: rgba(128, 0, 128, 0.212);
-  position: absolute;
-  top: -40px;
-  right: -35px;
 }
 #bEliminarCuadroTexto:hover {
   background-color: rgba(128, 0, 128, 0.637);
 }
 
-#zHandlers{
+#zHandlers {
   position: absolute;
-  top:-33px;
+  top: -33px;
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(104, 7, 104, 0.534);
@@ -771,29 +875,27 @@ export default {
   display: grid;
   grid-template-columns: 16px 30px 16px;
 }
-.zHandler{
+.zHandler {
   border-radius: 50%;
   width: 15px;
   height: 15px;
-  cursor: pointer;    
+  cursor: pointer;
 }
-#bSendBack{
+#bSendBack {
   background-color: rgba(8, 83, 8, 0.377);
   grid-column: 1/2;
 }
-#bSendBack:hover{
-  background-color: rgba(8, 83, 8, 0.61); 
+#bSendBack:hover {
+  background-color: rgba(8, 83, 8, 0.61);
 }
-#bBringFront{
+#bBringFront {
   background-color: rgb(8, 83, 8);
   grid-column: 3/4;
 }
-#bBringFront:hover{
+#bBringFront:hover {
   background-color: rgb(4, 56, 4);
-
 }
-.enDuda{
+.enDuda {
   color: purple;
 }
-
 </style>

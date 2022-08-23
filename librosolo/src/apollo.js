@@ -16,7 +16,7 @@ let getToken = () => localStorage.getItem('token');
 
 
 export const serverUrl = process.env.NODE_ENV === 'production'
-  ? 'https://pe-pe-pe.herokuapp.com'
+  ? 'http://192.168.1.100:3000'
   : 'http://localhost:3000'
 
 export const wsServerUrl = process.env.NODE_ENV === 'production'

@@ -435,7 +435,7 @@ export default {
 
 <style scoped>
 .libro {
-  margin-top: 100px;
+  margin: 100px 100px;
   border: 2px solid black;
   padding-bottom: 80vh;
 }
