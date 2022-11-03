@@ -16,7 +16,8 @@
       :class="{ nombreSeleccionado: seleccionado }"
       :style="[{ fontSize: basicFontSizeNombre * factor + 'px' }]"
     >
-      {{ estaPersona.nombres }}
+      {{ estaPersona.nombres }} <br>
+      <b>{{estaPersona.titulo}}</b>
     </div>
     <div id="menuCxPersona" v-show="menuContextual">
       <div class="botonMenuCx" @click.stop="copiarId">{{ idPersona }}</div>
@@ -190,6 +191,7 @@ export default {
   position: absolute;
   top: 105%;
   left: 50%;
+  width: 170%;
   transform: translateX(-50%);
   text-align: center;
   border: 1px solid rgb(105, 24, 24);

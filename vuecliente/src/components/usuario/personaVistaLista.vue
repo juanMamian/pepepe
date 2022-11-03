@@ -112,7 +112,7 @@
           @click="mostrando = mostrando === 'informe' ? null : 'informe'"
           :class="{ activo: mostrando === 'informe' }"
         >
-          Informe II
+          Informes
         </div>
         <div
           class="boton selector"
@@ -177,7 +177,39 @@
       <div id="zonaInforme" v-show="mostrando === 'informe'">
         <div class="contenedorSeccionInforme">
           <div class="contenedorControles">
-            <div class="boton" @click="descargarArchivoInforme" v-show="!creandoDocumentoInforme">
+            <div
+              id="selectoresPeriodo"
+              style="display: flex"
+              v-show="usuarioSuperadministrador"
+            >
+              <div
+                class="boton selector"
+                @click="periodoInforme = 'primero'"
+                :class="{ activo: periodoInforme === 'primero' }"
+              >
+                I
+              </div>
+              <div
+                class="boton selector"
+                @click="periodoInforme = 'segundo'"
+                :class="{ activo: periodoInforme === 'segundo' }"
+              >
+                II
+              </div>
+              <div
+                class="boton selector"
+                @click="periodoInforme = 'tercero'"
+                :class="{ activo: periodoInforme === 'tercero' }"
+              >
+                III
+              </div>
+            </div>
+
+            <div
+              class="boton"
+              @click="descargarArchivoInforme"
+              v-show="!creandoDocumentoInforme"
+            >
               <img src="@/assets/iconos/file.svg" alt="archivo" />
             </div>
             <loading texto="" v-show="creandoDocumentoInforme" />
@@ -194,6 +226,19 @@
               guardado: nuevoInformeObjetivos == misInformesActivos.objetivos,
             }"
           ></textarea>
+          <div class="controlesSeccionInforme">
+            <div
+              v-show="
+                nuevoInformeObjetivos != misInformesActivos.objetivos &&
+                !guardandoInformeObjetivos
+              "
+              class="boton"
+              @click="guardarInforme('objetivos')"
+            >
+              <img src="@/assets/iconos/guardar.png" alt="Guardar" />
+            </div>
+            <loading v-show="guardandoInformeObjetivos" />
+          </div>
 
           <div class="tituloSeccionInforme">Sobre proyectos</div>
           <textarea
@@ -207,6 +252,19 @@
               guardado: nuevoInformeProyectos == misInformesActivos.proyectos,
             }"
           ></textarea>
+          <div class="controlesSeccionInforme">
+            <div
+              v-show="
+                nuevoInformeProyectos != misInformesActivos.proyectos &&
+                !guardandoInformeProyectos
+              "
+              class="boton"
+              @click="guardarInforme('proyectos')"
+            >
+              <img src="@/assets/iconos/guardar.png" alt="Guardar" />
+            </div>
+            <loading v-show="guardandoInformeProyectos" />
+          </div>
 
           <div class="tituloSeccionInforme">Sobre espacios</div>
           <textarea
@@ -220,6 +278,19 @@
               guardado: nuevoInformeEspacios == misInformesActivos.espacios,
             }"
           ></textarea>
+          <div class="controlesSeccionInforme">
+            <div
+              v-show="
+                nuevoInformeEspacios != misInformesActivos.espacios &&
+                !guardandoInformeEspacios
+              "
+              class="boton"
+              @click="guardarInforme('espacios')"
+            >
+              <img src="@/assets/iconos/guardar.png" alt="Guardar" />
+            </div>
+            <loading v-show="guardandoInformeEspacios" />
+          </div>
 
           <div class="tituloSeccionInforme">Comentario</div>
           <textarea
@@ -233,6 +304,20 @@
               guardado: nuevoInformeComentario == misInformesActivos.comentario,
             }"
           ></textarea>
+          <div class="controlesSeccionInforme">
+            <div
+              v-show="
+                nuevoInformeComentario != misInformesActivos.comentario &&
+                !guardandoInformeComentario
+              "
+              class="boton"
+              @click="guardarInforme('comentario')"
+            >
+              <img src="@/assets/iconos/guardar.png" alt="Guardar" />
+            </div>
+            <loading v-show="guardandoInformeComentario" />
+            <img v-show="nuevoInformeComentario===misInformesActivos.comentario" src="@/assets/iconos/check.svg" alt="Check">
+          </div>
         </div>
       </div>
       <div
@@ -335,13 +420,14 @@ export default {
       guardandoInformeEspacios: false,
       guardandoInformeComentario: false,
       guardandoInformeProyectos: false,
-      creandoDocumentoInforme:false,
+      creandoDocumentoInforme: false,
 
       nuevoInformeObjetivos: null,
       nuevoInformeProyectos: null,
       nuevoInformeEspacios: null,
       nuevoInformeComentario: null,
 
+      periodoInforme: "tercero",
       activable: 0,
     };
   },
@@ -566,25 +652,14 @@ export default {
           variables: {
             idUsuario: this.estaPersona.id,
             year: 2022,
-            periodo: "segundo",
+            periodo: this.periodoInforme,
             idProfe: this.usuario.id,
             categoria,
             texto,
           },
         })
         .then(({ data: { guardarInformeEstudianteMaestraVida } }) => {
-          if (categoria === "objetivos") {
-            this.guardandoInformeObjetivos = false;
-          }
-          if (categoria === "espacios") {
-            this.guardandoInformeEspacios = false;
-          }
-          if (categoria === "comentario") {
-            this.guardandoInformeComentario = false;
-          }
-          if (categoria === "proyectos") {
-            this.guardandoInformeProyectos = false;
-          }
+          
 
           const store = this.$apollo.provider.defaultClient;
           const cache = store.readQuery({
@@ -610,6 +685,19 @@ export default {
               data: nuevoCache,
             });
           }
+
+          if (categoria === "objetivos") {
+            this.guardandoInformeObjetivos = false;
+          }
+          if (categoria === "espacios") {
+            this.guardandoInformeEspacios = false;
+          }
+          if (categoria === "comentario") {
+            this.guardandoInformeComentario = false;
+          }
+          if (categoria === "proyectos") {
+            this.guardandoInformeProyectos = false;
+          }
         })
         .catch((error) => {
           console.log("error: " + error);
@@ -632,7 +720,7 @@ export default {
         "Creando documento docx de informe para " + this.estaPersona.nombres
       );
 
-      this.creandoDocumentoInforme=true;
+      this.creandoDocumentoInforme = true;
 
       var filaObjetivos = new TableRow({
         children: [
@@ -642,13 +730,12 @@ export default {
                 text: "Acerca de los objetivos",
                 style: "nombreSeccion",
                 alignment: AlignmentType.CENTER,
-
               }),
             ],
-            width:{
+            width: {
               size: 300,
-              type: WidthType.DXA
-            }
+              type: WidthType.DXA,
+            },
           }),
           new TableCell({
             children: [
@@ -656,7 +743,7 @@ export default {
                 .filter(
                   (i) =>
                     i.year == 2022 &&
-                    i.periodo === "segundo" &&
+                    i.periodo === this.periodoInforme &&
                     i.categoria === "objetivos" &&
                     i.texto &&
                     i.texto.length > 10
@@ -664,8 +751,20 @@ export default {
                 .reduce((acc, informe) => {
                   return acc.concat([
                     new Paragraph({
-                      text: informe.texto,
+                      children: informe.texto.split("\n").map((textR) => {
+                        return new TextRun({
+                          text: textR,
+                          break: 1
+                          
+                          ,
+                        });
+                      }),
                       style: "textoProfe",
+
+                      // {
+                      // text: informe.texto,
+                      // style: "textoProfe",
+                      // }
                     }),
                     new Paragraph({
                       text: informe.nombreProfe,
@@ -674,42 +773,40 @@ export default {
                   ]);
                 }, []),
             ],
-            width:{
+            width: {
               size: 700,
-              type: WidthType.DXA
-            }
+              type: WidthType.DXA,
+            },
           }),
-        ],        
+        ],
       });
 
       var filaProyectos = new TableRow({
         children: [
           new TableCell({
-            width:{
+            width: {
               size: 3000,
-              type: WidthType.DXA
+              type: WidthType.DXA,
             },
             children: [
               new Paragraph({
                 text: "Proyectos pedagógicos productivos",
                 style: "nombreSeccion",
                 alignment: AlignmentType.CENTER,
-
               }),
             ],
-            
           }),
           new TableCell({
-            width:{
+            width: {
               size: 2700,
-              type: WidthType.DXA
+              type: WidthType.DXA,
             },
             children: [
               ...this.estaPersona.informesMaestraVida
                 .filter(
                   (i) =>
                     i.year == 2022 &&
-                    i.periodo === "segundo" &&
+                    i.periodo === this.periodoInforme &&
                     i.categoria === "proyectos" &&
                     i.texto &&
                     i.texto.length > 10
@@ -726,10 +823,9 @@ export default {
                     }),
                   ]);
                 }, []),
-            ],            
+            ],
           }),
         ],
-       
       });
 
       var filaEspacios = new TableRow({
@@ -740,13 +836,12 @@ export default {
                 text: "Acerca de los espacios",
                 style: "nombreSeccion",
                 alignment: AlignmentType.CENTER,
-
               }),
             ],
-            width:{
+            width: {
               size: 300,
-              type: WidthType.DXA
-            }
+              type: WidthType.DXA,
+            },
           }),
           new TableCell({
             children: [
@@ -754,7 +849,7 @@ export default {
                 .filter(
                   (i) =>
                     i.year == 2022 &&
-                    i.periodo === "segundo" &&
+                    i.periodo === this.periodoInforme &&
                     i.categoria === "espacios" &&
                     i.texto &&
                     i.texto.length > 10
@@ -772,12 +867,12 @@ export default {
                   ]);
                 }, []),
             ],
-            width:{
+            width: {
               size: 700,
-              type: WidthType.DXA
-            }
+              type: WidthType.DXA,
+            },
           }),
-        ],        
+        ],
       });
 
       var filaComentario = new TableRow({
@@ -788,13 +883,12 @@ export default {
                 text: "Comentario",
                 style: "nombreSeccion",
                 alignment: AlignmentType.CENTER,
-
               }),
             ],
-            width:{
+            width: {
               size: 300,
-              type: WidthType.DXA
-            }
+              type: WidthType.DXA,
+            },
           }),
           new TableCell({
             children: [
@@ -802,7 +896,7 @@ export default {
                 .filter(
                   (i) =>
                     i.year == 2022 &&
-                    i.periodo === "segundo" &&
+                    i.periodo === this.periodoInforme &&
                     i.categoria === "comentario" &&
                     i.texto &&
                     i.texto.length > 10
@@ -820,36 +914,31 @@ export default {
                   ]);
                 }, []),
             ],
-            width:{
+            width: {
               size: 700,
-              type: WidthType.DXA
-            }
+              type: WidthType.DXA,
+            },
           }),
-        ],        
+        ],
       });
 
-      var tablaFinal=new Table({
-        rows: [
-          filaObjetivos,
-          filaProyectos,
-          filaEspacios,
-          filaComentario
-        ],
-        width:{
+      var tablaFinal = new Table({
+        rows: [filaObjetivos, filaProyectos, filaEspacios, filaComentario],
+        width: {
           size: 8500,
-          type: WidthType.DXA
-        }
-      })
+          type: WidthType.DXA,
+        },
+      });
 
       var archivo = new Document({
         styles: {
           paragraphStyles: [
             {
-              id:"estiloGlobal",
-              name:"Estilo global",
-              run:{
-                font: "Maiandra GD"
-              }
+              id: "estiloGlobal",
+              name: "Estilo global",
+              run: {
+                font: "Maiandra GD",
+              },
             },
             {
               id: "titulos",
@@ -885,7 +974,7 @@ export default {
               basedOn: "estiloGlobal",
               run: {
                 bold: true,
-                size: 24
+                size: 24,
               },
               paragraph: {
                 spacing: {
@@ -897,13 +986,13 @@ export default {
               id: "objetivo",
               name: "Objetivo del estudiante",
               basedOn: "estiloGlobal",
-              run: {size: 24},
+              run: { size: 24 },
             },
             {
               id: "textoProfe",
               name: "Texto escrito por un profe",
               basedOn: "estiloGlobal",
-              run: {size: 24},
+              run: { size: 24 },
               paragraph: {
                 spacing: {
                   after: 30,
@@ -948,20 +1037,23 @@ export default {
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
-                text: "PERIODO MAYO - JULIO DE 2022",
+                text: "PERIODO AGOSTO - OCTUBRE DE 2022",
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
                 text:
-                  "Nombre:  " +this.estaPersona.nombres + " " + this.estaPersona.apellidos,
+                  "Nombre:  " +
+                  this.estaPersona.nombres +
+                  " " +
+                  this.estaPersona.apellidos,
                 style: "nombreEstudiante",
               }),
               new Paragraph({
                 text: "Objetivos",
                 style: "nombreSeccion",
               }),
-              
+
               ...this.estaPersona.objetivosEstudiante.map((objetivo) => {
                 return new Paragraph({
                   text: objetivo.nombre,
@@ -974,25 +1066,25 @@ export default {
 
               new Paragraph({
                 text: "",
-                spacing:{
-                  after:200,
-                }
+                spacing: {
+                  after: 200,
+                },
               }),
-              
+
               tablaFinal,
 
-              new Paragraph({                
+              new Paragraph({
                 children: [
                   new TextRun({
                     text: "EQUIPO PEDAGÓGICO",
-                    bold: true,                    
-                  })
-                ],                              
+                    bold: true,
+                  }),
+                ],
                 alignment: AlignmentType.CENTER,
-                style:"estiloGlobal",
-                spacing:{
+                style: "estiloGlobal",
+                spacing: {
                   before: 1500,
-                }
+                },
               }),
               new Paragraph({
                 text: "Corporación Maestra Vida",
@@ -1000,16 +1092,13 @@ export default {
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
               }),
-              
-
-              
             ],
           },
         ],
       });
 
       saveDocumentToFile(archivo, `informe${this.estaPersona.username}.docx`);
-      this.creandoDocumentoInforme=false;
+      this.creandoDocumentoInforme = false;
     },
   },
   computed: {
@@ -1025,28 +1114,28 @@ export default {
       var miInformeObjetivos = this.estaPersona.informesMaestraVida.find(
         (i) =>
           i.year === 2022 &&
-          i.periodo === "segundo" &&
+          i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "objetivos"
       );
       var miInformeEspacios = this.estaPersona.informesMaestraVida.find(
         (i) =>
           i.year === 2022 &&
-          i.periodo === "segundo" &&
+          i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "espacios"
       );
       var miInformeComentario = this.estaPersona.informesMaestraVida.find(
         (i) =>
           i.year === 2022 &&
-          i.periodo === "segundo" &&
+          i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "comentario"
       );
       var miInformeProyectos = this.estaPersona.informesMaestraVida.find(
         (i) =>
           i.year === 2022 &&
-          i.periodo === "segundo" &&
+          i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "proyectos"
       );
@@ -1125,6 +1214,12 @@ export default {
     "estaPersona.informesMaestraVida": function () {
       this.activable++;
     },
+    misInformesActivos() {
+      this.nuevoInformeObjetivos = this.misInformesActivos.objetivos;
+      this.nuevoInformeProyectos = this.misInformesActivos.proyectos;
+      this.nuevoInformeEspacios = this.misInformesActivos.espacios;
+      this.nuevoInformeComentario = this.misInformesActivos.comentario;
+    },
   },
   mounted() {
     setTimeout(() => {
@@ -1165,7 +1260,6 @@ function saveDocumentToFile(doc, fileName) {
   font-size: 15px;
   padding: 25px 15px;
   flex-wrap: wrap;
-  width: 100%;
 }
 .iconoPersona {
   height: 20px;
@@ -1205,14 +1299,15 @@ function saveDocumentToFile(doc, fileName) {
   color: white;
 }
 
-.contenedorSeccionInforme{
+.contenedorSeccionInforme {
   padding: 15px 2vw;
 }
 
 .seccionInforme {
   height: 150px;
-  width: 100%;
-  margin-bottom: 30px;
+  width: 90%;
+  margin: 10px 15px;
+  margin-bottom: 5px;
   border-radius: 10px;
   padding: 5px;
   border: 2px solid #4f4f4f;
@@ -1223,5 +1318,16 @@ function saveDocumentToFile(doc, fileName) {
 .tituloSeccionInforme {
   font-weight: bold;
   color: #2f2f2f;
+}
+.controlesSeccionInforme {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  margin-bottom: 30px;
+}
+.controlesSeccionInforme .boton {
+  height: 30px;
+  width: 30px;
 }
 </style>

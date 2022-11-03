@@ -122,6 +122,7 @@ export const typeDefs = gql`
         id: ID,
         nombres:String,
         apellidos: String,
+        titulo:String,
         fechaNacimiento:Date,
         edad:Int,
         lugarResidencia:String,

@@ -25,7 +25,7 @@
         <img src="@/assets/iconos/user.svg" alt="User" style="height:13px; margin-right: 6px">
         {{esteEvento.eventosEnmarcados.length}}{{esteEvento.limiteDeCupos?'/'+esteEvento.limiteDeCupos:''}}
       </div>
-      <icono-persona-autonomo :class="{seleccionado}" style="margin: 0px auto" v-if="idUsuarioTarget!=esteEvento.idAdministrador" :idPersona="esteEvento.idAdministrador" :factorEscala="'0.5'" />
+      <icono-persona-autonomo :class="{seleccionado}" style="margin: 0px auto" v-if="idUsuarioTarget!=esteEvento.idAdministrador || true" :idPersona="esteEvento.idAdministrador" :factorEscala="'0.7'" />
       <div id="contenedorControlesEvento" :class="{ seleccionado }">
         <div
           class="boton botonControlEvento"
@@ -127,7 +127,7 @@ export default {
   opacity: 1;
 }
 #bloque {
-  height: 100px;
+  height: 160px;
 
   background-color: var(--calendarioPublico);
 }
@@ -144,7 +144,7 @@ export default {
   justify-content: center;
 }
 .iconoPersonaAutonomo.seleccionado{
-  opacity: 0.4;
+  opacity: 1;
 }
 #contenedorControlesEvento {
   display: flex;

@@ -170,6 +170,10 @@ const esquemaUsuario = new mongoose_1.default.Schema({
         min: 2,
         required: true
     },
+    titulo: {
+        type: String,
+        maxLength: 300,
+    },
     fechaNacimiento: {
         type: Date,
         max: Date.now,

@@ -33,6 +33,7 @@ fragment fragMinimoPersona on Usuario {
   nombres
   apellidos
   username
+  titulo
 }
 `;
 

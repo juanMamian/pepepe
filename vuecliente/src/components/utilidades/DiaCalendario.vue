@@ -524,7 +524,7 @@ export default {
     },
     indiceOffset() {
       const sizeBarra = 15;
-      const sizeBloque = 100;
+      const sizeBloque = 160;
       const marginRows = 5;
       const lineaEventosPublicosAsistidos = 30;
       // console.log(
