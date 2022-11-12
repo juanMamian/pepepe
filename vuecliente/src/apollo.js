@@ -11,6 +11,18 @@ import possibleTypes from "../possibleTypes.json"
 import { typeDefs, resolvers} from "./apolloStore/Schema"
 
 
+
+export const serverUrl=process.env.NODE_ENV === 'production'
+? 'https://pe-pe-pe.herokuapp.com'
+: 'https://pe-pe-pe.herokuapp.com'
+
+
+
+export const wsServerUrl=process.env.NODE_ENV === 'production'
+? 'wss://'+serverUrl.substr(7)+'/subscripciones'
+: 'ws://'+serverUrl.substr(7)+'/subscripciones'
+
+
 const cache= new InMemoryCache({
   possibleTypes
 });
@@ -19,7 +31,6 @@ const cache= new InMemoryCache({
 let getToken = ()=> localStorage.getItem('token');
 
 
-export const serverUrl='http://192.168.1.100:3000';
 
 
 

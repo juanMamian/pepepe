@@ -295,7 +295,7 @@ export default {
   computed: {
     tallerCuentosUrl() {
       return process.env.NODE_ENV === "production"
-        ? "http://192.168.1.100:3000/tallerCuentos"
+        ? "https://pe-pe-pe.herokuapp.com/tallerCuentos"
         : "http://localhost:8081";
     },
     username: function () {
@@ -408,7 +408,7 @@ export default {
 }
 @font-face{
     font-family: 'Salsa';
-    src: url("http://192.168.1.100:3000/public/resources/fonts/Salsa/Salsa-Regular.ttf");
+    src: url("https://pe-pe-pe.herokuapp.com/public/resources/fonts/Salsa/Salsa-Regular.ttf");
     font-style:normal ;
 }
 html {
