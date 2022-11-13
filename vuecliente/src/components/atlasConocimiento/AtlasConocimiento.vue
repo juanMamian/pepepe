@@ -334,13 +334,6 @@ export default {
         });
         return nuevoTodosNodos;
       },
-      fetchPolicy() {
-        if (process.env.NODE_ENV === "production") {
-          return "cache-first";
-        } else {
-          return "cache-and-network";
-        }
-      },
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
