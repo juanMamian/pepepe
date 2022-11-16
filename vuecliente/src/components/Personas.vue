@@ -32,7 +32,12 @@
       <div
         class="boton"
         @click="
-          mostrarPersonas = mostrarPersonas === 'todos' ? 'profes' : mostrarPersonas==='profes'?'estudiantes': 'todos'
+          mostrarPersonas =
+            mostrarPersonas === 'todos'
+              ? 'profes'
+              : mostrarPersonas === 'profes'
+              ? 'estudiantes'
+              : 'todos'
         "
       >
         <img
@@ -53,7 +58,10 @@
       </div>
     </div>
     <div id="listaPersonas" @click="idPersonaMenuCx = null">
-      <loading v-show="loadingPersonas" texto="Cargando lista de personas..." />
+      <loading
+        v-show="$apollo.queries.personas.loading"
+        texto="Cargando lista de personas..."
+      />
       <persona-vista-lista
         :seleccionado="idPersonaSeleccionada === persona.id"
         @click.native="idPersonaSeleccionada = persona.id"
@@ -83,20 +91,6 @@ export const QUERY_PERSONAS = gql`
       apellidos
       permisos
       username
-      informesMaestraVida{
-        id
-        year
-        periodo
-        idProfe
-        nombreProfe
-        categoria
-        texto
-      }
-      objetivosEstudiante{
-        id
-        nombre
-        estadoDesarrollo
-      }
     }
   }
 `;
@@ -111,29 +105,27 @@ export default {
     personas: {
       query: QUERY_PERSONAS,
       update: function ({ todosUsuarios }) {
-        this.loadingPersonas = false;
         return todosUsuarios;
       },
     },
-    nodosSolidaridadPublicitados:{
-      query:gql`
-        query{
-          nodosSolidaridadPublicitados{
+    nodosSolidaridadPublicitados: {
+      query: gql`
+        query {
+          nodosSolidaridadPublicitados {
             id
-            nombre       
-            responsables     
+            nombre
+            responsables
           }
         }
       `,
-    }
+    },
   },
   data() {
     return {
       personas: [],
-      nodosSolidaridadPublicitados:[],
+      nodosSolidaridadPublicitados: [],
       idPersonaMenuCx: null,
       idPersonaSeleccionada: null,
-      loadingPersonas: true,
       mostrarPersonas: "todos",
 
       permisoInput: "",
@@ -304,26 +296,35 @@ export default {
         visibles = visibles.filter((p) =>
           p.permisos.includes("maestraVida-profesor")
         );
-      }
-      else if(this.mostrarPersonas==='estudiantes'){
+      } else if (this.mostrarPersonas === "estudiantes") {
         visibles = visibles.filter((p) =>
           p.permisos.includes("maestraVida-estudiante")
         );
       }
       if (this.textoBusquedaUsado) {
-        const textoBusquedaStripped=this.textoBusquedaUsado.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+        const textoBusquedaStripped = this.textoBusquedaUsado
+          .normalize("NFD")
+          .replace(/\p{Diacritic}/gu, "");
 
         visibles.sort((a, b) => {
           var res = 0;
-          var aStripped=(a.nombres + " " + a.apellidos).normalize("NFD").replace(/\p{Diacritic}/gu, "");
-          var bStripped=(b.nombres + " " + b.apellidos).normalize("NFD").replace(/\p{Diacritic}/gu, "");
+          var aStripped = (a.nombres + " " + a.apellidos)
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "");
+          var bStripped = (b.nombres + " " + b.apellidos)
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "");
           if (
-            (aStripped).toLowerCase().search(textoBusquedaStripped.toLowerCase()) > -1
+            aStripped
+              .toLowerCase()
+              .search(textoBusquedaStripped.toLowerCase()) > -1
           ) {
             res++;
           }
           if (
-            (bStripped).toLowerCase().search(textoBusquedaStripped.toLowerCase()) > -1
+            bStripped
+              .toLowerCase()
+              .search(textoBusquedaStripped.toLowerCase()) > -1
           ) {
             res--;
           }

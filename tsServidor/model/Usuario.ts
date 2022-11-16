@@ -16,11 +16,12 @@ export const permisosDeUsuario = [
     "maestraVida-acompañante",
     "comunere"
 ];
+
 const esquemaIteracionRepaso = new mongoose.Schema({
     intervalo: {
         type: Number,
         default: 86400000
-    },
+    }
 });
 
 const EsquemaInformeUsuario=new mongoose.Schema({
@@ -31,7 +32,7 @@ const EsquemaInformeUsuario=new mongoose.Schema({
     periodo:{
         type: String,
         required: true,
-        enum: ["primero", "segundo", "tercero"],        
+        enum: ["primero", "segundo", "tercero", "total"],        
     },
     idProfe:{
         type: String,

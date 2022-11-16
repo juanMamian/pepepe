@@ -740,8 +740,7 @@ export const resolvers = {
         },
 
         guardarInformeEstudianteMaestraVida: async function (_: any, { idUsuario, year, periodo, idProfe, categoria, texto}: any, contexto: contextoQuery) {
-            console.log(`|||||||||||||||||||`);
-            console.log(`Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
+            console.log('\x1b[35m%s\x1b[0m', `Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
@@ -793,7 +792,7 @@ export const resolvers = {
             } catch (error) {
                 console.log(`error guardando el nodo: ${error}`);
             }
-            console.log(`Descripcion guardado`);
+            console.log(`Informe guardado`);
             return elInforme;
         },
 
