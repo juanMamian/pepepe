@@ -184,7 +184,7 @@
             <div
               id="selectoresPeriodo"
               style="display: flex"
-              v-show="usuarioSuperadministrador"
+              v-show="usuarioProfe"
             >
               <div
                 class="boton selector"
@@ -1144,6 +1144,20 @@ export default {
               }),
 
               tablaFinal,
+
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Promocionado: SI",
+                    bold: true,
+                  })
+                ],
+                style: "estiloGlobal",
+                spacing:{
+                  before: 1500,
+                  after: 1000,
+                }
+              }),
 
               new Paragraph({
                 children: [
