@@ -67,7 +67,10 @@ justify-content:center;
     margin: 15px 10px;
 }
 
-
+.zonaInteraccion{
+border: 2px dashed gray;
+padding: 5px;
+}
 .operacionReto {
         margin: 10px 10px;
         background-color: #449ae6;
