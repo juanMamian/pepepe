@@ -6,7 +6,7 @@
         <img
           id="botonDesplegarNav"
           src="@/assets/iconos/stream.svg"
-          alt="Menu"          
+          alt="Menu"
         />
         <div id="logoPepepe">Pepepe</div>
       </div>
@@ -92,8 +92,8 @@
                 Atlas de conocimientos
               </div>
             </router-link>
-            <a     
-              target="_blank"         
+            <a
+              target="_blank"
               :href="tallerCuentosUrl + '?t=' + $store.state.token"
               v-show="usuarioLogeado"
             >
@@ -107,10 +107,7 @@
           </div>
         </div>
 
-        <router-link
-          to="/personas"
-          v-if="usuarioLogeado"
-        >
+        <router-link to="/personas" v-if="usuarioLogeado">
           <div
             class="botonNavBarra botonNav hoverNegro"
             id="navActividadesVirtuales"
@@ -179,7 +176,7 @@
             <div id="botonesLogeado" v-if="accionesLogeado">
               <router-link to="/miperfil">
                 <div class="botonesLogeado hoverNegro" id="Perfil">Perfil</div>
-              </router-link>             
+              </router-link>
               <div
                 class="botonesLogeado hoverNegro"
                 id="desconexion"
@@ -275,7 +272,7 @@ export default {
       },
       skip() {
         return !this.usuarioLogeado;
-      },      
+      },
     },
   },
   components: { Notificacion, NotificacionActividadForos },
@@ -295,7 +292,7 @@ export default {
   computed: {
     tallerCuentosUrl() {
       return process.env.NODE_ENV === "production"
-        ? "http://192.168.1.100:3000/tallerCuentos"
+        ? "https://pe-pe-pe.herokuapp.com/tallerCuentos"
         : "http://localhost:8081";
     },
     username: function () {
@@ -375,6 +372,11 @@ export default {
   --atlasGris: #929292;
   --atlasParent: #3066be;
 
+  --filtroAmarillo: invert(79%) sepia(32%) saturate(4772%) hue-rotate(3deg)
+    brightness(108%) contrast(105%);
+  --filtroVerde: invert(41%) sepia(84%) saturate(349%) hue-rotate(57deg)
+    brightness(95%) contrast(89%);
+
   --atlasFilterFondo: invert(10%) sepia(55%) saturate(1034%) hue-rotate(174deg)
     brightness(91%) contrast(91%);
   --atlasFilterVerde: invert(41%) sepia(84%) saturate(349%) hue-rotate(57deg)
@@ -398,18 +400,18 @@ export default {
   --paletaVerde: #62c370;
   --grisHover: rgba(128, 128, 128, 0.192);
 
-  --calendarioUsuario: #3F88C5;
+  --calendarioUsuario: #3f88c5;
   --calendarioUsuarioStrong: #2d608a;
-  --calendarioPublico: #B6C649;
+  --calendarioPublico: #b6c649;
   --calendarioPublicoStrong: #7e8a33;
-  --calendarioNodoSolidaridad: #593F62;
+  --calendarioNodoSolidaridad: #593f62;
   --calendarioNodoSolidaridadStrong: #312336;
-  --calendarioSelect: #FCAA67;
+  --calendarioSelect: #fcaa67;
 }
-@font-face{
-    font-family: 'Salsa';
-    src: url("http://192.168.1.100:3000/public/resources/fonts/Salsa/Salsa-Regular.ttf");
-    font-style:normal ;
+@font-face {
+  font-family: "Salsa";
+  src: url("https://pe-pe-pe.herokuapp.com/public/resources/fonts/Salsa/Salsa-Regular.ttf");
+  font-style: normal;
 }
 html {
   height: 100vh;
@@ -427,7 +429,7 @@ body {
   flex-direction: row-reverse;
   margin-right: 5px;
 }
-.contenedorControles .boton{
+.contenedorControles .boton {
   margin: 0px 5px;
 }
 .boton {
@@ -445,13 +447,13 @@ body {
 .boton svg {
   height: 100%;
 }
-.selector{
+.selector {
   border-radius: 50%;
   border-style: solid;
   border-width: 1px;
   border-color: transparent;
 }
-.selector.activo{
+.selector.activo {
   border-color: var(--paletaMain);
 }
 .contenedorBotonesCampo {
@@ -465,10 +467,10 @@ body {
   margin: 0px 5px;
   opacity: 0.8;
 }
-#descripcion{
+#descripcion {
   border: 2px solid var(--paletaMain);
   border-radius: 7px;
-  padding:5px;
+  padding: 5px;
 }
 textarea {
   font-family: "Varela Round", sans-serif;
@@ -481,7 +483,7 @@ textarea {
   border-style: solid;
   border-color: rgb(139, 139, 139);
 }
-.iconoPersonaAutonomo{
+.iconoPersonaAutonomo {
   margin: 10px 15px;
   margin-bottom: 60px;
 }
@@ -613,7 +615,7 @@ input {
   background-color: var(--mainColor);
   position: relative;
 }
-#zonaIcono{
+#zonaIcono {
   display: flex;
   align-items: center;
   cursor: pointer;

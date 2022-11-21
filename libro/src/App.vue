@@ -122,7 +122,7 @@ export default {
     },
     URLLibrosolo() {
       return process.env.NODE_ENV === "production"
-        ? "http://192.168.1.100:3000/libro"
+        ? "https://pe-pe-pe.herokuapp.com/libro"
         : "http://localhost:8082";
     },
   },

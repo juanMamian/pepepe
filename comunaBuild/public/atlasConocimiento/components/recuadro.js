@@ -24,15 +24,15 @@ const recuadroComponent={
         },
         srcIcono(){
             if(this.descubrimiento){
-                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoDescubrimiento.png";
+                return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/iconoDescubrimiento.png";
             }
             else if(this.instruccionPointer){
-                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/handPointer.svg";
+                return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/handPointer.svg";
             }
             else if(this.instruccionTeclado){
-                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoInstruccionTeclado.svg";
+                return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/iconoInstruccionTeclado.svg";
             }
-            return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/bombillo.png";
+            return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/bombillo.png";
 
         }
     },

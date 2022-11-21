@@ -274,7 +274,13 @@ export default {
     },
     srcIframe(){
       if(this.estaSeccion.modo==='enlace' && this.estaSeccion.enlace){
-        return this.estaSeccion.enlace;
+        var elEnlace=this.estaSeccion.enlace;
+        
+        if(elEnlace.substring(0, 25) === 'http://192.168.1.100:3000'){
+          elEnlace="https://pe-pe-pe.herokuapp.com"+elEnlace.substring(25);
+          console.log("Enlace queda: "+ elEnlace)
+        }
+        return elEnlace;
       }
       return this.direccionNodo + '/' + this.estaSeccion.id + '/?v=' + this.versionArchivo;
     },

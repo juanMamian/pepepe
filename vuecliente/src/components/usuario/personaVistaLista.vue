@@ -1,6 +1,6 @@
 <template>
   <div class="personaVistaLista" :class="{ seleccionado }">
-    <div id="barraSuperior" :style="[colorBarraSuperior]">
+    <div id="barraSuperior">
       <div class="iconoPersona">
         <img
           src="@/assets/iconos/teacher.svg"
@@ -175,12 +175,16 @@
         </div>
       </div>
       <div id="zonaInforme" v-show="mostrando === 'informe'">
-        <div class="contenedorSeccionInforme">
+        <loading v-show="$apollo.queries.informes.loading" />
+        <div
+          v-if="!$apollo.queries.informes.loading"
+          class="contenedorSeccionInforme"
+        >
           <div class="contenedorControles">
             <div
               id="selectoresPeriodo"
               style="display: flex"
-              v-show="usuarioSuperadministrador"
+              v-show="usuarioProfe"
             >
               <div
                 class="boton selector"
@@ -202,6 +206,13 @@
                 :class="{ activo: periodoInforme === 'tercero' }"
               >
                 III
+              </div>
+              <div
+                class="boton selector"
+                @click="periodoInforme = 'total'"
+                :class="{ activo: periodoInforme === 'total' }"
+              >
+                Total
               </div>
             </div>
 
@@ -228,11 +239,11 @@
           ></textarea>
           <div class="controlesSeccionInforme">
             <div
-              v-show="
-                nuevoInformeObjetivos != misInformesActivos.objetivos &&
-                !guardandoInformeObjetivos
-              "
-              class="boton"
+              :class="{
+                guardado: nuevoInformeObjetivos === misInformesActivos.objetivos,
+              }"
+              v-show="!guardandoInformeObjetivos"
+              class="boton botonGuardarSeccion"
               @click="guardarInforme('objetivos')"
             >
               <img src="@/assets/iconos/guardar.png" alt="Guardar" />
@@ -254,11 +265,11 @@
           ></textarea>
           <div class="controlesSeccionInforme">
             <div
-              v-show="
-                nuevoInformeProyectos != misInformesActivos.proyectos &&
-                !guardandoInformeProyectos
-              "
-              class="boton"
+              :class="{
+                guardado: nuevoInformeProyectos === misInformesActivos.proyectos,
+              }"
+              v-show="!guardandoInformeProyectos"
+              class="boton botonGuardarSeccion"
               @click="guardarInforme('proyectos')"
             >
               <img src="@/assets/iconos/guardar.png" alt="Guardar" />
@@ -280,11 +291,11 @@
           ></textarea>
           <div class="controlesSeccionInforme">
             <div
-              v-show="
-                nuevoInformeEspacios != misInformesActivos.espacios &&
-                !guardandoInformeEspacios
-              "
-              class="boton"
+              :class="{
+                guardado: nuevoInformeEspacios === misInformesActivos.espacios,
+              }"
+              v-show="!guardandoInformeEspacios"
+              class="boton botonGuardarSeccion"
               @click="guardarInforme('espacios')"
             >
               <img src="@/assets/iconos/guardar.png" alt="Guardar" />
@@ -306,17 +317,16 @@
           ></textarea>
           <div class="controlesSeccionInforme">
             <div
-              v-show="
-                nuevoInformeComentario != misInformesActivos.comentario &&
-                !guardandoInformeComentario
-              "
-              class="boton"
+              :class="{
+                guardado: nuevoInformeComentario === misInformesActivos.comentario,
+              }"
+              v-show="!guardandoInformeComentario"
+              class="boton botonGuardarSeccion"
               @click="guardarInforme('comentario')"
             >
               <img src="@/assets/iconos/guardar.png" alt="Guardar" />
             </div>
             <loading v-show="guardandoInformeComentario" />
-            <img v-show="nuevoInformeComentario===misInformesActivos.comentario" src="@/assets/iconos/check.svg" alt="Check">
           </div>
         </div>
       </div>
@@ -371,7 +381,6 @@ import gql from "graphql-tag";
 import Calendario from "../utilidades/Calendario.vue";
 import Loading from "../utilidades/Loading.vue";
 import VentanaLista from "../atlasSolidaridad/ventanaLista/ventanaLista.vue";
-import { QUERY_PERSONAS } from "../Personas.vue";
 import {
   AlignmentType,
   Document,
@@ -386,6 +395,23 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 
+const QUERY_INFORMES = gql`
+  query ($idUsuario: ID!) {
+    Usuario(idUsuario: $idUsuario) {
+      id
+      informesMaestraVida {
+        id
+        year
+        periodo
+        idProfe
+        nombreProfe
+        categoria
+        texto
+      }
+    }
+  }
+`;
+
 export default {
   components: { Calendario, Loading, VentanaLista },
   props: {
@@ -394,6 +420,47 @@ export default {
     nodosSolidaridadPublicitados: Array,
   },
   name: "PersonaVistaLista",
+  apollo: {
+    informes: {
+      query: QUERY_INFORMES,
+      variables() {
+        return {
+          idUsuario: this.estaPersona.id,
+        };
+      },
+      skip() {
+        return this.mostrando != "informe";
+      },
+      update({ Usuario }) {
+        return Usuario.informesMaestraVida;
+      },
+    },
+    objetivos:{
+      query: gql`
+        query($idUsuario: ID!){
+          Usuario(idUsuario: $idUsuario){
+            id
+            objetivosEstudiante{
+              id
+              nombre
+              estadoDesarrollo
+            }
+          }
+        }
+      `,
+      variables(){
+        return {
+          idUsuario: this.estaPersona.id
+        }
+      },
+      update({Usuario}){
+        return Usuario.objetivosEstudiante
+      },
+      skip(){
+        return this.mostrando!="informe"
+      }
+    },
+  },
   data() {
     return {
       permisosPosibles: [
@@ -406,6 +473,8 @@ export default {
         "maestraVida-profesor",
         "maestraVida-acompañante",
       ],
+      informes: [],
+      objetivos: [],
 
       mostrando: null,
       reseteandoPassword: false,
@@ -427,7 +496,7 @@ export default {
       nuevoInformeEspacios: null,
       nuevoInformeComentario: null,
 
-      periodoInforme: "tercero",
+      periodoInforme: "total",
       activable: 0,
     };
   },
@@ -589,32 +658,36 @@ export default {
       console.log("Guardando informe");
       var texto = null;
       if (categoria === "objetivos") {
-        this.guardandoInformeObjetivos = true;
         texto = this.$refs.inputInformeCategoriaObjetivos.value;
+        if (texto === this.misInformesActivos.objetivos) return;
+        this.guardandoInformeObjetivos = true;
         if (texto) {
           texto = texto.trim();
         }
         this.nuevoInformeObjetivos = texto;
       }
       if (categoria === "espacios") {
-        this.guardandoInformeEspacios = true;
         texto = this.$refs.inputInformeCategoriaEspacios.value;
+        if (texto === this.misInformesActivos.espacios) return;
+        this.guardandoInformeEspacios = true;
         if (texto) {
           texto = texto.trim();
         }
         this.nuevoInformeEspacios = texto;
       }
       if (categoria === "comentario") {
-        this.guardandoInformeComentario = true;
         texto = this.$refs.inputInformeCategoriaComentario.value;
+        if (texto === this.misInformesActivos.comentario) return;
+        this.guardandoInformeComentario = true;
         if (texto) {
           texto = texto.trim();
         }
         this.nuevoInformeComentario = texto;
       }
       if (categoria === "proyectos") {
-        this.guardandoInformeProyectos = true;
         texto = this.$refs.inputInformeCategoriaProyectos.value;
+        if (texto === this.misInformesActivos.proyectos) return;
+        this.guardandoInformeProyectos = true;
         if (texto) {
           texto = texto.trim();
         }
@@ -644,6 +717,7 @@ export default {
                 year
                 periodo
                 idProfe
+                nombreProfe
                 categoria
                 texto
               }
@@ -659,29 +733,29 @@ export default {
           },
         })
         .then(({ data: { guardarInformeEstudianteMaestraVida } }) => {
-          
-
           const store = this.$apollo.provider.defaultClient;
           const cache = store.readQuery({
-            query: QUERY_PERSONAS,
+            query: QUERY_INFORMES,
+            variables: {
+              idUsuario: this.estaPersona.id,
+            },
           });
 
           var nuevoCache = JSON.parse(JSON.stringify(cache));
-
-          var laPersona = nuevoCache.todosUsuarios.find(
-            (u) => u.id === this.estaPersona.id
-          );
-          var elInforme = laPersona.informesMaestraVida.find(
+          var elInforme = nuevoCache.Usuario.informesMaestraVida.find(
             (i) => i.id === guardarInformeEstudianteMaestraVida.id
           );
           if (!elInforme) {
             //Add al cache
-            laPersona.informesMaestraVida.push(
+            nuevoCache.Usuario.informesMaestraVida.push(
               guardarInformeEstudianteMaestraVida
             );
 
             store.writeQuery({
-              query: QUERY_PERSONAS,
+              query: QUERY_INFORMES,
+              variables: {
+                idUsuario: this.estaPersona.id,
+              },
               data: nuevoCache,
             });
           }
@@ -739,7 +813,7 @@ export default {
           }),
           new TableCell({
             children: [
-              ...this.estaPersona.informesMaestraVida
+              ...this.informes
                 .filter(
                   (i) =>
                     i.year == 2022 &&
@@ -754,9 +828,7 @@ export default {
                       children: informe.texto.split("\n").map((textR) => {
                         return new TextRun({
                           text: textR,
-                          break: 1
-                          
-                          ,
+                          break: 1,
                         });
                       }),
                       style: "textoProfe",
@@ -802,7 +874,7 @@ export default {
               type: WidthType.DXA,
             },
             children: [
-              ...this.estaPersona.informesMaestraVida
+              ...this.informes
                 .filter(
                   (i) =>
                     i.year == 2022 &&
@@ -845,7 +917,7 @@ export default {
           }),
           new TableCell({
             children: [
-              ...this.estaPersona.informesMaestraVida
+              ...this.informes
                 .filter(
                   (i) =>
                     i.year == 2022 &&
@@ -892,7 +964,7 @@ export default {
           }),
           new TableCell({
             children: [
-              ...this.estaPersona.informesMaestraVida
+              ...this.informes
                 .filter(
                   (i) =>
                     i.year == 2022 &&
@@ -1054,7 +1126,7 @@ export default {
                 style: "nombreSeccion",
               }),
 
-              ...this.estaPersona.objetivosEstudiante.map((objetivo) => {
+              ...this.objetivos.filter(obj=>obj.nombre!='Nuevo nodo de solidaridad').map((objetivo) => {
                 return new Paragraph({
                   text: objetivo.nombre,
                   style: "objetivo",
@@ -1072,6 +1144,20 @@ export default {
               }),
 
               tablaFinal,
+
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Promocionado: SI",
+                    bold: true,
+                  })
+                ],
+                style: "estiloGlobal",
+                spacing:{
+                  before: 1500,
+                  after: 1000,
+                }
+              }),
 
               new Paragraph({
                 children: [
@@ -1103,7 +1189,7 @@ export default {
   },
   computed: {
     misInformesActivos() {
-      if (!this.estaPersona.informesMaestraVida) {
+      if (!this.informes) {
         return {
           objetivos: null,
           espacios: null,
@@ -1111,28 +1197,28 @@ export default {
           proyectos: null,
         };
       }
-      var miInformeObjetivos = this.estaPersona.informesMaestraVida.find(
+      var miInformeObjetivos = this.informes.find(
         (i) =>
           i.year === 2022 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "objetivos"
       );
-      var miInformeEspacios = this.estaPersona.informesMaestraVida.find(
+      var miInformeEspacios = this.informes.find(
         (i) =>
           i.year === 2022 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "espacios"
       );
-      var miInformeComentario = this.estaPersona.informesMaestraVida.find(
+      var miInformeComentario = this.informes.find(
         (i) =>
           i.year === 2022 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "comentario"
       );
-      var miInformeProyectos = this.estaPersona.informesMaestraVida.find(
+      var miInformeProyectos = this.informes.find(
         (i) =>
           i.year === 2022 &&
           i.periodo === this.periodoInforme &&
@@ -1146,45 +1232,45 @@ export default {
         proyectos: miInformeProyectos ? miInformeProyectos.texto : null,
       };
     },
-    cantidadMisInformesEscritos() {
-      if (!this.usuarioLogeado) {
-        return 0;
-      }
-      if (!this.estaPersona.informesMaestraVida) {
-        return 0;
-      }
+    // cantidadMisInformesEscritos() {
+    //   if (!this.usuarioLogeado) {
+    //     return 0;
+    //   }
+    //   if (!this.informes) {
+    //     return 0;
+    //   }
 
-      var cuenta = 0;
-      cuenta += this.activable;
-      cuenta = 0;
+    //   var cuenta = 0;
+    //   cuenta += this.activable;
+    //   cuenta = 0;
 
-      if (
-        this.misInformesActivos.objetivos &&
-        this.misInformesActivos.objetivos.length > 5
-      ) {
-        cuenta++;
-      }
-      if (
-        this.misInformesActivos.proyectos &&
-        this.misInformesActivos.proyectos.length > 5
-      ) {
-        cuenta++;
-      }
-      if (
-        this.misInformesActivos.espacios &&
-        this.misInformesActivos.espacios.length > 5
-      ) {
-        cuenta++;
-      }
-      if (
-        this.misInformesActivos.comentario &&
-        this.misInformesActivos.comentario.length > 5
-      ) {
-        cuenta++;
-      }
+    //   if (
+    //     this.misInformesActivos.objetivos &&
+    //     this.misInformesActivos.objetivos.length > 5
+    //   ) {
+    //     cuenta++;
+    //   }
+    //   if (
+    //     this.misInformesActivos.proyectos &&
+    //     this.misInformesActivos.proyectos.length > 5
+    //   ) {
+    //     cuenta++;
+    //   }
+    //   if (
+    //     this.misInformesActivos.espacios &&
+    //     this.misInformesActivos.espacios.length > 5
+    //   ) {
+    //     cuenta++;
+    //   }
+    //   if (
+    //     this.misInformesActivos.comentario &&
+    //     this.misInformesActivos.comentario.length > 5
+    //   ) {
+    //     cuenta++;
+    //   }
 
-      return cuenta;
-    },
+    //   return cuenta;
+    // },
     colorBarraSuperior() {
       if (
         !this.usuarioLogeado ||
@@ -1194,12 +1280,12 @@ export default {
         return {};
       }
       var elColor = "rgb(161, 240, 82)";
-      if (this.cantidadMisInformesEscritos < 4) {
-        elColor = "#f2aa87";
-      }
-      if (this.cantidadMisInformesEscritos < 1) {
-        elColor = "#972b2b";
-      }
+      // if (this.cantidadMisInformesEscritos < 4) {
+      //   elColor = "#f2aa87";
+      // }
+      // if (this.cantidadMisInformesEscritos < 1) {
+      //   elColor = "#972b2b";
+      // }
       return {
         backgroundColor: elColor,
       };
@@ -1211,7 +1297,7 @@ export default {
         this.mostrando = null;
       }
     },
-    "estaPersona.informesMaestraVida": function () {
+    informes: function () {
       this.activable++;
     },
     misInformesActivos() {
@@ -1252,51 +1338,68 @@ function saveDocumentToFile(doc, fileName) {
   font-family: Salsa, cursive;
   color: gray;
 }
+
 .personaVistaLista.seleccionado {
   background-color: rgba(128, 128, 128, 0.342);
 }
+
 #barraSuperior {
   display: flex;
   font-size: 15px;
   padding: 25px 15px;
   flex-wrap: wrap;
 }
+
 .iconoPersona {
   height: 20px;
   width: 20px;
 }
+
 .iconoPersona img {
   height: 100%;
 }
+
 #zonaNombres {
   margin: 0px 15px;
 }
+
 #barraInfoAdicional {
   display: flex;
 }
+
 #contenedorControlesPersona {
   margin-left: auto;
 }
+
 #listaPermisos {
   max-width: 150px;
   margin-left: auto;
 }
+
 .activadorPermiso {
   padding: 5px 15px;
   cursor: pointer;
   font-size: 13px;
 }
+
 .activadorPermiso.permisoGranted {
   background-color: var(--paletaSelect);
   color: whitesmoke;
 }
+
 .selectorNodoSolidaridad {
   padding: 5px 15px;
   cursor: pointer;
 }
+
 .selectorNodoSolidaridad.activo {
   background-color: var(--paletaSelect);
   color: white;
+}
+
+#selectoresPeriodo .selector.activo {
+  border-color: transparent;
+  color: var(--mainColor);
 }
 
 .contenedorSeccionInforme {
@@ -1311,14 +1414,19 @@ function saveDocumentToFile(doc, fileName) {
   border-radius: 10px;
   padding: 5px;
   border: 2px solid #4f4f4f;
+  font-size: 20px;
 }
+
 .seccionInforme.guardado {
-  background-color: rgba(26, 172, 21, 0.46);
+  border-color: rgb(37 118 34);
+  background-color: rgb(24 120 24 / 18%);
 }
+
 .tituloSeccionInforme {
   font-weight: bold;
   color: #2f2f2f;
 }
+
 .controlesSeccionInforme {
   display: flex;
   align-items: center;
@@ -1326,8 +1434,17 @@ function saveDocumentToFile(doc, fileName) {
   padding: 5px 10px;
   margin-bottom: 30px;
 }
+
 .controlesSeccionInforme .boton {
   height: 30px;
   width: 30px;
+}
+
+.botonGuardarSeccion.guardado {
+  filter: var(--filtroVerde);
+  pointer-events: none;
+}
+.botonGuardarSeccion:not(.guardado) {
+  filter: unset;
 }
 </style>
