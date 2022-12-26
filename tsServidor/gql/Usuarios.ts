@@ -60,6 +60,7 @@ export const typeDefs = gql`
         objetivo:Boolean,
         aprendido:Boolean,
         estudiado: Date,
+        periodoRepaso:Int,
         iteracionesRepaso: [IteracionRepasoNodoConocimiento]
     }
 
@@ -202,6 +203,7 @@ export const typeDefs = gql`
         setIntervaloIteracionRepaso(idUsuario: ID!, idNodo: ID!, idIteracion:ID!, nuevoIntervalo:Float!):IteracionRepasoNodoConocimiento,
 
         setDateNodoConocimientoEstudiadoUsuario(idUsuario: ID!, idNodo: ID!, fecha:Date!):DatoNodoUsuario,
+        setPeriodoRepasoNodoConocimientoUsuario(idNodo: ID!, nuevoPeriodoRepaso: Int!):DatoNodoUsuario,
 
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
@@ -633,7 +635,7 @@ export const resolvers = {
                 }
                 console.log(`Encontrados ${currentNodos.length} nodos current`);
                 todosNodosAfectados.push(...currentNodos);
-                currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.tipo === 'requiere' && v.rol === tipoRol).map(v => v.idRef)), []);
+                currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v =>v.rol === tipoRol).map(v => v.idRef)), []);
                 console.log(`Current ids queda en ${currentIds} con length ${currentIds.length}`);
 
             }
@@ -662,8 +664,53 @@ export const resolvers = {
                 console.log(`error guardando usuario en la base de datos: ${error}`);
                 throw new ApolloError("");
             }
-            return elUsuario.atlas.datosNodos.filter(dn=>idsNodosAfectados.includes(dn.idNodo));
 
+            let datosNodoAfectados=elUsuario.atlas.datosNodos.filter(dn=>idsNodosAfectados.includes(dn.idNodo));
+            console.log(`Se afectaron ${datosNodoAfectados.length} datos de nodo`);
+            // for(const dato of datosNodoAfectados){
+            //     console.log(`${JSON.stringify(dato)}`);
+            // }
+            return datosNodoAfectados;
+
+        },
+        setPeriodoRepasoNodoConocimientoUsuario: async function (_: any, { idNodo, nuevoPeriodoRepaso }: any, contexto: contextoQuery) {
+
+            console.log('\x1b[35m%s\x1b[0m', `Peticion de set periodo de repaso en ${nuevoPeriodoRepaso} para el nodo ${idNodo}`);
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            
+
+            try {
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+
+            } catch (error) {
+                console.log(`error buscando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+
+            var elDatoNodo=elUsuario.atlas.datosNodos.find(dn=>dn.idNodo===idNodo);
+
+            if(!elDatoNodo){
+                let elDatoNodo=elUsuario.atlas.datosNodos.create({
+                    idNodo,
+                })
+                
+                elUsuario.atlas.datosNodos.push(elDatoNodo);
+            }
+
+            elDatoNodo.periodoRepaso=nuevoPeriodoRepaso;
+            
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`error guardando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+            return elDatoNodo;
         },
         setNodoAtlasTarget: async function (_: any, { idNodo }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;

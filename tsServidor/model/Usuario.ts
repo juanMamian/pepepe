@@ -24,31 +24,31 @@ const esquemaIteracionRepaso = new mongoose.Schema({
     }
 });
 
-const EsquemaInformeUsuario=new mongoose.Schema({
+const EsquemaInformeUsuario = new mongoose.Schema({
     year: {
-        type: Number, 
-        required:true,
+        type: Number,
+        required: true,
     },
-    periodo:{
+    periodo: {
         type: String,
         required: true,
-        enum: ["primero", "segundo", "tercero", "total"],        
+        enum: ["primero", "segundo", "tercero", "total"],
     },
-    idProfe:{
+    idProfe: {
         type: String,
-        required:true,
+        required: true,
     },
-    categoria:{
+    categoria: {
         type: String,
         required: true,
         enum: ["objetivos", "comentario", "espacios", "proyectos"],
     },
-    texto:{
-        type: String,        
+    texto: {
+        type: String,
     }
 
 
-}); 
+});
 
 const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({
     nombre: {
@@ -130,10 +130,24 @@ const esquemaNotificacionActividadForo = new mongoose.Schema({
 })
 
 const esquemaDatoNodo = new mongoose.Schema({
-    idNodo: { type: String, required: true },
-    objetivo: { type: Boolean, default: false },
-    aprendido: { type: Boolean, default: false },
-    estudiado: { type: Date },
+    idNodo: { 
+        type: String, required: true 
+    },
+    objetivo: { 
+        type: Boolean, 
+        default: false 
+    },
+    aprendido: { 
+        type: Boolean, 
+        default: false 
+    },
+    estudiado: { 
+        type: Date 
+    },
+    periodoRepaso:{
+        type: Number,
+        min: 86400000, //24 horas
+    },
     iteracionesRepaso: {
         type: [esquemaIteracionRepaso],
         default: []
@@ -152,8 +166,8 @@ esquemaDatoNodo.pre("save", function (this: any, next) {
             })
         }
     }
-    else{
-        this.iteracionesRepaso=[];
+    else {
+        this.iteracionesRepaso = [];
     }
     next();
 
@@ -181,7 +195,7 @@ const esquemaUsuario = new mongoose.Schema({
         min: 2,
         required: true
     },
-    titulo:{
+    titulo: {
         type: String,
         maxLength: 300,
     },
@@ -191,9 +205,9 @@ const esquemaUsuario = new mongoose.Schema({
         min: new Date('1890-01-01'),
         default: Date.now
     },
-    informesMaestraVida:{
-        type:[EsquemaInformeUsuario],
-        default:[],
+    informesMaestraVida: {
+        type: [EsquemaInformeUsuario],
+        default: [],
     },
     fotografia: {
         type: Buffer,
@@ -383,6 +397,22 @@ const esquemaUsuario = new mongoose.Schema({
     }
 
 });
+
+esquemaUsuario.pre("save", function(this:any, next){
+    var nuevoDatosNodos:Array<any>=[];
+    console.log("Revisando si hay datos nodo repetidos")
+    for(const dato of this.atlas.datosNodos){
+        if(!nuevoDatosNodos.map(dn=>dn.idNodo).includes(dato.idNodo)){
+            nuevoDatosNodos.push(dato);
+        }
+        else{
+            console.log("Habia un dato nodo repetido");
+        }
+    }
+
+    this.atlas.datosNodos=nuevoDatosNodos;
+    next();
+})
 
 esquemaUsuario.methods.getEdad = function (this: any) {
     console.log(`convirtiendo ${this.fechaNacimiento} a edad`);

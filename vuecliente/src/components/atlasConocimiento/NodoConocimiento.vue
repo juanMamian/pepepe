@@ -10,6 +10,14 @@
     @mouseleave="arrastrandoNodo = false"
     @dblclick="abrirPaginaNodo"
   >
+    <div
+      class="boton"
+      id="botonAbrirMenuCx"
+      @click.stop="$emit('abroMenuContextual')"
+      v-show="seleccionado && !menuCx"
+    >
+      <img src="@/assets/iconos/ellipsisVertical.svg" alt="Opciones" />
+    </div>
     <div id="zonaArrastre" v-show="arrastrandoNodo"></div>
 
     <div
@@ -31,8 +39,8 @@
       <div class="flechitaFuerza"></div>
     </div>
 
-    <img
-      src="@/assets/iconos/nodoConocimientoDefault.png"
+    <div
+      id="iconoNodo"
       :class="{
         fantasmeado:
           usuarioLogeado &&
@@ -41,10 +49,13 @@
           !callingPosiciones,
         deNodoSeleccionado: seleccionado,
       }"
-      alt=""
-      class="iconoNodo"
-      ref="iconoNodo"
-    />
+    >
+      <img
+        v-if="esteNodo.tipoNodo === 'concepto'"
+        src="@/assets/iconos/atlas/lightbulbEmpty.svg"
+      />
+      <img v-else src="@/assets/iconos/atlas/fireSolid.svg" />
+    </div>
     <img
       src="@/assets/iconos/success.png"
       alt="Aprendido"
@@ -75,6 +86,28 @@
       <div class="seccionMenuCx" @click="abrirPaginaNodo">
         {{ esteNodo.nombre }}
       </div>
+      <div
+        id="opcionesTipoNodo"
+        :class="{ deshabilitado: settingTipoNodo }"
+        v-if="usuarioExpertoNodo"
+      >
+        <div
+          class="boton selector"
+          :class="{ activo: esteNodo.tipoNodo === 'concepto' }"
+          @click.stop="setTipoNodo('concepto')"
+        >
+          <img src="@/assets/iconos/atlas/lightbulbEmpty.svg" alt="Concepto" />
+        </div>
+
+        <div
+          class="boton selector"
+          :class="{ activo: esteNodo.tipoNodo === 'skill' }"
+          @click.stop="setTipoNodo('skill')"
+        >
+          <img src="@/assets/iconos/atlas/fireSolid.svg" alt="Habilidad" />
+        </div>
+      </div>
+      <loading v-show="settingTipoNodo" style="margin: 5px auto"/>
       <div
         class="botonMenuCx"
         v-if="
@@ -148,7 +181,7 @@
             },
           ]"
         />
-        <loading v-show="togglingAprendido" texto=""/>
+        <loading v-show="togglingAprendido" texto="" />
         {{ nodoAprendido ? "Desm" : "M" }}arcar como aprendido
       </div>
       <div
@@ -158,14 +191,19 @@
         v-show="aprendible"
         :class="{ deshabilitado: enviandoFechaEstudiado }"
       >
-        <img src="@/assets/iconos/readme.svg" alt="Read" class="iconoMenuCx" v-show="!enviandoFechaEstudiado" />
+        <img
+          src="@/assets/iconos/readme.svg"
+          alt="Read"
+          class="iconoMenuCx"
+          v-show="!enviandoFechaEstudiado"
+        />
         <loading v-show="enviandoFechaEstudiado" texto="" />
         Estudiado
       </div>
       <div
         class="botonMenuCx"
         v-if="usuarioLogeado"
-        @click.stop="iniciarGestionRepasos"
+        @click.stop="setPeriodoRepaso"
         v-show="nodoEstudiado && !nodoAprendido"
         :class="{ deshabilitado: creandoIteracionRepaso }"
       >
@@ -173,7 +211,8 @@
           src="@/assets/iconos/clock.svg"
           alt="Reloj"
           class="iconoMenuCx"
-        />Repasos
+        />Periodo de repaso
+        <span></span>
         <loading texto="" v-show="creandoIteracionRepaso" />
       </div>
       <template
@@ -206,7 +245,12 @@
         </div>
       </template>
     </div>
-    <div id="nombre" :style="[estiloCartelNombre]" ref="nombre">
+    <div
+      @click="clickCartelNombre"
+      id="nombre"
+      :style="[estiloCartelNombre]"
+      ref="nombre"
+    >
       {{ callingPosiciones ? esteNodo.puntaje : esteNodo.nombre }}
     </div>
 
@@ -245,6 +289,37 @@ import { QUERY_DATOS_USUARIO_NODOS } from "./AtlasConocimiento.vue";
 export default {
   components: { Loading },
   name: "NodoConocimiento",
+  props: {
+    esteNodo: {
+      type: Object,
+      required: true,
+    },
+    datosUsuarioEsteNodo:{
+      type: Object,
+      
+    },
+    esNodoObjetivo: Boolean,
+    esTarget: Boolean,
+    yo: Object,
+    modoAtlas: String,
+    escondido: Boolean,
+    centroVista: Object,
+    idNodoMenuCx: String,
+    idsNodosAprendidos: Array,
+    idsNodosEstudiados: Array,
+    idsNodosFrescos: Array,
+    idsNodosPresentesCabeza: Array,
+    nodoSeleccionado: Object,
+    seleccionado: Boolean,
+    usuarioAdministradorAtlas: {
+      type: Boolean,
+      default: false,
+    },
+    esquinasDiagrama: Object,
+    callingPosiciones: Boolean,
+    factorZoom: Number,
+    configuracionAtlas: Object,
+  },
   data() {
     return {
       arrastrandoNodo: false,
@@ -268,39 +343,14 @@ export default {
         padding: 5,
         borderRadius: 4,
       },
-      mostrarDescripcion: true,
+      mostrarDescripcion: false,
       creandoIteracionRepaso: false,
 
       enviandoFechaEstudiado: false,
-      togglingAprendido:false,
+      togglingAprendido: false,
+
+      settingTipoNodo: false,
     };
-  },
-  props: {
-    esteNodo: {
-      type: Object,
-      required: true,
-    },
-    esNodoObjetivo: Boolean,
-    esTarget: Boolean,
-    yo: Object,
-    modoAtlas: String,
-    escondido: Boolean,
-    centroVista: Object,
-    idNodoMenuCx: String,
-    idsNodosAprendidos: Array,
-    idsNodosEstudiados: Array,
-    idsNodosFrescos: Array,
-    idsNodosPresentesCabeza: Array,
-    nodoSeleccionado: Object,
-    seleccionado: Boolean,
-    usuarioAdministradorAtlas: {
-      type: Boolean,
-      default: false,
-    },
-    esquinasDiagrama: Object,
-    callingPosiciones: Boolean,
-    factorZoom: Number,
-    configuracionAtlas: Object,
   },
   computed: {
     menuCx() {
@@ -375,41 +425,41 @@ export default {
     nodoAprendido() {
       return this.idsNodosAprendidos.includes(this.esteNodo.id);
     },
-    nodoEstudiado(){
+    nodoEstudiado() {
       return this.idsNodosEstudiados.includes(this.esteNodo.id);
     },
-    nodoRepasar(){
-      return !this.idNodoAprendido && this.nodoEstudiado && !this.idsNodosFrescos.includes(this.esteNodo.id);
+    nodoRepasar() {
+      return (
+        !this.idNodoAprendido &&
+        this.nodoEstudiado &&
+        !this.idsNodosFrescos.includes(this.esteNodo.id)
+      );
     },
     nodoPresenteCabeza() {
       return this.idsNodosPresentesCabeza.includes(this.esteNodo.id);
     },
     estiloCartelNombre() {
-      var bColor = "var(--atlasConocimientoOff)";      
-      var color="black";
+      var bColor = "var(--atlasConocimientoOff)";
+      var color = "black";
       if (this.modoAtlas === "estudiante") {
         if (this.nodoPresenteCabeza) {
-          bColor = "var(--atlasConocimientoCheck)";          
+          bColor = "var(--atlasConocimientoCheck)";
+        } else if (this.nodoRepasar) {
+          bColor = "var(--atlasConocimientoRepaso)";
+        } else if (this.aprendible) {
+          bColor = "var(--atlasConocimientoAvailable)";
+        } else {
+          color = "#313131";
         }
-        else if(this.nodoRepasar){
-          bColor="var(--atlasConocimientoRepaso)";          
-        } 
-        else if (this.aprendible) {
-          bColor = "var(--atlasConocimientoAvailable)";          
-        }
-        else{
-          color= "#313131"
-        }
-        
-      } else if (this.modoAtlas === "experto") {        
+      } else if (this.modoAtlas === "experto") {
         if (this.usuarioExpertoNodo) {
-          bColor = "var(--atlasConocimientoCheck)";          
+          bColor = "var(--atlasConocimientoCheck)";
         }
       }
 
       return {
-        backgroundColor: bColor,  
-        color,      
+        backgroundColor: bColor,
+        color,
         minWidth:
           parseInt(this.estiloNombreBase.minWidth * this.factorZoom) + "px",
         fontSize:
@@ -446,11 +496,86 @@ export default {
       };
     },
     
+    
   },
   methods: {
+    setTipoNodo(nuevoTipoNodo) {
+      if (!this.usuarioExpertoNodo) {
+        return;
+      }
+
+      if (this.esteNodo.tipoNodo === nuevoTipoNodo) {
+        console.log("Operación innecesaria");
+        return;
+      }
+      this.settingTipoNodo = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+          mutation($idNodo: ID!, $nuevoTipoNodo: String!){
+            setTipoNodo(idNodo: $idNodo, nuevoTipoNodo: $nuevoTipoNodo){
+              id
+              tipoNodo
+            }
+          }
+        `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            nuevoTipoNodo,
+          },
+        })
+        .then(() => {
+          this.settingTipoNodo = false;
+        })
+        .catch((error) => {
+          this.settingTipoNodo = false;
+
+          console.log(`Error: ${error}`);
+        });
+    },
+    setPeriodoRepaso(){
+      const diasRepaso=parseInt(Number(prompt("Introduce el periodo para repasar este tema (En días)")));
+  
+      if(diasRepaso<1){
+        console.log("Periodo ilegal");
+        return;
+      }
+
+      var nuevoPeriodoRepaso=diasRepaso*86400000;
+
+      this.enviandoOperacion=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodo: ID!, $nuevoPeriodoRepaso: Int!){
+            setPeriodoRepasoNodoConocimientoUsuario(idNodo: $idNodo, nuevoPeriodoRepaso: $nuevoPeriodoRepaso){
+               id
+               idNodo
+               periodoRepaso
+            }
+          }
+          `,
+          variables:{
+            idNodo: this.esteNodo.id,
+            nuevoPeriodoRepaso,
+          }
+        }).then(()=>{
+          this.enviandoOperacion=false;
+            
+        }).catch((error)=>{
+          console.log(`Error: ${error}`);
+          this.enviandoOperacion=false;
+        })
+
+    },
+    clickCartelNombre(e) {
+      if (this.seleccionado) {
+        e.stopPropagation();
+        this.mostrarDescripcion = !this.mostrarDescripcion;
+      }
+    },
     toggleAprendido() {
       var nuevoEstadoAprendido = this.nodoAprendido ? false : true;
-      this.togglingAprendido=true;
+      this.togglingAprendido = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -458,9 +583,8 @@ export default {
               setNodoAtlasAprendidoUsuario(
                 idNodo: $idNodo
                 nuevoEstadoAprendido: $nuevoEstadoAprendido
-              ){
+              ) {
                 ...fragDatoNodoConocimiento
-                
               }
             }
             ${fragmentoDatoNodoConocimiento}
@@ -471,13 +595,45 @@ export default {
           },
         })
         .then(({ data: { setNodoAtlasAprendidoUsuario } }) => {
-          console.log(`${setNodoAtlasAprendidoUsuario.length} nodos modificados`);
-          this.togglingAprendido=false;
+          console.log(
+            `${setNodoAtlasAprendidoUsuario.length} nodos modificados`
+          );
 
-        }).catch((error)=>{
-          console.log(`Error: ${error}`);
-          this.togglingAprendido=false;
+          for(const res of setNodoAtlasAprendidoUsuario){
+
+            console.log(`Nombre: ` + res.nombreNodo);
+          }
+          
+          this.togglingAprendido = false;
+
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_DATOS_USUARIO_NODOS,
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+
+          var modificacionesRealizadas = false;
+          for (const datoNodo of setNodoAtlasAprendidoUsuario) {
+            if (!this.yo.atlas.datosNodos.some((dn) => dn.id === datoNodo.id)) {
+              console.log(
+                `No estaba en caché. Pushing ${JSON.stringify(datoNodo)}`
+              );
+              modificacionesRealizadas = true;
+              nuevoCache.yo.atlas.datosNodos.push(datoNodo);
+            }
+          }
+
+          if (modificacionesRealizadas) {
+            store.writeQuery({
+              query: QUERY_DATOS_USUARIO_NODOS,
+              data: nuevoCache,
+            });
+          }
         })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.togglingAprendido = false;
+        });
     },
     // setNodoObjetivo(nuevoEstadoObjetivo) {
     //   this.$apollo
@@ -674,7 +830,6 @@ export default {
       var fechaEstudiado = new Date();
       // fechaEstudiado.setDate(7);
 
-
       // fechaEstudiado.setHours(0);
       // fechaEstudiado.setMinutes(0);
       // fechaEstudiado.setSeconds(0);
@@ -738,11 +893,6 @@ export default {
     esteNodo() {
       this.posicion = { ...this.esteNodo.coords };
     },
-    seleccionado(estado) {
-      if (estado) {
-        this.mostrarDescripcion = true;
-      }
-    },
   },
   mounted() {
     this.posicion = { ...this.esteNodo.autoCoords };
@@ -751,17 +901,24 @@ export default {
 </script>
 
 <style scoped>
-.iconoNodo {
+#iconoNodo {
   position: absolute;
-  top: 0px;
-  left: 0px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   pointer-events: none;
-  width: 100%;
-  height: 100%;
+  width: 55%;
+  height: 55%;
   z-index: 1;
   pointer-events: none;
-  box-shadow: 2px 2px 2px 2px grey;
   border-radius: 50%;
+}
+#iconoNodo img {
+  width: 100%;
+  height: 100%;
+}
+#iconoNodo.deNodoSeleccionado {
+  filter: var(--atlasFilterFondo);
 }
 .nodoConocimiento {
   width: 60px;
@@ -772,6 +929,14 @@ export default {
   position: absolute;
   pointer-events: all;
   background-color: rgba(128, 128, 128, 0.349);
+}
+
+#botonAbrirMenuCx {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  right: -40px;
 }
 #zonaArrastre {
   width: 500px;
@@ -845,6 +1010,14 @@ export default {
 .selectorSubseccionMenuCx:hover > .subseccionMenuCx {
   display: block;
 }
+#opcionesTipoNodo {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  align-items: center;
+  padding: 10px 20px;
+}
+
 .enColeccion {
   background-color: rgb(117, 182, 117);
 }
@@ -903,7 +1076,6 @@ export default {
   bottom: 101%;
   width: 15px;
   height: 15px;
-  
 }
 .fuerzaMovimiento {
   background-color: black;

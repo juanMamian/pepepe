@@ -146,7 +146,9 @@
           "
           :configuracionAtlas="configuracionAtlas"
           :callingPosiciones="callingPosiciones"
-          @click.right.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
+          :datosUsuarioEsteNodo="yo.atlas.datosNodos.find(dn=>dn.idNodo===nodo.id) || {}"
+          @contextmenu.native.stop.prevent="idNodoMenuCx = nodo.id"
+          @abroMenuContextual="idNodoMenuCx=nodo.id"
           @click.native.stop="seleccionNodo(nodo)"
           @creacionVinculo="crearVinculo"
           @eliminacionVinculo="eliminarVinculo"
@@ -229,6 +231,7 @@ const fragmentoNodoConocimiento = gql`
     nombre
     descripcion
     expertos
+    tipoNodo
     clases {
       id
       nombre
@@ -321,10 +324,7 @@ export default {
       query: QUERY_NODOS,
       result: function () {
         this.dibujarVinculosGrises();
-      },
-      pollInterval() {
-        return this.callingPosiciones ? 5000 : null;
-      },
+      },      
       update({ todosNodos }) {
         this.nodosDescargados = true;
         var nuevoTodosNodos = JSON.parse(JSON.stringify(todosNodos));
@@ -334,6 +334,7 @@ export default {
         });
         return nuevoTodosNodos;
       },
+      fetchPolicy: "cache-and-network",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
@@ -454,7 +455,7 @@ export default {
     },
     idsNodosAprendidos() {
       return this.yo.atlas.datosNodos
-        .filter((n) => n.aprendido == true)
+        .filter((n) => n.aprendido === true)
         .map((n) => n.idNodo);
     },
     datosNodosEstudiados() {
@@ -470,13 +471,21 @@ export default {
         return [];
       }
 
-      return this.yo.atlas.datosNodos.filter(
-        (dn) =>
-          !dn.aprendido &&
-          dn.estudiado &&
-          dn.iteracionesRepaso &&
-          dn.iteracionesRepaso.length > 0
-      );
+      var datosNodoConRepasoConfigurado=this.yo.atlas.datosNodos.filter(dn=>!dn.aprendido && dn.periodoRepaso);
+
+      console.log(`Hay ${datosNodoConRepasoConfigurado.length} nodos con repaso configurado`);
+      let dateHoy=new Date();
+      console.log("La date de hoy es "+dateHoy);
+
+      let dateHoyMin=dateHoy;
+      dateHoyMin.setHours(0);
+      dateHoyMin.setMinutes(0);
+      dateHoyMin.setSeconds(0);
+      console.log("La min date de hoy es "+dateHoyMin);
+
+      let datosNodoParaRepasar=datosNodoConRepasoConfigurado.filter(dn=>!dn.estudiado || dn.estudiado + dn.periodoRepaso > dateHoyMin.getTime())
+        console.log(`Hay ${datosNodoParaRepasar.length} nodos que se deben repasar hoy`);
+  return datosNodoParaRepasar
     },
     datosNodosUrgentes() {
       return this.datosNodosRepasar.filter((dn) => {
@@ -1371,6 +1380,12 @@ export default {
   // },
 };
 </script>
+
+
+<style>
+@import "./estilosGlobalesAtlasConocimiento.css";
+</style>
+
 <style>
 :root {
   --atlasConocimientoFondo: #f3eff5;

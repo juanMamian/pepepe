@@ -10,7 +10,7 @@ import { ejecutarPosicionamientoNodosConocimientoByFuerzas } from "../controlAtl
 import { charProhibidosNombreCosa } from "../model/config";
 
 export const idAtlasConocimiento = "61ea0b0f17a5d80da7e94320";
-
+const permisosEspecialesAtlas=["superadministrador", "atlasAdministrador"]
 
 /*
 interface NodoConocimiento{
@@ -93,6 +93,7 @@ type NodoConocimiento{
     clases: [ClaseNodoConocimiento],
     coordX: Int,
     coordY: Int,
+    tipoNodo: String,
     vinculos: [Vinculo],
     coordsManuales: Coords,
     coords:Coords,
@@ -151,6 +152,7 @@ extend type Mutation{
     eliminarNodo(idNodo:ID!):ID,
     editarDescripcionNodoConocimiento(idNodo:ID!, nuevoDescripcion:String!):NodoConocimiento,
     editarKeywordsNodoConocimiento(idNodo:ID!, nuevoKeywords:String!):NodoConocimiento,
+    setTipoNodo(idNodo: ID!, nuevoTipoNodo: String!):NodoConocimiento,
 
     addExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
     addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
@@ -198,7 +200,7 @@ export const resolvers = {
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             try {
-                var todosNodos = await Nodo.find({}, "nombre descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
+                var todosNodos = await Nodo.find({}, "nombre tipoNodo descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
                 console.log(`encontrados ${todosNodos.length} nodos`);
             }
             catch (error) {
@@ -843,6 +845,41 @@ export const resolvers = {
             return elNodo
 
         },
+        setTipoNodo: async function(_:any, {idNodo, nuevoTipoNodo}:any, contexto:contextoQuery){
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            
+
+            try {
+                var elNodo:any = await Nodo.findById(idNodo).exec();
+                if (!elNodo) throw 'Nodo no encontrado';
+            } catch (error){
+                console.log('Error descargando el nodo de la base de datos: '+error)
+                throw new ApolloError('Error conectando con la base de datos');
+            };
+
+            const esExperto=elNodo.expertos.includes(credencialesUsuario.id);
+            const tienePermisosEspeciales=permisosEspecialesAtlas.some(p=>credencialesUsuario.permisos.includes(p));
+
+            if(!esExperto && !tienePermisosEspeciales){
+                throw new AuthenticationError("No autorizado");
+            }
+
+            elNodo.tipoNodo=nuevoTipoNodo;
+
+            try {
+                await elNodo.save();
+            } catch (error) {
+                console.log(`Error guardando el nodo: ${error}`);
+                throw new ApolloError(`Error conectando con la base de datos`);
+            }
+
+            return elNodo;
+        },
+
         eliminarArchivoSeccionNodo: async function (_: any, { idNodo, idSeccion, nombreArchivo }: any, contexto: contextoQuery) {
             console.log(`Solicitud de eliminar archivo ${nombreArchivo}`);
             try {

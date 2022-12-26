@@ -107,6 +107,7 @@ export default {
       update: function ({ todosUsuarios }) {
         return todosUsuarios;
       },
+      fetchPolicy: "cache-and-network"
     },
     nodosSolidaridadPublicitados: {
       query: gql`
