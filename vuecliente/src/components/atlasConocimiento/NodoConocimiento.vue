@@ -1,9 +1,8 @@
 <template>
   <div
     class="nodoConocimiento"
-    :style="[estiloPosicion, estiloSize, estiloZeta]"
-    :class="{ escondido }"
-    @mousedown.ctrl.stop="arrastrandoNodo = true"
+    :style="[estiloPosicion, estiloSize, estiloZeta, estiloBolita]"
+    :class="{ escondido, deNodoSeleccionado: seleccionado, fantasmeado }"
     @click.ctrl.capture="stopProp"
     @mouseup.left="guardarPosicion"
     @mousemove="arrastrarNodo"
@@ -48,6 +47,7 @@
           modoAtlas === 'estudiante' &&
           !callingPosiciones,
         deNodoSeleccionado: seleccionado,
+        previoDeSeleccionado
       }"
     >
       <img
@@ -107,7 +107,7 @@
           <img src="@/assets/iconos/atlas/fireSolid.svg" alt="Habilidad" />
         </div>
       </div>
-      <loading v-show="settingTipoNodo" style="margin: 5px auto"/>
+      <loading v-show="settingTipoNodo" style="margin: 5px auto" />
       <div
         class="botonMenuCx"
         v-if="
@@ -116,6 +116,15 @@
         @click.stop="eliminarEsteNodo"
       >
         Eliminar
+      </div>
+      <div
+        class="botonMenuCx"
+        :class="{ deshabilitado: esTarget }"
+        @click.stop="$emit('mePongoEnMira')"
+      >
+        <img class="iconoMenuCx" src="@/assets/iconos/target.png" alt="mira" v-show="!enviandoQueryTarget" />
+        <loading v-show="enviandoQueryTarget"/>
+        Poner en la mira
       </div>
       <div
         class="botonMenuCx"
@@ -294,10 +303,10 @@ export default {
       type: Object,
       required: true,
     },
-    datosUsuarioEsteNodo:{
+    datosUsuarioEsteNodo: {
       type: Object,
-      
     },
+    enviandoQueryTarget:Boolean,
     esNodoObjetivo: Boolean,
     esTarget: Boolean,
     yo: Object,
@@ -311,6 +320,8 @@ export default {
     idsNodosPresentesCabeza: Array,
     nodoSeleccionado: Object,
     seleccionado: Boolean,
+    fantasmeado:Boolean,
+    previoDeSeleccionado: Boolean,
     usuarioAdministradorAtlas: {
       type: Boolean,
       default: false,
@@ -418,10 +429,7 @@ export default {
       return idsNecesarios.every((id) =>
         this.idsNodosPresentesCabeza.includes(id)
       );
-    },
-    fantasmeado() {
-      return !this.aprendible;
-    },
+    },    
     nodoAprendido() {
       return this.idsNodosAprendidos.includes(this.esteNodo.id);
     },
@@ -495,8 +503,19 @@ export default {
         transform: "rotate(" + this.esteNodo.fuerzaColision.direccion + "rad)",
       };
     },
-    
-    
+    estiloBolita(){
+      let border="2px solid transparent";
+      if(this.previoDeSeleccionado){
+        border="2px solid var(--atlasConocimientoSeleccion)";
+      }
+      if(this.seleccionado){
+        border="2px solid transparent";
+      }
+
+      return {
+        border
+      }
+    }
   },
   methods: {
     setTipoNodo(nuevoTipoNodo) {
@@ -512,13 +531,13 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-          mutation($idNodo: ID!, $nuevoTipoNodo: String!){
-            setTipoNodo(idNodo: $idNodo, nuevoTipoNodo: $nuevoTipoNodo){
-              id
-              tipoNodo
+            mutation ($idNodo: ID!, $nuevoTipoNodo: String!) {
+              setTipoNodo(idNodo: $idNodo, nuevoTipoNodo: $nuevoTipoNodo) {
+                id
+                tipoNodo
+              }
             }
-          }
-        `,
+          `,
           variables: {
             idNodo: this.esteNodo.id,
             nuevoTipoNodo,
@@ -533,39 +552,45 @@ export default {
           console.log(`Error: ${error}`);
         });
     },
-    setPeriodoRepaso(){
-      const diasRepaso=parseInt(Number(prompt("Introduce el periodo para repasar este tema (En días)")));
-  
-      if(diasRepaso<1){
+    setPeriodoRepaso() {
+      const diasRepaso = parseInt(
+        Number(prompt("Introduce el periodo para repasar este tema (En días)"))
+      );
+
+      if (diasRepaso < 1) {
         console.log("Periodo ilegal");
         return;
       }
 
-      var nuevoPeriodoRepaso=diasRepaso*86400000;
+      var nuevoPeriodoRepaso = diasRepaso * 86400000;
 
-      this.enviandoOperacion=true;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idNodo: ID!, $nuevoPeriodoRepaso: Int!){
-            setPeriodoRepasoNodoConocimientoUsuario(idNodo: $idNodo, nuevoPeriodoRepaso: $nuevoPeriodoRepaso){
-               id
-               idNodo
-               periodoRepaso
+      this.enviandoOperacion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $nuevoPeriodoRepaso: Int!) {
+              setPeriodoRepasoNodoConocimientoUsuario(
+                idNodo: $idNodo
+                nuevoPeriodoRepaso: $nuevoPeriodoRepaso
+              ) {
+                id
+                idNodo
+                periodoRepaso
+              }
             }
-          }
           `,
-          variables:{
+          variables: {
             idNodo: this.esteNodo.id,
             nuevoPeriodoRepaso,
-          }
-        }).then(()=>{
-          this.enviandoOperacion=false;
-            
-        }).catch((error)=>{
-          console.log(`Error: ${error}`);
-          this.enviandoOperacion=false;
+          },
         })
-
+        .then(() => {
+          this.enviandoOperacion = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.enviandoOperacion = false;
+        });
     },
     clickCartelNombre(e) {
       if (this.seleccionado) {
@@ -599,11 +624,10 @@ export default {
             `${setNodoAtlasAprendidoUsuario.length} nodos modificados`
           );
 
-          for(const res of setNodoAtlasAprendidoUsuario){
-
+          for (const res of setNodoAtlasAprendidoUsuario) {
             console.log(`Nombre: ` + res.nombreNodo);
           }
-          
+
           this.togglingAprendido = false;
 
           const store = this.$apollo.provider.defaultClient;
@@ -912,13 +936,16 @@ export default {
   z-index: 1;
   pointer-events: none;
   border-radius: 50%;
+  
 }
+
+
 #iconoNodo img {
   width: 100%;
   height: 100%;
 }
-#iconoNodo.deNodoSeleccionado {
-  filter: var(--atlasFilterFondo);
+#iconoNodo.deNodoSeleccionado img {
+  filter: var(--filtroBlanco);
 }
 .nodoConocimiento {
   width: 60px;
@@ -928,7 +955,12 @@ export default {
   cursor: pointer;
   position: absolute;
   pointer-events: all;
+}
+.nodoConocimiento:not(.deNodoSeleccionado) {
   background-color: rgba(128, 128, 128, 0.349);
+}
+.nodoConocimiento.deNodoSeleccionado {
+  background-color: var(--atlasConocimientoSeleccion);
 }
 
 #botonAbrirMenuCx {
@@ -948,11 +980,9 @@ export default {
   z-index: 10;
 }
 .fantasmeado {
-  filter: saturate(50%);
+  opacity: 0.5;
 }
-.fantasmeado.imgSeleccionado {
-  filter: saturate(10%);
-}
+
 .escondido {
   visibility: hidden;
 }
@@ -984,6 +1014,7 @@ export default {
   display: flex;
   align-items: center;
 }
+
 .iconoMenuCx {
   height: 13px;
   margin: 0px 5px;

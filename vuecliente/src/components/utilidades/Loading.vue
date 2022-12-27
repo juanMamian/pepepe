@@ -1,7 +1,7 @@
 <template>
   <div class="loading">
     <img src="@/assets/iconos/loading.png" alt="Cargando" id="iconoLoading" />
-    <span :style="[estiloTexto]" class="textoLoading">{{ texto }}</span>
+    <span v-if="texto" :style="[estiloTexto]" class="textoLoading">{{ texto }}</span>
   </div>
 </template>
 
@@ -10,8 +10,7 @@ export default {
   name: "Loading",
   props: {
     texto: {
-      type: String,
-      default: "Cargando...",
+      type: String,      
     },
     colorLetra: {
       type: String,

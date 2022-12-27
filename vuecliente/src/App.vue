@@ -364,6 +364,9 @@ export default {
   --mainColorDark: #f49e4c;
   --mainColorLight: #e99e58;
 
+  --colorBlanco: #e9e9e9;
+  --filtroBlanco: invert(100%) sepia(8%) saturate(404%) hue-rotate(225deg) brightness(115%) contrast(83%);
+
   --atlasFondo: #12263a;
   --atlasVerde: #4d8b31;
   --atlasAmarillo: #ffc800;

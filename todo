@@ -1,7 +1,8 @@
 Atlas de conocimiento.
 
--En safari no funciona el contextmenu.
--
+-Que al marcar nodo como rastreado, se centre.
+-Porcentaje de avance en nodos de colecciones.
+-Que al seleccionar un nodo, las flechitas indiquen con colores los caminos ya avanzados.
 
 
 -En el MixinBasicoEventosPublicos hay demasiadas versiones de horarioLegible, depurar.
