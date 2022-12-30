@@ -40,9 +40,9 @@
 
     <div
       id="iconoNodo"
-      :class="{        
+      :class="{
         deNodoSeleccionado: seleccionado,
-        previoDeSeleccionado
+        previoDeSeleccionado,
       }"
     >
       <img
@@ -117,8 +117,13 @@
         :class="{ deshabilitado: esTarget }"
         @click.stop="$emit('mePongoEnMira')"
       >
-        <img class="iconoMenuCx" src="@/assets/iconos/target.png" alt="mira" v-show="!enviandoQueryTarget" />
-        <loading v-show="enviandoQueryTarget"/>
+        <img
+          class="iconoMenuCx"
+          src="@/assets/iconos/target.png"
+          alt="mira"
+          v-show="!enviandoQueryTarget"
+        />
+        <loading v-show="enviandoQueryTarget" />
         Poner en la mira
       </div>
       <div
@@ -146,8 +151,21 @@
             v-for="coleccion of yo.atlas.colecciones"
             :key="coleccion.id"
             @click.stop="toggleNodoEnColeccion(coleccion.id)"
-            :class="{ enColeccion: coleccion.idsNodos.includes(esteNodo.id) }"
           >
+            <img
+              src="@/assets/iconos/check.svg"
+              alt="Check"
+              style="height: 12px; margin-right: 10px; border-radius: 50%"
+              v-show="togglingNodoEnColeccion!=coleccion.id"
+              :style="[
+                {
+                  backgroundColor: coleccion.idsNodos.includes(esteNodo.id)
+                    ? 'var(--atlasVerde)'
+                    : '',
+                },
+              ]"
+            />
+            <loading v-show="togglingNodoEnColeccion===coleccion.id" />
             {{ coleccion.nombre }}
           </div>
         </div>
@@ -301,7 +319,7 @@ export default {
     datosUsuarioEsteNodo: {
       type: Object,
     },
-    enviandoQueryTarget:Boolean,
+    enviandoQueryTarget: Boolean,
     esNodoObjetivo: Boolean,
     esTarget: Boolean,
     yo: Object,
@@ -315,7 +333,7 @@ export default {
     idsNodosPresentesCabeza: Array,
     nodoSeleccionado: Object,
     seleccionado: Boolean,
-    fantasmeado:Boolean,
+    fantasmeado: Boolean,
     previoDeSeleccionado: Boolean,
     usuarioAdministradorAtlas: {
       type: Boolean,
@@ -341,6 +359,7 @@ export default {
         x: 0,
         y: 0,
       },
+      togglingNodoEnColeccion: null,
 
       estiloNombreBase: {
         minWidth: 20,
@@ -424,7 +443,7 @@ export default {
       return idsNecesarios.every((id) =>
         this.idsNodosPresentesCabeza.includes(id)
       );
-    },    
+    },
     nodoAprendido() {
       return this.idsNodosAprendidos.includes(this.esteNodo.id);
     },
@@ -498,24 +517,24 @@ export default {
         transform: "rotate(" + this.esteNodo.fuerzaColision.direccion + "rad)",
       };
     },
-    estiloBolita(){
-      let border="2px solid transparent";
-      let backgroundColor="rgb(195 195 195)";
+    estiloBolita() {
+      let border = "2px solid transparent";
+      let backgroundColor = "rgb(195 195 195)";
 
-      if(this.previoDeSeleccionado){
-        border="2px solid var(--atlasConocimientoSeleccion)";
-        backgroundColor="rgb(195 195 195)";
+      if (this.previoDeSeleccionado) {
+        border = "2px solid var(--atlasConocimientoSeleccion)";
+        backgroundColor = "rgb(195 195 195)";
       }
-      if(this.seleccionado){
-        border="2px solid transparent";
-        backgroundColor="var(--atlasConocimientoSeleccion)";
+      if (this.seleccionado) {
+        border = "2px solid transparent";
+        backgroundColor = "var(--atlasConocimientoSeleccion)";
       }
 
       return {
         border,
-        backgroundColor
-      }
-    }
+        backgroundColor,
+      };
+    },
   },
   methods: {
     setTipoNodo(nuevoTipoNodo) {
@@ -768,29 +787,39 @@ export default {
       if (!this.usuario || !this.usuario.id) {
         return;
       }
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation ($idNodo: ID!, $idColeccion: ID!, $idUsuario: ID!) {
-            toggleNodoColeccionNodosAtlasConocimientoUsuario(
-              idNodo: $idNodo
-              idColeccion: $idColeccion
-              idUsuario: $idUsuario
-            ) {
-              id
-              idsNodos
-              nodos {
+
+      this.togglingNodoEnColeccion = idColeccion;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $idColeccion: ID!, $idUsuario: ID!) {
+              toggleNodoColeccionNodosAtlasConocimientoUsuario(
+                idNodo: $idNodo
+                idColeccion: $idColeccion
+                idUsuario: $idUsuario
+              ) {
                 id
-                nombre
+                idsNodos
+                nodos {
+                  id
+                  nombre
+                }
               }
             }
-          }
-        `,
-        variables: {
-          idNodo: this.esteNodo.id,
-          idColeccion,
-          idUsuario: this.usuario.id,
-        },
-      });
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            idColeccion,
+            idUsuario: this.usuario.id,
+          },
+        })
+        .then(() => {
+          this.togglingNodoEnColeccion = null;
+        })
+        .catch((error) => {
+          this.togglingNodoEnColeccion = null;
+          console.log(`Error: ${error}`);
+        });
     },
     iniciarGestionRepasos() {
       var elDatoNodo = this.yo.atlas.datosNodos.find(
@@ -936,9 +965,7 @@ export default {
   z-index: 1;
   pointer-events: none;
   border-radius: 50%;
-  
 }
-
 
 #iconoNodo img {
   width: 100%;
@@ -1049,12 +1076,6 @@ export default {
   padding: 10px 20px;
 }
 
-.enColeccion {
-  background-color: rgb(117, 182, 117);
-}
-.enColeccion:hover {
-  background-color: rgb(136, 168, 136);
-}
 .cuadritoDescripcionNodo {
   position: absolute;
   top: 50%;
