@@ -40,12 +40,7 @@
 
     <div
       id="iconoNodo"
-      :class="{
-        fantasmeado:
-          usuarioLogeado &&
-          !aprendible &&
-          modoAtlas === 'estudiante' &&
-          !callingPosiciones,
+      :class="{        
         deNodoSeleccionado: seleccionado,
         previoDeSeleccionado
       }"
@@ -505,15 +500,20 @@ export default {
     },
     estiloBolita(){
       let border="2px solid transparent";
+      let backgroundColor="rgb(195 195 195)";
+
       if(this.previoDeSeleccionado){
         border="2px solid var(--atlasConocimientoSeleccion)";
+        backgroundColor="rgb(195 195 195)";
       }
       if(this.seleccionado){
         border="2px solid transparent";
+        backgroundColor="var(--atlasConocimientoSeleccion)";
       }
 
       return {
-        border
+        border,
+        backgroundColor
       }
     }
   },
@@ -980,7 +980,7 @@ export default {
   z-index: 10;
 }
 .fantasmeado {
-  opacity: 0.5;
+  opacity: 0.2;
 }
 
 .escondido {

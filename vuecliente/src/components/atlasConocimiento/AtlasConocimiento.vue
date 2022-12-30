@@ -107,6 +107,8 @@
           :redibujarEnlaces="redibujarEnlacesNodos"
           :idsTodosNodosRender="idsTodosNodosRender"
           :callingPosiciones="callingPosiciones"
+          :idsNodosPreviosSeleccionado="idsNodosPreviosSeleccionado"
+          :idsNodosPresentesCabeza="idsNodosPresentesCabeza"
         />
       </div>
       <div
@@ -624,7 +626,6 @@ export default {
       var idsActuales=[this.idNodoSeleccionado];
       var cadenaTotal=[];
       for (var i = 0; i < 20; i++) {
-        console.log(`Iteracion ${i + 1} de previos`);
 
         let previos = this.nodosRender.filter((n) =>
           n.vinculos.some(
@@ -632,7 +633,6 @@ export default {
           )
         );
 
-        console.table(previos.map(prev=>({nombre: prev.nombre})));
 
         if(previos.length<1){
           break;
@@ -640,7 +640,6 @@ export default {
 
         let idsPrevios=previos.map(previo=>previo.id);
 
-        console.log(`${previos.length} previos encontrados`);
         cadenaTotal.push(...idsPrevios);
 
         idsActuales=idsPrevios;
