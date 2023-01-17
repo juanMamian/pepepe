@@ -14,7 +14,13 @@
         :key="bloque.id"
         :esteBloque="bloque"
         :factorZoom="factorZoom"
-        :style="[{ left: (((bloque.millisInicio / 60000) - offset) * factorZoom) + 'px' }]"
+        :style="[
+          { left: (bloque.millisInicio / 60000 - offset) * factorZoom + 'px' },
+        ]"
+        :idBloqueMenuContextual="idBloqueMenuContextual"
+        :idBloqueSeleccionado="idBloqueSeleccionado"
+        @menuContextual="$emit('menuContextualBloque', $event)"
+        @seleccionado="$emit('bloqueSeleccionado', bloque.id)"
       />
     </div>
     <div id="barraHoras">
@@ -38,6 +44,9 @@ export const fragmentoBloqueHorario = gql`
     millisFinal
     idsParticipantesConstantes
     diaSemana
+    nombreEspacio
+    idAdministradorEspacio
+    idEspacio
   }
 `;
 
@@ -50,7 +59,9 @@ export default {
     nombreDia: String,
     numeroDia: Number,
     idEspacioCrear: String,
+    idBloqueSeleccionado: String,
     bloquesHorario: Array,
+    idBloqueMenuContextual: String,
     factorZoom: {
       type: Number,
       default() {
@@ -161,8 +172,9 @@ export default {
             diaSemana: this.numeroDia,
           },
         })
-        .then(() => {
+        .then(({ data: { crearBloqueHorario } }) => {
           this.creandoBloqueHorario = false;
+          this.$emit("bloqueHorarioCreado", crearBloqueHorario);
         })
         .catch((error) => {
           console.log("Error: " + error);

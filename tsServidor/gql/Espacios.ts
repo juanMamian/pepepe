@@ -16,6 +16,9 @@ export const typeDefs = gql`
         millisFinal:Int,
         idsParticipantesConstantes: [ID],
         diaSemana:Int,
+        nombreEspacio:String,
+        idAdministradorEspacio:String,
+        idEspacio:ID,
     }
 
     type Espacio{
@@ -316,5 +319,7 @@ export const resolvers = {
             return nuevoBloque;
 
         }
-    }
+    },
+
+    
 }

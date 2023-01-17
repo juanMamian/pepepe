@@ -178,7 +178,7 @@ export default {
   height: 20px;
 }
 #listaEspacios{
-    margin: 20px auto;
+    margin: 20px ;
     width: min(600px, 95vw);
     margin-bottom: 100px;
 }

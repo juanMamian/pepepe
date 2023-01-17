@@ -35,7 +35,15 @@ const EsquemaIteracionSemanal= new mongoose.Schema({
     },
     
 });
-
+EsquemaIteracionSemanal.virtual('nombreEspacio').get(function (this: any) {
+    return this.parent().nombre;
+});
+EsquemaIteracionSemanal.virtual('idAdministradorEspacio').get(function (this: any) {
+    return this.parent().idAdministrador;
+})
+EsquemaIteracionSemanal.virtual('idEspacio').get(function (this: any) {
+    return this.parent()._id;
+})
 
 export const esquemaEspacio = new mongoose.Schema({
     nombre: {

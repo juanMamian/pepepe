@@ -1,12 +1,22 @@
 <template>
-  <div class="organizadorHorarioSemanal">
-    
+  <div class="organizadorHorarioSemanal" @click.left.exact="idBloqueMenuContextual=null">
     <div id="seleccionAdministradoresEspacios">
-      <div class="zonaCheckAdministradorEspacios" v-for="profe of usuariosProfe" :key="profe.id">
-        <div class="nombreProfe">{{profe.nombre}}</div> <input type="checkbox" :value="profe.id" ref="checkProfe" id="checkProfe" v-model="idsUsuariosSeleccionados">
+      <div
+        class="zonaCheckAdministradorEspacios"
+        v-for="profe of usuariosProfe"
+        :key="profe.id"
+      >
+        <div class="nombreProfe">{{ profe.nombre }}</div>
+        <input
+          type="checkbox"
+          :value="profe.id"
+          ref="checkProfe"
+          id="checkProfe"
+          v-model="idsUsuariosSeleccionados"
+        />
       </div>
     </div>
-    
+
     <div id="seleccionEspacio">
       <select
         name="selectEspacioCrear"
@@ -32,19 +42,28 @@
       :factorZoom="factorZoom"
       :offset="offset"
       :idEspacioCrear="idEspacioCrear"
-      :bloquesHorario="bloquesHorario.filter(b=>b.diaSemana===index)"
+      :bloquesHorario="bloquesHorario.filter((b) => b.diaSemana === index)"
+      :idBloqueMenuContextual="idBloqueMenuContextual"
+      :idBloqueSeleccionado="idBloqueSeleccionado"
+      @bloqueSeleccionado="idBloqueSeleccionado=idBloqueSeleccionado===$event?null:$event"
+      @bloqueHorarioCreado="addBloqueHorarioCache"
+      @menuContextualBloque="idBloqueMenuContextual=$event"
     />
   </div>
 </template>
 
 <script>
-import DiaOrganizadorHorario, { fragmentoBloqueHorario } from "./DiaOrganizadorHorario.vue";
-import { fragmentoEspacio } from '../frags';
-import { gql } from 'apollo-server-core';
+import DiaOrganizadorHorario, {
+  fragmentoBloqueHorario,
+} from "./DiaOrganizadorHorario.vue";
+import { fragmentoEspacio } from "../frags";
+import { gql } from "apollo-server-core";
 
-const QUERY_ITERACIONES_SEMANALES_ESPACIOS= gql`
-  query($idsAdministradores: [ID]!){
-    iteracionesSemanalesEspaciosByAdministradores(idsAdministradores: $idsAdministradores){
+const QUERY_ITERACIONES_SEMANALES_ESPACIOS = gql`
+  query ($idsAdministradores: [ID]!) {
+    iteracionesSemanalesEspaciosByAdministradores(
+      idsAdministradores: $idsAdministradores
+    ) {
       ...fragBloqueHorario
     }
   }
@@ -73,35 +92,37 @@ export default {
         return espaciosByUsuariosAdmin;
       },
     },
-    usuariosProfe:{
+    usuariosProfe: {
       query: gql`
-        query{
-          usuariosProfe{
+        query {
+          usuariosProfe {
             id
             nombre
           }
         }
       `,
-
     },
-    bloquesHorario:{
+    bloquesHorario: {
       query: QUERY_ITERACIONES_SEMANALES_ESPACIOS,
-      variables(){
+      variables() {
         return {
           idsAdministradores: this.idsUsuariosSeleccionados,
-        }
+        };
       },
-      skip(){
-        return !this.idsUsuariosSeleccionados || this.idsUsuariosSeleccionados.length<1;
+      skip() {
+        return (
+          !this.idsUsuariosSeleccionados ||
+          this.idsUsuariosSeleccionados.length < 1
+        );
       },
-      update({iteracionesSemanalesEspaciosByAdministradores}){
-        return iteracionesSemanalesEspaciosByAdministradores
-      }
-    }
+      update({ iteracionesSemanalesEspaciosByAdministradores }) {
+        return iteracionesSemanalesEspaciosByAdministradores;
+      },
+    },
   },
   data() {
     return {
-      usuariosProfe:[],
+      usuariosProfe: [],
       espacios: [],
       diasSemana: [
         "Lunes",
@@ -116,7 +137,10 @@ export default {
       offset: 420,
       idEspacioCrear: null,
       idsUsuariosSeleccionados: [],
-      bloquesHorario:[],
+      bloquesHorario: [],
+
+      idBloqueMenuContextual:null,
+      idBloqueSeleccionado: null,
     };
   },
   computed: {
@@ -124,9 +148,41 @@ export default {
       return this.espacios;
     },
   },
-  mounted(){
-    this.idsUsuariosSeleccionados=[this.usuario.id]
-  }
+  methods: {
+    addBloqueHorarioCache(nuevoBloque) {
+
+      console.log(`Adding to cache un bloque con id ${nuevoBloque.id}`);
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_ITERACIONES_SEMANALES_ESPACIOS,
+        variables: {
+          idsAdministradores: this.idsUsuariosSeleccionados,
+        },
+      });
+
+      var nuevoCache=JSON.parse(JSON.stringify(cache));
+
+      const indexB=nuevoCache.iteracionesSemanalesEspaciosByAdministradores.findIndex(b=>b.id===nuevoBloque.id);
+
+      if(indexB<0){
+        nuevoCache.iteracionesSemanalesEspaciosByAdministradores.push(nuevoBloque);
+
+        store.writeQuery({
+          query: QUERY_ITERACIONES_SEMANALES_ESPACIOS,
+          variables:{
+            idsAdministradores: this.idsUsuariosSeleccionados
+          },
+          data: nuevoCache
+        });
+      } 
+      else{
+        console.log("Iteración semanal ya estaba en caché");
+      }
+    },
+  },
+  mounted() {
+    this.idsUsuariosSeleccionados = [this.usuario.id];
+  },
 };
 </script>
 
@@ -136,7 +192,7 @@ export default {
   flex-direction: column;
 }
 
-.zonaCheckAdministradorEspacios{
+.zonaCheckAdministradorEspacios {
   display: flex;
   gap: 20px;
 }
