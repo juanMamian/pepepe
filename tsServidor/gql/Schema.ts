@@ -15,7 +15,7 @@ import { InterfaceCredencialesUsuario } from "./tsObjetos"
 import { makeExecutableSchema } from "apollo-server-express";
 const jwt = require("jsonwebtoken");
 
-
+export const permisosEspecialesDefault=["superadministrador"];
 
 const globalTypeDefs = gql`
     type Query{

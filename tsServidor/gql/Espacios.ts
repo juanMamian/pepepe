@@ -4,13 +4,26 @@ import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { contextoQuery } from "./tsObjetos";
 import { ModeloEventoPublico as EventoPublico, ModeloEventoPersonal as EventoPersonal } from "../model/Evento";
 import { reScheduleEventosEnmarcadosEnEventoPublicoEliminado } from "./Eventos";
+import { permisosEspecialesDefault } from "./Schema";
+
+
 
 export const typeDefs = gql`
+
+    type IteracionSemanalEspacio{
+        id: ID,
+        millisInicio: Int,
+        millisFinal:Int,
+        idsParticipantesConstantes: [ID],
+        diaSemana:Int,
+    }
+
     type Espacio{
         id:ID,
         nombre:String,
         descripcion:String,
-        idAdministrador:ID
+        idAdministrador:ID,
+        iteracionesSemanales:[IteracionSemanalEspacio],
     }
 
     input InputCrearEspacio{
@@ -22,6 +35,8 @@ export const typeDefs = gql`
     extend type Query{
         espacio(idEspacio:ID!):Espacio,
         todosEspacios:[Espacio],
+        espaciosByUsuariosAdmin(idsUsuarios: [ID]!):[Espacio],
+        iteracionesSemanalesEspaciosByAdministradores(idsAdministradores: [ID]!): [IteracionSemanalEspacio],
     }
 
     extend type Mutation{
@@ -29,6 +44,7 @@ export const typeDefs = gql`
         eliminarEspacio(idEspacio:ID!):Boolean,
         editarNombreEspacio(idEspacio:ID!, nuevoNombre: String!):Espacio,
         editarDescripcionEspacio(idEspacio:ID!, nuevoDescripcion: String!):Espacio,
+        crearBloqueHorario(idEspacio: ID!, diaSemana: Int!, millisInicio: Int!, millisFinal: Int): IteracionSemanalEspacio,
     }
 `
 
@@ -53,6 +69,36 @@ export const resolvers = {
             }
 
             return losEspacios
+        },
+        async espaciosByUsuariosAdmin(_:any, {idsUsuarios}:any, contexto:contextoQuery){
+
+            try {
+                var losEspacios:any=await Espacio.find({idAdministrador: idsUsuarios}).exec();
+            } catch (error) {
+                console.log(`Error getting espacios : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+
+            }
+
+            return losEspacios;
+        },
+        async iteracionesSemanalesEspaciosByAdministradores(_:any, {idsAdministradores}:any, contexto: contextoQuery){
+            console.log(`Getting iteraciones semanales para espacios administrados por ${idsAdministradores}`);
+            try {
+                var losEspacios:any=await Espacio.find({idAdministrador: {$in: idsAdministradores}}).exec();
+            } catch (error) {
+                console.log(`Error getting espacios de los administradores : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+                
+            }
+
+            console.log(`Encontrados ${losEspacios.length} espacios`);
+
+            var lasIteraciones=losEspacios.reduce((acc, espacio)=>acc.concat(espacio.iteracionesSemanales), []);
+
+            console.log(`Encontradas ${lasIteraciones.length} iteraciones`);
+
+            return lasIteraciones;
         }
     },
 
@@ -230,5 +276,45 @@ export const resolvers = {
 
             return elEspacio;
         },
+        async crearBloqueHorario(_:any, {idEspacio, millisInicio, millisFinal, diaSemana}:any, contexto:contextoQuery){
+            console.log('\x1b[35m%s\x1b[0m', `Query de crear iteración semanal de espacio ${idEspacio} con inicio ${millisInicio} y final ${millisFinal} en dia ${diaSemana} de la semana`);
+            
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            
+
+            try {
+                var elEspacio:any = await Espacio.findById(idEspacio).exec();
+                if (!elEspacio) throw 'Espacio no encontrado';
+            } catch (error){
+                console.log('Error descargando el espacio de la base de datos: '+error)
+                throw new ApolloError('Error conectando con la base de datos');
+            };
+
+            const esAdministradorEspacio=elEspacio.idAdministrador === credencialesUsuario.id;
+            const tienePermisosEspeciales=permisosEspecialesDefault.some(p=>credencialesUsuario.permisos.includes(p));
+
+            if(!esAdministradorEspacio && !tienePermisosEspeciales){
+                throw new AuthenticationError("No autorizado");
+            }
+
+            var nuevoBloque=elEspacio.iteracionesSemanales.create({millisInicio, millisFinal, diaSemana});
+
+            elEspacio.iteracionesSemanales.push(nuevoBloque);
+
+            try {
+                await elEspacio.save();
+            } catch (error) {
+                console.log(`Error guardando espacio con nuevo bloque de horario : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');                
+            }
+
+            console.log("Iteración Semanal creada");
+            return nuevoBloque;
+
+        }
     }
 }

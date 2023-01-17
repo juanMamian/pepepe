@@ -20,7 +20,9 @@
         <img src="@/assets/iconos/user.svg" alt="Usuario" v-show="!verTodos">
       </div>
     </div>
-    <div id="listaEspacios">
+
+    <div class="tituloSeccion" @click="mostrandoEspacios=!mostrandoEspacios">Espacios</div>
+    <div id="listaEspacios" v-show="mostrandoEspacios">
       <espacio
         v-for="espacio of espaciosVisibles"
         ref="espacios"
@@ -29,6 +31,8 @@
         @meElimine="eliminarEspacioCache(espacio.id)"
       />
     </div>
+
+    <organizador-horario-semanal />
   </div>
 </template>
 
@@ -36,14 +40,10 @@
 import gql from "graphql-tag";
 import Espacio from "./Espacio.vue";
 import Loading from './utilidades/Loading.vue';
-const fragmentoEspacio = gql`
-  fragment fragEspacio on Espacio {
-    id
-    nombre
-    descripcion
-    idAdministrador
-  }
-`;
+import OrganizadorHorarioSemanal from './calendario/OrganizadorHorarioSemanal.vue';
+import {fragmentoEspacio} from "./frags"
+
+
 const QUERY_ESPACIOS = gql`
   query {
     todosEspacios {
@@ -56,7 +56,7 @@ const QUERY_ESPACIOS = gql`
 
 
 export default {
-  components: { Espacio, Loading },
+  components: { Espacio, Loading, OrganizadorHorarioSemanal },
   apollo: {
     todosEspacios: {
       query: QUERY_ESPACIOS,
@@ -69,6 +69,8 @@ export default {
 
       verTodos:false,
       creandoEspacio: false,
+
+      mostrandoEspacios:true,
     };
   },
   methods: {
@@ -178,7 +180,7 @@ export default {
 #listaEspacios{
     margin: 20px auto;
     width: min(600px, 95vw);
-    margin-bottom: 40vh;
+    margin-bottom: 100px;
 }
 .espacio{
   margin:10px 0px;
