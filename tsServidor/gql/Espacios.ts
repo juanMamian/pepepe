@@ -47,7 +47,9 @@ export const typeDefs = gql`
         eliminarEspacio(idEspacio:ID!):Boolean,
         editarNombreEspacio(idEspacio:ID!, nuevoNombre: String!):Espacio,
         editarDescripcionEspacio(idEspacio:ID!, nuevoDescripcion: String!):Espacio,
+        
         crearBloqueHorario(idEspacio: ID!, diaSemana: Int!, millisInicio: Int!, millisFinal: Int): IteracionSemanalEspacio,
+        eliminarIteracionSemanalEspacio(idEspacio: ID!, idIteracion: ID!):Boolean,
     }
 `
 
@@ -318,6 +320,51 @@ export const resolvers = {
             console.log("Iteración Semanal creada");
             return nuevoBloque;
 
+        },
+
+        async eliminarIteracionSemanalEspacio(_:any, {idEspacio, idIteracion}:any, contexto: contextoQuery){
+            console.log('\x1b[35m%s\x1b[0m', `Query de eliminar iteración semanal de espacio ${idEspacio} con id de iteración ${idIteracion}`);
+            
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            
+            
+            try {
+                var elEspacio:any=await Espacio.findById(idEspacio).exec();
+                if(!elEspacio)throw "Espacio no encontrado";
+            } catch (error) {
+                console.log(`Error getting espacio : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+                
+            }
+            const esAdministradorEspacio=elEspacio.idAdministrador===credencialesUsuario.id;
+            const tienePermisosEspeciales=permisosEspecialesDefault.some(p=>credencialesUsuario.permisos.includes(p));
+
+            if(!esAdministradorEspacio && !tienePermisosEspeciales){
+                throw new AuthenticationError("No autorizado");
+            }
+
+            const laIteracion=elEspacio.iteracionesSemanales.find(iteracion=>iteracion.id===idIteracion);
+
+            if(!laIteracion){
+                throw new UserInputError("Iteración no encontrada");
+            }
+
+
+            laIteracion.remove();
+
+            try {
+                await elEspacio.save();
+            } catch (error) {
+                console.log(`Error saving espacio tras eliminación de iteración : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+                
+            }
+            console.log("Eliminada");
+            return true;
         }
     },
 

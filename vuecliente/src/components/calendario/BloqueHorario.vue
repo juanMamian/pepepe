@@ -1,9 +1,9 @@
 <template>
   <div
     class="bloqueHorario"
-    :class="{seleccionado}"
+    :class="{seleccionado, deshabilitado: eliminandose}"
     :style="[{ width: duracionMinutos * factorZoom + 'px', backgroundColor: miColor }]"
-    @contextmenu.exact.self.prevent.stop="
+    @contextmenu.exact.prevent.stop="
       $emit('menuContextual', esteBloque.id)
     "
     @click.left="$emit('seleccionado')"
@@ -30,6 +30,7 @@
 </template>
 
 <script>
+import gql from 'graphql-tag';
 export default {
   name: "BloqueHorario",
   props: {
@@ -46,6 +47,7 @@ export default {
 
     return {
       coloresEspacios,
+      eliminandose:false,
     };
   },
   computed: {
@@ -111,6 +113,26 @@ export default {
             console.log("No autorizado");
             return 
         }
+
+        this.eliminandose=true;
+        this.$apollo.mutate({
+            mutation: gql`
+                mutation($idEspacio: ID!, $idIteracion: ID!){
+                    eliminarIteracionSemanalEspacio(idEspacio: $idEspacio, idIteracion: $idIteracion)                                             
+                }
+                `,
+                variables:{
+                    idEspacio: this.esteBloque.idEspacio,
+                    idIteracion: this.esteBloque.id
+                }
+            }).then(()=>{
+                this.eliminandose=false;
+                this.$emit('meElimine');
+                    
+            }).catch((error)=>{
+                console.log('Error: '+ error);
+                this.eliminandose=false;
+            })
     }
   },
 };

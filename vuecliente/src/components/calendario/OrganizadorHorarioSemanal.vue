@@ -48,6 +48,7 @@
       @bloqueSeleccionado="idBloqueSeleccionado=idBloqueSeleccionado===$event?null:$event"
       @bloqueHorarioCreado="addBloqueHorarioCache"
       @menuContextualBloque="idBloqueMenuContextual=$event"
+      @bloqueEliminado="eliminarBloqueHorarioCache"
     />
   </div>
 </template>
@@ -177,6 +178,36 @@ export default {
       } 
       else{
         console.log("Iteración semanal ya estaba en caché");
+      }
+    },
+    eliminarBloqueHorarioCache(idBloque) {
+
+      console.log(`Removing from cache un bloque con id ${idBloque}`);
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_ITERACIONES_SEMANALES_ESPACIOS,
+        variables: {
+          idsAdministradores: this.idsUsuariosSeleccionados,
+        },
+      });
+
+      var nuevoCache=JSON.parse(JSON.stringify(cache));
+
+      const indexB=nuevoCache.iteracionesSemanalesEspaciosByAdministradores.findIndex(b=>b.id===idBloque);
+
+      if(indexB>-1){
+        nuevoCache.iteracionesSemanalesEspaciosByAdministradores.splice(indexB, 1);
+
+        store.writeQuery({
+          query: QUERY_ITERACIONES_SEMANALES_ESPACIOS,
+          variables:{
+            idsAdministradores: this.idsUsuariosSeleccionados
+          },
+          data: nuevoCache
+        });
+      } 
+      else{
+        console.log("Iteración semanal no estaba en caché");
       }
     },
   },

@@ -19,6 +19,7 @@
         ]"
         :idBloqueMenuContextual="idBloqueMenuContextual"
         :idBloqueSeleccionado="idBloqueSeleccionado"
+        @meElimine="$emit('bloqueEliminado', bloque.id)"
         @menuContextual="$emit('menuContextualBloque', $event)"
         @seleccionado="$emit('bloqueSeleccionado', bloque.id)"
       />
