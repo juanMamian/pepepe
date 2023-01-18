@@ -1,11 +1,11 @@
 <template>
   <div
     class="bloqueHorario"
-    :class="{seleccionado, deshabilitado: eliminandose || settingTiempos}"
-    :style="[{ width: duracionMinutos * factorZoom + 'px', backgroundColor: miColor }]"
-    @contextmenu.exact.prevent.stop="
-      $emit('menuContextual', esteBloque.id)
-    "
+    :class="{ seleccionado, deshabilitado: eliminandose || settingTiempos }"
+    :style="[
+      { width: duracionMinutos * factorZoom + 'px', backgroundColor: miColor },
+    ]"
+    @contextmenu.exact.prevent.stop="$emit('menuContextual', esteBloque.id)"
     @dblclick="toggleDuracionBloque"
     @click.left="$emit('seleccionado')"
   >
@@ -15,8 +15,19 @@
 
     <loading v-show="eliminandose || settingTiempos" />
 
-    <div id="menuContextual" :class="{seleccionado}" @click.stop="" v-show="mostrandoMenuContextual">
-      <div class="itemMenuContextual" v-if="usuarioAdministrador || usuarioSuperadministrador" @click="eliminarse">Eliminar</div>
+    <div
+      id="menuContextual"
+      :class="{ seleccionado }"
+      @click.stop=""
+      v-show="mostrandoMenuContextual"
+    >
+      <div
+        class="itemMenuContextual"
+        v-if="usuarioAdministrador || usuarioSuperadministrador"
+        @click="eliminarse"
+      >
+        Eliminar
+      </div>
       <div class="itemMenuContextual" @click="$refs.inputColor.click()">
         Seleccionar color
       </div>
@@ -33,8 +44,8 @@
 </template>
 
 <script>
-import gql from 'graphql-tag';
-import Loading from '../utilidades/Loading.vue';
+import gql from "graphql-tag";
+import Loading from "../utilidades/Loading.vue";
 export default {
   components: { Loading },
   name: "BloqueHorario",
@@ -52,7 +63,7 @@ export default {
 
     return {
       coloresEspacios,
-      eliminandose:false,
+      eliminandose: false,
       settingTiempos: false,
     };
   },
@@ -79,17 +90,17 @@ export default {
 
       return "#a04d4d";
     },
-    seleccionado(){
-        return this.idBloqueSeleccionado===this.esteBloque.id;
+    seleccionado() {
+      return this.idBloqueSeleccionado === this.esteBloque.id;
     },
-    usuarioAdministrador(){
-        return this.usuario.id===this.esteBloque.idAdministradorEspacio;
+    usuarioAdministrador() {
+      return this.usuario.id === this.esteBloque.idAdministradorEspacio;
     },
-    minutosInicio(){
-        return Math.round(this.esteBloque.millisInicio/60000);
+    minutosInicio() {
+      return Math.round(this.esteBloque.millisInicio / 60000);
     },
-    minutosFinal(){
-        return Math.round(this.esteBloque.millisFinal/60000);
+    minutosFinal() {
+      return Math.round(this.esteBloque.millisFinal / 60000);
     },
   },
   methods: {
@@ -120,101 +131,110 @@ export default {
         JSON.stringify(this.coloresEspacios)
       );
     },
-    eliminarse(){
-        if(!this.usuarioAdministrador && !this.superadministrador){
-            console.log("No autorizado");
-            return 
-        }
+    eliminarse() {
+      if (!this.usuarioAdministrador && !this.superadministrador) {
+        console.log("No autorizado");
+        return;
+      }
 
-        this.eliminandose=true;
-        this.$apollo.mutate({
-            mutation: gql`
-                mutation($idEspacio: ID!, $idIteracion: ID!){
-                    eliminarIteracionSemanalEspacio(idEspacio: $idEspacio, idIteracion: $idIteracion)                                             
-                }
-                `,
-                variables:{
-                    idEspacio: this.esteBloque.idEspacio,
-                    idIteracion: this.esteBloque.id
-                }
-            }).then(()=>{
-                this.eliminandose=false;
-                this.$emit('meElimine');
-                    
-            }).catch((error)=>{
-                console.log('Error: '+ error);
-                this.eliminandose=false;
-            })
+      this.eliminandose = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idEspacio: ID!, $idIteracion: ID!) {
+              eliminarIteracionSemanalEspacio(
+                idEspacio: $idEspacio
+                idIteracion: $idIteracion
+              )
+            }
+          `,
+          variables: {
+            idEspacio: this.esteBloque.idEspacio,
+            idIteracion: this.esteBloque.id,
+          },
+        })
+        .then(() => {
+          this.eliminandose = false;
+          this.$emit("meElimine");
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.eliminandose = false;
+        });
     },
-    toggleDuracionBloque(){
-
-        console.log(`Toggleando bloque que tiene minutosInicio ${this.minutosInicio} y minutosFinal ${this.minutosFinal}`);
-        if(this.minutosInicio===480){
-            if(this.minutosFinal===600){
-                this.setMinutos(480, 540);
-            }
-            else{
-                this.setMinutos(480, 600);
-            }
+    toggleDuracionBloque() {
+      console.log(
+        `Toggleando bloque que tiene minutosInicio ${this.minutosInicio} y minutosFinal ${this.minutosFinal}`
+      );
+      if (this.minutosInicio === 480) {
+        if (this.minutosFinal === 600) {
+          this.setMinutos(480, 540);
+        } else {
+          this.setMinutos(480, 600);
         }
-        else if(this.minutosInicio===540){
-            this.setMinutos(480, 600);
+      } else if (this.minutosInicio === 540) {
+        this.setMinutos(480, 600);
+      } else if (this.minutosInicio === 630) {
+        if (this.minutosFinal === 750) {
+          this.setMinutos(630, 690);
+        } else {
+          this.setMinutos(630, 750);
         }
-        else if(this.minutosInicio===630){
-            if(this.minutosFinal===750){
-                this.setMinutos(630, 690)
-            }
-            else{
-                this.setMinutos(630, 750)
-            }
+      } else if (this.minutosInicio === 690) {
+        this.setMinutos(630, 750);
+      } else if (this.minutosInicio === 810) {
+        if (this.minutosFinal === 930) {
+          this.setMinutos(810, 870);
+        } else {
+          this.setMinutos(810, 930);
         }
-        else if(this.minutosInicio===690){
-            this.setMinutos(630, 750);
-        }
-        else if(this.minutosInicio===810){
-            if(this.minutosFinal===930){
-                this.setMinutos(810, 870);
-            }
-            else{
-                this.setMinutos(810, 930);
-            }
-        }
-        else if(this.minutosInicio===870){
-            this.setMinutos(870, 930);
-        }
-        else{
-            console.log(`No se pudo togglear el bloque`);
-        }
+      } else if (this.minutosInicio === 870) {
+        this.setMinutos(870, 930);
+      } else {
+        console.log(`No se pudo togglear el bloque`);
+      }
     },
-    setMinutos(minutosInicio, minutosFinal){
-        const millisInicio=minutosInicio*60000;
-        const millisFinal=minutosFinal*60000;
+    setMinutos(minutosInicio, minutosFinal) {
+      const millisInicio = minutosInicio * 60000;
+      const millisFinal = minutosFinal * 60000;
 
-        this.settingTiempos=true;
-        this.$apollo.mutate({
-            mutation: gql`
-                mutation($idEspacio: ID!, $idIteracion: ID!, $millisInicio: Int!, $millisFinal: Int!){
-                    setTiemposIteracionSemanalEspacio(idEspacio: $idEspacio, idIteracion: $idIteracion, millisInicio: $millisInicio, millisFinal: $millisFinal){
-                        id
-                        millisInicio
-                        millisFinal                            
-                    }
-                }
-                `,
-                variables:{
-                    idEspacio: this.esteBloque.idEspacio,
-                    idIteracion: this.esteBloque.id,
-                    millisInicio,
-                    millisFinal
-                }
-            }).then(()=>{
-                this.settingTiempos=false;
-                    
-            }).catch((error)=>{
-                console.log('Error: '+ error);
-                this.settingTiempos=false;
-            })
-    }
+      this.settingTiempos = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation (
+              $idEspacio: ID!
+              $idIteracion: ID!
+              $millisInicio: Int!
+              $millisFinal: Int!
+            ) {
+              setTiemposIteracionSemanalEspacio(
+                idEspacio: $idEspacio
+                idIteracion: $idIteracion
+                millisInicio: $millisInicio
+                millisFinal: $millisFinal
+              ) {
+                id
+                millisInicio
+                millisFinal
+              }
+            }
+          `,
+          variables: {
+            idEspacio: this.esteBloque.idEspacio,
+            idIteracion: this.esteBloque.id,
+            millisInicio,
+            millisFinal,
+          },
+        })
+        .then(() => {
+          this.settingTiempos = false;
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.settingTiempos = false;
+        });
+    },
   },
 };
 </script>
@@ -228,11 +248,9 @@ export default {
   box-sizing: border-box;
 }
 .bloqueHorario.seleccionado {
-    border: 2px solid black;
-    filter: brightness(1.7);
+  border: 2px solid black;
+  filter: brightness(1.7);
 }
-
-
 
 #nombre {
   text-align: center;
@@ -246,11 +264,11 @@ export default {
 }
 
 #menuContextual.seleccionado {
-    color: black
+  color: black;
 }
 
 #menuContextual:not(.seleccionado) {
-    color: antiquewhite
+  color: antiquewhite;
 }
 .itemMenuContextual {
   padding: 10px 10px;

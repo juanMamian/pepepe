@@ -6,7 +6,7 @@
 
     <div
       id="zonaBloques"
-      :style="[{ width: Math.round(1440 * factorZoom) + 'px' }]"
+      :style="[{ width: Math.round(anchoDiaMinutos * factorZoom) + 'px' }]"
       @dblclick.self="crearBloqueHorario"
     >
       <bloque-horario
@@ -75,6 +75,7 @@ export default {
     return {
       minutosRelevantesBase: [480, 540, 600, 630, 750, 810, 870, 930],
       creandoBloqueHorario: false,
+      anchoDiaMinutos: 540,
     };
   },
   computed: {
@@ -107,7 +108,8 @@ export default {
 
       const xRes = xMouse - posDia.left;
 
-      const minutosInicio = (1440 / posDia.width) * xRes + this.offset;
+      const minutosInicio =
+        (this.anchoDiaMinutos / posDia.width) * xRes + this.offset;
 
       console.log(
         "Creando bloque de horario en " + this.toTiempoFormateado(minutosInicio)
@@ -136,10 +138,9 @@ export default {
         //Segundo bloque pero antes de refrigerio.
         minutosInicioCorregido = 870;
         minutosFinalCorregido = 930;
-      }
-      else{
+      } else {
         console.log("En zona no considerada");
-        return 
+        return;
       }
 
       console.log(

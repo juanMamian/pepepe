@@ -1,5 +1,8 @@
 <template>
-  <div class="organizadorHorarioSemanal" @click.left.exact="idBloqueMenuContextual=null">
+  <div
+    class="organizadorHorarioSemanal"
+    @click.left.exact="idBloqueMenuContextual = null"
+  >
     <div id="seleccionAdministradoresEspacios">
       <div
         class="zonaCheckAdministradorEspacios"
@@ -45,9 +48,11 @@
       :bloquesHorario="bloquesHorario.filter((b) => b.diaSemana === index)"
       :idBloqueMenuContextual="idBloqueMenuContextual"
       :idBloqueSeleccionado="idBloqueSeleccionado"
-      @bloqueSeleccionado="idBloqueSeleccionado=idBloqueSeleccionado===$event?null:$event"
+      @bloqueSeleccionado="
+        idBloqueSeleccionado = idBloqueSeleccionado === $event ? null : $event
+      "
       @bloqueHorarioCreado="addBloqueHorarioCache"
-      @menuContextualBloque="idBloqueMenuContextual=$event"
+      @menuContextualBloque="idBloqueMenuContextual = $event"
       @bloqueEliminado="eliminarBloqueHorarioCache"
     />
   </div>
@@ -135,12 +140,12 @@ export default {
         "Domingo",
       ],
       factorZoom: 3,
-      offset: 420,
+      offset: 468,
       idEspacioCrear: null,
       idsUsuariosSeleccionados: [],
       bloquesHorario: [],
 
-      idBloqueMenuContextual:null,
+      idBloqueMenuContextual: null,
       idBloqueSeleccionado: null,
     };
   },
@@ -151,7 +156,6 @@ export default {
   },
   methods: {
     addBloqueHorarioCache(nuevoBloque) {
-
       console.log(`Adding to cache un bloque con id ${nuevoBloque.id}`);
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
@@ -161,27 +165,30 @@ export default {
         },
       });
 
-      var nuevoCache=JSON.parse(JSON.stringify(cache));
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
 
-      const indexB=nuevoCache.iteracionesSemanalesEspaciosByAdministradores.findIndex(b=>b.id===nuevoBloque.id);
+      const indexB =
+        nuevoCache.iteracionesSemanalesEspaciosByAdministradores.findIndex(
+          (b) => b.id === nuevoBloque.id
+        );
 
-      if(indexB<0){
-        nuevoCache.iteracionesSemanalesEspaciosByAdministradores.push(nuevoBloque);
+      if (indexB < 0) {
+        nuevoCache.iteracionesSemanalesEspaciosByAdministradores.push(
+          nuevoBloque
+        );
 
         store.writeQuery({
           query: QUERY_ITERACIONES_SEMANALES_ESPACIOS,
-          variables:{
-            idsAdministradores: this.idsUsuariosSeleccionados
+          variables: {
+            idsAdministradores: this.idsUsuariosSeleccionados,
           },
-          data: nuevoCache
+          data: nuevoCache,
         });
-      } 
-      else{
+      } else {
         console.log("Iteración semanal ya estaba en caché");
       }
     },
     eliminarBloqueHorarioCache(idBloque) {
-
       console.log(`Removing from cache un bloque con id ${idBloque}`);
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
@@ -191,22 +198,27 @@ export default {
         },
       });
 
-      var nuevoCache=JSON.parse(JSON.stringify(cache));
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
 
-      const indexB=nuevoCache.iteracionesSemanalesEspaciosByAdministradores.findIndex(b=>b.id===idBloque);
+      const indexB =
+        nuevoCache.iteracionesSemanalesEspaciosByAdministradores.findIndex(
+          (b) => b.id === idBloque
+        );
 
-      if(indexB>-1){
-        nuevoCache.iteracionesSemanalesEspaciosByAdministradores.splice(indexB, 1);
+      if (indexB > -1) {
+        nuevoCache.iteracionesSemanalesEspaciosByAdministradores.splice(
+          indexB,
+          1
+        );
 
         store.writeQuery({
           query: QUERY_ITERACIONES_SEMANALES_ESPACIOS,
-          variables:{
-            idsAdministradores: this.idsUsuariosSeleccionados
+          variables: {
+            idsAdministradores: this.idsUsuariosSeleccionados,
           },
-          data: nuevoCache
+          data: nuevoCache,
         });
-      } 
-      else{
+      } else {
         console.log("Iteración semanal no estaba en caché");
       }
     },
