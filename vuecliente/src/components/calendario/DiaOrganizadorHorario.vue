@@ -73,7 +73,7 @@ export default {
   },
   data() {
     return {
-      minutosRelevantesBase: [480, 630, 660, 750, 810, 930],
+      minutosRelevantesBase: [480, 540, 600, 630, 750, 810, 870, 930],
       creandoBloqueHorario: false,
     };
   },
@@ -116,17 +116,17 @@ export default {
       var minutosInicioCorregido = minutosInicio;
       var minutosFinalCorregido = minutosInicioCorregido + 60;
 
-      if (minutosInicio >= 480 && minutosInicio < 570) {
+      if (minutosInicio >= 480 && minutosInicio < 540) {
         //Estamos en el primer bloque
         minutosInicioCorregido = 480;
-        minutosFinalCorregido = 570;
-      } else if (minutosInicio >= 570 && minutosInicio < 630) {
+        minutosFinalCorregido = 540;
+      } else if (minutosInicio >= 540 && minutosInicio < 600) {
         //Segundo bloque pero antes de refrigerio.
-        minutosInicioCorregido = 570;
-        minutosFinalCorregido = 630;
-      } else if (minutosInicio >= 660 && minutosInicio < 750) {
+        minutosInicioCorregido = 540;
+        minutosFinalCorregido = 600;
+      } else if (minutosInicio >= 630 && minutosInicio < 750) {
         //Bloque intermedio.
-        minutosInicioCorregido = 660;
+        minutosInicioCorregido = 630;
         minutosFinalCorregido = 750;
       } else if (minutosInicio >= 810 && minutosInicio < 870) {
         //Segundo bloque pero antes de refrigerio.
@@ -136,6 +136,10 @@ export default {
         //Segundo bloque pero antes de refrigerio.
         minutosInicioCorregido = 870;
         minutosFinalCorregido = 930;
+      }
+      else{
+        console.log("En zona no considerada");
+        return 
       }
 
       console.log(
@@ -203,10 +207,12 @@ export default {
   height: 100%;
   background-color: rgb(218, 218, 218);
   min-height: 100px;
+  z-index: 1;
 }
 #barraHoras {
   position: absolute;
   top: 100%;
+  z-index: 0;
 }
 
 .marcaTiempo {

@@ -1,16 +1,19 @@
 <template>
   <div
     class="bloqueHorario"
-    :class="{seleccionado, deshabilitado: eliminandose}"
+    :class="{seleccionado, deshabilitado: eliminandose || settingTiempos}"
     :style="[{ width: duracionMinutos * factorZoom + 'px', backgroundColor: miColor }]"
     @contextmenu.exact.prevent.stop="
       $emit('menuContextual', esteBloque.id)
     "
+    @dblclick="toggleDuracionBloque"
     @click.left="$emit('seleccionado')"
   >
     <div id="nombre">
       {{ esteBloque.nombreEspacio }}
     </div>
+
+    <loading v-show="eliminandose || settingTiempos" />
 
     <div id="menuContextual" :class="{seleccionado}" @click.stop="" v-show="mostrandoMenuContextual">
       <div class="itemMenuContextual" v-if="usuarioAdministrador || usuarioSuperadministrador" @click="eliminarse">Eliminar</div>
@@ -31,7 +34,9 @@
 
 <script>
 import gql from 'graphql-tag';
+import Loading from '../utilidades/Loading.vue';
 export default {
+  components: { Loading },
   name: "BloqueHorario",
   props: {
     esteBloque: Object,
@@ -48,6 +53,7 @@ export default {
     return {
       coloresEspacios,
       eliminandose:false,
+      settingTiempos: false,
     };
   },
   computed: {
@@ -78,7 +84,13 @@ export default {
     },
     usuarioAdministrador(){
         return this.usuario.id===this.esteBloque.idAdministradorEspacio;
-    }
+    },
+    minutosInicio(){
+        return Math.round(this.esteBloque.millisInicio/60000);
+    },
+    minutosFinal(){
+        return Math.round(this.esteBloque.millisFinal/60000);
+    },
   },
   methods: {
     setColorEspacio() {
@@ -132,6 +144,75 @@ export default {
             }).catch((error)=>{
                 console.log('Error: '+ error);
                 this.eliminandose=false;
+            })
+    },
+    toggleDuracionBloque(){
+
+        console.log(`Toggleando bloque que tiene minutosInicio ${this.minutosInicio} y minutosFinal ${this.minutosFinal}`);
+        if(this.minutosInicio===480){
+            if(this.minutosFinal===600){
+                this.setMinutos(480, 540);
+            }
+            else{
+                this.setMinutos(480, 600);
+            }
+        }
+        else if(this.minutosInicio===540){
+            this.setMinutos(480, 600);
+        }
+        else if(this.minutosInicio===630){
+            if(this.minutosFinal===750){
+                this.setMinutos(630, 690)
+            }
+            else{
+                this.setMinutos(630, 750)
+            }
+        }
+        else if(this.minutosInicio===690){
+            this.setMinutos(630, 750);
+        }
+        else if(this.minutosInicio===810){
+            if(this.minutosFinal===930){
+                this.setMinutos(810, 870);
+            }
+            else{
+                this.setMinutos(810, 930);
+            }
+        }
+        else if(this.minutosInicio===870){
+            this.setMinutos(870, 930);
+        }
+        else{
+            console.log(`No se pudo togglear el bloque`);
+        }
+    },
+    setMinutos(minutosInicio, minutosFinal){
+        const millisInicio=minutosInicio*60000;
+        const millisFinal=minutosFinal*60000;
+
+        this.settingTiempos=true;
+        this.$apollo.mutate({
+            mutation: gql`
+                mutation($idEspacio: ID!, $idIteracion: ID!, $millisInicio: Int!, $millisFinal: Int!){
+                    setTiemposIteracionSemanalEspacio(idEspacio: $idEspacio, idIteracion: $idIteracion, millisInicio: $millisInicio, millisFinal: $millisFinal){
+                        id
+                        millisInicio
+                        millisFinal                            
+                    }
+                }
+                `,
+                variables:{
+                    idEspacio: this.esteBloque.idEspacio,
+                    idIteracion: this.esteBloque.id,
+                    millisInicio,
+                    millisFinal
+                }
+            }).then(()=>{
+                this.settingTiempos=false;
+                    
+            }).catch((error)=>{
+                console.log('Error: '+ error);
+                this.settingTiempos=false;
             })
     }
   },

@@ -49,6 +49,7 @@ export const typeDefs = gql`
         editarDescripcionEspacio(idEspacio:ID!, nuevoDescripcion: String!):Espacio,
         
         crearBloqueHorario(idEspacio: ID!, diaSemana: Int!, millisInicio: Int!, millisFinal: Int): IteracionSemanalEspacio,
+        setTiemposIteracionSemanalEspacio(idEspacio: ID!, idIteracion: ID!, millisInicio: Int!, millisFinal: Int!):IteracionSemanalEspacio,
         eliminarIteracionSemanalEspacio(idEspacio: ID!, idIteracion: ID!):Boolean,
     }
 `
@@ -281,6 +282,8 @@ export const resolvers = {
 
             return elEspacio;
         },
+
+
         async crearBloqueHorario(_:any, {idEspacio, millisInicio, millisFinal, diaSemana}:any, contexto:contextoQuery){
             console.log('\x1b[35m%s\x1b[0m', `Query de crear iteración semanal de espacio ${idEspacio} con inicio ${millisInicio} y final ${millisFinal} en dia ${diaSemana} de la semana`);
             
@@ -321,7 +324,44 @@ export const resolvers = {
             return nuevoBloque;
 
         },
+        async setTiemposIteracionSemanalEspacio(_:any, {idEspacio, idIteracion, millisInicio, millisFinal}:any, contexto: contextoQuery){
+            console.log('\x1b[35m%s\x1b[0m', `Query de set tiempos de iteración semanal de espacio ${idEspacio} con id de iteración ${idIteracion} en inicio ${Math.round(millisInicio/60000)}minutos y final ${Math.round(millisFinal/60000)}minutos`);
 
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            
+            try {
+                var elEspacio:any=await Espacio.findById(idEspacio).exec()
+                if(!elEspacio) throw "Espacio no encontrado";
+            } catch (error) {
+                console.log(`Error getting espacio : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+                
+            }
+
+            var laIteracion=elEspacio.iteracionesSemanales.id(idIteracion);
+
+            if(!laIteracion){
+                throw new UserInputError("Iteración no encontrada");
+            }
+
+            laIteracion.millisInicio=millisInicio;
+            laIteracion.millisFinal=millisFinal;
+
+            try {
+                await elEspacio.save();
+            } catch (error) {
+                console.log(`Error guardando espacio después de set tiempos de iteración : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+
+            }
+
+            console.log(`Tiempos set`);
+            return laIteracion
+        },
         async eliminarIteracionSemanalEspacio(_:any, {idEspacio, idIteracion}:any, contexto: contextoQuery){
             console.log('\x1b[35m%s\x1b[0m', `Query de eliminar iteración semanal de espacio ${idEspacio} con id de iteración ${idIteracion}`);
             
