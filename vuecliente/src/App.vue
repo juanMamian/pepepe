@@ -461,6 +461,12 @@ body {
 .selector.activo {
   border-color: var(--paletaMain);
 }
+.barraSeccion{
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 20px 10px;
+}
 .contenedorBotonesCampo {
   margin: 5px auto;
   display: flex;
@@ -471,6 +477,13 @@ body {
   cursor: pointer;
   margin: 0px 5px;
   opacity: 0.8;
+}
+.listaPersonas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 35px;
+  padding: 20px 20px;
+  margin-bottom: 20px;
 }
 #descripcion {
   border: 2px solid var(--paletaMain);

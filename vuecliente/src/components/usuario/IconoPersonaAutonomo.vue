@@ -24,8 +24,8 @@
       <div class="botonMenuCx" v-if="usuarioSuperadministrador">
         {{ estaPersona.username }}
       </div>
-      <input type="text" v-model="nuevoPermiso" placeholder="Nuevo permiso" />
-      <div class="botonMenuCx" @click.stop="addPermisos">Dar permiso</div>
+      <input type="text" v-if="usuarioSuperadministrador" v-model="nuevoPermiso" placeholder="Nuevo permiso" />
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador" @click.stop="addPermisos">Dar permiso</div>
       <div
         class="botonMenuCx"
         :key="index"
@@ -222,7 +222,7 @@ export default {
 }
 #menuCxPersona {
   position: absolute;
-  top: 110%;
+  top: -50%;
   left: 110%;
   min-width: 140px;
 

@@ -76,7 +76,7 @@ export default {
     return {
       minutosRelevantesBase: [480, 540, 600, 630, 750, 810, 870, 930],
       creandoBloqueHorario: false,
-      anchoDiaMinutos: 540,
+      anchoDiaMinutos: 490,
     };
   },
   computed: {

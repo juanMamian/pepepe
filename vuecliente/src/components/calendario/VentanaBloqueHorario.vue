@@ -1,9 +1,15 @@
 <template>
-  <div class="ventanaBloqueHorario">
+  <div class="ventanaBloqueHorario" @click="idPersonaMenuCx=null">
     <div id="fondoGris" @click.self.stop="$emit('cerrarme')"></div>
     <div id="laPropiaVentana" :style="[{ backgroundColor: miColor }]">
       <div id="titulo">
         {{ esteBloque.nombreEspacio }}
+      </div>
+
+      <div id="infoBasica">
+        <div class="info">
+          {{diasSemana[esteBloque.diaSemana]}}. {{toTiempoFormateado(minutosInicio)}} - {{toTiempoFormateado(minutosFinal)}} 
+        </div>
       </div>
 
       <div class="seccionListaUsuarios">
@@ -39,10 +45,14 @@
             :key="idAsistente"
             :idPersona="idAsistente"
             :seleccionado="idAsistente === idPersonaSeleccionado"
+            :opcionesMenuCx="opcionesAsistentes"
+            :menuContextual="idPersonaMenuCx===idAsistente"
             @click.stop="
               idPersonaSeleccionado =
                 idPersonaSeleccionado === idAsistente ? null : idAsistente
             "
+            @click.native.right.stop.prevent="idPersonaMenuCx=idAsistente"
+            @remover="removerAsistente(idAsistente)"
           />
         </div>
 
@@ -50,10 +60,10 @@
           <div class="zonaInformacion" style="display: flex">
             <div class="informacion">Adicionando asistentes</div>
 
-            <div class="contenedorControles" style="margin-left: auto;">
-                <div class="boton" @click="mostrandoBuscadorAsistentes=false">
-                    <img src='@/assets/iconos/equis.svg' alt='Salir' style='' />
-                </div>
+            <div class="contenedorControles" style="margin-left: auto">
+              <div class="boton" @click="mostrandoBuscadorAsistentes = false">
+                <img src="@/assets/iconos/equis.svg" alt="Salir" style="" />
+              </div>
             </div>
           </div>
           <div id="zonaInputBuscador" style="width: 100%">
@@ -62,11 +72,12 @@
               ref="inputTextoBuscador"
               id="inputTextoBuscador"
               placeholder="buscar"
+              @keypress.enter="setTextoBusqueda"
             />
           </div>
-          <div class="listaPersonas">
+          <div class="listaPersonas" :class="{deshabilitado: addingAsistente}">
             <icono-persona-autonomo
-              v-for="idAdicionable of idsPersonasAdicionables"
+              v-for="idAdicionable of idsPersonasAdicionablesOrdenadas"
               :key="idAdicionable"
               :idPersona="idAdicionable"
               :seleccionado="idAdicionable === idPersonaSeleccionado"
@@ -74,6 +85,8 @@
                 idPersonaSeleccionado =
                   idPersonaSeleccionado === idAdicionable ? null : idAdicionable
               "
+              @dblclick.native.stop="addComoAsistente(idAdicionable)"
+              
             />
           </div>
         </div>
@@ -85,6 +98,9 @@
 <script>
 import gql from "graphql-tag";
 import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
+var stringSimilarity = require("string-similarity");
+const diasSemana=["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
 export default {
   components: { IconoPersonaAutonomo },
   name: "VentanaBloqueHorario",
@@ -109,25 +125,153 @@ export default {
     return {
       participantesCasaMaestraVida: [],
       idPersonaSeleccionado: null,
+      idPersonaMenuCx:null,
       mostrandoBuscadorAsistentes: false,
+
+      textoBusqueda: "",
+      versionBusqueda:0,
+
+      addingAsistente:false,
+
+      opcionesAsistentes:[
+        {
+          textoVisible: "Remover",
+          evento: "remover"
+        }
+      ],
+
+      diasSemana,
     };
   },
   computed: {
     idsAsistentes() {
       return this.esteBloque.idsParticipantesConstantes;
     },
+    personasAdicionables() {
+      return this.participantesCasaMaestraVida.filter(
+        (persona) =>
+          !this.esteBloque.idsParticipantesConstantes.includes(persona.id)
+      );
+    },
     idsPersonasAdicionables() {
-      return this.participantesCasaMaestraVida
-        .filter(
-          (persona) =>
-            !this.esteBloque.idsParticipantesConstantes.includes(persona.id)
-        )
-        .map((persona) => persona.id);
+      return this.personasAdicionables.map((persona) => persona.id);
+    },
+    personasAdicionablesOrdenadas() {
+      var versionBusqueda=this.versionBusqueda;
+      if (!this.textoBusqueda || this.textoBusqueda.length <= 2) {
+        return this.personasAdicionables;
+      }
+      var textoBusqueda=this.textoBusqueda;
+      console.log("Version "+versionBusqueda)
+      if(this.versionBusqueda<0){
+        console.log("Error desconocido");
+        return;
+      }
+      return [...this.personasAdicionables].sort((a, b) => {
+
+        let res =
+          stringSimilarity.compareTwoStrings(
+            b.nombres + b.apellidos,
+            textoBusqueda
+          ) -
+          stringSimilarity.compareTwoStrings(
+            a.nombres + a.apellidos,
+            textoBusqueda
+          );
+
+        return res;
+      });
+    },
+    idsPersonasAdicionablesOrdenadas(){
+      return this.personasAdicionablesOrdenadas.map(p=>p.id);
+    },
+    usuarioAdministrador(){
+      return this.esteBloque.idAdministradorEspacio===this.usuario.id;
+    },
+    minutosInicio() {
+      return Math.round(this.esteBloque.millisInicio / 60000);
+    },
+    minutosFinal() {
+      return Math.round(this.esteBloque.millisFinal / 60000);
     },
   },
   methods: {
     iniciarAdicionAsistente() {
       this.mostrandoBuscadorAsistentes = true;
+    },
+    setTextoBusqueda() {
+      var nuevoString=this.$refs.inputTextoBuscador.value
+      this.textoBusqueda = nuevoString;
+      this.versionBusqueda++;
+      
+    },
+    addComoAsistente(idAsistente){
+        if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
+          return;
+        }
+
+        this.addingAsistente=true;
+        this.$apollo.mutate({
+          mutation: gql`
+            mutation($idEspacio: ID!, $idIteracion: ID!, $idAsistente: ID!){
+              addAsistenteIteracionSemanalEspacio(idEspacio: $idEspacio, idIteracion: $idIteracion, idAsistente: $idAsistente){
+                id
+                idsParticipantesConstantes
+              }
+            }
+          `,
+          variables:{
+            idEspacio: this.esteBloque.idEspacio,
+            idIteracion: this.esteBloque.id,
+            idAsistente
+          }
+        }).then(()=>{
+          this.addingAsistente=false;
+        }).catch((error)=>{
+          this.addingAsistente=false;
+          console.log(`Error ${error}`);
+        })
+    },
+    removerAsistente(idAsistente){
+        if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
+          return;
+        }
+
+        this.removingAsistente=true;
+        this.$apollo.mutate({
+          mutation: gql`
+            mutation($idEspacio: ID!, $idIteracion: ID!, $idAsistente: ID!){
+              removeAsistenteIteracionSemanalEspacio(idEspacio: $idEspacio, idIteracion: $idIteracion, idAsistente: $idAsistente){
+                id
+                idsParticipantesConstantes
+              }
+            }
+          `,
+          variables:{
+            idEspacio: this.esteBloque.idEspacio,
+            idIteracion: this.esteBloque.id,
+            idAsistente
+          }
+        }).then(()=>{
+          this.removingAsistente=false;
+        }).catch((error)=>{
+          this.removingAsistente=false;
+          console.log(`Error ${error}`);
+        })
+    },
+    toTiempoFormateado(minutos) {
+      var horas = Math.floor(minutos / 60);
+      if (horas.length < 2) {
+        horas = "0" + horas;
+      }
+
+      var minutosSolos = String(Math.round(minutos - horas * 60));
+
+      if (minutosSolos.length < 2) {
+        minutosSolos = "0" + minutosSolos;
+      }
+
+      return horas + ":" + minutosSolos;
     },
   },
 };
@@ -164,6 +308,9 @@ export default {
   margin-bottom: 20px;
 }
 
+#infoBasica{
+  padding: 20px 10px;
+}
 .barraListaUsuarios {
   background-color: rgb(100, 100, 100);
   padding: 10px 10px;
@@ -175,27 +322,20 @@ export default {
   margin-left: auto;
 }
 
-.listaPersonas {
+
+
+.zonaInformacion {
   display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  padding: 20px 20px;
-  margin-bottom: 20px;
+  align-items: center;
+  padding: 10px 10px;
 }
 
-.zonaInformacion{
-    display: flex;
-    align-items: center;
-    padding: 10px 10px;
-
-}
-
-#inputTextoBuscador{
-    display: block;
-    margin: 10px auto;
-    font-size: 20px;
-    padding: 5px 10px;
-    border-radius: 5px;
-    background-color: rgba(255, 255, 255, 0.267);
+#inputTextoBuscador {
+  display: block;
+  margin: 10px auto;
+  font-size: 20px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.267);
 }
 </style>

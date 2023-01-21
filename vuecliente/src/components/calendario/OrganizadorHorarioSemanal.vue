@@ -3,13 +3,46 @@
     class="organizadorHorarioSemanal"
     @click.left.exact="idBloqueMenuContextual = null"
   >
-  <ventana-bloque-horario v-if="bloqueEnVentana" :esteBloque="bloqueEnVentana" @cerrarme="idBloqueEnVentana=null"/>
+    <ventana-bloque-horario
+      v-if="bloqueEnVentana"
+      :esteBloque="bloqueEnVentana"
+      @cerrarme="idBloqueEnVentana = null"
+    />
 
     <div id="seleccionAdministradoresEspacios">
+      <div class="barraSeccion">
+        Mostrando espacios de:
+        <div class="contenedorControles" style="margin-left: auto">
+          <div class="boton">
+            <img
+              src="@/assets/iconos/cog.svg"
+              @click.stop="
+                seleccionandoAdministradoresEspacios =
+                  !seleccionandoAdministradoresEspacios
+              "
+              alt="configrurar"
+              style=""
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        id="listaAdministradoresActivos"
+        class="listaPersonas"
+        v-show="!seleccionandoAdministradoresEspacios"
+      >
+        <icono-persona-autonomo
+          v-for="idAdmin of idsUsuariosSeleccionados"
+          :key="idAdmin"
+          :idPersona="idAdmin"
+        />
+      </div>
+
       <div
         class="zonaCheckAdministradorEspacios"
         v-for="profe of usuariosProfe"
         :key="profe.id"
+        v-show="seleccionandoAdministradoresEspacios"
       >
         <div class="nombreProfe">{{ profe.nombre }}</div>
         <input
@@ -23,6 +56,9 @@
     </div>
 
     <div id="seleccionEspacio">
+      <div class="barraSeccion">
+        Crear espacio:
+      </div>
       <select
         name="selectEspacioCrear"
         id="selectEspacioCrear"
@@ -39,25 +75,27 @@
         </option>
       </select>
     </div>
-    <dia-organizador-horario
-      v-for="(dia, index) of diasSemana"
-      :key="dia"
-      :nombreDia="dia"
-      :numeroDia="index"
-      :factorZoom="factorZoom"
-      :offset="offset"
-      :idEspacioCrear="idEspacioCrear"
-      :bloquesHorario="bloquesHorario.filter((b) => b.diaSemana === index)"
-      :idBloqueMenuContextual="idBloqueMenuContextual"
-      :idBloqueSeleccionado="idBloqueSeleccionado"
-      @bloqueSeleccionado="
-        idBloqueSeleccionado = idBloqueSeleccionado === $event ? null : $event
-      "
-      @bloqueHorarioCreado="addBloqueHorarioCache"
-      @menuContextualBloque="idBloqueMenuContextual = $event"
-      @bloqueEliminado="eliminarBloqueHorarioCache"
-      @expandirBloque="setIdBloqueVentana"
-    />
+    <div id="contenedorDias">
+      <dia-organizador-horario
+        v-for="(dia, index) of diasSemana"
+        :key="dia"
+        :nombreDia="dia"
+        :numeroDia="index"
+        :factorZoom="factorZoom"
+        :offset="offset"
+        :idEspacioCrear="idEspacioCrear"
+        :bloquesHorario="bloquesHorario.filter((b) => b.diaSemana === index)"
+        :idBloqueMenuContextual="idBloqueMenuContextual"
+        :idBloqueSeleccionado="idBloqueSeleccionado"
+        @bloqueSeleccionado="
+          idBloqueSeleccionado = idBloqueSeleccionado === $event ? null : $event
+        "
+        @bloqueHorarioCreado="addBloqueHorarioCache"
+        @menuContextualBloque="idBloqueMenuContextual = $event"
+        @bloqueEliminado="eliminarBloqueHorarioCache"
+        @expandirBloque="setIdBloqueVentana"
+      />
+    </div>
   </div>
 </template>
 
@@ -67,7 +105,8 @@ import DiaOrganizadorHorario, {
 } from "./DiaOrganizadorHorario.vue";
 import { fragmentoEspacio } from "../frags";
 import { gql } from "apollo-server-core";
-import VentanaBloqueHorario from './VentanaBloqueHorario.vue';
+import VentanaBloqueHorario from "./VentanaBloqueHorario.vue";
+import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
 
 const QUERY_ITERACIONES_SEMANALES_ESPACIOS = gql`
   query ($idsAdministradores: [ID]!) {
@@ -81,7 +120,11 @@ const QUERY_ITERACIONES_SEMANALES_ESPACIOS = gql`
 `;
 
 export default {
-  components: { DiaOrganizadorHorario, VentanaBloqueHorario },
+  components: {
+    DiaOrganizadorHorario,
+    VentanaBloqueHorario,
+    IconoPersonaAutonomo,
+  },
   name: "OrganizadorHorarioSemanal",
   apollo: {
     espacios: {
@@ -99,6 +142,7 @@ export default {
         };
       },
       update({ espaciosByUsuariosAdmin }) {
+        this.idEspacioCrear=espaciosByUsuariosAdmin.find(e=>e.idAdministrador===this.usuario.id).id;
         return espaciosByUsuariosAdmin;
       },
     },
@@ -134,36 +178,33 @@ export default {
     return {
       usuariosProfe: [],
       espacios: [],
-      diasSemana: [
-        "Lunes",
-        "Martes",
-        "Miércoles",
-        "Jueves",
-        "Viernes",        
-      ],
+      diasSemana: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
       factorZoom: 3,
-      offset: 468,
+      offset: 470,
       idEspacioCrear: null,
       idsUsuariosSeleccionados: [],
+      seleccionandoAdministradoresEspacios: false,
       bloquesHorario: [],
 
       idBloqueMenuContextual: null,
       idBloqueSeleccionado: null,
 
-      idBloqueEnVentana:null,
+      idBloqueEnVentana: null,
     };
   },
   computed: {
     espaciosCreables() {
       return this.espacios;
     },
-    bloqueEnVentana(){
-      if(!this.idBloqueEnVentana){
-        return null
+    bloqueEnVentana() {
+      if (!this.idBloqueEnVentana) {
+        return null;
       }
 
-      return this.bloquesHorario.find(bloque=>bloque.id===this.idBloqueEnVentana);
-    }
+      return this.bloquesHorario.find(
+        (bloque) => bloque.id === this.idBloqueEnVentana
+      );
+    },
   },
   methods: {
     addBloqueHorarioCache(nuevoBloque) {
@@ -233,23 +274,26 @@ export default {
         console.log("Iteración semanal no estaba en caché");
       }
     },
-    abrirVentanaBloque(idBloque){
-      console.log("Abriendo la ventana del bloque con id "+idBloque);
+    abrirVentanaBloque(idBloque) {
+      console.log("Abriendo la ventana del bloque con id " + idBloque);
     },
-    setIdBloqueVentana(nuevoId){
-      this.idBloqueEnVentana=nuevoId;
+    setIdBloqueVentana(nuevoId) {
+      this.idBloqueEnVentana = nuevoId;
     },
-    checkVentanaBloque(){
-      if(this.idBloqueEnVentana){
-        this.idBloqueEnVentana=null;
-        return true
+    checkVentanaBloque() {
+      if (this.idBloqueEnVentana) {
+        this.idBloqueEnVentana = null;
+        return true;
       }
-      
+
       return false;
-    }
+    },
   },
   mounted() {
-    this.idsUsuariosSeleccionados = [this.usuario.id];
+    if(this.usuario?.id){
+
+      this.idsUsuariosSeleccionados = [this.usuario.id];
+    }
   },
 };
 </script>
@@ -263,9 +307,19 @@ export default {
 .zonaCheckAdministradorEspacios {
   display: flex;
   gap: 20px;
+  padding: 10px 10px;
+  background-color: rgb(197, 197, 197);
 }
 
-.ventanaBloqueHorario{
+.ventanaBloqueHorario {
   z-index: 100;
+}
+
+#contenedorDias{
+  width: min(1900px, 100vw);
+  overflow-x: scroll;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
 }
 </style>

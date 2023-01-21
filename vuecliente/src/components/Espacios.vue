@@ -27,7 +27,8 @@
       </div>
     </div>
 
-    <div class="tituloSeccion" @click="mostrandoEspacios = !mostrandoEspacios">
+    <div class="barraSeccion" @click="mostrandoEspacios = !mostrandoEspacios">
+      <img src='@/assets/iconos/angleDown.svg' style="height: 20px" alt='Abrir' :style="[{transform: mostrandoEspacios?'none':'rotate(-90deg)'}]" />
       Espacios
     </div>
     <div id="listaEspacios" v-show="mostrandoEspacios">
@@ -40,7 +41,11 @@
       />
     </div>
 
-    <organizador-horario-semanal ref="organizadorSemanal"/>
+    <div class="barraSeccion" @click="mostrandoOrganizadorSemanal=!mostrandoOrganizadorSemanal">
+      <img src='@/assets/iconos/angleDown.svg' style="height: 20px" alt='Abrir' :style="[{transform: mostrandoOrganizadorSemanal?'mostrandoOrganizadorSemanalnone':'rotate(-90deg)'}]"  /> Calendario semanal
+    </div>
+
+    <organizador-horario-semanal v-show="mostrandoOrganizadorSemanal" ref="organizadorSemanal"/>
   </div>
 </template>
 
@@ -76,6 +81,7 @@ export default {
       creandoEspacio: false,
 
       mostrandoEspacios: true,
+      mostrandoOrganizadorSemanal:false,
     };
   },
   methods: {

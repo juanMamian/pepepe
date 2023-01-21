@@ -9,6 +9,9 @@
     @dblclick="toggleDuracionBloque"
     @click.left="$emit('seleccionado')"
   >
+  <div class="boton" v-show="seleccionado" @click.stop="$emit('menuContextual', esteBloque.id)" id="botonOpciones">
+    <img src='@/assets/iconos/ellipsisVertical.svg' alt='Opciones' />
+  </div>
 
     <div id="nombre">
       {{ esteBloque.nombreEspacio }}
@@ -260,7 +263,11 @@ export default {
   border: 2px solid black;
   filter: brightness(1.7);
 }
-
+#botonOpciones{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
 #nombre {
   text-align: center;
   margin: 20px 0px;
