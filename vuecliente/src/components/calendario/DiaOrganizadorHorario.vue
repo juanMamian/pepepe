@@ -22,6 +22,7 @@
         @meElimine="$emit('bloqueEliminado', bloque.id)"
         @menuContextual="$emit('menuContextualBloque', $event)"
         @seleccionado="$emit('bloqueSeleccionado', bloque.id)"
+        @expandirme="$emit('expandirBloque', bloque.id)"
       />
     </div>
     <div id="barraHoras">

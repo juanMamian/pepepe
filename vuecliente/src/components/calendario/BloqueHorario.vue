@@ -9,8 +9,13 @@
     @dblclick="toggleDuracionBloque"
     @click.left="$emit('seleccionado')"
   >
+
     <div id="nombre">
       {{ esteBloque.nombreEspacio }}
+    </div>
+
+    <div id="botonExpandir" class="boton" style="margin: 0px auto" @click.stop="expandir" v-show="seleccionado">
+      <img src='@/assets/iconos/expand.svg' alt='expandir' style='' />
     </div>
 
     <loading v-show="eliminandose || settingTiempos" />
@@ -47,7 +52,7 @@
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 export default {
-  components: { Loading },
+  components: { Loading,  },
   name: "BloqueHorario",
   props: {
     esteBloque: Object,
@@ -65,6 +70,7 @@ export default {
       coloresEspacios,
       eliminandose: false,
       settingTiempos: false,
+      mostrarVentana:false,
     };
   },
   computed: {
@@ -235,6 +241,9 @@ export default {
           this.settingTiempos = false;
         });
     },
+    expandir(){
+      this.$emit('expandirme');
+    }
   },
 };
 </script>
@@ -278,4 +287,5 @@ export default {
 .itemMenuContextual:hover {
   background-color: rgb(59, 59, 59);
 }
+
 </style>

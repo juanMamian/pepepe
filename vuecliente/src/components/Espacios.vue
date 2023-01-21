@@ -40,7 +40,7 @@
       />
     </div>
 
-    <organizador-horario-semanal />
+    <organizador-horario-semanal ref="organizadorSemanal"/>
   </div>
 </template>
 
@@ -176,6 +176,14 @@ export default {
       );
     },
   },
+  beforeRouteLeave(to, from, next){
+    if(this.$refs.organizadorSemanal.checkVentanaBloque()){
+      console.log("Había bloque en ventana");
+      return;
+    }
+    
+    next()
+  }
 };
 </script>
 

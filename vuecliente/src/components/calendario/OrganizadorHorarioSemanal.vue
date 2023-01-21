@@ -3,6 +3,8 @@
     class="organizadorHorarioSemanal"
     @click.left.exact="idBloqueMenuContextual = null"
   >
+  <ventana-bloque-horario v-if="bloqueEnVentana" :esteBloque="bloqueEnVentana" @cerrarme="idBloqueEnVentana=null"/>
+
     <div id="seleccionAdministradoresEspacios">
       <div
         class="zonaCheckAdministradorEspacios"
@@ -54,6 +56,7 @@
       @bloqueHorarioCreado="addBloqueHorarioCache"
       @menuContextualBloque="idBloqueMenuContextual = $event"
       @bloqueEliminado="eliminarBloqueHorarioCache"
+      @expandirBloque="setIdBloqueVentana"
     />
   </div>
 </template>
@@ -64,6 +67,7 @@ import DiaOrganizadorHorario, {
 } from "./DiaOrganizadorHorario.vue";
 import { fragmentoEspacio } from "../frags";
 import { gql } from "apollo-server-core";
+import VentanaBloqueHorario from './VentanaBloqueHorario.vue';
 
 const QUERY_ITERACIONES_SEMANALES_ESPACIOS = gql`
   query ($idsAdministradores: [ID]!) {
@@ -77,7 +81,7 @@ const QUERY_ITERACIONES_SEMANALES_ESPACIOS = gql`
 `;
 
 export default {
-  components: { DiaOrganizadorHorario },
+  components: { DiaOrganizadorHorario, VentanaBloqueHorario },
   name: "OrganizadorHorarioSemanal",
   apollo: {
     espacios: {
@@ -135,9 +139,7 @@ export default {
         "Martes",
         "Miércoles",
         "Jueves",
-        "Viernes",
-        "Sábado",
-        "Domingo",
+        "Viernes",        
       ],
       factorZoom: 3,
       offset: 468,
@@ -147,12 +149,21 @@ export default {
 
       idBloqueMenuContextual: null,
       idBloqueSeleccionado: null,
+
+      idBloqueEnVentana:null,
     };
   },
   computed: {
     espaciosCreables() {
       return this.espacios;
     },
+    bloqueEnVentana(){
+      if(!this.idBloqueEnVentana){
+        return null
+      }
+
+      return this.bloquesHorario.find(bloque=>bloque.id===this.idBloqueEnVentana);
+    }
   },
   methods: {
     addBloqueHorarioCache(nuevoBloque) {
@@ -222,6 +233,20 @@ export default {
         console.log("Iteración semanal no estaba en caché");
       }
     },
+    abrirVentanaBloque(idBloque){
+      console.log("Abriendo la ventana del bloque con id "+idBloque);
+    },
+    setIdBloqueVentana(nuevoId){
+      this.idBloqueEnVentana=nuevoId;
+    },
+    checkVentanaBloque(){
+      if(this.idBloqueEnVentana){
+        this.idBloqueEnVentana=null;
+        return true
+      }
+      
+      return false;
+    }
   },
   mounted() {
     this.idsUsuariosSeleccionados = [this.usuario.id];
@@ -238,5 +263,9 @@ export default {
 .zonaCheckAdministradorEspacios {
   display: flex;
   gap: 20px;
+}
+
+.ventanaBloqueHorario{
+  z-index: 100;
 }
 </style>
