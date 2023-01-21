@@ -1,7 +1,11 @@
 <template>
   <div
     class="bloqueHorario"
-    :class="{ seleccionado, deshabilitado: eliminandose || settingTiempos }"
+    :class="{
+      seleccionado,
+      deshabilitado: eliminandose || settingTiempos,
+      usuarioAsiste,
+    }"
     :style="[
       { width: duracionMinutos * factorZoom + 'px', backgroundColor: miColor },
     ]"
@@ -9,16 +13,28 @@
     @dblclick="toggleDuracionBloque"
     @click.left="$emit('seleccionado')"
   >
-  <div class="boton" v-show="seleccionado" @click.stop="$emit('menuContextual', esteBloque.id)" id="botonOpciones">
-    <img src='@/assets/iconos/ellipsisVertical.svg' alt='Opciones' />
-  </div>
-
-    <div id="nombre">
-      {{ esteBloque.nombreEspacio }}
+    <div
+      class="boton"
+      v-show="seleccionado"
+      @click.stop="$emit('menuContextual', esteBloque.id)"
+      id="botonOpciones"
+    >
+      <img src="@/assets/iconos/ellipsisVertical.svg" alt="Opciones" />
+    </div>
+    <div id="barraTag" :style="[colorBarraTag]">
+      <div id="nombre">
+        {{ esteBloque.nombreEspacio }}
+      </div>
     </div>
 
-    <div id="botonExpandir" class="boton" style="margin: 0px auto" @click.stop="expandir" v-show="seleccionado">
-      <img src='@/assets/iconos/expand.svg' alt='expandir' style='' />
+    <div
+      id="botonExpandir"
+      class="boton"
+      style="margin: 0px auto"
+      @click.stop="expandir"
+      v-show="seleccionado"
+    >
+      <img src="@/assets/iconos/expand.svg" alt="expandir" style="" />
     </div>
 
     <loading v-show="eliminandose || settingTiempos" />
@@ -27,6 +43,7 @@
       id="menuContextual"
       :class="{ seleccionado }"
       @click.stop=""
+      @dblclick.stop=""
       v-show="mostrandoMenuContextual"
     >
       <div
@@ -36,9 +53,32 @@
       >
         Eliminar
       </div>
-      <div class="itemMenuContextual" @click="$refs.inputColor.click()">
+      <div class="itemMenuContextual"  @click="$refs.inputColor.click()">
         Seleccionar color
       </div>
+      <div class="itemMenuContextual" v-if="usuarioAdministrador || usuarioSuperadministrador" @click="iniciarSetHoraInicio">
+        Fijar hora de inicio
+      </div>
+      <input
+        type="time"
+        :value="tiempoInicioFormateado"
+        v-show="editandoHoraInicio"
+        ref="inputHoraInicio"
+        id="inputHoraInicio"
+        @change="setHoraInicio"
+      />
+
+      <div class="itemMenuContextual" v-if="usuarioAdministrador || usuarioSuperadministrador" @click="iniciarSetHoraFinal">
+        Fijar hora de finalización
+      </div>
+      <input
+        type="time"
+        :value="tiempoFinalFormateado"
+        v-show="editandoHoraFinal"
+        ref="inputHoraFinal"
+        id="inputHoraFinal"
+        @change="setHoraFinal"
+      />
 
       <input
         type="color"
@@ -55,7 +95,7 @@
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 export default {
-  components: { Loading,  },
+  components: { Loading },
   name: "BloqueHorario",
   props: {
     esteBloque: Object,
@@ -73,7 +113,10 @@ export default {
       coloresEspacios,
       eliminandose: false,
       settingTiempos: false,
-      mostrarVentana:false,
+      mostrarVentana: false,
+
+      editandoHoraInicio: false,
+      editandoHoraFinal: false,
     };
   },
   computed: {
@@ -110,6 +153,31 @@ export default {
     },
     minutosFinal() {
       return Math.round(this.esteBloque.millisFinal / 60000);
+    },
+    tiempoInicioFormateado() {
+      return this.toTiempoFormateado(this.minutosInicio);
+    },
+    tiempoFinalFormateado() {
+      return this.toTiempoFormateado(this.minutosFinal);
+    },
+    usuarioAsiste() {
+      return (
+        this.usuarioAdministrador ||
+        this.esteBloque.idsParticipantesConstantes.includes(this.usuario.id)
+      );
+    },
+    colorBarraTag() {
+      var color = "rgb(182 182 182)";
+
+      if (this.usuarioAsiste) {
+        color = "var(--calendarioUsuario)";
+      }
+      if(this.usuarioAdministrador){
+        color = "var(--calendarioUsuarioStrong)";
+      }
+      return {
+        backgroundColor: color,
+      };
     },
   },
   methods: {
@@ -244,9 +312,59 @@ export default {
           this.settingTiempos = false;
         });
     },
-    expandir(){
-      this.$emit('expandirme');
-    }
+    expandir() {
+      this.$emit("expandirme");
+    },
+    iniciarSetHoraInicio() {
+      this.$refs.inputHoraInicio.value = this.toTiempoFormateado(
+        this.minutosInicio
+      );
+      this.editandoHoraInicio = true;
+      this.editandoHoraFinal = false;
+    },
+    iniciarSetHoraFinal() {
+      this.$refs.inputHoraFinal.value = this.toTiempoFormateado(
+        this.minutosFinal
+      );
+      this.editandoHoraFinal = true;
+      this.editandoHoraInicio = false;
+    },
+    toTiempoFormateado(minutos) {
+      var horas = Math.floor(minutos / 60);
+      if (String(horas).length < 2) {
+        horas = "0" + horas;
+      }
+
+      var minutosSolos = String(Math.round(minutos - horas * 60));
+
+      if (minutosSolos.length < 2) {
+        minutosSolos = "0" + minutosSolos;
+      }
+
+      return horas + ":" + minutosSolos;
+    },
+    setHoraInicio() {
+      console.log(`Setting hora inicio`);
+      const inputTime = this.$refs.inputHoraInicio.value.split(":");
+      const inputHoras = parseInt(inputTime[0]);
+      const inputMinutos = parseInt(inputTime[1]);
+
+      const minutosTotal = inputHoras * 60 + inputMinutos;
+
+      console.log("Nuevo minutos inicio: " + minutosTotal);
+      this.setMinutos(minutosTotal, this.minutosFinal);
+    },
+    setHoraFinal() {
+      console.log(`Setting hora final`);
+      const inputTime = this.$refs.inputHoraFinal.value.split(":");
+      const inputHoras = parseInt(inputTime[0]);
+      const inputMinutos = parseInt(inputTime[1]);
+
+      const minutosTotal = inputHoras * 60 + inputMinutos;
+
+      console.log("Nuevo minutos final: " + minutosTotal);
+      this.setMinutos(this.minutosInicio, minutosTotal);
+    },
   },
 };
 </script>
@@ -258,24 +376,36 @@ export default {
   position: absolute;
   top: 0px;
   box-sizing: border-box;
+  border: 1px solid rgb(110, 110, 110);
+
 }
 .bloqueHorario.seleccionado {
-  border: 2px solid black;
   filter: brightness(1.7);
+  border: 2px solid white;
+
 }
-#botonOpciones{
+.bloqueHorario.usuarioAsiste {
+}
+#botonOpciones {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: calc(100% + 0px);
+  
+}
+#barraTag {
+  min-height: 20px;
+  width: 100%;
+  border-bottom: 1px solid rgb(204, 204, 204);
+  padding: 5px 10px;
+  box-sizing: border-box;
 }
 #nombre {
   text-align: center;
-  margin: 20px 0px;
 }
 
 #menuContextual {
   position: absolute;
-  top: 50%;
+  top: 0%;
   left: 50%;
 }
 
@@ -294,5 +424,4 @@ export default {
 .itemMenuContextual:hover {
   background-color: rgb(59, 59, 59);
 }
-
 </style>

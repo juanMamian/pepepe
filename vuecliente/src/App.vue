@@ -198,7 +198,7 @@
         </template>
       </div>
     </div>
-    <router-view id="visorRouter">asd</router-view>
+    <router-view id="visorRouter" :yo="yo">asd</router-view>
   </div>
 </template>
 
@@ -484,6 +484,14 @@ body {
   gap: 35px;
   padding: 20px 20px;
   margin-bottom: 20px;
+}
+
+.anuncioZonaVacia {
+    font-size: 13px;
+    color: gray;
+    text-align: center;
+    margin: 30px auto;
+    width: min(300px, 80%);
 }
 #descripcion {
   border: 2px solid var(--paletaMain);

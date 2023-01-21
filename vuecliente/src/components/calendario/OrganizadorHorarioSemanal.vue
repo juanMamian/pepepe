@@ -8,43 +8,55 @@
       :esteBloque="bloqueEnVentana"
       @cerrarme="idBloqueEnVentana = null"
     />
+    <div class="barraSeccion">
+      Organizador de horario
+      <div class="contenedorControles" style="margin-left: auto">
+        <div class="boton">
+          <img
+            src="@/assets/iconos/cog.svg"
+            @click.stop="mostrandoConfiguracion = !mostrandoConfiguracion"
+            alt="configrurar"
+            style=""
+          />
+        </div>
+      </div>
+    </div>
 
-    <div id="seleccionAdministradoresEspacios">
-      <div class="barraSeccion">
-        Mostrando espacios de:
-        <div class="contenedorControles" style="margin-left: auto">
-          <div class="boton">
-            <img
-              src="@/assets/iconos/cog.svg"
-              @click.stop="
-                seleccionandoAdministradoresEspacios =
-                  !seleccionandoAdministradoresEspacios
-              "
-              alt="configrurar"
-              style=""
+      
+      <div id="zonaConfiguracion" v-show="mostrandoConfiguracion">
+        <div id="configuracionAdministradoresEspacios">
+          <div class="barraSeccion">
+        Mostrando espacios de: 
+      </div>
+          <div class="campoCheckAdministradorEspacios">
+            <label for="checkAdministradorYo">Yo</label>
+            <input
+              type="checkbox"
+              name="checkAdministradorYo"
+              v-model="configuracionAdministradoresEspacios"
+              value="yo"
+              id=""
+            />
+          </div>
+          <div class="campoCheckAdministradorEspacios">
+            <label for="checkAdministradorYo">Profes</label>
+            <input
+              type="checkbox"
+              v-model="configuracionAdministradoresEspacios"
+              value="profesorxs"
+              id=""
             />
           </div>
         </div>
       </div>
-      <div
-        id="listaAdministradoresActivos"
-        class="listaPersonas"
-        v-show="!seleccionandoAdministradoresEspacios"
-      >
-        <icono-persona-autonomo
-          v-for="idAdmin of idsUsuariosSeleccionados"
-          :key="idAdmin"
-          :idPersona="idAdmin"
-        />
-      </div>
 
       <div
         class="zonaCheckAdministradorEspacios"
-        v-for="profe of usuariosProfe"
+        v-for="profe of usuariosSeleccionables"
         :key="profe.id"
-        v-show="seleccionandoAdministradoresEspacios"
+        v-show="false"
       >
-        <div class="nombreProfe">{{ profe.nombre }}</div>
+        <div class="nombreProfe">{{ profe.nombres }}</div>
         <input
           type="checkbox"
           :value="profe.id"
@@ -53,12 +65,9 @@
           v-model="idsUsuariosSeleccionados"
         />
       </div>
-    </div>
 
     <div id="seleccionEspacio">
-      <div class="barraSeccion">
-        Crear espacio:
-      </div>
+      <div class="barraSeccion">Crear espacio:</div>
       <select
         name="selectEspacioCrear"
         id="selectEspacioCrear"
@@ -106,7 +115,6 @@ import DiaOrganizadorHorario, {
 import { fragmentoEspacio } from "../frags";
 import { gql } from "apollo-server-core";
 import VentanaBloqueHorario from "./VentanaBloqueHorario.vue";
-import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
 
 const QUERY_ITERACIONES_SEMANALES_ESPACIOS = gql`
   query ($idsAdministradores: [ID]!) {
@@ -123,8 +131,8 @@ export default {
   components: {
     DiaOrganizadorHorario,
     VentanaBloqueHorario,
-    IconoPersonaAutonomo,
   },
+  props: { yo: Object },
   name: "OrganizadorHorarioSemanal",
   apollo: {
     espacios: {
@@ -142,8 +150,17 @@ export default {
         };
       },
       update({ espaciosByUsuariosAdmin }) {
-        this.idEspacioCrear=espaciosByUsuariosAdmin.find(e=>e.idAdministrador===this.usuario.id).id;
+        const primerEspacio = espaciosByUsuariosAdmin.find(
+          (e) => e.idAdministrador === this.usuario.id
+        );
+        if (primerEspacio) {
+          this.idEspacioCrear = primerEspacio.id;
+        }
+
         return espaciosByUsuariosAdmin;
+      },
+      skip() {
+        return !this.usuario?.id;
       },
     },
     usuariosProfe: {
@@ -151,7 +168,7 @@ export default {
         query {
           usuariosProfe {
             id
-            nombre
+            nombres
           }
         }
       `,
@@ -182,8 +199,8 @@ export default {
       factorZoom: 3,
       offset: 470,
       idEspacioCrear: null,
-      idsUsuariosSeleccionados: [],
-      seleccionandoAdministradoresEspacios: false,
+      configuracionAdministradoresEspacios: ["yo"],
+      mostrandoConfiguracion: false,
       bloquesHorario: [],
 
       idBloqueMenuContextual: null,
@@ -205,6 +222,30 @@ export default {
         (bloque) => bloque.id === this.idBloqueEnVentana
       );
     },
+    usuariosSeleccionables() {
+      var listaFinal = [...this.usuariosProfe];
+
+      if (!this.usuariosProfe.some((profe) => profe.id === this.usuario.id)) {
+        listaFinal.push({
+          id: this.usuario.id,
+          nombres: this.yo.nombres,
+        });
+      }
+
+      return listaFinal;
+    },
+    idsUsuariosSeleccionados(){
+      var listaFinal=[];
+      if(this.configuracionAdministradoresEspacios.includes("yo")){
+        listaFinal.push(this.usuario.id);
+      }
+
+      if(this.configuracionAdministradoresEspacios.includes("profesorxs")){
+        listaFinal.push(...this.usuariosProfe.map(u=>u.id));
+      }
+
+      return listaFinal;
+    }
   },
   methods: {
     addBloqueHorarioCache(nuevoBloque) {
@@ -288,13 +329,9 @@ export default {
 
       return false;
     },
+    
   },
-  mounted() {
-    if(this.usuario?.id){
-
-      this.idsUsuariosSeleccionados = [this.usuario.id];
-    }
-  },
+  
 };
 </script>
 
@@ -304,7 +341,7 @@ export default {
   flex-direction: column;
 }
 
-.zonaCheckAdministradorEspacios {
+#zonaConfiguracion {
   display: flex;
   gap: 20px;
   padding: 10px 10px;
@@ -312,10 +349,22 @@ export default {
 }
 
 .ventanaBloqueHorario {
-  z-index: 100;
+  z-index: 100000;
 }
 
-#contenedorDias{
+#seleccionEspacio {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#selectEspacioCrear {
+  font-size: 17px;
+  padding: 5px 10px;
+  margin-left: 10px;
+}
+
+#contenedorDias {
   width: min(1900px, 100vw);
   overflow-x: scroll;
   display: flex;

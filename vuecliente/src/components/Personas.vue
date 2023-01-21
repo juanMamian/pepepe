@@ -80,6 +80,7 @@ import Loading from "./utilidades/Loading.vue";
 import PersonaVistaLista from "./usuario/personaVistaLista.vue";
 import debounce from "debounce";
 // import { similarity } from "./utilidades/funciones";
+var stringSimilarity = require("string-similarity");
 
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
 
@@ -303,33 +304,19 @@ export default {
         );
       }
       if (this.textoBusquedaUsado) {
-        const textoBusquedaStripped = this.textoBusquedaUsado
-          .normalize("NFD")
-          .replace(/\p{Diacritic}/gu, "");
+        
 
         visibles.sort((a, b) => {
-          var res = 0;
-          var aStripped = (a.nombres + " " + a.apellidos)
-            .normalize("NFD")
-            .replace(/\p{Diacritic}/gu, "");
-          var bStripped = (b.nombres + " " + b.apellidos)
-            .normalize("NFD")
-            .replace(/\p{Diacritic}/gu, "");
-          if (
-            aStripped
-              .toLowerCase()
-              .search(textoBusquedaStripped.toLowerCase()) > -1
-          ) {
-            res++;
-          }
-          if (
-            bStripped
-              .toLowerCase()
-              .search(textoBusquedaStripped.toLowerCase()) > -1
-          ) {
-            res--;
-          }
-          return -res;
+          let res =
+          stringSimilarity.compareTwoStrings(
+            b.nombres + b.apellidos,
+            this.textoBusquedaUsado
+          ) -
+          stringSimilarity.compareTwoStrings(
+            a.nombres + a.apellidos,
+            this.textoBusquedaUsado
+          );
+          return res;
         });
       }
 

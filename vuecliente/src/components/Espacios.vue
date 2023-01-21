@@ -28,10 +28,31 @@
     </div>
 
     <div class="barraSeccion" @click="mostrandoEspacios = !mostrandoEspacios">
-      <img src='@/assets/iconos/angleDown.svg' style="height: 20px" alt='Abrir' :style="[{transform: mostrandoEspacios?'none':'rotate(-90deg)'}]" />
+      <img
+        src="@/assets/iconos/angleDown.svg"
+        style="height: 20px"
+        alt="Abrir"
+        :style="[{ transform: mostrandoEspacios ? 'none' : 'rotate(-90deg)' }]"
+      />
       Espacios
+
+      <div class="contenedorControles" style="margin-left: auto">
+        <div
+          class="boton"
+          @click.stop="crearNuevoEspacio"
+          v-show="mostrandoEspacios"
+        >
+          <img src="@/assets/iconos/plusCircle.svg" alt="Crear" style="" />
+        </div>
+      </div>
     </div>
     <div id="listaEspacios" v-show="mostrandoEspacios">
+      <div
+        class="anuncioZonaVacia"
+        v-if="!espaciosVisibles || espaciosVisibles.length < 1"
+      >
+        Aún no hay espacios
+      </div>
       <espacio
         v-for="espacio of espaciosVisibles"
         ref="espacios"
@@ -41,11 +62,30 @@
       />
     </div>
 
-    <div class="barraSeccion" @click="mostrandoOrganizadorSemanal=!mostrandoOrganizadorSemanal">
-      <img src='@/assets/iconos/angleDown.svg' style="height: 20px" alt='Abrir' :style="[{transform: mostrandoOrganizadorSemanal?'mostrandoOrganizadorSemanalnone':'rotate(-90deg)'}]"  /> Calendario semanal
+    <div
+      class="barraSeccion"
+      @click="mostrandoOrganizadorSemanal = !mostrandoOrganizadorSemanal"
+    >
+      <img
+        src="@/assets/iconos/angleDown.svg"
+        style="height: 20px"
+        alt="Abrir"
+        :style="[
+          {
+            transform: mostrandoOrganizadorSemanal
+              ? 'none'
+              : 'rotate(-90deg)',
+          },
+        ]"
+      />
+      Calendario semanal
     </div>
 
-    <organizador-horario-semanal v-show="mostrandoOrganizadorSemanal" ref="organizadorSemanal"/>
+    <organizador-horario-semanal
+      v-show="mostrandoOrganizadorSemanal"
+      ref="organizadorSemanal"
+      :yo="yo"
+    />
   </div>
 </template>
 
@@ -67,6 +107,9 @@ const QUERY_ESPACIOS = gql`
 
 export default {
   components: { Espacio, Loading, OrganizadorHorarioSemanal },
+  props:{
+    yo:Object,
+  },
   apollo: {
     todosEspacios: {
       query: QUERY_ESPACIOS,
@@ -81,13 +124,11 @@ export default {
       creandoEspacio: false,
 
       mostrandoEspacios: true,
-      mostrandoOrganizadorSemanal:false,
+      mostrandoOrganizadorSemanal: false,
     };
   },
   methods: {
     crearNuevoEspacio() {
-      if (!this.usuarioProfe && !this.usuarioSuperadministrador) return;
-
       this.creandoEspacio = true;
 
       this.$apollo
@@ -182,14 +223,21 @@ export default {
       );
     },
   },
-  beforeRouteLeave(to, from, next){
-    if(this.$refs.organizadorSemanal.checkVentanaBloque()){
+  watch: {
+    mostrandoOrganizadorSemanal(mostrando) {
+      if (mostrando) {
+        this.$refs.organizadorSemanal.$apollo.queries.espacios.refetch();
+      }
+    },
+  },
+  beforeRouteLeave(to, from, next) {
+    if (this.$refs.organizadorSemanal.checkVentanaBloque()) {
       console.log("Había bloque en ventana");
       return;
     }
-    
-    next()
-  }
+
+    next();
+  },
 };
 </script>
 

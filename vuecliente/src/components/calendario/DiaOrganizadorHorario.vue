@@ -6,16 +6,30 @@
 
     <div
       id="zonaBloques"
-      :style="[{ width: Math.round(anchoDiaMinutos * factorZoom) + 'px' }]"
+      :style="[
+        {
+          width: Math.round(anchoDiaMinutos * factorZoom) + 'px',
+          height: maxFila * (heightBloques + gapFilas) + 'px',
+        },
+      ]"
       @dblclick.self="crearBloqueHorario"
     >
       <bloque-horario
-        v-for="bloque of bloquesHorario"
+        v-for="bloque of bloquesHorarioEnriquecidos"
         :key="bloque.id"
         :esteBloque="bloque"
         :factorZoom="factorZoom"
         :style="[
-          { left: (bloque.millisInicio / 60000 - offset) * factorZoom + 'px' },
+          {
+            left: (bloque.millisInicio / 60000 - offset) * factorZoom + 'px',
+            top: (bloque.fila - 1) * (heightBloques + gapFilas) + 'px',
+            zIndex:
+              bloque.id === idBloqueMenuContextual
+                ? 10000
+                : bloque.id === idBloqueSeleccionado
+                ? 1000
+                : 100 - bloque.fila,
+          },
         ]"
         :idBloqueMenuContextual="idBloqueMenuContextual"
         :idBloqueSeleccionado="idBloqueSeleccionado"
@@ -77,17 +91,79 @@ export default {
       minutosRelevantesBase: [480, 540, 600, 630, 750, 810, 870, 930],
       creandoBloqueHorario: false,
       anchoDiaMinutos: 490,
+
+      heightBloques: 100,
+      gapFilas: 10,
     };
   },
   computed: {
     minutosRelevantes() {
       return this.minutosRelevantesBase;
     },
+    bloquesHorarioPriorizados() {
+      var listaFinal = [...this.bloquesHorario].sort((a, b) => {
+        var res = 0;
+
+        if (a.idAdministradorEspacio === this.usuario.id) {
+          res++;
+        }
+
+        if (b.idAdministradorEspacio === this.usuario.id) {
+          res--;
+        }
+
+        return -res;
+      });
+
+      return listaFinal;
+    },
+    bloquesHorarioEnriquecidos() {
+      var listaFinal = [
+        ...this.bloquesHorarioPriorizados.map((bloque) => {
+          return {
+            ...bloque,
+            fila: 0,
+          };
+        }),
+      ];
+      for (var i = 0; i < listaFinal.length; i++) {
+        //Check anteriores para saber si hay choque
+        let esteBloque = listaFinal[i];
+        for (var j = i; j >= 0; j--) {
+          let bloqueAnterior = listaFinal[j];
+          let colision =
+            (bloqueAnterior.millisInicio >= esteBloque.millisInicio &&
+              bloqueAnterior.millisInicio < esteBloque.millisFinal) ||
+            (bloqueAnterior.millisFinal > esteBloque.millisInicio &&
+              bloqueAnterior.millisFinal <= esteBloque.millisFinal) ||
+            (bloqueAnterior.millisInicio <= esteBloque.millisInicio &&
+              bloqueAnterior.millisFinal >= esteBloque.millisFinal);
+          if (colision && bloqueAnterior.fila >= esteBloque.fila) {
+            let nuevaFila = bloqueAnterior.fila + 1;
+            esteBloque.fila = nuevaFila;
+          }
+        }
+      }
+
+      return listaFinal;
+    },
+
+    maxFila() {
+      var maxFila = this.bloquesHorarioEnriquecidos.reduce((acc, bloque) => {
+        if (bloque.fila > acc) {
+          return bloque.fila;
+        }
+
+        return acc;
+      }, 0);
+
+      return maxFila;
+    },
   },
   methods: {
     toTiempoFormateado(minutos) {
       var horas = Math.floor(minutos / 60);
-      if (horas.length < 2) {
+      if (String(horas).length < 2) {
         horas = "0" + horas;
       }
 
@@ -201,9 +277,11 @@ export default {
 }
 #nombreDia {
   position: absolute;
-  bottom: calc(100% + 10px);
-  font-size: 12px;
-  color: rgb(51, 51, 51);
+  bottom: 100%;
+  font-size: 18px;
+  background-color: gray;
+  color: white;
+  width: 100%;
 }
 #zonaBloques {
   height: 100%;

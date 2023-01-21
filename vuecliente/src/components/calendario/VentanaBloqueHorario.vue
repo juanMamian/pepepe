@@ -56,9 +56,11 @@
           />
         </div>
 
-        <div id="zonaAdicionarAsistente" v-show="mostrandoBuscadorAsistentes">
+        <div id="zonaAdicionarAsistente" v-show="mostrandoBuscadorAsistentes" :class="{deshabilitado:$apollo.queries.participantesCasaMaestraVida.loading}">
           <div class="zonaInformacion" style="display: flex">
-            <div class="informacion">Adicionando asistentes</div>
+            <div class="informacion" style="display: flex">
+              <loading v-show="$apollo.queries.participantesCasaMaestraVida.loading" />
+              Adicionando asistentes</div>
 
             <div class="contenedorControles" style="margin-left: auto">
               <div class="boton" @click="mostrandoBuscadorAsistentes = false">
@@ -98,11 +100,12 @@
 <script>
 import gql from "graphql-tag";
 import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
+import Loading from '../utilidades/Loading.vue';
 var stringSimilarity = require("string-similarity");
 const diasSemana=["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 export default {
-  components: { IconoPersonaAutonomo },
+  components: { IconoPersonaAutonomo, Loading },
   name: "VentanaBloqueHorario",
   props: {
     esteBloque: Object,
@@ -261,7 +264,7 @@ export default {
     },
     toTiempoFormateado(minutos) {
       var horas = Math.floor(minutos / 60);
-      if (horas.length < 2) {
+      if (String(horas).length < 2) {
         horas = "0" + horas;
       }
 
