@@ -9,7 +9,7 @@
       :style="[
         {
           width: Math.round(anchoDiaMinutos * factorZoom) + 'px',
-          height: maxFila * (heightBloques + gapFilas) + 'px',
+          height: maxFila * (heightBloques + (6*gapFilas)) + 'px',
         },
       ]"
       @dblclick.self="crearBloqueHorario"
@@ -22,7 +22,7 @@
         :style="[
           {
             left: (bloque.millisInicio / 60000 - offset) * factorZoom + 'px',
-            top: (bloque.fila - 1) * (heightBloques + gapFilas) + 'px',
+            top: (1*gapFilas) +((bloque.fila - 1) * (heightBloques + gapFilas)) + 'px',
             zIndex:
               bloque.id === idBloqueMenuContextual
                 ? 10000
@@ -282,6 +282,7 @@ export default {
   background-color: gray;
   color: white;
   width: 100%;
+  padding: 5px 10px;
 }
 #zonaBloques {
   height: 100%;

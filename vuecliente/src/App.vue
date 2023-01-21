@@ -120,7 +120,7 @@
             class="botonNavBarra botonNav hoverNegro"
             id="navActividadesVirtuales"
           >
-            Espacios
+            Horario semanal
           </div>
         </router-link>
         <router-link
