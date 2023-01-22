@@ -1,5 +1,5 @@
 <template>
-  <div class="ventanaBloqueHorario" @click="idPersonaMenuCx=null">
+  <div class="ventanaBloqueHorario" @click="idPersonaMenuCx = null">
     <div id="fondoGris" @click.self.stop="$emit('cerrarme')"></div>
     <div id="laPropiaVentana" :style="[{ backgroundColor: miColor }]">
       <div id="titulo">
@@ -8,7 +8,9 @@
 
       <div id="infoBasica">
         <div class="info">
-          {{diasSemana[esteBloque.diaSemana]}}. {{toTiempoFormateado(minutosInicio)}} - {{toTiempoFormateado(minutosFinal)}} 
+          {{ diasSemana[esteBloque.diaSemana] }}.
+          {{ toTiempoFormateado(minutosInicio) }} -
+          {{ toTiempoFormateado(minutosFinal) }}
         </div>
       </div>
 
@@ -28,13 +30,12 @@
         <div class="barraListaUsuarios">
           <div class="nombreListaUsuarios">Asisten</div>
           <div class="contenedorControles">
-            <div class="boton">
-              <img
-                src="@/assets/iconos/join.png"
-                alt="Agregar"
-                style=""
-                @click="iniciarAdicionAsistente"
-              />
+            <div
+              class="boton"
+              @click="iniciarAdicionAsistente"
+              v-if="usuarioSuperadministrador || usuarioAdministrador"
+            >
+              <img src="@/assets/iconos/join.png" alt="Agregar" style="" />
             </div>
           </div>
         </div>
@@ -46,21 +47,30 @@
             :idPersona="idAsistente"
             :seleccionado="idAsistente === idPersonaSeleccionado"
             :opcionesMenuCx="opcionesAsistentes"
-            :menuContextual="idPersonaMenuCx===idAsistente"
+            :menuContextual="idPersonaMenuCx === idAsistente"
             @click.stop="
               idPersonaSeleccionado =
                 idPersonaSeleccionado === idAsistente ? null : idAsistente
             "
-            @click.native.right.stop.prevent="idPersonaMenuCx=idAsistente"
+            @click.native.right.stop.prevent="idPersonaMenuCx = idAsistente"
             @remover="removerAsistente(idAsistente)"
           />
         </div>
 
-        <div id="zonaAdicionarAsistente" v-show="mostrandoBuscadorAsistentes" :class="{deshabilitado:$apollo.queries.participantesCasaMaestraVida.loading}">
+        <div
+          id="zonaAdicionarAsistente"
+          v-show="mostrandoBuscadorAsistentes"
+          :class="{
+            deshabilitado: $apollo.queries.participantesCasaMaestraVida.loading,
+          }"
+        >
           <div class="zonaInformacion" style="display: flex">
             <div class="informacion" style="display: flex">
-              <loading v-show="$apollo.queries.participantesCasaMaestraVida.loading" />
-              Adicionando asistentes</div>
+              <loading
+                v-show="$apollo.queries.participantesCasaMaestraVida.loading"
+              />
+              Adicionando asistentes
+            </div>
 
             <div class="contenedorControles" style="margin-left: auto">
               <div class="boton" @click="mostrandoBuscadorAsistentes = false">
@@ -77,7 +87,10 @@
               @keypress.enter="setTextoBusqueda"
             />
           </div>
-          <div class="listaPersonas" :class="{deshabilitado: addingAsistente}">
+          <div
+            class="listaPersonas"
+            :class="{ deshabilitado: addingAsistente }"
+          >
             <icono-persona-autonomo
               v-for="idAdicionable of idsPersonasAdicionablesOrdenadas"
               :key="idAdicionable"
@@ -88,7 +101,6 @@
                   idPersonaSeleccionado === idAdicionable ? null : idAdicionable
               "
               @dblclick.native.stop="addComoAsistente(idAdicionable)"
-              
             />
           </div>
         </div>
@@ -100,9 +112,17 @@
 <script>
 import gql from "graphql-tag";
 import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
-import Loading from '../utilidades/Loading.vue';
+import Loading from "../utilidades/Loading.vue";
 var stringSimilarity = require("string-similarity");
-const diasSemana=["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const diasSemana = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+  "Domingo",
+];
 
 export default {
   components: { IconoPersonaAutonomo, Loading },
@@ -128,19 +148,19 @@ export default {
     return {
       participantesCasaMaestraVida: [],
       idPersonaSeleccionado: null,
-      idPersonaMenuCx:null,
+      idPersonaMenuCx: null,
       mostrandoBuscadorAsistentes: false,
 
       textoBusqueda: "",
-      versionBusqueda:0,
+      versionBusqueda: 0,
 
-      addingAsistente:false,
+      addingAsistente: false,
 
-      opcionesAsistentes:[
+      opcionesAsistentes: [
         {
           textoVisible: "Remover",
-          evento: "remover"
-        }
+          evento: "remover",
+        },
       ],
 
       diasSemana,
@@ -160,18 +180,17 @@ export default {
       return this.personasAdicionables.map((persona) => persona.id);
     },
     personasAdicionablesOrdenadas() {
-      var versionBusqueda=this.versionBusqueda;
+      var versionBusqueda = this.versionBusqueda;
       if (!this.textoBusqueda || this.textoBusqueda.length <= 2) {
         return this.personasAdicionables;
       }
-      var textoBusqueda=this.textoBusqueda;
-      console.log("Version "+versionBusqueda)
-      if(this.versionBusqueda<0){
+      var textoBusqueda = this.textoBusqueda;
+      console.log("Version " + versionBusqueda);
+      if (this.versionBusqueda < 0) {
         console.log("Error desconocido");
         return;
       }
       return [...this.personasAdicionables].sort((a, b) => {
-
         let res =
           stringSimilarity.compareTwoStrings(
             b.nombres + b.apellidos,
@@ -185,11 +204,11 @@ export default {
         return res;
       });
     },
-    idsPersonasAdicionablesOrdenadas(){
-      return this.personasAdicionablesOrdenadas.map(p=>p.id);
+    idsPersonasAdicionablesOrdenadas() {
+      return this.personasAdicionablesOrdenadas.map((p) => p.id);
     },
-    usuarioAdministrador(){
-      return this.esteBloque.idAdministradorEspacio===this.usuario.id;
+    usuarioAdministrador() {
+      return this.esteBloque.idAdministradorEspacio === this.usuario.id;
     },
     minutosInicio() {
       return Math.round(this.esteBloque.millisInicio / 60000);
@@ -203,64 +222,77 @@ export default {
       this.mostrandoBuscadorAsistentes = true;
     },
     setTextoBusqueda() {
-      var nuevoString=this.$refs.inputTextoBuscador.value
+      var nuevoString = this.$refs.inputTextoBuscador.value;
       this.textoBusqueda = nuevoString;
       this.versionBusqueda++;
-      
     },
-    addComoAsistente(idAsistente){
-        if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
-          return;
-        }
+    addComoAsistente(idAsistente) {
+      if (!this.usuarioAdministrador && !this.usuarioSuperadministrador) {
+        return;
+      }
 
-        this.addingAsistente=true;
-        this.$apollo.mutate({
+      this.addingAsistente = true;
+      this.$apollo
+        .mutate({
           mutation: gql`
-            mutation($idEspacio: ID!, $idIteracion: ID!, $idAsistente: ID!){
-              addAsistenteIteracionSemanalEspacio(idEspacio: $idEspacio, idIteracion: $idIteracion, idAsistente: $idAsistente){
+            mutation ($idEspacio: ID!, $idIteracion: ID!, $idAsistente: ID!) {
+              addAsistenteIteracionSemanalEspacio(
+                idEspacio: $idEspacio
+                idIteracion: $idIteracion
+                idAsistente: $idAsistente
+              ) {
                 id
                 idsParticipantesConstantes
               }
             }
           `,
-          variables:{
+          variables: {
             idEspacio: this.esteBloque.idEspacio,
             idIteracion: this.esteBloque.id,
-            idAsistente
-          }
-        }).then(()=>{
-          this.addingAsistente=false;
-        }).catch((error)=>{
-          this.addingAsistente=false;
-          console.log(`Error ${error}`);
+            idAsistente,
+          },
         })
+        .then(() => {
+          this.addingAsistente = false;
+        })
+        .catch((error) => {
+          this.addingAsistente = false;
+          console.log(`Error ${error}`);
+        });
     },
-    removerAsistente(idAsistente){
-        if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
-          return;
-        }
+    removerAsistente(idAsistente) {
+      if (!this.usuarioAdministrador && !this.usuarioSuperadministrador) {
+        return;
+      }
 
-        this.removingAsistente=true;
-        this.$apollo.mutate({
+      this.removingAsistente = true;
+      this.$apollo
+        .mutate({
           mutation: gql`
-            mutation($idEspacio: ID!, $idIteracion: ID!, $idAsistente: ID!){
-              removeAsistenteIteracionSemanalEspacio(idEspacio: $idEspacio, idIteracion: $idIteracion, idAsistente: $idAsistente){
+            mutation ($idEspacio: ID!, $idIteracion: ID!, $idAsistente: ID!) {
+              removeAsistenteIteracionSemanalEspacio(
+                idEspacio: $idEspacio
+                idIteracion: $idIteracion
+                idAsistente: $idAsistente
+              ) {
                 id
                 idsParticipantesConstantes
               }
             }
           `,
-          variables:{
+          variables: {
             idEspacio: this.esteBloque.idEspacio,
             idIteracion: this.esteBloque.id,
-            idAsistente
-          }
-        }).then(()=>{
-          this.removingAsistente=false;
-        }).catch((error)=>{
-          this.removingAsistente=false;
-          console.log(`Error ${error}`);
+            idAsistente,
+          },
         })
+        .then(() => {
+          this.removingAsistente = false;
+        })
+        .catch((error) => {
+          this.removingAsistente = false;
+          console.log(`Error ${error}`);
+        });
     },
     toTiempoFormateado(minutos) {
       var horas = Math.floor(minutos / 60);
@@ -292,7 +324,7 @@ export default {
 
 #laPropiaVentana {
   position: fixed;
-  top: 5%;
+  top: 8%;
   left: 50%;
   transform: translate(-50%, -0%);
   width: min(700px, 95%);
@@ -300,7 +332,7 @@ export default {
   max-height: 90%;
   overflow-y: scroll;
   z-index: 1;
-  background-color: rgb(197, 197, 197);
+  background-color: rgb(218 218 218);
 }
 
 #titulo {
@@ -311,12 +343,12 @@ export default {
   margin-bottom: 20px;
 }
 
-#infoBasica{
-  padding: 20px 10px;
+#infoBasica {
+  padding: 20px 20px;
 }
 .barraListaUsuarios {
-  background-color: rgb(100, 100, 100);
-  padding: 10px 10px;
+  background-color: rgb(169 169 169);
+  padding: 10px 20px;
   display: flex;
   align-items: center;
 }
@@ -324,8 +356,6 @@ export default {
 .barraListaUsuarios .contenedorControles {
   margin-left: auto;
 }
-
-
 
 .zonaInformacion {
   display: flex;

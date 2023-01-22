@@ -8,7 +8,7 @@
       :esteBloque="bloqueEnVentana"
       @cerrarme="idBloqueEnVentana = null"
     />
-    <div class="barraSeccion">
+    <div class="barraComponente">
       Organizador de horario
       <div class="contenedorControles" style="margin-left: auto">
         <div class="boton">
@@ -23,56 +23,59 @@
     </div>
 
     <div id="zonaConfiguracion" v-show="mostrandoConfiguracion">
-      <div
-        id="configuracionAdministradoresEspacios"
-        class="bloqueConfiguracion"
-      >
-        <div class="barraSeccion">Mostrando espacios de:</div>
-        <div class="campoCheckAdministradorEspacios">
-          <label for="checkAdministradorYo">Yo</label>
-          <input
-            type="checkbox"
-            name="checkAdministradorYo"
-            v-model="configuracionAdministradoresEspacios"
-            value="yo"
-            id=""
-          />
-        </div>
-        <div class="campoCheckAdministradorEspacios">
-          <label for="checkAdministradorYo">Profes</label>
-          <input
-            type="checkbox"
-            v-model="configuracionAdministradoresEspacios"
-            value="profesorxs"
-            id=""
-          />
-        </div>
-      </div>
+      <div class="barraSeccion">Configuración.</div>
 
-      <div class="bloqueConfiguracion">
-        <div class="campoConfiguracion">
-          <label for="checkMostrarBloquesNiñosPequeños"
-            >Mostrar bloques dirigidos a niñxs pequeñxs</label
-          >
-          <input
-            type="checkbox"
-            name="checkMostrarBloquesNiñosPequeños"
-            ref="checkMostrarBloquesNiñosPequeños"
-            id="checkMostrarBloquesNiñosPequeños"
-            v-model="mostrarBloquesParaChiquis"
-          />
+      <div id="contenedorBloquesConfiguracion">
+        <div
+          id="configuracionAdministradoresEspacios"
+          class="bloqueConfiguracion"
+        >
+          <div class="campoConfiguracion">
+            <label for="checkAdministradorYo">Mostrar mis bloques</label>
+            <input
+              type="checkbox"
+              name="checkAdministradorYo"
+              v-model="configuracionAdministradoresEspacios"
+              value="yo"
+              id=""
+            />
+          </div>
+          <div class="campoConfiguracion">
+            <label for="checkAdministradorYo">Mostrar bloques de profes</label>
+            <input
+              type="checkbox"
+              v-model="configuracionAdministradoresEspacios"
+              value="profesorxs"
+              id=""
+            />
+          </div>
         </div>
-        <div class="campoConfiguracion">
-          <label for="checkMostrarBloquesTodos"
-            >Mostrar bloques dirigidos a todxs</label
-          >
-          <input
-            type="checkbox"
-            name="checkMostrarBloquesTodos"
-            ref="checkMostrarBloquesTodos"
-            id="checkMostrarBloquesTodos"
-            v-model="mostrarBloquesParaTodos"
-          />
+
+        <div class="bloqueConfiguracion">
+          <div class="campoConfiguracion">
+            <label for="checkMostrarBloquesNiñosPequeños"
+              >Mostrar bloques dirigidos a niñxs pequeñxs</label
+            >
+            <input
+              type="checkbox"
+              name="checkMostrarBloquesNiñosPequeños"
+              ref="checkMostrarBloquesNiñosPequeños"
+              id="checkMostrarBloquesNiñosPequeños"
+              v-model="mostrarBloquesParaChiquis"
+            />
+          </div>
+          <div class="campoConfiguracion">
+            <label for="checkMostrarBloquesTodos"
+              >Mostrar bloques dirigidos a todxs</label
+            >
+            <input
+              type="checkbox"
+              name="checkMostrarBloquesTodos"
+              ref="checkMostrarBloquesTodos"
+              id="checkMostrarBloquesTodos"
+              v-model="mostrarBloquesParaTodos"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -93,24 +96,7 @@
       />
     </div>
 
-    <div id="seleccionEspacio">
-      <div class="barraSeccion">Crear espacio:</div>
-      <select
-        name="selectEspacioCrear"
-        id="selectEspacioCrear"
-        ref="selectEspacioCrear"
-        v-model="idEspacioCrear"
-      >
-        <option disabled>Seleccionar espacio para crear</option>
-        <option
-          v-for="espacio of espaciosCreables"
-          :key="espacio.id"
-          :value="espacio.id"
-        >
-          {{ espacio.nombre }}
-        </option>
-      </select>
-    </div>
+  
     <div id="contenedorDias">
       <dia-organizador-horario
         v-for="(dia, index) of diasSemana"
@@ -217,11 +203,25 @@ export default {
         return iteracionesSemanalesEspaciosByAdministradores;
       },
     },
+    bloquesHorarioUsuarioAsiste: {
+      query: gql`
+        query {
+          bloquesHorarioUsuarioAsiste {
+            ...fragBloqueHorario
+          }
+        }
+        ${fragmentoBloqueHorario}
+      `,
+      skip() {
+        return !this.configuracionAdministradoresEspacios.includes("yo");
+      },
+    },
   },
   data() {
     return {
       usuariosProfe: [],
       espacios: [],
+      bloquesHorarioUsuarioAsiste:[],
       diasSemana: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
       factorZoom: 3,
       offset: 470,
@@ -280,17 +280,26 @@ export default {
 
       return listaFinal;
     },
-    bloquesActivos(){
-      var listaFinal=[...this.bloquesHorario];
-      if(!this.mostrarBloquesParaChiquis){
-        listaFinal=listaFinal.filter(bloque=>!bloque.paraChiquis);
+    bloquesActivos() {
+      var listaFinal = [...this.bloquesHorario];
+      const idsListaFinal = listaFinal.map((elem) => elem.id);
+      if (this.configuracionAdministradoresEspacios.includes("yo")) {
+        for (var bloqueU of this.bloquesHorarioUsuarioAsiste) {
+          if (!idsListaFinal.includes(bloqueU.id)) {
+            listaFinal.push(bloqueU);
+          }
+        }
       }
-      if(!this.mostrarBloquesParaTodos){
-        listaFinal=listaFinal.filter(bloque=>bloque.paraChiquis);
+
+      if (!this.mostrarBloquesParaChiquis) {
+        listaFinal = listaFinal.filter((bloque) => !bloque.paraChiquis);
+      }
+      if (!this.mostrarBloquesParaTodos) {
+        listaFinal = listaFinal.filter((bloque) => bloque.paraChiquis);
       }
 
       return listaFinal;
-    }
+    },
   },
   methods: {
     addBloqueHorarioCache(nuevoBloque) {
@@ -385,12 +394,25 @@ export default {
 }
 
 #zonaConfiguracion {
+  padding: 10px 10px;
+  background-color: rgb(224, 224, 224);
+}
+#contenedorBloquesConfiguracion {
   display: flex;
   gap: 20px;
-  padding: 10px 10px;
-  background-color: rgb(197, 197, 197);
 }
 
+.bloqueConfiguracion {
+  background-color: rgb(197, 197, 197);
+  padding: 10px 10px;
+}
+.campoConfiguracion {
+  display: flex;
+  gap: 20px;
+}
+.campoConfiguracion input {
+  margin-left: auto;
+}
 .ventanaBloqueHorario {
   z-index: 100000;
 }

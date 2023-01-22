@@ -209,7 +209,7 @@ export default {
       );
     },
     eliminarse() {
-      if (!this.usuarioAdministrador && !this.superadministrador) {
+      if (!this.usuarioAdministrador && !this.usuarioSuperadministrador) {
         console.log("No autorizado");
         return;
       }
@@ -243,6 +243,12 @@ export default {
       console.log(
         `Toggleando bloque que tiene minutosInicio ${this.minutosInicio} y minutosFinal ${this.minutosFinal}`
       );
+
+      if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
+        console.log("No autorizado");
+        return;
+      }
+
       if (this.minutosInicio === 480) {
         if (this.minutosFinal === 600) {
           this.setMinutos(480, 540);

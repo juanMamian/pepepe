@@ -1,8 +1,10 @@
 <template>
-  <div class="diaOrganizadorHorario">
+  <div class="diaOrganizadorHorario" >
     <div id="nombreDia">
       {{ nombreDia }}
     </div>
+
+    
 
     <div
       id="zonaBloques"
@@ -10,11 +12,26 @@
       :style="[
         {
           width: Math.round(anchoDiaMinutos * factorZoom) + 'px',
-          height: maxFila * (heightBloques + (6*gapFilas)) + 'px',
+          height: maxFila * (heightBloques + 6 * gapFilas) + 'px',
         },
       ]"
-      @dblclick.self="crearBloqueHorario"
+      @dblclick.self="iniciarCreacionBloqueHorario"
+      @click.self="bloqueCreacionHorario=null"
     >
+    <bloque-creacion-horario
+    v-if="bloqueCreacionHorario"
+    style="z-index: 100000"
+      :style="[
+        {
+          left: (bloqueCreacionHorario.millisInicio / 60000 - offset) * factorZoom + 'px',
+          top:
+            ((1 * gapFilas) - 5) +
+            'px',          
+        },
+      ]"
+      :esteBloque="bloqueCreacionHorario"
+      @espacioSeleccionado="crearBloqueHorario"
+    />
       <bloque-horario
         v-for="bloque of bloquesHorarioEnriquecidos"
         :key="bloque.id"
@@ -23,7 +40,10 @@
         :style="[
           {
             left: (bloque.millisInicio / 60000 - offset) * factorZoom + 'px',
-            top: (1*gapFilas) +((bloque.fila - 1) * (heightBloques + gapFilas)) + 'px',
+            top:
+              1 * gapFilas +
+              (bloque.fila - 1) * (heightBloques + gapFilas) +
+              'px',
             zIndex:
               bloque.id === idBloqueMenuContextual
                 ? 10000
@@ -70,8 +90,9 @@ export const fragmentoBloqueHorario = gql`
 
 import gql from "graphql-tag";
 import BloqueHorario from "./BloqueHorario.vue";
+import BloqueCreacionHorario from "./BloqueCreacionHorario.vue";
 export default {
-  components: { BloqueHorario },
+  components: { BloqueHorario, BloqueCreacionHorario },
   name: "DiaOrganizadorHorario",
   props: {
     nombreDia: String,
@@ -88,6 +109,7 @@ export default {
     },
     offset: Number,
   },
+
   data() {
     return {
       minutosRelevantesBase: [480, 540, 600, 630, 750, 810, 870, 930],
@@ -96,6 +118,8 @@ export default {
 
       heightBloques: 100,
       gapFilas: 10,
+
+      bloqueCreacionHorario: null,
     };
   },
   computed: {
@@ -178,13 +202,9 @@ export default {
       return horas + ":" + minutosSolos;
     },
 
-    mostrarCalculoMinutos(){
-    },
+    mostrarCalculoMinutos() {},
 
-    crearBloqueHorario(e) {
-      if (!this.idEspacioCrear) {
-        return;
-      }
+    iniciarCreacionBloqueHorario(e) {
       const posDia = this.$refs.zonaBloques.getBoundingClientRect();
       const xMouse = e.clientX;
 
@@ -232,6 +252,17 @@ export default {
       var millisInicio = minutosInicioCorregido * 60000;
       var millisFinal = minutosFinalCorregido * 60000;
 
+      this.bloqueCreacionHorario = {
+        millisInicio,
+        millisFinal,
+      };
+    },
+
+    crearBloqueHorario(idEspacioCrear) {
+      if (!this.idEspacioCrear || !this.bloqueCreacionHorario) {
+        return;
+      }
+
       this.creandoBloqueHorario = true;
       this.$apollo
         .mutate({
@@ -254,15 +285,16 @@ export default {
             ${fragmentoBloqueHorario}
           `,
           variables: {
-            idEspacio: this.idEspacioCrear,
-            millisInicio,
-            millisFinal,
+            idEspacio: idEspacioCrear,
+            millisInicio: this.bloqueCreacionHorario.millisInicio,
+            millisFinal: this.bloqueCreacionHorario.millisFinal,
             diaSemana: this.numeroDia,
           },
         })
         .then(({ data: { crearBloqueHorario } }) => {
           this.creandoBloqueHorario = false;
           this.$emit("bloqueHorarioCreado", crearBloqueHorario);
+          this.bloqueCreacionHorario=null;
         })
         .catch((error) => {
           console.log("Error: " + error);

@@ -40,9 +40,10 @@ export const typeDefs = gql`
     extend type Query{
         espacio(idEspacio:ID!):Espacio,
         todosEspacios:[Espacio],
+        espaciosControladosUsuario:[Espacio],
         espaciosByUsuariosAdmin(idsUsuarios: [ID]!):[Espacio],
         iteracionesSemanalesEspaciosByAdministradores(idsAdministradores: [ID]!): [IteracionSemanalEspacio],
-
+        bloquesHorarioUsuarioAsiste:[IteracionSemanalEspacio]
         
     }
 
@@ -112,7 +113,70 @@ export const resolvers = {
             console.log(`Encontradas ${lasIteraciones.length} iteraciones`);
 
             return lasIteraciones;
-        }
+        },
+        async bloquesHorarioUsuarioAsiste(_:any, __:any, contexto: contextoQuery){
+          if(!contexto.usuario?.id){
+            throw new AuthenticationError('loginRequerido');
+          }
+          
+          const credencialesUsuario=contexto.usuario;
+          
+          
+          try {
+            var losEspacios:any=await Espacio.find({"iteracionesSemanales.idsParticipantesConstantes": credencialesUsuario.id}).exec();
+          } catch (error) {
+            console.log(`Error getting espacios : `+ error);
+            throw new ApolloError('Error conectando con la base de datos');            
+          }
+
+          var losBloques:Array<any>=[];
+
+          for(const espacio of losEspacios){
+            let bloquesUsuarioAsiste=espacio.iteracionesSemanales.filter(it=>it.idsParticipantesConstantes.includes(credencialesUsuario.id));
+
+            losBloques.push(...bloquesUsuarioAsiste);
+          }
+
+          return losBloques;
+        },
+        async espaciosControladosUsuario(_:any, {}:any, contexto: contextoQuery){
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            
+            var queryOpts:any={
+                idAdministrador: credencialesUsuario.id
+            }
+            if(credencialesUsuario.permisos.includes("superadministrador")){
+                queryOpts={};
+            }
+
+            try {
+                var losEspacios:any=await Espacio.find(queryOpts).exec();
+            } catch (error) {
+                console.log(`Error getting espacios : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+                
+            }
+
+            if(credencialesUsuario.permisos.includes("superadministrador")){
+                losEspacios.sort((a, b)=>{
+                    var res=0;
+                    if(a.idAdministrador===credencialesUsuario.id){
+                        res++
+                    }
+                    if(b.idAdministrador===credencialesUsuario.id){
+                        res--
+                    }
+
+                    return -res;
+                })
+            }
+
+            return losEspacios;
+        },
     },
 
     Mutation: {
@@ -343,6 +407,8 @@ export const resolvers = {
                 throw new ApolloError('Error conectando con la base de datos');
             };
 
+            //Authorization
+
             const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
             const tienePermisosEspeciales = permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
 
@@ -381,6 +447,15 @@ export const resolvers = {
                 console.log(`Error getting espacio : ` + error);
                 throw new ApolloError('Error conectando con la base de datos');
 
+            }
+
+            //Authorization
+
+            const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
+            const tienePermisosEspeciales = permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+
+            if (!esAdministradorEspacio && !tienePermisosEspeciales) {
+                throw new AuthenticationError("No autorizado");
             }
 
             var laIteracion = elEspacio.iteracionesSemanales.id(idIteracion);

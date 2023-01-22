@@ -400,6 +400,8 @@ export default {
     brightness(106%) contrast(102%);
 
   --paletaMain: #efae4a;
+  --paletaSecond: #eeb867;
+
   --paletaSelect: #cc3363;
   --paletaFondo: #fffcf9;
   --paletaVerde: #62c370;
@@ -432,6 +434,13 @@ body {
   height: 100vh;
   background-color: #fffcf9;
   font-family: "Salsa", sans-serif;
+}
+.barraComponente{
+  padding: 10px 20px;
+  font-size: 20px;
+  background-color: var(--paletaSecond);
+  display: flex;
+  align-items: center;
 }
 .contenedorControles {
   display: flex;

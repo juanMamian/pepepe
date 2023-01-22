@@ -74,7 +74,7 @@
 		"prefix": "resolverapollo",
 		"body": [
 			"async $1(_:any, {$2}:any, contexto: contextoQuery){",
-			"\t$3",
+			"\t$0",
 			"},",
 		],
 	},
