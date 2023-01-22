@@ -22,49 +22,76 @@
       </div>
     </div>
 
-      
-      <div id="zonaConfiguracion" v-show="mostrandoConfiguracion">
-        <div id="configuracionAdministradoresEspacios">
-          <div class="barraSeccion">
-        Mostrando espacios de: 
-      </div>
-          <div class="campoCheckAdministradorEspacios">
-            <label for="checkAdministradorYo">Yo</label>
-            <input
-              type="checkbox"
-              name="checkAdministradorYo"
-              v-model="configuracionAdministradoresEspacios"
-              value="yo"
-              id=""
-            />
-          </div>
-          <div class="campoCheckAdministradorEspacios">
-            <label for="checkAdministradorYo">Profes</label>
-            <input
-              type="checkbox"
-              v-model="configuracionAdministradoresEspacios"
-              value="profesorxs"
-              id=""
-            />
-          </div>
+    <div id="zonaConfiguracion" v-show="mostrandoConfiguracion">
+      <div
+        id="configuracionAdministradoresEspacios"
+        class="bloqueConfiguracion"
+      >
+        <div class="barraSeccion">Mostrando espacios de:</div>
+        <div class="campoCheckAdministradorEspacios">
+          <label for="checkAdministradorYo">Yo</label>
+          <input
+            type="checkbox"
+            name="checkAdministradorYo"
+            v-model="configuracionAdministradoresEspacios"
+            value="yo"
+            id=""
+          />
+        </div>
+        <div class="campoCheckAdministradorEspacios">
+          <label for="checkAdministradorYo">Profes</label>
+          <input
+            type="checkbox"
+            v-model="configuracionAdministradoresEspacios"
+            value="profesorxs"
+            id=""
+          />
         </div>
       </div>
 
-      <div
-        class="zonaCheckAdministradorEspacios"
-        v-for="profe of usuariosSeleccionables"
-        :key="profe.id"
-        v-show="false"
-      >
-        <div class="nombreProfe">{{ profe.nombres }}</div>
-        <input
-          type="checkbox"
-          :value="profe.id"
-          ref="checkProfe"
-          id="checkProfe"
-          v-model="idsUsuariosSeleccionados"
-        />
+      <div class="bloqueConfiguracion">
+        <div class="campoConfiguracion">
+          <label for="checkMostrarBloquesNiñosPequeños"
+            >Mostrar bloques dirigidos a niñxs pequeñxs</label
+          >
+          <input
+            type="checkbox"
+            name="checkMostrarBloquesNiñosPequeños"
+            ref="checkMostrarBloquesNiñosPequeños"
+            id="checkMostrarBloquesNiñosPequeños"
+            v-model="mostrarBloquesParaChiquis"
+          />
+        </div>
+        <div class="campoConfiguracion">
+          <label for="checkMostrarBloquesTodos"
+            >Mostrar bloques dirigidos a todxs</label
+          >
+          <input
+            type="checkbox"
+            name="checkMostrarBloquesTodos"
+            ref="checkMostrarBloquesTodos"
+            id="checkMostrarBloquesTodos"
+            v-model="mostrarBloquesParaTodos"
+          />
+        </div>
       </div>
+    </div>
+
+    <div
+      class="zonaCheckAdministradorEspacios"
+      v-for="profe of usuariosSeleccionables"
+      :key="profe.id"
+      v-show="false"
+    >
+      <div class="nombreProfe">{{ profe.nombres }}</div>
+      <input
+        type="checkbox"
+        :value="profe.id"
+        ref="checkProfe"
+        id="checkProfe"
+        v-model="idsUsuariosSeleccionados"
+      />
+    </div>
 
     <div id="seleccionEspacio">
       <div class="barraSeccion">Crear espacio:</div>
@@ -93,7 +120,7 @@
         :factorZoom="factorZoom"
         :offset="offset"
         :idEspacioCrear="idEspacioCrear"
-        :bloquesHorario="bloquesHorario.filter((b) => b.diaSemana === index)"
+        :bloquesHorario="bloquesActivos.filter((b) => b.diaSemana === index)"
         :idBloqueMenuContextual="idBloqueMenuContextual"
         :idBloqueSeleccionado="idBloqueSeleccionado"
         @bloqueSeleccionado="
@@ -199,11 +226,11 @@ export default {
       factorZoom: 3,
       offset: 470,
       idEspacioCrear: null,
-      
+
       configuracionAdministradoresEspacios: ["yo"],
       mostrandoConfiguracion: false,
-      mostrarEspaciosParaChiquis:true,
-
+      mostrarBloquesParaChiquis: true,
+      mostrarBloquesParaTodos: true,
 
       bloquesHorario: [],
 
@@ -229,7 +256,10 @@ export default {
     usuariosSeleccionables() {
       var listaFinal = [...this.usuariosProfe];
 
-      if (!this.usuariosProfe.some((profe) => profe.id === this.usuario.id) && this.yo) {
+      if (
+        !this.usuariosProfe.some((profe) => profe.id === this.usuario.id) &&
+        this.yo
+      ) {
         listaFinal.push({
           id: this.usuario.id,
           nombres: this.yo.nombres,
@@ -238,14 +268,25 @@ export default {
 
       return listaFinal;
     },
-    idsUsuariosSeleccionados(){
-      var listaFinal=[];
-      if(this.configuracionAdministradoresEspacios.includes("yo")){
+    idsUsuariosSeleccionados() {
+      var listaFinal = [];
+      if (this.configuracionAdministradoresEspacios.includes("yo")) {
         listaFinal.push(this.usuario.id);
       }
 
-      if(this.configuracionAdministradoresEspacios.includes("profesorxs")){
-        listaFinal.push(...this.usuariosProfe.map(u=>u.id));
+      if (this.configuracionAdministradoresEspacios.includes("profesorxs")) {
+        listaFinal.push(...this.usuariosProfe.map((u) => u.id));
+      }
+
+      return listaFinal;
+    },
+    bloquesActivos(){
+      var listaFinal=[...this.bloquesHorario];
+      if(!this.mostrarBloquesParaChiquis){
+        listaFinal=listaFinal.filter(bloque=>!bloque.paraChiquis);
+      }
+      if(!this.mostrarBloquesParaTodos){
+        listaFinal=listaFinal.filter(bloque=>bloque.paraChiquis);
       }
 
       return listaFinal;
@@ -333,9 +374,7 @@ export default {
 
       return false;
     },
-    
   },
-  
 };
 </script>
 
