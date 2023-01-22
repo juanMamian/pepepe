@@ -23,7 +23,7 @@
     </div>
     <div id="barraTag" :style="[colorBarraTag]">
       <div id="nombre">
-        {{ esteBloque.nombreEspacio }}
+        <img src='@/assets/iconos/babySolid.svg' v-if="esteBloque.paraChiquis" alt='bebé' style='height: 15px' />{{ esteBloque.nombreEspacio }}
       </div>
     </div>
 
@@ -400,7 +400,10 @@ export default {
   box-sizing: border-box;
 }
 #nombre {
-  text-align: center;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
 }
 
 #menuContextual {

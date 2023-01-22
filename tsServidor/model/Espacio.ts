@@ -43,7 +43,10 @@ EsquemaIteracionSemanal.virtual('idAdministradorEspacio').get(function (this: an
 })
 EsquemaIteracionSemanal.virtual('idEspacio').get(function (this: any) {
     return this.parent()._id;
-})
+});
+EsquemaIteracionSemanal.virtual('paraChiquis').get(function (this: any) {
+    return this.parent().paraChiquis;
+});
 
 export const esquemaEspacio = new mongoose.Schema({
     nombre: {
@@ -74,6 +77,10 @@ export const esquemaEspacio = new mongoose.Schema({
     iteracionesSemanales:{
         type: [EsquemaIteracionSemanal],
         default:[],
+    },
+    paraChiquis:{
+        type: Boolean,
+        default: false,
     }
 
 });

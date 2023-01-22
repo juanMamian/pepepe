@@ -107,8 +107,7 @@ export default {
       query: QUERY_PERSONAS,
       update: function ({ todosUsuarios }) {
         return todosUsuarios;
-      },
-      fetchPolicy: "cache-and-network"
+      },      
     },
     nodosSolidaridadPublicitados: {
       query: gql`

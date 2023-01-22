@@ -421,6 +421,11 @@ export default {
 html {
   height: 100vh;
 }
+* {
+  box-sizing: border-box;
+  padding: 0px 0px;
+  
+}
 body {
   margin: 0px;
   width: 100%;

@@ -69,6 +69,50 @@
 		],
 		"description": "Descargar de mongoose un nodo de conocimiento by id",
 	},
+	"Crear resolver de apollo":{
+		"scope": "typescript",
+		"prefix": "resolverapollo",
+		"body": [
+			"async $1(_:any, {$2}:any, contexto: contextoQuery){",
+			"\t$3",
+			"},",
+		],
+	},
+	"Descargar documento mongoose":{
+		"scope":"typescript",
+		"prefix": "descargardocumento",
+		"body": [
+			"try {",
+			"\tvar $1:any = await $2.findById($3).exec();",
+			"\tif(!$1) throw '${4:documento} no encontrado';",
+			"}",
+			"catch(error) {",
+			"\tthrow new ApolloError('Error conectando con la base de datos');",
+			"}",
+			"$0"
+
+		]
+	},
+	"Guardar documento mongoose":{
+		"scope":"typescript",
+		"prefix": "guardardocumento",
+		"body": [
+			"try {",
+			"\tawait $1.save();",
+			"}",
+			"catch(error) {",
+			"\tthrow new ApolloError('Error guardando $2');",
+			"}",
+			"$0"
+
+		]
+	},
+	"Lanzar error de autenticacion":{
+		"scope": "typescript",
+		"prefix": "errorautenticion",
+		"body": ["throw new AuthenticationError('No autorizado')"],
+
+	},
 	"Enviar mutacion apollo": {
 		"scope": "javascript",
 		"prefix": "apollomutacion",
@@ -93,5 +137,13 @@
 			"\t\tthis.${7:enviandoOperacion}=false;",
 			"\t})",
 		]
+	},
+	"log con color":{
+		"scope": "typescript",
+		"prefix": "consolecolor",
+		"body": [
+			"console.log('\\x1b[35m%s\\x1b[0m', `$1`);"
+		]
+		
 	}
 }

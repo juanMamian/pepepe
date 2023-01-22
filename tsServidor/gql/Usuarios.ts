@@ -166,7 +166,8 @@ export const typeDefs = gql`
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
-        buscarPersonas(textoBuscar:String!):[Usuario]
+        buscarPersonas(textoBuscar:String!):[Usuario],
+        participantesCasaMaestraVida:[Usuario],
 
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
@@ -246,7 +247,7 @@ export const resolvers = {
         usuariosProfe: async function (_: any, args: any, context: contextoQuery) {
             console.log(`Fetching la lista de todos los profes`);
             try {
-                var profes = await Usuario.find({ permisos: "actividadesEstudiantiles-profe" }).exec();
+                var profes = await Usuario.find({ permisos: "maestraVida-profesor" }).exec();
             } catch (error) {
                 console.log(`Error buscando profes en la base de datos`);
                 throw new ApolloError("Error conectando con la base de datos");
@@ -389,6 +390,24 @@ export const resolvers = {
 
             return token;
         },
+        participantesCasaMaestraVida: async function(_:any, __:any, contexto: contextoQuery){
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            
+
+            try {
+                var losParticipantes:any=await Usuario.find({$or:[{permisos: "maestraVida-estudiante"}, {permisos: "maestraVida-profesor"}]}).exec();
+            } catch (error) {
+                console.log(`Error getting lista de usuarios participantes de Maestra Vida : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+                
+            }
+
+            return losParticipantes;
+        }
         
 
     },

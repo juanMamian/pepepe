@@ -6,6 +6,7 @@
 
     <div
       id="zonaBloques"
+      ref="zonaBloques"
       :style="[
         {
           width: Math.round(anchoDiaMinutos * factorZoom) + 'px',
@@ -63,6 +64,7 @@ export const fragmentoBloqueHorario = gql`
     nombreEspacio
     idAdministradorEspacio
     idEspacio
+    paraChiquis
   }
 `;
 
@@ -176,11 +178,14 @@ export default {
       return horas + ":" + minutosSolos;
     },
 
+    mostrarCalculoMinutos(){
+    },
+
     crearBloqueHorario(e) {
       if (!this.idEspacioCrear) {
         return;
       }
-      const posDia = this.$el.getBoundingClientRect();
+      const posDia = this.$refs.zonaBloques.getBoundingClientRect();
       const xMouse = e.clientX;
 
       const xRes = xMouse - posDia.left;

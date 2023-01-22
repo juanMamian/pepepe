@@ -8,16 +8,6 @@
     </router-view>
     <div id="barraControles">
       <div
-        class="boton botonControl"
-        title="Crear nuevo espacio"
-        v-show="usuarioProfe && !creandoEspacio"
-        @click="crearNuevoEspacio"
-      >
-        <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
-      </div>
-      <loading texto="" v-show="creandoEspacio" />
-
-      <div
         class="boton"
         @click="verTodos = !verTodos"
         style="margin-right: 15px"
@@ -40,10 +30,11 @@
         <div
           class="boton"
           @click.stop="crearNuevoEspacio"
-          v-show="mostrandoEspacios"
+          v-show="mostrandoEspacios && !creandoEspacio"
         >
           <img src="@/assets/iconos/plusCircle.svg" alt="Crear" style="" />
         </div>
+        <loading texto="" v-show="creandoEspacio" />
       </div>
     </div>
     <div id="listaEspacios" v-show="mostrandoEspacios">
@@ -72,9 +63,7 @@
         alt="Abrir"
         :style="[
           {
-            transform: mostrandoOrganizadorSemanal
-              ? 'none'
-              : 'rotate(-90deg)',
+            transform: mostrandoOrganizadorSemanal ? 'none' : 'rotate(-90deg)',
           },
         ]"
       />
@@ -107,8 +96,8 @@ const QUERY_ESPACIOS = gql`
 
 export default {
   components: { Espacio, Loading, OrganizadorHorarioSemanal },
-  props:{
-    yo:Object,
+  props: {
+    yo: Object,
   },
   apollo: {
     todosEspacios: {
@@ -123,7 +112,7 @@ export default {
       verTodos: false,
       creandoEspacio: false,
 
-      mostrandoEspacios: true,
+      mostrandoEspacios: false,
       mostrandoOrganizadorSemanal: false,
     };
   },

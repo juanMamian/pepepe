@@ -199,8 +199,12 @@ export default {
       factorZoom: 3,
       offset: 470,
       idEspacioCrear: null,
+      
       configuracionAdministradoresEspacios: ["yo"],
       mostrandoConfiguracion: false,
+      mostrarEspaciosParaChiquis:true,
+
+
       bloquesHorario: [],
 
       idBloqueMenuContextual: null,
@@ -225,7 +229,7 @@ export default {
     usuariosSeleccionables() {
       var listaFinal = [...this.usuariosProfe];
 
-      if (!this.usuariosProfe.some((profe) => profe.id === this.usuario.id)) {
+      if (!this.usuariosProfe.some((profe) => profe.id === this.usuario.id) && this.yo) {
         listaFinal.push({
           id: this.usuario.id,
           nombres: this.yo.nombres,

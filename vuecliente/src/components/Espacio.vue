@@ -94,6 +94,9 @@
       class="zonaPrimerNivel"
       v-show="mostrando === 'descripcion'"
     >
+    <div id="zonaParaChiquis" @click="toggleEstadoParaChiquis" :class="{deshabilitado: settingEstadoParaChiquis}">
+      <img src='@/assets/iconos/babySolid.svg' alt='Chiqui' style='height: 15px' /> {{esteEspacio.paraChiquis?'Espacio dirigido a niñxs pequeñxs':'Espacio abierto para todos'}}
+    </div>
       <div
         id="descripcion"
         class="contenidoTexto"
@@ -301,10 +304,39 @@ export default {
 
       introduciendoEventoPublicoCalendario:false,
 
+      settingEstadoParaChiquis:false,
+
       eliminandose: false,
     };
   },
   methods: {
+    toggleEstadoParaChiquis(){
+      if(!this.usuarioSuperadministrador && !this.administrador){
+        console.log("No autorizado");
+        return;
+      }
+
+      this.settingEstadoParaChiquis=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idEspacio: ID!, $nuevoEstado:Boolean!){
+            setEspacioParaChiquis(idEspacio: $idEspacio, nuevoEstado: $nuevoEstado){
+               id
+               paraChiquis 
+            }
+          }
+          `,
+          variables:{
+            idEspacio: this.esteEspacio.id,
+            nuevoEstado:!this.esteEspacio.paraChiquis,  
+          }
+        }).then(()=>{
+          this.settingEstadoParaChiquis=false;            
+        }).catch((error)=>{
+          console.log('Error: '+ error);
+          this.settingEstadoParaChiquis=false;
+        })
+    },
     guardarNuevoNombre() {
       this.nuevoNombre = this.$refs.inputNuevoNombre.value;
 
@@ -624,6 +656,12 @@ export default {
   min-height: 50px;
   padding: 10px 2%;
   border-radius: 10px;
+}
+#zonaParaChiquis{
+  display: flex;
+  padding: 5px 10px;
+  gap: 10px;
+  align-items: center;
 }
 #zonaAdministrador {
   display: flex;

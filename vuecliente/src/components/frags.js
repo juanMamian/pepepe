@@ -6,5 +6,6 @@ export const fragmentoEspacio = gql`
     nombre
     descripcion
     idAdministrador
+    paraChiquis
   }
 `;
