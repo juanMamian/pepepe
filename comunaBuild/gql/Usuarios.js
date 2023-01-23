@@ -53,6 +53,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         objetivo:Boolean,
         aprendido:Boolean,
         estudiado: Date,
+        periodoRepaso:Int,
         iteracionesRepaso: [IteracionRepasoNodoConocimiento]
     }
 
@@ -158,7 +159,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
-        buscarPersonas(textoBuscar:String!):[Usuario]
+        buscarPersonas(textoBuscar:String!):[Usuario],
+        participantesCasaMaestraVida:[Usuario],
 
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
@@ -195,6 +197,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         setIntervaloIteracionRepaso(idUsuario: ID!, idNodo: ID!, idIteracion:ID!, nuevoIntervalo:Float!):IteracionRepasoNodoConocimiento,
 
         setDateNodoConocimientoEstudiadoUsuario(idUsuario: ID!, idNodo: ID!, fecha:Date!):DatoNodoUsuario,
+        setPeriodoRepasoNodoConocimientoUsuario(idNodo: ID!, nuevoPeriodoRepaso: Int!):DatoNodoUsuario,
 
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
@@ -232,7 +235,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Fetching la lista de todos los profes`);
                 try {
-                    var profes = yield Usuario_1.ModeloUsuario.find({ permisos: "actividadesEstudiantiles-profe" }).exec();
+                    var profes = yield Usuario_1.ModeloUsuario.find({ permisos: "maestraVida-profesor" }).exec();
                 }
                 catch (error) {
                     console.log(`Error buscando profes en la base de datos`);
@@ -371,6 +374,23 @@ exports.resolvers = {
                 return token;
             });
         },
+        participantesCasaMaestraVida: function (_, __, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var losParticipantes = yield Usuario_1.ModeloUsuario.find({ $or: [{ permisos: "maestraVida-estudiante" }, { permisos: "maestraVida-profesor" }] }).exec();
+                }
+                catch (error) {
+                    console.log(`Error getting lista de usuarios participantes de Maestra Vida : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                return losParticipantes;
+            });
+        }
     },
     Mutation: {
         editarDatosUsuario: function (_, { nuevosDatos }, context) {
@@ -611,7 +631,7 @@ exports.resolvers = {
                     }
                     console.log(`Encontrados ${currentNodos.length} nodos current`);
                     todosNodosAfectados.push(...currentNodos);
-                    currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.tipo === 'requiere' && v.rol === tipoRol).map(v => v.idRef)), []);
+                    currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.rol === tipoRol).map(v => v.idRef)), []);
                     console.log(`Current ids queda en ${currentIds} con length ${currentIds.length}`);
                 }
                 console.log(`Encontrados ${todosNodosAfectados.length} nodos encadenados: ${todosNodosAfectados.map(n => n.nombre)}`);
@@ -637,7 +657,45 @@ exports.resolvers = {
                     console.log(`error guardando usuario en la base de datos: ${error}`);
                     throw new apollo_server_express_1.ApolloError("");
                 }
-                return elUsuario.atlas.datosNodos.filter(dn => idsNodosAfectados.includes(dn.idNodo));
+                let datosNodoAfectados = elUsuario.atlas.datosNodos.filter(dn => idsNodosAfectados.includes(dn.idNodo));
+                console.log(`Se afectaron ${datosNodoAfectados.length} datos de nodo`);
+                // for(const dato of datosNodoAfectados){
+                //     console.log(`${JSON.stringify(dato)}`);
+                // }
+                return datosNodoAfectados;
+            });
+        },
+        setPeriodoRepasoNodoConocimientoUsuario: function (_, { idNodo, nuevoPeriodoRepaso }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Peticion de set periodo de repaso en ${nuevoPeriodoRepaso} para el nodo ${idNodo}`);
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                }
+                catch (error) {
+                    console.log(`error buscando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+                var elDatoNodo = elUsuario.atlas.datosNodos.find(dn => dn.idNodo === idNodo);
+                if (!elDatoNodo) {
+                    let elDatoNodo = elUsuario.atlas.datosNodos.create({
+                        idNodo,
+                    });
+                    elUsuario.atlas.datosNodos.push(elDatoNodo);
+                }
+                elDatoNodo.periodoRepaso = nuevoPeriodoRepaso;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`error guardando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+                return elDatoNodo;
             });
         },
         setNodoAtlasTarget: function (_, { idNodo }, contexto) {
@@ -710,8 +768,7 @@ exports.resolvers = {
         },
         guardarInformeEstudianteMaestraVida: function (_, { idUsuario, year, periodo, idProfe, categoria, texto }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||`);
-                console.log(`Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
+                console.log('\x1b[35m%s\x1b[0m', `Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
                     if (!elUsuario) {
@@ -756,7 +813,7 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`error guardando el nodo: ${error}`);
                 }
-                console.log(`Descripcion guardado`);
+                console.log(`Informe guardado`);
                 return elInforme;
             });
         },

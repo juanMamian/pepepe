@@ -25,7 +25,7 @@ const esquemaIteracionRepaso = new mongoose_1.default.Schema({
     intervalo: {
         type: Number,
         default: 86400000
-    },
+    }
 });
 const EsquemaInformeUsuario = new mongoose_1.default.Schema({
     year: {
@@ -35,7 +35,7 @@ const EsquemaInformeUsuario = new mongoose_1.default.Schema({
     periodo: {
         type: String,
         required: true,
-        enum: ["primero", "segundo", "tercero"],
+        enum: ["primero", "segundo", "tercero", "total"],
     },
     idProfe: {
         type: String,
@@ -123,10 +123,24 @@ const esquemaNotificacionActividadForo = new mongoose_1.default.Schema({
     }
 });
 const esquemaDatoNodo = new mongoose_1.default.Schema({
-    idNodo: { type: String, required: true },
-    objetivo: { type: Boolean, default: false },
-    aprendido: { type: Boolean, default: false },
-    estudiado: { type: Date },
+    idNodo: {
+        type: String, required: true
+    },
+    objetivo: {
+        type: Boolean,
+        default: false
+    },
+    aprendido: {
+        type: Boolean,
+        default: false
+    },
+    estudiado: {
+        type: Date
+    },
+    periodoRepaso: {
+        type: Number,
+        min: 86400000, //24 horas
+    },
     iteracionesRepaso: {
         type: [esquemaIteracionRepaso],
         default: []
@@ -370,6 +384,20 @@ const esquemaUsuario = new mongoose_1.default.Schema({
             default: 0
         }
     }
+});
+esquemaUsuario.pre("save", function (next) {
+    var nuevoDatosNodos = [];
+    console.log("Revisando si hay datos nodo repetidos");
+    for (const dato of this.atlas.datosNodos) {
+        if (!nuevoDatosNodos.map(dn => dn.idNodo).includes(dato.idNodo)) {
+            nuevoDatosNodos.push(dato);
+        }
+        else {
+            console.log("Habia un dato nodo repetido");
+        }
+    }
+    this.atlas.datosNodos = nuevoDatosNodos;
+    next();
 });
 esquemaUsuario.methods.getEdad = function () {
     console.log(`convirtiendo ${this.fechaNacimiento} a edad`);

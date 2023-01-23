@@ -19,6 +19,7 @@ const Evento_1 = require("../model/Evento");
 const controlAtlasConocimiento_1 = require("../controlAtlasConocimiento");
 const config_1 = require("../model/config");
 exports.idAtlasConocimiento = "61ea0b0f17a5d80da7e94320";
+const permisosEspecialesAtlas = ["superadministrador", "atlasAdministrador"];
 exports.typeDefs = apollo_server_express_1.gql `
 type Vinculo{
     id:ID!,
@@ -59,6 +60,7 @@ type NodoConocimiento{
     clases: [ClaseNodoConocimiento],
     coordX: Int,
     coordY: Int,
+    tipoNodo: String,
     vinculos: [Vinculo],
     coordsManuales: Coords,
     coords:Coords,
@@ -117,6 +119,7 @@ extend type Mutation{
     eliminarNodo(idNodo:ID!):ID,
     editarDescripcionNodoConocimiento(idNodo:ID!, nuevoDescripcion:String!):NodoConocimiento,
     editarKeywordsNodoConocimiento(idNodo:ID!, nuevoKeywords:String!):NodoConocimiento,
+    setTipoNodo(idNodo: ID!, nuevoTipoNodo: String!):NodoConocimiento,
 
     addExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
     addPosibleExpertoNodo(idNodo:ID!, idUsuario:ID!):NodoConocimiento,
@@ -163,7 +166,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`enviando todos los nombres, vinculos y coordenadas`);
                 try {
-                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
+                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre tipoNodo descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
                     console.log(`encontrados ${todosNodos.length} nodos`);
                 }
                 catch (error) {
@@ -762,6 +765,39 @@ exports.resolvers = {
                     console.log(`Error mirroring expertos del nodo hacia miembros del foro. E: ${error}`);
                 }
                 console.log(`Nodo guardado`);
+                return elNodo;
+            });
+        },
+        setTipoNodo: function (_, { idNodo, nuevoTipoNodo }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                    if (!elNodo)
+                        throw 'Nodo no encontrado';
+                }
+                catch (error) {
+                    console.log('Error descargando el nodo de la base de datos: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                ;
+                const esExperto = elNodo.expertos.includes(credencialesUsuario.id);
+                const tienePermisosEspeciales = permisosEspecialesAtlas.some(p => credencialesUsuario.permisos.includes(p));
+                if (!esExperto && !tienePermisosEspeciales) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                elNodo.tipoNodo = nuevoTipoNodo;
+                try {
+                    yield elNodo.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el nodo: ${error}`);
+                    throw new apollo_server_express_1.ApolloError(`Error conectando con la base de datos`);
+                }
                 return elNodo;
             });
         },
