@@ -499,7 +499,7 @@ export default {
       nuevoInformeEspacios: null,
       nuevoInformeComentario: null,
 
-      periodoInforme: "total",
+      periodoInforme: "primero",
       activable: 0,
     };
   },
@@ -728,7 +728,7 @@ export default {
           `,
           variables: {
             idUsuario: this.estaPersona.id,
-            year: 2022,
+            year: 2023,
             periodo: this.periodoInforme,
             idProfe: this.usuario.id,
             categoria,
@@ -819,7 +819,7 @@ export default {
               ...this.informes
                 .filter(
                   (i) =>
-                    i.year == 2022 &&
+                    i.year == 2023 &&
                     i.periodo === this.periodoInforme &&
                     i.categoria === "objetivos" &&
                     i.texto &&
@@ -880,7 +880,7 @@ export default {
               ...this.informes
                 .filter(
                   (i) =>
-                    i.year == 2022 &&
+                    i.year == 2023 &&
                     i.periodo === this.periodoInforme &&
                     i.categoria === "proyectos" &&
                     i.texto &&
@@ -923,7 +923,7 @@ export default {
               ...this.informes
                 .filter(
                   (i) =>
-                    i.year == 2022 &&
+                    i.year == 2023 &&
                     i.periodo === this.periodoInforme &&
                     i.categoria === "espacios" &&
                     i.texto &&
@@ -970,7 +970,7 @@ export default {
               ...this.informes
                 .filter(
                   (i) =>
-                    i.year == 2022 &&
+                    i.year == 2023 &&
                     i.periodo === this.periodoInforme &&
                     i.categoria === "comentario" &&
                     i.texto &&
@@ -1112,7 +1112,7 @@ export default {
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
-                text: "PERIODO AGOSTO - OCTUBRE DE 2022",
+                text: "PERIODO AGOSTO - OCTUBRE DE 2023",
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
               }),
@@ -1202,28 +1202,28 @@ export default {
       }
       var miInformeObjetivos = this.informes.find(
         (i) =>
-          i.year === 2022 &&
+          i.year === 2023 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "objetivos"
       );
       var miInformeEspacios = this.informes.find(
         (i) =>
-          i.year === 2022 &&
+          i.year === 2023 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "espacios"
       );
       var miInformeComentario = this.informes.find(
         (i) =>
-          i.year === 2022 &&
+          i.year === 2023 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "comentario"
       );
       var miInformeProyectos = this.informes.find(
         (i) =>
-          i.year === 2022 &&
+          i.year === 2023 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "proyectos"
@@ -1377,7 +1377,7 @@ function saveDocumentToFile(doc, fileName) {
 
 #selectoresPeriodo .selector.activo {
   border-color: transparent;
-  color: var(--mainColor);
+  color: black;
 }
 
 .contenedorSeccionInforme {
