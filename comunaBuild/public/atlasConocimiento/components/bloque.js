@@ -30,21 +30,21 @@ const bloqueComponent={
         },
         iconoSrc(){
             if(this.ejemplo){
-                return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/iconoEjemplo.svg"
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoEjemplo.svg"
             }
             else if(this.herramientaInteractiva){
-                return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/iconoHerramientaInteractiva.svg"
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoHerramientaInteractiva.svg"
             }
             else if(this.cuento){
-                return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/iconoCuento.svg"
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoCuento.svg"
             }
             else if(this.spoiler){
-                return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/iconoSpoiler.svg"
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoSpoiler.svg"
             }
             else if(this.evaluacion){
-                return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/iconoEvaluacion.svg"
+                return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/iconoEvaluacion.svg"
             }
-            return "https://pe-pe-pe.herokuapp.com/public/atlasConocimiento/iconos/puzzlePiece.svg"
+            return "http://192.168.1.100:3000/public/atlasConocimiento/iconos/puzzlePiece.svg"
         },
         textoCerrarBoton(){
             if(this.textoboton==='Iniciar' || this.textoboton==='Intentar'){

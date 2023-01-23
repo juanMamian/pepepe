@@ -1,7 +1,7 @@
 
 @font-face{
     font-family: 'Salsa';
-    src: url("https://pe-pe-pe.herokuapp.com/public/resources/fonts/Salsa/Salsa-Regular.ttf");
+    src: url("http://192.168.1.100:3000/public/resources/fonts/Salsa/Salsa-Regular.ttf");
     font-style:normal ;
 }
 
@@ -71,6 +71,12 @@ justify-content:center;
 border: 2px dashed gray;
 padding: 5px;
 }
+
+.contenedorFlex {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+    }
 .operacionReto {
         margin: 10px 10px;
         background-color: #449ae6;
@@ -100,6 +106,7 @@ padding: 5px;
 	border-radius: 50%;
 	margin: 5px;
 	background-color: red;
+	flex-shrink: 0;
     }
 .fadeIn-enter-active{
 	animation: fadeIn 0.8s;
