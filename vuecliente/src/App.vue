@@ -439,9 +439,11 @@ body {
   padding: 20px 10px;
   background-color: rgb(224, 224, 224);
 }
-#contenedorBloquesConfiguracion {
+.contenedorBloquesConfiguracion {
   display: flex;
   gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .bloqueConfiguracion {

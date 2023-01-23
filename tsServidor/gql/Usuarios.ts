@@ -1,13 +1,14 @@
 import { ApolloError, AuthenticationError, gql, UserInputError, withFilter } from "apollo-server-express";
 // import { ModeloUsuario as Usuario, permisosDeUsuario,  validarDatosUsuario} from "../model/Usuario"
 import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario, charProhibidosNombresUsuario, charProhibidosUsername, minLengthNombresUsuario, minLengthApellidosUsuario, minLengthUsername, minLengthEmail, minLengthPassword, maxLengthPassword, charProhibidosPassword, emailValidator } from "../model/Usuario"
-import { ModeloNodoSolidaridad as NodoSolidaridad} from "../model/atlasSolidaridad/NodoSolidaridad";
+import { ModeloNodoSolidaridad as NodoSolidaridad } from "../model/atlasSolidaridad/NodoSolidaridad";
 
 import { GraphQLDateTime } from "graphql-iso-date";
 import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
-import { create } from "domain";
+import { ModeloEspacio as Espacio } from "../model/Espacio";
+
 const jwt = require("jsonwebtoken");
 
 const bcrypt = require("bcryptjs");
@@ -149,6 +150,7 @@ export const typeDefs = gql`
        fuerzaCentroMasa: FuerzaPolar,
        nombre:String,
        objetivosEstudiante: [NodoSolidaridad],
+       espacioActual: String,
 
     }
     input DatosEditablesUsuario{
@@ -162,7 +164,7 @@ export const typeDefs = gql`
     }    
 
     extend type Query {
-        todosUsuarios:[Usuario],
+        todosUsuarios(dateActual: Date):[Usuario],
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
@@ -264,7 +266,7 @@ export const resolvers = {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
                 throw new ApolloError("Error de conexión a la base de datos");
             }
-            
+
             console.log(`Enviando lista de todos los usuarios`);
             return todosUsuarios;
         },
@@ -320,13 +322,13 @@ export const resolvers = {
 
             try {
                 var elUsuario: any = await Usuario.findOne({ username }, "username password permisos").exec();
-                if(!elUsuario)throw "Usuario no encontrado"
+                if (!elUsuario) throw "Usuario no encontrado"
             } catch (error) {
                 console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
 
             }
-            
+
             const correctLogin = await bcrypt.compare(password, elUsuario.password);
             if (!correctLogin) {
                 console.log(`Contraseña errada. Rechazando`);
@@ -390,25 +392,25 @@ export const resolvers = {
 
             return token;
         },
-        participantesCasaMaestraVida: async function(_:any, __:any, contexto: contextoQuery){
-            if(!contexto.usuario?.id){
+        participantesCasaMaestraVida: async function (_: any, __: any, contexto: contextoQuery) {
+            if (!contexto.usuario?.id) {
                 throw new AuthenticationError('loginRequerido');
             }
-            
-            const credencialesUsuario=contexto.usuario;
-            
+
+            const credencialesUsuario = contexto.usuario;
+
 
             try {
-                var losParticipantes:any=await Usuario.find({$or:[{permisos: "maestraVida-estudiante"}, {permisos: "maestraVida-profesor"}]}).exec();
+                var losParticipantes: any = await Usuario.find({ $or: [{ permisos: "maestraVida-estudiante" }, { permisos: "maestraVida-profesor" }] }).exec();
             } catch (error) {
-                console.log(`Error getting lista de usuarios participantes de Maestra Vida : `+ error);
+                console.log(`Error getting lista de usuarios participantes de Maestra Vida : ` + error);
                 throw new ApolloError('Error conectando con la base de datos');
-                
+
             }
 
             return losParticipantes;
         }
-        
+
 
     },
     Mutation: {
@@ -654,7 +656,7 @@ export const resolvers = {
                 }
                 console.log(`Encontrados ${currentNodos.length} nodos current`);
                 todosNodosAfectados.push(...currentNodos);
-                currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v =>v.rol === tipoRol).map(v => v.idRef)), []);
+                currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.rol === tipoRol).map(v => v.idRef)), []);
                 console.log(`Current ids queda en ${currentIds} con length ${currentIds.length}`);
 
             }
@@ -684,7 +686,7 @@ export const resolvers = {
                 throw new ApolloError("");
             }
 
-            let datosNodoAfectados=elUsuario.atlas.datosNodos.filter(dn=>idsNodosAfectados.includes(dn.idNodo));
+            let datosNodoAfectados = elUsuario.atlas.datosNodos.filter(dn => idsNodosAfectados.includes(dn.idNodo));
             console.log(`Se afectaron ${datosNodoAfectados.length} datos de nodo`);
             // for(const dato of datosNodoAfectados){
             //     console.log(`${JSON.stringify(dato)}`);
@@ -695,12 +697,12 @@ export const resolvers = {
         setPeriodoRepasoNodoConocimientoUsuario: async function (_: any, { idNodo, nuevoPeriodoRepaso }: any, contexto: contextoQuery) {
 
             console.log('\x1b[35m%s\x1b[0m', `Peticion de set periodo de repaso en ${nuevoPeriodoRepaso} para el nodo ${idNodo}`);
-            if(!contexto.usuario?.id){
+            if (!contexto.usuario?.id) {
                 throw new AuthenticationError('loginRequerido');
             }
-            
-            const credencialesUsuario=contexto.usuario;
-            
+
+            const credencialesUsuario = contexto.usuario;
+
 
             try {
                 var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
@@ -710,18 +712,18 @@ export const resolvers = {
                 throw new ApolloError("");
             }
 
-            var elDatoNodo=elUsuario.atlas.datosNodos.find(dn=>dn.idNodo===idNodo);
+            var elDatoNodo = elUsuario.atlas.datosNodos.find(dn => dn.idNodo === idNodo);
 
-            if(!elDatoNodo){
-                let elDatoNodo=elUsuario.atlas.datosNodos.create({
+            if (!elDatoNodo) {
+                let elDatoNodo = elUsuario.atlas.datosNodos.create({
                     idNodo,
                 })
-                
+
                 elUsuario.atlas.datosNodos.push(elDatoNodo);
             }
 
-            elDatoNodo.periodoRepaso=nuevoPeriodoRepaso;
-            
+            elDatoNodo.periodoRepaso = nuevoPeriodoRepaso;
+
 
             try {
                 await elUsuario.save();
@@ -805,7 +807,7 @@ export const resolvers = {
 
         },
 
-        guardarInformeEstudianteMaestraVida: async function (_: any, { idUsuario, year, periodo, idProfe, categoria, texto}: any, contexto: contextoQuery) {
+        guardarInformeEstudianteMaestraVida: async function (_: any, { idUsuario, year, periodo, idProfe, categoria, texto }: any, contexto: contextoQuery) {
             console.log('\x1b[35m%s\x1b[0m', `Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
@@ -823,9 +825,9 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            var esProfe=false;
-            if(elProfe.permisos.includes("maestraVida-profesor")){
-                esProfe=true;
+            var esProfe = false;
+            if (elProfe.permisos.includes("maestraVida-profesor")) {
+                esProfe = true;
             }
 
             let credencialesUsuario = contexto.usuario;
@@ -836,20 +838,20 @@ export const resolvers = {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
                 throw new AuthenticationError("No autorizado");
             }
-            
+
             texto = texto.trim();
 
-            var elInforme:any=elUsuario.informesMaestraVida.find(i=>i.year==year && i.periodo===periodo && i.idProfe===idProfe && i.categoria===categoria)
-            if(!elInforme){
+            var elInforme: any = elUsuario.informesMaestraVida.find(i => i.year == year && i.periodo === periodo && i.idProfe === idProfe && i.categoria === categoria)
+            if (!elInforme) {
                 console.log("Informe no existía, creando.");
-                elInforme=elUsuario.informesMaestraVida.create({
+                elInforme = elUsuario.informesMaestraVida.create({
                     year, periodo, idProfe, categoria, texto,
                 })
                 elUsuario.informesMaestraVida.push(elInforme);
             }
-            else{
+            else {
                 console.log("El informe ya existía");
-                elInforme.texto=texto;
+                elInforme.texto = texto;
             }
 
             try {
@@ -1589,17 +1591,36 @@ export const resolvers = {
         nombre: function (parent: any, _: any, __: any) {
             return parent.username;
         },
-        objetivosEstudiante:async function(parent: any, _:any, __:any){
+        objetivosEstudiante: async function (parent: any, _: any, __: any) {
             try {
-                var losObjetivos:any=await NodoSolidaridad.find({nodoParent:parent.id}).exec();
+                var losObjetivos: any = await NodoSolidaridad.find({ nodoParent: parent.id }).exec();
             } catch (error) {
                 console.log(`Error buscando nodos objetivo estudiantil de usaurio con id ${parent.id}: ${error}`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
             return losObjetivos;
+        },
+        espacioActual: async function (parent: any, { dateActual }: any, __: any) {
+            try {
+                var losEspacios: any = await Espacio.find({ "iteracionesSemanales.idsAsistentesConstantes": parent.id }).exec();
+            }
+            catch (error) {
+                throw new ApolloError('Error conectando con la base de datos');
+            }
+
+            var stringFinal="";
+            for(const espacio of losEspacios){
+                if(stringFinal.length>0){
+                    stringFinal+=", ";
+                }
+                stringFinal+=espacio.nombre;
+            }
+
+            return stringFinal;
+
         }
-    },   
+    },
     Date: {
         GraphQLDateTime
     },
@@ -1610,7 +1631,7 @@ export const resolvers = {
                 var losNodos: any = await Nodo.find({ _id: { $in: parent.idsNodos } }).exec();
             } catch (error) {
                 console.log(`Error buscando los nodos de la coleccion ${parent.id}`);
-            }            
+            }
             if (!losNodos) losNodos = [];
             return losNodos;
         }
@@ -1619,25 +1640,25 @@ export const resolvers = {
         nombreNodo: async function (parent: any, _: any, __: any) {
             try {
                 var elNodo: any = await Nodo.findById(parent.idNodo).select("nombre").exec();
-                if(!elNodo)throw "Nodo no encontrado resolviendo nombre de dato nodo"
+                if (!elNodo) throw "Nodo no encontrado resolviendo nombre de dato nodo"
             } catch (error) {
                 console.log(`error: ${error}`);
                 return "";
             }
-            
+
             return elNodo.nombre;
         }
     },
-    InformeEstudianteMaestraVida:{
-        nombreProfe: async function(parent:any){
+    InformeEstudianteMaestraVida: {
+        nombreProfe: async function (parent: any) {
             try {
-                var elProfe:any=await Usuario.findById(parent.idProfe).select("nombres apellidos").exec();
-                if(!elProfe)throw "Profe no encontrado";
+                var elProfe: any = await Usuario.findById(parent.idProfe).select("nombres apellidos").exec();
+                if (!elProfe) throw "Profe no encontrado";
             } catch (error) {
                 console.log(`Error buscando el nombre del profe de un informe: ${error}`);
                 return "Error"
             }
-            return elProfe.nombres+" "+elProfe.apellidos;
+            return elProfe.nombres + " " + elProfe.apellidos;
         }
     },
 }

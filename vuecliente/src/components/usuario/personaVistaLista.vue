@@ -32,7 +32,7 @@
         />
       </div>
       <div id="zonaNombres">
-        <div id="nombres">{{ estaPersona.nombres }}</div>
+        <div id="nombres">{{ estaPersona.nombres }} <span class="espacioActual" v-if="miEspacioActual" v-show="mostrarEspacioActual">({{miEspacioActual}})</span> </div>
       </div>
       <div id="zonaApellidos">
         <div id="apellidos">{{ estaPersona.apellidos }}</div>
@@ -415,6 +415,8 @@ const QUERY_INFORMES = gql`
 export default {
   components: { Calendario, Loading, VentanaLista },
   props: {
+    personasConEspacio:Array,
+    mostrarEspacioActual:Boolean,
     estaPersona: Object,
     seleccionado: Boolean,
     nodosSolidaridadPublicitados: Array,
@@ -1233,46 +1235,17 @@ export default {
         proyectos: miInformeProyectos ? miInformeProyectos.texto : null,
       };
     },
-    // cantidadMisInformesEscritos() {
-    //   if (!this.usuarioLogeado) {
-    //     return 0;
-    //   }
-    //   if (!this.informes) {
-    //     return 0;
-    //   }
+    miEspacioActual(){
+      const miPersonaConEspacio=this.personasConEspacio.find(p=>p.id===this.estaPersona.id);
 
-    //   var cuenta = 0;
-    //   cuenta += this.activable;
-    //   cuenta = 0;
+      if(!miPersonaConEspacio){
+        return null;
+      }
 
-    //   if (
-    //     this.misInformesActivos.objetivos &&
-    //     this.misInformesActivos.objetivos.length > 5
-    //   ) {
-    //     cuenta++;
-    //   }
-    //   if (
-    //     this.misInformesActivos.proyectos &&
-    //     this.misInformesActivos.proyectos.length > 5
-    //   ) {
-    //     cuenta++;
-    //   }
-    //   if (
-    //     this.misInformesActivos.espacios &&
-    //     this.misInformesActivos.espacios.length > 5
-    //   ) {
-    //     cuenta++;
-    //   }
-    //   if (
-    //     this.misInformesActivos.comentario &&
-    //     this.misInformesActivos.comentario.length > 5
-    //   ) {
-    //     cuenta++;
-    //   }
-
-    //   return cuenta;
-    // },
+      return miPersonaConEspacio.espacioActual;
+    },
     colorBarraSuperior() {
+
       if (
         !this.usuarioLogeado ||
         !this.estaPersona.permisos ||
@@ -1362,6 +1335,10 @@ function saveDocumentToFile(doc, fileName) {
 
 #zonaNombres {
   margin: 0px 15px;
+}
+
+#espacioActual{
+  font-size: 14px;
 }
 
 #barraInfoAdicional {

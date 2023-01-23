@@ -25,7 +25,7 @@
     <div class="zonaConfiguracion" v-show="mostrandoConfiguracion">
       <div class="barraSeccion">Configuración.</div>
 
-      <div id="contenedorBloquesConfiguracion">
+      <div class="contenedorBloquesConfiguracion">
         <div
           id="configuracionAdministradoresEspacios"
           class="bloqueConfiguracion"
