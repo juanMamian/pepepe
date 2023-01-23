@@ -120,7 +120,7 @@
             class="botonNavBarra botonNav hoverNegro"
             id="navActividadesVirtuales"
           >
-            Espacios
+            Horario semanal
           </div>
         </router-link>
         <router-link
@@ -198,7 +198,7 @@
         </template>
       </div>
     </div>
-    <router-view id="visorRouter">asd</router-view>
+    <router-view id="visorRouter" :yo="yo">asd</router-view>
   </div>
 </template>
 
@@ -356,11 +356,16 @@ export default {
 };
 </script>
 
+
+
 <style>
 :root {
   --mainColor: #f49e4c;
   --mainColorDark: #f49e4c;
   --mainColorLight: #e99e58;
+
+  --colorBlanco: #e9e9e9;
+  --filtroBlanco: invert(100%) sepia(8%) saturate(404%) hue-rotate(225deg) brightness(115%) contrast(83%);
 
   --atlasFondo: #12263a;
   --atlasVerde: #4d8b31;
@@ -395,6 +400,8 @@ export default {
     brightness(106%) contrast(102%);
 
   --paletaMain: #efae4a;
+  --paletaSecond: #eeb867;
+
   --paletaSelect: #cc3363;
   --paletaFondo: #fffcf9;
   --paletaVerde: #62c370;
@@ -416,12 +423,44 @@ export default {
 html {
   height: 100vh;
 }
+* {
+  box-sizing: border-box;
+  padding: 0px 0px;
+  
+}
 body {
   margin: 0px;
   width: 100%;
   height: 100vh;
   background-color: #fffcf9;
   font-family: "Salsa", sans-serif;
+}
+.zonaConfiguracion {
+  padding: 20px 10px;
+  background-color: rgb(224, 224, 224);
+}
+#contenedorBloquesConfiguracion {
+  display: flex;
+  gap: 20px;
+}
+
+.bloqueConfiguracion {
+  background-color: rgb(197, 197, 197);
+  padding: 10px 10px;
+}
+.campoConfiguracion {
+  display: flex;
+  gap: 20px;
+}
+.campoConfiguracion input {
+  margin-left: auto;
+}
+.barraComponente{
+  padding: 10px 20px;
+  font-size: 20px;
+  background-color: var(--paletaSecond);
+  display: flex;
+  align-items: center;
 }
 .contenedorControles {
   display: flex;
@@ -456,6 +495,12 @@ body {
 .selector.activo {
   border-color: var(--paletaMain);
 }
+.barraSeccion{
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 20px 10px;
+}
 .contenedorBotonesCampo {
   margin: 5px auto;
   display: flex;
@@ -466,6 +511,21 @@ body {
   cursor: pointer;
   margin: 0px 5px;
   opacity: 0.8;
+}
+.listaPersonas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 35px;
+  padding: 20px 20px;
+  margin-bottom: 20px;
+}
+
+.anuncioZonaVacia {
+    font-size: 13px;
+    color: gray;
+    text-align: center;
+    margin: 30px auto;
+    width: min(300px, 80%);
 }
 #descripcion {
   border: 2px solid var(--paletaMain);

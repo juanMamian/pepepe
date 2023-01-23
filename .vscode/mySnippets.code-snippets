@@ -1,0 +1,149 @@
+{
+	// Place your pepepe workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+	// Placeholders with the same ids are connected.
+	// Example:
+	// "Print to console": {
+	// 	"scope": "javascript,typescript",
+	// 	"prefix": "log",
+	// 	"body": [
+	// 		"console.log('$1');",
+	// 		"$2"
+	// 	],
+	// 	"description": "Log output to console"
+	// }
+	"Boton con imagen de assets": {
+		"scope": "vue-html",
+		"prefix": "botonimagen",
+		"body": [
+			"<div class='boton$1'  @click.stop='$2'>",
+			"\t<img src='@/assets/iconos/$3' alt='$4' />",
+			"</div>"
+		],
+		"description": "Boton con una imágen en su interior"
+	},
+	"Imagen de assets": {
+		"scope": "vue-html",
+		"prefix": "iconoassets",
+		"body": [
+			"<img src='@/assets/iconos/$1' alt='$2' style='$3' />",
+		],
+		"description": "Boton con una imágen en su interior"
+	},
+	"RequerirLogin": {
+		"scope": "typescript",
+		"prefix": "requerirLogin",
+		"body": [
+			"if(!contexto.usuario?.id){",
+			"\tthrow new AuthenticationError('loginRequerido');",
+			"}",
+			"",
+			"const credencialesUsuario=contexto.usuario;",
+			"$0"
+		],
+		"description": "Bloque para indicar que una mutación o query en apollo requiere que el usuario esté logeado"
+	},
+	"Lanzar error en apollo server": {
+		"scope": "typescript",
+		"prefix": "apollerror",
+		"body": [
+			"console.log(`Error $1 : `+ error);",
+			"throw new ${2:ApolloError}('${3:Error conectando con la base de datos}');",
+			"$0"
+		]
+	},
+	"Bajar nodo de conocimiento": {
+		"scope": "typescript",
+		"prefix": "descargarNodo",
+		"body": [
+			"try {",
+			"\tvar elNodo:any = await Nodo.findById(idNodo).exec();",
+			"\tif (!elNodo) throw 'Nodo no encontrado';",
+			"} catch (error){",
+			"\tconsole.log('Error descargando el nodo de la base de datos: '+error)",
+			"\tthrow new ApolloError('Error conectando con la base de datos');",
+			"};"
+		],
+		"description": "Descargar de mongoose un nodo de conocimiento by id",
+	},
+	"Crear resolver de apollo":{
+		"scope": "typescript",
+		"prefix": "resolverapollo",
+		"body": [
+			"async $1(_:any, {$2}:any, contexto: contextoQuery){",
+			"\t$0",
+			"},",
+		],
+	},
+	"Descargar documento mongoose":{
+		"scope":"typescript",
+		"prefix": "descargardocumento",
+		"body": [
+			"try {",
+			"\tvar $1:any = await $2.findById($3).exec();",
+			"\tif(!$1) throw '${4:documento} no encontrado';",
+			"}",
+			"catch(error) {",
+			"\tthrow new ApolloError('Error conectando con la base de datos');",
+			"}",
+			"$0"
+
+		]
+	},
+	"Guardar documento mongoose":{
+		"scope":"typescript",
+		"prefix": "guardardocumento",
+		"body": [
+			"try {",
+			"\tawait $1.save();",
+			"}",
+			"catch(error) {",
+			"\tthrow new ApolloError('Error guardando $2');",
+			"}",
+			"$0"
+
+		]
+	},
+	"Lanzar error de autenticacion":{
+		"scope": "typescript",
+		"prefix": "errorautenticion",
+		"body": ["throw new AuthenticationError('No autorizado')"],
+
+	},
+	"Enviar mutacion apollo": {
+		"scope": "javascript",
+		"prefix": "apollomutacion",
+		"body": [
+			"this.${7:enviandoOperacion}=true;",
+			"this.\\$apollo.mutate({",
+			"\tmutation: gql`",
+			"\t\tmutation($1){",
+			"\t\t\t$2($3){",
+			"\t\t\t\t $4",
+			"\t\t\t}",
+			"\t\t}",
+			"\t\t`,",
+			"\t\tvariables:{",
+			"\t\t\t$5",
+			"\t\t}",
+			"\t}).then(()=>{",
+			"\t\tthis.${7:enviandoOperacion}=false;",
+			"\t\t\t$6",
+			"\t}).catch((error)=>{",
+			"\t\tconsole.log('Error: '+ error);",
+			"\t\tthis.${7:enviandoOperacion}=false;",
+			"\t})",
+		]
+	},
+	"log con color":{
+		"scope": "typescript",
+		"prefix": "consolecolor",
+		"body": [
+			"console.log('\\x1b[35m%s\\x1b[0m', `$1`);"
+		]
+		
+	}
+}

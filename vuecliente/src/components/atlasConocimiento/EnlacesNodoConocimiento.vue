@@ -35,6 +35,7 @@ export default {
   props: {
     yo: Object,
     idNodoSeleccionado: String,
+    idsNodosPreviosSeleccionado: Array,
     esteNodo: Object,
     todosNodos: Array,
     factorZoom: Number,
@@ -44,6 +45,7 @@ export default {
     idsTodosNodosRender: Array,
     esquinasDiagrama: Object,
     transicionarPosicionNodos: Boolean,
+    idsNodosPresentesCabeza: Array,
     redibujarEnlaces: {
       type: Number,
       default: 0,
@@ -68,13 +70,17 @@ export default {
   computed: {
     continuacionDeSeleccionado() {
       if (!this.nodoSeleccionado) return false;
-      if (this.nodoSeleccionado.vinculos.some(v=>v.idRef === this.esteNodo.id)) return true;
+      if (
+        this.nodoSeleccionado.vinculos.some((v) => v.idRef === this.esteNodo.id)
+      )
+        return true;
       return false;
     },
     estiloPosicion() {
-
-      const posXAjustada=this.esteNodo.autoCoords.x-this.esquinasDiagrama.x1;
-      const posYAjustada=this.esteNodo.autoCoords.y-this.esquinasDiagrama.y1;
+      const posXAjustada =
+        this.esteNodo.autoCoords.x - this.esquinasDiagrama.x1;
+      const posYAjustada =
+        this.esteNodo.autoCoords.y - this.esquinasDiagrama.y1;
       return {
         left: posXAjustada * this.factorZoom + "px",
         top: posYAjustada * this.factorZoom + "px",
@@ -83,9 +89,21 @@ export default {
     vinculosGrises() {
       var vGrises = JSON.parse(
         JSON.stringify(
-          this.esteNodo.vinculos.filter((v) => v.rol==='target' && this.idsTodosNodosRender.includes(v.idRef))
+          this.esteNodo.vinculos.filter(
+            (v) =>
+              v.rol === "target" && this.idsTodosNodosRender.includes(v.idRef)
+          )
         )
       );
+
+      var idsRelevantesSeleccionado = [];
+
+      if (this.idNodoSeleccionado) {
+        idsRelevantesSeleccionado = this.idsNodosPreviosSeleccionado;
+        idsRelevantesSeleccionado = idsRelevantesSeleccionado.concat([
+          this.idNodoSeleccionado,
+        ]);
+      }
 
       vGrises.forEach((v) => {
         const coordsFrom = this.todosNodos.find((n) => n.id === v.idRef).coords;
@@ -95,33 +113,56 @@ export default {
         };
         const angulo = Math.PI + Math.atan2(paralelas.y, paralelas.x);
         const modulo = Math.hypot(paralelas.x, paralelas.y);
-        const vSeleccionado = this.idNodoSeleccionado === v.idRef;
+        const entreNodosPreviosSeleccionado =
+          this.idNodoSeleccionado &&
+          idsRelevantesSeleccionado.includes(this.esteNodo.id) &&
+          idsRelevantesSeleccionado.includes(v.idRef);
+
+        const esEnlaceSuperado =
+          (v.rol === "target" &&
+            this.idsNodosPresentesCabeza.includes(this.esteNodo.id)) ||
+          (v.rol === "source" &&
+            this.idsNodosPresentesCabeza.includes(v.idRef));
+
+        const esEnlacePorSuperar =
+          (v.rol === "source" &&
+            !this.idsNodosPresentesCabeza.includes(this.esteNodo.id)) ||
+          (v.rol === "target" &&
+            this.idsNodosPresentesCabeza.includes(v.idRef));
+
+        const esEnlaceInaccesible = !esEnlaceSuperado && !esEnlacePorSuperar;
+
+        let opacity = 0.3;
+        let backgroundColor = "black";
+
+        if (esEnlacePorSuperar) {
+          backgroundColor = "var(--atlasConocimientoAvailable)";
+        }
+        if (esEnlaceInaccesible) {
+          backgroundColor = "black";
+        }
+        if (esEnlaceSuperado) {
+          backgroundColor = "var(--atlasConocimientoCheck)";
+        }
+
+        if (this.idNodoSeleccionado) {
+          opacity=0.05;
+          if (entreNodosPreviosSeleccionado) {
+            opacity = 0.7;
+            if(esEnlaceInaccesible){
+              opacity=0.2;
+            }
+          }
+        }
 
         v.estilo = {
           transform: "rotate(" + angulo + "rad)",
           top: Math.round((paralelas.y - 1) * this.factorZoom) + "px",
           left: Math.round(paralelas.x * this.factorZoom) + "px",
           width: Math.round(modulo * this.factorZoom) + "px",
-          backgroundColor: this.seleccionado
-            ? "#ef7229"
-            : vSeleccionado &&
-              (this.continuacionDeSeleccionado )
-            ? "var(--atlasParent)"
-            : "black",
-          opacity:
-            this.seleccionado ||
-            (vSeleccionado &&
-            this.continuacionDeSeleccionado )
-              ? 1
-              : !this.nodoSeleccionado
-              ? 0.3
-              : 0.05,
-          borderLeftColor: this.seleccionado
-            ? "#ef7229"
-            : vSeleccionado &&
-              (this.continuacionDeSeleccionado)
-            ? "var(--atlasParent)"
-            : "black",
+          backgroundColor,
+          opacity,
+          borderLeftColor: backgroundColor,
         };
       });
 
@@ -213,8 +254,8 @@ export default {
 
 <style scoped>
 .enlacesNodoConocimiento {
-  position: relative;  
-  width:1px;
+  position: relative;
+  width: 1px;
   overflow: visible;
 }
 

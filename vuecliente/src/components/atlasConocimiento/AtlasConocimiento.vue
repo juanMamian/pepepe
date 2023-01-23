@@ -37,29 +37,30 @@
 
     <div id="zonaNodoTarget">
       <div
-        class="boton"
-        @click="
-          configurarNodoTarget(nodoSeleccionado ? nodoSeleccionado.id : null)
-        "
-        v-show="!enviandoQueryTarget && (nodoSeleccionado || nodoTarget)"
-        :title="
-          nodoSeleccionado
-            ? 'Rastrear ' + nodoSeleccionado.nombre
-            : yo.atlas.idNodoTarget
-            ? 'Dejar de rastrear'
-            : ''
-        "
-        :class="{ deshabilitado: enviandoQueryTarget }"
-      >
-        <img src="@/assets/iconos/target.png" alt="Target" />
-      </div>
-      <loading texto="" v-show="enviandoQueryTarget" />
-      <div
         id="nombreNodoTarget"
         v-if="nodoTarget"
         @click="centrarEnNodo(nodoTarget)"
       >
+        <img
+          style="
+            height: 25px;
+            filter: var(--filtroBlanco);
+            margin: 2px 5px;
+            margin-right: 15px;
+          "
+          src="@/assets/iconos/target.png"
+          alt="Target"
+        />
+
         {{ nodoTarget.nombre }}
+      </div>
+
+      <div
+        class="boton"
+        v-show="yo.atlas.idNodoTarget && !enviandoQueryTarget"
+        @click.stop="configurarNodoTarget(null)"
+      >
+        <img src="@/assets/iconos/equis.svg" alt="Equis" />
       </div>
     </div>
 
@@ -106,6 +107,8 @@
           :redibujarEnlaces="redibujarEnlacesNodos"
           :idsTodosNodosRender="idsTodosNodosRender"
           :callingPosiciones="callingPosiciones"
+          :idsNodosPreviosSeleccionado="idsNodosPreviosSeleccionado"
+          :idsNodosPresentesCabeza="idsNodosPresentesCabeza"
         />
       </div>
       <div
@@ -146,7 +149,14 @@
           "
           :configuracionAtlas="configuracionAtlas"
           :callingPosiciones="callingPosiciones"
-          @click.right.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
+          :datosUsuarioEsteNodo="
+            yo.atlas.datosNodos.find((dn) => dn.idNodo === nodo.id) || {}
+          "
+          :fantasmeado="idNodoSeleccionado && idNodoSeleccionado!=nodo.id && !idsNodosPreviosSeleccionado.includes(nodo.id)"
+          :previoDeSeleccionado="idNodoSeleccionado && idsNodosPreviosSeleccionado.includes(nodo.id)"
+          :enviandoQueryTarget="enviandoQueryTarget"
+          @contextmenu.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
+          @abroMenuContextual="idNodoMenuCx = nodo.id"
           @click.native.stop="seleccionNodo(nodo)"
           @creacionVinculo="crearVinculo"
           @eliminacionVinculo="eliminarVinculo"
@@ -154,6 +164,7 @@
           @eliminar="eliminarNodo"
           @cambieEstadoObjetivo="setEstadoObjetivoNodoCache($event, nodo.id)"
           @tengoNuevoValorAprendido="setNodoAprendidoCache($event, nodo.id)"
+          @mePongoEnMira="configurarNodoTarget(nodo.id)"
         />
       </div>
     </div>
@@ -229,6 +240,7 @@ const fragmentoNodoConocimiento = gql`
     nombre
     descripcion
     expertos
+    tipoNodo
     clases {
       id
       nombre
@@ -322,9 +334,6 @@ export default {
       result: function () {
         this.dibujarVinculosGrises();
       },
-      pollInterval() {
-        return this.callingPosiciones ? 5000 : null;
-      },
       update({ todosNodos }) {
         this.nodosDescargados = true;
         var nuevoTodosNodos = JSON.parse(JSON.stringify(todosNodos));
@@ -334,6 +343,7 @@ export default {
         });
         return nuevoTodosNodos;
       },
+      fetchPolicy: "cacheFirst",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
@@ -366,6 +376,7 @@ export default {
       nodosDescargados: false,
       posicionCreandoNodo: null,
       idNodoSeleccionado: null,
+      idsNodosCadenaPreviaSeleccionado: [],
       idNodoMenuCx: null,
       idsNecesariosParaTarget: [],
       enviandoQueryModo: false,
@@ -454,7 +465,7 @@ export default {
     },
     idsNodosAprendidos() {
       return this.yo.atlas.datosNodos
-        .filter((n) => n.aprendido == true)
+        .filter((n) => n.aprendido === true)
         .map((n) => n.idNodo);
     },
     datosNodosEstudiados() {
@@ -470,13 +481,26 @@ export default {
         return [];
       }
 
-      return this.yo.atlas.datosNodos.filter(
-        (dn) =>
-          !dn.aprendido &&
-          dn.estudiado &&
-          dn.iteracionesRepaso &&
-          dn.iteracionesRepaso.length > 0
+      var datosNodoConRepasoConfigurado = this.yo.atlas.datosNodos.filter(
+        (dn) => !dn.aprendido && dn.periodoRepaso
       );
+
+      let dateHoy = new Date();
+
+      let dateHoyMin = dateHoy;
+      dateHoyMin.setHours(0);
+      dateHoyMin.setMinutes(0);
+      dateHoyMin.setSeconds(0);
+
+      let datosNodoParaRepasar = datosNodoConRepasoConfigurado.filter(
+        (dn) =>
+          !dn.estudiado ||
+          dn.estudiado + dn.periodoRepaso > dateHoyMin.getTime()
+      );
+      console.log(
+        `Hay ${datosNodoParaRepasar.length} nodos que se deben repasar hoy`
+      );
+      return datosNodoParaRepasar;
     },
     datosNodosUrgentes() {
       return this.datosNodosRepasar.filter((dn) => {
@@ -594,6 +618,34 @@ export default {
       return this.todosNodos.filter((n) =>
         this.nodoSeleccionado.vinculos.some((v) => v.idRef === n.id)
       );
+    },
+    idsNodosPreviosSeleccionado() {
+      if(!this.idNodoSeleccionado){
+        return []
+      }
+      var idsActuales=[this.idNodoSeleccionado];
+      var cadenaTotal=[];
+      for (var i = 0; i < 20; i++) {
+
+        let previos = this.nodosRender.filter((n) =>
+          n.vinculos.some(
+            (v) => (v.rol === "source" && idsActuales.includes(v.idRef))
+          )
+        );
+
+
+        if(previos.length<1){
+          break;
+        }
+
+        let idsPrevios=previos.map(previo=>previo.id);
+
+        cadenaTotal.push(...idsPrevios);
+
+        idsActuales=idsPrevios;
+      }
+
+      return cadenaTotal
     },
   },
   methods: {
@@ -837,14 +889,12 @@ export default {
       console.log(`Configurando nodo target`);
       if (!idNodo || idNodo === this.idNodoTarget) {
         console.log(`Nulificando`);
-        setTimeout(()=>{
-        this.nulificarNodoTarget();
-
+        setTimeout(() => {
+          this.nulificarNodoTarget();
         }, 100);
       } else {
-        setTimeout(()=>{
-
-        this.setNodoTarget(idNodo);
+        setTimeout(() => {
+          this.setNodoTarget(idNodo);
         }, 100);
       }
     },
@@ -1371,6 +1421,12 @@ export default {
   // },
 };
 </script>
+
+
+<style>
+@import "./estilosGlobalesAtlasConocimiento.css";
+</style>
+
 <style>
 :root {
   --atlasConocimientoFondo: #f3eff5;
@@ -1378,6 +1434,10 @@ export default {
   --atlasConocimientoAvailable: #e2c044;
   --atlasConocimientoRepaso: #ff5f5f;
   --atlasConocimientoOff: #dbfcff;
+  --atlasConocimientoSeleccion: #ad58d8;
+
+  --filtroAtlasSeleccion: invert(43%) sepia(84%) saturate(539%)
+    hue-rotate(236deg) brightness(88%) contrast(92%);
 }
 </style>
 <style scoped>
@@ -1405,6 +1465,16 @@ export default {
 #zonaNodoTarget .boton {
   width: 25px;
   height: 25px;
+}
+#nombreNodoTarget {
+  background-color: var(--atlasConocimientoSeleccion);
+  padding: 5px 10px;
+  padding-right: 20px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
 }
 #menuContextual {
   position: absolute;

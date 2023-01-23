@@ -472,6 +472,7 @@ export default {
         "maestraVida-estudiante",
         "maestraVida-profesor",
         "maestraVida-acompañante",
+        "maestraVida-graduado",
       ],
       informes: [],
       objetivos: [],

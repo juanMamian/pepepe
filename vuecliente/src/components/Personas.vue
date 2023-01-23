@@ -1,6 +1,62 @@
 <template>
   <div class="personas">
     <router-view> </router-view>
+
+    <div class="zonaConfiguracion">
+      <div class="contenedorBloquesConfiguracion">
+        <div class="bloqueConfiguracion">
+          <div class="campoConfiguracion" id="campoUsuariosMostrados">
+            <span style="width: 100%"> Mostrar:</span>
+            <div class="opcion">
+              <label for="mostrarTodos">Todos</label>
+              <input
+                type="radio"
+                name="radioMostrarTodos"
+                ref="mostrarTodos"
+                value="todos"
+                v-model="tipoMostrarUsuarios"
+                id="radioMostrarTodos"
+              />
+            </div>
+            <div class="opcion">
+              <label for="mostrarEstudiantes">Estudiantes</label>
+              <input
+                type="radio"
+                name="radioMostrarEstudiantes"
+                ref="mostrarEstudiantes"
+                value="estudiantes"
+                v-model="tipoMostrarUsuarios"
+                id="radioMostrarEstudiantes"
+              />
+            </div>
+
+            <div class="opcion">
+              <label for="mostrarProfesores">Profesorxs</label>
+              <input
+                type="radio"
+                name="radioMostrarProfesores"
+                ref="mostrarProfesores"
+                value="profesores"
+                v-model="tipoMostrarUsuarios"
+                id="radioMostrarProfesores"
+              />
+            </div>
+
+            <div class="opcion">
+              <label for="mostrarGraduados">Graduados</label>
+              <input
+                type="radio"
+                name="radioMostrarGraduados"
+                ref="mostrarGraduados"
+                value="graduados"
+                v-model="tipoMostrarUsuarios"
+                id="radioMostrarGraduados"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="zonaBuscar">
       <div class="barraSuperior">
         <input
@@ -28,35 +84,7 @@
         </div>
       </div>
     </div>
-    <div id="controlesPersonas" class="contenedorControles">
-      <div
-        class="boton"
-        @click="
-          mostrarPersonas =
-            mostrarPersonas === 'todos'
-              ? 'profes'
-              : mostrarPersonas === 'profes'
-              ? 'estudiantes'
-              : 'todos'
-        "
-      >
-        <img
-          src="@/assets/iconos/users.svg"
-          alt="Todos"
-          v-show="mostrarPersonas === 'todos'"
-        />
-        <img
-          src="@/assets/iconos/teacher.svg"
-          alt="Profes"
-          v-show="mostrarPersonas === 'profes'"
-        />
-        <img
-          src="@/assets/iconos/graduationCap.svg"
-          alt="Estudiantes"
-          v-show="mostrarPersonas === 'estudiantes'"
-        />
-      </div>
-    </div>
+
     <div id="listaPersonas" @click="idPersonaMenuCx = null">
       <loading
         v-show="$apollo.queries.personas.loading"
@@ -80,6 +108,7 @@ import Loading from "./utilidades/Loading.vue";
 import PersonaVistaLista from "./usuario/personaVistaLista.vue";
 import debounce from "debounce";
 // import { similarity } from "./utilidades/funciones";
+var stringSimilarity = require("string-similarity");
 
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
 
@@ -107,6 +136,7 @@ export default {
       update: function ({ todosUsuarios }) {
         return todosUsuarios;
       },
+      fetchPolicy: "cache-first",
     },
     nodosSolidaridadPublicitados: {
       query: gql`
@@ -126,7 +156,7 @@ export default {
       nodosSolidaridadPublicitados: [],
       idPersonaMenuCx: null,
       idPersonaSeleccionada: null,
-      mostrarPersonas: "todos",
+      tipoMostrarUsuarios: "todos",
 
       permisoInput: "",
       textoBuscar: null,
@@ -292,43 +322,32 @@ export default {
     },
     personasVisibles() {
       var visibles = JSON.parse(JSON.stringify(this.personas));
-      if (this.mostrarPersonas === "profes") {
+      if (this.tipoMostrarUsuarios === "profesores") {
         visibles = visibles.filter((p) =>
           p.permisos.includes("maestraVida-profesor")
         );
-      } else if (this.mostrarPersonas === "estudiantes") {
+      } else if (this.tipoMostrarUsuarios === "estudiantes") {
         visibles = visibles.filter((p) =>
           p.permisos.includes("maestraVida-estudiante")
         );
+      } else if (this.tipoMostrarUsuarios === "graduados") {
+        visibles = visibles.filter((p) =>
+          p.permisos.includes("maestraVida-graduado")
+        );
       }
-      if (this.textoBusquedaUsado) {
-        const textoBusquedaStripped = this.textoBusquedaUsado
-          .normalize("NFD")
-          .replace(/\p{Diacritic}/gu, "");
 
+      if (this.textoBusquedaUsado) {
         visibles.sort((a, b) => {
-          var res = 0;
-          var aStripped = (a.nombres + " " + a.apellidos)
-            .normalize("NFD")
-            .replace(/\p{Diacritic}/gu, "");
-          var bStripped = (b.nombres + " " + b.apellidos)
-            .normalize("NFD")
-            .replace(/\p{Diacritic}/gu, "");
-          if (
-            aStripped
-              .toLowerCase()
-              .search(textoBusquedaStripped.toLowerCase()) > -1
-          ) {
-            res++;
-          }
-          if (
-            bStripped
-              .toLowerCase()
-              .search(textoBusquedaStripped.toLowerCase()) > -1
-          ) {
-            res--;
-          }
-          return -res;
+          let res =
+            stringSimilarity.compareTwoStrings(
+              b.nombres + b.apellidos,
+              this.textoBusquedaUsado
+            ) -
+            stringSimilarity.compareTwoStrings(
+              a.nombres + a.apellidos,
+              this.textoBusquedaUsado
+            );
+          return res;
         });
       }
 
@@ -345,7 +364,15 @@ export default {
   padding-bottom: 50px;
   flex-flow: row wrap;
 }
-
+#campoUsuariosMostrados{
+  display: flex;
+  flex-wrap: wrap;
+}
+#campoUsuariosMostrados .opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 #zonaBuscar {
   padding: 10px 5px;
 }

@@ -34,6 +34,11 @@ var esquemaNodo = new mongoose_1.default.Schema({
     icono: {
         type: Buffer
     },
+    tipoNodo: {
+        type: String,
+        enum: ["concepto", "skill"],
+        default: "concepto",
+    },
     vinculos: {
         type: [
             {

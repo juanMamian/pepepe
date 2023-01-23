@@ -15,12 +15,28 @@ const config_1 = require("../model/config");
 const Espacio_1 = require("../model/Espacio");
 const Evento_1 = require("../model/Evento");
 const Eventos_1 = require("./Eventos");
+const Schema_1 = require("./Schema");
 exports.typeDefs = apollo_server_express_1.gql `
+
+    type IteracionSemanalEspacio{
+        id: ID,
+        millisInicio: Int,
+        millisFinal:Int,
+        idsParticipantesConstantes: [ID],
+        diaSemana:Int,
+        nombreEspacio:String,
+        idAdministradorEspacio:String,
+        idEspacio:ID,
+        paraChiquis:Boolean,
+    }
+
     type Espacio{
         id:ID,
         nombre:String,
         descripcion:String,
-        idAdministrador:ID
+        idAdministrador:ID,
+        iteracionesSemanales:[IteracionSemanalEspacio],
+        paraChiquis:Boolean,
     }
 
     input InputCrearEspacio{
@@ -32,6 +48,11 @@ exports.typeDefs = apollo_server_express_1.gql `
     extend type Query{
         espacio(idEspacio:ID!):Espacio,
         todosEspacios:[Espacio],
+        espaciosControladosUsuario:[Espacio],
+        espaciosByUsuariosAdmin(idsUsuarios: [ID]!):[Espacio],
+        iteracionesSemanalesEspaciosByAdministradores(idsAdministradores: [ID]!): [IteracionSemanalEspacio],
+        bloquesHorarioUsuarioAsiste:[IteracionSemanalEspacio]
+        
     }
 
     extend type Mutation{
@@ -39,6 +60,13 @@ exports.typeDefs = apollo_server_express_1.gql `
         eliminarEspacio(idEspacio:ID!):Boolean,
         editarNombreEspacio(idEspacio:ID!, nuevoNombre: String!):Espacio,
         editarDescripcionEspacio(idEspacio:ID!, nuevoDescripcion: String!):Espacio,
+        setEspacioParaChiquis(idEspacio: ID!, nuevoEstado: Boolean!): Espacio,
+        
+        crearBloqueHorario(idEspacio: ID!, diaSemana: Int!, millisInicio: Int!, millisFinal: Int): IteracionSemanalEspacio,
+        setTiemposIteracionSemanalEspacio(idEspacio: ID!, idIteracion: ID!, millisInicio: Int!, millisFinal: Int!):IteracionSemanalEspacio,
+        eliminarIteracionSemanalEspacio(idEspacio: ID!, idIteracion: ID!):Boolean,
+        addAsistenteIteracionSemanalEspacio(idEspacio: ID!, idIteracion: ID!, idAsistente: ID!):IteracionSemanalEspacio,
+        removeAsistenteIteracionSemanalEspacio(idEspacio: ID!, idIteracion: ID!, idAsistente: ID!):IteracionSemanalEspacio,
     }
 `;
 exports.resolvers = {
@@ -66,22 +94,101 @@ exports.resolvers = {
                 }
                 return losEspacios;
             });
-        }
+        },
+        espaciosByUsuariosAdmin(_, { idsUsuarios }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    var losEspacios = yield Espacio_1.ModeloEspacio.find({ idAdministrador: idsUsuarios }).exec();
+                }
+                catch (error) {
+                    console.log(`Error getting espacios : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                return losEspacios;
+            });
+        },
+        iteracionesSemanalesEspaciosByAdministradores(_, { idsAdministradores }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log(`Getting iteraciones semanales para espacios administrados por ${idsAdministradores}`);
+                try {
+                    var losEspacios = yield Espacio_1.ModeloEspacio.find({ idAdministrador: { $in: idsAdministradores } }).exec();
+                }
+                catch (error) {
+                    console.log(`Error getting espacios de los administradores : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                console.log(`Encontrados ${losEspacios.length} espacios`);
+                var lasIteraciones = losEspacios.reduce((acc, espacio) => acc.concat(espacio.iteracionesSemanales), []);
+                console.log(`Encontradas ${lasIteraciones.length} iteraciones`);
+                return lasIteraciones;
+            });
+        },
+        bloquesHorarioUsuarioAsiste(_, __, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var losEspacios = yield Espacio_1.ModeloEspacio.find({ "iteracionesSemanales.idsParticipantesConstantes": credencialesUsuario.id }).exec();
+                }
+                catch (error) {
+                    console.log(`Error getting espacios : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                var losBloques = [];
+                for (const espacio of losEspacios) {
+                    let bloquesUsuarioAsiste = espacio.iteracionesSemanales.filter(it => it.idsParticipantesConstantes.includes(credencialesUsuario.id));
+                    losBloques.push(...bloquesUsuarioAsiste);
+                }
+                return losBloques;
+            });
+        },
+        espaciosControladosUsuario(_, {}, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                var queryOpts = {
+                    idAdministrador: credencialesUsuario.id
+                };
+                if (credencialesUsuario.permisos.includes("superadministrador")) {
+                    queryOpts = {};
+                }
+                try {
+                    var losEspacios = yield Espacio_1.ModeloEspacio.find(queryOpts).exec();
+                }
+                catch (error) {
+                    console.log(`Error getting espacios : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                if (credencialesUsuario.permisos.includes("superadministrador")) {
+                    losEspacios.sort((a, b) => {
+                        var res = 0;
+                        if (a.idAdministrador === credencialesUsuario.id) {
+                            res++;
+                        }
+                        if (b.idAdministrador === credencialesUsuario.id) {
+                            res--;
+                        }
+                        return -res;
+                    });
+                }
+                return losEspacios;
+            });
+        },
     },
     Mutation: {
         crearEspacio(_, { info }, contexto) {
+            var _a;
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`Solicitud de crear un nuevo espacio`);
-                if (!contexto.usuario || !contexto.usuario.id) {
-                    console.log(`El usuario no estaba logeado`);
-                    throw new apollo_server_express_1.AuthenticationError("Login requerido");
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
                 }
                 const credencialesUsuario = contexto.usuario;
-                const permisosAutorizados = ["superadministrador", "maestraVida-profesor"];
-                if (!credencialesUsuario.permisos.some(p => permisosAutorizados.includes(p))) {
-                    console.log(`El usuario no contaba con los permisos necesarios`);
-                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
-                }
                 var nuevoEspacio = new Espacio_1.ModeloEspacio(Object.assign({}, info));
                 try {
                     yield nuevoEspacio.save();
@@ -228,5 +335,241 @@ exports.resolvers = {
                 return elEspacio;
             });
         },
-    }
+        setEspacioParaChiquis(_, { idEspacio, nuevoEstado }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Mutación de set estado en ${nuevoEstado} para el espacio ${idEspacio}`);
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elEspacio = yield Espacio_1.ModeloEspacio.findById(idEspacio).exec();
+                    if (!elEspacio)
+                        throw 'Espacio no encontrado';
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                //Authorization
+                const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
+                const tienePermisosEspeciales = Schema_1.permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+                if (!esAdministradorEspacio && !tienePermisosEspeciales) {
+                    throw new apollo_server_express_1.AuthenticationError('No autorizado');
+                }
+                elEspacio.paraChiquis = nuevoEstado;
+                try {
+                    yield elEspacio.save();
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError('Error guardando espacio después de set paraChiquis');
+                }
+                console.log(`Estado para chiquis guardado`);
+                return elEspacio;
+            });
+        },
+        crearBloqueHorario(_, { idEspacio, millisInicio, millisFinal, diaSemana }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Query de crear iteración semanal de espacio ${idEspacio} con inicio ${millisInicio} y final ${millisFinal} en dia ${diaSemana} de la semana`);
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elEspacio = yield Espacio_1.ModeloEspacio.findById(idEspacio).exec();
+                    if (!elEspacio)
+                        throw 'Espacio no encontrado';
+                }
+                catch (error) {
+                    console.log('Error descargando el espacio de la base de datos: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                ;
+                //Authorization
+                const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
+                const tienePermisosEspeciales = Schema_1.permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+                if (!esAdministradorEspacio && !tienePermisosEspeciales) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var nuevoBloque = elEspacio.iteracionesSemanales.create({ millisInicio, millisFinal, diaSemana });
+                elEspacio.iteracionesSemanales.push(nuevoBloque);
+                try {
+                    yield elEspacio.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando espacio con nuevo bloque de horario : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                console.log("Iteración Semanal creada");
+                return nuevoBloque;
+            });
+        },
+        setTiemposIteracionSemanalEspacio(_, { idEspacio, idIteracion, millisInicio, millisFinal }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Query de set tiempos de iteración semanal de espacio ${idEspacio} con id de iteración ${idIteracion} en inicio ${Math.round(millisInicio / 60000)}minutos y final ${Math.round(millisFinal / 60000)}minutos`);
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elEspacio = yield Espacio_1.ModeloEspacio.findById(idEspacio).exec();
+                    if (!elEspacio)
+                        throw "Espacio no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error getting espacio : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                //Authorization
+                const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
+                const tienePermisosEspeciales = Schema_1.permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+                if (!esAdministradorEspacio && !tienePermisosEspeciales) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                var laIteracion = elEspacio.iteracionesSemanales.id(idIteracion);
+                if (!laIteracion) {
+                    throw new apollo_server_express_1.UserInputError("Iteración no encontrada");
+                }
+                laIteracion.millisInicio = millisInicio;
+                laIteracion.millisFinal = millisFinal;
+                try {
+                    yield elEspacio.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando espacio después de set tiempos de iteración : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                console.log(`Tiempos set`);
+                return laIteracion;
+            });
+        },
+        eliminarIteracionSemanalEspacio(_, { idEspacio, idIteracion }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Query de eliminar iteración semanal de espacio ${idEspacio} con id de iteración ${idIteracion}`);
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elEspacio = yield Espacio_1.ModeloEspacio.findById(idEspacio).exec();
+                    if (!elEspacio)
+                        throw "Espacio no encontrado";
+                }
+                catch (error) {
+                    console.log(`Error getting espacio : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
+                const tienePermisosEspeciales = Schema_1.permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+                if (!esAdministradorEspacio && !tienePermisosEspeciales) {
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                const laIteracion = elEspacio.iteracionesSemanales.find(iteracion => iteracion.id === idIteracion);
+                if (!laIteracion) {
+                    throw new apollo_server_express_1.UserInputError("Iteración no encontrada");
+                }
+                laIteracion.remove();
+                try {
+                    yield elEspacio.save();
+                }
+                catch (error) {
+                    console.log(`Error saving espacio tras eliminación de iteración : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                console.log("Eliminada");
+                return true;
+            });
+        },
+        addAsistenteIteracionSemanalEspacio(_, { idEspacio, idIteracion, idAsistente }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elEspacio = yield Espacio_1.ModeloEspacio.findById(idEspacio).exec();
+                    if (!elEspacio)
+                        throw 'Espacio no encontrado';
+                }
+                catch (error) {
+                    console.log('Error descargando el Espacio de la base de datos: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                ;
+                var laIteracion = elEspacio.iteracionesSemanales.id(idIteracion);
+                if (!laIteracion) {
+                    throw new apollo_server_express_1.UserInputError("Iteración no encontrada");
+                }
+                // auth
+                const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
+                const tienePermisosEspeciales = Schema_1.permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+                if (!esAdministradorEspacio && !tienePermisosEspeciales) {
+                    throw new apollo_server_express_1.AuthenticationError('No autorizado');
+                }
+                const indexA = laIteracion.idsParticipantesConstantes.indexOf(idAsistente);
+                if (indexA > -1) {
+                    console.log("El asistente ya estaba incluido");
+                    throw new apollo_server_express_1.UserInputError("Asistente ya estaba registrado");
+                }
+                laIteracion.idsParticipantesConstantes.push(idAsistente);
+                try {
+                    yield elEspacio.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el espacio con nuevo asistente en iteración semanal : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                console.log(`Asistente added`);
+                return laIteracion;
+            });
+        },
+        removeAsistenteIteracionSemanalEspacio(_, { idEspacio, idIteracion, idAsistente }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elEspacio = yield Espacio_1.ModeloEspacio.findById(idEspacio).exec();
+                    if (!elEspacio)
+                        throw 'Espacio no encontrado';
+                }
+                catch (error) {
+                    console.log('Error descargando el Espacio de la base de datos: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                ;
+                var laIteracion = elEspacio.iteracionesSemanales.id(idIteracion);
+                if (!laIteracion) {
+                    throw new apollo_server_express_1.UserInputError("Iteración no encontrada");
+                }
+                // auth
+                const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
+                const tienePermisosEspeciales = Schema_1.permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+                if (!esAdministradorEspacio && !tienePermisosEspeciales) {
+                    throw new apollo_server_express_1.AuthenticationError('No autorizado');
+                }
+                const indexA = laIteracion.idsParticipantesConstantes.indexOf(idAsistente);
+                if (indexA === -1) {
+                    console.log("El asistente no estaba incluido");
+                    throw new apollo_server_express_1.UserInputError("Asistente no estaba registrado");
+                }
+                laIteracion.idsParticipantesConstantes.splice(indexA, 1);
+                try {
+                    yield elEspacio.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el espacio con asistente removido de iteración semanal : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                console.log(`Asistente removed`);
+                return laIteracion;
+            });
+        }
+    },
 };
