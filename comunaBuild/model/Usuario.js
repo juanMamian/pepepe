@@ -25,7 +25,7 @@ const esquemaIteracionRepaso = new mongoose_1.default.Schema({
     intervalo: {
         type: Number,
         default: 86400000
-    },
+    }
 });
 const EsquemaInformeUsuario = new mongoose_1.default.Schema({
     year: {
@@ -35,7 +35,7 @@ const EsquemaInformeUsuario = new mongoose_1.default.Schema({
     periodo: {
         type: String,
         required: true,
-        enum: ["primero", "segundo", "tercero"],
+        enum: ["primero", "segundo", "tercero", "total"],
     },
     idProfe: {
         type: String,

@@ -774,6 +774,7 @@ export default {
           }
         })
         .catch((error) => {
+          alert("¡Error guardando informe!");
           console.log("error: " + error);
           if (categoria === "objetivos") {
             this.guardandoInformeObjetivos = false;
@@ -831,12 +832,7 @@ export default {
                           break: 1,
                         });
                       }),
-                      style: "textoProfe",
-
-                      // {
-                      // text: informe.texto,
-                      // style: "textoProfe",
-                      // }
+                      style: "textoProfe",                     
                     }),
                     new Paragraph({
                       text: informe.nombreProfe,
@@ -886,8 +882,15 @@ export default {
                 .reduce((acc, informe) => {
                   return acc.concat([
                     new Paragraph({
-                      text: informe.texto,
-                      style: "textoProfe",
+                      children: informe.texto.split("\n").map((textR) => {
+                        return new TextRun({
+                          text: textR,
+                          break: 1,
+                        });
+                      }),
+                      style: "textoProfe", 
+                      // text: informe.texto,
+                      // style: "textoProfe",
                     }),
                     new Paragraph({
                       text: informe.nombreProfe,
@@ -929,8 +932,15 @@ export default {
                 .reduce((acc, informe) => {
                   return acc.concat([
                     new Paragraph({
-                      text: informe.texto,
-                      style: "textoProfe",
+                      children: informe.texto.split("\n").map((textR) => {
+                        return new TextRun({
+                          text: textR,
+                          break: 1,
+                        });
+                      }),
+                      style: "textoProfe", 
+                      // text: informe.texto,
+                      // style: "textoProfe",
                     }),
                     new Paragraph({
                       text: informe.nombreProfe,
@@ -976,8 +986,15 @@ export default {
                 .reduce((acc, informe) => {
                   return acc.concat([
                     new Paragraph({
-                      text: informe.texto,
-                      style: "textoProfe",
+                      children: informe.texto.split("\n").map((textR) => {
+                        return new TextRun({
+                          text: textR,
+                          break: 1,
+                        });
+                      }),
+                      style: "textoProfe", 
+                      // text: informe.texto,
+                      // style: "textoProfe",
                     }),
                     new Paragraph({
                       text: informe.nombreProfe,
@@ -994,8 +1011,26 @@ export default {
         ],
       });
 
+      var filaAprobado = new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: "Promocionado: SI",
+                style: "nombreSeccion",
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
+            width: {
+              size: 300,
+              type: WidthType.DXA,
+            },
+          }),          
+        ],
+      });
+
       var tablaFinal = new Table({
-        rows: [filaObjetivos, filaProyectos, filaEspacios, filaComentario],
+        rows: [filaObjetivos, filaProyectos, filaEspacios, filaComentario, filaAprobado],
         width: {
           size: 8500,
           type: WidthType.DXA,
@@ -1109,7 +1144,12 @@ export default {
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
-                text: "PERIODO AGOSTO - OCTUBRE DE 2022",
+                text: "INFORME FINAL",
+                style: "titulos",
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({
+                text: "2022",
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
               }),
@@ -1143,21 +1183,7 @@ export default {
                 },
               }),
 
-              tablaFinal,
-
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Promocionado: SI",
-                    bold: true,
-                  })
-                ],
-                style: "estiloGlobal",
-                spacing:{
-                  before: 1500,
-                  after: 1000,
-                }
-              }),
+              tablaFinal,            
 
               new Paragraph({
                 children: [

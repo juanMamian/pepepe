@@ -710,8 +710,7 @@ exports.resolvers = {
         },
         guardarInformeEstudianteMaestraVida: function (_, { idUsuario, year, periodo, idProfe, categoria, texto }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log(`|||||||||||||||||||`);
-                console.log(`Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
+                console.log('\x1b[35m%s\x1b[0m', `Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
                     if (!elUsuario) {
@@ -756,7 +755,7 @@ exports.resolvers = {
                 catch (error) {
                     console.log(`error guardando el nodo: ${error}`);
                 }
-                console.log(`Descripcion guardado`);
+                console.log(`Informe guardado`);
                 return elInforme;
             });
         },

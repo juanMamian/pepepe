@@ -13,8 +13,8 @@ import { typeDefs, resolvers} from "./apolloStore/Schema"
 
 
 export const serverUrl=process.env.NODE_ENV === 'production'
-? 'https://pe-pe-pe.herokuapp.com'
-: 'http://192.168.1.105:3000'
+? 'http://192.168.1.100:3000'
+: 'http://192.168.1.100:3000'
 
 
 
