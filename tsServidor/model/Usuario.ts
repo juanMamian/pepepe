@@ -14,6 +14,7 @@ export const permisosDeUsuario = [
     "maestraVida-estudiante",
     "maestraVida-profesor",
     "maestraVida-acompañante",
+    "maestraVida-graduado",
     "comunere"
 ];
 

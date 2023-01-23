@@ -26,9 +26,9 @@
       <div class="boton" title="Mi calendario" @click="seccion = 'calendario'">
         <img src="@/assets/iconos/calendar.svg" alt="Calendario" />
       </div>
-      <div class="boton" title="Organizador semanal" @click="seccion = 'organizadorSemanal'">
+      <!-- <div class="boton" title="Organizador semanal" @click="seccion = 'organizadorSemanal'">
         <img src="@/assets/iconos/calendarWeek.svg" alt="Calendario" />
-      </div>
+      </div> -->
     </div>
     <div id="contenido" v-if="!$apollo.queries.esteUsuario.loading">
       <div

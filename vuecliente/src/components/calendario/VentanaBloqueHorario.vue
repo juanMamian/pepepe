@@ -59,10 +59,7 @@
 
         <div
           id="zonaAdicionarAsistente"
-          v-show="mostrandoBuscadorAsistentes"
-          :class="{
-            deshabilitado: $apollo.queries.participantesCasaMaestraVida.loading,
-          }"
+          v-show="mostrandoBuscadorAsistentes"          
         >
           <div class="zonaInformacion" style="display: flex">
             <div class="informacion" style="display: flex">
@@ -78,7 +75,7 @@
               </div>
             </div>
           </div>
-          <div id="zonaInputBuscador" style="width: 100%">
+          <div id="zonaInputBuscador" :class="{deshabilitado:  $apollo.queries.participantesCasaMaestraVida.loading}" style="width: 100%">
             <input
               type="text"
               ref="inputTextoBuscador"
@@ -89,7 +86,7 @@
           </div>
           <div
             class="listaPersonas"
-            :class="{ deshabilitado: addingAsistente }"
+            :class="{ deshabilitado: addingAsistente ||  $apollo.queries.participantesCasaMaestraVida.loading }"
           >
             <icono-persona-autonomo
               v-for="idAdicionable of idsPersonasAdicionablesOrdenadas"

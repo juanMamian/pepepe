@@ -6,16 +6,7 @@
       @eventoCambioFecha="manejarCreacionEventos([$event])"
     >
     </router-view>
-    <div id="barraControles">
-      <div
-        class="boton"
-        @click="verTodos = !verTodos"
-        style="margin-right: 15px"
-      >
-        <img src="@/assets/iconos/users.svg" alt="Todos" v-show="verTodos" />
-        <img src="@/assets/iconos/user.svg" alt="Usuario" v-show="!verTodos" />
-      </div>
-    </div>
+    
 
     <div class="barraSeccion" @click="mostrandoEspacios = !mostrandoEspacios">
       <img
@@ -26,7 +17,13 @@
       />
       Espacios
 
-      <div class="contenedorControles" style="margin-left: auto">
+      <div class="contenedorControles" v-show="mostrandoEspacios" @click.stop="" style="margin-left: auto">
+        <div
+          class="boton"
+          @click="mostrandoConfiguracion = !mostrandoConfiguracion"
+        >
+          <img src="@/assets/iconos/cog.svg" alt="Config" style="" />
+        </div>
         <div
           class="boton"
           @click.stop="crearNuevoEspacio"
@@ -35,6 +32,42 @@
           <img src="@/assets/iconos/plusCircle.svg" alt="Crear" style="" />
         </div>
         <loading texto="" v-show="creandoEspacio" />
+      </div>
+    </div>
+
+    <div class="zonaConfiguracion" v-show="mostrandoConfiguracion && mostrandoEspacios">
+      <div class="barraSeccion">
+        Configuración
+      </div>
+      <div class="contenedorBloquesConfiguracion">
+        <div class="bloqueConfiguracion">
+          <div class="campoConfiguracion">
+            Mostrar: 
+            <label for="checkMostrarTodosEspacios"
+              >Mis espacios</label
+            >
+            <input
+              type="radio"
+              name="checkMostrarTodosEspacios"
+              id="checkMostrarTodosEspacios"
+              ref="checkMostrarTodosEspacios"
+              value="mios"
+              v-model="tipoMostrarEspacios"
+            />
+
+            <label for="checkMostrarTodosEspacios"
+              >Todos los espacios</label
+            >
+            <input
+              type="radio"
+              name="checkMostrarTodosEspacios"
+              id="checkMostrarTodosEspacios"
+              ref="checkMostrarTodosEspacios"
+              value="todos"
+              v-model="tipoMostrarEspacios"
+            />
+          </div>
+        </div>
       </div>
     </div>
     <div id="listaEspacios" v-show="mostrandoEspacios">
@@ -114,6 +147,9 @@ export default {
 
       mostrandoEspacios: false,
       mostrandoOrganizadorSemanal: false,
+
+      mostrandoConfiguracion: false,
+      tipoMostrarEspacios: "mios",
     };
   },
   methods: {
@@ -195,7 +231,7 @@ export default {
       return this.usuario.permisos.includes("maestraVida-profesor");
     },
     espaciosVisibles() {
-      if (this.verTodos)
+      if (this.tipoMostrarEspacios==='todos')
         return this.espaciosUsuario.concat(this.espaciosNoUsuario);
       return this.espaciosUsuario;
     },

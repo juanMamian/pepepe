@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <div id="zonaConfiguracion" v-show="mostrandoConfiguracion">
+    <div class="zonaConfiguracion" v-show="mostrandoConfiguracion">
       <div class="barraSeccion">Configuración.</div>
 
       <div id="contenedorBloquesConfiguracion">
@@ -96,7 +96,6 @@
       />
     </div>
 
-  
     <div id="contenedorDias">
       <dia-organizador-horario
         v-for="(dia, index) of diasSemana"
@@ -218,19 +217,41 @@ export default {
     },
   },
   data() {
+    const stringConfiguracion = localStorage.getItem(
+      "configuracionOrganizadorHorarioSemanal"
+    );
+
+    var configuracion = {};
+
+    if (stringConfiguracion) {
+      configuracion = JSON.parse(stringConfiguracion);
+    }
+
+    console.log("La configuración es: ");
+    console.table(configuracion);
+
     return {
       usuariosProfe: [],
       espacios: [],
-      bloquesHorarioUsuarioAsiste:[],
+      bloquesHorarioUsuarioAsiste: [],
       diasSemana: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
       factorZoom: 3,
       offset: 470,
       idEspacioCrear: null,
 
-      configuracionAdministradoresEspacios: ["yo"],
+      configuracionAdministradoresEspacios:
+        configuracion.configuracionAdministradoresEspacios || ["yo"],
       mostrandoConfiguracion: false,
-      mostrarBloquesParaChiquis: true,
-      mostrarBloquesParaTodos: true,
+      mostrarBloquesParaChiquis:
+        configuracion.mostrarBloquesParaChiquis != null &&
+        configuracion.mostrarBloquesParaChiquis != undefined
+          ? configuracion.mostrarBloquesParaChiquis
+          : true,
+      mostrarBloquesParaTodos:
+        configuracion.mostrarBloquesParaTodos != null &&
+        configuracion.mostrarBloquesParaTodos != undefined
+          ? configuracion.mostrarBloquesParaTodos
+          : true,
 
       bloquesHorario: [],
 
@@ -241,6 +262,9 @@ export default {
     };
   },
   computed: {
+    todosBloquesDescargados() {
+      return this.bloquesHorario.concat(this.bloquesHorarioUsuarioAsiste);
+    },
     espaciosCreables() {
       return this.espacios;
     },
@@ -249,7 +273,7 @@ export default {
         return null;
       }
 
-      return this.bloquesHorario.find(
+      return this.todosBloquesDescargados.find(
         (bloque) => bloque.id === this.idBloqueEnVentana
       );
     },
@@ -383,6 +407,32 @@ export default {
 
       return false;
     },
+    setLocalStorageConfiguracion() {
+      const objeto = {
+        mostrarBloquesParaChiquis: this.mostrarBloquesParaChiquis,
+        mostrarBloquesParaTodos: this.mostrarBloquesParaTodos,
+        configuracionAdministradoresEspacios:
+          this.configuracionAdministradoresEspacios,
+      };
+
+      const objetoString = JSON.stringify(objeto);
+
+      localStorage.setItem(
+        "configuracionOrganizadorHorarioSemanal",
+        objetoString
+      );
+    },
+  },
+  watch: {
+    configuracionAdministradoresEspacios() {
+      this.setLocalStorageConfiguracion();
+    },
+    mostrarBloquesParaChiquis() {
+      this.setLocalStorageConfiguracion();
+    },
+    mostrarBloquesParaTodos() {
+      this.setLocalStorageConfiguracion();
+    },
   },
 };
 </script>
@@ -393,26 +443,7 @@ export default {
   flex-direction: column;
 }
 
-#zonaConfiguracion {
-  padding: 10px 10px;
-  background-color: rgb(224, 224, 224);
-}
-#contenedorBloquesConfiguracion {
-  display: flex;
-  gap: 20px;
-}
 
-.bloqueConfiguracion {
-  background-color: rgb(197, 197, 197);
-  padding: 10px 10px;
-}
-.campoConfiguracion {
-  display: flex;
-  gap: 20px;
-}
-.campoConfiguracion input {
-  margin-left: auto;
-}
 .ventanaBloqueHorario {
   z-index: 100000;
 }

@@ -643,7 +643,7 @@ export default {
   align-items: center;
 }
 .botonMostrar {
-  height: 20px;
+
   margin: 0px 5px;
 }
 #botonEliminarse {

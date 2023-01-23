@@ -435,6 +435,26 @@ body {
   background-color: #fffcf9;
   font-family: "Salsa", sans-serif;
 }
+.zonaConfiguracion {
+  padding: 20px 10px;
+  background-color: rgb(224, 224, 224);
+}
+#contenedorBloquesConfiguracion {
+  display: flex;
+  gap: 20px;
+}
+
+.bloqueConfiguracion {
+  background-color: rgb(197, 197, 197);
+  padding: 10px 10px;
+}
+.campoConfiguracion {
+  display: flex;
+  gap: 20px;
+}
+.campoConfiguracion input {
+  margin-left: auto;
+}
 .barraComponente{
   padding: 10px 20px;
   font-size: 20px;
