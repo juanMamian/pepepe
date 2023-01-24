@@ -82,7 +82,6 @@
     <panel-conjuntos-nodos
       ref="panelConjuntosNodos"
       :yo="yo"
-      :todosNodos="todosNodos"
       :modoAtlas="modoAtlas"
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
     />

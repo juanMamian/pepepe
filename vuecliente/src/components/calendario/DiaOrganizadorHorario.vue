@@ -54,6 +54,7 @@
         ]"
         :idBloqueMenuContextual="idBloqueMenuContextual"
         :idBloqueSeleccionado="idBloqueSeleccionado"
+        :mostrarCantidadAsistentes="mostrarCantidadAsistentes"
         @meElimine="$emit('bloqueEliminado', bloque.id)"
         @menuContextual="$emit('menuContextualBloque', $event)"
         @seleccionado="$emit('bloqueSeleccionado', bloque.id)"
@@ -95,6 +96,7 @@ export default {
   components: { BloqueHorario, BloqueCreacionHorario },
   name: "DiaOrganizadorHorario",
   props: {
+    mostrarCantidadAsistentes:Boolean,
     nombreDia: String,
     numeroDia: Number,
     idEspacioCrear: String,

@@ -19,6 +19,7 @@ exports.permisosDeUsuario = [
     "maestraVida-estudiante",
     "maestraVida-profesor",
     "maestraVida-acompañante",
+    "maestraVida-graduado",
     "comunere"
 ];
 const esquemaIteracionRepaso = new mongoose_1.default.Schema({

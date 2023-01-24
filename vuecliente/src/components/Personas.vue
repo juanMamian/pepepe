@@ -2,6 +2,38 @@
   <div class="personas">
     <router-view> </router-view>
 
+    <div class="barraSeccion">
+      <div class="contenedorControles" style="margin-left: auto">
+        <div
+          class="boton"
+          @click="mostrandoConfiguracion = !mostrandoConfiguracion"
+        >
+          <img src="@/assets/iconos/cog.svg" alt="Configuración" style="" />
+        </div>
+      </div>
+    </div>
+
+    <div class="zonaConfiguracion" v-show="mostrandoConfiguracion">
+      <div class="barraSeccion">Configuración</div>
+
+      <div class="contenedorBloquesConfiguracion">
+        <div class="bloqueConfiguracion">
+          <div class="campoConfiguracion">
+            <label for="checkMostrarEspacioActual"
+              >Mostrar espacio en el que se encuentra cada persona</label
+            >
+            <input
+              v-model="mostrarEspacioActual"
+              type="checkbox"
+              name="checkMostrarEspacioActual"
+              id="checkMostrarEspacioActual"
+              ref="checkMostrarEspacioActual"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="zonaConfiguracion">
       <div class="contenedorBloquesConfiguracion">
         <div class="bloqueConfiguracion">
@@ -91,12 +123,14 @@
         texto="Cargando lista de personas..."
       />
       <persona-vista-lista
-        :seleccionado="idPersonaSeleccionada === persona.id"
-        @click.native="idPersonaSeleccionada = persona.id"
-        :estaPersona="persona"
-        :nodosSolidaridadPublicitados="nodosSolidaridadPublicitados"
         v-for="persona of personasVisibles"
         :key="persona.id"
+        :seleccionado="idPersonaSeleccionada === persona.id"
+        :estaPersona="persona"
+        :nodosSolidaridadPublicitados="nodosSolidaridadPublicitados"
+        :personasConEspacio="personasConEspacio"
+        :mostrarEspacioActual="mostrarEspacioActual"
+        @click.native="idPersonaSeleccionada = persona.id"
       />
     </div>
   </div>
@@ -149,10 +183,36 @@ export default {
         }
       `,
     },
+    personasConEspacio:{
+      query: gql`
+        query($dateActual: Date){
+          todosUsuarios(dateActual: $dateActual){
+            id
+            espacioActual
+          }
+        }
+      `,
+      variables(){
+        return {
+          dateActual: Date.now(),
+        }
+      },
+      update({todosUsuarios}){
+        return todosUsuarios
+      }
+    }
   },
   data() {
+    const stringConfiguracion = localStorage.getItem("configuracionPersonas");
+
+    var configuracion = {};
+
+    if (stringConfiguracion) {
+      configuracion = JSON.parse(stringConfiguracion);
+    }
     return {
       personas: [],
+      personasConEspacio:[],
       nodosSolidaridadPublicitados: [],
       idPersonaMenuCx: null,
       idPersonaSeleccionada: null,
@@ -165,9 +225,27 @@ export default {
       buscados: [],
 
       debouncingBusqueda: false,
+
+      mostrarEspacioActual:
+        configuracion.mostrarEspacioActual != null &&
+        configuracion.mostrarEspacioActual != undefined
+          ? configuracion.mostrarEspacioActual
+          : true,
+
+      mostrandoConfiguracion: false,
     };
   },
   methods: {
+    setLocalStorageConfiguracion() {
+      const objeto = {
+        mostrarEspacioActual: this.mostrarEspacioActual,
+      };
+
+
+      const objetoString = JSON.stringify(objeto);
+
+      localStorage.setItem("configuracionPersonas", objetoString);
+    },
     copiarId(e) {
       let str = e.target.innerText.trim();
       const el = document.createElement("textarea");
@@ -354,7 +432,11 @@ export default {
       return visibles;
     },
   },
-  watch: {},
+  watch: {
+    mostrarEspacioActual() {
+      this.setLocalStorageConfiguracion();
+    },
+  },
 };
 </script>
 
@@ -364,7 +446,7 @@ export default {
   padding-bottom: 50px;
   flex-flow: row wrap;
 }
-#campoUsuariosMostrados{
+#campoUsuariosMostrados {
   display: flex;
   flex-wrap: wrap;
 }

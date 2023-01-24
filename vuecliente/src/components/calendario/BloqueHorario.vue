@@ -23,8 +23,25 @@
     </div>
     <div id="barraTag" :style="[colorBarraTag]">
       <div id="nombre">
-        <img src='@/assets/iconos/babySolid.svg' v-if="esteBloque.paraChiquis" alt='bebé' style='height: 15px' />{{ esteBloque.nombreEspacio }}
+        <img
+          src="@/assets/iconos/babySolid.svg"
+          v-if="esteBloque.paraChiquis"
+          alt="bebé"
+          style="height: 15px"
+        />{{ esteBloque.nombreEspacio }}
       </div>
+    </div>
+
+    <div
+      id="cantidadAsistentes"
+      v-if="
+        esteBloque.idsParticipantesConstantes &&
+        esteBloque.idsParticipantesConstantes.length > 0 &&
+        mostrarCantidadAsistentes
+      "
+      v-show="!seleccionado"
+    >
+      Asistentes: {{ esteBloque.idsParticipantesConstantes.length }}
     </div>
 
     <div
@@ -53,10 +70,14 @@
       >
         Eliminar
       </div>
-      <div class="itemMenuContextual"  @click="$refs.inputColor.click()">
+      <div class="itemMenuContextual" @click="$refs.inputColor.click()">
         Seleccionar color
       </div>
-      <div class="itemMenuContextual" v-if="usuarioAdministrador || usuarioSuperadministrador" @click="iniciarSetHoraInicio">
+      <div
+        class="itemMenuContextual"
+        v-if="usuarioAdministrador || usuarioSuperadministrador"
+        @click="iniciarSetHoraInicio"
+      >
         Fijar hora de inicio
       </div>
       <input
@@ -68,7 +89,11 @@
         @change="setHoraInicio"
       />
 
-      <div class="itemMenuContextual" v-if="usuarioAdministrador || usuarioSuperadministrador" @click="iniciarSetHoraFinal">
+      <div
+        class="itemMenuContextual"
+        v-if="usuarioAdministrador || usuarioSuperadministrador"
+        @click="iniciarSetHoraFinal"
+      >
         Fijar hora de finalización
       </div>
       <input
@@ -102,6 +127,7 @@ export default {
     idBloqueSeleccionado: String,
     factorZoom: Number,
     idBloqueMenuContextual: String,
+    mostrarCantidadAsistentes: Boolean,
   },
 
   data() {
@@ -172,7 +198,7 @@ export default {
       if (this.usuarioAsiste) {
         color = "var(--calendarioUsuario)";
       }
-      if(this.usuarioAdministrador){
+      if (this.usuarioAdministrador) {
         color = "var(--calendarioUsuarioStrong)";
       }
       return {
@@ -244,7 +270,7 @@ export default {
         `Toggleando bloque que tiene minutosInicio ${this.minutosInicio} y minutosFinal ${this.minutosFinal}`
       );
 
-      if(!this.usuarioAdministrador && !this.usuarioSuperadministrador){
+      if (!this.usuarioAdministrador && !this.usuarioSuperadministrador) {
         console.log("No autorizado");
         return;
       }
@@ -383,12 +409,10 @@ export default {
   top: 0px;
   box-sizing: border-box;
   border: 1px solid rgb(110, 110, 110);
-
 }
 .bloqueHorario.seleccionado {
   filter: brightness(1.7);
   border: 2px solid white;
-
 }
 .bloqueHorario.usuarioAsiste {
 }
@@ -396,7 +420,6 @@ export default {
   position: absolute;
   top: 10px;
   left: calc(100% + 0px);
-  
 }
 #barraTag {
   min-height: 20px;
@@ -411,7 +434,11 @@ export default {
   justify-content: center;
   align-items: center;
 }
-
+#cantidadAsistentes {
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+}
 #menuContextual {
   position: absolute;
   top: 0%;

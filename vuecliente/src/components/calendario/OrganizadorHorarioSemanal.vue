@@ -25,7 +25,7 @@
     <div class="zonaConfiguracion" v-show="mostrandoConfiguracion">
       <div class="barraSeccion">Configuración.</div>
 
-      <div id="contenedorBloquesConfiguracion">
+      <div class="contenedorBloquesConfiguracion">
         <div
           id="configuracionAdministradoresEspacios"
           class="bloqueConfiguracion"
@@ -77,6 +77,15 @@
             />
           </div>
         </div>
+
+        <div class="bloqueConfiguracion">
+          <div class="campoConfiguracion">
+            <label for="checkMostrarCantidadAsistentes"
+              >Mostrar cantidad de asistentes de cada bloque</label
+            >
+            <input type="checkbox" v-model="mostrarCantidadAsistentes" />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -108,6 +117,7 @@
         :bloquesHorario="bloquesActivos.filter((b) => b.diaSemana === index)"
         :idBloqueMenuContextual="idBloqueMenuContextual"
         :idBloqueSeleccionado="idBloqueSeleccionado"
+        :mostrarCantidadAsistentes="mostrarCantidadAsistentes"
         @bloqueSeleccionado="
           idBloqueSeleccionado = idBloqueSeleccionado === $event ? null : $event
         "
@@ -252,6 +262,12 @@ export default {
         configuracion.mostrarBloquesParaTodos != undefined
           ? configuracion.mostrarBloquesParaTodos
           : true,
+
+      mostrarCantidadAsistentes:
+        configuracion.mostrarCantidadAsistentes != null &&
+        configuracion.mostrarCantidadAsistentes != undefined
+          ? configuracion.mostrarCantidadAsistentes
+          : false,
 
       bloquesHorario: [],
 
@@ -413,6 +429,7 @@ export default {
         mostrarBloquesParaTodos: this.mostrarBloquesParaTodos,
         configuracionAdministradoresEspacios:
           this.configuracionAdministradoresEspacios,
+        mostrarCantidadAsistentes: this.mostrarCantidadAsistentes,
       };
 
       const objetoString = JSON.stringify(objeto);
@@ -433,6 +450,9 @@ export default {
     mostrarBloquesParaTodos() {
       this.setLocalStorageConfiguracion();
     },
+    mostrarCantidadAsistentes() {
+      this.setLocalStorageConfiguracion();
+    },
   },
 };
 </script>
@@ -442,7 +462,6 @@ export default {
   display: flex;
   flex-direction: column;
 }
-
 
 .ventanaBloqueHorario {
   z-index: 100000;

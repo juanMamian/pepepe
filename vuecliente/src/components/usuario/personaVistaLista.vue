@@ -32,7 +32,7 @@
         />
       </div>
       <div id="zonaNombres">
-        <div id="nombres">{{ estaPersona.nombres }}</div>
+        <div id="nombres">{{ estaPersona.nombres }} <span class="espacioActual" v-if="miEspacioActual" v-show="mostrarEspacioActual">({{miEspacioActual}})</span> </div>
       </div>
       <div id="zonaApellidos">
         <div id="apellidos">{{ estaPersona.apellidos }}</div>
@@ -415,6 +415,8 @@ const QUERY_INFORMES = gql`
 export default {
   components: { Calendario, Loading, VentanaLista },
   props: {
+    personasConEspacio:Array,
+    mostrarEspacioActual:Boolean,
     estaPersona: Object,
     seleccionado: Boolean,
     nodosSolidaridadPublicitados: Array,
@@ -497,7 +499,7 @@ export default {
       nuevoInformeEspacios: null,
       nuevoInformeComentario: null,
 
-      periodoInforme: "total",
+      periodoInforme: "primero",
       activable: 0,
     };
   },
@@ -726,7 +728,7 @@ export default {
           `,
           variables: {
             idUsuario: this.estaPersona.id,
-            year: 2022,
+            year: 2023,
             periodo: this.periodoInforme,
             idProfe: this.usuario.id,
             categoria,
@@ -818,7 +820,7 @@ export default {
               ...this.informes
                 .filter(
                   (i) =>
-                    i.year == 2022 &&
+                    i.year == 2023 &&
                     i.periodo === this.periodoInforme &&
                     i.categoria === "objetivos" &&
                     i.texto &&
@@ -874,7 +876,7 @@ export default {
               ...this.informes
                 .filter(
                   (i) =>
-                    i.year == 2022 &&
+                    i.year == 2023 &&
                     i.periodo === this.periodoInforme &&
                     i.categoria === "proyectos" &&
                     i.texto &&
@@ -924,7 +926,7 @@ export default {
               ...this.informes
                 .filter(
                   (i) =>
-                    i.year == 2022 &&
+                    i.year == 2023 &&
                     i.periodo === this.periodoInforme &&
                     i.categoria === "espacios" &&
                     i.texto &&
@@ -978,7 +980,7 @@ export default {
               ...this.informes
                 .filter(
                   (i) =>
-                    i.year == 2022 &&
+                    i.year == 2023 &&
                     i.periodo === this.periodoInforme &&
                     i.categoria === "comentario" &&
                     i.texto &&
@@ -1145,12 +1147,16 @@ export default {
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
+<<<<<<< HEAD
                 text: "INFORME FINAL",
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
                 text: "2022",
+=======
+                text: "PERIODO AGOSTO - OCTUBRE DE 2023",
+>>>>>>> 3d580d3bbff31dafe32fd5f0c5f69de33c720fb6
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
               }),
@@ -1226,28 +1232,28 @@ export default {
       }
       var miInformeObjetivos = this.informes.find(
         (i) =>
-          i.year === 2022 &&
+          i.year === 2023 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "objetivos"
       );
       var miInformeEspacios = this.informes.find(
         (i) =>
-          i.year === 2022 &&
+          i.year === 2023 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "espacios"
       );
       var miInformeComentario = this.informes.find(
         (i) =>
-          i.year === 2022 &&
+          i.year === 2023 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "comentario"
       );
       var miInformeProyectos = this.informes.find(
         (i) =>
-          i.year === 2022 &&
+          i.year === 2023 &&
           i.periodo === this.periodoInforme &&
           i.idProfe === this.usuario.id &&
           i.categoria === "proyectos"
@@ -1259,46 +1265,17 @@ export default {
         proyectos: miInformeProyectos ? miInformeProyectos.texto : null,
       };
     },
-    // cantidadMisInformesEscritos() {
-    //   if (!this.usuarioLogeado) {
-    //     return 0;
-    //   }
-    //   if (!this.informes) {
-    //     return 0;
-    //   }
+    miEspacioActual(){
+      const miPersonaConEspacio=this.personasConEspacio.find(p=>p.id===this.estaPersona.id);
 
-    //   var cuenta = 0;
-    //   cuenta += this.activable;
-    //   cuenta = 0;
+      if(!miPersonaConEspacio){
+        return null;
+      }
 
-    //   if (
-    //     this.misInformesActivos.objetivos &&
-    //     this.misInformesActivos.objetivos.length > 5
-    //   ) {
-    //     cuenta++;
-    //   }
-    //   if (
-    //     this.misInformesActivos.proyectos &&
-    //     this.misInformesActivos.proyectos.length > 5
-    //   ) {
-    //     cuenta++;
-    //   }
-    //   if (
-    //     this.misInformesActivos.espacios &&
-    //     this.misInformesActivos.espacios.length > 5
-    //   ) {
-    //     cuenta++;
-    //   }
-    //   if (
-    //     this.misInformesActivos.comentario &&
-    //     this.misInformesActivos.comentario.length > 5
-    //   ) {
-    //     cuenta++;
-    //   }
-
-    //   return cuenta;
-    // },
+      return miPersonaConEspacio.espacioActual;
+    },
     colorBarraSuperior() {
+
       if (
         !this.usuarioLogeado ||
         !this.estaPersona.permisos ||
@@ -1390,6 +1367,10 @@ function saveDocumentToFile(doc, fileName) {
   margin: 0px 15px;
 }
 
+#espacioActual{
+  font-size: 14px;
+}
+
 #barraInfoAdicional {
   display: flex;
 }
@@ -1426,7 +1407,7 @@ function saveDocumentToFile(doc, fileName) {
 
 #selectoresPeriodo .selector.activo {
   border-color: transparent;
-  color: var(--mainColor);
+  color: black;
 }
 
 .contenedorSeccionInforme {

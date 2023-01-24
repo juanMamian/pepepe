@@ -58,28 +58,9 @@
         <div @click="crearNuevaColeccion" class="botonControlesConjuntos">Nueva colección</div>
       </div>
     </div>
-    <div
-      id="controlesListaNodos"
-      :style="[
-        { visibility: idNodoSeleccionado != null ? 'visible' : 'hidden' },
-      ]"
-    >
-      <div
-        class="controlListaNodos hoverGris"
-        @click.stop="$emit('centrarEnNodo', idNodoSeleccionado)"
-      >
-        Centrar
-      </div>      
-      <img
-        src="@/assets/iconos/delete.png"
-        alt="Eliminar"
-        :class="{deshabilitado: enviandoQueryNodosSeccion}"
-        v-show="idNodoSeleccionado"
-        class="botonEliminarNodoColeccion"
-        @click.stop="eliminarNodoSeleccionadoSeccionSeleccionada"
-      />
-    </div>
-    <div
+    
+    <coleccion-nodos-conocimiento :yo="yo" v-if="idConjuntoSeleccionado" :estaColeccion="conjuntoSeleccionado"/>
+    <!-- <div
       id="listaNodosConjunto"
       v-if="conjuntoSeleccionado"
       v-show="abierto && conjuntoSeleccionado"
@@ -94,53 +75,23 @@
         :seleccionado="nodo.id === idNodoSeleccionado"
         @click.native.stop="idNodoSeleccionado = nodo.id"
         @dblclick.native.stop="$emit('centrarEnNodo', nodo.id)"
-      />
-    </div>
-    <div
-      id="listaClasesNodo"
-      v-if="conjuntoSeleccionado"
-      v-show="conjuntoSeleccionado.nombre === 'nodosConClaseDictada'"
-    >
-      <div
-        class="infoClase"
-        v-for="clase of clasesDictadasUsuario"
-        :key="'infoClase' + clase.id"
-        @click.stop="$emit('centrarEnNodo', clase.idNodoParent)"
-      >
-        <img
-          src="@/assets/iconos/nodoConocimientoDefault.png"
-          alt="Abrir nodo"
-          title="Abrir el nodo de conocimiento"
-          @click.stop="abrirPaginaNodo(clase.idNodoParent)"
-          class="iconoAbrirNodo"
-        />
-        <div class="nombreClase">{{ clase.nombre }}</div>
-        <div class="infoInteresados">
-          <div class="cantidadInteresados">{{ clase.interesados.length }}</div>
-          <img
-            src="@/assets/iconos/raiseHand.png"
-            alt="Interesados"
-            class="iconoInteresados"
-            title="Estudiantes interesados en esta clase"
-          />
-        </div>
-      </div>
-    </div>
+      /> -->
+    <!-- </div> -->
+    
   </div>
 </template>
 
 <script>
-import IconoNodoConocimiento from "./IconoNodoConocimiento.vue";
 import gql from "graphql-tag";
+import ColeccionNodosConocimiento from './ColeccionNodosConocimiento.vue';
 
 const charProhibidosNombreColeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
 export default {
-  components: { IconoNodoConocimiento },
+  components: { ColeccionNodosConocimiento },
   name: "PanelConjuntosNodos",
   props: {
     yo: Object,
-    todosNodos: Array,
     modoAtlas:String,
   },
   data() {
@@ -348,50 +299,11 @@ export default {
       return this.todosNodos.filter((n) =>
         this.idsNodosObjetivos.includes(n.id)
       );
-    },
-    nodosClasesDictadasUsuario() {
-      if (!this.usuario || !this.usuario.id) return [];
-      return this.todosNodos.filter((n) =>
-        n.clases.some((c) => c.idExperto === this.usuario.id)
-      );
-    },
-    clasesDictadasUsuario() {
-      if (!this.usuario || !this.usuario.id) return;
-      var clasesDictadas = [];
-      this.nodosClasesDictadasUsuario.forEach((nodo) => {        
-        clasesDictadas = clasesDictadas.concat(
-          nodo.clases
-            .filter((c) => c.idExperto === this.usuario.id)
-            .map((c) => {
-              return {
-                ...c,
-                idNodoParent: nodo.id,
-              };
-            })
-        );
-      });
-      return clasesDictadas;
-    },
+    },        
     conjuntos() {
-      if(this.modoAtlas==='experto'){
-        return this.conjuntosUsuario.concat([{
-          nombre: "nodosConClaseDictada",
-          titulo: "Mis clases",
-          id: 1,
-          nodos: [],
-          modo: "experto",
-        }])
-      }
+      
       return this.conjuntosUsuario
-    },
-    conjuntoSeleccionado() {
-      if (this.idConjuntoSeleccionado === null) return null;
-      return this.conjuntos.find((c) => c.id === this.idConjuntoSeleccionado);
-    },
-    nodoSeleccionado() {
-      if (!this.idNodoSeleccionado) return null;
-      return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
-    },
+    },     
     conjuntosUsuario() {
       if (!this.yo || !this.yo.atlas || !this.yo.atlas.colecciones) {
         return [];
@@ -408,6 +320,9 @@ export default {
 
       return nuevoColecciones;
     },
+    conjuntoSeleccionado(){
+      return this.conjuntos.find(c=>c.id===this.idConjuntoSeleccionado);
+    }
   },
   watch: {
     abierto() {
@@ -473,17 +388,7 @@ export default {
 .botonControlesConjuntos:hover {
   background-color: rgba(128, 128, 128, 0.527);
 }
-#controlesListaNodos {
-  display: flex;
-  width: 100%;
-  margin: 20px auto;
-}
-.controlListaNodos {
-  padding: 3px 5px;
-  font-size: 12px;
-  color: gray;
-  cursor: pointer;
-}
+
 #botonRastrearNodo {
   width: 20px;
   min-width: 20px;
