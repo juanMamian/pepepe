@@ -16,6 +16,36 @@
       :datosNodosUrgentes="datosNodosUrgentes"
       @centrarEnNodo="centrarEnNodoById($event)"
     />
+    <div id="zonaSeleccionColeccion">
+      <div
+        id="nombreColeccion"
+        @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
+      >
+        <img
+          src="@/assets/iconos/userNodes.png"
+          alt="Coleccion"
+          style="height: 10px"
+        />
+        {{ nombreColeccionSeleccionada }}
+      </div>
+
+      <div id="listaSelectoresColeccion" v-show="seleccionandoColeccion">
+        <div class="selectorColeccion" @click.stop="idColeccionSeleccionada=null" v-show="idColeccionSeleccionada">
+          Atlas
+        </div>
+        <div
+          class="selectorColeccion"
+          @click.stop="
+            idColeccionSeleccionada =
+              idColeccionSeleccionada === coleccion.id ? null : coleccion.id
+          "
+          v-for="coleccion of coleccionesUsuario.filter(col=>idColeccionSeleccionada!=col.id)"
+          :key="coleccion.id"
+        >
+          {{ coleccion.nombre }}
+        </div>
+      </div>
+    </div>
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
@@ -151,8 +181,14 @@
           :datosUsuarioEsteNodo="
             yo.atlas.datosNodos.find((dn) => dn.idNodo === nodo.id) || {}
           "
-          :fantasmeado="idNodoSeleccionado && idNodoSeleccionado!=nodo.id && !idsNodosPreviosSeleccionado.includes(nodo.id)"
-          :previoDeSeleccionado="idNodoSeleccionado && idsNodosPreviosSeleccionado.includes(nodo.id)"
+          :fantasmeado="
+            idNodoSeleccionado &&
+            idNodoSeleccionado != nodo.id &&
+            !idsNodosPreviosSeleccionado.includes(nodo.id)
+          "
+          :previoDeSeleccionado="
+            idNodoSeleccionado && idsNodosPreviosSeleccionado.includes(nodo.id)
+          "
           :enviandoQueryTarget="enviandoQueryTarget"
           @contextmenu.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
           @abroMenuContextual="idNodoMenuCx = nodo.id"
@@ -422,9 +458,34 @@ export default {
         left: "0px",
       },
       enviandoQueryConfiguracionAtlas: false,
+
+      idColeccionSeleccionada: null,
+      seleccionandoColeccion: false,
     };
   },
   computed: {
+    nombreColeccionSeleccionada() {
+      if (!this.idColeccionSeleccionada) {
+        return "Atlas";
+      }
+
+      return this.coleccionSeleccionada.nombre;
+    },
+    coleccionSeleccionada() {
+      if (!this.idColeccionSeleccionada) {
+        return null;
+      }
+      return this.coleccionesUsuario.find(
+        (col) => col.id === this.idColeccionSeleccionada
+      );
+    },
+    coleccionesUsuario() {
+      if (!this.yo?.atlas?.colecciones) {
+        return [];
+      }
+
+      return this.yo.atlas.colecciones;
+    },
     idsNodosObjetivos() {
       if (!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos) {
         return [];
@@ -619,32 +680,30 @@ export default {
       );
     },
     idsNodosPreviosSeleccionado() {
-      if(!this.idNodoSeleccionado){
-        return []
+      if (!this.idNodoSeleccionado) {
+        return [];
       }
-      var idsActuales=[this.idNodoSeleccionado];
-      var cadenaTotal=[];
+      var idsActuales = [this.idNodoSeleccionado];
+      var cadenaTotal = [];
       for (var i = 0; i < 20; i++) {
-
         let previos = this.nodosRender.filter((n) =>
           n.vinculos.some(
-            (v) => (v.rol === "source" && idsActuales.includes(v.idRef))
+            (v) => v.rol === "source" && idsActuales.includes(v.idRef)
           )
         );
 
-
-        if(previos.length<1){
+        if (previos.length < 1) {
           break;
         }
 
-        let idsPrevios=previos.map(previo=>previo.id);
+        let idsPrevios = previos.map((previo) => previo.id);
 
         cadenaTotal.push(...idsPrevios);
 
-        idsActuales=idsPrevios;
+        idsActuales = idsPrevios;
       }
 
-      return cadenaTotal
+      return cadenaTotal;
     },
   },
   methods: {
@@ -1349,6 +1408,9 @@ export default {
     }, 1000),
   },
   watch: {
+    idColeccionSeleccionada(){
+      this.seleccionandoColeccion=false;
+    },
     nodoSeleccionado: function () {
       this.actualizarTrazos++;
     },
@@ -1473,6 +1535,36 @@ export default {
   cursor: pointer;
   font-size: 13px;
   display: flex;
+  align-items: center;
+}
+#zonaSeleccionColeccion {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+#nombreColeccion {
+  padding: 10px 30px;
+  background-color: var(--atlasConocimientoSeleccion);
+  border-radius: 25px;
+  cursor: pointer;
+}
+#listaSelectoresColeccion {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(200px, 90vw);
+}
+.selectorColeccion {
+  padding: 5px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: var(--atlasConocimientoAvailable);
+  display: flex;
+  gap: 10px;
   align-items: center;
 }
 #menuContextual {

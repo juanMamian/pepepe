@@ -701,12 +701,7 @@ export default {
     //     });
     // },
     abrirPaginaNodo() {
-      if (
-        !this.aprendible &&
-        !this.usuarioSuperadministrador &&
-        this.modoAtlas === "estudiante"
-      )
-        return alert("¡Aún no puedes estudiar este nodo!");
+      
       this.$router.push(
         this.$route.path + "/nodoConocimiento/" + this.esteNodo.id
       );
