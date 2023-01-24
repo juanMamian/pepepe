@@ -70,6 +70,8 @@ export const typeDefs = gql`
         nombre: String,
         idsNodos: [ID],
         nodos:[NodoConocimiento],
+        progreso: Float,
+        idUsuario: ID,
     }
 
     type IteracionRepasoNodoConocimiento{
@@ -173,6 +175,8 @@ export const typeDefs = gql`
 
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
+
+        coleccionNodosConocimiento(idUsuario: ID!, idColeccion: ID!):ColeccionNodosAtlasConocimiento,
     }
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
@@ -409,7 +413,33 @@ export const resolvers = {
             }
 
             return losParticipantes;
-        }
+        },
+
+        async coleccionNodosConocimiento(_:any, {idUsuario, idColeccion}:any, contexto: contextoQuery){
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            
+            try {
+                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                if (!elUsuario) throw 'Usuario no encontrado';
+            } catch (error){
+                console.log('Error descargando el usuario de la base de datos: '+error)
+                throw new ApolloError('Error conectando con la base de datos');
+            };
+
+            var laColeccion=elUsuario.atlas.colecciones.id(idColeccion);
+
+            if(!laColeccion){
+                console.log(`Error getting la colección : `);
+                throw new UserInputError('Colección no encontrada');
+                
+            }
+
+            return laColeccion;
+        },
 
 
     },
@@ -1634,6 +1664,63 @@ export const resolvers = {
             }
             if (!losNodos) losNodos = [];
             return losNodos;
+        },
+        progreso: async function (parent: any, _: any, __: any) {
+            console.log('\x1b[35m%s\x1b[0m', `Calculando progreso de colección ${parent.nombre} en usuario ${parent.idUsuario}`);
+            
+            //Revisar nodo por nodo
+
+            var todosNodos: Array<any>=[];
+
+            var guarda=0;
+            var idsNodosActuales:Array<any>=parent.idsNodos;
+            var nodosActuales:Array<any>
+
+            while(guarda<300 && idsNodosActuales.length>0){
+
+                try {
+                    nodosActuales=await Nodo.find({"_id": {$in: idsNodosActuales}}).exec();
+                } catch (error) {
+                    console.log(`Error getting nodos actuales : `+ error);
+                    throw new ApolloError('Error conectando con la base de datos');                    
+                }
+
+                todosNodos.push(...nodosActuales);
+
+                idsNodosActuales=[];
+                for (const nodo of nodosActuales){
+                    let idsRequeridos=nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==="target").map(v=>v.idRef);
+                    for(const idRequerido of idsRequeridos){
+                        if(!idsNodosActuales.includes(idRequerido)){
+                            idsNodosActuales.push(idRequerido);
+                        }
+                    }
+                }
+
+
+                guarda++
+            }
+
+            console.log(`Encontrados ${todosNodos.length} nodos relevantes para esta colección`);
+
+            const idsTodosNodos=todosNodos.map(n=>n.id);
+            try {
+                var elUsuario:any = await Usuario.findById(parent.idUsuario).exec();
+                if(!elUsuario) throw 'usuario no encontrado';
+            }
+            catch(error) {
+                console.log("Error getting usuario: "+error);
+                throw new ApolloError('Error conectando con la base de datos');
+            }
+            
+            const nodosAprendidos=elUsuario.atlas.datosNodos.filter(dn=>dn.aprendido).filter(dn=>idsTodosNodos.includes(dn.idNodo));
+
+            console.log(`${nodosAprendidos.length} nodos aprendidos de la colección`);
+
+            const progreso=(100/todosNodos.length)*nodosAprendidos.length;
+
+
+            return Number(progreso.toFixed(2));
         }
     },
     DatoNodoUsuario: {

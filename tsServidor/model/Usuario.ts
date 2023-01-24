@@ -66,6 +66,10 @@ const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({
     { strict: true }
 );
 
+esquemaColeccionNodosAtlasConocimiento.virtual("idUsuario").get( function(this:any){
+    return this.ownerDocument()._id;
+})
+
 const esquemaNotificacion = new mongoose.Schema({
     texto: {
         type: String,
@@ -227,7 +231,7 @@ const esquemaUsuario = new mongoose.Schema({
             type: String,
             required: true,
             max: 20,
-            default: "APRENDIENDO",
+            default: "aprendiendo",
             enum: ["aprendiendo", "aprendido", "objetivo"]
         },
         nodoConocimiento: {

@@ -136,6 +136,7 @@ extend type Query{
     todosNodos: [NodoConocimiento],
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
+    nodosConocimientoByIds(idsNodos: [ID!]!):[NodoConocimiento],
     busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
 
 
@@ -301,7 +302,28 @@ export const resolvers = {
             }
 
             return elNodo;
-        }
+        },
+        async nodosConocimientoByIds(_:any, {idsNodos}:any, contexto: contextoQuery){
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario; 
+            console.log("Getting nodos con ids "+idsNodos);
+            
+
+            try {
+                var losNodos:any=await Nodo.find({"_id": {$in: idsNodos}}).exec();
+            } catch (error) {
+                console.log(`Error getting nodosConocimiento by ids : `+ error);
+                throw new ApolloError('Error conectando con la base de datos');
+                
+            }
+
+            console.log(`Retornando ${losNodos.length} nodos`)
+
+            return losNodos;
+        },
     },
     Mutation: {
         async posicionarNodosConocimientoByFuerzas(_: any, { ciclos }: any, contexto: contextoQuery) {
