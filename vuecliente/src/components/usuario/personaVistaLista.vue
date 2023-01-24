@@ -1147,16 +1147,7 @@ export default {
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({
-<<<<<<< HEAD
-                text: "INFORME FINAL",
-                style: "titulos",
-                alignment: AlignmentType.CENTER,
-              }),
-              new Paragraph({
-                text: "2022",
-=======
                 text: "PERIODO AGOSTO - OCTUBRE DE 2023",
->>>>>>> 3d580d3bbff31dafe32fd5f0c5f69de33c720fb6
                 style: "titulos",
                 alignment: AlignmentType.CENTER,
               }),
