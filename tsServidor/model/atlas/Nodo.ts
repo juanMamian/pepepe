@@ -13,6 +13,34 @@ const esquemaClase = new mongoose.Schema({
     },
 })
 
+const EsquemaVinculo=new mongoose.Schema({
+    idRef: {
+        type: mongoose.Types.ObjectId,
+        required:true
+    },
+    rol: {
+        type: String,
+        required: true,
+        enum: ["target", "source"],
+    },
+    tipo: {
+        type: String,
+        required: true,
+        default: "continuacion",
+
+        
+    }
+})
+
+EsquemaVinculo.pre("save", function(this:any, next){
+    if(this.tipo="requiere"){
+        this.tipo="continuacion";
+    }
+
+    next();
+})
+
+
 var esquemaNodo = new mongoose.Schema({
     nombre: {
         type: String,
@@ -36,25 +64,7 @@ var esquemaNodo = new mongoose.Schema({
         default: "concepto",
     },
     vinculos:{
-        type:[
-            {
-                idRef: {
-                    type: mongoose.Types.ObjectId,
-                    required:true
-                },
-                rol: {
-                    type: String,
-                    required: true
-                },
-                tipo: {
-                    type: String,
-                    required: true,
-                    default: "continuacion",
-                    
-                }
-            }
-        ],
-        required: true,
+        type:[EsquemaVinculo],
         default:[]
     } ,
     coordsManuales:{
@@ -152,6 +162,7 @@ var esquemaNodo = new mongoose.Schema({
     ubicado:Boolean
 
 });
+
 
 esquemaNodo.methods.verificarVinculo=function(this:any,idRef, eliminar){
     console.log(`${this.nombre} está buscando un vinculo con ${idRef}. Eliminar es ${eliminar}`);
