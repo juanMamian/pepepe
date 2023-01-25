@@ -21,27 +21,76 @@
         id="nombreColeccion"
         @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
       >
+        
+        <span
+          class="indicadorProgreso"
+          v-if="coleccionSeleccionada && coleccionSeleccionada.progreso"
+          >{{ coleccionSeleccionada.progreso }}%</span
+        >
+        <span style="z-index:1">
+          {{ nombreColeccionSeleccionada }}
+        </span>
+      </div>
+
+      <div
+        class="boton"
+        id="botonMostrarOpcionesColeccion"
+        v-show="!seleccionandoColeccion"
+        @click="mostrandoOpcionesColeccion = !mostrandoOpcionesColeccion"
+      >
         <img
-          src="@/assets/iconos/userNodes.png"
-          alt="Coleccion"
-          style="height: 10px"
+          src="@/assets/iconos/ellipsisVertical.svg"
+          alt="Opciones"
+          style=""
         />
-        {{ nombreColeccionSeleccionada }}
+      </div>
+
+      <div
+        id="contenedorControlesColeccion"
+        v-show="mostrandoOpcionesColeccion"
+      >
+        <div class="boton controlColeccion" @click="localizarNext('available')">
+          <img
+            src="@/assets/iconos/atlas/locationCrosshair.svg"
+            alt="Localizar"
+            style="filter: var(--filtroAtlasAvailable)"
+          />
+        </div>
+        <div class="boton controlColeccion" @click="localizarNext('check')">
+          <img
+            src="@/assets/iconos/atlas/locationCrosshair.svg"
+            alt="Localizar"
+            style="filter: var(--filtroAtlasCheck)"
+          />
+        </div>
       </div>
 
       <div id="listaSelectoresColeccion" v-show="seleccionandoColeccion">
-        <div class="selectorColeccion" @click.stop="idColeccionSeleccionada=null" v-show="idColeccionSeleccionada">
+        <div
+          class="selectorColeccion"
+          @click.stop="setIdColeccionSeleccionada(null)"
+          v-show="idColeccionSeleccionada"
+        >
+          <img
+            src="@/assets/iconos/userNodes.png"
+            alt="Coleccion"
+            style="height: 15px"
+          />
           Atlas
         </div>
         <div
           class="selectorColeccion"
-          @click.stop="
-            idColeccionSeleccionada =
-              idColeccionSeleccionada === coleccion.id ? null : coleccion.id
-          "
-          v-for="coleccion of coleccionesUsuario.filter(col=>idColeccionSeleccionada!=col.id)"
+          @click.stop="setIdColeccionSeleccionada(coleccion.id)"
+          v-for="coleccion of coleccionesUsuario.filter(
+            (col) => idColeccionSeleccionada != col.id
+          )"
           :key="coleccion.id"
         >
+          <img
+            src="@/assets/iconos/userNodes.png"
+            alt="Coleccion"
+            style="height: 15px"
+          />
           {{ coleccion.nombre }}
         </div>
       </div>
@@ -343,6 +392,7 @@ export const QUERY_DATOS_USUARIO_NODOS = gql`
           id
           nombre
           idsNodos
+          progreso
           nodos {
             id
             nombre
@@ -461,6 +511,10 @@ export default {
 
       idColeccionSeleccionada: null,
       seleccionandoColeccion: false,
+      mostrandoOpcionesColeccion: false,
+
+      indexLastLocateNextAvailable: 0,
+      indexLastLocateNextCheck: 0,
     };
   },
   computed: {
@@ -646,6 +700,32 @@ export default {
         return this.todosNodos
           .filter((n) => this.idsNecesariosParaTarget.includes(n.id))
           .concat([this.todosNodos.find((n) => this.idNodoTarget === n.id)]);
+      } else if (this.coleccionSeleccionada) {
+        let guarda = 0;
+        let idsNodosActuales = this.coleccionSeleccionada.idsNodos;
+        let todosNodosColeccion = [];
+        let nodosActuales = [];
+
+        while (guarda < 100 && idsNodosActuales.length > 0) {
+          nodosActuales = this.todosNodos.filter((n) =>
+            idsNodosActuales.includes(n.id)
+          );
+          todosNodosColeccion.push(...nodosActuales);
+          let idsTodosNodosColeccion = todosNodosColeccion.map((n) => n.id);
+
+          idsNodosActuales = [];
+          for (const nodoActual of nodosActuales) {
+            let idsVinculosRequeridos = nodoActual.vinculos
+              .filter((v) => v.tipo === "continuacion" && v.rol === "target")
+              .map((v) => v.idRef);
+            let idsVinculosNuevos = idsVinculosRequeridos.filter(
+              (idV) => !idsTodosNodosColeccion.includes(idV)
+            );
+            idsNodosActuales.push(...idsVinculosNuevos);
+          }
+        }
+
+        return todosNodosColeccion;
       }
       return this.todosNodos;
     },
@@ -707,6 +787,83 @@ export default {
     },
   },
   methods: {
+    localizarNext(tipo) {
+      let nodosConsiderados = [...this.nodosRender];
+      console.log(
+        `Localizando next en ${nodosConsiderados.length} nodos de coleccion`
+      );
+      if (tipo === "available") {
+        let indexEncontrados = 0;
+        let nextNodo = nodosConsiderados.find((n) => {
+          if (this.idsNodosPresentesCabeza.includes(n.id)) {
+            console.log("Estaba fresco");
+            return false;
+          }
+
+          if (this.indexLastLocateNextAvailable === n.id) {
+            return false;
+          }
+
+          let idsNodosRequeridos = n.vinculos
+            .filter((v) => v.tipo === "continuacion" && v.rol === "target")
+            .map((v) => v.idRef);
+
+          let nodosRequeridos = nodosConsiderados.filter((n) =>
+            idsNodosRequeridos.includes(n.id)
+          );
+
+          if (
+            nodosRequeridos.some(
+              (nodo) => !this.idsNodosPresentesCabeza.includes(nodo.id)
+            )
+          ) {
+            return false;
+          }
+
+          indexEncontrados++;
+
+          if (indexEncontrados <= this.indexLastLocateNextAvailable) {
+            return false;
+          }
+          return true;
+        });
+
+        if (nextNodo) {
+          this.centrarEnNodoById(nextNodo.id);
+          this.indexLastLocateNextAvailable = indexEncontrados;
+        } else {
+          this.indexLastLocateNextAvailable = 0;
+        }
+      }
+      if (tipo === "check") {
+        let indexEncontrados = 0;
+        let nextNodo = nodosConsiderados.find((n) => {
+          if (this.idsNodosPresentesCabeza.includes(n.id)) {
+            console.log("Estaba fresco");
+
+            indexEncontrados++;
+
+            if (indexEncontrados <= this.indexLastLocateCheck) {
+              return false;
+            }
+            return true;
+          }
+        });
+
+        if (nextNodo) {
+          this.centrarEnNodoById(nextNodo.id);
+          this.indexLastLocateCheck = indexEncontrados;
+        } else {
+          this.indexLastLocateCheck = 0;
+        }
+      }
+    },
+    setIdColeccionSeleccionada(nuevoId) {
+      this.indexLastLocateNextAvailable = 0;
+      this.indexLastLocateNextCheck = 0;
+
+      this.idColeccionSeleccionada = nuevoId;
+    },
     iniciarCallingPosiciones() {
       var ciclos = prompt("¿Cuantos ciclos?");
       if (isNaN(ciclos)) {
@@ -1408,8 +1565,11 @@ export default {
     }, 1000),
   },
   watch: {
-    idColeccionSeleccionada(){
-      this.seleccionandoColeccion=false;
+    idColeccionSeleccionada() {
+      this.seleccionandoColeccion = false;
+    },
+    seleccionandoColeccion() {
+      this.mostrandoOpcionesColeccion = false;
     },
     nodoSeleccionado: function () {
       this.actualizarTrazos++;
@@ -1431,6 +1591,9 @@ export default {
     zoom() {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
+    },
+    nodosRender() {
+      this.localizarNext("available");
     },
   },
   mounted() {
@@ -1499,6 +1662,11 @@ export default {
 
   --filtroAtlasSeleccion: invert(43%) sepia(84%) saturate(539%)
     hue-rotate(236deg) brightness(88%) contrast(92%);
+
+  --filtroAtlasAvailable: invert(79%) sepia(70%) saturate(443%)
+    hue-rotate(349deg) brightness(92%) contrast(91%);
+  --filtroAtlasCheck: invert(34%) sepia(99%) saturate(407%) hue-rotate(56deg)
+    brightness(95%) contrast(81%);
 }
 </style>
 <style scoped>
@@ -1551,6 +1719,7 @@ export default {
   border-radius: 25px;
   cursor: pointer;
 }
+
 #listaSelectoresColeccion {
   position: absolute;
   top: 100%;
@@ -1558,8 +1727,26 @@ export default {
   transform: translateX(-50%);
   width: min(200px, 90vw);
 }
+#botonMostrarOpcionesColeccion {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 5px);
+  transform: translateY(-50%);
+}
+#contenedorControlesColeccion {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+.controlColeccion {
+  background-color: rgb(58, 58, 58);
+}
 .selectorColeccion {
-  padding: 5px 10px;
+  padding: 10px 15px;
   font-size: 16px;
   cursor: pointer;
   background-color: var(--atlasConocimientoAvailable);
