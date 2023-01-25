@@ -103,6 +103,7 @@ extend type Query{
     todosNodos: [NodoConocimiento],
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
+    nodosConocimientoByIds(idsNodos: [ID!]!):[NodoConocimiento],
     busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
 
 
@@ -267,7 +268,26 @@ exports.resolvers = {
                 }
                 return elNodo;
             });
-        }
+        },
+        nodosConocimientoByIds(_, { idsNodos }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                console.log("Getting nodos con ids " + idsNodos);
+                try {
+                    var losNodos = yield Nodo_1.ModeloNodo.find({ "_id": { $in: idsNodos } }).exec();
+                }
+                catch (error) {
+                    console.log(`Error getting nodosConocimiento by ids : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                console.log(`Retornando ${losNodos.length} nodos`);
+                return losNodos;
+            });
+        },
     },
     Mutation: {
         posicionarNodosConocimientoByFuerzas(_, { ciclos }, contexto) {

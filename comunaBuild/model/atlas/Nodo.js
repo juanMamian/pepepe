@@ -17,6 +17,28 @@ const esquemaClase = new mongoose_1.default.Schema({
         default: ""
     },
 });
+const EsquemaVinculo = new mongoose_1.default.Schema({
+    idRef: {
+        type: mongoose_1.default.Types.ObjectId,
+        required: true
+    },
+    rol: {
+        type: String,
+        required: true,
+        enum: ["target", "source"],
+    },
+    tipo: {
+        type: String,
+        required: true,
+        default: "continuacion",
+    }
+});
+EsquemaVinculo.pre("save", function (next) {
+    if (this.tipo = "requiere") {
+        this.tipo = "continuacion";
+    }
+    next();
+});
 var esquemaNodo = new mongoose_1.default.Schema({
     nombre: {
         type: String,
@@ -40,24 +62,7 @@ var esquemaNodo = new mongoose_1.default.Schema({
         default: "concepto",
     },
     vinculos: {
-        type: [
-            {
-                idRef: {
-                    type: mongoose_1.default.Types.ObjectId,
-                    required: true
-                },
-                rol: {
-                    type: String,
-                    required: true
-                },
-                tipo: {
-                    type: String,
-                    required: true,
-                    default: "continuacion",
-                }
-            }
-        ],
-        required: true,
+        type: [EsquemaVinculo],
         default: []
     },
     coordsManuales: {

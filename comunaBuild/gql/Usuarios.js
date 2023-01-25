@@ -17,6 +17,7 @@ const NodoSolidaridad_1 = require("../model/atlasSolidaridad/NodoSolidaridad");
 const graphql_iso_date_1 = require("graphql-iso-date");
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
 const Nodo_1 = require("../model/atlas/Nodo");
+const Espacio_1 = require("../model/Espacio");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 exports.typeDefs = apollo_server_express_1.gql `
@@ -62,6 +63,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         nombre: String,
         idsNodos: [ID],
         nodos:[NodoConocimiento],
+        progreso: Float,
+        idUsuario: ID,
     }
 
     type IteracionRepasoNodoConocimiento{
@@ -142,6 +145,7 @@ exports.typeDefs = apollo_server_express_1.gql `
        fuerzaCentroMasa: FuerzaPolar,
        nombre:String,
        objetivosEstudiante: [NodoSolidaridad],
+       espacioActual: String,
 
     }
     input DatosEditablesUsuario{
@@ -155,7 +159,7 @@ exports.typeDefs = apollo_server_express_1.gql `
     }    
 
     extend type Query {
-        todosUsuarios:[Usuario],
+        todosUsuarios(dateActual: Date):[Usuario],
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
@@ -164,6 +168,8 @@ exports.typeDefs = apollo_server_express_1.gql `
 
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
+
+        coleccionNodosConocimiento(idUsuario: ID!, idColeccion: ID!):ColeccionNodosAtlasConocimiento,
     }
     extend type Mutation{
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
@@ -390,7 +396,32 @@ exports.resolvers = {
                 }
                 return losParticipantes;
             });
-        }
+        },
+        coleccionNodosConocimiento(_, { idUsuario, idColeccion }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario)
+                        throw 'Usuario no encontrado';
+                }
+                catch (error) {
+                    console.log('Error descargando el usuario de la base de datos: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                ;
+                var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+                if (!laColeccion) {
+                    console.log(`Error getting la colección : `);
+                    throw new apollo_server_express_1.UserInputError('Colección no encontrada');
+                }
+                return laColeccion;
+            });
+        },
     },
     Mutation: {
         editarDatosUsuario: function (_, { nuevosDatos }, context) {
@@ -1503,6 +1534,24 @@ exports.resolvers = {
                 }
                 return losObjetivos;
             });
+        },
+        espacioActual: function (parent, { dateActual }, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    var losEspacios = yield Espacio_1.ModeloEspacio.find({ "iteracionesSemanales.idsAsistentesConstantes": parent.id }).exec();
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                var stringFinal = "";
+                for (const espacio of losEspacios) {
+                    if (stringFinal.length > 0) {
+                        stringFinal += ", ";
+                    }
+                    stringFinal += espacio.nombre;
+                }
+                return stringFinal;
+            });
         }
     },
     Date: {
@@ -1521,6 +1570,51 @@ exports.resolvers = {
                 if (!losNodos)
                     losNodos = [];
                 return losNodos;
+            });
+        },
+        progreso: function (parent, _, __) {
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Calculando progreso de colección ${parent.nombre} en usuario ${parent.idUsuario}`);
+                //Revisar nodo por nodo
+                var todosNodos = [];
+                var guarda = 0;
+                var idsNodosActuales = parent.idsNodos;
+                var nodosActuales;
+                while (guarda < 300 && idsNodosActuales.length > 0) {
+                    try {
+                        nodosActuales = yield Nodo_1.ModeloNodo.find({ "_id": { $in: idsNodosActuales } }).exec();
+                    }
+                    catch (error) {
+                        console.log(`Error getting nodos actuales : ` + error);
+                        throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                    }
+                    todosNodos.push(...nodosActuales);
+                    idsNodosActuales = [];
+                    for (const nodo of nodosActuales) {
+                        let idsRequeridos = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === "target").map(v => v.idRef);
+                        for (const idRequerido of idsRequeridos) {
+                            if (!idsNodosActuales.includes(idRequerido)) {
+                                idsNodosActuales.push(idRequerido);
+                            }
+                        }
+                    }
+                    guarda++;
+                }
+                console.log(`Encontrados ${todosNodos.length} nodos relevantes para esta colección`);
+                const idsTodosNodos = todosNodos.map(n => n.id);
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(parent.idUsuario).exec();
+                    if (!elUsuario)
+                        throw 'usuario no encontrado';
+                }
+                catch (error) {
+                    console.log("Error getting usuario: " + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsTodosNodos.includes(dn.idNodo));
+                console.log(`${nodosAprendidos.length} nodos aprendidos de la colección`);
+                const progreso = (100 / todosNodos.length) * nodosAprendidos.length;
+                return Number(progreso.toFixed(2));
             });
         }
     },
