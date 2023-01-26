@@ -76,6 +76,8 @@
       id="menuContextual"
       v-show="menuCx"
       @mousedown.stop=""
+      @dblclick.stop=""
+      @click.stop=""
       @mouseup.stop=""
     >
       <div class="seccionMenuCx" @click="abrirPaginaNodo">
@@ -156,7 +158,7 @@
               src="@/assets/iconos/check.svg"
               alt="Check"
               style="height: 12px; margin-right: 10px; border-radius: 50%"
-              v-show="togglingNodoEnColeccion!=coleccion.id"
+              v-show="togglingNodoEnColeccion != coleccion.id"
               :style="[
                 {
                   backgroundColor: coleccion.idsNodos.includes(esteNodo.id)
@@ -165,7 +167,7 @@
                 },
               ]"
             />
-            <loading v-show="togglingNodoEnColeccion===coleccion.id" />
+            <loading v-show="togglingNodoEnColeccion === coleccion.id" />
             {{ coleccion.nombre }}
           </div>
         </div>
@@ -212,6 +214,7 @@
         @click.stop="marcarEstudiado"
         v-show="aprendible"
         :class="{ deshabilitado: enviandoFechaEstudiado }"
+        
       >
         <img
           src="@/assets/iconos/readme.svg"
@@ -220,22 +223,40 @@
           v-show="!enviandoFechaEstudiado"
         />
         <loading v-show="enviandoFechaEstudiado" texto="" />
-        Estudiado
+        <span>
+           {{"Estudiado " +enrichedToReadableDate(datosUsuarioEsteNodo.estudiado)}}
+        </span>
       </div>
       <div
         class="botonMenuCx"
         v-if="usuarioLogeado"
-        @click.stop="setPeriodoRepaso"
-        v-show="nodoEstudiado && !nodoAprendido"
+        v-show="nodoEstudiado && !nodoAprendido && !editandoDiasRepaso"
         :class="{ deshabilitado: creandoIteracionRepaso }"
+        @click.stop="editandoDiasRepaso = !editandoDiasRepaso"
       >
-        <img
-          src="@/assets/iconos/clock.svg"
-          alt="Reloj"
-          class="iconoMenuCx"
-        />Periodo de repaso
+        <img src="@/assets/iconos/clock.svg" alt="Reloj" class="iconoMenuCx" />
+        <span v-show="diasRepaso > 1">{{
+          "Repaso cada " + diasRepaso + " dia"
+        }}</span>
+        <span v-show="diasRepaso > 1">s</span>
         <span></span>
         <loading texto="" v-show="creandoIteracionRepaso" />
+      </div>
+      <div class="seccionMenuCx" v-show="editandoDiasRepaso">
+        <loading v-show="settingPeriodoRepaso" />
+        <label for="inputDiasRepaso">Dias de repaso: </label
+        ><input
+          style="width: min(70px, 80vw)"
+          type="number"
+          name="inputDiasRepaso"
+          :class="{ deshabilitado: settingPeriodoRepaso }"
+          ref="inputDiasRepaso"
+          min="1"
+          id="inputDiasRepaso"
+          @focus="$event.target.select()"
+          @blur="editandoDiasRepaso=false;"
+          @keypress.enter="setPeriodoRepaso"
+        />
       </div>
       <template
         v-if="
@@ -375,6 +396,9 @@ export default {
       togglingAprendido: false,
 
       settingTipoNodo: false,
+
+      editandoDiasRepaso: false,
+      settingPeriodoRepaso: false,
     };
   },
   computed: {
@@ -535,6 +559,12 @@ export default {
         backgroundColor,
       };
     },
+    diasRepaso() {
+      if (!this.datosUsuarioEsteNodo?.periodoRepaso) {
+        return 2;
+      }
+      return Math.floor(this.datosUsuarioEsteNodo.periodoRepaso / 86400000);
+    },
   },
   methods: {
     setTipoNodo(nuevoTipoNodo) {
@@ -572,9 +602,7 @@ export default {
         });
     },
     setPeriodoRepaso() {
-      const diasRepaso = parseInt(
-        Number(prompt("Introduce el periodo para repasar este tema (En días)"))
-      );
+      const diasRepaso = parseInt(this.$refs.inputDiasRepaso.value);
 
       if (diasRepaso < 1) {
         console.log("Periodo ilegal");
@@ -583,7 +611,12 @@ export default {
 
       var nuevoPeriodoRepaso = diasRepaso * 86400000;
 
-      this.enviandoOperacion = true;
+      if (nuevoPeriodoRepaso === this.datosUsuarioEsteNodo.periodoRepaso) {
+        this.editandoDiasRepaso = false;
+        return;
+      }
+
+      this.settingPeriodoRepaso = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -604,11 +637,12 @@ export default {
           },
         })
         .then(() => {
-          this.enviandoOperacion = false;
+          this.settingPeriodoRepaso = false;
+          this.editandoDiasRepaso = false;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
-          this.enviandoOperacion = false;
+          this.settingPeriodoRepaso = false;
         });
     },
     clickCartelNombre(e) {
@@ -701,7 +735,6 @@ export default {
     //     });
     // },
     abrirPaginaNodo() {
-      
       this.$router.push(
         this.$route.path + "/nodoConocimiento/" + this.esteNodo.id
       );
@@ -940,6 +973,19 @@ export default {
   watch: {
     esteNodo() {
       this.posicion = { ...this.esteNodo.coords };
+    },
+    editandoDiasRepaso(editando) {
+      if (editando) {
+        this.$nextTick(() => {
+          this.$refs.inputDiasRepaso.value = this.diasRepaso;
+          this.$refs.inputDiasRepaso.focus();
+        });
+      }
+    },
+    menuCx(mostrando) {
+      if (!mostrando) {
+        this.editandoDiasRepaso = false;
+      }
     },
   },
   mounted() {

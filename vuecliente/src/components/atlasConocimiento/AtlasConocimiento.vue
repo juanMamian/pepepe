@@ -13,7 +13,7 @@
     <router-view
       :yo="yo"
       :datosNodosRepasar="datosNodosRepasar"
-      :datosNodosUrgentes="datosNodosUrgentes"
+      :datosNodosUrgentes="datosNodosRepasar"
       @centrarEnNodo="centrarEnNodoById($event)"
     />
     <div id="zonaSeleccionColeccion">
@@ -21,13 +21,12 @@
         id="nombreColeccion"
         @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
       >
-        
         <span
           class="indicadorProgreso"
           v-if="coleccionSeleccionada && coleccionSeleccionada.progreso"
           >{{ coleccionSeleccionada.progreso }}%</span
         >
-        <span style="z-index:1">
+        <span style="z-index: 1">
           {{ nombreColeccionSeleccionada }}
         </span>
       </div>
@@ -291,7 +290,7 @@
           <path
             d="M256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256C512 397.4 397.4 512 256 512zM232 256C232 264 236 271.5 242.7 275.1L338.7 339.1C349.7 347.3 364.6 344.3 371.1 333.3C379.3 322.3 376.3 307.4 365.3 300L280 243.2V120C280 106.7 269.3 96 255.1 96C242.7 96 231.1 106.7 231.1 120L232 256z"
             :fill="
-              datosNodosUrgentes.length > 0
+              datosNodosRepasar.length > 0
                 ? 'var(--atlasConocimientoRepaso)'
                 : ''
             "
@@ -595,8 +594,8 @@ export default {
         return [];
       }
 
-      var datosNodoConRepasoConfigurado = this.yo.atlas.datosNodos.filter(
-        (dn) => !dn.aprendido && dn.periodoRepaso
+      var datosNodoConRepasoConfigurado = this.datosNodosEstudiados.filter(
+        (dn) => dn.periodoRepaso
       );
 
       let dateHoy = new Date();
@@ -607,33 +606,19 @@ export default {
       dateHoyMin.setSeconds(0);
 
       let datosNodoParaRepasar = datosNodoConRepasoConfigurado.filter(
-        (dn) =>
-          !dn.estudiado ||
-          dn.estudiado + dn.periodoRepaso > dateHoyMin.getTime()
+        (dn) => dn.estudiado + dn.periodoRepaso > dateHoyMin.getTime()
       );
       console.log(
         `Hay ${datosNodoParaRepasar.length} nodos que se deben repasar hoy`
       );
       return datosNodoParaRepasar;
     },
-    datosNodosUrgentes() {
-      return this.datosNodosRepasar.filter((dn) => {
-        const pasado =
-          new Date(dn.estudiado).getTime() + dn.iteracionesRepaso[0].intervalo <
-          Date.now();
-        return pasado;
-      });
+    idsNodosRepasar(){
+      return this.datosNodosRepasar.map(dn=>dn.id);
     },
     datosNodosFrescos() {
       return this.datosNodosEstudiados.filter((dn) => {
-        const dateEstudiado = new Date(dn.estudiado);
-        if (!dn.iteracionesRepaso || dn.iteracionesRepaso.length < 1) {
-          return true;
-        }
-        return (
-          Date.now() <
-          dateEstudiado.getTime() + dn.iteracionesRepaso[0].intervalo
-        );
+        !this.idsNodosRepasar.includes(dn);
       });
     },
     idsNodosFrescos() {
@@ -1592,7 +1577,7 @@ export default {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
     },
-    // 
+    //
   },
   mounted() {
     // if (!this.usuario.atlas || !this.usuario.atlas.centroVista) {

@@ -11,10 +11,9 @@ import possibleTypes from "../possibleTypes.json"
 import { typeDefs, resolvers} from "./apolloStore/Schema"
 
 
-
 export const serverUrl=process.env.NODE_ENV === 'production'
 ? 'http://192.168.1.100:3000'
-: 'http://192.168.1.100:3000'
+: 'http://localhost:3000'
 
 
 

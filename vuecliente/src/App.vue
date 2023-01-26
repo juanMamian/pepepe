@@ -602,6 +602,8 @@ a {
 }
 input {
   border: 1px solid black;
+  padding: 5px 10px;
+  font-size: 15px;
 }
 .letrasRojas {
   color: red;
