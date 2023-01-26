@@ -1592,9 +1592,7 @@ export default {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
     },
-    nodosRender() {
-      this.localizarNext("available");
-    },
+    // 
   },
   mounted() {
     // if (!this.usuario.atlas || !this.usuario.atlas.centroVista) {
