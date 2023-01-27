@@ -95,11 +95,11 @@ export default {
       var datos = this.datosNodosRepasar.map((dn) => {
         var tiempoRestanteToRepaso =
           new Date(dn.estudiado).getTime() +
-          dn.iteracionesRepaso[0].intervalo -
+          dn.periodoRepaso -
           Date.now();
 
         var porcentajeIntervaloRestante = Math.round(
-          (tiempoRestanteToRepaso * 100) / dn.iteracionesRepaso[0].intervalo
+          (tiempoRestanteToRepaso * 100) / dn.periodoRepaso
         );
         var porcentajeIntervaloTranscurrido = 100 - porcentajeIntervaloRestante;
         if (porcentajeIntervaloTranscurrido > 100)

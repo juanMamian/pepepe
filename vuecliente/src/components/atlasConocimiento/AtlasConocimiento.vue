@@ -217,6 +217,7 @@
           :idsNodosEstudiados="idsNodosEstudiados"
           :idsNodosFrescos="idsNodosFrescos"
           :idsNodosPresentesCabeza="idsNodosPresentesCabeza"
+          :idsNodosRepasar="idsNodosRepasar"
           :factorZoom="factorZoom"
           :seleccionado="idNodoSeleccionado === nodo.id"
           :escondido="
@@ -613,13 +614,13 @@ export default {
       );
       return datosNodoParaRepasar;
     },
-    idsNodosRepasar(){
-      return this.datosNodosRepasar.map(dn=>dn.id);
+    idsNodosRepasar() {
+      return this.datosNodosRepasar.map((dn) => dn.id);
     },
     datosNodosFrescos() {
-      return this.datosNodosEstudiados.filter((dn) => {
-        !this.idsNodosRepasar.includes(dn);
-      });
+      return this.datosNodosEstudiados.filter(
+        (dn) => !this.idsNodosRepasar.includes(dn.id)
+      );
     },
     idsNodosFrescos() {
       return this.datosNodosFrescos.map((nf) => nf.idNodo);

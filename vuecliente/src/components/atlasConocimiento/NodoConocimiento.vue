@@ -352,6 +352,7 @@ export default {
     idsNodosEstudiados: Array,
     idsNodosFrescos: Array,
     idsNodosPresentesCabeza: Array,
+    idsNodosRepasar:Array,
     nodoSeleccionado: Object,
     seleccionado: Boolean,
     fantasmeado: Boolean,
@@ -475,11 +476,7 @@ export default {
       return this.idsNodosEstudiados.includes(this.esteNodo.id);
     },
     nodoRepasar() {
-      return (
-        !this.idNodoAprendido &&
-        this.nodoEstudiado &&
-        !this.idsNodosFrescos.includes(this.esteNodo.id)
-      );
+      return this.idsNodosRepasar.includes(this.esteNodo.id);
     },
     nodoPresenteCabeza() {
       return this.idsNodosPresentesCabeza.includes(this.esteNodo.id);
