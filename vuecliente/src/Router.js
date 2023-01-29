@@ -22,6 +22,7 @@ import AtlasSolidaridad from "./components/atlasSolidaridad/AtlasSolidaridad"
 import Espacios from "./components/Espacios"
 import VentanaEventoPublico from "./components/utilidades/VentanaEventoPublico"
 import VentanaEventoPersonal from "./components/utilidades/VentanaEventoPersonal"
+import RutaGrado from "./components/usuario/RutaGrado"
 
 Vue.use(Router);
 
@@ -41,7 +42,10 @@ const routes = [
             }
         ]
     },
-    {path:"/adminNodosConocimiento", name: "adminNodosConocimiento", component: adminNodosConocimiento},
+    {
+        path: "/rutaGrado/:idUsuario", name: "rutaGrado", component: RutaGrado, props: true
+    },
+    { path: "/adminNodosConocimiento", name: "adminNodosConocimiento", component: adminNodosConocimiento },
     {
         path: "/login", name: "loginArea",
         component: loginArea,

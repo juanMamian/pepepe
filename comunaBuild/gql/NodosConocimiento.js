@@ -371,7 +371,7 @@ exports.resolvers = {
                 console.log(`Nuevo foro expertos creado`);
                 try {
                     var nuevoNodo = new Nodo_1.ModeloNodo(Object.assign(Object.assign({}, infoNodo), { idForoPublico,
-                        idForoExpertos }));
+                        idForoExpertos, expertos: [credencialesUsuario.id] }));
                     yield nuevoNodo.save();
                 }
                 catch (error) {

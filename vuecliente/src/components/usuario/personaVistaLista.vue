@@ -43,6 +43,9 @@
         class="contenedorControles"
         v-show="seleccionado"
       >
+      <div class="boton" @click="mostrando=mostrando==='rutaGrado'?null:'rutaGrado'" :class="{activo:mostrando==='rutaGrado'}">
+        <img src='@/assets/iconos/routeSolid.svg' alt='Ruta' style='' />
+      </div>
         <div
           class="boton selector"
           :title="
@@ -156,6 +159,7 @@
             <img src="@/assets/iconos/key.svg" alt="Llave" />
           </div>
           <loading texto="" v-show="reseteandoPassword" />
+          
         </div>
         <div
           id="listaPermisos"
@@ -372,6 +376,10 @@
           tipoNodoRoot="usuario"
         />
       </div>
+
+      <div id="zonaRutaGrado" v-show="mostrando==='rutaGrado'" v-if="mostrando==='rutaGrado'">
+        <ruta-grado :idUsuario="estaPersona.id" />
+      </div>
     </div>
   </div>
 </template>
@@ -394,6 +402,7 @@ import {
   TextRun,
 } from "docx";
 import { saveAs } from "file-saver";
+import RutaGrado from './RutaGrado.vue';
 
 const QUERY_INFORMES = gql`
   query ($idUsuario: ID!) {
@@ -413,7 +422,7 @@ const QUERY_INFORMES = gql`
 `;
 
 export default {
-  components: { Calendario, Loading, VentanaLista },
+  components: { Calendario, Loading, VentanaLista, RutaGrado },
   props: {
     personasConEspacio:Array,
     mostrarEspacioActual:Boolean,

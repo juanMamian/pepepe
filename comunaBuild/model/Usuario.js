@@ -143,7 +143,8 @@ const esquemaDatoNodo = new mongoose_1.default.Schema({
     },
     periodoRepaso: {
         type: Number,
-        min: 86400000, //24 horas
+        min: 86400000,
+        default: 86400000 * 2,
     },
     iteracionesRepaso: {
         type: [esquemaIteracionRepaso],

@@ -410,7 +410,8 @@ export const resolvers = {
                 var nuevoNodo: any = new Nodo({
                     ...infoNodo,
                     idForoPublico,
-                    idForoExpertos
+                    idForoExpertos,
+                    expertos: [credencialesUsuario.id]
                 });
                 await nuevoNodo.save();
             } catch (error) {

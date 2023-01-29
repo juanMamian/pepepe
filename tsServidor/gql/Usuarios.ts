@@ -8,6 +8,7 @@ import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividades
 import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
+import { permisosEspecialesDefault } from "./Schema";
 
 const jwt = require("jsonwebtoken");
 
@@ -134,6 +135,7 @@ export const typeDefs = gql`
         numeroTel:String,
         username:String,
         nodosConocimiento: [ConocimientoUsuario],
+        nodosCompletadosRutaGrado: [ID],
         informesMaestraVida: [InformeEstudianteMaestraVida],
         atlas:InfoAtlas,        
         atlasSolidaridad:InfoAtlasSolidaridad,
@@ -190,6 +192,8 @@ export const typeDefs = gql`
         setNodoAtlasTarget(idNodo:ID!):Boolean,
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
+
+        setNodoGradoCompletadoUsuario(idUsuario: ID!, idNodo: ID!, nuevoEstado: Boolean!):Usuario,
 
         guardarInformeEstudianteMaestraVida(idUsuario:ID!, year: Int!, periodo: String!, idProfe: ID!, categoria: String!, texto: String!):InformeEstudianteMaestraVida,
 
@@ -415,27 +419,27 @@ export const resolvers = {
             return losParticipantes;
         },
 
-        async coleccionNodosConocimiento(_:any, {idUsuario, idColeccion}:any, contexto: contextoQuery){
-            if(!contexto.usuario?.id){
+        async coleccionNodosConocimiento(_: any, { idUsuario, idColeccion }: any, contexto: contextoQuery) {
+            if (!contexto.usuario?.id) {
                 throw new AuthenticationError('loginRequerido');
             }
-            
-            const credencialesUsuario=contexto.usuario;
-            
+
+            const credencialesUsuario = contexto.usuario;
+
             try {
-                var elUsuario:any = await Usuario.findById(idUsuario).exec();
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) throw 'Usuario no encontrado';
-            } catch (error){
-                console.log('Error descargando el usuario de la base de datos: '+error)
+            } catch (error) {
+                console.log('Error descargando el usuario de la base de datos: ' + error)
                 throw new ApolloError('Error conectando con la base de datos');
             };
 
-            var laColeccion=elUsuario.atlas.colecciones.id(idColeccion);
+            var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
 
-            if(!laColeccion){
+            if (!laColeccion) {
                 console.log(`Error getting la colección : `);
                 throw new UserInputError('Colección no encontrada');
-                
+
             }
 
             return laColeccion;
@@ -834,6 +838,63 @@ export const resolvers = {
             }
 
             return elUsuario;
+
+        },
+
+        async setNodoGradoCompletadoUsuario(_: any, { idUsuario, idNodo, nuevoEstado }: any, contexto: contextoQuery) {
+            console.log('\x1b[35m%s\x1b[0m', `Mutacion de set en ${nuevoEstado} el nodo ${idNodo} para el usuario ${idUsuario}`);
+            if (!contexto.usuario?.id) {
+                throw new AuthenticationError('loginRequerido');
+            }
+
+            const credencialesUsuario = contexto.usuario;
+
+            const tienePermisosEspeciales = permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+            const esProfe=credencialesUsuario.permisos.includes("maestraVida-profesor");
+
+            if (!tienePermisosEspeciales && !esProfe) {
+                console.log("No autorizado");
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var elUsuario: any = await Usuario.findById(idUsuario).exec();
+                if (!elUsuario) throw 'Usuario no encontrado';
+            }
+            catch (error) {
+                throw new ApolloError('Error conectando con la base de datos');
+            }
+
+            const indexN = elUsuario.nodosCompletadosRutaGrado.indexOf(idNodo);
+
+            if (nuevoEstado) {
+                if (indexN > -1) {
+                    throw new UserInputError("El nodo ya estaba completado");
+                }
+
+                elUsuario.nodosCompletadosRutaGrado.push(idNodo);
+            }
+            else {
+                if (indexN === -1) {
+                    throw new UserInputError("El nodo no estaba completado");
+                }
+
+                elUsuario.nodosCompletadosRutaGrado.splice(indexN, 1);
+            }
+
+            try {
+                elUsuario.save();
+            } catch (error) {
+                console.log(`Error guardando el usuario con cambio en nodosGrado completados : ` + error);
+                throw new ApolloError('Error conectando con la base de datos');
+
+            }
+
+            console.log("Toggling completado");
+            return elUsuario;
+
+
+
 
         },
 
@@ -1639,12 +1700,12 @@ export const resolvers = {
                 throw new ApolloError('Error conectando con la base de datos');
             }
 
-            var stringFinal="";
-            for(const espacio of losEspacios){
-                if(stringFinal.length>0){
-                    stringFinal+=", ";
+            var stringFinal = "";
+            for (const espacio of losEspacios) {
+                if (stringFinal.length > 0) {
+                    stringFinal += ", ";
                 }
-                stringFinal+=espacio.nombre;
+                stringFinal += espacio.nombre;
             }
 
             return stringFinal;
@@ -1667,31 +1728,31 @@ export const resolvers = {
         },
         progreso: async function (parent: any, _: any, __: any) {
             console.log('\x1b[35m%s\x1b[0m', `Calculando progreso de colección ${parent.nombre} en usuario ${parent.idUsuario}`);
-            
+
             //Revisar nodo por nodo
 
-            var todosNodos: Array<any>=[];
+            var todosNodos: Array<any> = [];
 
-            var guarda=0;
-            var idsNodosActuales:Array<any>=parent.idsNodos;
-            var nodosActuales:Array<any>
+            var guarda = 0;
+            var idsNodosActuales: Array<any> = parent.idsNodos;
+            var nodosActuales: Array<any>
 
-            while(guarda<300 && idsNodosActuales.length>0){
+            while (guarda < 300 && idsNodosActuales.length > 0) {
 
                 try {
-                    nodosActuales=await Nodo.find({"_id": {$in: idsNodosActuales}}).exec();
+                    nodosActuales = await Nodo.find({ "_id": { $in: idsNodosActuales } }).exec();
                 } catch (error) {
-                    console.log(`Error getting nodos actuales : `+ error);
-                    throw new ApolloError('Error conectando con la base de datos');                    
+                    console.log(`Error getting nodos actuales : ` + error);
+                    throw new ApolloError('Error conectando con la base de datos');
                 }
 
                 todosNodos.push(...nodosActuales);
 
-                idsNodosActuales=[];
-                for (const nodo of nodosActuales){
-                    let idsRequeridos=nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==="target").map(v=>v.idRef);
-                    for(const idRequerido of idsRequeridos){
-                        if(!idsNodosActuales.includes(idRequerido)){
+                idsNodosActuales = [];
+                for (const nodo of nodosActuales) {
+                    let idsRequeridos = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === "target").map(v => v.idRef);
+                    for (const idRequerido of idsRequeridos) {
+                        if (!idsNodosActuales.includes(idRequerido)) {
                             idsNodosActuales.push(idRequerido);
                         }
                     }
@@ -1703,21 +1764,21 @@ export const resolvers = {
 
             console.log(`Encontrados ${todosNodos.length} nodos relevantes para esta colección`);
 
-            const idsTodosNodos=todosNodos.map(n=>n.id);
+            const idsTodosNodos = todosNodos.map(n => n.id);
             try {
-                var elUsuario:any = await Usuario.findById(parent.idUsuario).exec();
-                if(!elUsuario) throw 'usuario no encontrado';
+                var elUsuario: any = await Usuario.findById(parent.idUsuario).exec();
+                if (!elUsuario) throw 'usuario no encontrado';
             }
-            catch(error) {
-                console.log("Error getting usuario: "+error);
+            catch (error) {
+                console.log("Error getting usuario: " + error);
                 throw new ApolloError('Error conectando con la base de datos');
             }
-            
-            const nodosAprendidos=elUsuario.atlas.datosNodos.filter(dn=>dn.aprendido).filter(dn=>idsTodosNodos.includes(dn.idNodo));
+
+            const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsTodosNodos.includes(dn.idNodo));
 
             console.log(`${nodosAprendidos.length} nodos aprendidos de la colección`);
 
-            const progreso=(100/todosNodos.length)*nodosAprendidos.length;
+            const progreso = (100 / todosNodos.length) * nodosAprendidos.length;
 
 
             return Number(progreso.toFixed(2));

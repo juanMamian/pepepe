@@ -123,6 +123,14 @@
             Horario semanal
           </div>
         </router-link>
+        <router-link v-if="yo && yo.id" :to="'/rutaGrado/'+yo.id">
+          <div
+            class="botonNavBarra botonNav hoverNegro"
+            id="navRutaGrado"
+          >
+            Mi ruta de grado
+          </div>
+        </router-link>
         <router-link
           to="/registro"
           id="navRegistro"
@@ -363,6 +371,7 @@ export default {
   --mainColor: #f49e4c;
   --mainColorDark: #f49e4c;
   --mainColorLight: #e99e58;
+  --gris:#A6A6A6;
 
   --colorBlanco: #e9e9e9;
   --filtroBlanco: invert(100%) sepia(8%) saturate(404%) hue-rotate(225deg) brightness(115%) contrast(83%);
@@ -435,6 +444,54 @@ body {
   background-color: #fffcf9;
   font-family: "Salsa", sans-serif;
 }
+
+.menuContextual {
+  position: absolute;
+  top: 110%;
+  left: 110%;
+  min-width: 140px;
+  padding: 5px 0px;
+  z-index: 110;
+  background-color: rgb(177, 177, 159);
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+.botonMenuCx {
+  cursor: pointer;
+  font-size: 14px;
+  padding: 13px 10px;
+  display: flex;
+  align-items: center;
+  color: rgb(24, 24, 24);
+}
+
+.iconoMenuCx {
+  height: 13px;
+  margin: 0px 5px;
+}
+.seccionMenuCx {
+  font-size: 15px;
+  color: rgb(71, 71, 71);
+  padding: 5px;
+}
+.botonMenuCx:hover {
+  background-color: gray;
+  color: rgb(214, 214, 214);
+}
+.selectorSubseccionMenuCx {
+  position: relative;
+}
+
+.subseccionMenuCx {
+  position: absolute;
+  left: 100%;
+  top: 0%;
+  display: none;
+  background-color: rgb(177, 177, 159);
+}
+.selectorSubseccionMenuCx:hover > .subseccionMenuCx {
+  display: block;
+}
 .zonaConfiguracion {
   padding: 20px 10px;
   background-color: rgb(224, 224, 224);
@@ -463,6 +520,11 @@ body {
   background-color: var(--paletaSecond);
   display: flex;
   align-items: center;
+}
+.tituloComponente{
+  font-size: 20px;
+  padding: 10px 20px;
+  text-align: center;
 }
 .contenedorControles {
   display: flex;

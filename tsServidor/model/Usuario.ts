@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { EsquemaVinculosNodosSolidaridad } from "./atlasSolidaridad/VinculosNodosSolidaridad";
+import { EsquemaRutaGrado } from "./rutaGrado/RutaGrado";
 
 export const permisosDeUsuario = [
     "usuario",
@@ -152,6 +153,7 @@ const esquemaDatoNodo = new mongoose.Schema({
     periodoRepaso:{
         type: Number,
         min: 86400000, //24 horas
+        default:86400000*2,
     },
     iteracionesRepaso: {
         type: [esquemaIteracionRepaso],
@@ -178,6 +180,7 @@ esquemaDatoNodo.pre("save", function (this: any, next) {
 
 })
 
+
 export const ModeloNotificacion = mongoose.model("Notificacion", esquemaNotificacion);
 
 
@@ -203,7 +206,7 @@ const esquemaUsuario = new mongoose.Schema({
     titulo: {
         type: String,
         maxLength: 300,
-    },
+    },   
     fechaNacimiento: {
         type: Date,
         max: Date.now,
@@ -238,6 +241,10 @@ const esquemaUsuario = new mongoose.Schema({
             type: String,
         }
     }],
+    nodosCompletadosRutaGrado:{
+        type: [String],        
+        default:[]
+    },
     password: {
         type: String,
         required: true,

@@ -77,7 +77,7 @@
 			"\t$0",
 			"},",
 		],
-	},
+	},	
 	"Descargar documento mongoose":{
 		"scope":"typescript",
 		"prefix": "descargardocumento",
