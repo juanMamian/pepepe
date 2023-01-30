@@ -99,6 +99,7 @@ export default {
   align-items: center;
   position: relative;
   flex-shrink: 0;
+  min-width: 300px;
 }
 
 .subruta .lineaRuta {
