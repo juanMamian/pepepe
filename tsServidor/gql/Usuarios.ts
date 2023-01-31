@@ -1764,6 +1764,9 @@ export const resolvers = {
 
             console.log(`Encontrados ${todosNodos.length} nodos relevantes para esta colección`);
 
+            if(todosNodos.length<1){
+                return 0;
+            }
             const idsTodosNodos = todosNodos.map(n => n.id);
             try {
                 var elUsuario: any = await Usuario.findById(parent.idUsuario).exec();

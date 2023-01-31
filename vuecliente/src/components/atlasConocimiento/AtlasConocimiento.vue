@@ -172,9 +172,10 @@
     >
       <div id="contenedorVinculosNodos" :style="[offsetContenedorNodos]">
         <enlaces-nodo-conocimiento
-          v-for="nodo of nodosConRequerimentos"
+          v-for="nodo of nodosRender"
           :key="nodo.id"
           :yo="yo"
+          ref="enlacesNodos"
           :idNodoSeleccionado="idNodoSeleccionado"
           :esteNodo="nodo"
           :todosNodos="todosNodos"
@@ -200,15 +201,16 @@
           :style="[offsetLoadingCreandoNodo]"
         />
         <nodo-conocimiento
+          :key="nodo.id"
+          v-for="nodo of nodosRender"
+          :esteNodo="nodo"
+          ref="nodosRender"
           :nodoSeleccionado="nodoSeleccionado"
           :todosNodos="todosNodos"
           :idNodoMenuCx="idNodoMenuCx"
           :usuarioAdministradorAtlas="usuarioAdministradorAtlas"
           :yo="yo"
           :modoAtlas="modoAtlas"
-          :key="nodo.id"
-          v-for="nodo of nodosRender"
-          :esteNodo="nodo"
           :esquinasDiagrama="esquinasDiagrama"
           :centroVista="centroVista"
           :esNodoObjetivo="idsNodosObjetivos.includes(nodo.id)"
@@ -598,7 +600,6 @@ export default {
       var datosNodoConRepasoConfigurado = this.datosNodosEstudiados.filter(
         (dn) => dn.periodoRepaso
       );
-
       let dateHoy = new Date();
 
       let dateHoyMin = dateHoy;
@@ -607,19 +608,19 @@ export default {
       dateHoyMin.setSeconds(0);
 
       let datosNodoParaRepasar = datosNodoConRepasoConfigurado.filter(
-        (dn) => dn.estudiado + dn.periodoRepaso > dateHoyMin.getTime()
-      );
-      console.log(
-        `Hay ${datosNodoParaRepasar.length} nodos que se deben repasar hoy`
+        (dn) => {
+         
+          return (new Date(dn.estudiado)).getTime() + dn.periodoRepaso < dateHoyMin.getTime()
+        }
       );
       return datosNodoParaRepasar;
     },
     idsNodosRepasar() {
-      return this.datosNodosRepasar.map((dn) => dn.id);
+      return this.datosNodosRepasar.map((dn) => dn.idNodo);
     },
     datosNodosFrescos() {
       return this.datosNodosEstudiados.filter(
-        (dn) => !this.idsNodosRepasar.includes(dn.id)
+        (dn) => !this.idsNodosRepasar.includes(dn.idNodo)
       );
     },
     idsNodosFrescos() {
@@ -1500,6 +1501,11 @@ export default {
           console.log(`error: ${error}`);
         });
     },
+    sendUpdatesNodos(){
+      // for(var nodo of this.$refs.nodosRender){
+      //   if()
+      // }
+    },
 
     zoomVista(deltaZoom) {
       var nuevoZoom = this.zoom + deltaZoom;
@@ -1577,6 +1583,18 @@ export default {
     zoom() {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
+    },
+    nodosRender() {
+      setTimeout(() => {
+        if(!this.$refs.enlacesNodos){
+          console.log("No hay enlaces");
+          return
+        }
+        console.log(`Hay ${this.$refs.enlacesNodos.length} enlaces de nodos`);
+        for (const enlace of this.$refs.enlacesNodos) {
+          enlace.setVinculosGrises();
+        }
+      }, 1000);
     },
     //
   },

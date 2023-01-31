@@ -64,29 +64,13 @@ export default {
         y: 0,
       },
       factorFuerza: 15,
+
+      vinculosGrises: [],
     };
   },
-
-  computed: {
-    continuacionDeSeleccionado() {
-      if (!this.nodoSeleccionado) return false;
-      if (
-        this.nodoSeleccionado.vinculos.some((v) => v.idRef === this.esteNodo.id)
-      )
-        return true;
-      return false;
-    },
-    estiloPosicion() {
-      const posXAjustada =
-        this.esteNodo.autoCoords.x - this.esquinasDiagrama.x1;
-      const posYAjustada =
-        this.esteNodo.autoCoords.y - this.esquinasDiagrama.y1;
-      return {
-        left: posXAjustada * this.factorZoom + "px",
-        top: posYAjustada * this.factorZoom + "px",
-      };
-    },
-    vinculosGrises() {
+  methods: {
+    setVinculosGrises() {
+      console.log("Calculando flechas de vínculos");
       var vGrises = JSON.parse(
         JSON.stringify(
           this.esteNodo.vinculos.filter(
@@ -146,11 +130,11 @@ export default {
         }
 
         if (this.idNodoSeleccionado) {
-          opacity=0.05;
+          opacity = 0.05;
           if (entreNodosPreviosSeleccionado) {
             opacity = 0.7;
-            if(esEnlaceInaccesible){
-              opacity=0.2;
+            if (esEnlaceInaccesible) {
+              opacity = 0.2;
             }
           }
         }
@@ -166,7 +150,28 @@ export default {
         };
       });
 
-      return vGrises;
+      this.vinculosGrises= vGrises;
+    },
+  },
+
+  computed: {
+    continuacionDeSeleccionado() {
+      if (!this.nodoSeleccionado) return false;
+      if (
+        this.nodoSeleccionado.vinculos.some((v) => v.idRef === this.esteNodo.id)
+      )
+        return true;
+      return false;
+    },
+    estiloPosicion() {
+      const posXAjustada =
+        this.esteNodo.autoCoords.x - this.esquinasDiagrama.x1;
+      const posYAjustada =
+        this.esteNodo.autoCoords.y - this.esquinasDiagrama.y1;
+      return {
+        left: posXAjustada * this.factorZoom + "px",
+        top: posYAjustada * this.factorZoom + "px",
+      };
     },
 
     estiloFuerzaColision() {
@@ -229,20 +234,6 @@ export default {
         return false;
       }
       return this.nodoSeleccionado.id === this.esteNodo.id;
-    },
-    desplegado() {
-      if (
-        !this.usuario ||
-        !this.usuario.id ||
-        !this.yo ||
-        !this.yo.atlasSolidaridad ||
-        !this.yo.atlasSolidaridad.idsNodosDesplegados
-      )
-        return false;
-
-      return this.yo.atlasSolidaridad.idsNodosDesplegados.includes(
-        this.esteNodo.id
-      );
     },
     nodoRender() {
       if (this.usuario && this.esteNodo.id === this.usuario.id) return true;
