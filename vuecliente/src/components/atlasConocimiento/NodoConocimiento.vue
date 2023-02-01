@@ -123,9 +123,7 @@
           class="iconoMenuCx"
           src="@/assets/iconos/target.png"
           alt="mira"
-          v-show="!enviandoQueryTarget"
         />
-        <loading v-show="enviandoQueryTarget" />
         Poner en la mira
       </div>
       <div
@@ -340,7 +338,6 @@ export default {
     datosUsuarioEsteNodo: {
       type: Object,
     },
-    enviandoQueryTarget: Boolean,
     esNodoObjetivo: Boolean,
     esTarget: Boolean,
     yo: Object,

@@ -566,7 +566,7 @@ export default {
       indexLastLocateNextAvailable: 0,
       indexLastLocateNextCheck: 0,
 
-      idTargetOnLastLocalizacion: null,
+      idColeccionTargetOnLastLocalizacion: null,
 
       idNodoTarget:null,
     };
@@ -844,7 +844,7 @@ export default {
       console.log(
         `Localizando next en ${nodosConsiderados.length} nodos de coleccion`
       );
-      this.idTargetOnLastLocalizacion = this.idTarget;
+      this.idColeccionTargetOnLastLocalizacion = this.idColeccionSeleccionada;
       if (tipo === "available") {
         let indexEncontrados = 0;
         let nextNodo = nodosConsiderados.find((n) => {
@@ -1600,7 +1600,7 @@ export default {
       this.hideZoomInfo();
     },
     nodosRender() {
-      if (this.idTarget != this.idTargetOnLastLocalizacion) {
+      if (this.idTarget != this.idColeccionTargetOnLastLocalizacion) {
         this.localizarNext("available");
       }
       setTimeout(() => {
