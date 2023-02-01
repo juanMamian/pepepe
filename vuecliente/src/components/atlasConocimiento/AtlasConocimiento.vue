@@ -117,7 +117,7 @@
       </div>
     </div>
 
-    <div id="zonaNodoTarget">
+    <div id="zonaNodoTarget" v-show="idNodoTarget">
       <div
         id="nombreNodoTarget"
         v-if="nodoTarget"
@@ -139,7 +139,6 @@
 
       <div
         class="boton"
-        v-show="yo.atlas.idNodoTarget && !enviandoQueryTarget"
         @click.stop="configurarNodoTarget(null)"
       >
         <img src="@/assets/iconos/equis.svg" alt="Equis" />
@@ -189,6 +188,9 @@
           :redibujarEnlaces="redibujarEnlacesNodos"
           :idsTodosNodosRender="idsTodosNodosRender"
           :callingPosiciones="callingPosiciones"
+          :conectadoSeleccionado="idsNodosConectadosSeleccionado.includes(nodo.id)"
+          :idsNodosConectadosSeleccionado="idsNodosConectadosSeleccionado"
+          :idsNodosContinuacionSeleccionado="idsNodosContinuacionSeleccionado"
           :idsNodosPreviosSeleccionado="idsNodosPreviosSeleccionado"
           :idsNodosPresentesCabeza="idsNodosPresentesCabeza"
         />
@@ -565,6 +567,8 @@ export default {
       indexLastLocateNextCheck: 0,
 
       idTargetOnLastLocalizacion: null,
+
+      idNodoTarget:null,
     };
   },
   computed: {
@@ -619,10 +623,7 @@ export default {
         ? true
         : false;
     },
-    idNodoTarget() {
-      if (!this.yo || !this.yo.atlas) return null;
-      return this.yo.atlas.idNodoTarget;
-    },
+    
     nodoTarget() {
       if (!this.idNodoTarget) return null;
       return this.todosNodos.find((n) => n.id === this.idNodoTarget);
@@ -795,7 +796,7 @@ export default {
       );
     },
     idsNodosPreviosSeleccionado() {
-      if (!this.idNodoSeleccionado) {
+      if (!this.nodoSeleccionado) {
         return [];
       }
       var idsActuales = [this.idNodoSeleccionado];
@@ -819,6 +820,19 @@ export default {
       }
 
       return cadenaTotal;
+    },    
+    idsNodosContinuacionSeleccionado(){
+      if(!this.nodoSeleccionado){
+        return [];
+      }
+
+      return this.nodoSeleccionado.vinculos.filter(v=>v.tipo==="continuacion" && v.rol==="source").map(v=>v.id);
+    },
+    idsNodosConectadosSeleccionado(){
+      if(!this.nodoSeleccionado){
+        return [];
+      }
+      return this.nodoSeleccionado.vinculos.map(v=>v.idRef);
     },
     idTarget() {
       return this.idNodoTarget || this.idColeccionSeleccionada;
@@ -1157,65 +1171,11 @@ export default {
         return;
       }
 
-      const store = this.$apollo.provider.defaultClient;
-      const cache = store.readQuery({
-        query: QUERY_DATOS_USUARIO_NODOS,
-      });
-      var nuevoCache = JSON.parse(JSON.stringify(cache));
-      nuevoCache.yo.atlas.idNodoTarget = idNodo;
-      store.writeQuery({
-        query: QUERY_DATOS_USUARIO_NODOS,
-        data: nuevoCache,
-      });
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idNodo: ID!) {
-              setNodoAtlasTarget(idNodo: $idNodo)
-            }
-          `,
-          variables: {
-            idNodo,
-          },
-        })
-        .then(() => {
-          this.enviandoQueryTarget = false;
-        })
-        .catch((error) => {
-          this.enviandoQueryTarget = false;
-          console.log(`Error: ${error}`);
-        });
+      this.idNodoTarget=idNodo;
     },
     nulificarNodoTarget() {
       console.log(`Nulificando nodo target`);
-      this.enviandoQueryTarget = true;
-
-      const store = this.$apollo.provider.defaultClient;
-      const cache = store.readQuery({
-        query: QUERY_DATOS_USUARIO_NODOS,
-      });
-      var nuevoCache = JSON.parse(JSON.stringify(cache));
-      nuevoCache.yo.atlas.idNodoTarget = null;
-      // nuevoCache.yo.atlas.centroVista = {x:100, y:100};
-      store.writeQuery({
-        query: QUERY_DATOS_USUARIO_NODOS,
-        data: nuevoCache,
-      });
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation {
-              nulificarNodoTargetUsuarioAtlas
-            }
-          `,
-        })
-        .then(() => {
-          this.enviandoQueryTarget = false;
-        })
-        .catch((error) => {
-          this.enviandoQueryTarget = false;
-          console.log(`Error: ${error}`);
-        });
+      this.idNodoTarget=null;
     },
     centrarEnNodo(n) {
       const posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();

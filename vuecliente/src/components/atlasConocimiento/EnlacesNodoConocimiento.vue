@@ -10,6 +10,16 @@
         v-for="vinculo of vinculosGrises"
         :key="vinculo.id"
         :style="[vinculo.estilo, altoVinculos]"
+        :class="{
+          irrelevante:
+            idNodoSeleccionado &&
+            esteNodo.id != idNodoSeleccionado &&
+            ((!idsNodosPreviosSeleccionado.includes(esteNodo.id) &&
+              !idsNodosContinuacionSeleccionado.includes(esteNodo.id)) ||
+              (!idsNodosPreviosSeleccionado.includes(vinculo.idRef) &&
+                !idsNodosContinuacionSeleccionado.includes(vinculo.idRef))),
+          inaccesible: vinculo.inaccesible,
+        }"
       >
         <div class="flechaVinculo" :style="[sizeFlecha]"></div>
       </div>
@@ -36,6 +46,8 @@ export default {
     yo: Object,
     idNodoSeleccionado: String,
     idsNodosPreviosSeleccionado: Array,
+    idsNodosContinuacionSeleccionado: Array,
+    conectadoSeleccionado: Boolean,
     esteNodo: Object,
     todosNodos: Array,
     factorZoom: Number,
@@ -80,15 +92,6 @@ export default {
         )
       );
 
-      var idsRelevantesSeleccionado = [];
-
-      if (this.idNodoSeleccionado) {
-        idsRelevantesSeleccionado = this.idsNodosPreviosSeleccionado;
-        idsRelevantesSeleccionado = idsRelevantesSeleccionado.concat([
-          this.idNodoSeleccionado,
-        ]);
-      }
-
       vGrises.forEach((v) => {
         const coordsFrom = this.todosNodos.find((n) => n.id === v.idRef).coords;
         const paralelas = {
@@ -97,10 +100,6 @@ export default {
         };
         const angulo = Math.PI + Math.atan2(paralelas.y, paralelas.x);
         const modulo = Math.hypot(paralelas.x, paralelas.y);
-        const entreNodosPreviosSeleccionado =
-          this.idNodoSeleccionado &&
-          idsRelevantesSeleccionado.includes(this.esteNodo.id) &&
-          idsRelevantesSeleccionado.includes(v.idRef);
 
         const esEnlaceSuperado =
           (v.rol === "target" &&
@@ -116,7 +115,6 @@ export default {
 
         const esEnlaceInaccesible = !esEnlaceSuperado && !esEnlacePorSuperar;
 
-        let opacity = 0.3;
         let backgroundColor = "black";
 
         if (esEnlacePorSuperar) {
@@ -129,15 +127,7 @@ export default {
           backgroundColor = "var(--atlasConocimientoCheck)";
         }
 
-        if (this.idNodoSeleccionado) {
-          opacity = 0.05;
-          if (entreNodosPreviosSeleccionado) {
-            opacity = 0.7;
-            if (esEnlaceInaccesible) {
-              opacity = 0.2;
-            }
-          }
-        }
+        v.inaccesible = esEnlaceInaccesible;
 
         v.estilo = {
           transform: "rotate(" + angulo + "rad)",
@@ -145,12 +135,11 @@ export default {
           left: Math.round(paralelas.x * this.factorZoom) + "px",
           width: Math.round(modulo * this.factorZoom) + "px",
           backgroundColor,
-          opacity,
           borderLeftColor: backgroundColor,
         };
       });
 
-      this.vinculosGrises= vGrises;
+      this.vinculosGrises = vGrises;
     },
   },
 
@@ -258,6 +247,14 @@ export default {
   position: absolute;
   transform-origin: 0% 0%;
   /* transition: left 3s, top 3s; */
+}
+
+.vinculoGris.inaccesible {
+  opacity: 0.2;
+}
+
+.vinculoGris.irrelevante {
+  opacity: 0.02;
 }
 .fuerza {
   position: absolute;
