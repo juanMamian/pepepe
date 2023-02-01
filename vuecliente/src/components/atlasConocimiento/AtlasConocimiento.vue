@@ -16,7 +16,7 @@
       :datosNodosUrgentes="datosNodosRepasar"
       @centrarEnNodo="centrarEnNodoById($event)"
     />
-    <div id="zonaSeleccionColeccion">
+    <div id="zonaSeleccionColeccion" v-if="yo.atlas && yo.atlas.colecciones">
       <div
         id="nombreColeccion"
         @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
@@ -304,7 +304,7 @@
 
     <loading
       id="simboloDescargandoNodos"
-      v-show="!nodosDescargados"
+      v-show="!nodosDescargados || $apollo.queries.yo.loading"
       texto="descargando nodos de conocimiento"
     />
   </div>
@@ -437,6 +437,27 @@ export default {
       skip() {
         return !this.usuarioLogeado || this.todosNodos.length < 1;
       },
+      update({ yo }) {
+        const tipoLastTarget = localStorage.getItem(
+          "atlasConocimientoTipoLastTarget"
+        );
+        const idLastTarget = localStorage.getItem(
+          "atlasConocimientoIdLastTarget"
+        );
+
+        console.log(`Tipo lastTarget: ${tipoLastTarget}`);
+        console.log(`ID lastTarget: ${idLastTarget}`);
+        
+
+        if (tipoLastTarget === "coleccion" && idLastTarget && yo.atlas?.colecciones) {
+          const coleccionLast=yo.atlas?.colecciones.find(col=>col.id===idLastTarget);
+          console.log(`Coleccion last: ${JSON.stringify(coleccionLast)}`);
+          if(coleccionLast){
+            this.idColeccionSeleccionada=coleccionLast.id;
+          }
+        }
+        return yo;
+      },
     },
     configuracionAtlas: {
       query: gql`
@@ -517,6 +538,8 @@ export default {
 
       indexLastLocateNextAvailable: 0,
       indexLastLocateNextCheck: 0,
+
+      idTargetOnLastLocalizacion:null,
     };
   },
   computed: {
@@ -525,7 +548,7 @@ export default {
         return "Atlas";
       }
 
-      return this.coleccionSeleccionada.nombre;
+      return this.coleccionSeleccionada?.nombre || "Cargando";
     },
     coleccionSeleccionada() {
       if (!this.idColeccionSeleccionada) {
@@ -607,12 +630,12 @@ export default {
       dateHoyMin.setMinutes(0);
       dateHoyMin.setSeconds(0);
 
-      let datosNodoParaRepasar = datosNodoConRepasoConfigurado.filter(
-        (dn) => {
-         
-          return (new Date(dn.estudiado)).getTime() + dn.periodoRepaso < dateHoyMin.getTime()
-        }
-      );
+      let datosNodoParaRepasar = datosNodoConRepasoConfigurado.filter((dn) => {
+        return (
+          new Date(dn.estudiado).getTime() + dn.periodoRepaso <
+          dateHoyMin.getTime()
+        );
+      });
       return datosNodoParaRepasar;
     },
     idsNodosRepasar() {
@@ -683,6 +706,9 @@ export default {
       return nr;
     },
     nodosRender() {
+      if(!this.yo?.atlas?.colecciones){
+        return []
+      }
       if (this.idNodoTarget) {
         return this.todosNodos
           .filter((n) => this.idsNecesariosParaTarget.includes(n.id))
@@ -735,8 +761,6 @@ export default {
       };
     },
     nodoAbierto() {
-      console.log("Verificando path name");
-      console.log(this.$route.name);
 
       return this.$route.name === "visorNodoConocimiento";
     },
@@ -772,6 +796,9 @@ export default {
 
       return cadenaTotal;
     },
+    idTarget(){
+      return this.idNodoTarget || this.idColeccionSeleccionada
+    }
   },
   methods: {
     localizarNext(tipo) {
@@ -779,6 +806,7 @@ export default {
       console.log(
         `Localizando next en ${nodosConsiderados.length} nodos de coleccion`
       );
+      this.idTargetOnLastLocalizacion=this.idTarget;
       if (tipo === "available") {
         let indexEncontrados = 0;
         let nextNodo = nodosConsiderados.find((n) => {
@@ -1292,7 +1320,6 @@ export default {
             idNodo,
           },
           update(store, { data: { eliminarNodo } }) {
-            console.log(`QUERY: ${JSON.stringify(QUERY_NODOS)}`);
             if (!eliminarNodo) {
               console.log(`Nodo no fue eliminado`);
               return;
@@ -1300,7 +1327,6 @@ export default {
             const cache = store.readQuery({
               query: QUERY_NODOS,
             });
-            console.log(`Cache QUERY_NODOS: ${JSON.stringify(cache)}`);
             var nuevoCache = JSON.parse(JSON.stringify(cache));
             const indexN = nuevoCache.todosNodos.findIndex(
               (n) => n.id == idNodo
@@ -1501,7 +1527,7 @@ export default {
           console.log(`error: ${error}`);
         });
     },
-    sendUpdatesNodos(){
+    sendUpdatesNodos() {
       // for(var nodo of this.$refs.nodosRender){
       //   if()
       // }
@@ -1557,8 +1583,13 @@ export default {
     }, 1000),
   },
   watch: {
-    idColeccionSeleccionada() {
+    idColeccionSeleccionada(idColeccion) {
       this.seleccionandoColeccion = false;
+      if(idColeccion){
+        console.log("Setting lastTarget")
+        localStorage.setItem("atlasConocimientoTipoLastTarget", "coleccion");
+        localStorage.setItem("atlasConocimientoIdLastTarget", idColeccion);
+      }
     },
     seleccionandoColeccion() {
       this.mostrandoOpcionesColeccion = false;
@@ -1585,10 +1616,13 @@ export default {
       this.hideZoomInfo();
     },
     nodosRender() {
+      if(this.idTarget!=this.idTargetOnLastLocalizacion){
+        this.localizarNext("available");
+      }
       setTimeout(() => {
-        if(!this.$refs.enlacesNodos){
+        if (!this.$refs.enlacesNodos) {
           console.log("No hay enlaces");
-          return
+          return;
         }
         console.log(`Hay ${this.$refs.enlacesNodos.length} enlaces de nodos`);
         for (const enlace of this.$refs.enlacesNodos) {
