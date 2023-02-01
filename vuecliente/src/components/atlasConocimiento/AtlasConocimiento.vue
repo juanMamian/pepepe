@@ -16,7 +16,11 @@
       :datosNodosUrgentes="datosNodosRepasar"
       @centrarEnNodo="centrarEnNodoById($event)"
     />
-    <div id="zonaSeleccionColeccion" v-if="yo.atlas && yo.atlas.colecciones">
+    <div
+      id="zonaSeleccionColeccion"
+      v-if="yo.atlas && yo.atlas.colecciones"
+      v-show="!idNodoTarget"
+    >
       <div
         id="nombreColeccion"
         @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
@@ -428,6 +432,26 @@ export default {
           nodo.coordsManuales = nodo.autoCoords;
           nodo.coords = nodo.autoCoords;
         });
+
+        const tipoLastTarget = localStorage.getItem(
+          "atlasConocimientoTipoLastTarget"
+        );
+        const idLastTarget = localStorage.getItem(
+          "atlasConocimientoIdLastTarget"
+        );
+
+        if (
+          tipoLastTarget === "nodo" &&
+          idLastTarget
+        ) {
+          const nodoLast = todosNodos.find(
+            (n) => n.id === idLastTarget
+          );
+          console.log(`Nodo last: ${JSON.stringify(nodoLast)}`);
+          if (nodoLast) {
+            this.idNodoTarget = nodoLast.id;
+          }
+        }
         return nuevoTodosNodos;
       },
       fetchPolicy: "cacheFirst",
@@ -438,22 +462,23 @@ export default {
         return !this.usuarioLogeado || this.todosNodos.length < 1;
       },
       update({ yo }) {
-        const tipoLastTarget = localStorage.getItem(
-          "atlasConocimientoTipoLastTarget"
-        );
-        const idLastTarget = localStorage.getItem(
-          "atlasConocimientoIdLastTarget"
-        );
-
-        console.log(`Tipo lastTarget: ${tipoLastTarget}`);
-        console.log(`ID lastTarget: ${idLastTarget}`);
         
+        const idLastColeccionTarget = localStorage.getItem(
+          "atlasConocimientoIdLastColeccionTarget"
+        );
 
-        if (tipoLastTarget === "coleccion" && idLastTarget && yo.atlas?.colecciones) {
-          const coleccionLast=yo.atlas?.colecciones.find(col=>col.id===idLastTarget);
+        console.log(`ID lastColeccionTarget: ${idLastColeccionTarget}`);
+
+        if (
+          idLastColeccionTarget &&
+          yo.atlas?.colecciones
+        ) {
+          const coleccionLast = yo.atlas?.colecciones.find(
+            (col) => col.id === idLastColeccionTarget
+          );
           console.log(`Coleccion last: ${JSON.stringify(coleccionLast)}`);
-          if(coleccionLast){
-            this.idColeccionSeleccionada=coleccionLast.id;
+          if (coleccionLast) {
+            this.idColeccionSeleccionada = coleccionLast.id;
           }
         }
         return yo;
@@ -539,7 +564,7 @@ export default {
       indexLastLocateNextAvailable: 0,
       indexLastLocateNextCheck: 0,
 
-      idTargetOnLastLocalizacion:null,
+      idTargetOnLastLocalizacion: null,
     };
   },
   computed: {
@@ -706,8 +731,8 @@ export default {
       return nr;
     },
     nodosRender() {
-      if(!this.yo?.atlas?.colecciones){
-        return []
+      if (!this.yo?.atlas?.colecciones) {
+        return [];
       }
       if (this.idNodoTarget) {
         return this.todosNodos
@@ -761,7 +786,6 @@ export default {
       };
     },
     nodoAbierto() {
-
       return this.$route.name === "visorNodoConocimiento";
     },
     nodosConectadosAlSeleccionado() {
@@ -796,9 +820,9 @@ export default {
 
       return cadenaTotal;
     },
-    idTarget(){
-      return this.idNodoTarget || this.idColeccionSeleccionada
-    }
+    idTarget() {
+      return this.idNodoTarget || this.idColeccionSeleccionada;
+    },
   },
   methods: {
     localizarNext(tipo) {
@@ -806,12 +830,11 @@ export default {
       console.log(
         `Localizando next en ${nodosConsiderados.length} nodos de coleccion`
       );
-      this.idTargetOnLastLocalizacion=this.idTarget;
+      this.idTargetOnLastLocalizacion = this.idTarget;
       if (tipo === "available") {
         let indexEncontrados = 0;
         let nextNodo = nodosConsiderados.find((n) => {
           if (this.idsNodosPresentesCabeza.includes(n.id)) {
-            console.log("Estaba fresco");
             return false;
           }
 
@@ -1585,10 +1608,9 @@ export default {
   watch: {
     idColeccionSeleccionada(idColeccion) {
       this.seleccionandoColeccion = false;
-      if(idColeccion){
-        console.log("Setting lastTarget")
-        localStorage.setItem("atlasConocimientoTipoLastTarget", "coleccion");
-        localStorage.setItem("atlasConocimientoIdLastTarget", idColeccion);
+      if (idColeccion) {
+        console.log("Setting lastTarget");
+        localStorage.setItem("atlasConocimientoIdLastColeccionTarget", idColeccion);
       }
     },
     seleccionandoColeccion() {
@@ -1610,13 +1632,15 @@ export default {
         idNodoTarget,
         []
       );
+
+      localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
     },
     zoom() {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
     },
     nodosRender() {
-      if(this.idTarget!=this.idTargetOnLastLocalizacion){
+      if (this.idTarget != this.idTargetOnLastLocalizacion) {
         this.localizarNext("available");
       }
       setTimeout(() => {
@@ -1721,10 +1745,12 @@ export default {
 #zonaNodoTarget {
   position: absolute;
   top: 0px;
-  left: 0px;
+  left: 50%;
+  transform: translate(-50%);
   display: flex;
   align-items: center;
   padding: 10px;
+  max-width: min(400px, 50%);
   z-index: 50;
 }
 #zonaNodoTarget .boton {
