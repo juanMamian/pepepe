@@ -43,6 +43,7 @@
       :class="{
         deNodoSeleccionado: seleccionado,
         previoDeSeleccionado,
+        noEstudiable
       }"
     >
       <img
@@ -564,6 +565,9 @@ export default {
       }
       return Math.floor(this.datosUsuarioEsteNodo.periodoRepaso / 86400000);
     },
+    noEstudiable(){
+      return !this.aprendible && !this.nodoAprendido
+    }
   },
   methods: {
     setTipoNodo(nuevoTipoNodo) {
@@ -1013,6 +1017,9 @@ export default {
 }
 #iconoNodo.deNodoSeleccionado img {
   filter: var(--filtroBlanco);
+}
+#iconoNodo.noEstudiable img{
+  opacity: 0.4;
 }
 .nodoConocimiento {
   width: 60px;

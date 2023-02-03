@@ -1672,7 +1672,7 @@ export default {
   --atlasConocimientoCheck: #3f7d20;
   --atlasConocimientoAvailable: #e2c044;
   --atlasConocimientoRepaso: #ff5f5f;
-  --atlasConocimientoOff: #dbfcff;
+  --atlasConocimientoOff: #d3d3d3;
   --atlasConocimientoSeleccion: #ad58d8;
   --atlasConocimientoContinuacion: #3066be;
 
