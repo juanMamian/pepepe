@@ -14,10 +14,10 @@
           irrelevante:
             idNodoSeleccionado &&
             esteNodo.id != idNodoSeleccionado &&
-            ((!idsNodosPreviosSeleccionado.includes(esteNodo.id) &&
-              !idsNodosContinuacionSeleccionado.includes(esteNodo.id)) ||
+            (!enAmbitoNodoSeleccionado ||
               (!idsNodosPreviosSeleccionado.includes(vinculo.idRef) &&
-                !idsNodosContinuacionSeleccionado.includes(vinculo.idRef))),
+                !idsNodosContinuacionSeleccionado.includes(vinculo.idRef) &&
+                vinculo.idRef != idNodoSeleccionado)),
           inaccesible: vinculo.inaccesible,
         }"
       >
@@ -227,6 +227,14 @@ export default {
     nodoRender() {
       if (this.usuario && this.esteNodo.id === this.usuario.id) return true;
       return this.idsTodosNodosRender.includes(this.esteNodo.id);
+    },
+
+    enAmbitoNodoSeleccionado() {
+      return (
+        this.idNodoSeleccionado &&
+        (this.idsNodosPreviosSeleccionado.includes(this.esteNodo.id) ||
+          this.idsNodosContinuacionSeleccionado.includes(this.esteNodo.id))
+      );
     },
   },
 };

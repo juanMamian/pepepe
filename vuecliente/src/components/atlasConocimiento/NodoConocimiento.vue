@@ -354,6 +354,7 @@ export default {
     seleccionado: Boolean,
     fantasmeado: Boolean,
     previoDeSeleccionado: Boolean,
+    continuacionDeSeleccionado:Boolean,
     usuarioAdministradorAtlas: {
       type: Boolean,
       default: false,
@@ -540,7 +541,11 @@ export default {
       let backgroundColor = "rgb(195 195 195)";
 
       if (this.previoDeSeleccionado) {
-        border = "2px solid var(--atlasConocimientoSeleccion)";
+        border = "3px solid var(--atlasConocimientoSeleccion)";
+        backgroundColor = "rgb(195 195 195)";
+      }
+      if (this.continuacionDeSeleccionado) {
+        border = "3px solid var(--atlasConocimientoContinuacion)";
         backgroundColor = "rgb(195 195 195)";
       }
       if (this.seleccionado) {

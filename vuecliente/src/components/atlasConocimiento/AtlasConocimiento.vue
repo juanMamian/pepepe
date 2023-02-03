@@ -28,7 +28,7 @@
         <span
           class="indicadorProgreso"
           v-if="coleccionSeleccionada && coleccionSeleccionada.progreso"
-          >{{ coleccionSeleccionada.progreso }}%</span
+          >{{ Math.floor(coleccionSeleccionada.progreso) }}%</span
         >
         <span style="z-index: 1">
           {{ nombreColeccionSeleccionada }}
@@ -137,10 +137,7 @@
         {{ nodoTarget.nombre }}
       </div>
 
-      <div
-        class="boton"
-        @click.stop="configurarNodoTarget(null)"
-      >
+      <div class="boton" @click.stop="configurarNodoTarget(null)">
         <img src="@/assets/iconos/equis.svg" alt="Equis" />
       </div>
     </div>
@@ -188,7 +185,9 @@
           :redibujarEnlaces="redibujarEnlacesNodos"
           :idsTodosNodosRender="idsTodosNodosRender"
           :callingPosiciones="callingPosiciones"
-          :conectadoSeleccionado="idsNodosConectadosSeleccionado.includes(nodo.id)"
+          :conectadoSeleccionado="
+            idsNodosConectadosSeleccionado.includes(nodo.id)
+          "
           :idsNodosConectadosSeleccionado="idsNodosConectadosSeleccionado"
           :idsNodosContinuacionSeleccionado="idsNodosContinuacionSeleccionado"
           :idsNodosPreviosSeleccionado="idsNodosPreviosSeleccionado"
@@ -241,10 +240,15 @@
           :fantasmeado="
             idNodoSeleccionado &&
             idNodoSeleccionado != nodo.id &&
-            !idsNodosPreviosSeleccionado.includes(nodo.id)
+            !idsNodosPreviosSeleccionado.includes(nodo.id) &&
+            !idsNodosContinuacionSeleccionado.includes(nodo.id)
           "
           :previoDeSeleccionado="
             idNodoSeleccionado && idsNodosPreviosSeleccionado.includes(nodo.id)
+          "
+          :continuacionDeSeleccionado="
+            idNodoSeleccionado &&
+            idsNodosContinuacionSeleccionado.includes(nodo.id)
           "
           :enviandoQueryTarget="enviandoQueryTarget"
           @contextmenu.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
@@ -395,7 +399,6 @@ export const QUERY_DATOS_USUARIO_NODOS = gql`
         configuracion {
           modo
         }
-        idNodoTarget
         colecciones {
           id
           nombre
@@ -435,21 +438,12 @@ export default {
           nodo.coords = nodo.autoCoords;
         });
 
-        const tipoLastTarget = localStorage.getItem(
-          "atlasConocimientoTipoLastTarget"
-        );
-        const idLastTarget = localStorage.getItem(
-          "atlasConocimientoIdLastTarget"
+        const idLastNodoTarget = localStorage.getItem(
+          "atlasConocimientoIdLastNodoTarget"
         );
 
-        if (
-          tipoLastTarget === "nodo" &&
-          idLastTarget
-        ) {
-          const nodoLast = todosNodos.find(
-            (n) => n.id === idLastTarget
-          );
-          console.log(`Nodo last: ${JSON.stringify(nodoLast)}`);
+        if (idLastNodoTarget) {
+          const nodoLast = todosNodos.find((n) => n.id === idLastNodoTarget);
           if (nodoLast) {
             this.idNodoTarget = nodoLast.id;
           }
@@ -464,21 +458,16 @@ export default {
         return !this.usuarioLogeado || this.todosNodos.length < 1;
       },
       update({ yo }) {
-        
         const idLastColeccionTarget = localStorage.getItem(
           "atlasConocimientoIdLastColeccionTarget"
         );
 
         console.log(`ID lastColeccionTarget: ${idLastColeccionTarget}`);
 
-        if (
-          idLastColeccionTarget &&
-          yo.atlas?.colecciones
-        ) {
+        if (idLastColeccionTarget && yo.atlas?.colecciones) {
           const coleccionLast = yo.atlas?.colecciones.find(
             (col) => col.id === idLastColeccionTarget
           );
-          console.log(`Coleccion last: ${JSON.stringify(coleccionLast)}`);
           if (coleccionLast) {
             this.idColeccionSeleccionada = coleccionLast.id;
           }
@@ -568,7 +557,7 @@ export default {
 
       idColeccionTargetOnLastLocalizacion: null,
 
-      idNodoTarget:null,
+      idNodoTarget: null,
     };
   },
   computed: {
@@ -623,7 +612,7 @@ export default {
         ? true
         : false;
     },
-    
+
     nodoTarget() {
       if (!this.idNodoTarget) return null;
       return this.todosNodos.find((n) => n.id === this.idNodoTarget);
@@ -820,19 +809,21 @@ export default {
       }
 
       return cadenaTotal;
-    },    
-    idsNodosContinuacionSeleccionado(){
-      if(!this.nodoSeleccionado){
+    },
+    idsNodosContinuacionSeleccionado() {
+      if (!this.nodoSeleccionado) {
         return [];
       }
 
-      return this.nodoSeleccionado.vinculos.filter(v=>v.tipo==="continuacion" && v.rol==="source").map(v=>v.id);
+      return this.nodoSeleccionado.vinculos
+        .filter((v) => v.tipo === "continuacion" && v.rol === "source")
+        .map((v) => v.idRef);
     },
-    idsNodosConectadosSeleccionado(){
-      if(!this.nodoSeleccionado){
+    idsNodosConectadosSeleccionado() {
+      if (!this.nodoSeleccionado) {
         return [];
       }
-      return this.nodoSeleccionado.vinculos.map(v=>v.idRef);
+      return this.nodoSeleccionado.vinculos.map((v) => v.idRef);
     },
     idTarget() {
       return this.idNodoTarget || this.idColeccionSeleccionada;
@@ -841,9 +832,7 @@ export default {
   methods: {
     localizarNext(tipo) {
       let nodosConsiderados = [...this.nodosRender];
-      console.log(
-        `Localizando next en ${nodosConsiderados.length} nodos de coleccion`
-      );
+
       this.idColeccionTargetOnLastLocalizacion = this.idColeccionSeleccionada;
       if (tipo === "available") {
         let indexEncontrados = 0;
@@ -1171,11 +1160,11 @@ export default {
         return;
       }
 
-      this.idNodoTarget=idNodo;
+      this.idNodoTarget = idNodo;
     },
     nulificarNodoTarget() {
       console.log(`Nulificando nodo target`);
-      this.idNodoTarget=null;
+      this.idNodoTarget = null;
     },
     centrarEnNodo(n) {
       const posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();
@@ -1568,9 +1557,12 @@ export default {
   watch: {
     idColeccionSeleccionada(idColeccion) {
       this.seleccionandoColeccion = false;
+      localStorage.setItem(
+        "atlasConocimientoIdLastColeccionTarget",
+        idColeccion
+      );
       if (idColeccion) {
         console.log("Setting lastTarget");
-        localStorage.setItem("atlasConocimientoIdLastColeccionTarget", idColeccion);
       }
     },
     seleccionandoColeccion() {
@@ -1583,17 +1575,20 @@ export default {
       console.log(`cambio de navegación a ${to.path}`);
     },
     idNodoTarget(idNodoTarget) {
+      localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
+      console.log(
+        `Last nodo target quedó en ${localStorage.getItem(
+          `atlasConocimientoIdLastNodoTarget`
+        )}`
+      );
       if (!idNodoTarget) {
         this.idsNecesariosParaTarget = [];
         return;
       }
-      console.log(`iniciando busqueda de requeridos de nodo ${idNodoTarget}`);
       this.idsNecesariosParaTarget = this.encontrarNodosNecesariosDeNodo(
         idNodoTarget,
         []
       );
-
-      localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
     },
     zoom() {
       this.showingZoomInfo = true;
@@ -1679,6 +1674,7 @@ export default {
   --atlasConocimientoRepaso: #ff5f5f;
   --atlasConocimientoOff: #dbfcff;
   --atlasConocimientoSeleccion: #ad58d8;
+  --atlasConocimientoContinuacion: #3066be;
 
   --filtroAtlasSeleccion: invert(43%) sepia(84%) saturate(539%)
     hue-rotate(236deg) brightness(88%) contrast(92%);
