@@ -7,6 +7,7 @@ Atlas de conocimiento.
 
 pepepe
 
+-Que al hacer doble click sobre un icono nodo de conocimiento de los que hay en las colecciones, se abra el home de ese nodo.
 -Configurar el cache para que pueda encontrar documentos específicos que ya han sido descargados en bulk. Como en Coordi.
 -En el MixinBasicoEventosPublicos hay demasiadas versiones de horarioLegible, depurar.
 -Desarrollar el limite de cupos de los eventos publicos.

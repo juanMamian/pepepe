@@ -1,16 +1,40 @@
 <template>
   <div class="coleccionNodosConocimiento">
-    <div id="zonaBarraProgreso" v-show="!$apollo.queries.progresoColeccion.loading">
+    <div
+      id="zonaBarraProgreso"
+      v-show="!$apollo.queries.progresoColeccion.loading"
+    >
       <div id="barraProgreso">
-        <div id="barraProgresoVerde" :style="[{width: progresoColeccion+'%'}]"></div>
+        <div
+          id="barraProgresoVerde"
+          :style="[{ width: progresoColeccion + '%' }]"
+        ></div>
       </div>
-    
-    <div id="numeroProgreso">
-        {{progresoColeccion}}%
-    </div>
+
+      <div id="numeroProgreso">{{ progresoColeccion }}%</div>
     </div>
 
     <loading v-show="$apollo.queries.progresoColeccion.loading" />
+
+    <div class="barraSeccion" id="barraSuperior">
+      <div
+        id="elTitulo"
+        v-show="!editandoTitulo"
+        @click.stop="iniciarEdicionTitulo"
+      >
+        {{ estaColeccion.titulo }}
+      </div>
+
+      <input
+        :class="{ deshabilitado: guardandoNuevoTitulo }"
+        type="text"
+        id="inputNuevoTitulo"
+        style="text-align: center"
+        ref="inputNuevoTitulo"
+        v-show="editandoTitulo"
+        @keypress.enter="guardarNuevoTitulo"
+      />
+    </div>
 
     <div class="listaNodos">
       <icono-nodo-conocimiento
@@ -18,6 +42,7 @@
         :key="nodo.id"
         :esteNodo="nodo"
         :seleccionado="idNodoSeleccionado === nodo.id"
+        :datosEsteNodo="yo.atlas.datosNodos.find(dn=>dn.idNodo===nodo.id)"
         @click.self.stop="
           idNodoSeleccionado = idNodoSeleccionado === nodo.id ? null : nodo.id
         "
@@ -29,7 +54,8 @@
 <script>
 import gql from "graphql-tag";
 import IconoNodoConocimiento from "./IconoNodoConocimiento.vue";
-import Loading from '../utilidades/Loading.vue';
+import Loading from "../utilidades/Loading.vue";
+import { charProhibidosNombreCosa } from "../configs";
 
 const QUERY_NODOS_COLECCION = gql`
   query ($idsNodos: [ID!]!) {
@@ -37,6 +63,7 @@ const QUERY_NODOS_COLECCION = gql`
       id
       nombre
       descripcion
+      tipoNodo
     }
   }
 `;
@@ -94,7 +121,61 @@ export default {
       idNodoSeleccionado: null,
       nodosConocimiento: [],
       progresoColeccion: null,
+
+      editandoTitulo: false,
+      guardandoNuevoTitulo: false,
+
+
     };
+  },
+  methods: {
+    iniciarEdicionTitulo() {
+      this.$refs.inputNuevoTitulo.value = this.estaColeccion.titulo;
+      this.editandoTitulo = true;
+    },
+    guardarNuevoTitulo() {
+      var nuevoNombre = this.$refs.inputNuevoTitulo.value;
+      console.log(
+        `seting nombre de coleccion con value: ${nuevoNombre}`
+      );
+      if (charProhibidosNombreCosa.test(nuevoNombre)) {
+        alert("¡El nombre contenía caracteres ilegales!");
+        return true;
+      }
+      this.guardandoNuevoTitulo = true;
+
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!, $nuevoNombre: String!) {
+              setNombreColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+                nuevoNombre: $nuevoNombre
+              ) {
+                id
+                atlas {
+                  colecciones {
+                    id
+                    nombre
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            idColeccion: this.estaColeccion.id,
+            nuevoNombre,
+          },
+        })
+        .then(() => {
+          this.guardandoNuevoTitulo = false;
+          this.editandoTitulo = false;
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.guardandoNuevoTitulo = false;
+        });
+    },
   },
 };
 </script>
@@ -118,8 +199,13 @@ export default {
   height: 100%;
 }
 
-#numeroProgreso{
-    width: 100%;
-    text-align: center;
+#numeroProgreso {
+  width: 100%;
+  text-align: center;
+}
+
+#barraSuperior {
+  display: flex;
+  justify-content: center;
 }
 </style>

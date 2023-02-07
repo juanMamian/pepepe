@@ -43,7 +43,7 @@
       :class="{
         deNodoSeleccionado: seleccionado,
         previoDeSeleccionado,
-        noEstudiable
+        noEstudiable,
       }"
     >
       <img
@@ -120,11 +120,7 @@
         :class="{ deshabilitado: esTarget }"
         @click.stop="$emit('mePongoEnMira')"
       >
-        <img
-          class="iconoMenuCx"
-          src="@/assets/iconos/target.png"
-          alt="mira"
-        />
+        <img class="iconoMenuCx" src="@/assets/iconos/target.png" alt="mira" />
         Poner en la mira
       </div>
       <div
@@ -213,7 +209,6 @@
         @click.stop="marcarEstudiado"
         v-show="aprendible"
         :class="{ deshabilitado: enviandoFechaEstudiado }"
-        
       >
         <img
           src="@/assets/iconos/readme.svg"
@@ -223,7 +218,10 @@
         />
         <loading v-show="enviandoFechaEstudiado" texto="" />
         <span>
-           {{"Estudiado " +enrichedToReadableDate(datosUsuarioEsteNodo.estudiado)}}
+          {{
+            "Estudiado " +
+            enrichedToReadableDate(datosUsuarioEsteNodo.estudiado)
+          }}
         </span>
       </div>
       <div
@@ -253,7 +251,7 @@
           min="1"
           id="inputDiasRepaso"
           @focus="$event.target.select()"
-          @blur="editandoDiasRepaso=false;"
+          @blur="editandoDiasRepaso = false"
           @keypress.enter="setPeriodoRepaso"
         />
       </div>
@@ -350,12 +348,12 @@ export default {
     idsNodosEstudiados: Array,
     idsNodosFrescos: Array,
     idsNodosPresentesCabeza: Array,
-    idsNodosRepasar:Array,
+    idsNodosRepasar: Array,
     nodoSeleccionado: Object,
     seleccionado: Boolean,
     fantasmeado: Boolean,
     previoDeSeleccionado: Boolean,
-    continuacionDeSeleccionado:Boolean,
+    continuacionDeSeleccionado: Boolean,
     usuarioAdministradorAtlas: {
       type: Boolean,
       default: false,
@@ -565,9 +563,9 @@ export default {
       }
       return Math.floor(this.datosUsuarioEsteNodo.periodoRepaso / 86400000);
     },
-    noEstudiable(){
-      return !this.aprendible && !this.nodoAprendido
-    }
+    noEstudiable() {
+      return !this.aprendible && !this.nodoAprendido;
+    },
   },
   methods: {
     setTipoNodo(nuevoTipoNodo) {
@@ -1018,7 +1016,7 @@ export default {
 #iconoNodo.deNodoSeleccionado img {
   filter: var(--filtroBlanco);
 }
-#iconoNodo.noEstudiable img{
+#iconoNodo.noEstudiable img {
   opacity: 0.4;
 }
 .nodoConocimiento {

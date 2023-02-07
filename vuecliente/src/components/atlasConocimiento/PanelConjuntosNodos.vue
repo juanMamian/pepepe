@@ -5,11 +5,11 @@
     @mousedown.left.stop=""
     @touchmove.stop=""
     v-show="abierto"
-  >   
+  >
     <div id="barraConjuntos">
       <div
-        class="selectorConjunto"      
-        :class="{ seleccionado: conjunto.id === idConjuntoSeleccionado }"
+        class="selectorConjunto"
+        :class="{ seleccionado: conjunto.id === idColeccionSeleccionada }"
         @click="seleccionarColeccion($event, conjunto.id)"
         v-for="conjunto of conjuntos"
         :key="'selectorConjunto' + conjunto.id"
@@ -19,7 +19,7 @@
           v-show="
             !editandoNombreColeccion ||
             !conjunto.editable ||
-            conjunto.id != idConjuntoSeleccionado
+            conjunto.id != idColeccionSeleccionada
           "
         >
           {{ conjunto.titulo }}
@@ -27,13 +27,13 @@
         <input
           type="text"
           name="nuevoNombreColeccion"
-          :id="'inputNombreColeccion'+conjunto.id"
+          :id="'inputNombreColeccion' + conjunto.id"
           v-show="
             conjunto.editable &&
-            conjunto.id === idConjuntoSeleccionado &&
+            conjunto.id === idColeccionSeleccionada &&
             editandoNombreColeccion
           "
-          :class="{deshabilitado: enviandoQueryColecciones}"
+          :class="{ deshabilitado: enviandoQueryColecciones }"
           @keypress.enter="guardarNuevoNombreColeccion($event, conjunto.id)"
           @blur="editandoNombreColeccion = false"
         />
@@ -45,7 +45,7 @@
           v-show="
             !editandoNombreColeccion &&
             conjunto.editable &&
-            conjunto.id === idConjuntoSeleccionado
+            conjunto.id === idColeccionSeleccionada
           "
           class="botonEliminarColeccion"
           @click.stop="eliminarColeccion(conjunto.id)"
@@ -53,60 +53,86 @@
       </div>
       <div
         id="controlesConjuntos"
-        :class="{ deshabilitado: enviandoQueryColecciones }"        
+        :class="{ deshabilitado: enviandoQueryColecciones }"
       >
-        <div @click="crearNuevaColeccion" class="botonControlesConjuntos">Nueva colección</div>
+        <div @click="crearNuevaColeccion" class="botonControlesConjuntos">
+          Nueva colección
+        </div>
       </div>
     </div>
-    
-    <coleccion-nodos-conocimiento :yo="yo" v-if="idConjuntoSeleccionado" :estaColeccion="conjuntoSeleccionado"/>
+
+    <div class="barraSeccion">
+      <span @click="idColeccionAbierta=null"> Colecciones</span><span v-if="coleccionAbierta">{{ " > " + coleccionAbierta.titulo }}</span>
+    </div>
+
+    <div id="listaConjuntos" v-show="!coleccionAbierta">
+      <div class="anuncioZonaVacia" v-if="conjuntos.length < 1">
+        Aún no hay colecciones
+      </div>
+      <selector-conjunto
+        @dblclick.native="idColeccionAbierta = coleccion.id"
+        @click.native.stop="idColeccionSeleccionada=idColeccionSeleccionada===coleccion.id?null:coleccion.id"
+        v-for="coleccion of conjuntos"
+        :key="coleccion.id"
+        :seleccionado="coleccion.id === idColeccionSeleccionada"
+        :estaColeccion="coleccion"
+      />
+    </div>
+
+    <coleccion-nodos-conocimiento
+      :yo="yo"
+      v-if="coleccionAbierta"
+      :estaColeccion="coleccionAbierta"
+    />
     <!-- <div
       id="listaNodosConjunto"
-      v-if="conjuntoSeleccionado"
-      v-show="abierto && conjuntoSeleccionado"
-      :key="'listaNodos' + idConjuntoSeleccionado"
+      v-if="coleccionSeleccionada"
+      v-show="abierto && coleccionSeleccionada"
+      :key="'listaNodos' + idColeccionSeleccionada"
       @click.self.stop="idNodoSeleccionado = null"
     >
       <icono-nodo-conocimiento
         :esteNodo="nodo"
-        v-for="nodo of conjuntoSeleccionado.nodos"
-        v-show="conjuntoSeleccionado"
+        v-for="nodo of coleccionSeleccionada.nodos"
+        v-show="coleccionSeleccionada"
         :key="nodo.id"
         :seleccionado="nodo.id === idNodoSeleccionado"
         @click.native.stop="idNodoSeleccionado = nodo.id"
         @dblclick.native.stop="$emit('centrarEnNodo', nodo.id)"
       /> -->
     <!-- </div> -->
-    
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
-import ColeccionNodosConocimiento from './ColeccionNodosConocimiento.vue';
+import ColeccionNodosConocimiento from "./ColeccionNodosConocimiento.vue";
+import SelectorConjunto from "./SelectorConjunto.vue";
 
 const charProhibidosNombreColeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
 export default {
-  components: { ColeccionNodosConocimiento },
+  components: { ColeccionNodosConocimiento, SelectorConjunto },
   name: "PanelConjuntosNodos",
   props: {
     yo: Object,
-    modoAtlas:String,
+    modoAtlas: String,
   },
   data() {
     return {
       abierto: false,
-      idConjuntoSeleccionado: 0,
+      idColeccionSeleccionada: 0,
       editandoNombreColeccion: false,
 
       idNodoSeleccionado: null,
+
+      idColeccionAbierta: null,
 
       enviandoQueryColecciones: false,
       enviandoQueryNodosSeccion: false,
     };
   },
-  methods: {    
+  methods: {
     abrirPaginaNodo(idNodo) {
       if (!idNodo) return;
       this.$router.push("/nodoConocimiento/" + idNodo);
@@ -144,16 +170,18 @@ export default {
         });
     },
     seleccionarColeccion(e, idColeccion) {
-      if (this.idConjuntoSeleccionado === idColeccion) {
-        const nombreColeccion=this.conjuntos.find(c=>c.id===idColeccion).nombre;
+      if (this.idColeccionSeleccionada === idColeccion) {
+        const nombreColeccion = this.conjuntos.find(
+          (c) => c.id === idColeccion
+        ).nombre;
         console.log(`Seting value del input a ${nombreColeccion}`);
         this.editandoNombreColeccion = true;
-        document.getElementById('inputNombreColeccion'+idColeccion).value=nombreColeccion;
-
+        document.getElementById("inputNombreColeccion" + idColeccion).value =
+          nombreColeccion;
       } else {
         this.editandoNombreColeccion = false;
       }
-      this.idConjuntoSeleccionado = idColeccion;
+      this.idColeccionSeleccionada = idColeccion;
       this.idNodoSeleccionado = null;
     },
     guardarNuevoNombreColeccion(e, idColeccion) {
@@ -211,7 +239,7 @@ export default {
         )
       )
         return;
-      this.idConjuntoSeleccionado = null;
+      this.idColeccionSeleccionada = null;
       this.enviandoQueryColecciones = true;
 
       this.$apollo
@@ -248,8 +276,7 @@ export default {
         });
     },
     eliminarNodoSeleccionadoSeccionSeleccionada() {
-
-      if(!this.idConjuntoSeleccionado || !this.idNodoSeleccionado)return
+      if (!this.idColeccionSeleccionada || !this.idNodoSeleccionado) return;
 
       this.enviandoQueryNodosSeccion = true;
       this.$apollo
@@ -269,22 +296,22 @@ export default {
               }
             }
           `,
-          variables:{
-            idColeccion:this.idConjuntoSeleccionado,
-            idNodo:this.idNodoSeleccionado
-          }
+          variables: {
+            idColeccion: this.idColeccionSeleccionada,
+            idNodo: this.idNodoSeleccionado,
+          },
         })
         .then(() => {
           this.enviandoQueryNodosSeccion = false;
-          this.idNodoSeleccionado=null;
+          this.idNodoSeleccionado = null;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
           this.enviandoQueryNodosSeccion = false;
         });
-    },    
+    },
   },
-  computed: {    
+  computed: {
     idsNodosObjetivos() {
       if (!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos) {
         return [];
@@ -299,17 +326,18 @@ export default {
       return this.todosNodos.filter((n) =>
         this.idsNodosObjetivos.includes(n.id)
       );
-    },        
+    },
     conjuntos() {
-      
-      return this.conjuntosUsuario
-    },     
+      return this.conjuntosUsuario;
+    },
     conjuntosUsuario() {
       if (!this.yo || !this.yo.atlas || !this.yo.atlas.colecciones) {
         return [];
       }
 
-      var nuevoColecciones=JSON.parse(JSON.stringify(this.yo.atlas.colecciones));
+      var nuevoColecciones = JSON.parse(
+        JSON.stringify(this.yo.atlas.colecciones)
+      );
 
       nuevoColecciones.forEach((c) => {
         c.titulo = c.nombre;
@@ -320,9 +348,16 @@ export default {
 
       return nuevoColecciones;
     },
-    conjuntoSeleccionado(){
-      return this.conjuntos.find(c=>c.id===this.idConjuntoSeleccionado);
-    }
+    coleccionSeleccionada() {
+      return this.conjuntos.find((c) => c.id === this.idColeccionSeleccionada);
+    },
+    coleccionAbierta() {
+      if (!this.idColeccionAbierta) {
+        return null;
+      }
+
+      return this.conjuntos.find((c) => c.id === this.idColeccionAbierta);
+    },
   },
   watch: {
     abierto() {
@@ -342,7 +377,7 @@ export default {
   max-height: 80%;
   background-color: whitesmoke;
   width: min(90%, 650px);
-  right:0px;
+  right: 0px;
 }
 #grabber {
   width: 30px;
@@ -357,22 +392,19 @@ export default {
   width: 100%;
   overflow-x: scroll;
 }
-.selectorConjunto {
-  cursor: pointer;
-  background-color: rgba(95, 158, 160, 0.637);
-  padding: 3px 5px;
-  font-style: italic;
+
+#listaConjuntos {
   display: flex;
-}
-.selectorConjunto.seleccionado {
-  background-color: cadetblue;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 10px;
 }
 .botonEliminarColeccion {
   cursor: pointer;
   border-radius: 50%;
   margin-left: 10px;
-  width:20px;
-  height:20px;
+  width: 20px;
+  height: 20px;
 }
 .botonEliminarColeccion:hover {
   background-color: rgb(219, 63, 63);

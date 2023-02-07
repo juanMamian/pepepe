@@ -1,12 +1,18 @@
 <template>
-  <div class="iconoNodoConocimiento">    
-    <img
-      :src="this.serverUrl + '/api/atlas/iconos/' + esteNodo.id"
-      alt=""
-      class="iconoNodo"
-      ref="iconoNodo"
-    />
-    <div id="nombre" ref="nombre" :class="{seleccionado}">
+  <div class="iconoNodoConocimiento">
+    <div id="iconoNodo">
+      <img
+        v-if="esteNodo.tipoNodo === 'concepto'"
+        src="@/assets/iconos/atlas/lightbulbEmpty.svg"
+      />
+      <img v-else src="@/assets/iconos/atlas/fireSolid.svg" />
+    </div>
+    <div
+      id="nombre"
+      ref="nombre"
+      :style="[estiloCartelNombre ]"
+      :class="{ seleccionado }"
+    >
       {{ esteNodo.nombre }}
     </div>
   </div>
@@ -15,13 +21,68 @@
 <script>
 export default {
   name: "IconoNodoConocimiento",
+  apollo: {},
   data() {
     return {};
   },
-  props:{
-      esteNodo:Object,
-      seleccionado:Boolean
-  }
+  props: {
+    esteNodo: Object,
+    seleccionado: Boolean,
+    datosEsteNodo: Object,
+  },
+  computed: {
+    estiloCartelNombre() {
+      var bColor = "var(--atlasConocimientoOff)";
+      var color = "black";
+      if (this.aprendido || this.estudiado) {
+        bColor = "var(--atlasConocimientoCheck)";
+      } else if (this.nodoRepasar) {
+        bColor = "var(--atlasConocimientoRepaso)";
+      } else if (this.aprendible) {
+        bColor = "var(--atlasConocimientoAvailable)";
+      } else {
+        color = "#313131";
+      }
+
+      return {
+        backgroundColor: bColor,
+        color,
+      };
+    },
+    estudiado() {
+      if (!this.datosEsteNodo?.estudiado) {
+        return false;
+      }
+
+      return true;
+    },
+    estudiadoRecientemente() {
+      if (!this.estudiado || !this.datosEsteNodo.periodoRepaso) {
+        return false;
+      }
+      let dateHoy = new Date();
+
+      let dateHoyMin = dateHoy;
+      dateHoyMin.setHours(0);
+      dateHoyMin.setMinutes(0);
+      dateHoyMin.setSeconds(0);
+
+      let millisEstudiado = new Date(this.datosEsteNodo.estudiado).getTime();
+      let millisRepaso = millisEstudiado + this.datosEsteNodo.periodoRepaso;
+      let millisHoy = dateHoy.getTime();
+
+      console.log(
+        `${this.datosEsteNodo.nombreNodo}: Millis estudiado: ${millisEstudiado}, millisRepaso: ${millisRepaso}, millisHoy ${millisHoy}`
+      );
+      return millisRepaso > millisHoy;
+    },
+    repasar() {
+      return this.estudiado && !this.estudiadoRecientemente;
+    },
+    aprendido() {
+      return this.datosEsteNodo?.aprendido;
+    },
+  },
 };
 </script>
 
@@ -32,26 +93,29 @@ export default {
   height: 30px;
   border-radius: 50%;
   background-size: 100% 100%;
-  cursor: pointer;  
+  cursor: pointer;
   position: relative;
   pointer-events: all;
   background-color: rgba(128, 128, 128, 0.349);
   user-select: none;
 }
-.iconoNodo {
+#iconoNodo {
   position: absolute;
-  top: 0px;
-  left: 0px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   pointer-events: none;
-  width: 100%;
-  height: 100%;
+  width: 55%;
+  height: 55%;
   z-index: 1;
   pointer-events: none;
-  box-shadow: 2px 2px 2px 2px grey;
   border-radius: 50%;
-  user-select: none;
 }
 
+#iconoNodo img {
+  width: 100%;
+  height: 100%;
+}
 #nombre {
   font-size: 11px;
   position: absolute;
@@ -66,13 +130,6 @@ export default {
   transform: translateX(-50%);
   border: 1px solid rgb(5, 102, 109);
   border-radius: 3px;
-}
-#nombre:not(.seleccionado){
-  background-color: rgba(173, 216, 230, 0.719);
-
-}
-#nombre.seleccionado{
-  background-color: rgb(108, 179, 202);
 }
 #menuContextual {
   position: absolute;
