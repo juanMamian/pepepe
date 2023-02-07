@@ -25,11 +25,11 @@
         id="nombreColeccion"
         @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
       >
-        <span
-          class="indicadorProgreso"
-          v-if="coleccionSeleccionada && coleccionSeleccionada.progreso"
-          >{{ Math.floor(coleccionSeleccionada.progreso) }}%</span
-        >
+        <pie-progreso
+          v-if="coleccionSeleccionada"
+          :progreso="coleccionSeleccionada.progreso"
+          style="margin-right: 10px"
+        />        
         <span style="z-index: 1">
           {{ nombreColeccionSeleccionada }}
         </span>
@@ -328,6 +328,7 @@ import Loading from "../utilidades/Loading.vue";
 import PanelConjuntosNodos from "./PanelConjuntosNodos.vue";
 import EnlacesNodoConocimiento from "./EnlacesNodoConocimiento.vue";
 import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
+import PieProgreso from "../utilidades/PieProgreso.vue";
 const debounce = require("debounce");
 
 const fragmentoNodoConocimiento = gql`
@@ -422,6 +423,7 @@ export default {
     Loading,
     PanelConjuntosNodos,
     EnlacesNodoConocimiento,
+    PieProgreso,
   },
   name: "AtlasConocimiento",
   apollo: {
@@ -1734,8 +1736,13 @@ export default {
 #nombreColeccion {
   padding: 10px 30px;
   background-color: var(--atlasConocimientoSeleccion);
-  border-radius: 25px;
+  border-radius: 45px;
   cursor: pointer;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 #listaSelectoresColeccion {

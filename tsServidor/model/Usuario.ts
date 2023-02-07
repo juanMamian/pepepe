@@ -412,7 +412,10 @@ const esquemaUsuario = new mongoose.Schema({
 
 esquemaUsuario.pre("save", function(this:any, next){
     var nuevoDatosNodos:Array<any>=[];
-    console.log("Revisando si hay datos nodo repetidos")
+    console.log("Revisando si hay datos nodo repetidos");
+    if(!this.atlas.datosNodos){
+        next();
+    }
     for(const dato of this.atlas.datosNodos){
         if(!nuevoDatosNodos.map(dn=>dn.idNodo).includes(dato.idNodo)){
             nuevoDatosNodos.push(dato);
