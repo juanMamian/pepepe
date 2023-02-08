@@ -65,17 +65,19 @@
       <span @click="idColeccionAbierta=null"> Colecciones</span><span v-if="coleccionAbierta">{{ " > " + coleccionAbierta.titulo }}</span>
     </div>
 
-    <div id="listaConjuntos" v-show="!coleccionAbierta">
+    <div id="listaConjuntos" v-show="!coleccionAbierta" @click="idColeccionMenuCx=null;">
       <div class="anuncioZonaVacia" v-if="conjuntos.length < 1">
         Aún no hay colecciones
       </div>
       <selector-conjunto
-        @dblclick.native="idColeccionAbierta = coleccion.id"
-        @click.native.stop="idColeccionSeleccionada=idColeccionSeleccionada===coleccion.id?null:coleccion.id"
         v-for="coleccion of conjuntos"
         :key="coleccion.id"
         :seleccionado="coleccion.id === idColeccionSeleccionada"
+        :menuCx="idColeccionMenuCx===coleccion.id"
         :estaColeccion="coleccion"
+        @contextmenu.native.exact.stop.prevent="idColeccionMenuCx=coleccion.id"
+        @dblclick.native="idColeccionAbierta = coleccion.id"
+        @click.native.stop="idColeccionSeleccionada=idColeccionSeleccionada===coleccion.id?null:coleccion.id"
       />
     </div>
 
@@ -127,6 +129,8 @@ export default {
       idNodoSeleccionado: null,
 
       idColeccionAbierta: null,
+
+      idColeccionMenuCx:null,
 
       enviandoQueryColecciones: false,
       enviandoQueryNodosSeccion: false,
