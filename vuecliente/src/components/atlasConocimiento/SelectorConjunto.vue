@@ -110,6 +110,7 @@ export default {
   padding: 10px 20px;
   border-radius: 15px;
   background-color: var(--atlasConocimientoAvailable);
+  box-sizing: border-box;
 }
 .selectorConjunto.seleccionado {
   border: 2px solid var(--atlasConocimientoSeleccion);

@@ -29,7 +29,7 @@
           v-if="coleccionSeleccionada"
           :progreso="coleccionSeleccionada.progreso"
           style="margin-right: 10px"
-        />        
+        />
         <span style="z-index: 1">
           {{ nombreColeccionSeleccionada }}
         </span>
@@ -331,6 +331,19 @@ import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
 import PieProgreso from "../utilidades/PieProgreso.vue";
 const debounce = require("debounce");
 
+export const fragmentoColecciones = gql`
+  fragment fragColecciones on ColeccionNodosAtlasConocimiento {
+    id
+    nombre
+    idsNodos
+    progreso
+    nodos {
+      id
+      nombre
+    }
+  }
+`;
+
 const fragmentoNodoConocimiento = gql`
   fragment fragNodoConocimiento on NodoConocimiento {
     id
@@ -401,19 +414,13 @@ export const QUERY_DATOS_USUARIO_NODOS = gql`
           modo
         }
         colecciones {
-          id
-          nombre
-          idsNodos
-          progreso
-          nodos {
-            id
-            nombre
-          }
+          ...fragColecciones
         }
       }
     }
   }
   ${fragmentoDatoNodoConocimiento}
+  ${fragmentoColecciones}
 `;
 
 export default {

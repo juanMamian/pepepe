@@ -6,66 +6,31 @@
     @touchmove.stop=""
     v-show="abierto"
   >
-    <div id="barraConjuntos">
-      <div
-        class="selectorConjunto"
-        :class="{ seleccionado: conjunto.id === idColeccionSeleccionada }"
-        @click="seleccionarColeccion($event, conjunto.id)"
-        v-for="conjunto of conjuntos"
-        :key="'selectorConjunto' + conjunto.id"
-      >
-        <div
-          class="nombreColeccion"
-          v-show="
-            !editandoNombreColeccion ||
-            !conjunto.editable ||
-            conjunto.id != idColeccionSeleccionada
-          "
-        >
-          {{ conjunto.titulo }}
-        </div>
-        <input
-          type="text"
-          name="nuevoNombreColeccion"
-          :id="'inputNombreColeccion' + conjunto.id"
-          v-show="
-            conjunto.editable &&
-            conjunto.id === idColeccionSeleccionada &&
-            editandoNombreColeccion
-          "
-          :class="{ deshabilitado: enviandoQueryColecciones }"
-          @keypress.enter="guardarNuevoNombreColeccion($event, conjunto.id)"
-          @blur="editandoNombreColeccion = false"
-        />
-        <img
-          src="@/assets/iconos/delete.png"
-          alt="Eliminar"
-          width="20px"
-          title="Eliminar colección"
-          v-show="
-            !editandoNombreColeccion &&
-            conjunto.editable &&
-            conjunto.id === idColeccionSeleccionada
-          "
-          class="botonEliminarColeccion"
-          @click.stop="eliminarColeccion(conjunto.id)"
-        />
-      </div>
-      <div
-        id="controlesConjuntos"
-        :class="{ deshabilitado: enviandoQueryColecciones }"
-      >
-        <div @click="crearNuevaColeccion" class="botonControlesConjuntos">
-          Nueva colección
-        </div>
-      </div>
-    </div>
-
     <div class="barraSeccion">
-      <span @click="idColeccionAbierta=null"> Colecciones</span><span v-if="coleccionAbierta">{{ " > " + coleccionAbierta.titulo }}</span>
+      <span @click="idColeccionAbierta = null"> Colecciones</span
+      ><span v-if="coleccionAbierta">{{
+        " > " + coleccionAbierta.titulo
+      }}</span>
+
+      <div style="margin-left: auto">
+        <div
+          v-show="!creandoColeccion"
+          @click="crearNuevaColeccion"
+          class="boton"
+        >
+          <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" style="" />
+        </div>
+
+        <loading v-show="creandoColeccion" />
+      </div>
     </div>
 
-    <div id="listaConjuntos" v-show="!coleccionAbierta" @click="idColeccionMenuCx=null;">
+    <div
+      id="listaConjuntos"
+      v-show="!coleccionAbierta"
+      @click="idColeccionMenuCx = null"
+      @click.self="idColeccionSeleccionada=null"
+    >
       <div class="anuncioZonaVacia" v-if="conjuntos.length < 1">
         Aún no hay colecciones
       </div>
@@ -73,11 +38,16 @@
         v-for="coleccion of conjuntos"
         :key="coleccion.id"
         :seleccionado="coleccion.id === idColeccionSeleccionada"
-        :menuCx="idColeccionMenuCx===coleccion.id"
+        :menuCx="idColeccionMenuCx === coleccion.id"
         :estaColeccion="coleccion"
-        @contextmenu.native.exact.stop.prevent="idColeccionMenuCx=coleccion.id"
+        @contextmenu.native.exact.stop.prevent="
+          idColeccionMenuCx = coleccion.id
+        "
         @dblclick.native="idColeccionAbierta = coleccion.id"
-        @click.native.stop="idColeccionSeleccionada=idColeccionSeleccionada===coleccion.id?null:coleccion.id"
+        @click.native="
+          idColeccionSeleccionada =
+            idColeccionSeleccionada === coleccion.id ? null : coleccion.id
+        "
       />
     </div>
 
@@ -110,11 +80,16 @@
 import gql from "graphql-tag";
 import ColeccionNodosConocimiento from "./ColeccionNodosConocimiento.vue";
 import SelectorConjunto from "./SelectorConjunto.vue";
+import {
+  QUERY_DATOS_USUARIO_NODOS,
+  fragmentoColecciones,
+} from "./AtlasConocimiento.vue";
+import Loading from "../utilidades/Loading.vue";
 
 const charProhibidosNombreColeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
 
 export default {
-  components: { ColeccionNodosConocimiento, SelectorConjunto },
+  components: { ColeccionNodosConocimiento, SelectorConjunto, Loading },
   name: "PanelConjuntosNodos",
   props: {
     yo: Object,
@@ -130,10 +105,11 @@ export default {
 
       idColeccionAbierta: null,
 
-      idColeccionMenuCx:null,
+      idColeccionMenuCx: null,
 
       enviandoQueryColecciones: false,
       enviandoQueryNodosSeccion: false,
+      creandoColeccion: false,
     };
   },
   methods: {
@@ -144,33 +120,46 @@ export default {
     crearNuevaColeccion() {
       this.enviandoQueryColecciones = true;
 
+      this.creandoColeccion = true;
       this.$apollo
         .mutate({
           mutation: gql`
             mutation {
               crearColeccionNodosAtlasConocimientoUsuario {
-                id
-                atlas {
-                  colecciones {
-                    id
-                    nombre
-                    idsNodos
-                    nodos {
-                      id
-                      nombre
-                    }
-                  }
-                }
+                ...fragColecciones
               }
             }
+            ${fragmentoColecciones}
           `,
         })
-        .then(() => {
+        .then(({ data: { crearColeccionNodosAtlasConocimientoUsuario } }) => {
           this.enviandoQueryColecciones = false;
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_DATOS_USUARIO_NODOS,
+          });
+
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+
+          var colecciones = nuevoCache.yo.atlas.colecciones;
+          const indexC = colecciones.findIndex(
+            (col) => col.id === crearColeccionNodosAtlasConocimientoUsuario.id
+          );
+
+          if (indexC === -1) {
+            colecciones.push(crearColeccionNodosAtlasConocimientoUsuario);
+            store.writeQuery({
+              query: QUERY_DATOS_USUARIO_NODOS,
+              data: nuevoCache,
+            });
+          } else {
+            console.log(`La colección ya estaba incluida`);
+          }
+          this.creandoColeccion = false;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
-          this.enviandoQueryColecciones = false;
+          this.creandoColeccion = false;
         });
     },
     seleccionarColeccion(e, idColeccion) {
@@ -230,49 +219,6 @@ export default {
         .then(() => {
           this.enviandoQueryColecciones = false;
           this.editandoNombreColeccion = false;
-        })
-        .catch((error) => {
-          console.log(`Error: ${error}`);
-          this.enviandoQueryColecciones = false;
-        });
-    },
-    eliminarColeccion(idColeccion) {
-      if (
-        !confirm(
-          "Confirmar eliminación de colección? (Esta acción no se puede deshacer)"
-        )
-      )
-        return;
-      this.idColeccionSeleccionada = null;
-      this.enviandoQueryColecciones = true;
-
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idColeccion: ID!) {
-              eliminarColeccionNodosAtlasConocimientoUsuario(
-                idColeccion: $idColeccion
-              ) {
-                id
-                atlas {
-                  colecciones {
-                    id
-                    idsNodos
-                    nodos {
-                      id
-                      nombre
-                    }
-                  }
-                }
-              }
-            }
-          `,
-          variables: {
-            idColeccion,
-          },
-        })
-        .then(() => {
-          this.enviandoQueryColecciones = false;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
