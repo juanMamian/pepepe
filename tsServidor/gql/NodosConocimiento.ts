@@ -463,12 +463,21 @@ export const resolvers = {
                 throw new AuthenticationError("No autorizado");
             }
             try {
-                var nodoSource: any = await Nodo.findById(args.idSource, "vinculos").exec();
-                var nodoTarget: any = await Nodo.findById(args.idTarget, "vinculos").exec();
+                var nodoSource: any = await Nodo.findById(args.idSource, "vinculos nombre").exec();
+                var nodoTarget: any = await Nodo.findById(args.idTarget, "vinculos nombre").exec();
             }
             catch (error) {
                 console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
             }
+
+            //Prevenir loop.
+
+            let idsRedPrevia=await getIdsRedRequerimentosNodo(nodoSource);
+            if(idsRedPrevia.includes(nodoTarget.id)){
+                throw new UserInputError('Una vinculación entre estos nodos produce loop');                
+            }
+
+            console.log(`Los ids previos de la red son: ${idsRedPrevia}`);
 
             //Buscar y eliminar vinculos previos entre estos dos nodos.
             for (var vinculo of nodoSource.vinculos) {
@@ -1506,5 +1515,37 @@ export const resolvers = {
     }
 };
 
+
+async function getIdsRedRequerimentosNodo(nodo){
+    console.log(`Getting red previa de ${nodo.nombre}`)
+    let idsActuales=nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target').map(v=>v.idRef);
+    let todosIds=idsActuales;
+    let guarda=0;
+    let losNodosAnteriores=[nodo];
+    console.log(`Tiene ${idsActuales.length} nodos previos`);
+    while(guarda<200 && idsActuales.length>0){
+        try {
+            losNodosAnteriores=await Nodo.find({"_id": {$in: idsActuales}}).exec();
+        } catch (error) {
+            console.log(`Error getting nodos anteriores : `+ error);
+            throw new ApolloError('Error conectando con la base de datos');
+            
+        }
+
+        console.log( `Anteriores: ${losNodosAnteriores.map(n=>n.nombre)}`);
+
+        idsActuales=losNodosAnteriores.reduce((acc, nod)=>{
+            let idsPrevios=nod.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target').map(v=>v.idRef);
+            return acc.concat(idsPrevios);
+        }, []);
+
+        todosIds.push(...idsActuales);
+
+        guarda++
+    }
+
+    return todosIds; 
+
+}
 
 

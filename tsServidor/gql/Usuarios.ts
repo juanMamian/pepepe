@@ -202,8 +202,8 @@ export const typeDefs = gql`
 
         setPlegarNodoSolidaridadUsuario(idNodo:ID!):Usuario,
 
-        crearColeccionNodosAtlasConocimientoUsuario:Usuario,
-        eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Usuario,
+        crearColeccionNodosAtlasConocimientoUsuario:ColeccionNodosAtlasConocimiento,
+        eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Boolean,
         setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):Usuario,
         addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):ColeccionNodosAtlasConocimiento,
         removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):ColeccionNodosAtlasConocimiento,
@@ -1087,7 +1087,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            return elUsuario;
+            return nuevaColeccion;
 
         },
         async eliminarColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion }: any, contexto: contextoQuery) {
@@ -1123,8 +1123,8 @@ export const resolvers = {
                 console.log(`Error guardando la colección en la base de datos`);
                 throw new ApolloError("Error conectando con la base de datos");
             }
-
-            return elUsuario;
+            console.log(`Colección eliminada`);
+            return true;
 
         },
         async setNombreColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion, nuevoNombre }: any, contexto: contextoQuery) {
