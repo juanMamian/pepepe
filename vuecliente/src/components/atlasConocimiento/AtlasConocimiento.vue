@@ -166,7 +166,7 @@
 
     <div
       id="contenedorDiagrama"
-      ref="contenedorDiagrama"
+      ref="contenedorDiagrama"      
       @contextmenu.self.exact.prevent="abrirMenuContextual"
       @mouseup.left.self="clickFondoAtlas"
     >
@@ -459,7 +459,7 @@ export default {
         }
         return nuevoTodosNodos;
       },
-      fetchPolicy: "cacheFirst",
+      fetchPolicy: "cache-first",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
@@ -732,6 +732,10 @@ export default {
     nodosRender() {
       if (!this.yo?.atlas?.colecciones) {
         return [];
+      }
+
+      if(this.$route.name!='atlas'){
+        return []
       }
       if (this.idNodoTarget) {
         return this.todosNodos
