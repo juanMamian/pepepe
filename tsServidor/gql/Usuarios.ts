@@ -9,6 +9,7 @@ import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { permisosEspecialesDefault } from "./Schema";
+import { getIdsRedContinuacionesNodo, getIdsRedRequerimentosNodo } from "./NodosConocimiento";
 
 const jwt = require("jsonwebtoken");
 
@@ -205,7 +206,6 @@ export const typeDefs = gql`
         crearColeccionNodosAtlasConocimientoUsuario:ColeccionNodosAtlasConocimiento,
         eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Boolean,
         setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):Usuario,
-        addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):ColeccionNodosAtlasConocimiento,
         removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):ColeccionNodosAtlasConocimiento,
         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
         
@@ -1165,41 +1165,7 @@ export const resolvers = {
             return elUsuario;
 
         },
-        async addNodoColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion, idNuevoNodo }: any, contexto: contextoQuery) {
-            const credencialesUsuario = contexto.usuario;
-
-            try {
-                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
-                if (!elUsuario) {
-                    throw "Usuario no encontrado";
-                }
-            } catch (error) {
-                console.log(`Error buscando el usuario`);
-                throw new ApolloError("Usuario no encontrado");
-            }
-
-            var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
-            if (!laColeccion) {
-                console.log(`Coleccion no encontrada`);
-                throw new UserInputError("Colección no encontrada");
-            }
-
-            var indexN = laColeccion.idsNodos.indexOf(idNuevoNodo);
-            if (indexN === -1) {
-                laColeccion.idsNodos.push(idNuevoNodo);
-            }
-            else {
-                throw new UserInputError("Nodo ya existía en la colección");
-            }
-
-            try {
-                await elUsuario.save();
-            } catch (error) {
-                throw new ApolloError("Error guardando datos de usuario en la base de datos");
-            }
-
-            return laColeccion;
-        },
+       
         async removeNodoColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion, idNodo }: any, contexto: contextoQuery) {
             const credencialesUsuario = contexto.usuario;
 
@@ -1263,7 +1229,26 @@ export const resolvers = {
 
             const indexN = laColeccion.idsNodos.indexOf(idNodo);
             if (indexN === -1) {
+                try {
+                    var elNodo:any = await Nodo.findById(idNodo).exec();
+                    if (!elNodo) throw 'Nodo no encontrado';
+                } catch (error){
+                    console.log('Error descargando el nodo de la base de datos: '+error)
+                    throw new ApolloError('Error conectando con la base de datos');
+                };
+    
+                const idsRedContinuacion=await getIdsRedContinuacionesNodo(elNodo);
+                if(laColeccion.idsNodos.some(id=>idsRedContinuacion.includes(id))){
+                    console.log(`Error porque era un nodo que ya estaba incluido como parte de la red de requerimentos de otro`);
+                    throw new UserInputError('Este nodo ya estaba incluido como parte del camino a otro nodo');                
+                }
+    
                 laColeccion.idsNodos.push(idNodo);
+
+                const idsRedPrevia=await getIdsRedRequerimentosNodo(elNodo);
+                
+    
+                laColeccion.idsNodos=laColeccion.idsNodos.filter(idN=>!idsRedPrevia.includes(idN));
             }
             else {
                 laColeccion.idsNodos.splice(indexN, 1);

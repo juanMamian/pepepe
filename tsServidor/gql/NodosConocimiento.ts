@@ -1516,7 +1516,7 @@ export const resolvers = {
 };
 
 
-async function getIdsRedRequerimentosNodo(nodo){
+export async function getIdsRedRequerimentosNodo(nodo){
     console.log(`Getting red previa de ${nodo.nombre}`)
     let idsActuales=nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target').map(v=>v.idRef);
     let todosIds=idsActuales;
@@ -1548,4 +1548,36 @@ async function getIdsRedRequerimentosNodo(nodo){
 
 }
 
+
+export async function getIdsRedContinuacionesNodo(nodo){
+    console.log(`Getting red posterior de ${nodo.nombre}`)
+    let idsActuales=nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='source').map(v=>v.idRef);
+    let todosIds=idsActuales;
+    let guarda=0;
+    let losNodosPosteriores=[nodo];
+    console.log(`Tiene ${idsActuales.length} nodos previos`);
+    while(guarda<200 && idsActuales.length>0){
+        try {
+            losNodosPosteriores=await Nodo.find({"_id": {$in: idsActuales}}).exec();
+        } catch (error) {
+            console.log(`Error getting nodos posteriores : `+ error);
+            throw new ApolloError('Error conectando con la base de datos');
+            
+        }
+
+        console.log( `Anteriores: ${losNodosPosteriores.map(n=>n.nombre)}`);
+
+        idsActuales=losNodosPosteriores.reduce((acc, nod)=>{
+            let idsPrevios=nod.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='source').map(v=>v.idRef);
+            return acc.concat(idsPrevios);
+        }, []);
+
+        todosIds.push(...idsActuales);
+
+        guarda++
+    }
+
+    return todosIds; 
+
+}
 
