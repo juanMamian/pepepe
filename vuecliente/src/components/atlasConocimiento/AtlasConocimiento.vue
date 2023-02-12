@@ -123,6 +123,14 @@
         v-if="nodoTarget"
         @click="centrarEnNodo(nodoTarget)"
       >
+        <pie-progreso
+          v-show="
+            progresoNodoTarget && !$apollo.queries.progresoNodoTarget.loading
+          "
+          :progreso="progresoNodoTarget"
+          :size="40"
+          :cifrasDecimales="0"
+        />
         <img
           style="
             height: 25px;
@@ -166,7 +174,7 @@
 
     <div
       id="contenedorDiagrama"
-      ref="contenedorDiagrama"      
+      ref="contenedorDiagrama"
       @contextmenu.self.exact.prevent="abrirMenuContextual"
       @mouseup.left.self="clickFondoAtlas"
     >
@@ -498,6 +506,27 @@ export default {
       },
       fetchPolicy: "network-only",
     },
+    progresoNodoTarget: {
+      query: gql`
+        query ($idNodo: ID!) {
+          nodo(idNodo: $idNodo) {
+            id
+            porcentajeCompletado
+          }
+        }
+      `,
+      variables() {
+        return {
+          idNodo: this.idNodoTarget,
+        };
+      },
+      skip() {
+        return !this.idNodoTarget;
+      },
+      update({ nodo }) {
+        return nodo.porcentajeCompletado;
+      },
+    },
   },
   data() {
     return {
@@ -734,8 +763,8 @@ export default {
         return [];
       }
 
-      if(this.$route.name!='atlas'){
-        return []
+      if (this.$route.name != "atlas") {
+        return [];
       }
       if (this.idNodoTarget) {
         return this.todosNodos
