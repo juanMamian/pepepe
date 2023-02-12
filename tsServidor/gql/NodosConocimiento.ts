@@ -10,7 +10,7 @@ import { ejecutarPosicionamientoNodosConocimientoByFuerzas } from "../controlAtl
 import { charProhibidosNombreCosa } from "../model/config";
 
 export const idAtlasConocimiento = "61ea0b0f17a5d80da7e94320";
-const permisosEspecialesAtlas=["superadministrador", "atlasAdministrador"]
+const permisosEspecialesAtlas = ["superadministrador", "atlasAdministrador"]
 
 /*
 interface NodoConocimiento{
@@ -95,6 +95,7 @@ type NodoConocimiento{
     coordY: Int,
     tipoNodo: String,
     vinculos: [Vinculo],
+    porcentajeCompletado: Float,
     coordsManuales: Coords,
     coords:Coords,
     autoCoords:Coords,
@@ -303,21 +304,21 @@ export const resolvers = {
 
             return elNodo;
         },
-        async nodosConocimientoByIds(_:any, {idsNodos}:any, contexto: contextoQuery){
-            if(!contexto.usuario?.id){
+        async nodosConocimientoByIds(_: any, { idsNodos }: any, contexto: contextoQuery) {
+            if (!contexto.usuario?.id) {
                 throw new AuthenticationError('loginRequerido');
             }
-            
-            const credencialesUsuario=contexto.usuario; 
-            console.log("Getting nodos con ids "+idsNodos);
-            
+
+            const credencialesUsuario = contexto.usuario;
+            console.log("Getting nodos con ids " + idsNodos);
+
 
             try {
-                var losNodos:any=await Nodo.find({"_id": {$in: idsNodos}}).exec();
+                var losNodos: any = await Nodo.find({ "_id": { $in: idsNodos } }).exec();
             } catch (error) {
-                console.log(`Error getting nodosConocimiento by ids : `+ error);
+                console.log(`Error getting nodosConocimiento by ids : ` + error);
                 throw new ApolloError('Error conectando con la base de datos');
-                
+
             }
 
             console.log(`Retornando ${losNodos.length} nodos`)
@@ -472,9 +473,9 @@ export const resolvers = {
 
             //Prevenir loop.
 
-            let idsRedPrevia=await getIdsRedRequerimentosNodo(nodoSource);
-            if(idsRedPrevia.includes(nodoTarget.id)){
-                throw new UserInputError('Una vinculación entre estos nodos produce loop');                
+            let idsRedPrevia = await getIdsRedRequerimentosNodo(nodoSource);
+            if (idsRedPrevia.includes(nodoTarget.id)) {
+                throw new UserInputError('Una vinculación entre estos nodos produce loop');
             }
 
             console.log(`Los ids previos de la red son: ${idsRedPrevia}`);
@@ -877,30 +878,30 @@ export const resolvers = {
             return elNodo
 
         },
-        setTipoNodo: async function(_:any, {idNodo, nuevoTipoNodo}:any, contexto:contextoQuery){
-            if(!contexto.usuario?.id){
+        setTipoNodo: async function (_: any, { idNodo, nuevoTipoNodo }: any, contexto: contextoQuery) {
+            if (!contexto.usuario?.id) {
                 throw new AuthenticationError('loginRequerido');
             }
-            
-            const credencialesUsuario=contexto.usuario;
-            
+
+            const credencialesUsuario = contexto.usuario;
+
 
             try {
-                var elNodo:any = await Nodo.findById(idNodo).exec();
+                var elNodo: any = await Nodo.findById(idNodo).exec();
                 if (!elNodo) throw 'Nodo no encontrado';
-            } catch (error){
-                console.log('Error descargando el nodo de la base de datos: '+error)
+            } catch (error) {
+                console.log('Error descargando el nodo de la base de datos: ' + error)
                 throw new ApolloError('Error conectando con la base de datos');
             };
 
-            const esExperto=elNodo.expertos.includes(credencialesUsuario.id);
-            const tienePermisosEspeciales=permisosEspecialesAtlas.some(p=>credencialesUsuario.permisos.includes(p));
+            const esExperto = elNodo.expertos.includes(credencialesUsuario.id);
+            const tienePermisosEspeciales = permisosEspecialesAtlas.some(p => credencialesUsuario.permisos.includes(p));
 
-            if(!esExperto && !tienePermisosEspeciales){
+            if (!esExperto && !tienePermisosEspeciales) {
                 throw new AuthenticationError("No autorizado");
             }
 
-            elNodo.tipoNodo=nuevoTipoNodo;
+            elNodo.tipoNodo = nuevoTipoNodo;
 
             try {
                 await elNodo.save();
@@ -1008,7 +1009,7 @@ export const resolvers = {
                 console.log(`Carpeta no especificada`);
                 throw new ApolloError("Informacion de la seccion inesperada");
             }
-            laSeccion.modo="archivo";
+            laSeccion.modo = "archivo";
 
             try {
                 var laCarpeta: any = await CarpetasArchivos.findById(laSeccion.idCarpeta).exec();
@@ -1199,11 +1200,11 @@ export const resolvers = {
             const permisosEspeciales = ["superadministrador", "atlasAdministrador"];
 
             const credencialesUsuario = contexto.usuario;
-            
+
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando artículo de seccion de nodoConocimiento`);
                 throw new AuthenticationError("No autorizado");
-            }            
+            }
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
             if (charProhibidosNombreCosa.test(nuevoNombre)) {
@@ -1238,7 +1239,7 @@ export const resolvers = {
         },
         async setNuevoEnlaceSeccionNodo(_: any, { idNodo, idSeccion, nuevoEnlace }, contexto: contextoQuery) {
             console.log(`cambiando el enlace de seccion con id ${idSeccion} del nodoConocimiento con id ${idNodo}`);
-            
+
             try {
                 var elNodo: any = await Nodo.findById(idNodo).exec();
                 if (!elNodo) {
@@ -1254,12 +1255,12 @@ export const resolvers = {
             const permisosEspeciales = ["superadministrador", "atlasAdministrador"];
 
             const credencialesUsuario = contexto.usuario;
-            
+
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando artículo de seccion de nodoConocimiento`);
                 throw new AuthenticationError("No autorizado");
-            }        
-            
+            }
+
             try {
                 var laSeccion = elNodo.secciones.id(idSeccion);
                 if (!laSeccion) {
@@ -1267,7 +1268,7 @@ export const resolvers = {
                     throw "No existía el seccion";
                 }
                 laSeccion.enlace = nuevoEnlace;
-                laSeccion.modo="enlace"
+                laSeccion.modo = "enlace"
             }
             catch (error) {
                 console.log("Error cambiando el artículo en la base de datos. E: " + error);
@@ -1512,30 +1513,92 @@ export const resolvers = {
 
             return elPrimario.mimetype;
         }
+    },
+    NodoConocimiento: {
+        async porcentajeCompletado(parent: any, { }: any, contexto: contextoQuery) {
+
+            if (!contexto.usuario?.id) {
+                throw new AuthenticationError('loginRequerido');
+            }
+
+            const credencialesUsuario = contexto.usuario;
+
+            try {
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) throw 'Usuario no encontrado';
+            }
+            catch (error) {
+                throw new ApolloError('Error conectando con la base de datos');
+            }
+
+            let datosNodos = elUsuario.atlas.datosNodos;
+
+
+            //Descargar progresivamente la red previa.
+
+            let vinculos = parent.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target');
+
+            let idsActuales = vinculos.map(v => v.idRef);
+            let nodosActuales: Array<any> = [];
+            let nodosRed: Array<any> = [parent];
+
+            let guarda = 0;
+
+            while (guarda < 100 && idsActuales.length > 0) {
+
+                try {
+                    nodosActuales = await Nodo.find({ "_id": { $in: idsActuales } }).exec();
+                } catch (error) {
+                    console.log(`Error getting nodos actuales : ` + error);
+                    throw new ApolloError('Error conectando con la base de datos');
+                }
+
+                let nodosNuevos = nodosActuales.filter(n => !nodosRed.some(nr => nr.id === n.id));
+
+                nodosRed.push(...nodosNuevos);
+
+                idsActuales = nodosNuevos.reduce((acc, n) => {
+                    let vinculosPrevios = n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target');
+                    let idsPrevios = vinculosPrevios.map(v => v.idRef);
+                    let idsNuevos = idsPrevios.filter(id => !acc.includes(id));
+
+                    return acc.concat(idsPrevios)
+                }, []);
+
+                guarda++;
+            }
+
+            let nodosRedAprendidos = nodosRed.filter(n => datosNodos.some(dn => dn.idNodo === n.id && dn.aprendido));
+
+            let porcentajeCompletado = (100 / nodosRed.length) * nodosRedAprendidos.length;
+
+            return porcentajeCompletado;
+
+        },
     }
 };
 
 
-export async function getIdsRedRequerimentosNodo(nodo){
+export async function getIdsRedRequerimentosNodo(nodo) {
     console.log(`Getting red previa de ${nodo.nombre}`)
-    let idsActuales=nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target').map(v=>v.idRef);
-    let todosIds=idsActuales;
-    let guarda=0;
-    let losNodosAnteriores=[nodo];
+    let idsActuales = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef);
+    let todosIds = idsActuales;
+    let guarda = 0;
+    let losNodosAnteriores = [nodo];
     console.log(`Tiene ${idsActuales.length} nodos previos`);
-    while(guarda<200 && idsActuales.length>0){
+    while (guarda < 200 && idsActuales.length > 0) {
         try {
-            losNodosAnteriores=await Nodo.find({"_id": {$in: idsActuales}}).exec();
+            losNodosAnteriores = await Nodo.find({ "_id": { $in: idsActuales } }).exec();
         } catch (error) {
-            console.log(`Error getting nodos anteriores : `+ error);
+            console.log(`Error getting nodos anteriores : ` + error);
             throw new ApolloError('Error conectando con la base de datos');
-            
+
         }
 
-        console.log( `Anteriores: ${losNodosAnteriores.map(n=>n.nombre)}`);
+        console.log(`Anteriores: ${losNodosAnteriores.map(n => n.nombre)}`);
 
-        idsActuales=losNodosAnteriores.reduce((acc, nod)=>{
-            let idsPrevios=nod.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target').map(v=>v.idRef);
+        idsActuales = losNodosAnteriores.reduce((acc, nod) => {
+            let idsPrevios = nod.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef);
             return acc.concat(idsPrevios);
         }, []);
 
@@ -1544,31 +1607,31 @@ export async function getIdsRedRequerimentosNodo(nodo){
         guarda++
     }
 
-    return todosIds; 
+    return todosIds;
 
 }
 
 
-export async function getIdsRedContinuacionesNodo(nodo){
+export async function getIdsRedContinuacionesNodo(nodo) {
     console.log(`Getting red posterior de ${nodo.nombre}`)
-    let idsActuales=nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='source').map(v=>v.idRef);
-    let todosIds=idsActuales;
-    let guarda=0;
-    let losNodosPosteriores=[nodo];
+    let idsActuales = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'source').map(v => v.idRef);
+    let todosIds = idsActuales;
+    let guarda = 0;
+    let losNodosPosteriores = [nodo];
     console.log(`Tiene ${idsActuales.length} nodos previos`);
-    while(guarda<200 && idsActuales.length>0){
+    while (guarda < 200 && idsActuales.length > 0) {
         try {
-            losNodosPosteriores=await Nodo.find({"_id": {$in: idsActuales}}).exec();
+            losNodosPosteriores = await Nodo.find({ "_id": { $in: idsActuales } }).exec();
         } catch (error) {
-            console.log(`Error getting nodos posteriores : `+ error);
+            console.log(`Error getting nodos posteriores : ` + error);
             throw new ApolloError('Error conectando con la base de datos');
-            
+
         }
 
-        console.log( `Anteriores: ${losNodosPosteriores.map(n=>n.nombre)}`);
+        console.log(`Anteriores: ${losNodosPosteriores.map(n => n.nombre)}`);
 
-        idsActuales=losNodosPosteriores.reduce((acc, nod)=>{
-            let idsPrevios=nod.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='source').map(v=>v.idRef);
+        idsActuales = losNodosPosteriores.reduce((acc, nod) => {
+            let idsPrevios = nod.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'source').map(v => v.idRef);
             return acc.concat(idsPrevios);
         }, []);
 
@@ -1577,7 +1640,7 @@ export async function getIdsRedContinuacionesNodo(nodo){
         guarda++
     }
 
-    return todosIds; 
+    return todosIds;
 
 }
 

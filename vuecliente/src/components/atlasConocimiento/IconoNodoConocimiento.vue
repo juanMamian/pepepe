@@ -1,16 +1,25 @@
 <template>
   <div class="iconoNodoConocimiento">
-    <div id="iconoNodo">
+    <pie-progreso
+        id="piePorcentajeCompletado"
+        v-if="porcentajeCompletado"
+        :cifrasDecimales="0"
+        :progreso="porcentajeCompletado"
+        :size="30"
+        v-show="mostrarPorcentajeCompletado"
+      />
+    <div id="iconoNodo" v-show="!mostrarPorcentajeCompletado">
       <img
         v-if="esteNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
       />
       <img v-else src="@/assets/iconos/atlas/fireSolid.svg" />
+      
     </div>
     <div
       id="nombre"
       ref="nombre"
-      :style="[estiloCartelNombre ]"
+      :style="[estiloCartelNombre]"
       :class="{ seleccionado }"
     >
       {{ esteNodo.nombre }}
@@ -19,7 +28,9 @@
 </template>
 
 <script>
+import PieProgreso from "../utilidades/PieProgreso.vue";
 export default {
+  components: { PieProgreso },
   name: "IconoNodoConocimiento",
   apollo: {},
   data() {
@@ -29,6 +40,9 @@ export default {
     esteNodo: Object,
     seleccionado: Boolean,
     datosEsteNodo: Object,
+
+    mostrarPorcentajeCompletado: Boolean,
+    porcentajeCompletado: Number,
   },
   computed: {
     estiloCartelNombre() {
@@ -115,6 +129,15 @@ export default {
 #iconoNodo img {
   width: 100%;
   height: 100%;
+}
+
+#piePorcentajeCompletado{
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 #nombre {
   font-size: 11px;

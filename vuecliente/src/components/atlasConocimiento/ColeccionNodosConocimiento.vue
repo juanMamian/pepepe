@@ -3,6 +3,8 @@
     <div
       id="zonaBarraProgreso"
       v-show="!$apollo.queries.progresoColeccion.loading"
+      @mouseenter="mostrarPorcentajesNodos=true"
+      @mouseleave="mostrarPorcentajesNodos=false"
     >
       <div id="barraProgreso">
         <div
@@ -43,6 +45,8 @@
         :esteNodo="nodo"
         :seleccionado="idNodoSeleccionado === nodo.id"
         :datosEsteNodo="yo.atlas.datosNodos.find(dn=>dn.idNodo===nodo.id)"
+        :mostrarPorcentajeCompletado="mostrarPorcentajesNodos"
+        :porcentajeCompletado="progresoNodos.find(info=>info.id===nodo.id).porcentajeCompletado"
         @click.self.stop="
           idNodoSeleccionado = idNodoSeleccionado === nodo.id ? null : nodo.id
         "
@@ -86,6 +90,27 @@ export default {
         return nodosConocimientoByIds;
       },
     },
+    progresoNodos:{
+      query: gql`
+        query($idsNodos: [ID!]!){
+          nodosConocimientoByIds(idsNodos: $idsNodos){
+            id
+            porcentajeCompletado
+          }
+        }
+      `,
+      variables(){
+        return{
+          idsNodos: this.estaColeccion.idsNodos
+        }
+      },
+      skip(){
+        return !this.nodosConocimiento?.length>0;
+      },
+      update({nodosConocimientoByIds}){
+        return nodosConocimientoByIds;
+      }
+    },
     progresoColeccion: {
       query: gql`
         query ($idColeccion: ID!, $idUsuario: ID!) {
@@ -120,12 +145,13 @@ export default {
     return {
       idNodoSeleccionado: null,
       nodosConocimiento: [],
+      progresoNodos:[],
       progresoColeccion: null,
 
       editandoTitulo: false,
       guardandoNuevoTitulo: false,
 
-
+      mostrarPorcentajesNodos:false,
     };
   },
   methods: {

@@ -1,7 +1,11 @@
 <template>
   <div class="pieProgreso">
     <div id="circuloVacio" :style="[estiloCirculoVacio]">
-      <div id="numeroProgreso">{{ progreso.toFixed(cifrasDecimales) }}%</div>
+      <div id="numeroProgreso" :style="[estiloNumero]">
+        <span>{{ progreso.toFixed(cifrasDecimales) }} </span>
+        <!-- <span id="simboloPorcentaje" >%</span> -->
+
+      </div>
       <canvas
         id="canvasProgreso"
         ref="canvasProgreso"
@@ -49,6 +53,17 @@ export default {
         height: this.size + "px",
       };
     },
+    estiloNumero(){
+      let fSize=70;
+
+      if(this.progreso>=100){
+        fSize=60;
+      }
+
+      return{
+        fontSize: fSize+'%'
+      }
+    }
   },
   methods: {
     trazarGraph() {
@@ -94,6 +109,14 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 11px;
+  font-size: 60%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#simboloPorcentaje{
+  font-size: 40%;
 }
 </style>
