@@ -1562,7 +1562,7 @@ export const resolvers = {
                     let idsPrevios = vinculosPrevios.map(v => v.idRef);
                     let idsNuevos = idsPrevios.filter(id => !acc.includes(id));
 
-                    return acc.concat(idsPrevios)
+                    return acc.concat(idsNuevos)
                 }, []);
 
                 guarda++;

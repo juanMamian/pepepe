@@ -1731,19 +1731,18 @@ export const resolvers = {
                     throw new ApolloError('Error conectando con la base de datos');
                 }
 
-                todosNodos.push(...nodosActuales);
+                let nodosNuevos=nodosActuales.filter(nd=>!todosNodos.some(n=>n.id===nd.id));
 
-                idsNodosActuales = [];
-                for (const nodo of nodosActuales) {
-                    let idsRequeridos = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === "target").map(v => v.idRef);
-                    for (const idRequerido of idsRequeridos) {
-                        if (!idsNodosActuales.includes(idRequerido)) {
-                            idsNodosActuales.push(idRequerido);
-                        }
-                    }
-                }
+                todosNodos.push(...nodosNuevos);
 
+                idsNodosActuales = nodosNuevos.reduce((acc, n) => {
+                    let vinculosPrevios = n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target');
+                    let idsPrevios = vinculosPrevios.map(v => v.idRef);
+                    let idsNuevos = idsPrevios.filter(id => !acc.includes(id));
 
+                    return acc.concat(idsNuevos)
+                }, []);
+                
                 guarda++
             }
 

@@ -174,6 +174,7 @@
 
     <div
       id="contenedorDiagrama"
+      v-show="!$apollo.queries.yo.loading"
       ref="contenedorDiagrama"
       @contextmenu.self.exact.prevent="abrirMenuContextual"
       @mouseup.left.self="clickFondoAtlas"
@@ -759,10 +760,6 @@ export default {
       return nr;
     },
     nodosRender() {
-      if (!this.yo?.atlas?.colecciones) {
-        return [];
-      }
-
       if (this.$route.name != "atlas") {
         return [];
       }
@@ -1618,11 +1615,7 @@ export default {
     },
     idNodoTarget(idNodoTarget) {
       localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
-      console.log(
-        `Last nodo target quedó en ${localStorage.getItem(
-          `atlasConocimientoIdLastNodoTarget`
-        )}`
-      );
+
       if (!idNodoTarget) {
         this.idsNecesariosParaTarget = [];
         return;
@@ -1637,9 +1630,6 @@ export default {
       this.hideZoomInfo();
     },
     nodosRender() {
-      if (this.idTarget != this.idColeccionTargetOnLastLocalizacion) {
-        this.localizarNext("available");
-      }
       setTimeout(() => {
         if (!this.$refs.enlacesNodos) {
           console.log("No hay enlaces");

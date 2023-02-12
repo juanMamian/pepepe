@@ -46,7 +46,7 @@
         :seleccionado="idNodoSeleccionado === nodo.id"
         :datosEsteNodo="yo.atlas.datosNodos.find(dn=>dn.idNodo===nodo.id)"
         :mostrarPorcentajeCompletado="mostrarPorcentajesNodos"
-        :porcentajeCompletado="progresoNodos.find(info=>info.id===nodo.id).porcentajeCompletado"
+        :porcentajeCompletado="(progresoNodos.find(info=>info.id===nodo.id) || {}).porcentajeCompletado"
         @click.self.stop="
           idNodoSeleccionado = idNodoSeleccionado === nodo.id ? null : nodo.id
         "
