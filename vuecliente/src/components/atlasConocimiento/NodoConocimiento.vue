@@ -323,6 +323,7 @@
 
 <script>
 import gql from "graphql-tag";
+
 import Loading from "../utilidades/Loading.vue";
 import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
 import { QUERY_DATOS_USUARIO_NODOS } from "./AtlasConocimiento.vue";
@@ -848,6 +849,14 @@ export default {
         .catch((error) => {
           this.togglingNodoEnColeccion = null;
           console.log(`Error: ${error}`);
+          console.log(
+            `Con codigo ${JSON.stringify(error)}. Con tipo: ${error.type}`
+          );
+          if (error.graphQLErrors) {
+            if (error.graphQLErrors[0].extensions?.code === "BAD_USER_INPUT") {
+              this.$store.commit("addMensajeError", error.message);
+            }
+          }
         });
     },
     iniciarGestionRepasos() {

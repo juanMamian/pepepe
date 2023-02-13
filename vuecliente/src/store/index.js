@@ -31,6 +31,7 @@ export default new Vuex.Store({
             foros: []
         },
         token: null,
+        errores:[],
 
         refreshActividadEspecifica: 0,
         refreshNodoVentanitaAtlasSolidaridad: 0,
@@ -63,6 +64,9 @@ export default new Vuex.Store({
             apolloClient.cache.data.clear();
             router.push("/");
 
+        },
+        addMensajeError(state, mensaje){
+            state.errores.push(mensaje);
         },
 
         refreshActividadEspecifica(state) {

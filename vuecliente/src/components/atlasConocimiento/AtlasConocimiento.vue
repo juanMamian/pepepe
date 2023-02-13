@@ -66,6 +66,13 @@
             style="filter: var(--filtroAtlasCheck)"
           />
         </div>
+        <div class="boton controlColeccion" @click="localizarNext('repaso')" :class="{deshabilitado:!idsNodosRepasarPresentes || idsNodosRepasarPresentes.length===0}">
+          <img
+            src="@/assets/iconos/atlas/locationCrosshair.svg"
+            alt="Localizar"
+            style="filter: var(--filtroAtlasRepaso)"
+          />
+        </div>
       </div>
 
       <div id="listaSelectoresColeccion" v-show="seleccionandoColeccion">
@@ -527,28 +534,31 @@ export default {
         return nodo.porcentajeCompletado;
       },
     },
-    progresoColeccionSeleccionada:{
+    progresoColeccionSeleccionada: {
       query: gql`
-        query($idColeccion: ID!, $idUsuario: ID!){
-          coleccionNodosConocimiento(idColeccion: $idColeccion, idUsuario: $idUsuario){
+        query ($idColeccion: ID!, $idUsuario: ID!) {
+          coleccionNodosConocimiento(
+            idColeccion: $idColeccion
+            idUsuario: $idUsuario
+          ) {
             id
             progreso
           }
         }
       `,
-      variables(){
+      variables() {
         return {
           idColeccion: this.idColeccionSeleccionada,
-          idUsuario: this.usuario.id
-        }
+          idUsuario: this.usuario.id,
+        };
       },
-      update({coleccionNodosConocimiento}){
-        return coleccionNodosConocimiento.progreso
+      update({ coleccionNodosConocimiento }) {
+        return coleccionNodosConocimiento.progreso;
       },
-      skip(){
-        return !this.idColeccionSeleccionada
-      }
-    }
+      skip() {
+        return !this.idColeccionSeleccionada;
+      },
+    },
   },
   data() {
     return {
@@ -614,6 +624,7 @@ export default {
 
       indexLastLocateNextAvailable: 0,
       indexLastLocateNextCheck: 0,
+      indexLastLocateNextRepaso: 0,
 
       idColeccionTargetOnLastLocalizacion: null,
 
@@ -716,6 +727,15 @@ export default {
     idsNodosRepasar() {
       return this.datosNodosRepasar.map((dn) => dn.idNodo);
     },
+    idsNodosRepasarPresentes() {
+      if (!this.idTarget) {
+        return this.idsNodosRepasar;
+      }
+
+      return this.idsNodosRepasar.filter((id) =>
+        this.idsNodosRender.includes(id)
+      );
+    },
     datosNodosFrescos() {
       return this.datosNodosEstudiados.filter(
         (dn) => !this.idsNodosRepasar.includes(dn.idNodo)
@@ -816,6 +836,9 @@ export default {
         return todosNodosColeccion;
       }
       return this.todosNodos;
+    },
+    idsNodosRender(){
+      return this.nodosRender.map(n=>n.id);
     },
     idsTodosNodosRender() {
       return this.nodosRender.map((n) => n.id);
@@ -935,8 +958,7 @@ export default {
         } else {
           this.indexLastLocateNextAvailable = 0;
         }
-      }
-      if (tipo === "check") {
+      } else if (tipo === "check") {
         let indexEncontrados = 0;
         let nextNodo = nodosConsiderados.find((n) => {
           if (this.idsNodosPresentesCabeza.includes(n.id)) {
@@ -957,6 +979,18 @@ export default {
         } else {
           this.indexLastLocateCheck = 0;
         }
+      } else if (tipo === "repaso") {
+        if (!this.idsNodosRepasarPresentes?.length > 0) {
+          return;
+        }
+        this.indexLastLocateNextRepaso++;
+        if (this.indexLastLocateNextRepaso >= this.idsNodosRepasarPresentes.length) {
+          this.indexLastLocateNextRepaso = 0;
+        }
+
+        this.centrarEnNodoById(
+          this.idsNodosRepasarPresentes[this.indexLastLocateNextRepaso]
+        );
       }
     },
     setIdColeccionSeleccionada(nuevoId) {
@@ -1736,6 +1770,8 @@ export default {
     hue-rotate(349deg) brightness(92%) contrast(91%);
   --filtroAtlasCheck: invert(34%) sepia(99%) saturate(407%) hue-rotate(56deg)
     brightness(95%) contrast(81%);
+  --filtroAtlasRepaso: invert(50%) sepia(95%) saturate(2482%) hue-rotate(328deg)
+    brightness(106%) contrast(101%);
 }
 </style>
 <style scoped>

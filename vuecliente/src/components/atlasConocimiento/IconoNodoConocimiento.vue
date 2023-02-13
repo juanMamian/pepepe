@@ -1,5 +1,12 @@
 <template>
   <div class="iconoNodoConocimiento" :class="{ deshabilitado: siendoRemovido }">
+    <img
+      src="@/assets/iconos/success.png"
+      alt="Aprendido"
+      title="Este tema ya ha sido aprendido"
+      v-if="aprendido"
+      id="iconoAprendido"      
+    />
     <pie-progreso
       id="piePorcentajeCompletado"
       v-if="porcentajeCompletado"
@@ -129,6 +136,16 @@ export default {
   pointer-events: all;
   background-color: rgba(128, 128, 128, 0.349);
   user-select: none;
+}
+#iconoAprendido{
+  width: 17px;
+  height: 17px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background-color: var(--atlasConocimientoCheck);
 }
 #loadingRemovido {
   top: 50%;

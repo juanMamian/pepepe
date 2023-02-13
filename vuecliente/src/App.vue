@@ -207,6 +207,7 @@
       </div>
     </div>
     <router-view id="visorRouter" :yo="yo">asd</router-view>
+    <cuadrito-mensaje-usuario style="z-index: 100" :mensajes="this.$store.state.errores" />
   </div>
 </template>
 
@@ -214,6 +215,7 @@
 import gql from "graphql-tag";
 import Notificacion from "./components/usuario/Notificacion.vue";
 import NotificacionActividadForos from "./components/usuario/NotificacionActividadForos.vue";
+import CuadritoMensajeUsuario from './components/utilidades/CuadritoMensajeUsuario.vue';
 
 export const QUERY_YO = gql`
   query {
@@ -283,7 +285,7 @@ export default {
       },
     },
   },
-  components: { Notificacion, NotificacionActividadForos },
+  components: { Notificacion, NotificacionActividadForos, CuadritoMensajeUsuario },
   data() {
     return {
       accionesLogeado: false,
