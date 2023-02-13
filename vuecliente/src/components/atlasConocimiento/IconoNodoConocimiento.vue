@@ -1,5 +1,5 @@
 <template>
-  <div class="iconoNodoConocimiento" :class="{ deshabilitado: siendoRemovido }">
+  <div class="iconoNodoConocimiento" @dblclick.stop="abrirPaginaNodo" :class="{ deshabilitado: siendoRemovido }">
     <img
       src="@/assets/iconos/success.png"
       alt="Aprendido"
@@ -121,6 +121,13 @@ export default {
       return this.datosEsteNodo?.aprendido;
     },
   },
+  methods:{
+    abrirPaginaNodo() {
+      this.$router.push(
+        this.$route.path + "/nodoConocimiento/" + this.esteNodo.id
+      );
+    },
+  }
 };
 </script>
 
