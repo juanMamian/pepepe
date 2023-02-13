@@ -1,8 +1,9 @@
 Atlas de conocimiento.
 
--Verificar que al calcular el porcentaje completado de las colecciones no se acumulen nodos repetidos al descargar de la DB  los documentos de nodos.
 -Que se puedan eliminar nodos de las colecciones en el panel de colecciones.
 -Que los iconos nodo conocimiento también  pongan chulito si están aprendidos.
+-Add un ubicador de nodos por repasar.
+-Que salga un mensaje que explique cuando se intenta agregar un nodo redundante a una colección. Hacer el componente encargado de mostrar este tipo de errores.
 
 pepepe
 

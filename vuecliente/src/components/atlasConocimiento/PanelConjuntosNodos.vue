@@ -225,41 +225,7 @@ export default {
           this.enviandoQueryColecciones = false;
         });
     },
-    eliminarNodoSeleccionadoSeccionSeleccionada() {
-      if (!this.idColeccionSeleccionada || !this.idNodoSeleccionado) return;
-
-      this.enviandoQueryNodosSeccion = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idColeccion: ID!, $idNodo: ID!) {
-              removeNodoColeccionNodosAtlasConocimientoUsuario(
-                idColeccion: $idColeccion
-                idNodo: $idNodo
-              ) {
-                id
-                idsNodos
-                nodos {
-                  id
-                  nombre
-                }
-              }
-            }
-          `,
-          variables: {
-            idColeccion: this.idColeccionSeleccionada,
-            idNodo: this.idNodoSeleccionado,
-          },
-        })
-        .then(() => {
-          this.enviandoQueryNodosSeccion = false;
-          this.idNodoSeleccionado = null;
-        })
-        .catch((error) => {
-          console.log(`Error: ${error}`);
-          this.enviandoQueryNodosSeccion = false;
-        });
-    },
+    
   },
   computed: {
     idsNodosObjetivos() {

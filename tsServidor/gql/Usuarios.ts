@@ -206,7 +206,7 @@ export const typeDefs = gql`
         crearColeccionNodosAtlasConocimientoUsuario:ColeccionNodosAtlasConocimiento,
         eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Boolean,
         setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):Usuario,
-        removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):ColeccionNodosAtlasConocimiento,
+        removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):Boolean,
         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
         
         crearIteracionRepasoNodoConocimientoUsuario(idUsuario: ID!, idNodo: ID!, intervalo: Int):DatoNodoUsuario,
@@ -1199,7 +1199,7 @@ export const resolvers = {
                 throw new ApolloError("Error guardando datos de usuario en la base de datos");
             }
 
-            return laColeccion;
+            return true;
         },
         async toggleNodoColeccionNodosAtlasConocimientoUsuario(_: any, { idColeccion, idNodo, idUsuario }: any, contexto: contextoQuery) {
             const credencialesUsuario = contexto.usuario;

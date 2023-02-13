@@ -1,20 +1,20 @@
 <template>
-  <div class="iconoNodoConocimiento">
+  <div class="iconoNodoConocimiento" :class="{ deshabilitado: siendoRemovido }">
     <pie-progreso
-        id="piePorcentajeCompletado"
-        v-if="porcentajeCompletado"
-        :cifrasDecimales="0"
-        :progreso="porcentajeCompletado"
-        :size="30"
-        v-show="mostrarPorcentajeCompletado"
-      />
-    <div id="iconoNodo" v-show="!mostrarPorcentajeCompletado">
+      id="piePorcentajeCompletado"
+      v-if="porcentajeCompletado"
+      :cifrasDecimales="0"
+      :progreso="porcentajeCompletado"
+      :size="30"
+      v-show="mostrarPorcentajeCompletado"
+    />
+    <loading id="loadingRemovido" v-show="siendoRemovido" />
+    <div id="iconoNodo" v-show="!mostrarPorcentajeCompletado && !siendoRemovido">
       <img
         v-if="esteNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
       />
       <img v-else src="@/assets/iconos/atlas/fireSolid.svg" />
-      
     </div>
     <div
       id="nombre"
@@ -24,13 +24,25 @@
     >
       {{ esteNodo.nombre }}
     </div>
+
+    <div class="menuContextual" v-show="menuCx" @click.stop="">
+      <div
+        class="botonMenuCx"
+        v-for="opcion of opcionesMenuCx"
+        :key="opcion.accion"
+        @click="$emit(opcion.accion)"
+      >
+        {{ opcion.texto }}
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import Loading from "../utilidades/Loading.vue";
 import PieProgreso from "../utilidades/PieProgreso.vue";
 export default {
-  components: { PieProgreso },
+  components: { PieProgreso, Loading },
   name: "IconoNodoConocimiento",
   apollo: {},
   data() {
@@ -43,6 +55,11 @@ export default {
 
     mostrarPorcentajeCompletado: Boolean,
     porcentajeCompletado: Number,
+
+    opcionesMenuCx: Array,
+    menuCx: Boolean,
+
+    siendoRemovido: Boolean,
   },
   computed: {
     estiloCartelNombre() {
@@ -113,6 +130,12 @@ export default {
   background-color: rgba(128, 128, 128, 0.349);
   user-select: none;
 }
+#loadingRemovido {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  position: absolute;
+}
 #iconoNodo {
   position: absolute;
   top: 50%;
@@ -131,7 +154,7 @@ export default {
   height: 100%;
 }
 
-#piePorcentajeCompletado{
+#piePorcentajeCompletado {
   width: 100%;
   height: 100%;
   position: absolute;

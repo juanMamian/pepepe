@@ -1,10 +1,10 @@
 <template>
-  <div class="coleccionNodosConocimiento">
+  <div class="coleccionNodosConocimiento" @click="idNodoMenuCx = null">
     <div
       id="zonaBarraProgreso"
       v-show="!$apollo.queries.progresoColeccion.loading"
-      @mouseenter="mostrarPorcentajesNodos=true"
-      @mouseleave="mostrarPorcentajesNodos=false"
+      @mouseenter="mostrarPorcentajesNodos = true"
+      @mouseleave="mostrarPorcentajesNodos = false"
     >
       <div id="barraProgreso">
         <div
@@ -44,12 +44,20 @@
         :key="nodo.id"
         :esteNodo="nodo"
         :seleccionado="idNodoSeleccionado === nodo.id"
-        :datosEsteNodo="yo.atlas.datosNodos.find(dn=>dn.idNodo===nodo.id)"
+        :datosEsteNodo="yo.atlas.datosNodos.find((dn) => dn.idNodo === nodo.id)"
         :mostrarPorcentajeCompletado="mostrarPorcentajesNodos"
-        :porcentajeCompletado="(progresoNodos.find(info=>info.id===nodo.id) || {}).porcentajeCompletado"
+        :siendoRemovido="idNodoSiendoRemovido===nodo.id"
+        :porcentajeCompletado="
+          (progresoNodos.find((info) => info.id === nodo.id) || {})
+            .porcentajeCompletado
+        "
+        :menuCx="idNodoMenuCx === nodo.id"
+        :opcionesMenuCx="opcionesMenuCxNodos"
+        @contextmenu.native.stop.prevent="idNodoMenuCx = nodo.id"
         @click.self.stop="
           idNodoSeleccionado = idNodoSeleccionado === nodo.id ? null : nodo.id
         "
+        @removerme="removerNodo(nodo.id)"
       />
     </div>
   </div>
@@ -90,26 +98,26 @@ export default {
         return nodosConocimientoByIds;
       },
     },
-    progresoNodos:{
+    progresoNodos: {
       query: gql`
-        query($idsNodos: [ID!]!){
-          nodosConocimientoByIds(idsNodos: $idsNodos){
+        query ($idsNodos: [ID!]!) {
+          nodosConocimientoByIds(idsNodos: $idsNodos) {
             id
             porcentajeCompletado
           }
         }
       `,
-      variables(){
-        return{
-          idsNodos: this.estaColeccion.idsNodos
-        }
+      variables() {
+        return {
+          idsNodos: this.estaColeccion.idsNodos,
+        };
       },
-      skip(){
-        return !this.nodosConocimiento?.length>0;
+      skip() {
+        return !this.nodosConocimiento?.length > 0;
       },
-      update({nodosConocimientoByIds}){
+      update({ nodosConocimientoByIds }) {
         return nodosConocimientoByIds;
-      }
+      },
     },
     progresoColeccion: {
       query: gql`
@@ -144,14 +152,23 @@ export default {
   data() {
     return {
       idNodoSeleccionado: null,
+      idNodoMenuCx: null,
+      idNodoSiendoRemovido:null,
       nodosConocimiento: [],
-      progresoNodos:[],
+      progresoNodos: [],
       progresoColeccion: null,
 
       editandoTitulo: false,
       guardandoNuevoTitulo: false,
 
-      mostrarPorcentajesNodos:false,
+      mostrarPorcentajesNodos: false,
+
+      opcionesMenuCxNodos: [
+        {
+          texto: "Remover",
+          accion: "removerme",
+        },
+      ],
     };
   },
   methods: {
@@ -161,9 +178,7 @@ export default {
     },
     guardarNuevoTitulo() {
       var nuevoNombre = this.$refs.inputNuevoTitulo.value;
-      console.log(
-        `seting nombre de coleccion con value: ${nuevoNombre}`
-      );
+      console.log(`seting nombre de coleccion con value: ${nuevoNombre}`);
       if (charProhibidosNombreCosa.test(nuevoNombre)) {
         alert("¡El nombre contenía caracteres ilegales!");
         return true;
@@ -200,6 +215,61 @@ export default {
         .catch((error) => {
           console.log(`Error: ${error}`);
           this.guardandoNuevoTitulo = false;
+        });
+    },
+    removerNodo(idNodo) {
+      this.idNodoSiendoRemovido = idNodo;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!, $idNodo: ID!) {
+              removeNodoColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+                idNodo: $idNodo
+              )
+            }
+          `,
+          variables: {
+            idColeccion: this.estaColeccion.id,
+            idNodo,
+          },
+        })
+        .then(() => {
+          this.idNodoSiendoRemovido = null;
+          this.idNodoSeleccionado = null;
+
+          const store=this.$apollo.provider.defaultClient;
+          const cache=store.readQuery({
+            query: QUERY_NODOS_COLECCION,
+            variables:{
+              idsNodos: this.estaColeccion.idsNodos,
+            }
+          });
+
+          let nuevoCache=JSON.parse(JSON.stringify(cache));
+
+          const indexN=nuevoCache.nodosConocimientoByIds.findIndex(n=>n.id===idNodo);
+
+          if(indexN>-1){
+            nuevoCache.nodosConocimientoByIds.splice(indexN, 1);
+
+            store.writeQuery({
+              query: QUERY_NODOS_COLECCION,
+              variables:{
+                idsNodos: this.estaColeccion.idsNodos,
+              },
+              data: nuevoCache
+            })
+          }
+          else{
+            console.log(`El nodo no estaba en la colección.`);
+          }
+
+
+        })
+        .catch((error) => {
+          console.log(`Error: ${error}`);
+          this.idNodoSiendoRemovido = null;
         });
     },
   },
