@@ -26,8 +26,8 @@
         @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
       >
         <pie-progreso
-          v-if="coleccionSeleccionada"
-          :progreso="coleccionSeleccionada.progreso"
+          v-if="coleccionSeleccionada && progresoColeccionSeleccionada"
+          :progreso="progresoColeccionSeleccionada"
           style="margin-right: 10px"
         />
         <span style="z-index: 1">
@@ -345,7 +345,6 @@ export const fragmentoColecciones = gql`
     id
     nombre
     idsNodos
-    progreso
     nodos {
       id
       nombre
@@ -528,6 +527,28 @@ export default {
         return nodo.porcentajeCompletado;
       },
     },
+    progresoColeccionSeleccionada:{
+      query: gql`
+        query($idColeccion: ID!, $idUsuario: ID!){
+          coleccionNodosConocimiento(idColeccion: $idColeccion, idUsuario: $idUsuario){
+            id
+            progreso
+          }
+        }
+      `,
+      variables(){
+        return {
+          idColeccion: this.idColeccionSeleccionada,
+          idUsuario: this.usuario.id
+        }
+      },
+      update({coleccionNodosConocimiento}){
+        return coleccionNodosConocimiento.progreso
+      },
+      skip(){
+        return !this.idColeccionSeleccionada
+      }
+    }
   },
   data() {
     return {
