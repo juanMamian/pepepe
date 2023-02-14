@@ -13,6 +13,7 @@
           :colorSubruta="ruta.color"
           :seleccionado="idNodoSeleccionado === nodo.id"
           :idUsuario="idUsuario"
+          @setColorSubruta="setColorSubruta(ruta.id)"
           @click.native.stop="
             idNodoSeleccionado = idNodoSeleccionado === nodo.id ? null : nodo.id
           "
@@ -40,6 +41,7 @@ export default {
           subrutasGradoMaestraVida {
             id
             nombre
+            color
             nodos {
               id
               nombre
@@ -76,8 +78,37 @@ export default {
       subrutas: [],
       nodosCompletados: [],
       idNodoSeleccionado: null,
+
+      settingColorSubruta:false,
     };
   },
+  methods:{
+    setColorSubruta(idSubruta){
+      let nuevoColor=prompt("Introduce el código del nuevo color");
+
+      this.settingColorSubruta=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idSubruta: ID!, $nuevoColor: String!){
+            setColorSubrutaGrado(idSubruta: $idSubruta, nuevoColor: $nuevoColor){
+               id
+               color
+            }
+          }
+          `,
+          variables:{
+            idSubruta,
+            nuevoColor
+          }
+        }).then(()=>{
+          this.settingColorSubruta=false;
+            
+        }).catch((error)=>{
+          console.log('Error: '+ error);
+          this.settingColorSubruta=false;
+        });
+    }
+  }
 };
 </script>
 

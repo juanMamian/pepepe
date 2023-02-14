@@ -307,6 +307,7 @@ export default {
         };
       },
       update({ nodo }) {
+        document.title=nodo.nombre;
         return nodo;
       },
     },
@@ -727,6 +728,7 @@ export default {
       };
     },
   },
+  
 };
 </script>
 
@@ -740,6 +742,10 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 25px 0px;
+  gap: 10px;
+  width: min(400px, 90%);
+  margin: 10px auto;
+  text-align: center;
 }
 
 #iconoNodo {

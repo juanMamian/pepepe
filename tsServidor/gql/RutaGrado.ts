@@ -17,10 +17,15 @@ export const typeDefs = gql`
         nombre: String,
         descripcion: String,
         nodos: [NodoRutaGrado],
+        color: String,
     }
     
     extend type Query{
         subrutasGradoMaestraVida:[SubrutaGrado],
+    },
+
+    extend type Mutation{
+        setColorSubrutaGrado(idSubruta: ID!, nuevoColor: String!):SubrutaGrado,
     }
 
    
@@ -44,6 +49,38 @@ export const resolvers = {
 
 
             return lasSubrutas;
+        },
+    },
+    Mutation:{
+        async setColorSubrutaGrado(_:any, {idSubruta, nuevoColor}:any, contexto: contextoQuery){
+            if(!contexto.usuario?.id){
+                throw new AuthenticationError('loginRequerido');
+            }
+            
+            const credencialesUsuario=contexto.usuario;
+            if(!credencialesUsuario.permisos.includes("superadministrador")){
+                throw new AuthenticationError("No autorizado");
+            }
+
+            try {
+                var laSubruta:any = await Subruta.findById(idSubruta).exec();
+                if(!laSubruta) throw 'Subruta no encontrado';
+            }
+            catch(error) {
+                throw new ApolloError('Error conectando con la base de datos');
+            }
+            
+            laSubruta.color=nuevoColor;
+
+            try {
+                await laSubruta.save();
+            }
+            catch(error) {
+                throw new ApolloError('Error guardando la subruta: '+error);
+            }
+
+            return laSubruta
+            
         },
     }
 }

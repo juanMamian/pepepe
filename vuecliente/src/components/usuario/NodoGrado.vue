@@ -1,6 +1,11 @@
 <template>
-  <div class="nodoGrado" :class="seleccionado" @contextmenu.prevent="abrirMenuCx" @dblclick.stop="abrirDescripcion">
-    <div id="laBolita" :class="{seleccionado}" :style="[colorBolita]"></div>
+  <div
+    class="nodoGrado"
+    :class="seleccionado"
+    @contextmenu.prevent="abrirMenuCx"
+    @dblclick.stop="abrirDescripcion"
+  >
+    <div id="laBolita" :class="{ seleccionado }" :style="[colorBolita]"></div>
 
     <div id="cartel">
       {{ esteNodo.nombre }}
@@ -20,19 +25,21 @@
     </div>
 
     <div class="menuContextual" @click.stop="" v-show="menuCx">
+      <div class="botonMenuCx" @click="abrirDescripcion">Ver descripción</div>
       <div
+        v-if="usuarioSuperadministrador"
         class="botonMenuCx"
-        @click="abrirDescripcion"
+        @click="$emit('setColorSubruta')"
       >
-        Ver descripción
+        Set color subruta
       </div>
       <div
         class="botonMenuCx"
         v-if="usuarioSuperadministrador || usuarioProfe"
-        :class="{deshabilitado: togglingEstadoCompletado}"
+        :class="{ deshabilitado: togglingEstadoCompletado }"
         @click="toggleCompletado"
       >
-      <loading v-show="togglingEstadoCompletado" />
+        <loading v-show="togglingEstadoCompletado" />
         {{
           completado ? "Desmarcar como completado" : "Marcar como completado"
         }}
@@ -46,15 +53,15 @@
 </template>
 
 <script>
-import gql from 'graphql-tag';
-import Loading from '../utilidades/Loading.vue';
+import gql from "graphql-tag";
+import Loading from "../utilidades/Loading.vue";
 export default {
   components: { Loading },
   name: "NodoGrado",
   props: {
     esteNodo: Object,
     completado: Boolean,
-    colorSubruta:String,
+    colorSubruta: String,
     seleccionado: Boolean,
     idUsuario: String,
   },
@@ -63,31 +70,31 @@ export default {
       menuCx: false,
       mostrandoDescripcion: false,
 
-      togglingEstadoCompletado:false,
+      togglingEstadoCompletado: false,
     };
   },
-  computed: {    
-    colorBolita(){
-        var backgroundColor=this.colorSubruta;
+  computed: {
+    colorBolita() {
+      var backgroundColor = this.colorSubruta;
 
-        if(this.completado){
-            backgroundColor='var(--atlasVerde)';
-        }
+      if (this.completado) {
+        backgroundColor = "var(--atlasVerde)";
+      }
 
-        return {
-            backgroundColor,
-        }
-    }
+      return {
+        backgroundColor,
+      };
+    },
   },
   methods: {
-    abrirDescripcion(){
-      this.$emit('seleccioname');
-      this.mostrandoDescripcion=true;
-      this.menuCx=false;
-    },
-    abrirMenuCx(){
+    abrirDescripcion() {
       this.$emit("seleccioname");
-      this.menuCx=true;
+      this.mostrandoDescripcion = true;
+      this.menuCx = false;
+    },
+    abrirMenuCx() {
+      this.$emit("seleccioname");
+      this.menuCx = true;
     },
     toggleCompletado() {
       if (!this.usuarioSuperadministrador && !this.usuarioProfe) {
@@ -147,7 +154,7 @@ export default {
   position: relative;
 }
 
-.nodoGrado.seleccionado{
+.nodoGrado.seleccionado {
   z-index: 1;
 }
 
@@ -160,11 +167,11 @@ export default {
   background-color: var(--gris);
 }
 
-#laBolita:not(.seleccionado){
+#laBolita:not(.seleccionado) {
   border-color: var(--gris);
 }
 
-#laBolita.seleccionado{
+#laBolita.seleccionado {
   border-color: black;
 }
 
@@ -186,13 +193,13 @@ export default {
   transform: translateY(-50%);
 }
 
-.menuContextual{
-    position: absolute;
-    top: 50%;
-    left: 50%;
+.menuContextual {
+  position: absolute;
+  top: 50%;
+  left: 50%;
 }
 
-#descripcion{
+#descripcion {
   position: absolute;
   top: calc(100% - 10px);
   z-index: 1;

@@ -23,6 +23,9 @@ const EsquemaSubrutaGrado=new mongoose.Schema({
     nodos:{
         type: [EsquemaNodoRutaGrado],
         default: [],
+    },
+    color:{
+        type:String,        
     }
 });
 
