@@ -64,11 +64,11 @@
           progresoNodoTarget && !$apollo.queries.progresoNodoTarget.loading
         " :progreso="progresoNodoTarget" :size="40" :cifrasDecimales="0" />
         <img style="
-                                  height: 25px;
-                                  filter: var(--filtroBlanco);
-                                  margin: 2px 5px;
-                                  margin-right: 15px;
-                                " src="@/assets/iconos/target.png" alt="Target" />
+                                      height: 25px;
+                                      filter: var(--filtroBlanco);
+                                      margin: 2px 5px;
+                                      margin-right: 15px;
+                                    " src="@/assets/iconos/target.png" alt="Target" />
 
         {{ nodoTarget.nombre }}
       </div>
@@ -88,7 +88,6 @@
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))" />
 
     <div id="contenedorDiagrama" v-show="!$apollo.queries.yo.loading" ref="contenedorDiagrama"
-       
       @scroll="updateCentroVistaSegunScroll">
       <div id="contenedorVinculosNodos" :style="[offsetContenedorNodos]">
         <enlaces-nodo-conocimiento v-for="nodo of nodosEnVista" :key="nodo.id" :yo="yo" ref="enlacesNodos"
@@ -101,7 +100,8 @@
           :idsNodosContinuacionSeleccionado="idsNodosContinuacionSeleccionado"
           :idsNodosPreviosSeleccionado="idsNodosPreviosSeleccionado" :idsNodosPresentesCabeza="idsNodosPresentesCabeza" />
       </div>
-      <div id="contenedorNodos" @contextmenu.self.exact.prevent="abrirMenuContextual" @mouseup.left.self="clickFondoAtlas" ref="contenedorNodos" :style="[offsetContenedorNodos]">
+      <div id="contenedorNodos" @contextmenu.self.exact.prevent="abrirMenuContextual" @mouseup.left.self="clickFondoAtlas"
+        ref="contenedorNodos" :style="[offsetContenedorNodos]">
         <loading texto="" v-show="posicionCreandoNodo" style="position: absolute" :style="[offsetLoadingCreandoNodo]" />
         <nodo-conocimiento :key="nodo.id" v-for="nodo of nodosEnVista" :esteNodo="nodo" ref="nodosRender"
           :nodoSeleccionado="nodoSeleccionado" :todosNodos="todosNodos" :idNodoMenuCx="idNodoMenuCx"
@@ -122,7 +122,7 @@
   idNodoSeleccionado &&
   idsNodosContinuacionSeleccionado.includes(nodo.id)
 " :enviandoQueryTarget="enviandoQueryTarget" @contextmenu.native.exact.stop.prevent="idNodoMenuCx = nodo.id"
-          :fantasmeado="idNodoSeleccionado && idNodoSeleccionado != nodo.id && !idsNodosConectadosSeleccionado.includes(nodo.id)"
+          :fantasmeado="idNodoSeleccionado && idNodoSeleccionado != nodo.id && !idsNodosConectadosSeleccionado.includes(nodo.id) && !idsNodosPreviosSeleccionado.includes(nodo.id)"
           :seleccionado="idNodoSeleccionado == nodo.id" @abroMenuContextual="idNodoMenuCx = nodo.id"
           @click.native.stop="seleccionNodo(nodo)" @creacionVinculo="crearVinculo" @eliminacionVinculo="eliminarVinculo"
           @cambioDePosicionManual="cambiarCoordsManualesNodo" @eliminar="eliminarNodo"
@@ -453,7 +453,7 @@ export default {
     };
   },
   computed: {
-    
+
     nombreColeccionSeleccionada() {
       if (!this.idColeccionSeleccionada) {
         return "Atlas";
@@ -1458,7 +1458,19 @@ export default {
       // }
     },
 
-    zoomVista(deltaZoom) {
+    zoomVista: debounce(function (deltaZoom, posZoom) {
+      console.log(`zoomVista: ${deltaZoom} ${JSON.stringify(posZoom)} `);
+      
+      //Get distance from posZoom to centroVista    
+      let deltaX = posZoom.x - this.centroVistaDecimal.x;
+      let deltaY = posZoom.y - this.centroVistaDecimal.y;
+
+      console.log(`deltaX: ${deltaX} deltaY: ${deltaY} `);
+
+      let deltaXPx = deltaX * this.factorZoom;
+      let deltaYPx = deltaY * this.factorZoom;
+
+
       var nuevoZoom = this.zoom + deltaZoom;
       if (nuevoZoom < this.minZoom) {
         this.zoom = this.minZoom;
@@ -1468,36 +1480,51 @@ export default {
         this.zoom = nuevoZoom;
       }
 
+      let factorZoom = this.zoom / 100;
+
       //Pan vista de acuerdo con la posición del mouse respecto del atlas
-    },
+      //Get new esquinaVista
+      let nuevoCentroVista = {
+        x: posZoom.x + (deltaXPx / factorZoom),
+        y: posZoom.y + (deltaYPx / factorZoom),
+      };
+
+      this.$set(this.centroVistaDecimal, "x", Math.round(nuevoCentroVista.x));
+      this.$set(this.centroVistaDecimal, "y", Math.round(nuevoCentroVista.y));
+
+    }, 200),
     zoomWheel(e) {
       if (!this.hovered || !e.ctrlKey) {
         return;
       }
       e.preventDefault();
 
-      var contenedor = this.$el;
+      var contenedor = this.$refs.contenedorDiagrama;
       let posContenedor = contenedor.getBoundingClientRect();
 
-      const posZoom = {
-        x:
-          Math.round((e.clientX - posContenedor.left) / this.factorZoom) +
-          this.centroVista.x,
-        y:
-          Math.round((e.clientY - posContenedor.top) / this.factorZoom) +
-          this.centroVista.y,
+      let posEsquinaVista = {
+        x: this.esquinasDiagrama.x1 + (contenedor.scrollLeft / this.factorZoom),
+        y: this.esquinasDiagrama.y1 + (contenedor.scrollTop / this.factorZoom),
       };
 
-      // const proporciones = {
-      //   x:
-      //     (posZoom.x - this.centroVistaDecimal.x) /
-      //     (posContenedor.width / this.factorZoom),
-      //   y:
-      //     (posZoom.y - this.centroVistaDecimal.y) /
-      //     (posContenedor.height / this.factorZoom),
-      // };
+      let posMousePx = {
+        x: e.clientX - posContenedor.left,
+        y: e.clientY - posContenedor.top,
+      };
 
-      const factorZoom = 0.2;
+      let posMouse = {
+        x: posMousePx.x / this.factorZoom,
+        y: posMousePx.y / this.factorZoom,
+      };
+
+      const posZoom = {
+        x: Math.round(posEsquinaVista.x + posMouse.x),
+        y: Math.round(posEsquinaVista.y + posMouse.y),
+      };
+
+      console.log(`posZoom: ${JSON.stringify(posZoom)}`);
+
+      const factorZoom = 0.1;
       this.zoomVista(-Math.round(e.deltaY * factorZoom), {
         x: posZoom.x,
         y: posZoom.y,
@@ -1528,7 +1555,7 @@ export default {
     },
     seleccionandoColeccion() {
       this.mostrandoOpcionesColeccion = false;
-    },    
+    },
     route: function (to) {
       console.log(`cambio de navegación a ${to.path}`);
     },
