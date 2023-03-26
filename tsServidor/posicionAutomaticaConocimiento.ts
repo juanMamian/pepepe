@@ -54,7 +54,7 @@ export async function posicionAutomaticaConocimiento() {
 }
 
 function posicionar(todosNodos, celdas) {
-    todosNodos.forEach(nodo => {        
+    todosNodos.forEach(nodo => {    
         setFuerzaCentroMasa(nodo, todosNodos);
         setFuerzaColision(nodo, celdas, todosNodos);
         moverNodo(nodo, celdas);        

@@ -371,7 +371,6 @@ export default {
     desplazarVista(deltaX, deltaY) {
       this.$set(this.centroVistaDecimal, "x",this.centroVistaDecimal.x - deltaX);
       this.$set(this.centroVistaDecimal, "y",this.centroVistaDecimal.y - deltaY);
-      //this.actualizarTrazos++;
     },
     panVista(e){
       if(!this.panningVista){

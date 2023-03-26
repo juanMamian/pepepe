@@ -1,7 +1,6 @@
 <template>
   <div
     class="enlacesNodoConocimiento"
-    v-show="nodoRender"
     :style="[estiloPosicion]"
   >
     <transition-group tag="div">
@@ -78,11 +77,14 @@ export default {
       factorFuerza: 15,
 
       vinculosGrises: [],
+
+      // to set from outside
+      seleccionado: false,
+      enAmbitoNodoSeleccionado: false,
     };
   },
   methods: {
-    setVinculosGrises() {
-      console.log("Calculando flechas de vínculos");
+    drawVinculos() {
       var vGrises = JSON.parse(
         JSON.stringify(
           this.esteNodo.vinculos.filter(
@@ -144,14 +146,7 @@ export default {
   },
 
   computed: {
-    continuacionDeSeleccionado() {
-      if (!this.nodoSeleccionado) return false;
-      if (
-        this.nodoSeleccionado.vinculos.some((v) => v.idRef === this.esteNodo.id)
-      )
-        return true;
-      return false;
-    },
+   
     estiloPosicion() {
       const posXAjustada =
         this.esteNodo.autoCoords.x - this.esquinasDiagrama.x1;
@@ -216,26 +211,22 @@ export default {
 
     posNodo() {
       return this.esteNodo.coords;
-    },
-
-    seleccionado() {
-      if (!this.nodoSeleccionado) {
-        return false;
-      }
-      return this.nodoSeleccionado.id === this.esteNodo.id;
-    },
-    nodoRender() {
-      if (this.usuario && this.esteNodo.id === this.usuario.id) return true;
-      return this.idsTodosNodosRender.includes(this.esteNodo.id);
-    },
-
-    enAmbitoNodoSeleccionado() {
-      return (
-        this.idNodoSeleccionado &&
-        (this.idsNodosPreviosSeleccionado.includes(this.esteNodo.id) ||
-          this.idsNodosContinuacionSeleccionado.includes(this.esteNodo.id))
-      );
-    },
+    },    
+    
+    // seleccionado() {
+    //   if (!this.nodoSeleccionado) {
+    //     return false;
+    //   }
+    //   return this.nodoSeleccionado.id === this.esteNodo.id;
+    // },
+    // enAmbitoNodoSeleccionado() {
+    //   console.log("checking if enlace enAmbitoNodoSeleccionado");
+    //   return (
+    //     this.idNodoSeleccionado &&
+    //     (this.idsNodosPreviosSeleccionado.includes(this.esteNodo.id) ||
+    //       this.idsNodosContinuacionSeleccionado.includes(this.esteNodo.id))
+    //   );
+    // },
   },
 };
 </script>

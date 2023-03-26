@@ -110,6 +110,7 @@ type NodoConocimiento{
     expertos: [String],
     posiblesExpertos:[String],
     secciones:[SeccionContenidoNodo],
+    nivel: Int,
     angulo:Float
     fuerzaCentroMasa:FuerzaPolar,
     fuerzaColision:FuerzaPolar
@@ -202,7 +203,7 @@ export const resolvers = {
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             try {
-                var todosNodos = await Nodo.find({}, "nombre tipoNodo descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
+                var todosNodos = await Nodo.find({}, "nombre tipoNodo nivel descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
                 console.log(`encontrados ${todosNodos.length} nodos`);
             }
             catch (error) {

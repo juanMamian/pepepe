@@ -1,167 +1,83 @@
 <template>
-  <div
-    class="nodoConocimiento"
-    :style="[estiloPosicion, estiloSize, estiloZeta, estiloBolita]"
-    :class="{ escondido, deNodoSeleccionado: seleccionado, fantasmeado }"
-    @click.ctrl.capture="stopProp"
-    @mouseup.left="guardarPosicion"
-    @mousemove="arrastrarNodo"
-    @mouseleave="arrastrandoNodo = false"
-    @dblclick="abrirPaginaNodo"
-  >
-    <div
-      class="boton"
-      id="botonAbrirMenuCx"
-      @click.stop="$emit('abroMenuContextual')"
-      v-show="seleccionado && !menuCx"
-    >
+  <div class="nodoConocimiento" :style="[estiloPosicion, estiloSize, estiloZeta, estiloBolita]"
+    :class="{ escondido, deNodoSeleccionado: seleccionado, fantasmeado }" @click.ctrl.capture="stopProp"
+    @mouseup.left="guardarPosicion" @mousemove="arrastrarNodo" @mouseleave="arrastrandoNodo = false"
+    @dblclick="abrirPaginaNodo">
+    <div class="boton" id="botonAbrirMenuCx" @click.stop="$emit('abroMenuContextual')" v-show="seleccionado && !menuCx">
       <img src="@/assets/iconos/ellipsisVertical.svg" alt="Opciones" />
     </div>
     <div id="zonaArrastre" v-show="arrastrandoNodo"></div>
 
-    <div
-      v-if="usuarioSuperadministrador"
-      v-show="configuracionAtlas.posicionando"
-      id="fuerzaCentroMasa"
-      class="fuerzaMovimiento"
-      :style="[estiloFuerzaCentroMasa]"
-    >
+    <div v-if="usuarioSuperadministrador" v-show="configuracionAtlas.posicionando" id="fuerzaCentroMasa"
+      class="fuerzaMovimiento" :style="[estiloFuerzaCentroMasa]">
       <div class="flechitaFuerza"></div>
     </div>
-    <div
-      v-if="usuarioSuperadministrador"
-      v-show="configuracionAtlas.posicionando"
-      id="fuerzaColision"
-      class="fuerzaMovimiento"
-      :style="[estiloFuerzaColision]"
-    >
+    <div v-if="usuarioSuperadministrador" v-show="configuracionAtlas.posicionando" id="fuerzaColision"
+      class="fuerzaMovimiento" :style="[estiloFuerzaColision]">
       <div class="flechitaFuerza"></div>
     </div>
 
-    <div
-      id="iconoNodo"
-      :class="{
-        deNodoSeleccionado: seleccionado,
-        previoDeSeleccionado,
-        noEstudiable,
-      }"
-    >
-      <img
-        v-if="esteNodo.tipoNodo === 'concepto'"
-        src="@/assets/iconos/atlas/lightbulbEmpty.svg"
-      />
+    <div id="iconoNodo" :class="{
+      deNodoSeleccionado: seleccionado,
+      previoDeSeleccionado,
+      noEstudiable,
+    }">
+      <img v-if="esteNodo.tipoNodo === 'concepto'" src="@/assets/iconos/atlas/lightbulbEmpty.svg" />
       <img v-else src="@/assets/iconos/atlas/fireSolid.svg" />
     </div>
-    <img
-      src="@/assets/iconos/success.png"
-      alt="Aprendido"
-      title="Este tema ya ha sido aprendido"
-      v-show="nodoAprendido && modoAtlas === 'estudiante'"
-      :style="[
+    <img src="@/assets/iconos/success.png" alt="Aprendido" title="Este tema ya ha sido aprendido"
+      v-show="nodoAprendido && modoAtlas === 'estudiante'" :style="[
         {
           width: parseInt(20 * factorZoom) + 'px',
           left: parseInt(-10 * factorZoom) + 'px',
           top: parseInt(-10 * factorZoom) + 'px',
         },
-      ]"
-      class="imagenAprendido"
-    />
-    <img
-      src="@/assets/iconos/target.png"
-      alt="Objetivo"
-      v-show="esTarget"
-      class="imagenTarget"
-    />
+      ]" class="imagenAprendido" />
+    <img src="@/assets/iconos/target.png" alt="Objetivo" v-show="esTarget" class="imagenTarget" />
 
-    <div
-      id="menuContextual"
-      v-show="menuCx"
-      @mousedown.stop=""
-      @dblclick.stop=""
-      @click.stop=""
-      @mouseup.stop=""
-    >
+    <div id="menuContextual" v-show="menuCx" @mousedown.stop="" @dblclick.stop="" @click.stop="" @mouseup.stop="">
       <div class="seccionMenuCx" @click="abrirPaginaNodo">
         {{ esteNodo.nombre }}
       </div>
-      <div
-        id="opcionesTipoNodo"
-        :class="{ deshabilitado: settingTipoNodo }"
-        v-if="usuarioExpertoNodo"
-      >
-        <div
-          class="boton selector"
-          :class="{ activo: esteNodo.tipoNodo === 'concepto' }"
-          @click.stop="setTipoNodo('concepto')"
-        >
+      <div id="opcionesTipoNodo" :class="{ deshabilitado: settingTipoNodo }" v-if="usuarioExpertoNodo">
+        <div class="boton selector" :class="{ activo: esteNodo.tipoNodo === 'concepto' }"
+          @click.stop="setTipoNodo('concepto')">
           <img src="@/assets/iconos/atlas/lightbulbEmpty.svg" alt="Concepto" />
         </div>
 
-        <div
-          class="boton selector"
-          :class="{ activo: esteNodo.tipoNodo === 'skill' }"
-          @click.stop="setTipoNodo('skill')"
-        >
+        <div class="boton selector" :class="{ activo: esteNodo.tipoNodo === 'skill' }" @click.stop="setTipoNodo('skill')">
           <img src="@/assets/iconos/atlas/fireSolid.svg" alt="Habilidad" />
         </div>
       </div>
       <loading v-show="settingTipoNodo" style="margin: 5px auto" />
-      <div
-        class="botonMenuCx"
-        v-if="
-          usuarioSuperadministrador == true || usuarioAdministradorAtlas == true
-        "
-        @click.stop="eliminarEsteNodo"
-      >
+      <div class="botonMenuCx" v-if="
+        usuarioSuperadministrador == true || usuarioAdministradorAtlas == true
+      " @click.stop="eliminarEsteNodo">
         Eliminar
       </div>
-      <div
-        class="botonMenuCx"
-        :class="{ deshabilitado: esTarget }"
-        @click.stop="$emit('mePongoEnMira')"
-      >
+      <div class="botonMenuCx" :class="{ deshabilitado: esTarget }" @click.stop="$emit('mePongoEnMira')">
         <img class="iconoMenuCx" src="@/assets/iconos/target.png" alt="mira" />
         Poner en la mira
       </div>
-      <div
-        class="botonMenuCx"
-        v-if="usuarioSuperadministrador"
-        @click.stop="copiarId"
-      >
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador" @click.stop="copiarId">
         {{ esteNodo.id }}
       </div>
-      <div
-        class="botonMenuCx selectorSubseccionMenuCx"
-        v-show="
-          yo.atlas && yo.atlas.colecciones && yo.atlas.colecciones.length > 0
-        "
-      >
-        <img
-          src="@/assets/iconos/userNodes.png"
-          alt="nodos"
-          class="iconoMenuCx"
-        />
+      <div class="botonMenuCx selectorSubseccionMenuCx" v-show="
+        yo.atlas && yo.atlas.colecciones && yo.atlas.colecciones.length > 0
+      ">
+        <img src="@/assets/iconos/userNodes.png" alt="nodos" class="iconoMenuCx" />
         Colecciones
         <div class="subseccionMenuCx">
-          <div
-            class="botonMenuCx"
-            v-for="coleccion of yo.atlas.colecciones"
-            :key="coleccion.id"
-            @click.stop="toggleNodoEnColeccion(coleccion.id)"
-          >
-            <img
-              src="@/assets/iconos/check.svg"
-              alt="Check"
-              style="height: 12px; margin-right: 10px; border-radius: 50%"
-              v-show="togglingNodoEnColeccion != coleccion.id"
-              :style="[
+          <div class="botonMenuCx" v-for="coleccion of yo.atlas.colecciones" :key="coleccion.id"
+            @click.stop="toggleNodoEnColeccion(coleccion.id)">
+            <img src="@/assets/iconos/check.svg" alt="Check" style="height: 12px; margin-right: 10px; border-radius: 50%"
+              v-show="togglingNodoEnColeccion != coleccion.id" :style="[
                 {
                   backgroundColor: coleccion.idsNodos.includes(esteNodo.id)
                     ? 'var(--atlasVerde)'
                     : '',
                 },
-              ]"
-            />
+              ]" />
             <loading v-show="togglingNodoEnColeccion === coleccion.id" />
             {{ coleccion.nombre }}
           </div>
@@ -181,41 +97,21 @@
       >
         Retirar de objetivos
       </div> -->
-      <div
-        class="botonMenuCx"
-        v-if="usuarioLogeado"
-        @click.stop="toggleAprendido"
-      >
-        <img
-          src="@/assets/iconos/check.svg"
-          alt="check"
-          class="iconoMenuCx"
-          style="border-radius: 50%"
-          v-show="!togglingAprendido"
-          :style="[
+      <div class="botonMenuCx" v-if="usuarioLogeado" @click.stop="toggleAprendido">
+        <img src="@/assets/iconos/check.svg" alt="check" class="iconoMenuCx" style="border-radius: 50%"
+          v-show="!togglingAprendido" :style="[
             {
               backgroundColor: nodoAprendido
                 ? 'var(--atlasConocimientoCheck)'
                 : '',
             },
-          ]"
-        />
+          ]" />
         <loading v-show="togglingAprendido" texto="" />
         {{ nodoAprendido ? "Desm" : "M" }}arcar como aprendido
       </div>
-      <div
-        class="botonMenuCx"
-        v-if="usuarioLogeado"
-        @click.stop="marcarEstudiado"
-        v-show="aprendible"
-        :class="{ deshabilitado: enviandoFechaEstudiado }"
-      >
-        <img
-          src="@/assets/iconos/readme.svg"
-          alt="Read"
-          class="iconoMenuCx"
-          v-show="!enviandoFechaEstudiado"
-        />
+      <div class="botonMenuCx" v-if="usuarioLogeado" @click.stop="marcarEstudiado" v-show="aprendible"
+        :class="{ deshabilitado: enviandoFechaEstudiado }">
+        <img src="@/assets/iconos/readme.svg" alt="Read" class="iconoMenuCx" v-show="!enviandoFechaEstudiado" />
         <loading v-show="enviandoFechaEstudiado" texto="" />
         <span>
           {{
@@ -224,13 +120,8 @@
           }}
         </span>
       </div>
-      <div
-        class="botonMenuCx"
-        v-if="usuarioLogeado"
-        v-show="nodoEstudiado && !nodoAprendido && !editandoDiasRepaso"
-        :class="{ deshabilitado: creandoIteracionRepaso }"
-        @click.stop="editandoDiasRepaso = !editandoDiasRepaso"
-      >
+      <div class="botonMenuCx" v-if="usuarioLogeado" v-show="nodoEstudiado && !nodoAprendido && !editandoDiasRepaso"
+        :class="{ deshabilitado: creandoIteracionRepaso }" @click.stop="editandoDiasRepaso = !editandoDiasRepaso">
         <img src="@/assets/iconos/clock.svg" alt="Reloj" class="iconoMenuCx" />
         <span v-show="diasRepaso > 1">{{
           "Repaso cada " + diasRepaso + " dia"
@@ -241,79 +132,41 @@
       </div>
       <div class="seccionMenuCx" v-show="editandoDiasRepaso">
         <loading v-show="settingPeriodoRepaso" />
-        <label for="inputDiasRepaso">Dias de repaso: </label
-        ><input
-          style="width: min(70px, 80vw)"
-          type="number"
-          name="inputDiasRepaso"
-          :class="{ deshabilitado: settingPeriodoRepaso }"
-          ref="inputDiasRepaso"
-          min="1"
-          id="inputDiasRepaso"
-          @focus="$event.target.select()"
-          @blur="editandoDiasRepaso = false"
-          @keypress.enter="setPeriodoRepaso"
-        />
+        <label for="inputDiasRepaso">Dias de repaso: </label><input style="width: min(70px, 80vw)" type="number"
+          name="inputDiasRepaso" :class="{ deshabilitado: settingPeriodoRepaso }" ref="inputDiasRepaso" min="1"
+          id="inputDiasRepaso" @focus="$event.target.select()" @blur="editandoDiasRepaso = false"
+          @keypress.enter="setPeriodoRepaso" />
       </div>
-      <template
-        v-if="
-          nodoSeleccionado &&
-          nodoSeleccionado.id != esteNodo.id &&
-          (usuarioSuperadministrador == true ||
-            usuarioAdministradorAtlas == true)
-        "
-      >
+      <template v-if="
+        nodoSeleccionado &&
+        nodoSeleccionado.id != esteNodo.id &&
+        (usuarioSuperadministrador == true ||
+          usuarioAdministradorAtlas == true)
+      ">
         <div class="seccionMenuCx">{{ nodoSeleccionado.nombre }}</div>
-        <div
-          class="botonMenuCx"
-          @click.stop="crearVinculo('continuacion', nodoSeleccionado, esteNodo)"
-        >
+        <div class="botonMenuCx" @click.stop="crearVinculo('continuacion', nodoSeleccionado, esteNodo)">
           Continua aquí
         </div>
-        <div
-          class="botonMenuCx"
-          @click.stop="crearVinculo('continuacion', esteNodo, nodoSeleccionado)"
-        >
+        <div class="botonMenuCx" @click.stop="crearVinculo('continuacion', esteNodo, nodoSeleccionado)">
           Continua desde aquí
         </div>
-        <div
-          class="botonMenuCx"
-          v-show="esteNodo.vinculos.some((v) => v.idRef == nodoSeleccionado.id)"
-          @click.stop="eliminarVinculo(esteNodo, nodoSeleccionado)"
-        >
+        <div class="botonMenuCx" v-show="esteNodo.vinculos.some((v) => v.idRef == nodoSeleccionado.id)"
+          @click.stop="eliminarVinculo(esteNodo, nodoSeleccionado)">
           Desconectar
         </div>
       </template>
     </div>
-    <div
-      @click="clickCartelNombre"
-      id="nombre"
-      :style="[estiloCartelNombre]"
-      ref="nombre"
-    >
+    <div @click="clickCartelNombre" id="nombre" :style="[estiloCartelNombre]" ref="nombre">
       {{ callingPosiciones ? esteNodo.puntaje : esteNodo.nombre }}
     </div>
 
-    <div
-      class="cuadritoDescripcionNodo"
-      v-if="esteNodo && esteNodo.descripcion"
-      v-show="seleccionado && !callingPosiciones && mostrarDescripcion"
-    >
+    <div class="cuadritoDescripcionNodo" v-if="esteNodo && esteNodo.descripcion"
+      v-show="seleccionado && !callingPosiciones && mostrarDescripcion">
       <div class="descripcionNodo">{{ esteNodo.descripcion }}</div>
-      <img
-        @click.stop="abrirPaginaNodo"
-        src="@/assets/iconos/ir.png"
-        alt="Ir"
-        title="Abrir este nodo"
-        class="botonAbrirNodo"
-      />
-      <div
-        class="botonEquis"
-        @click.stop="mostrarDescripcion = false"
-        @mousedown.stop=""
-        @mouseup.stop=""
-        id="botonCerrarDescripcion"
-      >
+      <img @click.stop="abrirPaginaNodo" src="@/assets/iconos/ir.png" alt="Ir" title="Abrir este nodo"
+        class="botonAbrirNodo" />
+      <div class="botonEquis" @click.stop="mostrarDescripcion = false" @mousedown.stop="" @mouseup.stop=""
+        id="botonCerrarDescripcion">
         <div class="linea1"></div>
         <div class="linea2"></div>
       </div>
@@ -327,6 +180,7 @@ import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
 import { QUERY_DATOS_USUARIO_NODOS } from "./AtlasConocimiento.vue";
+
 export default {
   components: { Loading },
   name: "NodoConocimiento",
@@ -342,7 +196,6 @@ export default {
     esTarget: Boolean,
     yo: Object,
     modoAtlas: String,
-    escondido: Boolean,
     centroVista: Object,
     idNodoMenuCx: String,
     idsNodosAprendidos: Array,
@@ -351,10 +204,13 @@ export default {
     idsNodosPresentesCabeza: Array,
     idsNodosRepasar: Array,
     nodoSeleccionado: Object,
+
+    escondido: Boolean,
     seleccionado: Boolean,
     fantasmeado: Boolean,
     previoDeSeleccionado: Boolean,
     continuacionDeSeleccionado: Boolean,
+
     usuarioAdministradorAtlas: {
       type: Boolean,
       default: false,
@@ -398,6 +254,8 @@ export default {
 
       editandoDiasRepaso: false,
       settingPeriodoRepaso: false,
+
+     
     };
   },
   computed: {
@@ -405,14 +263,25 @@ export default {
       return this.idNodoMenuCx == this.esteNodo.id ? true : false;
     },
     size() {
-      let fSize = Object.assign({}, this.baseSize);
+
+      let nivelSizeDoble = 3;
+      let baseX = this.baseSize.x;
+      let baseY = this.baseSize.y;
+
+      //adjust by level;
+      baseX = Math.round(baseX * (1 + this.esteNodo.nivel / nivelSizeDoble));
+      baseY = Math.round(baseY * (1 + this.esteNodo.nivel / nivelSizeDoble));
+
       if (this.seleccionado) {
-        let baseX = this.baseSize.x;
-        let baseY = this.baseSize.y;
-        fSize.x = Math.round(baseX * 1.1);
-        fSize.y = Math.round(baseY * 1.1);
+        //increase by 10%
+        baseX = Math.round(baseX * 1.1);
+        baseY = Math.round(baseY * 1.1);
       }
-      return { ...fSize };
+
+      return {
+        x: baseX,
+        y: baseY,
+      }
     },
     estiloPosicion() {
       //Posicion ajustada a las esquinas del diagrama:
@@ -997,9 +866,14 @@ export default {
         this.editandoDiasRepaso = false;
       }
     },
+    seleccionado(sel) {
+      if (sel) {
+        console.log(`seleccionado ${this.esteNodo.nombre}`);
+      }
+    }
   },
   mounted() {
-    this.posicion = { ...this.esteNodo.autoCoords };
+    this.posicion = { ...this.esteNodo.coords };
   },
 };
 </script>
@@ -1022,12 +896,15 @@ export default {
   width: 100%;
   height: 100%;
 }
+
 #iconoNodo.deNodoSeleccionado img {
   filter: var(--filtroBlanco);
 }
+
 #iconoNodo.noEstudiable img {
   opacity: 0.4;
 }
+
 .nodoConocimiento {
   width: 60px;
   height: 60px;
@@ -1037,9 +914,11 @@ export default {
   position: absolute;
   pointer-events: all;
 }
+
 .nodoConocimiento:not(.deNodoSeleccionado) {
   background-color: rgba(128, 128, 128, 0.349);
 }
+
 .nodoConocimiento.deNodoSeleccionado {
   background-color: var(--atlasConocimientoSeleccion);
 }
@@ -1051,15 +930,18 @@ export default {
 
   right: -40px;
 }
+
 #zonaArrastre {
   width: 500px;
   height: 500px;
   position: absolute;
   transform: translate(-50%, -50%);
 }
+
 .seleccionado {
   z-index: 10;
 }
+
 .fantasmeado {
   opacity: 0.2;
 }
@@ -1067,6 +949,7 @@ export default {
 .escondido {
   visibility: hidden;
 }
+
 #nombre {
   position: absolute;
   top: 105%;
@@ -1088,6 +971,7 @@ export default {
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
     0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
+
 .botonMenuCx {
   cursor: pointer;
   font-size: 14px;
@@ -1100,14 +984,17 @@ export default {
   height: 13px;
   margin: 0px 5px;
 }
+
 .seccionMenuCx {
   font-size: 15px;
   color: rgb(71, 71, 71);
   padding: 5px;
 }
+
 .botonMenuCx:hover {
   background-color: gray;
 }
+
 .selectorSubseccionMenuCx {
   position: relative;
 }
@@ -1119,9 +1006,11 @@ export default {
   display: none;
   background-color: rgb(177, 177, 159);
 }
-.selectorSubseccionMenuCx:hover > .subseccionMenuCx {
+
+.selectorSubseccionMenuCx:hover>.subseccionMenuCx {
   display: block;
 }
+
 #opcionesTipoNodo {
   display: flex;
   justify-content: center;
@@ -1147,6 +1036,7 @@ export default {
   min-height: 30px;
   white-space: pre-wrap;
 }
+
 .botonAbrirNodo {
   display: block;
   width: 24px;
@@ -1157,6 +1047,7 @@ export default {
   padding: 10px;
   background-color: rgb(214, 176, 130);
 }
+
 .botonAbrirNodo:hover {
   background-color: rgb(190, 145, 88);
 }
@@ -1169,20 +1060,24 @@ export default {
   z-index: 10;
   opacity: 0.86;
 }
+
 .imagenTarget:hover {
   opacity: 0.16;
 }
+
 .imagenAprendido {
   position: absolute;
   background-color: rgb(33, 168, 33);
   border-radius: 50%;
 }
+
 #botonCerrarDescripcion {
   left: 101%;
   bottom: 101%;
   width: 15px;
   height: 15px;
 }
+
 .fuerzaMovimiento {
   background-color: black;
   position: absolute;
@@ -1191,12 +1086,15 @@ export default {
   transform-origin: 0% 0%;
   z-index: 200;
 }
+
 #fuerzaCentroMasa {
   background-color: blue;
 }
+
 #fuerzaColision {
   background-color: red;
 }
+
 .flechitaFuerza {
   position: absolute;
   top: 50%;
