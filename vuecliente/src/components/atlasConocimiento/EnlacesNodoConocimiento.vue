@@ -78,9 +78,7 @@ export default {
 
       vinculosGrises: [],
 
-      // to set from outside
-      seleccionado: false,
-      enAmbitoNodoSeleccionado: false,
+    
     };
   },
   methods: {
@@ -213,20 +211,20 @@ export default {
       return this.esteNodo.coords;
     },    
     
-    // seleccionado() {
-    //   if (!this.nodoSeleccionado) {
-    //     return false;
-    //   }
-    //   return this.nodoSeleccionado.id === this.esteNodo.id;
-    // },
-    // enAmbitoNodoSeleccionado() {
-    //   console.log("checking if enlace enAmbitoNodoSeleccionado");
-    //   return (
-    //     this.idNodoSeleccionado &&
-    //     (this.idsNodosPreviosSeleccionado.includes(this.esteNodo.id) ||
-    //       this.idsNodosContinuacionSeleccionado.includes(this.esteNodo.id))
-    //   );
-    // },
+    seleccionado() {
+      if (!this.nodoSeleccionado) {
+        return false;
+      }
+      return this.nodoSeleccionado.id === this.esteNodo.id;
+    },
+    enAmbitoNodoSeleccionado() {
+      console.log("checking if enlace enAmbitoNodoSeleccionado");
+      return (
+        this.idNodoSeleccionado &&
+        (this.idsNodosPreviosSeleccionado.includes(this.esteNodo.id) ||
+          this.idsNodosContinuacionSeleccionado.includes(this.esteNodo.id))
+      );
+    },
   },
 };
 </script>

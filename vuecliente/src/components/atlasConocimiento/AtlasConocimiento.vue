@@ -88,7 +88,7 @@
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))" />
 
     <div id="contenedorDiagrama" v-show="!$apollo.queries.yo.loading" ref="contenedorDiagrama"
-      @contextmenu.self.exact.prevent="abrirMenuContextual" @mouseup.left.self="clickFondoAtlas"
+       
       @scroll="updateCentroVistaSegunScroll">
       <div id="contenedorVinculosNodos" :style="[offsetContenedorNodos]">
         <enlaces-nodo-conocimiento v-for="nodo of nodosEnVista" :key="nodo.id" :yo="yo" ref="enlacesNodos"
@@ -101,7 +101,7 @@
           :idsNodosContinuacionSeleccionado="idsNodosContinuacionSeleccionado"
           :idsNodosPreviosSeleccionado="idsNodosPreviosSeleccionado" :idsNodosPresentesCabeza="idsNodosPresentesCabeza" />
       </div>
-      <div id="contenedorNodos" ref="contenedorNodos" :style="[offsetContenedorNodos]">
+      <div id="contenedorNodos" @contextmenu.self.exact.prevent="abrirMenuContextual" @mouseup.left.self="clickFondoAtlas" ref="contenedorNodos" :style="[offsetContenedorNodos]">
         <loading texto="" v-show="posicionCreandoNodo" style="position: absolute" :style="[offsetLoadingCreandoNodo]" />
         <nodo-conocimiento :key="nodo.id" v-for="nodo of nodosEnVista" :esteNodo="nodo" ref="nodosRender"
           :nodoSeleccionado="nodoSeleccionado" :todosNodos="todosNodos" :idNodoMenuCx="idNodoMenuCx"
@@ -1770,8 +1770,8 @@ export default {
   top: 50px;
   left: 50px;
   user-select: none;
-
-  pointer-events: none;
+  width: 100%;
+  height: 100%;
 }
 
 #buscadorNodosConocimiento {
