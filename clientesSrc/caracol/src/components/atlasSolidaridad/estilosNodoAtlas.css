@@ -1,0 +1,128 @@
+.nodo {
+    position: absolute;
+    border-radius: 50%;
+    cursor: pointer;
+    transition-timing-function: linear;
+  }
+  
+  #bolita {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    z-index: 1;
+    box-sizing: border-box;
+  }
+  .iconoFondo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50%;
+    height: 50%;
+    user-select: none;
+    pointer-events: none;
+  }
+  #iconoPlegado {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid white;
+    user-select: none;
+    z-index: 10;
+    top: -30px;
+    right: -30px;
+    transform: translate(-50%, 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+  }
+  #iconoPlegado:hover {
+    opacity: 1;
+  }
+  #iconoPlegado > img {
+    width: 60%;
+    height: 60%;
+  }
+  
+  .seleccionado {
+    border-width: 2px;
+    border-color: var(--atlasMorado);
+  }
+  #cartelNombre {
+    position: absolute;
+    top: 103%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1px solid black;
+  
+    overflow-y: hidden;
+  }
+  #cartelNombre:not(.completa) {
+    max-height: 160%;
+  }
+  #cartelNombre:hover {
+    max-height: none;
+  }
+  #nombre {
+    user-select: none;
+  }
+  #menuContextual {
+    position: absolute;
+    top: 68%;
+    left: 68%;
+    min-width: 140px;
+    z-index: 10;
+    background-color: rgb(177, 177, 159);
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+      0 1px 5px 0 rgba(0, 0, 0, 0.12);
+  }
+  .botonMenuCx {
+    cursor: pointer;
+    font-size: 14px;
+    padding: 5px 10px;
+  }
+  .tituloSeccionMenuCx {
+    font-size: 15px;
+    color: rgb(71, 71, 71);
+    padding: 5px 10px;
+  }
+  .botonesSeccionMenuCx .botonMenuCx {
+    padding-left: 20px;
+  }
+  .botonMenuCx:hover {
+    background-color: gray;
+  }
+  .bAbrirNodo {
+    padding: 3px;
+    background-color: rgb(168, 221, 223);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 105%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    width: 25px;
+    height: 25px;
+    z-index: 1;
+  }
+  .bAbrirNodo:hover {
+    background-color: cadetblue;
+  }
+  #zonaArrastre {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+  }
+  
+  .transparentoso {
+    opacity: 0.03;
+  }

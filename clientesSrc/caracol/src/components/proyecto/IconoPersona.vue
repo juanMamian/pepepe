@@ -1,0 +1,265 @@
+<template>
+  <div class="iconoPersona" :class="{ yo: soyYo, seleccionado: seleccionado }">
+    <img
+      class="fotografia"
+      :src="this.serverUrl + '/api/usuarios/fotografias/' + estaPersona.id"
+      v-show="fotografiaEnabled"
+      @load="fotografiaEnabled = true"
+      alt=""
+    />
+    <div id="contenedorAlertas">
+      <slot name="alertas"></slot>
+    </div>
+    <div class="nombres" :class="{ nombreSeleccionado: seleccionado }">
+      {{ estaPersona.nombres }}
+    </div>
+    <div id="menuCxPersona" v-show="menuContextual">
+      <div class="botonMenuCx">{{ estaPersona.nombres+' ' + estaPersona.apellidos}}</div>
+      <div class="botonMenuCx" @click="copiarId">{{ estaPersona.id }}</div>
+      <div class="botonMenuCx" v-if="usuarioSuperadministrador">
+        {{ estaPersona.username }}
+      </div>
+      <div class="botonMenuCx">
+        Permisos
+        <div id="listaPermisos">
+          <div
+            class="elementoListaPermisos"
+            :class="{permisoActivo: estaPersona.permisos && estaPersona.permisos.includes(permiso)}"
+            v-for="(permiso, index) of permisosPosibles"
+            :key="'permiso' + estaPersona.id + index"
+            @click.stop="togglePermiso(permiso, estaPersona.id)"
+          >
+            {{permiso}}
+          </div>
+        </div>
+      </div>
+      <div
+        class="botonMenuCx"
+        :key="index"
+        v-for="(opcionCx, index) of opcionesMenuCx"
+        @click="$emit(opcionCx.evento)"
+      >
+        {{ opcionCx.textoVisible }}
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import gql from "graphql-tag";
+
+export default {
+  name: "IconoPersona",
+  data() {
+    return {
+      nuevoPermiso: null,
+      mounted: false,
+      fotografiaEnabled: false,
+      permisosPosibles: [
+        "usuario",
+        "administrador",
+        "atlasAdministrador",
+        "superadministrador",
+        "actividadesEstudiantiles-profe",
+        "actividadesEstudiantiles-administrador",
+        "actividadesEstudiantiles-guia",
+        "visitante",
+        "maestraVida",
+        "maestraVida-estudiante",
+        "maestraVida-profesor",
+        "maestraVida-acompañante",
+        "comunere"
+      ],
+    };
+  },
+  props: {
+    estaPersona: {
+      type: Object,
+      default: function () {
+        return {
+          id: "-1",
+        };
+      },
+    },
+    seleccionado: Boolean,
+    menuContextual: Boolean,
+    opcionesMenuCx: {
+      type: Array,
+    },
+  },
+  computed: {
+    soyYo() {
+      if (this.mounted && this.estaPersona && this.usuario) {
+        return this.usuario.id == this.estaPersona.id
+          ? true
+          : false;
+      }
+      return false;
+    },
+  },
+  methods: {
+    addPermisos() {
+      console.log(
+        `enviando ${this.nuevoPermiso} para el usuario con id ${this.estaPersona.id}`
+      );
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($nuevoPermiso: String!, $idUsuario: ID!) {
+              addPermisoUsuario(
+                nuevoPermiso: $nuevoPermiso
+                idUsuario: $idUsuario
+              ) {
+                id
+                permisos
+              }
+            }
+          `,
+          variables: {
+            nuevoPermiso: this.nuevoPermiso,
+            idUsuario: this.estaPersona.id,
+          },
+        })
+        .then(() => {})
+        .catch((error) => {
+          console.log("error: " + error);
+        });
+    },
+    copiarId(e) {
+      let str = e.target.innerText.trim();
+      const el = document.createElement("textarea");
+      el.value = str;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    },
+    fotografiaCargada() {
+      console.log(`Fotografía cargada`);
+    },
+    togglePermiso(permiso, idPersona){
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($permiso:String!, $idUsuario:ID!){
+            togglePermisoUsuario(permiso: $permiso, idUsuario: $idUsuario){
+              id
+              permisos
+            }
+          }
+        `,
+        variables:{
+          permiso,
+          idUsuario:idPersona
+        }
+      })
+    }
+  },
+  mounted() {
+    this.mounted = true;
+  },
+  beforeRouteUpdate() {
+    console.log(`Before update`);
+  },
+};
+</script>
+
+<style scoped>
+.iconoPersona {
+  cursor: pointer;
+  position: relative;
+  border-radius: 50%;
+  user-select: none;
+  width: 70px;
+  height: 70px;
+  border: 1px solid transparent;
+}
+.iconoPersona:hover {
+  border-color: purple;
+}
+
+.fotografia {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  position: absolute;
+  pointer-events: none;
+}
+.seleccionado {
+  border-color: purple;
+}
+#contenedorAlertas {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.yo {
+  border: 1px solid purple;
+}
+
+.nombres {
+  background-color: rgb(243, 216, 204);
+  position: absolute;
+  top: 105%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  border: 1px solid rgb(105, 24, 24);
+  padding: 3px 5px;
+  border-radius: 5px;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+.nombreSeleccionado {
+  background-color: rgb(241, 175, 147);
+}
+
+.botonMenuCx {
+  cursor: pointer;
+  font-size: 14px;
+  padding: 3px 7px;
+  position: relative;
+}
+.seccionMenuCx {
+  font-size: 15px;
+  color: rgb(71, 71, 71);
+}
+.infoMenuCx {
+  font-size: 15px;
+  color: rgb(107, 107, 107);
+}
+.botonMenuCx:hover {
+  background-color: gray;
+}
+#listaPermisos {
+  position: absolute;
+  left: 100%;
+  top: 0%;
+  min-height: 10px;
+  min-width: 10px;
+  background-color: gray;
+}
+.elementoListaPermisos{
+  padding: 2px 5px;
+  cursor: pointer;
+}
+.elementoListaPermisos:hover{
+  background-color: rgb(187, 187, 187);
+}
+.permisoActivo{
+  background-color: rgb(45, 156, 45);
+}
+.permisoActivo:hover{
+  background-color: rgb(77, 192, 77);
+}
+#menuCxPersona {
+  position: absolute;
+  top: 110%;
+  left: 110%;
+  min-width: 140px;
+
+  z-index: 10;
+  background-color: rgb(177, 177, 159);
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+</style>

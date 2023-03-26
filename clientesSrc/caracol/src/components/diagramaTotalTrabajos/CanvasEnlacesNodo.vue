@@ -1,0 +1,513 @@
+<template>
+  <div id="canvasEnlacesNodo" v-show="nodoVisible">
+    <transition name="fade">
+      <canvas
+        v-show="!seleccionado"
+        ref="enlacesGrises"
+        class="enlacesGrises enlaces"
+        :style="[offset]"
+      >
+      </canvas>
+    </transition>
+    <transition name="fade">
+      <canvas
+        v-show="seleccionado"
+        ref="enlacesRequeridos"
+        class="enlacesRequeridos enlaces"
+        :style="[offset]"
+      >
+      </canvas>
+    </transition>
+    <transition name="fade">
+      <canvas
+        v-show="seleccionado && !plegado"
+        ref="enlacesChildren"
+        class="enlacesChildren enlaces"
+        :style="[offset]"
+      >
+      </canvas>
+    </transition>
+
+    <transition name="fade">
+      <canvas
+        v-show="requiereSeleccionado"
+        ref="enlacesSeleccionado"
+        class="enlacesSeleccionado enlaces"
+        :style="[offsetSeleccionado]"
+      >
+      </canvas>
+    </transition>
+
+    
+  </div>
+</template>
+
+<script>
+export default {
+  name: "CanvasEnlacesNodo",
+  props: {
+    yo: Object,
+    esteNodo: Object,
+    todosNodos: Array,
+    factorZoom: Number,
+    nodoSeleccionado: Object,
+    childSeleccionado: Boolean,
+    idsNodosVisibles: Array,
+    redibujarEnlaces: {
+      type: Number,
+      default: 0,
+    },
+  },
+  data() {
+    return {
+      esquinasSeleccionado: {
+        x1: 0,
+        x2: 0,
+        y1: 0,
+        y2: 0,
+      },
+      posicionSeleccionado: {
+        x: 0,
+        y: 0,
+      },
+    };
+  },
+  methods: {
+    setEsquinasSeleccionado() {
+      if (!this.requiereSeleccionado)
+        this.esquinasSeleccionado = {
+          x1: 0,
+          x2: 0,
+          y1: 0,
+          y2: 0,
+        };
+      const nodosInvolucrados = [
+        this.todosNodos.find((n) => n.id === this.esteNodo.id),
+        this.todosNodos.find((n) => n.id === this.nodoSeleccionado.id),
+      ];
+
+      const x1 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.autoCoords.x < acc) {
+          return n.autoCoords.x;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.autoCoords.x);
+      const x2 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.autoCoords.x > acc) {
+          return n.autoCoords.x;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.autoCoords.x);
+      const y1 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.autoCoords.y < acc) {
+          return n.autoCoords.y;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.autoCoords.y);
+      const y2 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.autoCoords.y > acc) {
+          return n.autoCoords.y;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.autoCoords.y);
+
+      this.esquinasSeleccionado = {
+        x1,
+        x2,
+        y1,
+        y2,
+      };
+    },
+    setPosicionSeleccionado() {
+      this.posicionSeleccionado = {
+        x: this.esquinasSeleccionado.x1,
+        y: this.esquinasSeleccionado.y1,
+      };
+    },
+
+    trazarVinculosGrises() {
+      if (!this.nodoVisible) return;
+      var lapiz = this.$refs.enlacesGrises.getContext("2d");
+      lapiz.canvas.width =
+        (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom;
+      lapiz.canvas.height =
+        (this.esquinas.y2 - this.esquinas.y1) * this.factorZoom;
+
+      lapiz.lineWidth = 2;
+      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+      lapiz.beginPath();
+      lapiz.strokeStyle = "#b3b3b3";
+
+      this.nodosRequeridos.forEach((nodoRequerido) => {
+        if (this.idsNodosVisibles.includes(nodoRequerido.id)) {
+          this.dibujarLineaEntreNodos(
+            nodoRequerido,
+            this.esteNodo,
+            lapiz,
+            this.posicion
+          );
+        }
+      });
+      lapiz.stroke();
+    },
+    trazarVinculosRequeridos() {
+      if (!this.nodoVisible) return;
+      var lapiz = this.$refs.enlacesRequeridos.getContext("2d");
+      lapiz.canvas.width =
+        (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom;
+      lapiz.canvas.height =
+        (this.esquinas.y2 - this.esquinas.y1) * this.factorZoom;
+
+      lapiz.lineWidth = 2;
+      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+
+      this.nodosRequeridos.forEach((nodoRequerido) => {
+        if (
+          this.idsNodosVisibles.includes(nodoRequerido.id) &&
+          !(
+            nodoRequerido.nodoParent &&
+            nodoRequerido.nodoParent.idNodo === this.esteNodo.id
+          )
+        ) {
+          lapiz.beginPath();
+          if (
+            nodoRequerido.nodoParent &&
+            nodoRequerido.nodoParent.idNodo === this.esteNodo.id
+          ) {
+            lapiz.strokeStyle = "#d55f18";
+          } else {
+            lapiz.strokeStyle = "#d09a83";
+          }
+          this.dibujarLineaEntreNodos(
+            nodoRequerido,
+            this.esteNodo,
+            lapiz,
+            this.posicion
+          );
+          lapiz.stroke();
+        }
+      });
+    },
+    trazarVinculosChildren() {
+      if (!this.nodoVisible) return;
+      var lapiz = this.$refs.enlacesChildren.getContext("2d");
+      lapiz.canvas.width =
+        (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom;
+      lapiz.canvas.height =
+        (this.esquinas.y2 - this.esquinas.y1) * this.factorZoom;
+
+      lapiz.lineWidth = 2;
+      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+      lapiz.beginPath();
+      lapiz.strokeStyle = "#d55f18";
+
+      this.nodosChildren.forEach((nodoChild) => {
+        if (this.idsNodosVisibles.includes(nodoChild.id)) {
+          this.dibujarLineaEntreNodos(
+            nodoChild,
+            this.esteNodo,
+            lapiz,
+            this.posicion
+          );
+        }
+      });
+      lapiz.stroke();
+    },
+    trazarVinculosSeleccionado() {
+      if (!this.nodoVisible) return;
+
+      this.setEsquinasSeleccionado();
+      this.setPosicionSeleccionado();
+      var lapiz = this.$refs.enlacesSeleccionado.getContext("2d");
+      lapiz.canvas.width =
+        (this.esquinasSeleccionado.x2 - this.esquinasSeleccionado.x1) *
+        this.factorZoom;
+      lapiz.canvas.height =
+        (this.esquinasSeleccionado.y2 - this.esquinasSeleccionado.y1) *
+        this.factorZoom;
+
+      lapiz.lineWidth = 2;
+      lapiz.clearRect(0, 0, lapiz.canvas.width, lapiz.canvas.height);
+      lapiz.beginPath();
+      lapiz.strokeStyle = "#1e4bbf";
+      [this.nodoSeleccionado].forEach((nodoAzul) => {
+        this.dibujarLineaEntreNodos(
+          nodoAzul,
+          this.esteNodo,
+          lapiz,
+          this.posicionSeleccionado
+        );
+      });
+      lapiz.stroke();
+    },
+    dibujarLineaEntreNodos(nodoFrom, nodoTo, lapiz, posicion) {
+      var anguloVinculo = Math.atan(
+        (nodoTo.autoCoords.y - nodoFrom.autoCoords.y) /
+          (nodoTo.autoCoords.x - nodoFrom.autoCoords.x)
+      );
+
+      if (
+        nodoTo.autoCoords.y - nodoFrom.autoCoords.y < 0 &&
+        nodoTo.autoCoords.x - nodoFrom.autoCoords.x < 0
+      )
+        anguloVinculo += Math.PI;
+      if (
+        nodoTo.autoCoords.y - nodoFrom.autoCoords.y > 0 &&
+        nodoTo.autoCoords.x - nodoFrom.autoCoords.x < 0
+      )
+        anguloVinculo += Math.PI;
+
+      const zonaNodo = {
+        x: Math.round(20 * Math.cos(anguloVinculo)),
+        y: Math.round(20 * Math.sin(anguloVinculo)),
+      };
+
+      let inicio = {
+        x: Math.round(
+          (nodoFrom.autoCoords.x + zonaNodo.x) * this.factorZoom -
+            posicion.x * this.factorZoom
+        ),
+        y: Math.round(
+          (nodoFrom.autoCoords.y + zonaNodo.y) * this.factorZoom -
+            posicion.y * this.factorZoom
+        ),
+      };
+      let final = {
+        x: Math.round(
+          (nodoTo.autoCoords.x - zonaNodo.x) * this.factorZoom -
+            posicion.x * this.factorZoom
+        ),
+        y: Math.round(
+          (nodoTo.autoCoords.y - zonaNodo.y) * this.factorZoom -
+            posicion.y * this.factorZoom
+        ),
+      };
+
+      lapiz.moveTo(inicio.x, inicio.y);
+      lapiz.lineTo(final.x, final.y);
+      //ahora la flechita
+      const centro = {
+        x: Math.round((final.x + inicio.x) / 2),
+        y: Math.round((final.y + inicio.y) / 2),
+      };
+      const longitudAla = Math.round(7 * this.factorZoom);
+
+      const puntaAlaIzquierda = {
+        x: Math.round(
+          centro.x + longitudAla * Math.cos(anguloVinculo - (3 * Math.PI) / 4)
+        ),
+        y: Math.round(
+          centro.y + longitudAla * Math.sin(anguloVinculo - (3 * Math.PI) / 4)
+        ),
+      };
+      const puntaAlaDerecha = {
+        x: Math.round(
+          centro.x + longitudAla * Math.cos(anguloVinculo + (3 * Math.PI) / 4)
+        ),
+        y: Math.round(
+          centro.y + longitudAla * Math.sin(anguloVinculo + (3 * Math.PI) / 4)
+        ),
+      };
+      lapiz.moveTo(centro.x, centro.y);
+      lapiz.lineTo(puntaAlaIzquierda.x, puntaAlaIzquierda.y);
+      lapiz.moveTo(centro.x, centro.y);
+      lapiz.lineTo(puntaAlaDerecha.x, puntaAlaDerecha.y);
+    },
+  },
+  computed: {
+    posNodo() {
+      return this.esteNodo.autoCoords;
+    },
+    idsNodosRequeridos() {
+      return this.esteNodo.vinculos
+        .filter((v) => v.tipo === "requiere")
+        .map((v) => v.idRef);
+    },
+    nodosRequeridos() {
+      return this.todosNodos.filter((n) =>
+        this.idsNodosRequeridos.includes(n.id)
+      );
+    },
+    nodosChildren() {
+      return this.todosNodos.filter(
+        (n) =>
+          this.idsNodosRequeridos.includes(n.id) &&
+          n.nodoParent &&
+          n.nodoParent.idNodo === this.esteNodo.id
+      );
+    },
+    cantidadNodosRequeridos() {
+      return this.nodosRequeridos.length;
+    },
+    esquinas() {
+      const nodosInvolucrados = this.todosNodos.filter(
+        (n) =>
+          (this.idsNodosRequeridos.includes(n.id) ||
+            n.id === this.esteNodo.id) &&
+          this.idsNodosVisibles.includes(n.id)
+      );
+      const x1 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.autoCoords.x < acc) {
+          return n.autoCoords.x;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.autoCoords.x);
+      const x2 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.autoCoords.x > acc) {
+          return n.autoCoords.x;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.autoCoords.x);
+      const y1 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.autoCoords.y < acc) {
+          return n.autoCoords.y;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.autoCoords.y);
+      const y2 = nodosInvolucrados.reduce((acc, n) => {
+        if (n.autoCoords.y > acc) {
+          return n.autoCoords.y;
+        } else {
+          return acc;
+        }
+      }, this.esteNodo.autoCoords.y);
+
+      return {
+        x1,
+        x2,
+        y1,
+        y2,
+      };
+    },
+    posicion() {
+      return {
+        x: this.esquinas.x1,
+        y: this.esquinas.y1,
+      };
+    },
+    offset() {
+      return {
+        left: this.esquinas.x1 * this.factorZoom + "px",
+        top: this.esquinas.y1 * this.factorZoom + "px",
+        width: (this.esquinas.x2 - this.esquinas.x1) * this.factorZoom + "px",
+        height: (this.esquinas.y2 - this.esquinas.y1) * this.factorZoom + "px",
+      };
+    },
+
+    apariencia() {
+      if (
+        this.nodoSeleccionado &&
+        this.nodoSeleccionado.id === this.esteNodo.id
+      ) {
+        return {
+          backgroundColor: "rgba(128, 255, 0, 0.39)",
+        };
+      }
+      return {
+        backgroundColor: "rgba(128, 255, 0, 0)",
+      };
+    },
+    seleccionado() {
+      if (!this.nodoSeleccionado) {
+        return false;
+      }
+      return this.nodoSeleccionado.id === this.esteNodo.id;
+    },
+    plegado() {
+      if (
+        !this.usuario ||
+        !this.usuario.id ||
+        !this.yo ||
+        !this.yo.atlasSolidaridad ||
+        !this.yo.atlasSolidaridad.idsNodosPlegados
+      )
+        return false;
+
+      return this.yo.atlasSolidaridad.idsNodosPlegados.includes(
+        this.esteNodo.id
+      );
+    },
+    nodoVisible() {
+      return this.idsNodosVisibles.includes(this.esteNodo.id);
+    },
+    requiereSeleccionado() {
+      if (!this.nodoSeleccionado) return false;
+      return this.esteNodo.vinculos.some(
+        (v) => v.tipo === "requiere" && v.idRef === this.nodoSeleccionado.id
+      );
+    },
+    offsetSeleccionado() {
+      return {
+        left: this.esquinasSeleccionado.x1 * this.factorZoom + "px",
+        top: this.esquinasSeleccionado.y1 * this.factorZoom + "px",
+        width:
+          (this.esquinasSeleccionado.x2 - this.esquinasSeleccionado.x1) *
+            this.factorZoom +
+          "px",
+        height:
+          (this.esquinasSeleccionado.y2 - this.esquinasSeleccionado.y1) *
+            this.factorZoom +
+          "px",
+      };
+    },
+  },
+  mounted() {
+    this.trazarVinculosGrises();
+    this.trazarVinculosRequeridos();
+    this.trazarVinculosChildren();
+  },
+  watch: {
+    redibujarEnlaces() {
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
+    },
+    cantidadNodosRequeridos() {
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
+    },
+    posNodo() {
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
+      this.trazarVinculosChildren();
+    },
+    esquinas() {
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
+      this.trazarVinculosChildren();
+    },
+    plegado() {
+      this.trazarVinculosGrises();
+      this.trazarVinculosRequeridos();
+    },
+    nodoSeleccionado() {
+      if (this.requiereSeleccionado) {
+        this.trazarVinculosSeleccionado();
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.enlaces {
+  position: absolute;
+  pointer-events: none;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
