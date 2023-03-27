@@ -85,22 +85,14 @@
 
     <div id="contenedorDiagrama" v-show="!$apollo.queries.yo.loading" ref="contenedorDiagrama"
       @scroll="updateCentroVistaSegunScroll">
-      <!-- <div id="contenedorVinculosNodos" :style="[offsetContenedorNodos]">
-        <enlaces-nodo-conocimiento v-for="nodo of nodosEnVista" :key="nodo.id" :yo="yo" ref="enlacesNodos"
-          :idNodoSeleccionado="idNodoSeleccionado" :esteNodo="nodo" :todosNodos="todosNodos" :factorZoom="factorZoom"
-          :esquinasDiagrama="esquinasDiagrama" :nodoSeleccionado="nodoSeleccionado"
-          :redibujarEnlaces="redibujarEnlacesNodos" :idsTodosNodosRender="idsTodosNodosRender"
-          :callingPosiciones="callingPosiciones" :conectadoSeleccionado="
-            idsNodosConectadosSeleccionado.includes(nodo.id)
-          " :idsNodosConectadosSeleccionado="idsNodosConectadosSeleccionado"
-          :idsNodosContinuacionSeleccionado="idsNodosContinuacionSeleccionado"
-          :idsNodosPreviosSeleccionado="idsNodosPreviosSeleccionado" :idsNodosPresentesCabeza="idsNodosPresentesCabeza" />
-      </div> -->
+      
       <div id="contenedorNodos" @contextmenu.self.exact.prevent="abrirMenuContextual" @mouseup.left.self="clickFondoAtlas"
         ref="contenedorNodos" :style="[offsetContenedorNodos]">
         <loading texto="" v-show="posicionCreandoNodo" style="position: absolute" :style="[offsetLoadingCreandoNodo]" />
-
-        <div class="placeholderNodoConocimiento" @click.stop="idNodoSeleccionado = nodo.id;"
+        
+        <div class="placeholderNodoConocimiento"
+          @dblclick="$router.push({ name: 'visorNodoConocimiento', params: { idNodo: nodo.id } })"
+          @click.stop="idNodoSeleccionado = nodo.id;"
           :style="[{ transform: `scale(${factorZoom})`, top: (nodo.coords.y - esquinasDiagrama.y1) * factorZoom + 'px', left: (nodo.coords.x - esquinasDiagrama.x1) * factorZoom + 'px' }]"
           v-for="nodo of nodosRenderConEstilos" :key="'placeholderNodo' + nodo.id"
           :class="{ seleccionado: idNodoSeleccionado === nodo.id, aprendido: idsNodosAprendidos.includes(nodo.id), estudiado: idsNodosEstudiados.includes(nodo.id), fresco: idsNodosFrescos.includes(nodo.id), aprendible: idsNodosEstudiables.includes(nodo.id), repasar: idsNodosRepasar.includes(nodo.id) }">
@@ -113,7 +105,8 @@
             {{ nodo.nombre }}
           </div>
 
-          <div class="lineaVinculo" v-for="vinculo of nodo.vinculos.filter(v=>v.estilo)" :key="vinculo.id" :style="[vinculo.estilo]">
+          <div class="lineaVinculo" v-for="vinculo of nodo.vinculos.filter(v => v.estilo)" :key="vinculo.id"
+            :style="[vinculo.estilo]">
             <div class="laLinea"></div>
           </div>
         </div>
@@ -171,6 +164,8 @@
         </svg>
       </div>
     </div>
+
+
 
     <loading id="simboloDescargandoNodos" v-show="!nodosDescargados || $apollo.queries.yo.loading"
       texto="descargando nodos de conocimiento" />
@@ -489,7 +484,7 @@ export default {
 
         nodo.vinculos = nodo.vinculos.map(vinculo => {
 
-          if(vinculo.rol==='source'){
+          if (vinculo.rol === 'source') {
             return {
               ...vinculo
             }
@@ -518,8 +513,8 @@ export default {
           //Calc distance
           let distance = Math.sqrt(Math.pow(posTo.y - posFrom.y, 2) + Math.pow(posTo.x - posFrom.x, 2));
 
-          let diametroBolitas=100;
-          let largoLinea=distance;
+          let diametroBolitas = 100;
+          let largoLinea = distance;
 
           let estilo = {
             paddingLeft: Math.round(diametroBolitas / 2) + 'px',
@@ -576,28 +571,28 @@ export default {
         ? true
         : false;
     },
-    nodosEnVista() {
-      console.log("calculando nodos en vista con " + this.centroVistaDecimal.x + " " + this.centroVistaDecimal.y);
+    // nodosEnVista() {
+    //   console.log("calculando nodos en vista con " + this.centroVistaDecimal.x + " " + this.centroVistaDecimal.y);
 
-      if (!this.$refs.contenedorDiagrama || !this.nodosRender) return [];
+    //   if (!this.$refs.contenedorDiagrama || !this.nodosRender) return [];
 
-      let anchoVista = this.$refs.contenedorDiagrama.clientWidth / this.factorZoom;
-      let altoVista = this.$refs.contenedorDiagrama.clientHeight / this.factorZoom;
+    //   let anchoVista = this.$refs.contenedorDiagrama.clientWidth / this.factorZoom;
+    //   let altoVista = this.$refs.contenedorDiagrama.clientHeight / this.factorZoom;
 
-      let factorVista = 1.5;
+    //   let factorVista = 1.5;
 
-      let nodosVista = this.nodosRender.filter(n => {
-        if (n.coords.x > this.centroVistaDecimal.x - anchoVista * factorVista && n.coords.x < this.centroVistaDecimal.x + anchoVista * factorVista) {
-          if (n.coords.y > this.centroVistaDecimal.y - altoVista * factorVista && n.coords.y < this.centroVistaDecimal.y + altoVista * factorVista) {
-            return true;
-          }
-        }
-      });
+    //   let nodosVista = this.nodosRender.filter(n => {
+    //     if (n.coords.x > this.centroVistaDecimal.x - anchoVista * factorVista && n.coords.x < this.centroVistaDecimal.x + anchoVista * factorVista) {
+    //       if (n.coords.y > this.centroVistaDecimal.y - altoVista * factorVista && n.coords.y < this.centroVistaDecimal.y + altoVista * factorVista) {
+    //         return true;
+    //       }
+    //     }
+    //   });
 
-      console.log("resultados: " + nodosVista.length);
+    //   console.log("resultados: " + nodosVista.length);
 
-      return nodosVista || [];
-    },
+    //   return nodosVista || [];
+    // },
 
     nodoTarget() {
       if (!this.idNodoTarget) return null;
@@ -840,7 +835,7 @@ export default {
       this.centroVistaDecimal.x = Math.round(nuevoX);
       this.centroVistaDecimal.y = Math.round(nuevoY);
 
-    }, 500),
+    }, 50),
     localizarNext(tipo) {
       let nodosConsiderados = [...this.nodosRender];
 
@@ -1528,13 +1523,11 @@ export default {
     },
 
     zoomVista: debounce(function (deltaZoom, posZoom) {
-      console.log(`zoomVista: ${deltaZoom} ${JSON.stringify(posZoom)} `);
 
       //Get distance from posZoom to centroVista    
-      let deltaX = posZoom.x - this.centroVistaDecimal.x;
-      let deltaY = posZoom.y - this.centroVistaDecimal.y;
+      let deltaX = this.centroVistaDecimal.x - posZoom.x;
+      let deltaY = this.centroVistaDecimal.y - posZoom.y;
 
-      console.log(`deltaX: ${deltaX} deltaY: ${deltaY} `);
 
       let deltaXPx = deltaX * this.factorZoom;
       let deltaYPx = deltaY * this.factorZoom;
@@ -1542,33 +1535,38 @@ export default {
 
       var nuevoZoom = this.zoom + deltaZoom;
       if (nuevoZoom < this.minZoom) {
-        this.zoom = this.minZoom;
+        nuevoZoom = this.minZoom;
       } else if (nuevoZoom > this.maxZoom) {
-        this.zoom = this.maxZoom;
-      } else {
-        this.zoom = nuevoZoom;
-      }
+        nuevoZoom = this.maxZoom;
+      } 
 
-      let factorZoom = this.zoom / 100;
+      this.zoom = nuevoZoom;
+
+      let factorZoom = nuevoZoom / 100;
 
       //Pan vista de acuerdo con la posición del mouse respecto del atlas
       //Get new esquinaVista
-      let nuevoCentroVista = {
+      let nuevoCentroVistaDeseado = {
         x: posZoom.x + (deltaXPx / factorZoom),
         y: posZoom.y + (deltaYPx / factorZoom),
       };
 
-      this.centroVistaDecimal.x = Math.round(nuevoCentroVista.x);
-      this.centroVistaDecimal.y = Math.round(nuevoCentroVista.y);
 
-    }, 200),
+      let nuevoScrollLeft = ((nuevoCentroVistaDeseado.x - this.esquinasDiagrama.x1 ) * factorZoom) - (this.$refs.contenedorDiagrama.clientWidth / 2);
+      let nuevoScrollTop = ((nuevoCentroVistaDeseado.y - this.esquinasDiagrama.y1) * factorZoom) - (this.$refs.contenedorDiagrama.clientHeight / 2);
+
+
+      this.$refs.contenedorDiagrama.scrollLeft = Math.round(nuevoScrollLeft);
+      this.$refs.contenedorDiagrama.scrollTop = Math.round(nuevoScrollTop);
+
+    }, 100),
     zoomWheel(e) {
       if (!this.hovered || !e.ctrlKey) {
         return;
       }
       e.preventDefault();
 
-      var contenedor = this.$refs.contenedorDiagrama;
+      var contenedor = this.$refs.contenedorNodos;
       let posContenedor = contenedor.getBoundingClientRect();
 
       let posEsquinaVista = {
@@ -1645,9 +1643,9 @@ export default {
       this.hideZoomInfo();
       this.drawVinculos();
     },
-    nodosEnVista() {
-      this.drawVinculos();
-    },
+    // nodosEnVista() {
+    //   this.drawVinculos();
+    // },
 
     //
   },
@@ -1958,5 +1956,13 @@ export default {
 
 .fadeOut-leave {
   opacity: 1;
+}
+
+#centroVista {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: red;
 }
 </style>
