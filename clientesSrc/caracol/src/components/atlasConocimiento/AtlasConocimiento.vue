@@ -85,7 +85,7 @@
 
     <div id="contenedorDiagrama" v-show="!$apollo.queries.yo.loading" ref="contenedorDiagrama"
       @scroll="updateCentroVistaSegunScroll">
-      
+
       <div id="contenedorNodos" @contextmenu.self.exact.prevent="abrirMenuContextual" @mouseup.left.self="clickFondoAtlas"
         ref="contenedorNodos" :style="[offsetContenedorNodos]">
         <loading texto="" v-show="posicionCreandoNodo" style="position: absolute" :style="[offsetLoadingCreandoNodo]" />
@@ -99,7 +99,7 @@
           v-for="nodo of nodosRenderConEstilos" :key="'placeholderNodo' + nodo.id"
           :class="{ seleccionado: idNodoSeleccionado === nodo.id, aprendido: idsNodosAprendidos.includes(nodo.id), estudiado: idsNodosEstudiados.includes(nodo.id), fresco: idsNodosFrescos.includes(nodo.id), aprendible: idsNodosEstudiables.includes(nodo.id), repasar: idsNodosRepasar.includes(nodo.id) }">
           <div class="bolita">
-            <img v-if="nodo.tipoNodo === 'concepto'" src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill">
+            <img v-if="nodo.tipoNodo === 'concepto'" src="@/assets/iconos/atlas/bombillo.svg" alt="Skill">
             <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill">
           </div>
 
@@ -139,6 +139,8 @@
           @tengoNuevoValorAprendido="setNodoAprendidoCache($event, nodo.id)"
           @mePongoEnMira="configurarNodoTarget(nodo.id)" /> -->
       </div>
+
+
     </div>
 
     <div id="barraInferior">
@@ -167,6 +169,8 @@
       </div>
     </div>
 
+    <controles-nodo :elNodo="nodoSeleccionado"
+      @setMeTarget="setNodoTarget(nodoSeleccionado.id); centrarEnNodoById(nodoSeleccionado.id)" />
 
 
     <loading id="simboloDescargandoNodos" v-show="!nodosDescargados || $apollo.queries.yo.loading"
@@ -184,6 +188,7 @@ import EnlacesNodoConocimiento from "./EnlacesNodoConocimiento.vue";
 import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
 import PieProgreso from "../utilidades/PieProgreso.vue";
 import debounce from "debounce";
+import ControlesNodo from "./controlesNodo.vue";
 
 export const fragmentoColecciones = gql`
   fragment fragColecciones on ColeccionNodosAtlasConocimiento {
@@ -279,6 +284,7 @@ export default {
     PanelConjuntosNodos,
     EnlacesNodoConocimiento,
     PieProgreso,
+    ControlesNodo,
   },
   name: "AtlasConocimiento",
   apollo: {
@@ -1529,14 +1535,14 @@ export default {
       let layoutContenedor = contenedor.getBoundingClientRect();
 
 
-      let deltaCentroPx={
+      let deltaCentroPx = {
         x: (layoutContenedor.width / 2) - posZoomPx.x,
         y: (layoutContenedor.height / 2) - posZoomPx.y,
-      } 
+      }
 
       let posZoom = {
-        x: this.esquinasDiagrama.x1 + (contenedor.scrollLeft / this.factorZoom) + (posZoomPx.x / this.factorZoom ),
-        y: this.esquinasDiagrama.y1 + (contenedor.scrollTop / this.factorZoom) + (posZoomPx.y / this.factorZoom ),
+        x: this.esquinasDiagrama.x1 + (contenedor.scrollLeft / this.factorZoom) + (posZoomPx.x / this.factorZoom),
+        y: this.esquinasDiagrama.y1 + (contenedor.scrollTop / this.factorZoom) + (posZoomPx.y / this.factorZoom),
       }
 
 
@@ -1545,7 +1551,7 @@ export default {
         nuevoZoom = this.minZoom;
       } else if (nuevoZoom > this.maxZoom) {
         nuevoZoom = this.maxZoom;
-      } 
+      }
 
       this.zoom = nuevoZoom;
 
@@ -1560,7 +1566,7 @@ export default {
       };
 
 
-      let nuevoScrollLeft = ((nuevoCentroVistaDeseado.x - this.esquinasDiagrama.x1 ) * factorZoom) - (layoutContenedor.width / 2);
+      let nuevoScrollLeft = ((nuevoCentroVistaDeseado.x - this.esquinasDiagrama.x1) * factorZoom) - (layoutContenedor.width / 2);
       let nuevoScrollTop = ((nuevoCentroVistaDeseado.y - this.esquinasDiagrama.y1) * factorZoom) - (layoutContenedor.height / 2);
 
 
@@ -1580,7 +1586,7 @@ export default {
       let posMousePx = {
         x: e.clientX - posContenedor.left,
         y: e.clientY - posContenedor.top,
-      };     
+      };
 
       const factorZoom = 0.05;
       this.zoomVista(-Math.round(e.deltaY * factorZoom), posMousePx);
