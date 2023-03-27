@@ -89,7 +89,9 @@
       <div id="contenedorNodos" @contextmenu.self.exact.prevent="abrirMenuContextual" @mouseup.left.self="clickFondoAtlas"
         ref="contenedorNodos" :style="[offsetContenedorNodos]">
         <loading texto="" v-show="posicionCreandoNodo" style="position: absolute" :style="[offsetLoadingCreandoNodo]" />
-        
+        <!-- <div id="centroVista" :style="[{left: ((centroVistaDecimal.x - esquinasDiagrama.x1) * this.factorZoom) + 'px', top: ((centroVistaDecimal.y - esquinasDiagrama.y1) *this.factorZoom ) + 'px'}]">
+          {{ centroVistaDecimal.x.toFixed(2) }}, {{ centroVistaDecimal.y.toFixed(2) }}
+        </div> -->
         <div class="placeholderNodoConocimiento"
           @dblclick="$router.push({ name: 'visorNodoConocimiento', params: { idNodo: nodo.id } })"
           @click.stop="idNodoSeleccionado = nodo.id;"
@@ -440,7 +442,7 @@ export default {
         y: 39,
       },
       showingZoomInfo: false,
-      zoom: 80,
+      zoom: 60,
       minZoom: 20,
       maxZoom: 200,
       pinching: false,
@@ -1522,15 +1524,20 @@ export default {
       // }
     },
 
-    zoomVista: debounce(function (deltaZoom, posZoom) {
-
-      //Get distance from posZoom to centroVista    
-      let deltaX = this.centroVistaDecimal.x - posZoom.x;
-      let deltaY = this.centroVistaDecimal.y - posZoom.y;
+    zoomVista: debounce(function (deltaZoom, posZoomPx) {
+      let contenedor = this.$refs.contenedorDiagrama;
+      let layoutContenedor = contenedor.getBoundingClientRect();
 
 
-      let deltaXPx = deltaX * this.factorZoom;
-      let deltaYPx = deltaY * this.factorZoom;
+      let deltaCentroPx={
+        x: (layoutContenedor.width / 2) - posZoomPx.x,
+        y: (layoutContenedor.height / 2) - posZoomPx.y,
+      } 
+
+      let posZoom = {
+        x: this.esquinasDiagrama.x1 + (contenedor.scrollLeft / this.factorZoom) + (posZoomPx.x / this.factorZoom ),
+        y: this.esquinasDiagrama.y1 + (contenedor.scrollTop / this.factorZoom) + (posZoomPx.y / this.factorZoom ),
+      }
 
 
       var nuevoZoom = this.zoom + deltaZoom;
@@ -1546,14 +1553,15 @@ export default {
 
       //Pan vista de acuerdo con la posición del mouse respecto del atlas
       //Get new esquinaVista
+
       let nuevoCentroVistaDeseado = {
-        x: posZoom.x + (deltaXPx / factorZoom),
-        y: posZoom.y + (deltaYPx / factorZoom),
+        x: posZoom.x + (deltaCentroPx.x / factorZoom),
+        y: posZoom.y + (deltaCentroPx.y / factorZoom),
       };
 
 
-      let nuevoScrollLeft = ((nuevoCentroVistaDeseado.x - this.esquinasDiagrama.x1 ) * factorZoom) - (this.$refs.contenedorDiagrama.clientWidth / 2);
-      let nuevoScrollTop = ((nuevoCentroVistaDeseado.y - this.esquinasDiagrama.y1) * factorZoom) - (this.$refs.contenedorDiagrama.clientHeight / 2);
+      let nuevoScrollLeft = ((nuevoCentroVistaDeseado.x - this.esquinasDiagrama.x1 ) * factorZoom) - (layoutContenedor.width / 2);
+      let nuevoScrollTop = ((nuevoCentroVistaDeseado.y - this.esquinasDiagrama.y1) * factorZoom) - (layoutContenedor.height / 2);
 
 
       this.$refs.contenedorDiagrama.scrollLeft = Math.round(nuevoScrollLeft);
@@ -1566,36 +1574,16 @@ export default {
       }
       e.preventDefault();
 
-      var contenedor = this.$refs.contenedorNodos;
+      var contenedor = this.$refs.contenedorDiagrama;
       let posContenedor = contenedor.getBoundingClientRect();
-
-      let posEsquinaVista = {
-        x: this.esquinasDiagrama.x1 + (contenedor.scrollLeft / this.factorZoom),
-        y: this.esquinasDiagrama.y1 + (contenedor.scrollTop / this.factorZoom),
-      };
 
       let posMousePx = {
         x: e.clientX - posContenedor.left,
         y: e.clientY - posContenedor.top,
-      };
+      };     
 
-      let posMouse = {
-        x: posMousePx.x / this.factorZoom,
-        y: posMousePx.y / this.factorZoom,
-      };
-
-      const posZoom = {
-        x: Math.round(posEsquinaVista.x + posMouse.x),
-        y: Math.round(posEsquinaVista.y + posMouse.y),
-      };
-
-      console.log(`posZoom: ${JSON.stringify(posZoom)}`);
-
-      const factorZoom = 0.1;
-      this.zoomVista(-Math.round(e.deltaY * factorZoom), {
-        x: posZoom.x,
-        y: posZoom.y,
-      });
+      const factorZoom = 0.05;
+      this.zoomVista(-Math.round(e.deltaY * factorZoom), posMousePx);
     },
     hideZoomInfo: debounce(function () {
       this.showingZoomInfo = false;
@@ -1651,7 +1639,7 @@ export default {
   },
   mounted() {
     if (screen.width < 600) {
-      this.zoom = 70;
+      this.zoom = 40;
     }
   },
   created() {
