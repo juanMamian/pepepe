@@ -1,41 +1,22 @@
 <template>
-  <div id="buscadorNodosConocimiento" :style="[{width: mostrandoInput?'min(100vh, 350px)':'30px'}]">
+  <div id="buscadorNodosConocimiento" :style="[{ width: mostrandoInput ? 'min(100vh, 350px)' : '30px' }]">
     <div id="barraSuperior">
-      <img
-        src="@/assets/iconos/search.png"
-        alt="Lupa"
-        title="Buscar nodos de conocimiento"
-        id="imagenLupa"
-        :class="{ opaco: !mostrandoInput }"
-        @click.stop="mostrandoInput = true"
-      />
+      <img src="@/assets/iconos/search.png" alt="Lupa" title="Buscar nodos de conocimiento" id="imagenLupa"
+        :class="{ opaco: !mostrandoInput }" @click.stop="mostrandoInput = true" />
       <transition name="unfold">
-        <input
-          type="text"
-          placeholder="Buscar"
-          v-model="textoBusqueda"
-          id="inputBuscador"
-          v-show="mostrandoInput"
-          autocomplete="off"
-          @click.stop=""
-          @keypress.enter="buscarDatabase"
-        />
+        <input type="text" placeholder="Buscar" v-model="textoBusqueda" id="inputBuscador" v-show="mostrandoInput"
+          autocomplete="off" @click.stop="" @keypress.enter="buscarDatabase" />
       </transition>
-      
+
     </div>
     <loading texto="Buscando" v-show="esperandoResultados" />
 
     <div id="listaResultados" v-show="mostrandoLista">
-      <div
-        class="resultado"
-        :key="resultado.id"
-        v-for="resultado of resultados"
-        @click.stop="
-          $emit('nodoSeleccionado', resultado);
-          mostrandoInput = false;
-          mostrandoLista = false;
-        "
-      >
+      <div class="resultado" :key="resultado.id" v-for="resultado of resultados" @click.stop="
+        $emit('nodoSeleccionado', resultado);
+      mostrandoInput = false;
+      mostrandoLista = false;
+                ">
         {{ resultado.nombre }}
       </div>
     </div>
@@ -62,10 +43,7 @@ export default {
 
       esperandoResultados: false,
     };
-  },
-  props: {
-    cerrarBusqueda: Number,
-  },
+  }, 
   methods: {
     cerrar() {
       this.mostrandoInput = false;
@@ -103,25 +81,26 @@ export default {
           this.esperandoResultados = false;
         });
     },
-  },
-  watch: {
-    textoBusqueda: function () {
-      this.mostrandoLista = false;
-    },
     cerrarBusqueda() {
       this.mostrandoInput = false;
       this.mostrandoLista = false;
     },
   },
+  watch: {
+    textoBusqueda: function () {
+      this.mostrandoLista = false;
+    },
+
+  },
 };
 </script>
 
 <style scoped>
-#barraSuperior{
-  display:flex;
+#barraSuperior {
+  display: flex;
   align-items: center;
   flex-direction: row-reverse;
-  
+
 }
 
 #inputBuscador {
@@ -140,9 +119,11 @@ export default {
 #imagenLupa:hover {
   opacity: 1;
 }
+
 .opaco {
   opacity: 0.5;
 }
+
 #listaResultados {
   margin: 2px auto;
   width: 100%;
@@ -154,6 +135,7 @@ export default {
   background-color: lightblue;
   cursor: pointer;
 }
+
 .resultado:hover {
   background-color: rgb(133, 179, 194);
 }
@@ -161,9 +143,11 @@ export default {
 .unfold-enter {
   width: 0px;
 }
+
 .unfold-enter-active {
   transition: width 1s;
 }
+
 .unfold-enter-to {
   width: 281px;
 }

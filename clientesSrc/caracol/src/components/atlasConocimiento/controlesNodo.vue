@@ -20,7 +20,7 @@
             </div>
         </div>
 
-        <div id="nombre" ref="nombre" @click="desplegado = !desplegado">
+        <div id="nombre" ref="nombre" @click="toggleDespliege">
             {{ elNodo?.nombre || '' }}
         </div>
 
@@ -162,6 +162,11 @@ export default {
         }
     },
     methods: {
+        toggleDespliege(){
+            if(!this.mostrandoFlechasConexiones){
+                this.desplegado = !this.desplegado;
+            }
+        },  
         clickFuera() {
             console.log("click fuera");
             this.mostrandoFlechasConexiones = false;
@@ -254,6 +259,7 @@ export default {
     },
     watch: {
         elNodo(nodo) {
+            this.mostrandoFlechasConexiones = false;
             if (!nodo) {
                 this.nivelesConexion = 0;
             }
@@ -428,7 +434,10 @@ export default {
 }
 
 
-.botonConexiones {}
+.botonConexiones {
+    height: 40px;
+    width: 40px;
+}
 
 /* #endregion */
 </style>

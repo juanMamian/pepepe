@@ -1,8 +1,6 @@
 <template>
   <div class="atlasConocimiento" :style="{ overflowY: nodoAbierto ? 'scroll' : 'hidden' }"
-    @mousedown.left.exact.stop="panningVista = true" @mouseenter="hovered = true" @mouseleave="hovered = false" @click="
-      idNodoMenuCx = null;
-    cerrarBusqueda++;">
+    @mousedown.left.exact.stop="panningVista = true" @mouseenter="hovered = true" @mouseleave="hovered = false" @click="clickFuera">
     <router-view :yo="yo" :datosNodosRepasar="datosNodosRepasar" :datosNodosUrgentes="datosNodosRepasar"
       @centrarEnNodo="centrarEnNodoById($event)" />
     <div id="zonaSeleccionColeccion" v-if="yo.atlas && yo.atlas.colecciones" v-show="!idNodoTarget">
@@ -78,7 +76,7 @@
       @click.stop="iniciarCallingPosiciones" :class="{ deshabilitado: callingPosiciones }" :style="[
         { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
       ]"></div>
-    <buscador-nodos-conocimiento @nodoSeleccionado="centrarEnNodo" ref="buscadorNodos" :cerrarBusqueda="cerrarBusqueda" />
+    <buscador-nodos-conocimiento @nodoSeleccionado="centrarEnNodo" ref="buscadorNodos" />
 
     <panel-conjuntos-nodos ref="panelConjuntosNodos" :yo="yo" :modoAtlas="modoAtlas"
       @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))" />
@@ -169,7 +167,7 @@
       </div>
     </div>
 
-    <controles-nodo :elNodo="nodoSeleccionado" :nivelesConexionDeeper="nivelesConexionDeeper" :nivelesConexionHigher="nivelesConexionHigher"
+    <controles-nodo ref="controlesNodo" :elNodo="nodoSeleccionado" :nivelesConexionDeeper="nivelesConexionDeeper" :nivelesConexionHigher="nivelesConexionHigher"
       @setMeTarget="setNodoTarget(nodoSeleccionado.id); centrarEnNodoById(nodoSeleccionado.id)"
       @nivelesConexion="nivelesConexion = $event" />
 
@@ -854,6 +852,10 @@ export default {
 
   },
   methods: {
+    clickFuera(){
+      this.$refs.controlesNodo.clickFuera();
+      this.$refs.buscadorNodos.cerrarBusqueda();
+    },  
     updateCentroVistaSegunScroll: debounce(function () {
       const contenedor = this.$refs.contenedorDiagrama;
       var scrolledY = (contenedor.scrollTop) / this.factorZoom;
