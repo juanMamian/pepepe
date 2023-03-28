@@ -227,6 +227,10 @@ const esquemaUsuario = new mongoose_1.default.Schema({
                 type: String,
             }
         }],
+    nodosCompletadosRutaGrado: {
+        type: [String],
+        default: []
+    },
     password: {
         type: String,
         required: true,
@@ -393,6 +397,9 @@ const esquemaUsuario = new mongoose_1.default.Schema({
 esquemaUsuario.pre("save", function (next) {
     var nuevoDatosNodos = [];
     console.log("Revisando si hay datos nodo repetidos");
+    if (!this.atlas.datosNodos) {
+        next();
+    }
     for (const dato of this.atlas.datosNodos) {
         if (!nuevoDatosNodos.map(dn => dn.idNodo).includes(dato.idNodo)) {
             nuevoDatosNodos.push(dato);

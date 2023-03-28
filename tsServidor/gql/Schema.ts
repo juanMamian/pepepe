@@ -14,7 +14,7 @@ import { typeDefs as tdCuentos, resolvers as rCuentos } from "./cuentos/Libro"
 import merge from "lodash/merge"
 import { InterfaceCredencialesUsuario } from "./tsObjetos"
 import { makeExecutableSchema } from "apollo-server-express";
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
 
 export const permisosEspecialesDefault = ["superadministrador"];
 
@@ -55,7 +55,6 @@ export const esquema = makeExecutableSchema({
 export const pubsub = new PubSub();
 
 const context = ({ req, res, connection }: any) => {
-    // console.log(`creando contexto`);
     var usuario: InterfaceCredencialesUsuario = {
         id: "",
         permisos: []
@@ -64,18 +63,20 @@ const context = ({ req, res, connection }: any) => {
         return connection.context;
     }
     else {
-        //console.log(`Conexion normal`);
 
         let headers: any = req.headers;
-        //console.log(`headers: ${JSON.stringify(headers)}`);
 
-        if (!headers.authorization) return { usuario };
+        if (!headers.authorization) { 
+            return usuario;
+        };
 
-        const token: string = headers.authorization;
+
+        const token: string = headers.authorization.substr(7);
         try {
             usuario = jwt.verify(token, process.env.JWT_SECRET);
         }
         catch (error) {
+            console.log(`error: ${error}`);
             usuario = {
                 id: "",
                 permisos: []

@@ -1267,7 +1267,7 @@ export default {
 
       var laSeccion = this.esteNodo.secciones.find((s) => s.id == idSeccion);
 
-      this.$set(laSeccion, "editandose", true);
+      this.laSeccion.editandose = true;
 
       var mov = 0;
       if (movimiento == "subir") mov = -1;

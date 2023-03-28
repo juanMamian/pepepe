@@ -139,8 +139,9 @@ extend type Query{
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
     nodosConocimientoByIds(idsNodos: [ID!]!):[NodoConocimiento],
-    busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
+    busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento],
 
+    idsMisNodosEstudiables:[String],
 
 },
 
@@ -326,6 +327,75 @@ export const resolvers = {
 
             return losNodos;
         },
+
+        async idsMisNodosEstudiables(_: any, __: any, contexto: contextoQuery) {
+            if (!contexto.usuario?.id) {
+                throw new AuthenticationError('loginRequerido');
+            }
+
+            const credencialesUsuario = contexto.usuario;
+            console.log("Getting ids de mis nodos estudiables");
+
+            try {
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) throw 'Usuario no encontrado';
+            }
+            catch (error) {
+                throw new ApolloError('Error conectando con la base de datos');
+            }
+
+            let datosAtlasConocimiento = elUsuario.atlas.datosNodos;
+            let datosNodosEstudiados = datosAtlasConocimiento.filter((dato: any) => dato.estudiado);
+            let datosNodosAprendidos = datosAtlasConocimiento.filter((dato: any) => dato.aprendido);
+
+            datosNodosEstudiados = datosNodosEstudiados.filter((dato: any) => {
+
+                let dateEstudiado = new Date(dato.estudiado);
+                let millisLimite = dateEstudiado.getTime() + dato.periodoRepaso;
+
+                if (millisLimite > new Date().getTime()) return true;
+            });
+
+            let todosNodosSabidos = [...datosNodosEstudiados, ...datosNodosAprendidos];
+            let idsTodosNodosSabidos = todosNodosSabidos.map((dato: any) => dato.idNodo);
+
+            console.log(`Retornando ${idsTodosNodosSabidos.length} ids de nodos sabidos`);
+
+            try {
+                var losNodosSabidos: any = await Nodo.find({ "_id": { $in: idsTodosNodosSabidos } }).exec();
+            } catch (error) {
+                console.log('Error descargando nodos de la base de datos: ' + error)
+                throw new ApolloError('Error conectando con la base de datos');
+            };
+
+            console.log(`Retornando ${losNodosSabidos.length} nodos sabidos`)
+
+            //Get  ids continuaciones. Ellos son los aprendibles
+
+            let vinculosRelevantes = losNodosSabidos.map((nodo: any) => nodo.vinculos.filter((vinculo: any) => vinculo.tipo == "continuacion" && vinculo.rol === 'source')).flat();
+            let idsNodosContinuacion = vinculosRelevantes.map((vinculo: any) => vinculo.idRef);
+            try {
+                var losNodosContinuacion: any = await Nodo.find({ "_id": { $in: idsNodosContinuacion } }).exec();
+            } catch (error) {
+                console.log('Error descargando nodos de la base de datos: ' + error)
+                throw new ApolloError('Error conectando con la base de datos');
+
+            };
+
+            let nodosAprendibles = losNodosContinuacion.filter((nodo: any) => {
+                let idsDependencias = nodo.vinculos.filter((vinculo: any) => vinculo.tipo == "continuacion" && vinculo.rol === "target").map((vinculo: any) => vinculo.idRef);
+
+                if (idsDependencias.every((id: any) => idsTodosNodosSabidos.includes(id))) return true;
+
+                return false;
+            })
+
+            let idsNodosAprendibles=nodosAprendibles.map((nodo:any)=>nodo.id);
+
+            return idsNodosAprendibles;
+        }
+
+
     },
     Mutation: {
         async posicionarNodosConocimientoByFuerzas(_: any, { ciclos }: any, contexto: contextoQuery) {

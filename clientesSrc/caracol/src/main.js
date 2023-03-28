@@ -5,6 +5,7 @@ import router from './router'
 import { apolloProvider } from './apollo'
 import { globalMixin } from "./globalMixin";
 import { persistor } from "./apolloCache";
+import "./estilosGlobales.css"
 
 
 

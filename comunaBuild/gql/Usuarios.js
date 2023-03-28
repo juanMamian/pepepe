@@ -18,6 +18,8 @@ const graphql_iso_date_1 = require("graphql-iso-date");
 const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
 const Nodo_1 = require("../model/atlas/Nodo");
 const Espacio_1 = require("../model/Espacio");
+const Schema_1 = require("./Schema");
+const NodosConocimiento_1 = require("./NodosConocimiento");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 exports.typeDefs = apollo_server_express_1.gql `
@@ -127,6 +129,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         numeroTel:String,
         username:String,
         nodosConocimiento: [ConocimientoUsuario],
+        nodosCompletadosRutaGrado: [ID],
         informesMaestraVida: [InformeEstudianteMaestraVida],
         atlas:InfoAtlas,        
         atlasSolidaridad:InfoAtlasSolidaridad,
@@ -184,6 +187,8 @@ exports.typeDefs = apollo_server_express_1.gql `
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 
+        setNodoGradoCompletadoUsuario(idUsuario: ID!, idNodo: ID!, nuevoEstado: Boolean!):Usuario,
+
         guardarInformeEstudianteMaestraVida(idUsuario:ID!, year: Int!, periodo: String!, idProfe: ID!, categoria: String!, texto: String!):InformeEstudianteMaestraVida,
 
         asignarPermisoTodosUsuarios(nuevoPermiso:String!):Boolean,
@@ -191,11 +196,10 @@ exports.typeDefs = apollo_server_express_1.gql `
 
         setPlegarNodoSolidaridadUsuario(idNodo:ID!):Usuario,
 
-        crearColeccionNodosAtlasConocimientoUsuario:Usuario,
-        eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Usuario,
+        crearColeccionNodosAtlasConocimientoUsuario:ColeccionNodosAtlasConocimiento,
+        eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Boolean,
         setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):Usuario,
-        addNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNuevoNodo:ID!):ColeccionNodosAtlasConocimiento,
-        removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):ColeccionNodosAtlasConocimiento,
+        removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):Boolean,
         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
         
         crearIteracionRepasoNodoConocimientoUsuario(idUsuario: ID!, idNodo: ID!, intervalo: Int):DatoNodoUsuario,
@@ -797,6 +801,52 @@ exports.resolvers = {
                 return elUsuario;
             });
         },
+        setNodoGradoCompletadoUsuario(_, { idUsuario, idNodo, nuevoEstado }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Mutacion de set en ${nuevoEstado} el nodo ${idNodo} para el usuario ${idUsuario}`);
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                const tienePermisosEspeciales = Schema_1.permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
+                const esProfe = credencialesUsuario.permisos.includes("maestraVida-profesor");
+                if (!tienePermisosEspeciales && !esProfe) {
+                    console.log("No autorizado");
+                    throw new apollo_server_express_1.AuthenticationError("No autorizado");
+                }
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(idUsuario).exec();
+                    if (!elUsuario)
+                        throw 'Usuario no encontrado';
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                const indexN = elUsuario.nodosCompletadosRutaGrado.indexOf(idNodo);
+                if (nuevoEstado) {
+                    if (indexN > -1) {
+                        throw new apollo_server_express_1.UserInputError("El nodo ya estaba completado");
+                    }
+                    elUsuario.nodosCompletadosRutaGrado.push(idNodo);
+                }
+                else {
+                    if (indexN === -1) {
+                        throw new apollo_server_express_1.UserInputError("El nodo no estaba completado");
+                    }
+                    elUsuario.nodosCompletadosRutaGrado.splice(indexN, 1);
+                }
+                try {
+                    elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`Error guardando el usuario con cambio en nodosGrado completados : ` + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                console.log("Toggling completado");
+                return elUsuario;
+            });
+        },
         guardarInformeEstudianteMaestraVida: function (_, { idUsuario, year, periodo, idProfe, categoria, texto }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log('\x1b[35m%s\x1b[0m', `Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
@@ -970,7 +1020,7 @@ exports.resolvers = {
                     console.log(`Error guardando la colección en la base de datos`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                return elUsuario;
+                return nuevaColeccion;
             });
         },
         eliminarColeccionNodosAtlasConocimientoUsuario(_, { idColeccion }, contexto) {
@@ -1004,7 +1054,8 @@ exports.resolvers = {
                     console.log(`Error guardando la colección en la base de datos`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
                 }
-                return elUsuario;
+                console.log(`Colección eliminada`);
+                return true;
             });
         },
         setNombreColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, nuevoNombre }, contexto) {
@@ -1042,40 +1093,6 @@ exports.resolvers = {
                 return elUsuario;
             });
         },
-        addNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNuevoNodo }, contexto) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const credencialesUsuario = contexto.usuario;
-                try {
-                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
-                    if (!elUsuario) {
-                        throw "Usuario no encontrado";
-                    }
-                }
-                catch (error) {
-                    console.log(`Error buscando el usuario`);
-                    throw new apollo_server_express_1.ApolloError("Usuario no encontrado");
-                }
-                var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
-                if (!laColeccion) {
-                    console.log(`Coleccion no encontrada`);
-                    throw new apollo_server_express_1.UserInputError("Colección no encontrada");
-                }
-                var indexN = laColeccion.idsNodos.indexOf(idNuevoNodo);
-                if (indexN === -1) {
-                    laColeccion.idsNodos.push(idNuevoNodo);
-                }
-                else {
-                    throw new apollo_server_express_1.UserInputError("Nodo ya existía en la colección");
-                }
-                try {
-                    yield elUsuario.save();
-                }
-                catch (error) {
-                    throw new apollo_server_express_1.ApolloError("Error guardando datos de usuario en la base de datos");
-                }
-                return laColeccion;
-            });
-        },
         removeNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNodo }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 const credencialesUsuario = contexto.usuario;
@@ -1107,7 +1124,7 @@ exports.resolvers = {
                 catch (error) {
                     throw new apollo_server_express_1.ApolloError("Error guardando datos de usuario en la base de datos");
                 }
-                return laColeccion;
+                return true;
             });
         },
         toggleNodoColeccionNodosAtlasConocimientoUsuario(_, { idColeccion, idNodo, idUsuario }, contexto) {
@@ -1137,7 +1154,24 @@ exports.resolvers = {
                 }
                 const indexN = laColeccion.idsNodos.indexOf(idNodo);
                 if (indexN === -1) {
+                    try {
+                        var elNodo = yield Nodo_1.ModeloNodo.findById(idNodo).exec();
+                        if (!elNodo)
+                            throw 'Nodo no encontrado';
+                    }
+                    catch (error) {
+                        console.log('Error descargando el nodo de la base de datos: ' + error);
+                        throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                    }
+                    ;
+                    const idsRedContinuacion = yield NodosConocimiento_1.getIdsRedContinuacionesNodo(elNodo);
+                    if (laColeccion.idsNodos.some(id => idsRedContinuacion.includes(id))) {
+                        console.log(`Error porque era un nodo que ya estaba incluido como parte de la red de requerimentos de otro`);
+                        throw new apollo_server_express_1.UserInputError('Este nodo ya estaba incluido como parte del camino a otro nodo');
+                    }
                     laColeccion.idsNodos.push(idNodo);
+                    const idsRedPrevia = yield NodosConocimiento_1.getIdsRedRequerimentosNodo(elNodo);
+                    laColeccion.idsNodos = laColeccion.idsNodos.filter(idN => !idsRedPrevia.includes(idN));
                 }
                 else {
                     laColeccion.idsNodos.splice(indexN, 1);
@@ -1588,19 +1622,20 @@ exports.resolvers = {
                         console.log(`Error getting nodos actuales : ` + error);
                         throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
                     }
-                    todosNodos.push(...nodosActuales);
-                    idsNodosActuales = [];
-                    for (const nodo of nodosActuales) {
-                        let idsRequeridos = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === "target").map(v => v.idRef);
-                        for (const idRequerido of idsRequeridos) {
-                            if (!idsNodosActuales.includes(idRequerido)) {
-                                idsNodosActuales.push(idRequerido);
-                            }
-                        }
-                    }
+                    let nodosNuevos = nodosActuales.filter(nd => !todosNodos.some(n => n.id === nd.id));
+                    todosNodos.push(...nodosNuevos);
+                    idsNodosActuales = nodosNuevos.reduce((acc, n) => {
+                        let vinculosPrevios = n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target');
+                        let idsPrevios = vinculosPrevios.map(v => v.idRef);
+                        let idsNuevos = idsPrevios.filter(id => !acc.includes(id));
+                        return acc.concat(idsNuevos);
+                    }, []);
                     guarda++;
                 }
                 console.log(`Encontrados ${todosNodos.length} nodos relevantes para esta colección`);
+                if (todosNodos.length < 1) {
+                    return 0;
+                }
                 const idsTodosNodos = todosNodos.map(n => n.id);
                 try {
                     var elUsuario = yield Usuario_1.ModeloUsuario.findById(parent.idUsuario).exec();

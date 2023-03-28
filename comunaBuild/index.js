@@ -28,6 +28,12 @@ app.use("/pepepe", express_1.default.static(__dirname + '/clientes/pepepe'));
 app.get("/pepepe", function (req, res) {
     res.sendFile(__dirname + "/clientes/pepepe/index.html");
 });
+//Rutas pepepe
+console.log(`Carpeta estatica en ${__dirname + '/caracol'}`);
+app.use("/caracol", express_1.default.static(__dirname + '/clientes/caracol'));
+app.get("/caracol", function (req, res) {
+    res.sendFile(__dirname + "/clientes/caracol/index.html");
+});
 //rutas tallerCuentos
 app.use("/tallerCuentos", express_1.default.static(__dirname + "/clientes/tallerCuentos"));
 app.get("/tallerCuentos", function (req, res) {

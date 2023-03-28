@@ -51,7 +51,7 @@
         "
         v-show="creandoConversacion"
       >
-        <center><h3>Creando conversación</h3></center>
+        <h3>Creando conversación</h3>
         <input
           type="text"
           v-model="tituloNuevaConversacion"
@@ -183,7 +183,7 @@ export default {
         if (this.numPaginaSeleccionada != pagina) {
           this.numPaginaSeleccionada = pagina;
         }
-        this.$set(this.conversacionesPorPagina, pagina, conversaciones);
+        this.conversacionesPorPagina[pagina] = conversaciones;
         return numPaginas;
       },
     },

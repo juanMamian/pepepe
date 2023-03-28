@@ -19,7 +19,7 @@ const esquemaClase = new mongoose_1.default.Schema({
 });
 const EsquemaVinculo = new mongoose_1.default.Schema({
     idRef: {
-        type: mongoose_1.default.Types.ObjectId,
+        type: String,
         required: true
     },
     rol: {
@@ -46,6 +46,10 @@ var esquemaNodo = new mongoose_1.default.Schema({
         max: 50,
         required: true,
         default: "nodo de conocimiento"
+    },
+    nivel: {
+        type: Number,
+        default: 0
     },
     descripcion: {
         type: String

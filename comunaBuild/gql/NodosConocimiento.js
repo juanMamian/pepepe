@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolvers = exports.NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS = exports.typeDefs = exports.idAtlasConocimiento = void 0;
+exports.getIdsRedContinuacionesNodo = exports.getIdsRedRequerimentosNodo = exports.resolvers = exports.NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS = exports.typeDefs = exports.idAtlasConocimiento = void 0;
 const apollo_server_express_1 = require("apollo-server-express");
 const Nodo_1 = require("../model/atlas/Nodo");
 const Usuario_1 = require("../model/Usuario");
@@ -62,6 +62,7 @@ type NodoConocimiento{
     coordY: Int,
     tipoNodo: String,
     vinculos: [Vinculo],
+    porcentajeCompletado: Float,
     coordsManuales: Coords,
     coords:Coords,
     autoCoords:Coords,
@@ -76,6 +77,7 @@ type NodoConocimiento{
     expertos: [String],
     posiblesExpertos:[String],
     secciones:[SeccionContenidoNodo],
+    nivel: Int,
     angulo:Float
     fuerzaCentroMasa:FuerzaPolar,
     fuerzaColision:FuerzaPolar
@@ -167,7 +169,7 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`enviando todos los nombres, vinculos y coordenadas`);
                 try {
-                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre tipoNodo descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
+                    var todosNodos = yield Nodo_1.ModeloNodo.find({}, "nombre tipoNodo nivel descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
                     console.log(`encontrados ${todosNodos.length} nodos`);
                 }
                 catch (error) {
@@ -421,12 +423,18 @@ exports.resolvers = {
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
-                    var nodoSource = yield Nodo_1.ModeloNodo.findById(args.idSource, "vinculos").exec();
-                    var nodoTarget = yield Nodo_1.ModeloNodo.findById(args.idTarget, "vinculos").exec();
+                    var nodoSource = yield Nodo_1.ModeloNodo.findById(args.idSource, "vinculos nombre").exec();
+                    var nodoTarget = yield Nodo_1.ModeloNodo.findById(args.idTarget, "vinculos nombre").exec();
                 }
                 catch (error) {
                     console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
                 }
+                //Prevenir loop.
+                let idsRedPrevia = yield getIdsRedRequerimentosNodo(nodoSource);
+                if (idsRedPrevia.includes(nodoTarget.id)) {
+                    throw new apollo_server_express_1.UserInputError('Una vinculación entre estos nodos produce loop');
+                }
+                console.log(`Los ids previos de la red son: ${idsRedPrevia}`);
                 //Buscar y eliminar vinculos previos entre estos dos nodos.
                 for (var vinculo of nodoSource.vinculos) {
                     if (vinculo.idRef == args.idTarget) {
@@ -1382,5 +1390,108 @@ exports.resolvers = {
                 return elPrimario.mimetype;
             });
         }
+    },
+    NodoConocimiento: {
+        porcentajeCompletado(parent, {}, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario)
+                        throw 'Usuario no encontrado';
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                let datosNodos = elUsuario.atlas.datosNodos;
+                //Descargar progresivamente la red previa.
+                let vinculos = parent.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target');
+                let idsActuales = vinculos.map(v => v.idRef);
+                let nodosActuales = [];
+                let nodosRed = [parent];
+                let guarda = 0;
+                while (guarda < 100 && idsActuales.length > 0) {
+                    try {
+                        nodosActuales = yield Nodo_1.ModeloNodo.find({ "_id": { $in: idsActuales } }).exec();
+                    }
+                    catch (error) {
+                        console.log(`Error getting nodos actuales : ` + error);
+                        throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                    }
+                    let nodosNuevos = nodosActuales.filter(n => !nodosRed.some(nr => nr.id === n.id));
+                    nodosRed.push(...nodosNuevos);
+                    idsActuales = nodosNuevos.reduce((acc, n) => {
+                        let vinculosPrevios = n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target');
+                        let idsPrevios = vinculosPrevios.map(v => v.idRef);
+                        let idsNuevos = idsPrevios.filter(id => !acc.includes(id));
+                        return acc.concat(idsNuevos);
+                    }, []);
+                    guarda++;
+                }
+                let nodosRedAprendidos = nodosRed.filter(n => datosNodos.some(dn => dn.idNodo === n.id && dn.aprendido));
+                let porcentajeCompletado = (100 / nodosRed.length) * nodosRedAprendidos.length;
+                return porcentajeCompletado;
+            });
+        },
     }
 };
+function getIdsRedRequerimentosNodo(nodo) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log(`Getting red previa de ${nodo.nombre}`);
+        let idsActuales = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef);
+        let todosIds = idsActuales;
+        let guarda = 0;
+        let losNodosAnteriores = [nodo];
+        console.log(`Tiene ${idsActuales.length} nodos previos`);
+        while (guarda < 200 && idsActuales.length > 0) {
+            try {
+                losNodosAnteriores = yield Nodo_1.ModeloNodo.find({ "_id": { $in: idsActuales } }).exec();
+            }
+            catch (error) {
+                console.log(`Error getting nodos anteriores : ` + error);
+                throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+            }
+            console.log(`Anteriores: ${losNodosAnteriores.map(n => n.nombre)}`);
+            idsActuales = losNodosAnteriores.reduce((acc, nod) => {
+                let idsPrevios = nod.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef);
+                return acc.concat(idsPrevios);
+            }, []);
+            todosIds.push(...idsActuales);
+            guarda++;
+        }
+        return todosIds;
+    });
+}
+exports.getIdsRedRequerimentosNodo = getIdsRedRequerimentosNodo;
+function getIdsRedContinuacionesNodo(nodo) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log(`Getting red posterior de ${nodo.nombre}`);
+        let idsActuales = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'source').map(v => v.idRef);
+        let todosIds = idsActuales;
+        let guarda = 0;
+        let losNodosPosteriores = [nodo];
+        console.log(`Tiene ${idsActuales.length} nodos previos`);
+        while (guarda < 200 && idsActuales.length > 0) {
+            try {
+                losNodosPosteriores = yield Nodo_1.ModeloNodo.find({ "_id": { $in: idsActuales } }).exec();
+            }
+            catch (error) {
+                console.log(`Error getting nodos posteriores : ` + error);
+                throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+            }
+            console.log(`Anteriores: ${losNodosPosteriores.map(n => n.nombre)}`);
+            idsActuales = losNodosPosteriores.reduce((acc, nod) => {
+                let idsPrevios = nod.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'source').map(v => v.idRef);
+                return acc.concat(idsPrevios);
+            }, []);
+            todosIds.push(...idsActuales);
+            guarda++;
+        }
+        return todosIds;
+    });
+}
+exports.getIdsRedContinuacionesNodo = getIdsRedContinuacionesNodo;

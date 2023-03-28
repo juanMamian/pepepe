@@ -64,11 +64,11 @@
           progresoNodoTarget && !$apollo.queries.progresoNodoTarget.loading
         " :progreso="progresoNodoTarget" :size="40" :cifrasDecimales="0" />
         <img style="
-                                      height: 25px;
-                                      filter: var(--filtroBlanco);
-                                      margin: 2px 5px;
-                                      margin-right: 15px;
-                                    " src="@/assets/iconos/target.png" alt="Target" />
+                                        height: 25px;
+                                        filter: var(--filtroBlanco);
+                                        margin: 2px 5px;
+                                        margin-right: 15px;
+                                      " src="@/assets/iconos/target.png" alt="Target" />
 
         {{ nodoTarget.nombre }}
       </div>
@@ -387,6 +387,8 @@ export default {
       configuracionAtlas: {
         posicionando: false,
       },
+
+      firstLoad: false,
       hovered: false,
       todosNodos: [],
       nodosDescargados: false,
@@ -1460,7 +1462,7 @@ export default {
 
     zoomVista: debounce(function (deltaZoom, posZoom) {
       console.log(`zoomVista: ${deltaZoom} ${JSON.stringify(posZoom)} `);
-      
+
       //Get distance from posZoom to centroVista    
       let deltaX = posZoom.x - this.centroVistaDecimal.x;
       let deltaY = posZoom.y - this.centroVistaDecimal.y;
@@ -1579,6 +1581,7 @@ export default {
     nodosEnVista() {
       this.drawVinculos();
     },
+    
 
     //
   },
@@ -1590,6 +1593,11 @@ export default {
     // }
     // this.$set(this.centroVistaDecimal, "x", this.usuario.atlas.centroVista.x);
     // this.$set(this.centroVistaDecimal, "y", this.usuario.atlas.centroVista.y);
+    let contenedorDiagrama = this.$refs.contenedorDiagrama;
+
+    //scroll to mid
+    contenedorDiagrama.scrollLeft = (contenedorDiagrama.scrollWidth - contenedorDiagrama.clientWidth) / 2;
+    contenedorDiagrama.scrollTop = (contenedorDiagrama.scrollHeight - contenedorDiagrama.clientHeight) / 2;
 
     if (screen.width < 600) {
       this.zoom = 70;

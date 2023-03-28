@@ -63,7 +63,7 @@ export const typeDefs = gql`
         objetivo:Boolean,
         aprendido:Boolean,
         estudiado: Date,
-        periodoRepaso:Int,
+        periodoRepaso:Float,
         iteracionesRepaso: [IteracionRepasoNodoConocimiento]
     }
 
@@ -214,7 +214,7 @@ export const typeDefs = gql`
         setIntervaloIteracionRepaso(idUsuario: ID!, idNodo: ID!, idIteracion:ID!, nuevoIntervalo:Float!):IteracionRepasoNodoConocimiento,
 
         setDateNodoConocimientoEstudiadoUsuario(idUsuario: ID!, idNodo: ID!, fecha:Date!):DatoNodoUsuario,
-        setPeriodoRepasoNodoConocimientoUsuario(idNodo: ID!, nuevoPeriodoRepaso: Int!):DatoNodoUsuario,
+        setPeriodoRepasoNodoConocimientoUsuario(idNodo: ID!, nuevoPeriodoRepaso: Float!):DatoNodoUsuario,
 
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
@@ -653,81 +653,7 @@ export const resolvers = {
             }
 
         },
-        setNodoAtlasAprendidoUsuario: async function (_: any, { idNodo, nuevoEstadoAprendido }: any, contexto: contextoQuery) {
-            let credencialesUsuario = contexto.usuario;
-            if (!credencialesUsuario || !credencialesUsuario.id) {
-                throw new AuthenticationError("No autenticado");
-            }
-
-            console.log('\x1b[35m%s\x1b[0m', `Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);
-
-            try {
-                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
-
-            } catch (error) {
-                console.log(`error buscando usuario en la base de datos: ${error}`);
-                throw new ApolloError("");
-            }
-            var todosNodosAfectados: Array<any> = [];
-            var tipoRol = null;
-            if (nuevoEstadoAprendido) {
-                tipoRol = "target"
-            }
-            else {
-                tipoRol = "source";
-            }
-            console.log(`Setting este y todos los nodos de conocimiento encadenados como aprendidos: ${nuevoEstadoAprendido}`);
-            var currentIds: Array<any> = [idNodo];
-            var currentNodos: Array<any> = [];
-            var cuenta = 0;
-            while (currentIds && currentIds.length > 0 && cuenta < 200) {
-                cuenta++;
-                try {
-                    currentNodos = await Nodo.find({ _id: { $in: currentIds } }).select("nombre vinculos").exec();
-                } catch (error) {
-                    console.log(`Error buscando current nodos: ${error}`);
-                    throw new ApolloError("Error ejecutando operación");
-                }
-                console.log(`Encontrados ${currentNodos.length} nodos current`);
-                todosNodosAfectados.push(...currentNodos);
-                currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.rol === tipoRol).map(v => v.idRef)), []);
-                console.log(`Current ids queda en ${currentIds} con length ${currentIds.length}`);
-
-            }
-            console.log(`Encontrados ${todosNodosAfectados.length} nodos encadenados: ${todosNodosAfectados.map(n => n.nombre)}`);
-            var idsNodosAfectados = todosNodosAfectados.map(na => na.id);
-
-            idsNodosAfectados.forEach((idN) => {
-                var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idN);
-                if (indexN > -1) {
-                    elUsuario.atlas.datosNodos[indexN].aprendido = nuevoEstadoAprendido;
-                }
-                else {
-                    if (nuevoEstadoAprendido) {
-                        elUsuario.atlas.datosNodos.push({
-                            idNodo: idN,
-                            aprendido: nuevoEstadoAprendido
-                        });
-                    }
-
-                }
-            });
-
-            try {
-                await elUsuario.save();
-            } catch (error) {
-                console.log(`error guardando usuario en la base de datos: ${error}`);
-                throw new ApolloError("");
-            }
-
-            let datosNodoAfectados = elUsuario.atlas.datosNodos.filter(dn => idsNodosAfectados.includes(dn.idNodo));
-            console.log(`Se afectaron ${datosNodoAfectados.length} datos de nodo`);
-            // for(const dato of datosNodoAfectados){
-            //     console.log(`${JSON.stringify(dato)}`);
-            // }
-            return datosNodoAfectados;
-
-        },
+        
         setPeriodoRepasoNodoConocimientoUsuario: async function (_: any, { idNodo, nuevoPeriodoRepaso }: any, contexto: contextoQuery) {
 
             console.log('\x1b[35m%s\x1b[0m', `Peticion de set periodo de repaso en ${nuevoPeriodoRepaso} para el nodo ${idNodo}`);
@@ -1456,7 +1382,7 @@ export const resolvers = {
                 elDatoNodo.iteracionesRepaso.push(nuevaIteracion);
             }
             elDatoNodo.estudiado = fecha;
-
+            console.log(JSON.stringify(elDatoNodo, null, 2));
 
             try {
                 await elUsuario.save();
@@ -1466,6 +1392,81 @@ export const resolvers = {
             }
 
             return elDatoNodo;
+        },
+        setNodoAtlasAprendidoUsuario: async function (_: any, { idNodo, nuevoEstadoAprendido }: any, contexto: contextoQuery) {
+            let credencialesUsuario = contexto.usuario;
+            if (!credencialesUsuario || !credencialesUsuario.id) {
+                throw new AuthenticationError("No autenticado");
+            }
+
+            console.log('\x1b[35m%s\x1b[0m', `Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);
+
+            try {
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+
+            } catch (error) {
+                console.log(`error buscando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+            var todosNodosAfectados: Array<any> = [];
+            var tipoRol = null;
+            if (nuevoEstadoAprendido) {
+                tipoRol = "target"
+            }
+            else {
+                tipoRol = "source";
+            }
+            console.log(`Setting este y todos los nodos de conocimiento encadenados como aprendidos: ${nuevoEstadoAprendido}`);
+            var currentIds: Array<any> = [idNodo];
+            var currentNodos: Array<any> = [];
+            var cuenta = 0;
+            while (currentIds && currentIds.length > 0 && cuenta < 200) {
+                cuenta++;
+                try {
+                    currentNodos = await Nodo.find({ _id: { $in: currentIds } }).select("nombre vinculos").exec();
+                } catch (error) {
+                    console.log(`Error buscando current nodos: ${error}`);
+                    throw new ApolloError("Error ejecutando operación");
+                }
+                console.log(`Encontrados ${currentNodos.length} nodos current`);
+                todosNodosAfectados.push(...currentNodos);
+                currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.rol === tipoRol).map(v => v.idRef)), []);
+                console.log(`Current ids queda en ${currentIds} con length ${currentIds.length}`);
+
+            }
+            console.log(`Encontrados ${todosNodosAfectados.length} nodos encadenados: ${todosNodosAfectados.map(n => n.nombre)}`);
+            var idsNodosAfectados = todosNodosAfectados.map(na => na.id);
+
+            idsNodosAfectados.forEach((idN) => {
+                var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idN);
+                if (indexN > -1) {
+                    elUsuario.atlas.datosNodos[indexN].aprendido = nuevoEstadoAprendido;
+                }
+                else {
+                    if (nuevoEstadoAprendido) {
+                        elUsuario.atlas.datosNodos.push({
+                            idNodo: idN,
+                            aprendido: nuevoEstadoAprendido
+                        });
+                    }
+
+                }
+            });
+
+            try {
+                await elUsuario.save();
+            } catch (error) {
+                console.log(`error guardando usuario en la base de datos: ${error}`);
+                throw new ApolloError("");
+            }
+
+            let datosNodoAfectados = elUsuario.atlas.datosNodos.filter(dn => idsNodosAfectados.includes(dn.idNodo));
+            console.log(`Se afectaron ${datosNodoAfectados.length} datos de nodo`);
+            // for(const dato of datosNodoAfectados){
+            //     console.log(`${JSON.stringify(dato)}`);
+            // }
+            return datosNodoAfectados;
+
         },
 
 

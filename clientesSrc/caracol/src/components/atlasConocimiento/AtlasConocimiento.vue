@@ -97,7 +97,7 @@
           @click.stop="idNodoSeleccionado = nodo.id;"
           :style="[{ transform: `scale(${factorZoom})`, top: (nodo.coords.y - esquinasDiagrama.y1) * factorZoom + 'px', left: (nodo.coords.x - esquinasDiagrama.x1) * factorZoom + 'px' }]"
           v-for="nodo of nodosRenderConEstilos" :key="'placeholderNodo' + nodo.id"
-          :class="{ seleccionado: idNodoSeleccionado === nodo.id, aprendido: idsNodosAprendidos.includes(nodo.id), estudiado: idsNodosEstudiados.includes(nodo.id), fresco: idsNodosFrescos.includes(nodo.id), aprendible: idsNodosEstudiables.includes(nodo.id), repasar: idsNodosRepasar.includes(nodo.id) }">
+          :class="{ fantasmeado: idNodoSeleccionado && nivelesConexion && idNodoSeleccionado != nodo.id && !idsNodosConectadosSeleccionado.includes(nodo.id), continuacionSeleccionado: nivelesConexion > 0 && idsNodosConectadosSeleccionado.includes(nodo.id), previoSeleccionado: nivelesConexion < 0 && idsNodosConectadosSeleccionado.includes(nodo.id), seleccionado: idNodoSeleccionado === nodo.id, aprendido: idsNodosAprendidos.includes(nodo.id), estudiado: idsNodosEstudiados.includes(nodo.id), fresco: idsNodosFrescos.includes(nodo.id), aprendible: idsNodosEstudiables.includes(nodo.id), repasar: idsNodosRepasar.includes(nodo.id) }">
           <div class="bolita">
             <img v-if="nodo.tipoNodo === 'concepto'" src="@/assets/iconos/atlas/bombillo.svg" alt="Skill">
             <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill">
@@ -109,7 +109,7 @@
 
           <div class="lineaVinculo" v-for="vinculo of nodo.vinculos.filter(v => v.estilo)" :key="vinculo.id"
             :style="[vinculo.estilo]">
-            <div class="laLinea"></div>
+            <div v-show="!idNodoSeleccionado || !nivelesConexion || (idsRedSeleccion.includes(nodo.id) && idsRedSeleccion.includes(vinculo.idRef))" class="laLinea"></div>
           </div>
         </div>
 
@@ -170,7 +170,8 @@
     </div>
 
     <controles-nodo :elNodo="nodoSeleccionado"
-      @setMeTarget="setNodoTarget(nodoSeleccionado.id); centrarEnNodoById(nodoSeleccionado.id)" />
+      @setMeTarget="setNodoTarget(nodoSeleccionado.id); centrarEnNodoById(nodoSeleccionado.id)"
+      @nivelesConexion="nivelesConexion = $event" />
 
 
     <loading id="simboloDescargandoNodos" v-show="!nodosDescargados || $apollo.queries.yo.loading"
@@ -337,6 +338,7 @@ export default {
         }
         return yo;
       },
+      fetchPolicy: "cache-and-network",
     },
     configuracionAtlas: {
       query: gql`
@@ -417,6 +419,8 @@ export default {
   },
   data() {
     return {
+      firstLoad: true,
+
       configuracionAtlas: {
         posicionando: false,
       },
@@ -425,6 +429,8 @@ export default {
       nodosDescargados: false,
       posicionCreandoNodo: null,
       idNodoSeleccionado: null,
+      nivelesConexion: 0,
+      factorEscalera: 0.2,
       idsNodosCadenaPreviaSeleccionado: [],
       idNodoMenuCx: null,
       idsNecesariosParaTarget: [],
@@ -776,56 +782,44 @@ export default {
     nodoAbierto() {
       return this.$route.name === "visorNodoConocimiento";
     },
-    nodosConectadosAlSeleccionado() {
-      if (!this.nodoSeleccionado) return [];
-      return this.todosNodos.filter((n) =>
-        this.nodoSeleccionado.vinculos.some((v) => v.idRef === n.id)
-      );
-    },
-    idsNodosPreviosSeleccionado() {
-      if (!this.nodoSeleccionado) {
-        return [];
-      }
-      var idsActuales = [this.idNodoSeleccionado];
-      var cadenaTotal = [];
-      for (var i = 0; i < 20; i++) {
-        let previos = this.nodosRender.filter((n) =>
-          n.vinculos.some(
-            (v) => v.rol === "source" && idsActuales.includes(v.idRef)
-          )
-        );
-
-        if (previos.length < 1) {
-          break;
-        }
-
-        let idsPrevios = previos.map((previo) => previo.id);
-
-        cadenaTotal.push(...idsPrevios);
-
-        idsActuales = idsPrevios;
-      }
-
-      return cadenaTotal;
-    },
-    idsNodosContinuacionSeleccionado() {
-      if (!this.nodoSeleccionado) {
-        return [];
-      }
-
-      return this.nodoSeleccionado.vinculos
-        .filter((v) => v.tipo === "continuacion" && v.rol === "source")
-        .map((v) => v.idRef);
+    idTarget() {
+      return this.idNodoTarget || this.idColeccionSeleccionada;
     },
     idsNodosConectadosSeleccionado() {
       if (!this.nodoSeleccionado) {
         return [];
       }
-      return this.nodoSeleccionado.vinculos.map((v) => v.idRef);
+
+      if (!this.nivelesConexion) {
+        return [];
+      }
+
+      let rolRelevante = 'target';
+      if (this.nivelesConexion > 0) {
+        rolRelevante = 'source';
+      }
+
+      let nodosActuales = [this.nodoSeleccionado];
+      let listaIdsConectados = [];
+      for (let i = 0; i < Math.abs(this.nivelesConexion); i++) {
+        if (listaIdsConectados.length > 1000) {
+          break;
+        }
+        let idsSiguientes = nodosActuales.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === rolRelevante).map(v => v.idRef)).flat();
+        nodosActuales = this.todosNodos.filter(n => idsSiguientes.includes(n.id));
+        listaIdsConectados.push(...nodosActuales.map(n => n.id));
+      }
+
+      return listaIdsConectados;
     },
-    idTarget() {
-      return this.idNodoTarget || this.idColeccionSeleccionada;
-    },
+    idsRedSeleccion(){
+      if (!this.nodoSeleccionado) {
+        return [];
+      }
+
+      return [...this.idsNodosConectadosSeleccionado, this.nodoSeleccionado?.id];
+    }
+
   },
   methods: {
     updateCentroVistaSegunScroll: debounce(function () {
@@ -1637,6 +1631,7 @@ export default {
       this.hideZoomInfo();
       this.drawVinculos();
     },
+
     // nodosEnVista() {
     //   this.drawVinculos();
     // },

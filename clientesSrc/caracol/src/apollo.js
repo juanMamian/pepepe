@@ -76,6 +76,9 @@ export const apolloClient = new ApolloClient({
 
 export const apolloProvider = createApolloProvider({
   defaultClient: apolloClient,
+  defaultOptions: {
+    $fetchPolicy: "cache-and-network",
+  },
 });
 
 
