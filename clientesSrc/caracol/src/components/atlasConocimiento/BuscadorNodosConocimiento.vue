@@ -2,10 +2,10 @@
   <div id="buscadorNodosConocimiento" :style="[{ width: mostrandoInput ? 'min(100vh, 350px)' : '30px' }]">
     <div id="barraSuperior">
       <img src="@/assets/iconos/search.png" alt="Lupa" title="Buscar nodos de conocimiento" id="imagenLupa"
-        :class="{ opaco: !mostrandoInput }" @click.stop="mostrandoInput = true" />
+        :class="{ opaco: !mostrandoInput }" @click.stop="clickEnLupa" />
       <transition name="unfold">
-        <input type="text" placeholder="Buscar" v-model="textoBusqueda" id="inputBuscador" v-show="mostrandoInput"
-          autocomplete="off" @click.stop="" @keypress.enter="buscarDatabase" />
+        <input type="text" placeholder="Buscar" v-model="textoBusqueda" id="inputBuscador" ref="inputBuscador"
+          v-show="mostrandoInput" autocomplete="off" @click.stop="" @keypress.enter="buscarDatabase" />
       </transition>
 
     </div>
@@ -16,7 +16,7 @@
         $emit('nodoSeleccionado', resultado);
       mostrandoInput = false;
       mostrandoLista = false;
-                ">
+                        ">
         {{ resultado.nombre }}
       </div>
     </div>
@@ -43,12 +43,28 @@ export default {
 
       esperandoResultados: false,
     };
-  }, 
+  },
   methods: {
+    clickEnLupa() {
+      if (!this.mostrandoInput) {
+        this.mostrandoInput = true;
+        this.$nextTick(() => {
+          this.$refs.inputBuscador.focus();
+          this.$refs.inputBuscador.select();
+        });
+
+      }
+      else {
+        this.buscarDatabase();
+      }
+    },
     cerrar() {
       this.mostrandoInput = false;
     },
     buscarDatabase() {
+      if (!this.textoBusqueda) {
+        return;
+      }
       console.log(`******Descargando resultados de búsqueda`);
       this.esperandoResultados = true;
       this.$apollo
