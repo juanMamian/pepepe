@@ -1,21 +1,30 @@
 <template>
-    <div class="controlesNodo" :style="estiloPos" :class="{ desplegado }">
-        <div id="zonaControlVerConexiones">
-            <div class="boton botonConexiones" @click.stop="nivelesConexion--">
-                <img src="@/assets/iconos/chevron.svg" alt="Arrow">
-            </div>
+    <div class="controlesNodo" :style="estiloPos" :class="{ desplegado }" @click="clickFuera">
+        <div id="centerSignaler" v-show="elNodo">
 
-            <div id="indicadorNiveles" v-show="nivelesConexion">{{ nivelesConexion }}</div>
-            <div class="boton botonConexiones" @click.stop="nivelesConexion++" style="transform: rotate(180deg);">
-                <img src="@/assets/iconos/chevron.svg" alt="Arrow">
+        </div>
+        <div id="zonaControlVerConexiones" @click.stop="mostrandoFlechasConexiones = true"
+            v-show="elNodo">
+            <div id="signaler" :style="[posSignaler]"></div>
+
+            <div id="bloqueFlechasConexiones" v-show="mostrandoFlechasConexiones">
+
+                <div class="boton botonConexiones" @click.stop="nivelesConexion--" :class="{deshabilitado:!nivelesConexionDeeper}">
+                    <img src="@/assets/iconos/chevron.svg" alt="Arrow">
+                </div>
+
+                <div id="indicadorNiveles">{{ Math.abs(nivelesConexion) }}</div>
+                <div class="boton botonConexiones" @click.stop="nivelesConexion++" style="transform: rotate(180deg);" :class="{deshabilitado:!nivelesConexionHigher}">
+                    <img src="@/assets/iconos/chevron.svg" alt="Arrow">
+                </div>
             </div>
         </div>
 
-        <div id="nombre" ref="nombre" @click.stop="desplegado = !desplegado">
+        <div id="nombre" ref="nombre" @click="desplegado = !desplegado">
             {{ elNodo?.nombre || '' }}
         </div>
 
-        <div id="zonaControles" @click.stop="">
+        <div id="zonaControles" @click="">
 
             <div class="bloqueControl" style="width: 100%; margin-bottom: 20px;" @click="" v-if="elNodo">
                 <router-link :to="{ name: 'visorNodoConocimiento', params: { idNodo: elNodo.id } }">
@@ -56,8 +65,9 @@
         </div>
 
         <teleport to='body'>
-            <div class="bloqueConfiguracion bloqueSplash" id="configuracionTiempoRepaso" v-show="mostrando==='tiempoRepaso'">
-                <div class="boton" id="botonCerrar" @click="mostrando=''">
+            <div class="bloqueConfiguracion bloqueSplash" id="configuracionTiempoRepaso"
+                v-show="mostrando === 'tiempoRepaso'">
+                <div class="boton" id="botonCerrar" @click="mostrando = ''">
                     <img src="@/assets/iconos/equis.svg" alt="Cerrar">
                 </div>
                 <h3 class="tituloSplash">
@@ -90,7 +100,15 @@ export default {
     props: {
         elNodo: {
             type: Object,
-        }
+        },
+        nivelesConexionDeeper: {
+            type: Boolean,
+            default: false,
+        },
+        nivelesConexionHigher: {
+            type: Boolean,
+            default: false,
+        },
     },
     components: {
         Loading,
@@ -98,6 +116,7 @@ export default {
     name: "ControlesNodo",
     data() {
         return {
+            mostrandoFlechasConexiones: false,
             desplegado: false,
             mostrando: "",
             montado: false,
@@ -108,7 +127,7 @@ export default {
             diasRepaso: 0,
             guardandoPeriodoRepaso: false,
 
-            nivelesConexion:0,
+            nivelesConexion: 0,
         };
     },
     computed: {
@@ -124,9 +143,29 @@ export default {
                 transform: `translate(-50%, -${translation}px)`,
             };
             return estilo;
+        },
+        posSignaler() {
+
+
+            let step = 0;
+            if (this.nivelesConexion != 0) {
+                step = 30;
+            }
+
+            if (this.nivelesConexion < 0) {
+                step = -step;
+            }
+
+            return {
+                transform: `translateX(calc(-50% + ${step}px))`,
+            }
         }
     },
     methods: {
+        clickFuera() {
+            console.log("click fuera");
+            this.mostrandoFlechasConexiones = false;
+        },
         marcarEstudiado() {
             this.settingDateEstudiado = true;
             this.$apollo.mutate({
@@ -180,7 +219,7 @@ export default {
             if (!this.elNodo) {
                 return;
             }
-            this.diasRepaso=this.$refs.inputDiasRepaso.value;
+            this.diasRepaso = this.$refs.inputDiasRepaso.value;
 
             let nuevoPeriodoRepaso = parseInt(this.diasRepaso * 86400000);
 
@@ -205,7 +244,7 @@ export default {
                 }
             }).then(() => {
                 this.guardandoPeriodoRepaso = false;
-                this.mostrando='';
+                this.mostrando = '';
 
             }).catch((error) => {
                 console.log('Error: ' + error);
@@ -215,8 +254,8 @@ export default {
     },
     watch: {
         elNodo(nodo) {
-            if(!nodo){
-                this.nivelesConexion=0;
+            if (!nodo) {
+                this.nivelesConexion = 0;
             }
             if (nodo) {
                 this.$nextTick(() => {
@@ -225,16 +264,16 @@ export default {
                 });
             }
             else {
-                this.mostrando='';
+                this.mostrando = '';
                 this.heightNombre = 0;
                 this.heigthAll = 0;
             }
         },
-        nivelesConexion:{
-            handler(niveles){
-                this.$emit('nivelesConexion',niveles)
+        nivelesConexion: {
+            handler(niveles) {
+                this.$emit('nivelesConexion', niveles)
             },
-            immediate:true
+            immediate: true
         }
     },
     mounted() {
@@ -259,18 +298,19 @@ export default {
     width: min(400px, 90%);
 }
 
-#botonCerrar{
+#botonCerrar {
     position: absolute;
     top: 0;
     right: 0;
-    transform: translate(50%, -50%);    
+    transform: translate(50%, -50%);
     background-color: inherit;
     border: inherit;
 
     width: 35px;
     height: 35px;
 }
-#botonCerrar img{
+
+#botonCerrar img {
     opacity: 0.8;
 }
 
@@ -327,19 +367,68 @@ export default {
 
 /* #region controlConexiones */
 
-#zonaControlVerConexiones{
-    display: flex;
+#centerSignaler{
     position: absolute;
     bottom: 100%;
-    width: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 10px solid transparent;
+    border-bottom: 10px solid var(--atlasConocimientoSeleccion);
+    width: 1px;
+    height: 1px;
+    cursor: pointer;
+    pointer-events: none;
+    z-index: 1;
+}
+#zonaControlVerConexiones {
+    display: flex;
+    position: absolute;
+    top: 0px;
+    left: 50%;
+    transform: translateX(-50%);
     align-items: center;
     justify-content: center;
     gap: 30px;
+    z-index: 0;
 }
 
-.botonConexiones{
+#signaler {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 10px solid transparent;
+    border-bottom: 10px solid gray;
+    width: 1px;
+    height: 1px;
+    cursor: pointer;
 
 }
+
+#bloqueFlechasConexiones {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+
+}
+
+#indicadorNiveles {
+    padding: 5px 5px;
+    background-color: var(--atlasConocimientoBaseNodo);
+    font-size: 0.9em;
+    min-width: 50px;
+    text-align: center;
+    border: 1px solid var(--paletaMain);
+}
+
+
+.botonConexiones {}
 
 /* #endregion */
 </style>

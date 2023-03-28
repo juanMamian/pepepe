@@ -97,7 +97,7 @@
           @click.stop="idNodoSeleccionado = nodo.id;"
           :style="[{ transform: `scale(${factorZoom})`, top: (nodo.coords.y - esquinasDiagrama.y1) * factorZoom + 'px', left: (nodo.coords.x - esquinasDiagrama.x1) * factorZoom + 'px' }]"
           v-for="nodo of nodosRenderConEstilos" :key="'placeholderNodo' + nodo.id"
-          :class="{ fantasmeado: idNodoSeleccionado && nivelesConexion && idNodoSeleccionado != nodo.id && !idsNodosConectadosSeleccionado.includes(nodo.id), continuacionSeleccionado: nivelesConexion > 0 && idsNodosConectadosSeleccionado.includes(nodo.id), previoSeleccionado: nivelesConexion < 0 && idsNodosConectadosSeleccionado.includes(nodo.id), seleccionado: idNodoSeleccionado === nodo.id, aprendido: idsNodosAprendidos.includes(nodo.id), estudiado: idsNodosEstudiados.includes(nodo.id), fresco: idsNodosFrescos.includes(nodo.id), aprendible: idsNodosEstudiables.includes(nodo.id), repasar: idsNodosRepasar.includes(nodo.id) }">
+          :class="{ fantasmeado: idNodoSeleccionado && nivelesConexion && !idsRedSeleccion.includes(nodo.id), continuacionSeleccionado: nivelesConexion > 0 && idsRedSeleccion.includes(nodo.id), previoSeleccionado: nivelesConexion < 0 && idsRedSeleccion.includes(nodo.id), seleccionado: idNodoSeleccionado === nodo.id, aprendido: idsNodosAprendidos.includes(nodo.id), estudiado: idsNodosEstudiados.includes(nodo.id), fresco: idsNodosFrescos.includes(nodo.id), aprendible: idsNodosEstudiables.includes(nodo.id), repasar: idsNodosRepasar.includes(nodo.id) }">
           <div class="bolita">
             <img v-if="nodo.tipoNodo === 'concepto'" src="@/assets/iconos/atlas/bombillo.svg" alt="Skill">
             <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill">
@@ -169,7 +169,7 @@
       </div>
     </div>
 
-    <controles-nodo :elNodo="nodoSeleccionado"
+    <controles-nodo :elNodo="nodoSeleccionado" :nivelesConexionDeeper="nivelesConexionDeeper" :nivelesConexionHigher="nivelesConexionHigher"
       @setMeTarget="setNodoTarget(nodoSeleccionado.id); centrarEnNodoById(nodoSeleccionado.id)"
       @nivelesConexion="nivelesConexion = $event" />
 
@@ -785,31 +785,25 @@ export default {
     idTarget() {
       return this.idNodoTarget || this.idColeccionSeleccionada;
     },
-    idsNodosConectadosSeleccionado() {
+    idsNodosConectadosSeleccionadoLabelled() {
       if (!this.nodoSeleccionado) {
         return [];
-      }
-
-      if (!this.nivelesConexion) {
-        return [];
-      }
+      }            
 
       let rolRelevante = 'target';
       if (this.nivelesConexion > 0) {
         rolRelevante = 'source';
       }
 
+      //Array of arrays. Each level of conection is an array. We need the last array to know if there are more levels to explore
       let nodosActuales = [this.nodoSeleccionado];
-      let listaIdsConectados = [];
-      for (let i = 0; i < Math.abs(this.nivelesConexion); i++) {
-        if (listaIdsConectados.length > 1000) {
-          break;
-        }
+      let listaIdsConectados = [[this.nodoSeleccionado.id]];
+      for (let i = 0; i < Math.abs(this.nivelesConexion); i++) {        
         let idsSiguientes = nodosActuales.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === rolRelevante).map(v => v.idRef)).flat();
         nodosActuales = this.todosNodos.filter(n => idsSiguientes.includes(n.id));
-        listaIdsConectados.push(...nodosActuales.map(n => n.id));
+        listaIdsConectados.push(nodosActuales.map(n => n.id));
       }
-
+      
       return listaIdsConectados;
     },
     idsRedSeleccion(){
@@ -817,7 +811,45 @@ export default {
         return [];
       }
 
-      return [...this.idsNodosConectadosSeleccionado, this.nodoSeleccionado?.id];
+      return this.idsNodosConectadosSeleccionadoLabelled.flat();
+    },
+    nivelesConexionDeeper(){
+      console.log("Calculando deeper");
+      if(!this.nodoSeleccionado){
+        return false;
+      }
+      if(this.nivelesConexion>0){
+        return true;
+      }
+
+      let lastNivel=[];
+      if(this.idsNodosConectadosSeleccionadoLabelled.length>0){
+        lastNivel=this.idsNodosConectadosSeleccionadoLabelled[this.idsNodosConectadosSeleccionadoLabelled.length-1];
+      }
+      let vinculosSiguienteNivel =this.todosNodos.filter(n => lastNivel.includes(n.id)).map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target')).flat();
+
+      console.log(vinculosSiguienteNivel.length>0);
+      return vinculosSiguienteNivel.length>0;
+    },
+    nivelesConexionHigher(){
+      console.log("Calculando higher");
+      if(!this.nodoSeleccionado){
+        return false;
+      }
+      if(this.nivelesConexion<0){
+        return true;
+      }
+
+      let lastNivel=[];
+      if(this.idsNodosConectadosSeleccionadoLabelled.length>0){
+        lastNivel=this.idsNodosConectadosSeleccionadoLabelled[this.idsNodosConectadosSeleccionadoLabelled.length-1];
+      }
+
+      let vinculosSiguienteNivel =this.todosNodos.filter(n => lastNivel.includes(n.id)).map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'source')).flat();
+
+      console.log(vinculosSiguienteNivel.length>0);
+      return vinculosSiguienteNivel.length>0;
+    
     }
 
   },
