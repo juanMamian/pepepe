@@ -1,111 +1,51 @@
 <template>
-  <div
-    class="atlasConocimiento"
-    :style="{ overflowY: nodoAbierto ? 'scroll' : 'hidden' }"
-    @mousedown.left.exact.stop="panningVista = true"
-    @mouseenter="hovered = true"
-    @mouseleave="hovered = false"
-    @click="clickFuera"
-  >
-    <router-view
-      :yo="yo"
-      :datosNodosRepasar="datosNodosRepasar"
-      :datosNodosUrgentes="datosNodosRepasar"
-      @centrarEnNodo="centrarEnNodoById($event)"
-    />
-    <div
-      id="zonaSeleccionColeccion"
-      v-if="yo.atlas && yo.atlas.colecciones"
-      v-show="!idNodoTarget"
-    >
-      <div
-        id="nombreColeccion"
-        @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
-      >
-        <pie-progreso
-          v-if="coleccionSeleccionada && progresoColeccionSeleccionada"
-          :progreso="progresoColeccionSeleccionada"
-          style="margin-right: 10px"
-        />
+  <div class="atlasConocimiento" :style="{ overflowY: nodoAbierto ? 'scroll' : 'hidden' }"
+    @mousedown.left.exact.stop="panningVista = true" @mouseenter="hovered = true" @mouseleave="hovered = false"
+    @click="clickFuera">
+    <router-view :yo="yo" :datosNodosRepasar="datosNodosRepasar" :datosNodosUrgentes="datosNodosRepasar"
+      @centrarEnNodo="centrarEnNodoById($event)" />
+    <div id="zonaSeleccionColeccion" v-if="yo.atlas && yo.atlas.colecciones" v-show="!idNodoTarget">
+      <div id="nombreColeccion" @click.stop="seleccionandoColeccion = !seleccionandoColeccion">
+        <pie-progreso v-if="coleccionSeleccionada && progresoColeccionSeleccionada"
+          :progreso="progresoColeccionSeleccionada" style="margin-right: 10px" />
         <span style="z-index: 1">
           {{ nombreColeccionSeleccionada }}
         </span>
       </div>
 
-      <div
-        class="boton"
-        id="botonMostrarOpcionesColeccion"
-        v-show="!seleccionandoColeccion"
-        @click="mostrandoOpcionesColeccion = !mostrandoOpcionesColeccion"
-      >
-        <img
-          src="@/assets/iconos/ellipsisVertical.svg"
-          alt="Opciones"
-          style=""
-        />
+      <div class="boton" id="botonMostrarOpcionesColeccion" v-show="!seleccionandoColeccion"
+        @click="mostrandoOpcionesColeccion = !mostrandoOpcionesColeccion">
+        <img src="@/assets/iconos/ellipsisVertical.svg" alt="Opciones" style="" />
       </div>
 
-      <div
-        id="contenedorControlesColeccion"
-        v-show="mostrandoOpcionesColeccion"
-      >
+      <div id="contenedorControlesColeccion" v-show="mostrandoOpcionesColeccion">
         <div class="boton controlColeccion" @click="localizarNext('available')">
-          <img
-            src="@/assets/iconos/atlas/locationCrosshair.svg"
-            alt="Localizar"
-            style="filter: var(--filtroAtlasAvailable)"
-          />
+          <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Localizar"
+            style="filter: var(--filtroAtlasAvailable)" />
         </div>
         <div class="boton controlColeccion" @click="localizarNext('check')">
-          <img
-            src="@/assets/iconos/atlas/locationCrosshair.svg"
-            alt="Localizar"
-            style="filter: var(--filtroAtlasCheck)"
-          />
+          <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Localizar"
+            style="filter: var(--filtroAtlasCheck)" />
         </div>
-        <div
-          class="boton controlColeccion"
-          @click="localizarNext('repaso')"
-          :class="{
-            deshabilitado:
-              !idsNodosRepasarPresentes ||
-              idsNodosRepasarPresentes.length === 0,
-          }"
-        >
-          <img
-            src="@/assets/iconos/atlas/locationCrosshair.svg"
-            alt="Localizar"
-            style="filter: var(--filtroAtlasRepaso)"
-          />
+        <div class="boton controlColeccion" @click="localizarNext('repaso')" :class="{
+          deshabilitado:
+            !idsNodosRepasarPresentes ||
+            idsNodosRepasarPresentes.length === 0,
+        }">
+          <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Localizar"
+            style="filter: var(--filtroAtlasRepaso)" />
         </div>
       </div>
 
       <div id="listaSelectoresColeccion" v-show="seleccionandoColeccion">
-        <div
-          class="selectorColeccion"
-          @click.stop="setIdColeccionSeleccionada(null)"
-          v-show="idColeccionSeleccionada"
-        >
-          <img
-            src="@/assets/iconos/userNodes.png"
-            alt="Coleccion"
-            style="height: 15px"
-          />
+        <div class="selectorColeccion" @click.stop="setIdColeccionSeleccionada(null)" v-show="idColeccionSeleccionada">
+          <img src="@/assets/iconos/userNodes.png" alt="Coleccion" style="height: 15px" />
           Atlas
         </div>
-        <div
-          class="selectorColeccion"
-          @click.stop="setIdColeccionSeleccionada(coleccion.id)"
-          v-for="coleccion of coleccionesUsuario.filter(
-            (col) => idColeccionSeleccionada != col.id
-          )"
-          :key="coleccion.id"
-        >
-          <img
-            src="@/assets/iconos/userNodes.png"
-            alt="Coleccion"
-            style="height: 15px"
-          />
+        <div class="selectorColeccion" @click.stop="setIdColeccionSeleccionada(coleccion.id)" v-for="coleccion of coleccionesUsuario.filter(
+          (col) => idColeccionSeleccionada != col.id
+        )" :key="coleccion.id">
+          <img src="@/assets/iconos/userNodes.png" alt="Coleccion" style="height: 15px" />
           {{ coleccion.nombre }}
         </div>
       </div>
@@ -113,46 +53,24 @@
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
-    <div
-      id="menuContextual"
-      :style="[offsetMenuContextual]"
-      v-show="mostrandoMenuContextual"
-    >
-      <div
-        class="botonMenuContextual"
-        id="botonCrearNuevoNodo"
-        :class="{ deshabilitado: posicionCreandoNodo }"
-        v-if="usuarioAdministradorAtlas || usuarioProfe"
-        @click="crearNodoEnMenuContextual"
-      >
+    <div id="menuContextual" :style="[offsetMenuContextual]" v-show="mostrandoMenuContextual">
+      <div class="botonMenuContextual" id="botonCrearNuevoNodo" :class="{ deshabilitado: posicionCreandoNodo }"
+        v-if="usuarioAdministradorAtlas || usuarioProfe" @click="crearNodoEnMenuContextual">
         Crear Nodo de conocimiento
       </div>
     </div>
 
     <div id="zonaNodoTarget" v-show="idNodoTarget">
-      <div
-        id="nombreNodoTarget"
-        v-if="nodoTarget"
-        @click="centrarEnNodo(nodoTarget)"
-      >
-        <pie-progreso
-          v-show="
-            progresoNodoTarget && !$apollo.queries.progresoNodoTarget.loading
-          "
-          :progreso="progresoNodoTarget"
-          :size="40"
-          :cifrasDecimales="0"
-        />
-        <img
-          style="
-            height: 25px;
-            filter: var(--filtroBlanco);
-            margin: 2px 5px;
-            margin-right: 15px;
-          "
-          src="@/assets/iconos/target.png"
-          alt="Target"
-        />
+      <div id="nombreNodoTarget" v-if="nodoTarget" @click="centrarEnNodo(nodoTarget)">
+        <pie-progreso v-show="
+          progresoNodoTarget && !$apollo.queries.progresoNodoTarget.loading
+        " :progreso="progresoNodoTarget" :size="40" :cifrasDecimales="0" />
+        <img style="
+                height: 25px;
+                filter: var(--filtroBlanco);
+                margin: 2px 5px;
+                margin-right: 15px;
+              " src="@/assets/iconos/target.png" alt="Target" />
 
         {{ nodoTarget.nombre }}
       </div>
@@ -162,94 +80,55 @@
       </div>
     </div>
 
-    <div
-      id="botonCallingPosiciones"
-      v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
-      @click.stop="iniciarCallingPosiciones"
-      :class="{ deshabilitado: callingPosiciones }"
-      :style="[
+    <div id="botonCallingPosiciones" v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
+      @click.stop="iniciarCallingPosiciones" :class="{ deshabilitado: callingPosiciones }" :style="[
         { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
-      ]"
-    ></div>
-    <buscador-nodos-conocimiento
-      @nodoSeleccionado="centrarEnNodo"
-      ref="buscadorNodos"
-    />
+      ]"></div>
+    <buscador-nodos-conocimiento @nodoSeleccionado="centrarEnNodo" ref="buscadorNodos" />
 
-    <panel-conjuntos-nodos
-      ref="panelConjuntosNodos"
-      :yo="yo"
-      :modoAtlas="modoAtlas"
-      @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
-    />
+    <panel-conjuntos-nodos ref="panelConjuntosNodos" :yo="yo" :modoAtlas="modoAtlas"
+      @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))" />
 
-    <div
-      id="contenedorDiagrama"
-      v-show="!$apollo.queries.yo.loading"
-      ref="contenedorDiagrama"
-      @scroll="updateCentroVistaSegunScroll"
-    >
-      <div
-        id="contenedorNodos"
-        @contextmenu.self.exact.prevent="abrirMenuContextual"
-        @mouseup.left.self="clickFondoAtlas"
-        ref="contenedorNodos"
-        :style="[offsetContenedorNodos]"
-      >
-        <loading
-          texto=""
-          v-show="posicionCreandoNodo"
-          style="position: absolute"
-          :style="[offsetLoadingCreandoNodo]"
-        />
+    <div id="contenedorDiagrama" v-show="!$apollo.queries.yo.loading" ref="contenedorDiagrama"
+      @scroll="updateCentroVistaSegunScroll">
+      <div id="contenedorNodos" @contextmenu.self.exact.prevent="abrirMenuContextual" @mouseup.left.self="clickFondoAtlas"
+        ref="contenedorNodos" :style="[offsetContenedorNodos, { transform: 'scale(' + factorZoom + ')' }]">
+        <loading texto="" v-show="posicionCreandoNodo" style="position: absolute" :style="[offsetLoadingCreandoNodo]" />
         <!-- <div id="centroVista" :style="[{left: ((centroVistaDecimal.x - esquinasDiagrama.x1) * this.factorZoom) + 'px', top: ((centroVistaDecimal.y - esquinasDiagrama.y1) *this.factorZoom ) + 'px'}]">
           {{ centroVistaDecimal.x.toFixed(2) }}, {{ centroVistaDecimal.y.toFixed(2) }}
         </div> -->
-        <div
-          class="placeholderNodoConocimiento"
-          @dblclick="
-            $router.push({
-              name: 'visorNodoConocimiento',
-              params: { idNodo: nodo.id },
-            })
-          "
-          @click.stop="idNodoSeleccionado = nodo.id"
-          :style="[
-            {
-              transform: `scale(${factorZoom})`,
-              top: (nodo.coords.y - esquinasDiagrama.y1) * factorZoom + 'px',
-              left: (nodo.coords.x - esquinasDiagrama.x1) * factorZoom + 'px',
-            },
-          ]"
-          v-for="nodo of nodosRenderConEstilos"
-          :key="'placeholderNodo' + nodo.id"
-          :class="{
-            fantasmeado:
-              idNodoSeleccionado &&
-              nivelesConexion &&
-              !idsRedSeleccion.includes(nodo.id),
-            continuacionSeleccionado:
-              nivelesConexion > 0 && idsRedSeleccion.includes(nodo.id),
-            previoSeleccionado:
-              nivelesConexion < 0 && idsRedSeleccion.includes(nodo.id),
-            seleccionado: idNodoSeleccionado === nodo.id,
-            aprendido: idsNodosAprendidos.includes(nodo.id),
-            estudiado: idsNodosEstudiados.includes(nodo.id),
-            fresco: idsNodosFrescos.includes(nodo.id),
-            aprendible:
-              idsNodosEstudiables.includes(nodo.id) ||
-              !nodo.vinculos.some(
-                (v) => v.tipo === 'continuacion' && v.rol === 'target'
-              ),
-            repasar: idsNodosRepasar.includes(nodo.id),
-          }"
-        >
+        <div class="placeholderNodoConocimiento" @dblclick="
+          $router.push({
+            name: 'visorNodoConocimiento',
+            params: { idNodo: nodo.id },
+          })
+        " @click.stop="idNodoSeleccionado = nodo.id" :style="[
+  {
+    top: (nodo.coords.y - esquinasDiagrama.y1) + 'px',
+    left: (nodo.coords.x - esquinasDiagrama.x1) + 'px',
+  },
+]" v-for="nodo of nodosRenderConEstilos" :key="'placeholderNodo' + nodo.id" :class="{
+  fantasmeado:
+    idNodoSeleccionado &&
+    nivelesConexion &&
+    !idsRedSeleccion.includes(nodo.id),
+  continuacionSeleccionado:
+    nivelesConexion > 0 && idsRedSeleccion.includes(nodo.id),
+  previoSeleccionado:
+    nivelesConexion < 0 && idsRedSeleccion.includes(nodo.id),
+  seleccionado: idNodoSeleccionado === nodo.id,
+  aprendido: idsNodosAprendidos.includes(nodo.id),
+  estudiado: idsNodosEstudiados.includes(nodo.id),
+  fresco: idsNodosFrescos.includes(nodo.id),
+  aprendible:
+    idsNodosEstudiables.includes(nodo.id) ||
+    !nodo.vinculos.some(
+      (v) => v.tipo === 'continuacion' && v.rol === 'target'
+    ),
+  repasar: idsNodosRepasar.includes(nodo.id),
+}">
           <div class="bolita">
-            <img
-              v-if="nodo.tipoNodo === 'concepto'"
-              src="@/assets/iconos/atlas/lightbulbEmpty.svg"
-              alt="Skill"
-            />
+            <img v-if="nodo.tipoNodo === 'concepto'" src="@/assets/iconos/atlas/lightbulbEmpty.svg" alt="Skill" />
             <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" />
           </div>
 
@@ -257,21 +136,14 @@
             {{ nodo.nombre }}
           </div>
 
-          <div
-            class="lineaVinculo"
-            v-for="vinculo of nodo.vinculos.filter((v) => v.estilo)"
-            :key="vinculo.id"
-            :style="[vinculo.estilo]"
-          >
-            <div
-              v-show="
-                !idNodoSeleccionado ||
-                !nivelesConexion ||
-                (idsRedSeleccion.includes(nodo.id) &&
-                  idsRedSeleccion.includes(vinculo.idRef))
-              "
-              class="laLinea"
-            ></div>
+          <div class="lineaVinculo" v-for="vinculo of nodo.vinculos.filter((v) => v.estilo)" :key="vinculo.id"
+            :style="[vinculo.estilo]">
+            <div v-show="
+              !idNodoSeleccionado ||
+              !nivelesConexion ||
+              (idsRedSeleccion.includes(nodo.id) &&
+                idsRedSeleccion.includes(vinculo.idRef))
+            " class="laLinea"></div>
           </div>
         </div>
 
@@ -304,39 +176,19 @@
     </div>
 
     <div id="barraInferior">
-      <div
-        class="boton"
-        title="Mostrar colecciones"
-        @click="$refs.panelConjuntosNodos.abierto = true"
-      >
+      <div class="boton" title="Mostrar colecciones" @click="$refs.panelConjuntosNodos.abierto = true">
         <img src="@/assets/iconos/userNodes.png" alt="Nodos de usuario" />
       </div>
 
-      <div
-        class="boton"
-        :title="
-          'Cambiar a modo ' + modoAtlas === 'experto' ? 'estudiante' : 'experto'
-        "
-        :class="{ deshabilitado: enviandoQueryModo }"
-        @click="setModo(modoAtlas === 'estudiante' ? 'experto' : 'estudiante')"
-      >
-        <img
-          src="@/assets/iconos/teacher.svg"
-          v-if="modoAtlas === 'experto'"
-          alt="Experto"
-        />
-        <img
-          src="@/assets/iconos/estudiante.png"
-          v-if="modoAtlas === 'estudiante'"
-          alt="Estudiante"
-        />
+      <div class="boton" :title="
+        'Cambiar a modo ' + modoAtlas === 'experto' ? 'estudiante' : 'experto'
+      " :class="{ deshabilitado: enviandoQueryModo }"
+        @click="setModo(modoAtlas === 'estudiante' ? 'experto' : 'estudiante')">
+        <img src="@/assets/iconos/teacher.svg" v-if="modoAtlas === 'experto'" alt="Experto" />
+        <img src="@/assets/iconos/estudiante.png" v-if="modoAtlas === 'estudiante'" alt="Estudiante" />
       </div>
 
-      <div
-        class="boton"
-        title="Mostrar temas para repasar"
-        @click="$router.push({ name: 'ventanaRepasos' })"
-      >
+      <div class="boton" title="Mostrar temas para repasar" @click="$router.push({ name: 'ventanaRepasos' })">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
           <path
             d="M256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256C512 397.4 397.4 512 256 512zM232 256C232 264 236 271.5 242.7 275.1L338.7 339.1C349.7 347.3 364.6 344.3 371.1 333.3C379.3 322.3 376.3 307.4 365.3 300L280 243.2V120C280 106.7 269.3 96 255.1 96C242.7 96 231.1 106.7 231.1 120L232 256z"
@@ -344,30 +196,19 @@
               datosNodosRepasar.length > 0
                 ? 'var(--atlasConocimientoRepaso)'
                 : ''
-            "
-          />
+            " />
         </svg>
       </div>
     </div>
 
-    <controles-nodo
-      :yo="yo"
-      ref="controlesNodo"
-      :elNodo="nodoSeleccionado"
-      :nivelesConexionDeeper="nivelesConexionDeeper"
-      :nivelesConexionHigher="nivelesConexionHigher"
-      @setMeTarget="
+    <controles-nodo :yo="yo" ref="controlesNodo" :elNodo="nodoSeleccionado" :nivelesConexionDeeper="nivelesConexionDeeper"
+      :nivelesConexionHigher="nivelesConexionHigher" @setMeTarget="
         setNodoTarget(nodoSeleccionado.id);
-        centrarEnNodoById(nodoSeleccionado.id);
-      "
-      @nivelesConexion="nivelesConexion = $event"
-    />
+      centrarEnNodoById(nodoSeleccionado.id);
+                      " @nivelesConexion="nivelesConexion = $event" />
 
-    <loading
-      id="simboloDescargandoNodos"
-      v-show="!nodosDescargados || $apollo.queries.yo.loading"
-      texto="descargando nodos de conocimiento"
-    />
+    <loading id="simboloDescargandoNodos" v-show="!nodosDescargados || $apollo.queries.yo.loading"
+      texto="descargando nodos de conocimiento" />
   </div>
 </template>
 
@@ -950,7 +791,7 @@ export default {
       if (this.idsNodosConectadosSeleccionadoLabelled.length > 0) {
         lastNivel =
           this.idsNodosConectadosSeleccionadoLabelled[
-            this.idsNodosConectadosSeleccionadoLabelled.length - 1
+          this.idsNodosConectadosSeleccionadoLabelled.length - 1
           ];
       }
       let vinculosSiguienteNivel = this.todosNodos
@@ -976,7 +817,7 @@ export default {
       if (this.idsNodosConectadosSeleccionadoLabelled.length > 0) {
         lastNivel =
           this.idsNodosConectadosSeleccionadoLabelled[
-            this.idsNodosConectadosSeleccionadoLabelled.length - 1
+          this.idsNodosConectadosSeleccionadoLabelled.length - 1
           ];
       }
 
@@ -1181,8 +1022,7 @@ export default {
 
       console.log(`xPix: ${parseInt(this.offsetMenuContextual.left)}`);
       console.log(
-        `posXContenedorNodos: ${parseInt(posContenedorNodos.left)}, ${
-          posContenedorNodos.top
+        `posXContenedorNodos: ${parseInt(posContenedorNodos.left)}, ${posContenedorNodos.top
         }`
       );
       console.log(`distanciaLeftPx: ${distanciaLeftPx}`);
@@ -1649,7 +1489,7 @@ export default {
             idNodoTo: args.idNodoTo,
           },
         })
-        .then(() => {})
+        .then(() => { })
         .catch((error) => {
           console.log(`error: ${error}`);
         });
@@ -1689,7 +1529,7 @@ export default {
             idNodoTo: args.idNodoTo,
           },
         })
-        .then(() => {})
+        .then(() => { })
         .catch((error) => {
           console.log(`error: ${error}`);
         });
@@ -1700,55 +1540,94 @@ export default {
       // }
     },
 
-    zoomVista: debounce(function (deltaZoom, posZoomPx) {
+    // zoomVista: debounce(function (deltaZoom, posZoomPx) {
+    //   let contenedor = this.$refs.contenedorDiagrama;
+    //   let layoutContenedor = contenedor.getBoundingClientRect();
+
+    //   let deltaCentroPx = {
+    //     x: layoutContenedor.width / 2 - posZoomPx.x,
+    //     y: layoutContenedor.height / 2 - posZoomPx.y,
+    //   };
+
+    //   let posZoom = {
+    //     x:
+    //       this.esquinasDiagrama.x1 +
+    //       contenedor.scrollLeft / this.factorZoom +
+    //       posZoomPx.x / this.factorZoom,
+    //     y:
+    //       this.esquinasDiagrama.y1 +
+    //       contenedor.scrollTop / this.factorZoom +
+    //       posZoomPx.y / this.factorZoom,
+    //   };
+
+    //   var nuevoZoom = this.zoom + deltaZoom;
+    //   if (nuevoZoom < this.minZoom) {
+    //     nuevoZoom = this.minZoom;
+    //   } else if (nuevoZoom > this.maxZoom) {
+    //     nuevoZoom = this.maxZoom;
+    //   }
+
+    //   this.zoom = nuevoZoom;
+
+    //   let factorZoom = nuevoZoom / 100;
+
+    //   //Pan vista de acuerdo con la posición del mouse respecto del atlas
+    //   //Get new esquinaVista
+
+    //   let nuevoCentroVistaDeseado = {
+    //     x: posZoom.x + deltaCentroPx.x / factorZoom,
+    //     y: posZoom.y + deltaCentroPx.y / factorZoom,
+    //   };
+
+    //   let nuevoScrollLeft =
+    //     (nuevoCentroVistaDeseado.x - this.esquinasDiagrama.x1) * factorZoom -
+    //     layoutContenedor.width / 2;
+    //   let nuevoScrollTop =
+    //     (nuevoCentroVistaDeseado.y - this.esquinasDiagrama.y1) * factorZoom -
+    //     layoutContenedor.height / 2;
+
+    //   this.$refs.contenedorDiagrama.scrollLeft = Math.round(nuevoScrollLeft);
+    //   this.$refs.contenedorDiagrama.scrollTop = Math.round(nuevoScrollTop);
+    // }, 100),
+    zoomVista(cantidad, posicionPx) {
+
       let contenedor = this.$refs.contenedorDiagrama;
-      let layoutContenedor = contenedor.getBoundingClientRect();
 
-      let deltaCentroPx = {
-        x: layoutContenedor.width / 2 - posZoomPx.x,
-        y: layoutContenedor.height / 2 - posZoomPx.y,
+
+      let posicionTotalPx = {
+        x: posicionPx.x + this.$refs.contenedorDiagrama.scrollLeft,
+        y: posicionPx.y + this.$refs.contenedorDiagrama.scrollTop,
       };
 
-      let posZoom = {
-        x:
-          this.esquinasDiagrama.x1 +
-          contenedor.scrollLeft / this.factorZoom +
-          posZoomPx.x / this.factorZoom,
-        y:
-          this.esquinasDiagrama.y1 +
-          contenedor.scrollTop / this.factorZoom +
-          posZoomPx.y / this.factorZoom,
-      };
-
-      var nuevoZoom = this.zoom + deltaZoom;
+      let step = 5 * cantidad;
+      let nuevoZoom = this.zoom + step;
       if (nuevoZoom < this.minZoom) {
         nuevoZoom = this.minZoom;
       } else if (nuevoZoom > this.maxZoom) {
         nuevoZoom = this.maxZoom;
       }
-
+      let cambioZoom= nuevoZoom/this.zoom;
       this.zoom = nuevoZoom;
 
-      let factorZoom = nuevoZoom / 100;
+      let posicionTotalPxPrima= {
+        x: posicionTotalPx.x*cambioZoom,
+        y: posicionTotalPx.y*cambioZoom,
+      }
 
-      //Pan vista de acuerdo con la posición del mouse respecto del atlas
-      //Get new esquinaVista
+      let nuevoScrollLeft = posicionTotalPxPrima.x - posicionPx.x; 
+      let nuevoScrollTop = posicionTotalPxPrima.y - posicionPx.y;
 
-      let nuevoCentroVistaDeseado = {
-        x: posZoom.x + deltaCentroPx.x / factorZoom,
-        y: posZoom.y + deltaCentroPx.y / factorZoom,
-      };
 
-      let nuevoScrollLeft =
-        (nuevoCentroVistaDeseado.x - this.esquinasDiagrama.x1) * factorZoom -
-        layoutContenedor.width / 2;
-      let nuevoScrollTop =
-        (nuevoCentroVistaDeseado.y - this.esquinasDiagrama.y1) * factorZoom -
-        layoutContenedor.height / 2;
+      this.$nextTick(() => {
 
-      this.$refs.contenedorDiagrama.scrollLeft = Math.round(nuevoScrollLeft);
-      this.$refs.contenedorDiagrama.scrollTop = Math.round(nuevoScrollTop);
-    }, 100),
+        contenedor.scrollLeft = Math.round(nuevoScrollLeft);
+        contenedor.scrollTop = Math.round(nuevoScrollTop);
+
+      })
+      this.showingZoomInfo = true;
+
+
+    },
     zoomWheel(e) {
       if (!this.hovered || !e.ctrlKey) {
         return;
@@ -1763,8 +1642,15 @@ export default {
         y: e.clientY - posContenedor.top,
       };
 
-      const factorZoom = 0.05;
-      this.zoomVista(-Math.round(e.deltaY * factorZoom), posMousePx);
+      //Check wheel direction
+      if (e.deltaY > 0) {
+        this.zoomVista(-1, posMousePx);
+      } else {
+        this.zoomVista(1, posMousePx);
+      }
+
+      // const factorZoom = 0.05;
+      // this.zoomVista(-Math.round(e.deltaY * factorZoom), posMousePx);
     },
     hideZoomInfo: debounce(function () {
       this.showingZoomInfo = false;
@@ -1877,15 +1763,11 @@ export default {
   --atlasConocimientoSeleccion: #ad58d8;
   --atlasConocimientoContinuacion: #3066be;
 
-  --filtroAtlasSeleccion: invert(43%) sepia(84%) saturate(539%)
-    hue-rotate(236deg) brightness(88%) contrast(92%);
+  --filtroAtlasSeleccion: invert(43%) sepia(84%) saturate(539%) hue-rotate(236deg) brightness(88%) contrast(92%);
 
-  --filtroAtlasAvailable: invert(79%) sepia(70%) saturate(443%)
-    hue-rotate(349deg) brightness(92%) contrast(91%);
-  --filtroAtlasCheck: invert(34%) sepia(99%) saturate(407%) hue-rotate(56deg)
-    brightness(95%) contrast(81%);
-  --filtroAtlasRepaso: invert(50%) sepia(95%) saturate(2482%) hue-rotate(328deg)
-    brightness(106%) contrast(101%);
+  --filtroAtlasAvailable: invert(79%) sepia(70%) saturate(443%) hue-rotate(349deg) brightness(92%) contrast(91%);
+  --filtroAtlasCheck: invert(34%) sepia(99%) saturate(407%) hue-rotate(56deg) brightness(95%) contrast(81%);
+  --filtroAtlasRepaso: invert(50%) sepia(95%) saturate(2482%) hue-rotate(328deg) brightness(106%) contrast(101%);
 }
 </style>
 <style scoped>
@@ -2028,8 +1910,9 @@ export default {
 
 #contenedorNodos {
   position: absolute;
-  top: 50px;
-  left: 50px;
+  top:0px;
+  left: 0px;
+  transform-origin: left top;
   user-select: none;
   width: 100%;
   height: 100%;
