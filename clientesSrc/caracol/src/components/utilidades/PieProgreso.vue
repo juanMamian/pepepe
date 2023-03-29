@@ -1,7 +1,12 @@
 <template>
   <div class="pieProgreso">
     <div id="circuloVacio" :style="[estiloCirculoVacio]">
-      <div id="numeroProgreso" :style="[estiloNumero]">
+      <div id="contenidoExterno">
+        <slot>
+  
+        </slot>
+      </div>
+      <div id="numeroProgreso" v-if="mostrarNumero" :style="[estiloNumero]">
         <span v-if="progreso">{{ progreso.toFixed(cifrasDecimales) }} </span>
         <!-- <span id="simboloPorcentaje" >%</span> -->
 
@@ -22,6 +27,14 @@
 export default {
   name: "PieProgreso",
   props: {
+    colorProgreso:{
+      type: String,
+      default: '#04AA6D'
+    },
+    mostrarNumero:{
+      type: Boolean,
+      default: true
+    },
     progreso: {
       type: Number,
       default: 0,
@@ -36,6 +49,10 @@ export default {
       type: Number,
       default: 40,
     },
+    colorFondo:{
+      type: String,
+      default: '#f5f5f59c'
+    }
   },
   data() {
     return {};
@@ -45,6 +62,7 @@ export default {
       return {
         width: this.size + "px",
         height: this.size + "px",
+        backgroundColor: this.colorFondo
       };
     },
     estiloCanvasProgreso() {
@@ -73,7 +91,7 @@ export default {
 
       lapiz.clearRect(0, 0, this.size, this.size);
       lapiz.beginPath();
-      lapiz.strokeStyle = "#04AA6D";
+      lapiz.strokeStyle = this.colorProgreso || "#04AA6D";
       lapiz.lineWidth = 5;
       lapiz.arc(
         centroCirculo,
@@ -99,7 +117,6 @@ export default {
 
 <style scoped>
 #circuloVacio {
-  background-color: #f5f5f59c;
   position: relative;
   border-radius: 50%;
 }
@@ -114,6 +131,15 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+#contenidoExterno{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+
 }
 
 #simboloPorcentaje{

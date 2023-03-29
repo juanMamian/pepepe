@@ -209,7 +209,7 @@
           </div>
           <loading texto="" v-show="enviandoQueryExpertos" />
         </div>
-        <div id="listaExpertos" @click.self="idExpertoSeleccionado = null">
+        <div id="listaExpertos" class="listaPersonas" @click.self="idExpertoSeleccionado = null">
           <icono-persona-autonomo
             texto=""
             v-for="idExperto of esteNodo.expertos.concat(

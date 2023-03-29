@@ -12,7 +12,7 @@ import { serverUrl, wsServerUrl } from "./hostConfig";
 
 
 const httpLink = createHttpLink({
-  uri: serverUrl,
+  uri: serverUrl + "/graphql",
 });
 
 const httpAuthLink = setContext((_, { headers }) => {
@@ -32,7 +32,7 @@ const httpAuthLink = setContext((_, { headers }) => {
 });
 
 const wsLink = new GraphQLWsLink(createClient({
-  url: wsServerUrl,
+  url: wsServerUrl + "/graphql",
   connectionParams: ()=> {
     let token=leerToken();
     return {

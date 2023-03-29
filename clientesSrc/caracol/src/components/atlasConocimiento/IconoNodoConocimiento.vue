@@ -95,7 +95,7 @@ export default {
       return true;
     },
     estudiadoRecientemente() {
-      if (!this.estudiado || !this.datosEsteNodo.periodoRepaso) {
+      if (!this.estudiado || !this.datosEsteNodo.diasRepaso) {
         return false;
       }
       let dateHoy = new Date();
@@ -106,7 +106,7 @@ export default {
       dateHoyMin.setSeconds(0);
 
       let millisEstudiado = new Date(this.datosEsteNodo.estudiado).getTime();
-      let millisRepaso = millisEstudiado + this.datosEsteNodo.periodoRepaso;
+      let millisRepaso = millisEstudiado + (this.datosEsteNodo.diasRepaso * 86400000 ) ;
       let millisHoy = dateHoy.getTime();
 
       console.log(

@@ -3,18 +3,19 @@
         <div id="centerSignaler" v-show="elNodo">
 
         </div>
-        <div id="zonaControlVerConexiones" @click.stop="mostrandoFlechasConexiones = true"
-            v-show="elNodo">
+        <div id="zonaControlVerConexiones" @click.stop="mostrandoFlechasConexiones = true" v-show="elNodo">
             <div id="signaler" :style="[posSignaler]"></div>
 
             <div id="bloqueFlechasConexiones" v-show="mostrandoFlechasConexiones">
 
-                <div class="boton botonConexiones" @click.stop="nivelesConexion--" :class="{deshabilitado:!nivelesConexionDeeper}">
+                <div class="boton botonConexiones" @click.stop="nivelesConexion--"
+                    :class="{ deshabilitado: !nivelesConexionDeeper }">
                     <img src="@/assets/iconos/chevron.svg" alt="Arrow">
                 </div>
 
                 <div id="indicadorNiveles">{{ Math.abs(nivelesConexion) }}</div>
-                <div class="boton botonConexiones" @click.stop="nivelesConexion++" style="transform: rotate(180deg);" :class="{deshabilitado:!nivelesConexionHigher}">
+                <div class="boton botonConexiones" @click.stop="nivelesConexion++" style="transform: rotate(180deg);"
+                    :class="{ deshabilitado: !nivelesConexionHigher }">
                     <img src="@/assets/iconos/chevron.svg" alt="Arrow">
                 </div>
             </div>
@@ -26,34 +27,62 @@
 
         <div id="zonaControles" @click="">
 
-            <div class="bloqueControl" style="width: 100%; margin-bottom: 20px;" @click="" v-if="elNodo">
-                <router-link :to="{ name: 'visorNodoConocimiento', params: { idNodo: elNodo.id } }">
-                    <div class="boton botonControl">
-                        <img src="@/assets/iconos/expandSolid.svg" alt="Repaso">
+            <div class="filaControles">
+                <div class="bloqueControl" @click="" v-if="elNodo">
+                    <router-link :to="{ name: 'visorNodoConocimiento', params: { idNodo: elNodo.id } }">
+                        <div class="boton botonControl">
+                            <img src="@/assets/iconos/expandSolid.svg" alt="Repaso">
+                        </div>
+                    </router-link>
+                </div>
+                <div class="bloqueControl">
+                    <div class="boton botonControl" @click="marcarEnLaMira">
+                        <img src="@/assets/iconos/crosshairsSolid.svg" @click="$emit('setMeTarget')" alt="Repaso">
                     </div>
-                </router-link>
+                </div>
+
             </div>
 
-            <div class="bloqueControl">
-                <div class="boton botonControl" @click="marcarEstudiado">
-                    <loading v-show="settingDateEstudiado" />
-                    <img src="@/assets/iconos/bookSolid.svg" v-show="!settingDateEstudiado" alt="Repaso">
+            <div class="filaControles">
+                <div class="bloqueControl">
+                    <pie-progreso :mostrarNumero="false" :color-progreso="'#3f7d20'"
+                        :color-fondo="porcentajeRepaso === 0 ? 'var(--atlasConocimientoRepasar)' : 'transparent'"
+                        :progreso="porcentajeRepaso" :size="40">
+                        <div class="boton botonControl" :class="{ deshabilitado: nodoAprendido }"
+                            :style="{ transform: porcentajeRepaso != null ? 'scale(0.6)' : 'scale(1)' }"
+                            @click="marcarEstudiado" @dblclick="marcarAprendido">
+                            <loading v-show="settingDateEstudiado" />
+                            <img src="@/assets/iconos/bookSolid.svg" v-show="!settingDateEstudiado" alt="Repaso">
+                        </div>
+                    </pie-progreso>
+                </div>
+                <div class="bloqueControl">
+                    <div class="boton botonControl" :class="{ deshabilitado: nodoAprendido }"
+                        @click="mostrando = mostrando === 'tiempoRepaso' ? '' : 'tiempoRepaso'">
+                        <img src="@/assets/iconos/stopwatchSolid.svg" alt="Repaso">
+                    </div>
+                </div>
+                <div class="bloqueControl">
+                    <div class="boton selector botonControl" id="botonMarcarAprendido" @click="marcarAprendido"
+                        :class="{ activo: nodoAprendido }">
+                        <img src="@/assets/iconos/circlecheckSolid.svg" v-show="!settingEstadoAprendido" alt="Check">
+                        <loading v-show="settingEstadoAprendido" />
+                    </div>
                 </div>
             </div>
 
-            <div class="bloqueControl">
-                <div class="boton botonControl" @click="mostrando = mostrando === 'tiempoRepaso' ? '' : 'tiempoRepaso'">
-                    <img src="@/assets/iconos/stopwatchSolid.svg" alt="Repaso">
+            <div class="filaControles">
+                <div class="bloqueControl" v-if="usuarioExperto || usuarioSuperadministrador">
+                    <div class="boton botonControl" @click="mostrando = mostrando === 'enlaces' ? null : 'enlaces'">
+                        <img src="@/assets/iconos/codeBranch.svg" alt="Repaso">
+                    </div>
                 </div>
-            </div>
-            <div class="bloqueControl">
-                <div class="boton botonControl" @click="marcarEnLaMira">
-                    <img src="@/assets/iconos/crosshairsSolid.svg" @click="$emit('setMeTarget')" alt="Repaso">
-                </div>
-            </div>
-            <div class="bloqueControl">
-                <div class="boton botonControl" @click="mostrando = mostrando === 'enlaces' ? null : 'enlaces'">
-                    <img src="@/assets/iconos/codeBranch.svg" alt="Repaso">
+
+                <div class="bloqueControl" v-if="usuarioSuperadministrador">
+                    <div class="boton botonControl" @click="eliminarNodo">
+                        <img src="@/assets/iconos/trash.svg" alt="Eliminar">
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -81,22 +110,24 @@
                     Selecciona la cantidad de días entre repasos para el nodo {{ elNodo?.nombre || '' }}.
                 </div>
 
-                <div class="botonTexto" @click="setPeriodoRepaso" :class="{ deshabilitado: guardandoPeriodoRepaso }">
+                <div class="botonTexto" @click="setDiasRepaso" :class="{ deshabilitado: guardandoDiasRepaso }">
                     Aceptar
                 </div>
 
-                <loading v-show="guardandoPeriodoRepaso" />
+                <loading v-show="guardandoDiasRepaso" />
             </div>
         </teleport>
     </div>
 </template>
 <script lang="js">
 import { gql } from '@apollo/client/core';
-import { QUERY_DATOS_USUARIO_NODOS } from './AtlasConocimiento.vue';
+import { QUERY_DATOS_USUARIO_NODOS } from './fragsAtlasConocimiento';
 import { fragmentoDatoNodoConocimiento } from './fragsAtlasConocimiento';
 import Loading from '../utilidades/Loading.vue';
+import PieProgreso from '../utilidades/PieProgreso.vue';
 
 export default {
+
     props: {
         elNodo: {
             type: Object,
@@ -109,9 +140,14 @@ export default {
             type: Boolean,
             default: false,
         },
+        yo: {
+            type: Object,
+            required: true,
+        },
     },
     components: {
         Loading,
+        PieProgreso,
     },
     name: "ControlesNodo",
     data() {
@@ -125,9 +161,11 @@ export default {
             settingDateEstudiado: false,
 
             diasRepaso: 0,
-            guardandoPeriodoRepaso: false,
+            guardandoDiasRepaso: false,
+            settingEstadoAprendido: false,
 
             nivelesConexion: 0,
+
         };
     },
     computed: {
@@ -159,16 +197,66 @@ export default {
             return {
                 transform: `translateX(calc(-50% + ${step}px))`,
             }
+        },
+        datoUsuarioEsteNodo() {
+            if (!this.elNodo || !this.yo?.atlas?.datosNodos) {
+                return null;
+            }
+
+            return this.yo.atlas.datosNodos.find(dato => dato.idNodo === this.elNodo.id);
+        },
+        nodoAprendido() {
+            if (!this.elNodo) {
+                return false;
+            }
+            if (!this.datoUsuarioEsteNodo) {
+                return false;
+            }
+            return this.datoUsuarioEsteNodo.aprendido;
+        },
+        porcentajeRepaso() {
+            if (!this.datoUsuarioEsteNodo?.estudiado) {
+                return null;
+            }
+            if (!this.datoUsuarioEsteNodo.diasRepaso) {
+                return null;
+            }
+
+            if (this.nodoAprendido) {
+                return null;
+            }
+            let tiempoTranscurrido = Date.now() - (new Date(this.datoUsuarioEsteNodo.estudiado)).getTime();
+
+            //To day
+            let porcentajeTranscurrido = tiempoTranscurrido / ((this.datoUsuarioEsteNodo.diasRepaso * 86400000) / 100);
+            if (porcentajeTranscurrido > 100) {
+                porcentajeTranscurrido = 100;
+            }
+            if (porcentajeTranscurrido < 0) {
+
+                porcentajeTranscurrido = 0;
+            }
+
+            return 100 - porcentajeTranscurrido;
+        },
+        usuarioExperto() {
+            if (!this.usuario?.id) {
+                return false;
+            }
+            if (!this.elNodo?.expertos) {
+                return false;
+            }
+
+            return this.elNodo.expertos.includes(this.usuario.id);
         }
     },
     methods: {
-        toggleDespliege(){
-            if(!this.mostrandoFlechasConexiones){
+        toggleDespliege() {
+            if (!this.mostrandoFlechasConexiones) {
                 this.desplegado = !this.desplegado;
             }
-        },  
+        },
         clickFuera() {
-            console.log("click fuera");
             this.mostrandoFlechasConexiones = false;
         },
         marcarEstudiado() {
@@ -189,7 +277,6 @@ export default {
                 }
             }).then(({ data: { setDateNodoConocimientoEstudiadoUsuario } }) => {
                 this.settingDateEstudiado = false;
-                console.log(`Completado. Recibido; ${JSON.stringify(setDateNodoConocimientoEstudiadoUsuario)}`);
 
                 //Add to cache if not already there
                 let store = this.$apollo.provider.defaultClient;
@@ -220,24 +307,26 @@ export default {
                 this.settingDateEstudiado = false;
             });
         },
-        setPeriodoRepaso() {
+        setDiasRepaso() {
             if (!this.elNodo) {
                 return;
             }
             this.diasRepaso = this.$refs.inputDiasRepaso.value;
 
-            let nuevoPeriodoRepaso = parseInt(this.diasRepaso * 86400000);
-
             //1 day minimum
-            if (nuevoPeriodoRepaso < 86400000) {
+            if (this.diasRepaso < 1) {
                 return
             }
 
-            this.guardandoPeriodoRepaso = true;
+            if (!this.diasRepaso > 3000) {
+                return
+            }
+
+            this.guardandoDiasRepaso = true;
             this.$apollo.mutate({
                 mutation: gql`
-                    mutation($idNodo: ID!, $nuevoPeriodoRepaso: Float!){
-                        setPeriodoRepasoNodoConocimientoUsuario(idNodo: $idNodo, nuevoPeriodoRepaso: $nuevoPeriodoRepaso){
+                    mutation($idNodo: ID!, $nuevoDiasRepaso: Float!){
+                        setDiasRepasoNodoConocimientoUsuario(idNodo: $idNodo, nuevoDiasRepaso: $nuevoDiasRepaso){
                              ...fragDatoNodoConocimiento
                         }
                     }
@@ -245,17 +334,75 @@ export default {
                     `,
                 variables: {
                     idNodo: this.elNodo.id,
-                    nuevoPeriodoRepaso,
+                    nuevoDiasRepaso: this.diasRepaso,
                 }
             }).then(() => {
-                this.guardandoPeriodoRepaso = false;
+                this.guardandoDiasRepaso = false;
                 this.mostrando = '';
 
             }).catch((error) => {
                 console.log('Error: ' + error);
-                this.guardandoPeriodoRepaso = false;
+                this.guardandoDiasRepaso = false;
+            })
+        },
+        marcarAprendido() {
+            if (!this.elNodo) {
+                return;
+            }
+
+            let nuevoEstadoAprendido = true;
+            if (this.datoUsuarioEsteNodo) {
+                nuevoEstadoAprendido = !this.datoUsuarioEsteNodo.aprendido;
+            }
+
+            this.settingEstadoAprendido = true;
+            this.$apollo.mutate({
+                mutation: gql`
+                    mutation($idNodo: ID!, $nuevoEstadoAprendido: Boolean!){
+                        setNodoAtlasAprendidoUsuario(idNodo: $idNodo, nuevoEstadoAprendido: $nuevoEstadoAprendido){
+                            ...fragDatoNodoConocimiento
+                        }                                                     
+                    }
+                    ${fragmentoDatoNodoConocimiento}
+                    `,
+                variables: {
+                    idNodo: this.elNodo.id,
+                    nuevoEstadoAprendido,
+                }
+            }).then(({data:{setNodoAtlasAprendidoUsuario}}) => {
+                this.settingEstadoAprendido = false;
+
+                //Add datos nodos nuevos al cache
+                let store = this.$apollo.provider.defaultClient;
+                let cache = store.readQuery({
+                    query: QUERY_DATOS_USUARIO_NODOS,
+                    variables: {
+                        idUsuario: this.usuario.id,
+                    }
+                });
+
+                let nuevosDatosNodos = setNodoAtlasAprendidoUsuario.filter(dn => cache.yo?.atlas?.datosNodos?.findIndex(dn2 => dn2.idNodo === dn.idNodo) === -1);
+
+                console.log("Nuevos datos nodos: ", nuevosDatosNodos.length);
+
+                let nuevoCache = JSON.parse(JSON.stringify(cache));
+
+                nuevoCache.yo.atlas.datosNodos = nuevoCache.yo.atlas.datosNodos.concat(nuevosDatosNodos);
+
+                store.writeQuery({
+                    query: QUERY_DATOS_USUARIO_NODOS,
+                    variables: {
+                        idUsuario: this.usuario.id,
+                    },
+                    data: nuevoCache
+                });
+
+            }).catch((error) => {
+                console.log('Error: ' + error);
+                this.settingEstadoAprendido = false;
             })
         }
+
     },
     watch: {
         elNodo(nodo) {
@@ -336,11 +483,21 @@ export default {
     min-height: 100px;
 
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    flex-direction: column;
     justify-content: center;
     gap: 20px;
 
     padding: 20px 20px;
+
+}
+
+.filaControles {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    width: min(400px, 90%);
 
 }
 
@@ -356,6 +513,10 @@ export default {
     height: 40px;
 }
 
+#botonMarcarAprendido.activo {
+    background-color: transparent;
+    border: 2px solid var(--atlasConocimientoCheck);
+}
 
 #inputDiasRepaso {
     padding: 5px 5px;
@@ -373,19 +534,20 @@ export default {
 
 /* #region controlConexiones */
 
-#centerSignaler{
+#centerSignaler {
     position: absolute;
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border: 10px solid transparent;
-    border-bottom: 10px solid var(--atlasConocimientoSeleccion);
+    border: 13px solid transparent;
+    border-bottom: 13px solid var(--atlasConocimientoSeleccion);
     width: 1px;
     height: 1px;
     cursor: pointer;
     pointer-events: none;
     z-index: 1;
 }
+
 #zonaControlVerConexiones {
     display: flex;
     position: absolute;
@@ -403,8 +565,8 @@ export default {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border: 10px solid transparent;
-    border-bottom: 10px solid gray;
+    border: 13px solid transparent;
+    border-bottom: 13px solid gray;
     width: 1px;
     height: 1px;
     cursor: pointer;

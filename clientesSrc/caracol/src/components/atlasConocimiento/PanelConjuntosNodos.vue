@@ -83,7 +83,7 @@ import SelectorConjunto from "./SelectorConjunto.vue";
 import {
   QUERY_DATOS_USUARIO_NODOS,
   fragmentoColecciones,
-} from "./AtlasConocimiento.vue";
+} from "./fragsAtlasConocimiento.js";
 import Loading from "../utilidades/Loading.vue";
 
 const charProhibidosNombreColeccion = /[^ a-zA-ZÀ-ž0-9_():.,-]/;

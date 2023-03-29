@@ -1,3 +1,4 @@
+/* #region variables globales */
 :root {
   --mainColor: #f49e4c;
   --mainColorDark: #f49e4c;
@@ -63,6 +64,10 @@
   font-style: normal;
 }
 
+/* #endregion */
+
+
+/* #region predefs */
 html {
   height: 100vh;
 }
@@ -80,6 +85,10 @@ body {
   font-family: "Salsa", sans-serif;
 }
 
+/* #endregion */
+
+
+/* #region menuCx */
 .menuContextual {
   position: absolute;
   top: 110%;
@@ -132,6 +141,7 @@ body {
 .selectorSubseccionMenuCx:hover > .subseccionMenuCx {
   display: block;
 }
+/* #endregion */
 
 .zonaConfiguracion {
   padding: 20px 10px;
@@ -184,13 +194,15 @@ body {
   margin: 0px 5px;
 }
 
+/* #region botones y selectores*/
+
 .boton {
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
 }
 
@@ -225,6 +237,7 @@ body {
 .selector.activo {
   border-color: var(--paletaMain);
 }
+/* #endregion */
 
 .barraSeccion {
   display: flex;

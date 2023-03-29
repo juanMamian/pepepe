@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import { QUERY_DATOS_USUARIO_NODOS } from "./AtlasConocimiento.vue";
+import { QUERY_DATOS_USUARIO_NODOS } from "./fragsAtlasConocimiento.js";
 import ItemRepaso from "./ItemRepaso.vue";
 export default {
   components: { ItemRepaso },
@@ -95,11 +95,11 @@ export default {
       var datos = this.datosNodosRepasar.map((dn) => {
         var tiempoRestanteToRepaso =
           new Date(dn.estudiado).getTime() +
-          dn.periodoRepaso -
+          (dn.diasRepaso * 86400000) -
           Date.now();
 
         var porcentajeIntervaloRestante = Math.round(
-          (tiempoRestanteToRepaso * 100) / dn.periodoRepaso
+          (tiempoRestanteToRepaso * 100) / (dn.diasRepaso * 86400000)
         );
         var porcentajeIntervaloTranscurrido = 100 - porcentajeIntervaloRestante;
         if (porcentajeIntervaloTranscurrido > 100)

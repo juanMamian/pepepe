@@ -16,6 +16,6 @@ if(hostLocation.includes("heroku")){
     wsProtocolPart="wss://";
 }
 
-export let serverUrl=protocolPart + hostLocation + "/graphql";
-export let wsServerUrl=wsProtocolPart + hostLocation + "/graphql";
+export let serverUrl=protocolPart + hostLocation;
+export let wsServerUrl=wsProtocolPart + hostLocation;
 

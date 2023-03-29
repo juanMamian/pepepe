@@ -354,7 +354,7 @@
               Ofrezco una clase
             </div>
           </div>
-          <div id="listaExpertos">
+          <div id="listaExpertos" class="listaPersonas">
             <icono-persona-autonomo
               :idPersona="idPersona"
               :key="idPersona"

@@ -66,7 +66,7 @@
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 import IteracionRepaso from "./IteracionRepaso.vue";
-import { QUERY_DATOS_USUARIO_NODOS } from "./AtlasConocimiento.vue";
+import { QUERY_DATOS_USUARIO_NODOS } from "./fragsAtlasConocimiento.js";
 
 export default {
   components: { IteracionRepaso, Loading },

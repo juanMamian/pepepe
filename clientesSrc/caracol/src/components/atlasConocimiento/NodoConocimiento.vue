@@ -178,8 +178,7 @@
 import gql from "graphql-tag";
 
 import Loading from "../utilidades/Loading.vue";
-import { fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
-import { QUERY_DATOS_USUARIO_NODOS } from "./AtlasConocimiento.vue";
+import { QUERY_DATOS_USUARIO_NODOS, fragmentoDatoNodoConocimiento } from "./fragsAtlasConocimiento";
 
 export default {
   components: { Loading },

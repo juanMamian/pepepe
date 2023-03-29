@@ -23,7 +23,7 @@
 
 <script>
 import { gql } from "@apollo/client/core"
-import { QUERY_DATOS_USUARIO_NODOS } from './AtlasConocimiento.vue';
+import { QUERY_DATOS_USUARIO_NODOS } from './fragsAtlasConocimiento.js';
 import Loading from '../utilidades/Loading.vue';
 export default {
   components: { Loading },
