@@ -228,21 +228,7 @@ export default {
     
   },
   computed: {
-    idsNodosObjetivos() {
-      if (!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos) {
-        return [];
-      }
-      return this.yo.atlas.datosNodos
-        .filter((n) => n.objetivo == true)
-        .map((n) => n.idNodo);
-    },
-    nodosObjetivo() {
-      if (!this.yo) return [];
-
-      return this.todosNodos.filter((n) =>
-        this.idsNodosObjetivos.includes(n.id)
-      );
-    },
+   
     conjuntos() {
       return this.conjuntosUsuario;
     },

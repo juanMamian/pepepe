@@ -25,8 +25,11 @@
         <pie-progreso
           v-if="coleccionSeleccionada && progresoColeccionSeleccionada"
           :progreso="progresoColeccionSeleccionada"
-          style="margin-right: 10px"
-        />
+          :color-fondo="'transparent'"
+          style="margin-right: 10px"          
+        >
+          <img src="@/assets/iconos/atlas/userNodes.png" alt="Colección" id="iconoColeccionSeleccionada">
+        </pie-progreso>
         <span style="z-index: 1">
           {{ nombreColeccionSeleccionada }}
         </span>
@@ -53,7 +56,6 @@
           <img
             src="@/assets/iconos/atlas/locationCrosshair.svg"
             alt="Localizar"
-            style="filter: var(--filtroAtlasAvailable)"
           />
         </div>
         <div class="boton controlColeccion" @click="localizarNext('check')">
@@ -137,27 +139,25 @@
       >
         <pie-progreso
           v-show="
-            progresoNodoTarget && !$apollo.queries.progresoNodoTarget.loading
+            progresoNodoTarget!=null && !$apollo.queries.progresoNodoTarget.loading
           "
           :progreso="progresoNodoTarget"
           :size="40"
           :cifrasDecimales="0"
-        />
+          :color-fondo="'transparent'"
+        >
         <img
-          style="
-            height: 25px;
-            filter: var(--filtroBlanco);
-            margin: 2px 5px;
-            margin-right: 15px;
-          "
-          src="@/assets/iconos/target.png"
+          style="height: 25px"
+          src="@/assets/iconos/crosshairsSolid.svg"
           alt="Target"
+          id="iconoNodoTarget"
         />
+        </pie-progreso>
 
         {{ nodoTarget.nombre }}
       </div>
 
-      <div class="boton" @click.stop="setNodoTarget(null)">
+      <div class="boton" id="botonCancelarNodoTarget" @click.stop="setNodoTarget(null)">
         <img src="@/assets/iconos/equis.svg" alt="Equis" />
       </div>
     </div>
@@ -188,91 +188,138 @@
       v-show="!$apollo.queries.yo.loading"
       ref="contenedorDiagrama"
     >
-      <div
-        id="contenedorNodos"
-        @contextmenu.self.exact.prevent="abrirMenuContextual"
-        ref="contenedorNodos"
-        :style="[{ transform: 'scale(' + factorZoom + ')' }]"
-      >
-        <loading
-          texto=""
-          v-show="posicionCreandoNodo"
-          style="position: absolute"
-          :style="[offsetLoadingCreandoNodo]"
-        />
-
+      <div id="contenedorElementosDiagrama">
         <div
-          class="placeholderNodoConocimiento"
-          @dblclick="
-            $router.push({
-              name: 'visorNodoConocimiento',
-              params: { idNodo: nodo.id },
-            })
-          "
-          @click.stop="idNodoSeleccionado = nodo.id"
+          id="contenedorNodos"
+          @contextmenu.self.exact.prevent="abrirMenuContextual"
+          ref="contenedorNodos"
           :style="[
-            {
-              top: nodo.coords.y - esquinasDiagrama.y1 + 'px',
-              left: nodo.coords.x - esquinasDiagrama.x1 + 'px',
-            },
+            { transform: 'scale(' + factorZoom + ')' },
+            sizeContenedorNodos,
           ]"
-          v-for="nodo of nodosRender"
-          :key="'placeholderNodo' + nodo.id"
-          :class="{
-            fantasmeado:
-              idNodoSeleccionado &&
-              nivelesConexion &&
-              !idsRedSeleccion.includes(nodo.id),
-            continuacionSeleccionado:
-              nivelesConexion > 0 && idsRedSeleccion.includes(nodo.id),
-            previoSeleccionado:
-              nivelesConexion < 0 && idsRedSeleccion.includes(nodo.id),
-            seleccionado: idNodoSeleccionado === nodo.id,
-            aprendido: idsNodosAprendidos.includes(nodo.id),
-            estudiado: idsNodosEstudiados.includes(nodo.id),
-            fresco: idsNodosFrescos.includes(nodo.id),
-            aprendible:
-              idsNodosEstudiables.includes(nodo.id) ||
-              !nodo.vinculos.some(
-                (v) => v.tipo === 'continuacion' && v.rol === 'target'
-              ),
-            repasar: idsNodosRepasar.includes(nodo.id),
-          }"
         >
-          <div class="bolita">
-            <img
-              v-if="nodo.tipoNodo === 'concepto'"
-              src="@/assets/iconos/atlas/lightbulbEmpty.svg"
-              alt="Skill"
-            />
-            <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" />
-          </div>
-
-          <div class="cajaTexto">
-            {{ nodo.nombre }}
-          </div>
+          <loading
+            texto=""
+            v-show="posicionCreandoNodo"
+            style="position: absolute"
+            :style="[offsetLoadingCreandoNodo]"
+          />
 
           <div
-            class="lineaVinculo"
-            v-for="vinculo of nodo.vinculos.filter((v) => v.estilo)"
-            :key="vinculo.id"
-            :style="[vinculo.estilo]"
+            class="placeholderNodoConocimiento"
+            @dblclick="
+              $router.push({
+                name: 'visorNodoConocimiento',
+                params: { idNodo: nodo.id },
+              })
+            "
+            @click.stop="idNodoSeleccionado = nodo.id"
+            :style="[
+              {
+                top: nodo.coords.y - esquinasDiagrama.y1 + 'px',
+                left: nodo.coords.x - esquinasDiagrama.x1 + 'px',
+              },
+            ]"
+            v-for="nodo of nodosRender"
+            :key="'placeholderNodo' + nodo.id"
+            :class="{
+              fantasmeado:
+                idNodoSeleccionado &&
+                nivelesConexion &&
+                !idsRedSeleccion.includes(nodo.id),
+              continuacionSeleccionado:
+                nivelesConexion > 0 && idsRedSeleccion.includes(nodo.id),
+              previoSeleccionado:
+                nivelesConexion < 0 && idsRedSeleccion.includes(nodo.id),
+              seleccionado: idNodoSeleccionado === nodo.id,
+              aprendido: idsNodosAprendidos.includes(nodo.id),
+              estudiado: idsNodosEstudiados.includes(nodo.id),
+              fresco: idsNodosFrescos.includes(nodo.id),
+              aprendible:
+                idsNodosEstudiables.includes(nodo.id) ||
+                !nodo.vinculos.some(
+                  (v) => v.tipo === 'continuacion' && v.rol === 'target'
+                ),
+              repasar: idsNodosRepasar.includes(nodo.id),
+            }"
           >
             <div
-              v-show="
-                !idNodoSeleccionado ||
-                !nivelesConexion ||
-                (idsRedSeleccion.includes(nodo.id) &&
-                  idsRedSeleccion.includes(vinculo.idRef))
-              "
-              class="laLinea"
-            ></div>
+              class="boton"
+              id="botonRastrear"
+              v-show="idNodoSeleccionado === nodo.id || idNodoTarget == nodo.id"
+            >
+              <img
+                src="@/assets/iconos/crosshairsSolid.svg"
+                alt="Rastrear"
+                :style="[
+                  {
+                    filter:
+                      idNodoTarget === nodo.id
+                        ? 'var(--filtroAtlasSeleccion)'
+                        : 'none',
+                  },
+                ]"
+                @click.stop="
+                  setNodoTarget(idNodoTarget === nodo.id ? null : nodo.id)
+                "
+              />
+            </div>
+            <div class="bolita">
+              <img
+                v-if="nodo.tipoNodo === 'concepto'"
+                src="@/assets/iconos/atlas/lightbulbEmpty.svg"
+                alt="Skill"
+              />
+              <img
+                v-else
+                src="@/assets/iconos/atlas/fireSolid.svg"
+                alt="Skill"
+              />
+            </div>
+
+            <div class="cajaTexto">
+              {{ nodo.nombre }}
+
+              <div
+                class="boton"
+                v-show="idNodoSeleccionado == nodo.id"
+                id="botonAbrir"
+              >
+                <img
+                  src="@/assets/iconos/expandSolid.svg"
+                  alt="Abrir"
+                  @click.stop="
+                    $router.push({
+                      name: 'visorNodoConocimiento',
+                      params: { idNodo: nodo.id },
+                    })
+                  "
+                />
+              </div>
+            </div>
+
+            <div
+              class="lineaVinculo"
+              v-for="vinculo of nodo.vinculos.filter((v) => v.estilo)"
+              :key="vinculo.id"
+              :style="[vinculo.estilo]"
+            >
+              <div
+                v-show="
+                  !idNodoSeleccionado ||
+                  !nivelesConexion ||
+                  (idsRedSeleccion.includes(nodo.id) &&
+                    idsRedSeleccion.includes(vinculo.idRef))
+                "
+                class="laLinea"
+              ></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="barraInferior">
+    <div id="barraInferior" @click.stop="">
       <div
         class="boton"
         title="Mostrar colecciones"
@@ -330,6 +377,7 @@
         centrarEnNodoById(nodoSeleccionado.id);
       "
       @nivelesConexion="nivelesConexion = $event"
+      @click.stop=""
     />
 
     <loading
@@ -375,10 +423,7 @@ export default {
           nodo.coordsManuales = nodo.autoCoords;
           nodo.coords = nodo.autoCoords;
 
-          //Aplicar estilo a los vinculos
-          if(nodo.nombre === "Inglés"){
-            console.log("Analizando nodo Inglés");
-          }
+
           nodo.vinculos = nodo.vinculos.map((vinculo) => {
             if (vinculo.rol === "source") {
               return {
@@ -399,16 +444,10 @@ export default {
 
             let nodoFrom = nodo;
             let nodoTo = nuevoTodosNodos.find((nodo) => nodo.id === idNodoTo);
-            if(nodo.nombre === "Inglés"){
-              console.log("vinculo de " + nodoFrom.nombre+ " con nodoTo: ", nodoTo.nombre);
-            }
+
 
             let posFrom = nodoFrom.autoCoords;
             let posTo = nodoTo.autoCoords;
-            if(nodo.nombre === "Inglés"){
-              console.log("posFrom: ", posFrom);
-              console.log("posTo: ", posTo);
-            }
 
             //Calc angle in radians
             let angle = Math.atan2(posTo.y - posFrom.y, posTo.x - posFrom.x);
@@ -681,17 +720,11 @@ export default {
       var datosNodoConRepasoConfigurado = this.datosNodosEstudiados.filter(
         (dn) => dn.diasRepaso
       );
-      let dateHoy = new Date();
-
-      let dateHoyMin = dateHoy;
-      dateHoyMin.setHours(0);
-      dateHoyMin.setMinutes(0);
-      dateHoyMin.setSeconds(0);
 
       let datosNodoParaRepasar = datosNodoConRepasoConfigurado.filter((dn) => {
         return (
           new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000 <
-          dateHoyMin.getTime()
+          Date.now()
         );
       });
       return datosNodoParaRepasar;
@@ -724,6 +757,12 @@ export default {
     factorZoom() {
       return Number((this.zoom / 100).toFixed(2));
     },
+    sizeContenedorNodos(){
+      return {
+        width: (this.esquinasDiagrama.x2 - this.esquinasDiagrama.x1) + 'px',
+        height: (this.esquinasDiagrama.y2 - this.esquinasDiagrama.y1) + 'px',
+      }
+    },
     esquinasDiagrama() {
       const maxX = this.todosNodos.reduce(
         (acc, n) => (n.autoCoords.x > acc ? n.autoCoords.x : acc),
@@ -751,7 +790,7 @@ export default {
         x2: maxX + padding,
         y2: maxY + padding,
       };
-    },    
+    },
     nodosRender() {
       console.log("recalculando nodosRender con idColeccion: ", this.coleccionSeleccionada?.id);
       if (this.$route.name != "atlas") {
@@ -913,8 +952,10 @@ export default {
   },
   methods: {
     clickFuera() {
+      this.seleccionNodo({});
       this.$refs.controlesNodo.clickFuera();
       this.$refs.buscadorNodos.cerrarBusqueda();
+      this.$refs.panelConjuntosNodos.abierto=false;
     },
     localizarNext(tipo) {
       let nodosConsiderados = [...this.nodosRender];
@@ -965,7 +1006,6 @@ export default {
         let indexEncontrados = 0;
         let nextNodo = nodosConsiderados.find((n) => {
           if (this.idsNodosPresentesCabeza.includes(n.id)) {
-            console.log("Estaba fresco");
 
             indexEncontrados++;
 
@@ -1572,8 +1612,9 @@ export default {
     hue-rotate(349deg) brightness(92%) contrast(91%);
   --filtroAtlasCheck: invert(34%) sepia(99%) saturate(407%) hue-rotate(56deg)
     brightness(95%) contrast(81%);
-  --filtroAtlasRepaso: invert(50%) sepia(95%) saturate(2482%) hue-rotate(328deg)
-    brightness(106%) contrast(101%);
+
+  --filtroAtlasRepaso: invert(76%) sepia(39%) saturate(654%) hue-rotate(4deg)
+    brightness(95%) contrast(93%);
 }
 </style>
 <style scoped>
@@ -1603,9 +1644,25 @@ export default {
   z-index: 50;
 }
 
-#zonaNodoTarget .boton {
+#botonCancelarNodoTarget {
   width: 25px;
   height: 25px;
+
+  background-color: var(--mainColor);
+  margin-left: 10px;
+}
+
+#iconoNodoTarget{
+  width: 25px;
+  height: 25px;
+  background-color: rgb(230, 230, 230);
+  border-radius: 50%;
+  align-self: center;
+  opacity: 1;
+}
+
+#iconoNodoTarget:hover{
+  opacity: 0;
 }
 
 #nombreNodoTarget {
@@ -1626,6 +1683,20 @@ export default {
   transform: translateX(-50%);
   z-index: 1;
 }
+
+#iconoColeccionSeleccionada{
+  width: 25px;
+  height: 25px;
+  background-color: rgb(230, 230, 230);
+  border-radius: 50%;
+  align-self: center;
+  opacity: 1;
+}
+
+#iconoColeccionSeleccionada:hover{
+  opacity: 0;
+}
+
 
 #nombreColeccion {
   padding: 10px 30px;
@@ -1665,7 +1736,8 @@ export default {
 }
 
 .controlColeccion {
-  background-color: rgb(58, 58, 58);
+  background-color: rgba(58, 58, 58, 0.445);
+  box-shadow: 2px 2px 2px gray;
 }
 
 .selectorColeccion {
