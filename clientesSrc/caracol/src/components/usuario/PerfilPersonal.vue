@@ -92,15 +92,10 @@ import {
 import axios from "axios";
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
-import VentanaLista from "../atlasSolidaridad/ventanaLista/ventanaLista.vue";
-import {
-  fragmentoNodoSolidaridad,
-  fragmentoPersonaAtlas,
-} from "../atlasSolidaridad/frags";
 import Calendario from "../utilidades/Calendario.vue";
 import OrganizadorHorarioSemanal from '../calendario/OrganizadorHorarioSemanal.vue';
 export default {
-  components: { Loading, VentanaLista, Calendario, OrganizadorHorarioSemanal },
+  components: { Loading, Calendario, OrganizadorHorarioSemanal },
   name: "PerfilPersonal",
   apollo: {
     esteUsuario: {
@@ -207,56 +202,6 @@ export default {
           console.log(`Error cambiando pass: ${error}`);
           this.enviandoCambioPass = false;
           this.textoResultadoCambioPass = "Error";
-        });
-    },
-    afterCrearNodoUnder(nuevoNodo) {
-      this.$refs.ventanaLista.addNodoToNodosSolidaridad(nuevoNodo);
-    },
-    crearNuevoNodoUnder(infoNodo) {
-      console.log(`Creando nodo under yo`);
-      this.creandoSubNodo = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation (
-              $infoNodo: NodoSolidaridadInput!
-              $idNodoParent: ID!
-              $tipoParent: String!
-            ) {
-              crearNuevoNodoSolidaridadUnderNodo(
-                infoNodo: $infoNodo
-                idNodoParent: $idNodoParent
-                tipoParent: $tipoParent
-              ) {
-                nuevoNodo {
-                  ...fragNodoSolidaridad
-                }
-                nodosModificados {
-                  ...fragNodoSolidaridad
-                }
-                usuariosModificados {
-                  ...fragPersonaAtlas
-                }
-              }
-            }
-            ${fragmentoNodoSolidaridad}
-            ${fragmentoPersonaAtlas}
-          `,
-          variables: {
-            infoNodo,
-            idNodoParent: this.usuario.id,
-            tipoParent: "usuario",
-          },
-        })
-        .then(({ data: { crearNuevoNodoSolidaridadUnderNodo } }) => {
-          this.creandoSubNodo = false;
-          this.afterCrearNodoUnder(
-            crearNuevoNodoSolidaridadUnderNodo.nuevoNodo
-          );
-        })
-        .catch((error) => {
-          this.creandoSubNodo = false;
-          console.log(`Error: ${error}`);
         });
     },
     uploadNuevaFoto(e) {

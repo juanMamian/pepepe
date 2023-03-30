@@ -364,19 +364,7 @@
           ref="calendario"
           enfasis="eventosPersonales"
         />
-      </div>
-      <div
-        id="zonaObjetivos"
-        class="zonaPrimerNivel"
-        v-if="mostrando === 'objetivos'"
-      >
-        <ventana-lista
-          ref="ventanaLista"
-          :idNodoRoot="estaPersona.id"
-          tipoNodoRoot="usuario"
-        />
-      </div>
-
+      </div>      
       <div id="zonaRutaGrado" v-show="mostrando==='rutaGrado'" v-if="mostrando==='rutaGrado'">
         <ruta-grado :idUsuario="estaPersona.id" />
       </div>
@@ -388,7 +376,6 @@
 import gql from "graphql-tag";
 import Calendario from "../utilidades/Calendario.vue";
 import Loading from "../utilidades/Loading.vue";
-import VentanaLista from "../atlasSolidaridad/ventanaLista/ventanaLista.vue";
 import {
   AlignmentType,
   Document,
@@ -422,7 +409,7 @@ const QUERY_INFORMES = gql`
 `;
 
 export default {
-  components: { Calendario, Loading, VentanaLista, RutaGrado },
+  components: { Calendario, Loading, RutaGrado },
   props: {
     personasConEspacio:Array,
     mostrarEspacioActual:Boolean,
