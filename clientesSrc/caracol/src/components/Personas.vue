@@ -169,12 +169,6 @@ export default {
     personas: {
       query: QUERY_PERSONAS,
       update: function ({ todosUsuarios }) {
-        console.log("Recibida lista de personas");
-
-        for (let index = 0; index < 20; index++) {
-          const usuario = todosUsuarios[index];
-          console.log(`Òbjetivos: ${usuario.objetivos}`);
-        }
         return todosUsuarios;
       },
       fetchPolicy: "network-only",

@@ -32,7 +32,15 @@
         />
       </div>
       <div id="zonaNombres">
-        <div id="nombres">{{ estaPersona.nombres }} <span class="espacioActual" v-if="miEspacioActual" v-show="mostrarEspacioActual">({{miEspacioActual}})</span> </div>
+        <div id="nombres">
+          {{ estaPersona.nombres }}
+          <span
+            class="espacioActual"
+            v-if="miEspacioActual"
+            v-show="mostrarEspacioActual"
+            >({{ miEspacioActual }})</span
+          >
+        </div>
       </div>
       <div id="zonaApellidos">
         <div id="apellidos">{{ estaPersona.apellidos }}</div>
@@ -43,9 +51,13 @@
         class="contenedorControles"
         v-show="seleccionado"
       >
-      <div class="boton" @click="mostrando=mostrando==='rutaGrado'?null:'rutaGrado'" :class="{activo:mostrando==='rutaGrado'}">
-        <img src='@/assets/iconos/routeSolid.svg' alt='Ruta' style='' />
-      </div>
+        <div
+          class="boton"
+          @click="mostrando = mostrando === 'rutaGrado' ? null : 'rutaGrado'"
+          :class="{ activo: mostrando === 'rutaGrado' }"
+        >
+          <img src="@/assets/iconos/routeSolid.svg" alt="Ruta" style="" />
+        </div>
         <div
           class="boton selector"
           :title="
@@ -64,7 +76,7 @@
         >
           <img src="@/assets/iconos/calendar.svg" alt="calendario" />
         </div>
-    
+
         <div
           class="boton selector"
           v-if="usuarioSuperadministrador"
@@ -100,18 +112,20 @@
         >
           Informes
         </div>
-        
+
         <div
           class="boton selector"
           v-if="usuarioLogeado && usuarioProfe"
           style="width: 100px"
           :title="
-            mostrando === 'objetivos' ? 'Ocultar objetivos' : 'Mostrar objetivos'
+            mostrando === 'objetivos'
+              ? 'Ocultar objetivos'
+              : 'Mostrar objetivos'
           "
           @click="mostrando = mostrando === 'objetivos' ? null : 'objetivos'"
           :class="{ activo: mostrando === 'objetivos' }"
         >
-          <img src="@/assets/iconos/starSolid.svg" alt="Objetivo">
+          <img src="@/assets/iconos/starSolid.svg" alt="Objetivo" />
         </div>
       </div>
     </div>
@@ -142,7 +156,6 @@
             <img src="@/assets/iconos/key.svg" alt="Llave" />
           </div>
           <loading texto="" v-show="reseteandoPassword" />
-          
         </div>
         <div
           id="listaPermisos"
@@ -227,7 +240,8 @@
           <div class="controlesSeccionInforme">
             <div
               :class="{
-                guardado: nuevoInformeObjetivos === misInformesActivos.objetivos,
+                guardado:
+                  nuevoInformeObjetivos === misInformesActivos.objetivos,
               }"
               v-show="!guardandoInformeObjetivos"
               class="boton botonGuardarSeccion"
@@ -253,7 +267,8 @@
           <div class="controlesSeccionInforme">
             <div
               :class="{
-                guardado: nuevoInformeProyectos === misInformesActivos.proyectos,
+                guardado:
+                  nuevoInformeProyectos === misInformesActivos.proyectos,
               }"
               v-show="!guardandoInformeProyectos"
               class="boton botonGuardarSeccion"
@@ -305,7 +320,8 @@
           <div class="controlesSeccionInforme">
             <div
               :class="{
-                guardado: nuevoInformeComentario === misInformesActivos.comentario,
+                guardado:
+                  nuevoInformeComentario === misInformesActivos.comentario,
               }"
               v-show="!guardandoInformeComentario"
               class="boton botonGuardarSeccion"
@@ -316,7 +332,7 @@
             <loading v-show="guardandoInformeComentario" />
           </div>
         </div>
-      </div>     
+      </div>
       <div
         id="zonaCalendario"
         class="zonaPrimerNivel"
@@ -327,13 +343,28 @@
           ref="calendario"
           enfasis="eventosPersonales"
         />
-      </div>      
-      <div id="zonaRutaGrado" v-show="mostrando==='rutaGrado'" v-if="mostrando==='rutaGrado'">
+      </div>
+      <div
+        id="zonaRutaGrado"
+        v-show="mostrando === 'rutaGrado'"
+        v-if="mostrando === 'rutaGrado'"
+      >
         <ruta-grado :idUsuario="estaPersona.id" />
       </div>
-      <div id="zonaObjetivos" v-show="mostrando=='objetivos'">
-        <div class="objetivoPersonal" v-for="(objetivo, index) in estaPersona.objetivos" :key="'objetivo'+index">
+      <div id="zonaObjetivos" v-show="mostrando == 'objetivos'">
+        <div
+          class="objetivoPersonal"
+          v-for="(objetivo, index) in estaPersona.objetivos"
+          :key="'objetivo' + index"
+        >
           {{ objetivo }}
+        </div>
+
+        <div
+          class="anuncioZonaVacia"
+          v-show="!estaPersona.objetivos?.length > 0"
+        >
+          Aún no hay objetivos
         </div>
       </div>
     </div>
@@ -357,7 +388,7 @@ import {
   TextRun,
 } from "docx";
 import { saveAs } from "file-saver";
-import RutaGrado from './RutaGrado.vue';
+import RutaGrado from "./RutaGrado.vue";
 
 const QUERY_INFORMES = gql`
   query ($idUsuario: ID!) {
@@ -379,8 +410,8 @@ const QUERY_INFORMES = gql`
 export default {
   components: { Calendario, Loading, RutaGrado },
   props: {
-    personasConEspacio:Array,
-    mostrarEspacioActual:Boolean,
+    personasConEspacio: Array,
+    mostrarEspacioActual: Boolean,
     estaPersona: Object,
     seleccionado: Boolean,
   },
@@ -399,7 +430,8 @@ export default {
       update({ Usuario }) {
         return Usuario.informesMaestraVida;
       },
-    },    
+      fetchPolicy: "network-only",
+    },
   },
   data() {
     return {
@@ -733,10 +765,15 @@ export default {
     },
     descargarArchivoInforme() {
       console.log(
-        "Creando documento docx de informe para " + this.estaPersona.nombres
+        "Creando documento docx de informe para " +
+          this.estaPersona.nombres +
+          " en el periodo " +
+          this.periodoInforme
       );
 
-      this.creandoDocumentoInforme = true;
+      this.creandoDocumentoInforme = true;  
+
+      console.log("informesObjetivos " + informesObjetivos.length); 
 
       var filaObjetivos = new TableRow({
         children: [
@@ -773,7 +810,7 @@ export default {
                           break: 1,
                         });
                       }),
-                      style: "textoProfe",                     
+                      style: "textoProfe",
                     }),
                     new Paragraph({
                       text: informe.nombreProfe,
@@ -829,7 +866,7 @@ export default {
                           break: 1,
                         });
                       }),
-                      style: "textoProfe", 
+                      style: "textoProfe",
                       // text: informe.texto,
                       // style: "textoProfe",
                     }),
@@ -879,7 +916,7 @@ export default {
                           break: 1,
                         });
                       }),
-                      style: "textoProfe", 
+                      style: "textoProfe",
                       // text: informe.texto,
                       // style: "textoProfe",
                     }),
@@ -933,7 +970,7 @@ export default {
                           break: 1,
                         });
                       }),
-                      style: "textoProfe", 
+                      style: "textoProfe",
                       // text: informe.texto,
                       // style: "textoProfe",
                     }),
@@ -966,12 +1003,18 @@ export default {
               size: 300,
               type: WidthType.DXA,
             },
-          }),          
+          }),
         ],
       });
 
       var tablaFinal = new Table({
-        rows: [filaObjetivos, filaProyectos, filaEspacios, filaComentario, filaAprobado],
+        rows: [
+          filaObjetivos,
+          filaProyectos,
+          filaEspacios,
+          filaComentario,
+          filaAprobado,
+        ],
         width: {
           size: 8500,
           type: WidthType.DXA,
@@ -1102,9 +1145,9 @@ export default {
                 style: "nombreSeccion",
               }),
 
-              ...this.objetivos.filter(obj=>obj.nombre!='Nuevo nodo de solidaridad').map((objetivo) => {
+              ...this.estaPersona.objetivos.map((objetivo) => {
                 return new Paragraph({
-                  text: objetivo.nombre,
+                  text: objetivo,
                   style: "objetivo",
                   bullet: {
                     level: 0,
@@ -1119,7 +1162,7 @@ export default {
                 },
               }),
 
-              tablaFinal,            
+              tablaFinal,
 
               new Paragraph({
                 children: [
@@ -1194,17 +1237,18 @@ export default {
         proyectos: miInformeProyectos ? miInformeProyectos.texto : null,
       };
     },
-    miEspacioActual(){
-      const miPersonaConEspacio=this.personasConEspacio.find(p=>p.id===this.estaPersona.id);
+    miEspacioActual() {
+      const miPersonaConEspacio = this.personasConEspacio.find(
+        (p) => p.id === this.estaPersona.id
+      );
 
-      if(!miPersonaConEspacio){
+      if (!miPersonaConEspacio) {
         return null;
       }
 
       return miPersonaConEspacio.espacioActual;
     },
     colorBarraSuperior() {
-
       if (
         !this.usuarioLogeado ||
         !this.estaPersona.permisos ||
@@ -1296,7 +1340,7 @@ function saveDocumentToFile(doc, fileName) {
   margin: 0px 15px;
 }
 
-#espacioActual{
+#espacioActual {
   font-size: 14px;
 }
 
@@ -1324,11 +1368,11 @@ function saveDocumentToFile(doc, fileName) {
   color: whitesmoke;
 }
 
-#zonaObjetivos{
+#zonaObjetivos {
   display: flex;
   flex-direction: column;
 }
-.objetivoPersonal{
+.objetivoPersonal {
   padding: 10px 10px;
 }
 #selectoresPeriodo .selector.activo {

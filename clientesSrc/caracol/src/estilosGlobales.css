@@ -306,6 +306,7 @@ body {
   text-align: center;
   margin: 30px auto;
   width: min(300px, 80%);
+  font-style: italic;
 }
 
 #descripcion {
