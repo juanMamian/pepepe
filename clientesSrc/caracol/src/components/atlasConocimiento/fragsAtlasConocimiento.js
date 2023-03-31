@@ -7,11 +7,7 @@ export const fragmentoDatoNodoConocimiento = gql`
     nombreNodo
     aprendido
     estudiado
-    diasRepaso
-    iteracionesRepaso{
-        id
-        intervalo
-    }
+    diasRepaso    
   }
 `;
 

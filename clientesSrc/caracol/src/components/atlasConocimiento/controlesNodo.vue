@@ -84,9 +84,9 @@
           <div
             class="botonTexto botonControl"
             style="
-              align-self: normal;
               border-top-left-radius: 0px;
               border-bottom-left-radius: 0px;
+              align-self: normal;
             "
             v-show="
               datoUsuarioEsteNodo &&
@@ -171,7 +171,9 @@
           <div id="listaDependencias" v-if="elNodo && elNodo.vinculos">
             <div
               class="dependencia"
-              v-for="vinculo of elNodo.vinculos"
+              v-for="vinculo of elNodo.vinculos.filter(
+                (v) => v.tipo == 'continuacion' && v.rol === 'target'
+              )"
               :key="vinculo.id"
             >
               <NodoConocimientoVistaLista :idNodo="vinculo.idRef" :yo="yo" />

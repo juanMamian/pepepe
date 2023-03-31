@@ -64,24 +64,7 @@
         >
           <img src="@/assets/iconos/calendar.svg" alt="calendario" />
         </div>
-        <div
-          class="boton selector"
-          v-if="usuarioSuperadministrador || usuarioProfe"
-          :title="
-            mostrando === 'nodosSolidaridadPublicitados'
-              ? 'Ocultar nodosSolidaridadPublicitados'
-              : 'Mostrar nodosSolidaridadPublicitados'
-          "
-          :class="{ activo: mostrando === 'nodosSolidaridadPublicitados' }"
-          @click="
-            mostrando =
-              mostrando === 'nodosSolidaridadPublicitados'
-                ? null
-                : 'nodosSolidaridadPublicitados'
-          "
-        >
-          <img src="@/assets/iconos/productHunt.svg" alt="P" />
-        </div>
+    
         <div
           class="boton selector"
           v-if="usuarioSuperadministrador"
@@ -117,18 +100,18 @@
         >
           Informes
         </div>
+        
         <div
           class="boton selector"
-          v-if="usuarioLogeado"
+          v-if="usuarioLogeado && usuarioProfe"
+          style="width: 100px"
           :title="
-            mostrando === 'objetivos'
-              ? 'Ocultar objetivos'
-              : 'Mostrar objetivos'
+            mostrando === 'objetivos' ? 'Ocultar objetivos' : 'Mostrar objetivos'
           "
           @click="mostrando = mostrando === 'objetivos' ? null : 'objetivos'"
           :class="{ activo: mostrando === 'objetivos' }"
         >
-          <img src="@/assets/iconos/starSolid.svg" alt="Cog" />
+          <img src="@/assets/iconos/starSolid.svg" alt="Objetivo">
         </div>
       </div>
     </div>
@@ -333,27 +316,7 @@
             <loading v-show="guardandoInformeComentario" />
           </div>
         </div>
-      </div>
-      <div
-        v-show="mostrando === 'nodosSolidaridadPublicitados'"
-        id="zonaNodosSolidaridadPublicitados"
-        class="zonaPrimerNivel"
-      >
-        <div
-          class="selectorNodoSolidaridad"
-          :class="{
-            deshabilitado: settingPresenciaNodoSolidaridad,
-            activo: nodoSolidaridadPublicitado.responsables.includes(
-              estaPersona.id
-            ),
-          }"
-          @click="toggleResponsableNodoSolidaridad(nodoSolidaridadPublicitado)"
-          v-for="nodoSolidaridadPublicitado of nodosSolidaridadPublicitados"
-          :key="nodoSolidaridadPublicitado.id"
-        >
-          {{ nodoSolidaridadPublicitado.nombre }}
-        </div>
-      </div>
+      </div>     
       <div
         id="zonaCalendario"
         class="zonaPrimerNivel"
@@ -367,6 +330,11 @@
       </div>      
       <div id="zonaRutaGrado" v-show="mostrando==='rutaGrado'" v-if="mostrando==='rutaGrado'">
         <ruta-grado :idUsuario="estaPersona.id" />
+      </div>
+      <div id="zonaObjetivos" v-show="mostrando=='objetivos'">
+        <div class="objetivoPersonal" v-for="(objetivo, index) in estaPersona.objetivos" :key="'objetivo'+index">
+          {{ objetivo }}
+        </div>
       </div>
     </div>
   </div>
@@ -415,7 +383,6 @@ export default {
     mostrarEspacioActual:Boolean,
     estaPersona: Object,
     seleccionado: Boolean,
-    nodosSolidaridadPublicitados: Array,
   },
   name: "PersonaVistaLista",
   apollo: {
@@ -432,32 +399,7 @@ export default {
       update({ Usuario }) {
         return Usuario.informesMaestraVida;
       },
-    },
-    objetivos:{
-      query: gql`
-        query($idUsuario: ID!){
-          Usuario(idUsuario: $idUsuario){
-            id
-            objetivosEstudiante{
-              id
-              nombre
-              estadoDesarrollo
-            }
-          }
-        }
-      `,
-      variables(){
-        return {
-          idUsuario: this.estaPersona.id
-        }
-      },
-      update({Usuario}){
-        return Usuario.objetivosEstudiante
-      },
-      skip(){
-        return this.mostrando!="informe"
-      }
-    },
+    },    
   },
   data() {
     return {
@@ -1382,16 +1324,13 @@ function saveDocumentToFile(doc, fileName) {
   color: whitesmoke;
 }
 
-.selectorNodoSolidaridad {
-  padding: 5px 15px;
-  cursor: pointer;
+#zonaObjetivos{
+  display: flex;
+  flex-direction: column;
 }
-
-.selectorNodoSolidaridad.activo {
-  background-color: var(--paletaSelect);
-  color: white;
+.objetivoPersonal{
+  padding: 10px 10px;
 }
-
 #selectoresPeriodo .selector.activo {
   border-color: transparent;
   color: black;

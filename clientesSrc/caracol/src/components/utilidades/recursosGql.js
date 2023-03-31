@@ -132,43 +132,6 @@ export const fragmentoTrabajoProyecto = gql`
   }
 `;
 
-export const fragmentoObjetivoProyecto = gql`
-  fragment fragObjetivoProyecto on ObjetivoDeProyecto{
-    id
-    nombre
-    descripcion
-    estadoDesarrollo
-    vinculos{
-      idRef
-      tipo
-      tipoRef
-    }
-    coords{
-      x
-      y
-    }
-  }
-`;
-
-export const fragmentoProyecto = gql`
-  fragment fragProyecto on Proyecto{
-    id
-    nombre
-    descripcion
-    idForo
-    responsables
-    participantes
-    posiblesResponsables    
-    objetivos {
-      ...fragObjetivoProyecto
-    }
-    trabajos {
-      ...fragTrabajoProyecto
-    }
-  }  
-  ${fragmentoTrabajoProyecto}
-  ${fragmentoObjetivoProyecto}
-`;
 
 const fragmentoQuote =gql`
   fragment fragQuote on Quote{

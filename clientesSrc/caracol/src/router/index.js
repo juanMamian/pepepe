@@ -5,11 +5,9 @@ import { QUERY_AUTH_USUARIO } from '../globalMixin'
 import atlasConocimiento from '../components/atlasConocimiento/AtlasConocimiento.vue'
 import adminNodosConocimiento from '../components/atlasConocimiento/adminNodosConocimiento.vue'
 import VisorNodoConocimiento from '../components/visorNodoConocimiento/VisorNodoConocimiento.vue'
-import VentanaRepasos from '../components/atlasConocimiento/VentanaRepasos.vue'
 import RutaGrado from '../components/usuario/RutaGrado.vue'
 import loginArea from '../components/LoginArea.vue'
 import perfilPersonal from '../components/usuario/PerfilPersonal.vue'
-import ForosGenerales from '../components/ForosGenerales.vue'
 import Registro from '../components/Registro.vue'
 import Personas from '../components/Personas.vue'
 import Espacios from '../components/Espacios.vue'
@@ -27,11 +25,7 @@ const router = createRouter({
           component: VisorNodoConocimiento,
           name: "visorNodoConocimiento"
         },
-        {
-          path: "repasos",
-          component: VentanaRepasos,
-          name: "ventanaRepasos"
-        }
+       
       ]
     },
     {

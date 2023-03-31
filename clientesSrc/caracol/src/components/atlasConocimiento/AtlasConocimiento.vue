@@ -1624,14 +1624,7 @@ export default {
   overflow-x: hidden;
 }
 
-.ventanaRepasos {
-  z-index: 100;
-  position: absolute;
-  top: 0px;
-  left: 0%;
-  background-color: rgb(255 252 249);
-  box-shadow: 3px 4px 4px rgba(0, 0, 0, 0.25);
-}
+
 
 #zonaNodoTarget {
   position: absolute;
@@ -1814,20 +1807,6 @@ export default {
 #panelConjuntosNodos {
   z-index: 100;
 }
-
-#panelObjetivos {
-  position: absolute;
-  top: 2%;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0.2;
-  z-index: 100;
-}
-
-#panelObjetivos:hover {
-  opacity: 1;
-}
-
 #infoZoom {
   position: absolute;
   bottom: 2%;

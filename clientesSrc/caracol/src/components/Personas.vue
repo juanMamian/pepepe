@@ -154,6 +154,7 @@ export const QUERY_PERSONAS = gql`
       apellidos
       permisos
       username
+      objetivos
     }
   }
 `;
@@ -168,21 +169,16 @@ export default {
     personas: {
       query: QUERY_PERSONAS,
       update: function ({ todosUsuarios }) {
+        console.log("Recibida lista de personas");
+
+        for (let index = 0; index < 20; index++) {
+          const usuario = todosUsuarios[index];
+          console.log(`Òbjetivos: ${usuario.objetivos}`);
+        }
         return todosUsuarios;
       },
-      fetchPolicy: "cache-first",
-    },
-    nodosSolidaridadPublicitados: {
-      query: gql`
-        query {
-          nodosSolidaridadPublicitados {
-            id
-            nombre
-            responsables
-          }
-        }
-      `,
-    },
+      fetchPolicy: "network-only",
+    },   
     personasConEspacio:{
       query: gql`
         query($dateActual: Date){
