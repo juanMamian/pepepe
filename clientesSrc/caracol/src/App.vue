@@ -308,9 +308,9 @@ export default {
         query: QUERY_AUTH_USUARIO,
         data: { auth_usuario: null },
       });
-      console.log("Navegando a loginScreen");
-      await this.$router.push({ name: "loginScreen" });
-      console.log("On loginScreen");
+      console.log("Navegando a loginArea");
+      await this.$router.push({ name: "loginArea" });
+      console.log("On loginArea");
 
       this.$nextTick(() => {
         store.resetStore().then(() => {

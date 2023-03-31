@@ -58,29 +58,10 @@ const router = createRouter({
           name: "VentanaEventoPersonal",
         }
       ]
-    },    
+    },
     // { path: "/foros", component: ForosGenerales },
     { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
     { path: "/registro", name: "registro", component: Registro },
-    // {
-    //     path: "/actividadesVirtuales2021", component: ActividadesEstudiantiles, children: [
-    //         {
-    //             path: 'grupoEstudiantil/:idGrupo',
-    //             component: ActividadesDeGrupo,
-    //             name: "ActividadesDeGrupo"
-    //         },
-    //         {
-    //             path: 'actividadesProfes/:idProfe',
-    //             component: ActividadesDeProfe,
-    //             name: "ActividadesDeProfe"
-    //         },
-    //         {
-    //             path: "",
-    //             component: PortadaActividadesEstudiantiles
-    //         }
-    //     ]
-    // },
-    // { path: "/actividad/:idActividad", name: "actividadEspecifica", component: ActividadEspecifica },
     {
       path: "/personas", name: "personas", component: Personas,
       children: [
@@ -113,29 +94,40 @@ const router = createRouter({
     {
       path: "/", redirect() {
         console.log(`Redirecting`);
-        if (!localStorage.getItem("token")) {
-          return "/login"
+        let datosUsuario = apolloClient.readQuery({
+          query: QUERY_AUTH_USUARIO
+        });
+        if (datosUsuario?.auth_usuario?.id) {
+          return {name: "perfilPersonal"}
         }
-        return "/miPerfil"
+        return {name: "loginArea"}
       }
     },
-    { path: "/:catchAll(.*)", redirect() { return "/" } },  
+    { path: "/:catchAll(.*)", redirect() { return "/" } },
   ]
 })
 
 
 router.beforeEach(async (to, from) => {
   if (!apolloClient) {
-      return false;
+    return false;
   }
 
   let datosUsuario = apolloClient.readQuery({
-      query: QUERY_AUTH_USUARIO
+    query: QUERY_AUTH_USUARIO
   });
- 
 
-  if (!datosUsuario?.auth_usuario?.id && to.name != 'loginArea') {
+
+
+  if (datosUsuario?.auth_usuario?.id) {
+    if (to.name == 'loginArea') {
+      return { name: "perfilPersonal" }
+    }
+  }
+  else {
+    if (to.name != 'loginArea') {
       return { name: "loginArea" }
+    }
   }
 })
 export default router

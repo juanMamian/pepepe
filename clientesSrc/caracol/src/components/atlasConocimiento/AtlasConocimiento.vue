@@ -20,6 +20,7 @@
     >
       <div
         id="nombreColeccion"
+        :class="{ seleccionandoColeccion }"
         @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
       >
         <pie-progreso
@@ -396,7 +397,7 @@
 
     <loading
       id="simboloDescargandoNodos"
-      v-show="!nodosDescargados || $apollo.queries.yo.loading"
+      v-show="$apollo.queries.yo.loading"
       texto="descargando nodos de conocimiento"
     />
   </div>
@@ -500,7 +501,6 @@ export default {
         }
         return nuevoTodosNodos;
       },
-      fetchPolicy: "cache-first",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
@@ -1710,6 +1710,12 @@ export default {
   justify-content: center;
 }
 
+#nombreColeccion.seleccionandoColeccion{
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+
+}
+
 #listaSelectoresColeccion {
   position: absolute;
   top: 100%;
@@ -1741,10 +1747,10 @@ export default {
 }
 
 .selectorColeccion {
-  padding: 10px 15px;
+  padding: 15px 15px;
   font-size: 16px;
   cursor: pointer;
-  background-color: var(--atlasConocimientoAvailable);
+  background-color: var(--mainColor);
   display: flex;
   gap: 10px;
   align-items: center;

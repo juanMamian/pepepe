@@ -287,7 +287,7 @@ export default {
             mostrandoFlechasConexiones: false,
             desplegado: false,
 
-            filaMostrada: 2,
+            filaMostrada: 1,
             mostrando: "",
 
             montado: false,
