@@ -138,11 +138,7 @@ const esquemaNotificacionActividadForo = new mongoose.Schema({
 const esquemaDatoNodo = new mongoose.Schema({
     idNodo: { 
         type: String, required: true 
-    },
-    objetivo: { 
-        type: Boolean, 
-        default: false 
-    },
+    },    
     aprendido: { 
         type: Boolean, 
         default: false 
@@ -155,6 +151,12 @@ const esquemaDatoNodo = new mongoose.Schema({
         min: 86400000, //24 horas
         default:86400000*2,
     },
+    diasRepaso: {
+        type: Number,
+        min: 1,
+        default: 2,
+        max: 1000,
+    },
     iteracionesRepaso: {
         type: [esquemaIteracionRepaso],
         default: []
@@ -162,19 +164,16 @@ const esquemaDatoNodo = new mongoose.Schema({
 })
 
 esquemaDatoNodo.pre("save", function (this: any, next) {
-    if (this.aprendido) {
-        this.iteracionesRepaso = [];
+    
+    if(!this.diasRepaso && this.periodoRepaso){
+
+        //Periodo repaso in milliseconds to diasRepaso in days
+        
+        this.diasRepaso = this.periodoRepaso / 86400000;
     }
-    else if (this.estudiado) {
-        if (!this.iteracionesRepaso) this.iteracionesRepaso = [];
-        if (this.iteracionesRepaso.length < 1) {
-            this.iteracionesRepaso.push({
-                intervalo: 172800000
-            })
-        }
-    }
-    else {
-        this.iteracionesRepaso = [];
+
+    if(this.estudiado  && !this.diasRepaso){
+        this.diastRepaso = 2;
     }
     next();
 
@@ -212,6 +211,10 @@ const esquemaUsuario = new mongoose.Schema({
         max: Date.now,
         min: new Date('1890-01-01'),
         default: Date.now
+    },
+    objetivos:{
+        type: [String],
+        default: [],
     },
     informesMaestraVida: {
         type: [EsquemaInformeUsuario],

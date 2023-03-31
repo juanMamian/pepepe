@@ -18,7 +18,7 @@ const Foros_1 = require("./Foros");
 const Libro_1 = require("./cuentos/Libro");
 const merge_1 = __importDefault(require("lodash/merge"));
 const apollo_server_express_1 = require("apollo-server-express");
-const jwt = require("jsonwebtoken");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 exports.permisosEspecialesDefault = ["superadministrador"];
 const globalTypeDefs = gql `
     type Query{
@@ -53,7 +53,6 @@ exports.esquema = apollo_server_express_1.makeExecutableSchema({
 });
 exports.pubsub = new PubSub();
 const context = ({ req, res, connection }) => {
-    // console.log(`creando contexto`);
     var usuario = {
         id: "",
         permisos: []
@@ -62,16 +61,17 @@ const context = ({ req, res, connection }) => {
         return connection.context;
     }
     else {
-        //console.log(`Conexion normal`);
         let headers = req.headers;
-        //console.log(`headers: ${JSON.stringify(headers)}`);
-        if (!headers.authorization)
-            return { usuario };
-        const token = headers.authorization;
+        if (!headers.authorization) {
+            return usuario;
+        }
+        ;
+        const token = headers.authorization.substr(7);
         try {
-            usuario = jwt.verify(token, process.env.JWT_SECRET);
+            usuario = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         }
         catch (error) {
+            console.log(`error: ${error}`);
             usuario = {
                 id: "",
                 permisos: []
@@ -88,7 +88,7 @@ const onConnect = function (connectionParams, webSocket) {
     if (connectionParams.headers && connectionParams.headers.Authorization) {
         let token = connectionParams.headers.Authorization.substr(7);
         try {
-            usuario = jwt.verify(token, process.env.JWT_SECRET);
+            usuario = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         }
         catch (error) {
             usuario = {

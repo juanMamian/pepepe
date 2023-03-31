@@ -106,8 +106,9 @@ extend type Query{
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
     nodosConocimientoByIds(idsNodos: [ID!]!):[NodoConocimiento],
-    busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
+    busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento],
 
+    idsMisNodosEstudiables:[String],
 
 },
 
@@ -290,6 +291,64 @@ exports.resolvers = {
                 return losNodos;
             });
         },
+        idsMisNodosEstudiables(_, __, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                console.log("Getting ids de mis nodos estudiables");
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                    if (!elUsuario)
+                        throw 'Usuario no encontrado';
+                }
+                catch (error) {
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                let datosAtlasConocimiento = elUsuario.atlas.datosNodos;
+                let datosNodosEstudiados = datosAtlasConocimiento.filter((dato) => dato.estudiado);
+                let datosNodosAprendidos = datosAtlasConocimiento.filter((dato) => dato.aprendido);
+                datosNodosEstudiados = datosNodosEstudiados.filter((dato) => {
+                    let dateEstudiado = new Date(dato.estudiado);
+                    let millisLimite = dateEstudiado.getTime() + dato.periodoRepaso;
+                    if (millisLimite > new Date().getTime())
+                        return true;
+                });
+                let todosNodosSabidos = [...datosNodosEstudiados, ...datosNodosAprendidos];
+                let idsTodosNodosSabidos = todosNodosSabidos.map((dato) => dato.idNodo);
+                console.log(`Retornando ${idsTodosNodosSabidos.length} ids de nodos sabidos`);
+                try {
+                    var losNodosSabidos = yield Nodo_1.ModeloNodo.find({ "_id": { $in: idsTodosNodosSabidos } }).exec();
+                }
+                catch (error) {
+                    console.log('Error descargando nodos de la base de datos: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                ;
+                console.log(`Retornando ${losNodosSabidos.length} nodos sabidos`);
+                //Get  ids continuaciones. Ellos son los aprendibles
+                let vinculosRelevantes = losNodosSabidos.map((nodo) => nodo.vinculos.filter((vinculo) => vinculo.tipo == "continuacion" && vinculo.rol === 'source')).flat();
+                let idsNodosContinuacion = vinculosRelevantes.map((vinculo) => vinculo.idRef);
+                try {
+                    var losNodosContinuacion = yield Nodo_1.ModeloNodo.find({ "_id": { $in: idsNodosContinuacion } }).exec();
+                }
+                catch (error) {
+                    console.log('Error descargando nodos de la base de datos: ' + error);
+                    throw new apollo_server_express_1.ApolloError('Error conectando con la base de datos');
+                }
+                ;
+                let nodosAprendibles = losNodosContinuacion.filter((nodo) => {
+                    let idsDependencias = nodo.vinculos.filter((vinculo) => vinculo.tipo == "continuacion" && vinculo.rol === "target").map((vinculo) => vinculo.idRef);
+                    if (idsDependencias.every((id) => idsTodosNodosSabidos.includes(id)))
+                        return true;
+                    return false;
+                });
+                let idsNodosAprendibles = nodosAprendibles.map((nodo) => nodo.id);
+                return idsNodosAprendibles;
+            });
+        }
     },
     Mutation: {
         posicionarNodosConocimientoByFuerzas(_, { ciclos }, contexto) {
@@ -412,19 +471,21 @@ exports.resolvers = {
                 return { modificados };
             });
         },
-        crearVinculo: function (_, args, contexto) {
+        crearVinculo: function (_, { idSource, idTarget }, contexto) {
             return __awaiter(this, void 0, void 0, function* () {
                 let modificados = [];
-                console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
+                console.log(`recibida una peticion de vincular nodos  ${idSource} y ${idTarget}`);
                 let credencialesUsuario = contexto.usuario;
                 let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+                if (idSource == idTarget)
+                    throw new apollo_server_express_1.UserInputError('No se puede vincular un nodo consigo mismo');
                 if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                     console.log(`El usuario no tenia permisos para efectuar esta operación`);
                     throw new apollo_server_express_1.AuthenticationError("No autorizado");
                 }
                 try {
-                    var nodoSource = yield Nodo_1.ModeloNodo.findById(args.idSource, "vinculos nombre").exec();
-                    var nodoTarget = yield Nodo_1.ModeloNodo.findById(args.idTarget, "vinculos nombre").exec();
+                    var nodoSource = yield Nodo_1.ModeloNodo.findById(idSource, "vinculos nombre").exec();
+                    var nodoTarget = yield Nodo_1.ModeloNodo.findById(idTarget, "vinculos nombre").exec();
                 }
                 catch (error) {
                     console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
@@ -437,23 +498,23 @@ exports.resolvers = {
                 console.log(`Los ids previos de la red son: ${idsRedPrevia}`);
                 //Buscar y eliminar vinculos previos entre estos dos nodos.
                 for (var vinculo of nodoSource.vinculos) {
-                    if (vinculo.idRef == args.idTarget) {
+                    if (vinculo.idRef == idTarget) {
                         vinculo.remove();
                         console.log(`encontrado un vinculo viejo en el Source. Eliminando`);
                     }
                 }
                 for (var vinculo of nodoTarget.vinculos) {
-                    if (vinculo.idRef == args.idSource) {
+                    if (vinculo.idRef == idSource) {
                         vinculo.remove();
                         console.log(`encontrado un vinculo viejo en el target. Eliminando`);
                     }
                 }
                 const vinculoSourceTarget = {
-                    idRef: args.idTarget,
+                    idRef: idTarget,
                     rol: "source"
                 };
                 const vinculoTargetSource = {
-                    idRef: args.idSource,
+                    idRef: idSource,
                     rol: "target"
                 };
                 nodoSource.vinculos.push(vinculoSourceTarget);
@@ -467,7 +528,7 @@ exports.resolvers = {
                 }
                 modificados.push(nodoSource);
                 modificados.push(nodoTarget);
-                console.log(`vinculo entre ${args.idSource} y ${args.idTarget} creado`);
+                console.log(`vinculo entre ${idSource} y ${idTarget} creado`);
                 return { modificados };
             });
         },

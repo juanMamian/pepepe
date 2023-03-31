@@ -1,6 +1,8 @@
 Atlas de conocimiento.
-Que el zoom se haga en donde está el puntero del mouse o el centro del pinching.
-Eliminar la logica de iteraciones repaso del backend.
+-En maestra vida asegurarse de que se hace la migración de periodoRepaso y de objetivos.
+-Que el zoom se haga en donde está el puntero del mouse o el centro del pinching.
+-Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.
+-Reparar los foros.
 
 
 pepepe
@@ -13,4 +15,3 @@ pepepe
 -Al eliminar eventos en masa (Como al limpiar una semana de eventos). Recordar eliminar los eventosPersonales enmarcados(Y sin parent) en los eventos públicos eliminados.
 -verificar que los chicos de maestra vida tengan el permiso "maestraVida-estudiante". y especificar que los profes de maestra vida pueden alienar los estudiantes de maestra vida en el handler de la query "alienarUsuario"
 -temporalmente en el back end los usuarios con permiso "maestraVida-profesor" están en los permisos especiales de algunas mutaciones de eventos. Deshacer cuando ya no haya necesidad.
--retirar "Objetivo" de los campos del tipo DatoNodoUsuario de InfoAtlas de Usuario. Verificar que no se rompa nada.

@@ -15,7 +15,6 @@ const apollo_server_express_1 = require("apollo-server-express");
 const Usuario_1 = require("../model/Usuario");
 const NodoSolidaridad_1 = require("../model/atlasSolidaridad/NodoSolidaridad");
 const graphql_iso_date_1 = require("graphql-iso-date");
-const GrupoEstudiantil_1 = require("../model/actividadesProfes/GrupoEstudiantil");
 const Nodo_1 = require("../model/atlas/Nodo");
 const Espacio_1 = require("../model/Espacio");
 const Schema_1 = require("./Schema");
@@ -53,10 +52,10 @@ exports.typeDefs = apollo_server_express_1.gql `
         id: ID,
         idNodo:ID,
         nombreNodo: String,
-        objetivo:Boolean,
         aprendido:Boolean,
         estudiado: Date,
-        periodoRepaso:Int,
+        periodoRepaso:Float,
+        diasRepaso: Int,
         iteracionesRepaso: [IteracionRepasoNodoConocimiento]
     }
 
@@ -89,7 +88,6 @@ exports.typeDefs = apollo_server_express_1.gql `
     enum relacionUsuarioConocimiento{
         APRENDIENDO
         APRENDIDO
-        OBJETIVO
     }
 
     type ConocimientoUsuario{
@@ -147,6 +145,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         fuerzaColision: FuerzaPolar,
        fuerzaCentroMasa: FuerzaPolar,
        nombre:String,
+       objetivos:[String],
        objetivosEstudiante: [NodoSolidaridad],
        espacioActual: String,
 
@@ -181,7 +180,6 @@ exports.typeDefs = apollo_server_express_1.gql `
         eliminarUsuario(idUsuario:ID!):Boolean,
         eliminarNotificacion(idNotificacion:ID!):Boolean,
         eliminarNotificacionActividadForos(idParent:ID!):Boolean,
-        setNodoObjetivo(idNodo:ID!, nuevoEstadoObjetivo:Boolean):Boolean
         setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):[DatoNodoUsuario]        
         setNodoAtlasTarget(idNodo:ID!):Boolean,
         nulificarNodoTargetUsuarioAtlas:Boolean,
@@ -207,7 +205,7 @@ exports.typeDefs = apollo_server_express_1.gql `
         setIntervaloIteracionRepaso(idUsuario: ID!, idNodo: ID!, idIteracion:ID!, nuevoIntervalo:Float!):IteracionRepasoNodoConocimiento,
 
         setDateNodoConocimientoEstudiadoUsuario(idUsuario: ID!, idNodo: ID!, fecha:Date!):DatoNodoUsuario,
-        setPeriodoRepasoNodoConocimientoUsuario(idNodo: ID!, nuevoPeriodoRepaso: Int!):DatoNodoUsuario,
+        setDiasRepasoNodoConocimientoUsuario(idNodo: ID!, nuevoDiasRepaso: Int!):DatoNodoUsuario,
 
         setCoordsVistaAtlasSolidaridadUsuario(coords:CoordsInput):Boolean,
         setNodoSolidaridadAsCoordsVistaUsuario(idNodo:ID!):Boolean,
@@ -258,13 +256,18 @@ exports.resolvers = {
             return __awaiter(this, void 0, void 0, function* () {
                 console.log(`Solicitud de la lista de todos los usuarios`);
                 try {
-                    var todosUsuarios = yield Usuario_1.ModeloUsuario.find({}).select("nombres informesMaestraVida apellidos permisos fechaNacimiento email username numeroTel email").exec();
+                    var todosUsuarios = yield Usuario_1.ModeloUsuario.find({}).select("nombres objetivos informesMaestraVida apellidos permisos fechaNacimiento email username numeroTel email").exec();
                 }
                 catch (error) {
                     console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
                     throw new apollo_server_express_1.ApolloError("Error de conexión a la base de datos");
                 }
                 console.log(`Enviando lista de todos los usuarios`);
+                // for(const usuario of todosUsuarios){
+                //     if(usuario.objetivos.length>0){
+                //         console.log(`Usuario ${usuario.username} tiene ${usuario.objetivos.length} objetivos`);
+                //     }
+                // }
                 return todosUsuarios;
             });
         },
@@ -599,138 +602,6 @@ exports.resolvers = {
                 }
                 console.log(`Notificacion eliminada`);
                 return true;
-            });
-        },
-        setNodoObjetivo: function (_, { idNodo, nuevoEstadoObjetivo }, contexto) {
-            return __awaiter(this, void 0, void 0, function* () {
-                let credencialesUsuario = contexto.usuario;
-                if (!credencialesUsuario || !credencialesUsuario.id) {
-                    throw new apollo_server_express_1.AuthenticationError("No autenticado");
-                }
-                console.log(`Seting nodo objetivo de ${idNodo} en ${nuevoEstadoObjetivo} para el usuario ${credencialesUsuario.id}`);
-                try {
-                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
-                    var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idNodo);
-                    if (indexN > -1) {
-                        elUsuario.atlas.datosNodos[indexN].objetivo = nuevoEstadoObjetivo;
-                    }
-                    else {
-                        elUsuario.atlas.datosNodos.push({
-                            idNodo,
-                            objetivo: nuevoEstadoObjetivo
-                        });
-                    }
-                    yield elUsuario.save();
-                    return true;
-                }
-                catch (error) {
-                    console.log(`error guardando usuario en la base de datos: ${error}`);
-                    throw new apollo_server_express_1.ApolloError("");
-                }
-            });
-        },
-        setNodoAtlasAprendidoUsuario: function (_, { idNodo, nuevoEstadoAprendido }, contexto) {
-            return __awaiter(this, void 0, void 0, function* () {
-                let credencialesUsuario = contexto.usuario;
-                if (!credencialesUsuario || !credencialesUsuario.id) {
-                    throw new apollo_server_express_1.AuthenticationError("No autenticado");
-                }
-                console.log('\x1b[35m%s\x1b[0m', `Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);
-                try {
-                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
-                }
-                catch (error) {
-                    console.log(`error buscando usuario en la base de datos: ${error}`);
-                    throw new apollo_server_express_1.ApolloError("");
-                }
-                var todosNodosAfectados = [];
-                var tipoRol = null;
-                if (nuevoEstadoAprendido) {
-                    tipoRol = "target";
-                }
-                else {
-                    tipoRol = "source";
-                }
-                console.log(`Setting este y todos los nodos de conocimiento encadenados como aprendidos: ${nuevoEstadoAprendido}`);
-                var currentIds = [idNodo];
-                var currentNodos = [];
-                var cuenta = 0;
-                while (currentIds && currentIds.length > 0 && cuenta < 200) {
-                    cuenta++;
-                    try {
-                        currentNodos = yield Nodo_1.ModeloNodo.find({ _id: { $in: currentIds } }).select("nombre vinculos").exec();
-                    }
-                    catch (error) {
-                        console.log(`Error buscando current nodos: ${error}`);
-                        throw new apollo_server_express_1.ApolloError("Error ejecutando operación");
-                    }
-                    console.log(`Encontrados ${currentNodos.length} nodos current`);
-                    todosNodosAfectados.push(...currentNodos);
-                    currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.rol === tipoRol).map(v => v.idRef)), []);
-                    console.log(`Current ids queda en ${currentIds} con length ${currentIds.length}`);
-                }
-                console.log(`Encontrados ${todosNodosAfectados.length} nodos encadenados: ${todosNodosAfectados.map(n => n.nombre)}`);
-                var idsNodosAfectados = todosNodosAfectados.map(na => na.id);
-                idsNodosAfectados.forEach((idN) => {
-                    var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idN);
-                    if (indexN > -1) {
-                        elUsuario.atlas.datosNodos[indexN].aprendido = nuevoEstadoAprendido;
-                    }
-                    else {
-                        if (nuevoEstadoAprendido) {
-                            elUsuario.atlas.datosNodos.push({
-                                idNodo: idN,
-                                aprendido: nuevoEstadoAprendido
-                            });
-                        }
-                    }
-                });
-                try {
-                    yield elUsuario.save();
-                }
-                catch (error) {
-                    console.log(`error guardando usuario en la base de datos: ${error}`);
-                    throw new apollo_server_express_1.ApolloError("");
-                }
-                let datosNodoAfectados = elUsuario.atlas.datosNodos.filter(dn => idsNodosAfectados.includes(dn.idNodo));
-                console.log(`Se afectaron ${datosNodoAfectados.length} datos de nodo`);
-                // for(const dato of datosNodoAfectados){
-                //     console.log(`${JSON.stringify(dato)}`);
-                // }
-                return datosNodoAfectados;
-            });
-        },
-        setPeriodoRepasoNodoConocimientoUsuario: function (_, { idNodo, nuevoPeriodoRepaso }, contexto) {
-            var _a;
-            return __awaiter(this, void 0, void 0, function* () {
-                console.log('\x1b[35m%s\x1b[0m', `Peticion de set periodo de repaso en ${nuevoPeriodoRepaso} para el nodo ${idNodo}`);
-                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
-                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
-                }
-                const credencialesUsuario = contexto.usuario;
-                try {
-                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
-                }
-                catch (error) {
-                    console.log(`error buscando usuario en la base de datos: ${error}`);
-                    throw new apollo_server_express_1.ApolloError("");
-                }
-                var elDatoNodo = elUsuario.atlas.datosNodos.find(dn => dn.idNodo === idNodo);
-                if (!elDatoNodo) {
-                    let elDatoNodo = elUsuario.atlas.datosNodos.create({
-                        idNodo,
-                    });
-                    elUsuario.atlas.datosNodos.push(elDatoNodo);
-                }
-                elDatoNodo.periodoRepaso = nuevoPeriodoRepaso;
-                try {
-                    yield elUsuario.save();
-                }
-                catch (error) {
-                    console.log(`error guardando usuario en la base de datos: ${error}`);
-                    throw new apollo_server_express_1.ApolloError("");
-                }
-                return elDatoNodo;
             });
         },
         setNodoAtlasTarget: function (_, { idNodo }, contexto) {
@@ -1357,12 +1228,117 @@ exports.resolvers = {
                     elDatoNodo.iteracionesRepaso.push(nuevaIteracion);
                 }
                 elDatoNodo.estudiado = fecha;
+                console.log(JSON.stringify(elDatoNodo, null, 2));
                 try {
                     yield elUsuario.save();
                 }
                 catch (error) {
                     console.log(`Error guardando el usuario en la base de datos: ${error}`);
                     throw new apollo_server_express_1.ApolloError("Error conectando con la base de datos");
+                }
+                return elDatoNodo;
+            });
+        },
+        setNodoAtlasAprendidoUsuario: function (_, { idNodo, nuevoEstadoAprendido }, contexto) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let credencialesUsuario = contexto.usuario;
+                if (!credencialesUsuario || !credencialesUsuario.id) {
+                    throw new apollo_server_express_1.AuthenticationError("No autenticado");
+                }
+                console.log('\x1b[35m%s\x1b[0m', `Seting nodo ${idNodo} en estado de aprendido ${nuevoEstadoAprendido} para el usuario ${credencialesUsuario.id}`);
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                }
+                catch (error) {
+                    console.log(`error buscando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+                var todosNodosAfectados = [];
+                var tipoRol = null;
+                if (nuevoEstadoAprendido) {
+                    tipoRol = "target";
+                }
+                else {
+                    tipoRol = "source";
+                }
+                console.log(`Setting este y todos los nodos de conocimiento encadenados como aprendidos: ${nuevoEstadoAprendido}`);
+                var currentIds = [idNodo];
+                var currentNodos = [];
+                var cuenta = 0;
+                while (currentIds && currentIds.length > 0 && cuenta < 200) {
+                    cuenta++;
+                    try {
+                        currentNodos = yield Nodo_1.ModeloNodo.find({ _id: { $in: currentIds } }).select("nombre vinculos").exec();
+                    }
+                    catch (error) {
+                        console.log(`Error buscando current nodos: ${error}`);
+                        throw new apollo_server_express_1.ApolloError("Error ejecutando operación");
+                    }
+                    console.log(`Encontrados ${currentNodos.length} nodos current`);
+                    todosNodosAfectados.push(...currentNodos);
+                    currentIds = currentNodos.reduce((acc, nodo) => acc.concat(nodo.vinculos.filter(v => v.rol === tipoRol).map(v => v.idRef)), []);
+                    console.log(`Current ids queda en ${currentIds} con length ${currentIds.length}`);
+                }
+                console.log(`Encontrados ${todosNodosAfectados.length} nodos encadenados: ${todosNodosAfectados.map(n => n.nombre)}`);
+                var idsNodosAfectados = todosNodosAfectados.map(na => na.id);
+                idsNodosAfectados.forEach((idN) => {
+                    var indexN = elUsuario.atlas.datosNodos.findIndex(n => n.idNodo == idN);
+                    if (indexN > -1) {
+                        elUsuario.atlas.datosNodos[indexN].aprendido = nuevoEstadoAprendido;
+                    }
+                    else {
+                        if (nuevoEstadoAprendido) {
+                            elUsuario.atlas.datosNodos.push({
+                                idNodo: idN,
+                                aprendido: nuevoEstadoAprendido
+                            });
+                        }
+                    }
+                });
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`error guardando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+                let datosNodoAfectados = elUsuario.atlas.datosNodos.filter(dn => idsNodosAfectados.includes(dn.idNodo));
+                console.log(`Se afectaron ${datosNodoAfectados.length} datos de nodo`);
+                // for(const dato of datosNodoAfectados){
+                //     console.log(`${JSON.stringify(dato)}`);
+                // }
+                return datosNodoAfectados;
+            });
+        },
+        setDiasRepasoNodoConocimientoUsuario: function (_, { idNodo, nuevoDiasRepaso }, contexto) {
+            var _a;
+            return __awaiter(this, void 0, void 0, function* () {
+                console.log('\x1b[35m%s\x1b[0m', `Peticion de set dias de repaso en ${nuevoDiasRepaso} para el nodo ${idNodo}`);
+                if (!((_a = contexto.usuario) === null || _a === void 0 ? void 0 : _a.id)) {
+                    throw new apollo_server_express_1.AuthenticationError('loginRequerido');
+                }
+                const credencialesUsuario = contexto.usuario;
+                try {
+                    var elUsuario = yield Usuario_1.ModeloUsuario.findById(credencialesUsuario.id).exec();
+                }
+                catch (error) {
+                    console.log(`error buscando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
+                }
+                var elDatoNodo = elUsuario.atlas.datosNodos.find(dn => dn.idNodo === idNodo);
+                if (!elDatoNodo) {
+                    let elDatoNodo = elUsuario.atlas.datosNodos.create({
+                        idNodo,
+                    });
+                    elUsuario.atlas.datosNodos.push(elDatoNodo);
+                }
+                elDatoNodo.diasRepaso = nuevoDiasRepaso;
+                try {
+                    yield elUsuario.save();
+                }
+                catch (error) {
+                    console.log(`error guardando usuario en la base de datos: ${error}`);
+                    throw new apollo_server_express_1.ApolloError("");
                 }
                 return elDatoNodo;
             });
@@ -1518,42 +1494,6 @@ exports.resolvers = {
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
         },
-        nombreGrupoEstudiantil: function (parent) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent._id) {
-                    return "";
-                }
-                try {
-                    let elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ estudiantes: parent._id }).exec();
-                    if (!elGrupo)
-                        return "";
-                    var nombreGrupo = elGrupo.nombre;
-                }
-                catch (error) {
-                    console.log(`Error buscando grupo en la base de datos. E: ${error}`);
-                    return "";
-                }
-                return nombreGrupo;
-            });
-        },
-        idGrupoEstudiantil: function (parent) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!parent._id) {
-                    return "";
-                }
-                try {
-                    let elGrupo = yield GrupoEstudiantil_1.ModeloGrupoEstudiantil.findOne({ estudiantes: parent._id });
-                    if (!elGrupo)
-                        return "";
-                    var idGrupo = elGrupo._id;
-                }
-                catch (error) {
-                    console.log(`Error buscando grupo en la base de datos. E: ${error}`);
-                    return "";
-                }
-                return idGrupo;
-            });
-        },
         nombre: function (parent, _, __) {
             return parent.username;
         },
@@ -1686,3 +1626,65 @@ exports.resolvers = {
         }
     },
 };
+function migrarPeriodoRepaso() {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log("Migrando periodo repaso a dias repaso");
+        let todosUsuarios;
+        try {
+            todosUsuarios = yield Usuario_1.ModeloUsuario.find({}).exec();
+        }
+        catch (error) {
+            console.log("Error buscando usuarios: " + error);
+            return;
+        }
+        for (var usuario of todosUsuarios) {
+            let datosNodos = usuario.atlas.datosNodos;
+            let datosNodosRelevantes = datosNodos.filter(dn => dn.periodoRepaso);
+            for (var datoNodo of datosNodosRelevantes) {
+                datoNodo.diasRepaso = datoNodo.periodoRepaso / 86400000;
+            }
+            try {
+                yield usuario.save();
+                console.log(usuario.nombres + " " + usuario.apellidos + " migrado");
+            }
+            catch (error) {
+                console.log("Error guardando usuario: " + error);
+            }
+        }
+    });
+}
+// migrarPeriodoRepaso();
+function migrarObjetivos() {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log("Migrando objetivos de usuarios a una lista simple");
+        let todosUsuarios;
+        try {
+            todosUsuarios = yield Usuario_1.ModeloUsuario.find({}).exec();
+        }
+        catch (error) {
+            console.log("Error buscando usuarios: " + error);
+            return;
+        }
+        for (var usuario of todosUsuarios) {
+            let nodosObjetivo;
+            try {
+                nodosObjetivo = yield NodoSolidaridad_1.ModeloNodoSolidaridad.find({ nodoParent: usuario.id }).exec();
+            }
+            catch (error) {
+                console.log("Error buscando nodos objetivo de usuario " + usuario.nombres + " " + usuario.apellidos + ": " + error);
+                continue;
+            }
+            let nombresObjetivo = nodosObjetivo.filter(n => n.nombre != 'Nuevo nodo de solidaridad').map(n => n.nombre);
+            // console.table({usuario: usuario.nombres + " " + usuario.apellidos, objetivos: nombresObjetivo});
+            usuario.objetivos = nombresObjetivo;
+            try {
+                yield usuario.save();
+                console.log(usuario.nombres + " " + usuario.apellidos + " migrado");
+            }
+            catch (error) {
+                console.log("Error guardando usuario: " + error);
+            }
+        }
+    });
+}
+//migrarObjetivos();

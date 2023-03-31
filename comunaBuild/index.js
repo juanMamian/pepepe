@@ -34,6 +34,7 @@ app.use("/caracol", express_1.default.static(__dirname + '/clientes/caracol'));
 app.get("/caracol", function (req, res) {
     res.sendFile(__dirname + "/clientes/caracol/index.html");
 });
+app.use("/caracol/*", express_1.default.static(__dirname + '/clientes/caracol'));
 //rutas tallerCuentos
 app.use("/tallerCuentos", express_1.default.static(__dirname + "/clientes/tallerCuentos"));
 app.get("/tallerCuentos", function (req, res) {

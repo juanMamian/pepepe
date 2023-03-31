@@ -835,6 +835,8 @@ export default {
   padding-bottom: 20px;
   display: flex;
   flex-direction: column;
+  max-height: 60vh;
+  overflow-y: scroll;
   gap: 10px;
 }
 .dependencia {

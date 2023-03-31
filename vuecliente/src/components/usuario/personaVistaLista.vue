@@ -445,32 +445,7 @@ export default {
       update({ Usuario }) {
         return Usuario.informesMaestraVida;
       },
-    },
-    objetivos:{
-      query: gql`
-        query($idUsuario: ID!){
-          Usuario(idUsuario: $idUsuario){
-            id
-            objetivosEstudiante{
-              id
-              nombre
-              estadoDesarrollo
-            }
-          }
-        }
-      `,
-      variables(){
-        return {
-          idUsuario: this.estaPersona.id
-        }
-      },
-      update({Usuario}){
-        return Usuario.objetivosEstudiante
-      },
-      skip(){
-        return this.mostrando!="informe"
-      }
-    },
+    },   
   },
   data() {
     return {

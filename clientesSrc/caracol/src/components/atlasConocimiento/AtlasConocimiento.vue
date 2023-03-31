@@ -117,9 +117,7 @@
         </div>
       </div>
     </div>
-    <transition name="fadeOut">
-      <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
-    </transition>
+
     <div
       id="menuContextual"
       :style="[offsetMenuContextual]"
@@ -197,6 +195,7 @@
       id="contenedorDiagrama"
       v-show="!$apollo.queries.yo.loading"
       ref="contenedorDiagrama"
+      @touchmove="touchMoveDiagrama"
     >
       <div id="contenedorElementosDiagrama">
         <div
@@ -328,7 +327,11 @@
         </div>
       </div>
     </div>
-
+    <transition name="fadeOut">
+      <div v-show="showingZoomInfo || true" id="infoZoom">
+        x{{ factorZoom }}
+      </div>
+    </transition>
     <div id="barraInferior" @click.stop="">
       <div
         class="boton"
@@ -969,6 +972,40 @@ export default {
     },
   },
   methods: {
+    touchMoveDiagrama(e){
+      if(e.touches.length===2){
+        e.stopPropagation();
+        e.preventDefault();
+        let center={
+          x:(e.touches[0].clientX+e.touches[1].clientX)/2,
+          y:(e.touches[0].clientY+e.touches[1].clientY)/2
+        }
+
+        let posContenedor=this.$refs.contenedorDiagrama.getBoundingClientRect();
+        let zoomPosPx={
+          x:center.x-posContenedor.left,
+          y:center.y-posContenedor.top
+        }
+
+        let distance=Math.sqrt(Math.pow(e.touches[0].clientX-e.touches[1].clientX,2)+Math.pow(e.touches[0].clientY-e.touches[1].clientY,2));
+
+        if(!this.lastPinchingDistance){
+          this.lastPinchingDistance=distance;
+          return;
+        }
+        let zoomChange=distance - this.lastPinchingDistance;
+
+        //set to 1 if postive, -1 if negative
+        if(zoomChange!=0){
+          zoomChange=zoomChange/Math.abs(zoomChange);
+          this.zoomVista(zoomChange,zoomPosPx );
+        }
+
+        this.lastPinchingDistance=distance;
+
+
+      }
+    },
     clickNodo(nodo){
       if(this.nodoCreandoDependencia){
         if(nodo.id===this.nodoCreandoDependencia.id){
@@ -1264,23 +1301,6 @@ export default {
         .catch((error) => {
           console.log(`Error: ${error}`);
         });
-    },
-    iniciaMovimientoTouch(e) {
-      if (e.touches.length === 2) {
-        var dist = Math.hypot(
-          e.touches[0].pageX - e.touches[1].pageX,
-          e.touches[0].pageY - e.touches[1].pageY
-        );
-        this.lastPinchDistance = dist;
-        this.pinching = true;
-        return;
-      }
-
-      this.ultimoTouchX = e.changedTouches[0].clientX;
-      this.ultimoTouchY = e.changedTouches[0].clientY;
-    },
-    finTouch() {
-      this.pinching = false;
     },
     cambiarCoordsManualesNodo(idNodo, coordsManuales) {
       if (!this.usuarioSuperadministrador) {
@@ -1624,8 +1644,6 @@ export default {
   overflow-x: hidden;
 }
 
-
-
 #zonaNodoTarget {
   position: absolute;
   top: 0px;
@@ -1703,10 +1721,9 @@ export default {
   justify-content: center;
 }
 
-#nombreColeccion.seleccionandoColeccion{
+#nombreColeccion.seleccionandoColeccion {
   border-bottom-left-radius: 0px;
   border-bottom-right-radius: 0px;
-
 }
 
 #listaSelectoresColeccion {
@@ -1793,6 +1810,7 @@ export default {
   user-select: none;
   width: 100%;
   height: 100%;
+  z-index: 0;
 }
 
 #buscadorNodosConocimiento {
@@ -1815,6 +1833,7 @@ export default {
   padding: 10px;
   display: inline-block;
   font-weight: bold;
+  z-index: 10;
   color: rgb(102, 102, 102);
 }
 

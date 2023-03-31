@@ -390,7 +390,7 @@ export const resolvers = {
                 return false;
             })
 
-            let idsNodosAprendibles=nodosAprendibles.map((nodo:any)=>nodo.id);
+            let idsNodosAprendibles = nodosAprendibles.map((nodo: any) => nodo.id);
 
             return idsNodosAprendibles;
         }
@@ -523,20 +523,22 @@ export const resolvers = {
             return { modificados };
 
         },
-        crearVinculo: async function (_: any, args: any, contexto: contextoQuery) {
+        crearVinculo: async function (_: any, { idSource, idTarget }: any, contexto: contextoQuery) {
             let modificados: Array<NodoConocimiento> = [];
-            console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
+            console.log(`recibida una peticion de vincular nodos  ${idSource} y ${idTarget}`);
             let credencialesUsuario = contexto.usuario;
 
             let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+
+            if(idSource == idTarget) throw new UserInputError('No se puede vincular un nodo consigo mismo');
 
             if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
                 throw new AuthenticationError("No autorizado");
             }
             try {
-                var nodoSource: any = await Nodo.findById(args.idSource, "vinculos nombre").exec();
-                var nodoTarget: any = await Nodo.findById(args.idTarget, "vinculos nombre").exec();
+                var nodoSource: any = await Nodo.findById(idSource, "vinculos nombre").exec();
+                var nodoTarget: any = await Nodo.findById(idTarget, "vinculos nombre").exec();
             }
             catch (error) {
                 console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
@@ -553,23 +555,23 @@ export const resolvers = {
 
             //Buscar y eliminar vinculos previos entre estos dos nodos.
             for (var vinculo of nodoSource.vinculos) {
-                if (vinculo.idRef == args.idTarget) {
+                if (vinculo.idRef == idTarget) {
                     vinculo.remove();
                     console.log(`encontrado un vinculo viejo en el Source. Eliminando`);
                 }
             }
             for (var vinculo of nodoTarget.vinculos) {
-                if (vinculo.idRef == args.idSource) {
+                if (vinculo.idRef == idSource) {
                     vinculo.remove();
                     console.log(`encontrado un vinculo viejo en el target. Eliminando`);
                 }
             }
             const vinculoSourceTarget = {
-                idRef: args.idTarget,
+                idRef: idTarget,
                 rol: "source"
             }
             const vinculoTargetSource = {
-                idRef: args.idSource,
+                idRef: idSource,
                 rol: "target"
             }
             nodoSource.vinculos.push(vinculoSourceTarget);
@@ -583,7 +585,7 @@ export const resolvers = {
             }
             modificados.push(nodoSource);
             modificados.push(nodoTarget);
-            console.log(`vinculo entre ${args.idSource} y ${args.idTarget} creado`);
+            console.log(`vinculo entre ${idSource} y ${idTarget} creado`);
             return { modificados };
         },
         eliminarVinculoFromTo: async function (_: any, args: any, contexto: contextoQuery) {

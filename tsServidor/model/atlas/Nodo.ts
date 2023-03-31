@@ -168,6 +168,8 @@ var esquemaNodo = new mongoose.Schema({
 });
 
 
+
+
 esquemaNodo.methods.verificarVinculo=function(this:any,idRef, eliminar){
     console.log(`${this.nombre} está buscando un vinculo con ${idRef}. Eliminar es ${eliminar}`);
     var respuesta=false;
