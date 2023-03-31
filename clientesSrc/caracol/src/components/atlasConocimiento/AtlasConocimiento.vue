@@ -26,9 +26,13 @@
           v-if="coleccionSeleccionada && progresoColeccionSeleccionada"
           :progreso="progresoColeccionSeleccionada"
           :color-fondo="'transparent'"
-          style="margin-right: 10px"          
+          style="margin-right: 10px"
         >
-          <img src="@/assets/iconos/atlas/userNodes.png" alt="Colección" id="iconoColeccionSeleccionada">
+          <img
+            src="@/assets/iconos/atlas/userNodes.png"
+            alt="Colección"
+            id="iconoColeccionSeleccionada"
+          />
         </pie-progreso>
         <span style="z-index: 1">
           {{ nombreColeccionSeleccionada }}
@@ -139,25 +143,30 @@
       >
         <pie-progreso
           v-show="
-            progresoNodoTarget!=null && !$apollo.queries.progresoNodoTarget.loading
+            progresoNodoTarget != null &&
+            !$apollo.queries.progresoNodoTarget.loading
           "
           :progreso="progresoNodoTarget"
           :size="40"
           :cifrasDecimales="0"
           :color-fondo="'transparent'"
         >
-        <img
-          style="height: 25px"
-          src="@/assets/iconos/crosshairsSolid.svg"
-          alt="Target"
-          id="iconoNodoTarget"
-        />
+          <img
+            style="height: 25px"
+            src="@/assets/iconos/crosshairsSolid.svg"
+            alt="Target"
+            id="iconoNodoTarget"
+          />
         </pie-progreso>
 
         {{ nodoTarget.nombre }}
       </div>
 
-      <div class="boton" id="botonCancelarNodoTarget" @click.stop="setNodoTarget(null)">
+      <div
+        class="boton"
+        id="botonCancelarNodoTarget"
+        @click.stop="setNodoTarget(null)"
+      >
         <img src="@/assets/iconos/equis.svg" alt="Equis" />
       </div>
     </div>
@@ -213,7 +222,7 @@
                 params: { idNodo: nodo.id },
               })
             "
-            @click.stop="idNodoSeleccionado = nodo.id"
+            @click.stop="clickNodo(nodo)"
             :style="[
               {
                 top: nodo.coords.y - esquinasDiagrama.y1 + 'px',
@@ -372,12 +381,17 @@
       :elNodo="nodoSeleccionado"
       :nivelesConexionDeeper="nivelesConexionDeeper"
       :nivelesConexionHigher="nivelesConexionHigher"
+      :nodoCreandoDependencia="nodoCreandoDependencia"
       @setMeTarget="
         setNodoTarget(nodoSeleccionado.id);
         centrarEnNodoById(nodoSeleccionado.id);
       "
       @nivelesConexion="nivelesConexion = $event"
       @click.stop=""
+      @iniciarCrearDependenciaNodo="
+        iniciarCrearDependenciaNodo(nodoSeleccionado)
+      "
+      @cancelarCreandoDependencia="nodoCreandoDependencia = null"
     />
 
     <loading
@@ -643,6 +657,10 @@ export default {
       idColeccionTargetOnLastLocalizacion: null,
 
       idNodoTarget: null,
+
+      nodoCreandoDependencia: null,
+      creandoDependencia:false,
+      editandoVinculos: false,
     };
   },
   computed: {
@@ -951,6 +969,20 @@ export default {
     },
   },
   methods: {
+    clickNodo(nodo){
+      if(this.nodoCreandoDependencia){
+        if(nodo.id===this.nodoCreandoDependencia.id){
+          return;
+        }
+        this.$refs.controlesNodo.crearDependenciaNodo(nodo);
+        return;
+      }
+      this.idNodoSeleccionado=nodo.id;
+    },
+    iniciarCrearDependenciaNodo(nodo){
+      this.nodoCreandoDependencia=nodo;
+    },
+
     clickFuera() {
       this.seleccionNodo({});
       this.$refs.controlesNodo.clickFuera();
@@ -1407,15 +1439,17 @@ export default {
     seleccionNodo(nodo) {
       this.idNodoSeleccionado = nodo.id;
     },
-    async eliminarVinculo(args) {
+    async eliminarVinculo(idNodoFrom, idNodoTo) {
       if (!this.usuarioSuperadministrador) {
         console.log(`No autorizado`);
         return;
       }
       console.log(
-        `eliminando un vinculo entre ${args.idNodoFrom} y ${args.idNodoTo} `
+        `eliminando un vinculo entre ${idNodoFrom} y ${idNodoTo} `
       );
-      await this.$apollo
+
+      this.editandoVinculos=true;
+      this.$apollo
         .mutate({
           mutation: gql`
             mutation ($idNodoFrom: ID!, $idNodoTo: ID!) {
@@ -1426,6 +1460,7 @@ export default {
                 modificados {
                   id
                   vinculos {
+                    id
                     idRef
                     tipo
                     rol
@@ -1435,50 +1470,16 @@ export default {
             }
           `,
           variables: {
-            idNodoFrom: args.idNodoFrom,
-            idNodoTo: args.idNodoTo,
+            idNodoFrom,
+            idNodoTo,
           },
         })
-        .then(() => { })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-        });
-    },
-    async crearVinculo(args) {
-      if (!this.usuarioSuperadministrador) {
-        console.log(`No autorizado`);
-        return;
-      }
-      console.log(`creando un vinculo ${JSON.stringify(args)} `);
-      await this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($tipo: String!, $idNodoFrom: ID!, $idNodoTo: ID!) {
-              crearVinculo(
-                tipo: $tipo
-                idSource: $idNodoFrom
-                idTarget: $idNodoTo
-              ) {
-                modificados {
-                  id
-                  vinculos {
-                    idRef
-                    rol
-                    tipo
-                  }
-                }
-              }
-            }
-          `,
-          variables: {
-            tipo: "continuacion",
-            idNodoFrom: args.idNodoFrom,
-            idNodoTo: args.idNodoTo,
-          },
+        .then(() => {
+          this.editandoVinculos = false;
         })
-        .then(() => { })
         .catch((error) => {
           console.log(`error: ${error}`);
+          this.editandoVinculos = false;
         });
     },
     zoomVista(cantidad, posicionPx) {
@@ -1652,7 +1653,7 @@ export default {
   margin-left: 10px;
 }
 
-#iconoNodoTarget{
+#iconoNodoTarget {
   width: 25px;
   height: 25px;
   background-color: rgb(230, 230, 230);
@@ -1661,7 +1662,7 @@ export default {
   opacity: 1;
 }
 
-#iconoNodoTarget:hover{
+#iconoNodoTarget:hover {
   opacity: 0;
 }
 
@@ -1684,7 +1685,7 @@ export default {
   z-index: 1;
 }
 
-#iconoColeccionSeleccionada{
+#iconoColeccionSeleccionada {
   width: 25px;
   height: 25px;
   background-color: rgb(230, 230, 230);
@@ -1693,10 +1694,9 @@ export default {
   opacity: 1;
 }
 
-#iconoColeccionSeleccionada:hover{
+#iconoColeccionSeleccionada:hover {
   opacity: 0;
 }
-
 
 #nombreColeccion {
   padding: 10px 30px;

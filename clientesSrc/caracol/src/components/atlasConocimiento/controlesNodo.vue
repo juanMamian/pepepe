@@ -1,10 +1,18 @@
 <template>
-  <div
-    class="controlesNodo"
-    :style="estiloPos"
-    :class="{ desplegado }"
-    @click="clickFuera"
-  >
+  <div class="controlesNodo" :style="estiloPos" @click="clickFuera">
+    <div id="anuncioCreandoDependencia" v-show="nodoCreandoDependencia">
+      <div class="anuncio">
+        <img
+          v-show="!creandoDependencia"
+          src="@/assets/iconos/codeBranch.svg"
+          alt="Dependencia"
+        />
+        <Loading v-show="creandoDependencia" />
+        <span> Creando dependencia </span>
+      </div>
+
+      <div class="subanuncio"></div>
+    </div>
     <div id="centerSignaler" v-show="elNodo"></div>
     <div
       id="zonaControlVerConexiones"
@@ -124,19 +132,62 @@
       <div class="filaControles" v-show="filaMostrada === 2">
         <div
           class="bloqueControl"
+          id="bloqueControlDependencias"
           v-if="usuarioExperto || usuarioSuperadministrador"
         >
           <div
-            class="boton botonControl"
-            @click="mostrando = mostrando === 'enlaces' ? null : 'enlaces'"
+            class="botonTexto selector botonControl"
+            :class="{ activo: mostrando === 'dependenciasNodo' }"
+            @click="
+              mostrando =
+                mostrando === 'dependenciasNodo' ? null : 'dependenciasNodo'
+            "
           >
             <img src="@/assets/iconos/codeBranch.svg" alt="Repaso" />
+            Dependencias
+          </div>
+          <div
+            class="botonTexto"
+            :class="{ deshabilitado: nodoCreandoDependencia }"
+            id="botonCrearDependenciaNodo"
+            v-if="usuarioSuperadministrador || usuarioExpertoNodo"
+            @click.stop="iniciarCrearDependenciaNodo"
+          >
+            <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
           </div>
         </div>
 
         <div class="bloqueControl" v-if="usuarioSuperadministrador">
           <div class="boton botonControl" @click="eliminarNodo">
             <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
+          </div>
+        </div>
+
+        <div
+          class="contenidoMostrado"
+          id="zonaGestionDependencias"
+          v-show="mostrando === 'dependenciasNodo'"
+        >
+          <div id="listaDependencias" v-if="elNodo && elNodo.vinculos">
+            <div
+              class="dependencia"
+              v-for="vinculo of elNodo.vinculos"
+              :key="vinculo.id"
+            >
+              <NodoConocimientoVistaLista :idNodo="vinculo.idRef" :yo="yo" />
+              <div
+                class="botonTexto botonEliminarDependencia"
+                :class="{ deshabilitado: idVinculoEliminando === vinculo.id }"
+                @click.stop="eliminarVinculo(vinculo)"
+              >
+                <Loading v-show="idVinculoEliminando === vinculo.id" />
+                <img
+                  v-show="idVinculoEliminando != vinculo.id"
+                  src="@/assets/iconos/equis.svg"
+                  alt="Eliminar"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -148,8 +199,7 @@
           v-for="index of 2"
           :key="'selectorFila' + index"
           @click.stop="filaMostrada = index"
-        >
-        </div>
+        ></div>
       </div>
     </div>
 
@@ -200,8 +250,9 @@
 import { gql } from '@apollo/client/core';
 import { QUERY_DATOS_USUARIO_NODOS } from './fragsAtlasConocimiento';
 import { fragmentoDatoNodoConocimiento } from './fragsAtlasConocimiento';
-import Loading from '../utilidades/Loading.vue';
 import PieProgreso from '../utilidades/PieProgreso.vue';
+import NodoConocimientoVistaLista from './NodoConocimientoVistaLista.vue';
+import Loading from '../utilidades/Loading.vue';
 
 export default {
 
@@ -221,18 +272,22 @@ export default {
             type: Object,
             required: true,
         },
+        nodoCreandoDependencia: {
+            type: Object,
+        },
     },
     components: {
-        Loading,
-        PieProgreso,
-    },
+    Loading,
+    PieProgreso,
+    NodoConocimientoVistaLista,
+},
     name: "ControlesNodo",
     data() {
         return {
             mostrandoFlechasConexiones: false,
             desplegado: false,
 
-            filaMostrada: 1,
+            filaMostrada: 2,
             mostrando: "",
 
             montado: false,
@@ -246,9 +301,18 @@ export default {
 
             nivelesConexion: 0,
 
+            idVinculoEliminando:null,
+            creandoDependencia:false,
         };
     },
     computed: {
+        usuarioExpertoNodo(){
+          if(!this.elNodo || !this.yo){
+            return false;
+          }
+
+          return this.elNodo.expertos?.includes(this.yo.id);
+        },
         estiloPos() {
             let translation = 0;
             if (this.elNodo) {
@@ -361,6 +425,81 @@ export default {
         }
     },
     methods: {
+        crearDependenciaNodo(nodoSource){
+        if(!nodoSource || !this.elNodo){
+          return;
+        }
+        let nodoTarget=this.elNodo;
+
+        console.log(`Mutando que ${nodoSource.nombre} es dependencia de ${nodoTarget.nombre}`);
+
+        this.creandoDependencia=true;
+        this.$apollo.mutate({
+          mutation: gql`
+            mutation($tipo: String!, $idSource: ID!, $idTarget: ID!){
+              crearVinculo(tipo: $tipo, idSource: $idSource, idTarget: $idTarget){
+                modificados{
+                  id
+                  vinculos{
+                    id
+                    idRef
+                    tipo
+                    rol
+                  }
+                }
+              }
+            }
+            `,
+            variables:{
+              tipo: "continuacion",
+              idSource: nodoSource.id,
+              idTarget: nodoTarget.id
+            }
+          }).then(()=>{
+            this.creandoDependencia=false;
+            this.$emit("cancelarCreandoDependencia");
+
+          }).catch((error)=>{
+            console.log('Error: '+ error);
+            this.creandoDependencia=false;
+          })
+        },
+         eliminarVinculo(vinculo){
+          if(!this.usuarioExperto && !this.usuarioSuperadministrador){
+            return;
+          }
+
+          let idSource= vinculo.idRef;
+
+          this.idVinculoEliminando=vinculo.id;
+          this.$apollo.mutate({
+            mutation: gql`
+              mutation($idSource: ID!, $idTarget: ID!){
+                eliminarVinculoFromTo(idSource: $idSource, idTarget: $idTarget){
+                  modificados{
+                    id
+                    vinculos{
+                      id
+                      idRef
+                      tipo
+                      rol
+                    }
+                  }
+                }
+              }
+              `,
+              variables:{
+                idSource,
+                idTarget: this.elNodo.id,
+              }
+            }).then(()=>{
+              this.idVinculoEliminando=null;
+
+            }).catch((error)=>{
+              console.log('Error: '+ error);
+              this.idVinculoEliminando=null;
+            })
+        },
         toggleDespliege() {
             if (!this.mostrandoFlechasConexiones) {
                 this.desplegado = !this.desplegado;
@@ -521,22 +660,27 @@ export default {
             this.heightNombre = this.$refs.nombre.clientHeight;
             this.heigthAll = this.$el.clientHeight;
           });
-        }
-
+        },
+        iniciarCrearDependenciaNodo(){
+            if(!this.elNodo){
+                return;
+            }
+            this.$emit('iniciarCrearDependenciaNodo');
+        },
     },
     watch: {
         elNodo(nodo) {
             this.mostrandoFlechasConexiones = false;
-            if (!nodo) {
-                this.nivelesConexion = 0;
-            }
             if (nodo) {
                 this.recalcularHeights();
             }
             else {
+              this.desplegado=false;
                 this.mostrando = '';
                 this.heightNombre = 0;
                 this.heigthAll = 0;
+                this.nivelesConexion = 0;
+                this.$emit("cancelarCreandoDependencia");
             }
         },
         datoUsuarioEsteNodo(datos){
@@ -552,7 +696,10 @@ export default {
         },
         filaMostrada(){
             this.recalcularHeights();
-        }
+        },
+        mostrando(){
+            this.recalcularHeights();
+        },
     },
     mounted() {
         this.montado = true;
@@ -623,6 +770,7 @@ export default {
 
 .filaControles {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   gap: 40px;
@@ -657,6 +805,67 @@ export default {
 #inputDiasRepaso:focus-visible {
   outline: none;
 }
+
+.contenidoMostrado {
+  width: 100%;
+}
+
+/* #region controles de admin */
+#bloqueControlDependencias {
+  display: flex;
+  justify-content: center;
+  align-items: normal;
+}
+
+#botonCrearDependenciaNodo {
+  align-self: stretch;
+  border-radius: 5px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  background-color: var(--paletaMain);
+  height: unset;
+}
+#botonCrearDependenciaNodo img {
+  height: 25px;
+}
+.listaDependencias {
+  padding: 10px 0px;
+  padding-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dependencia {
+  display: flex;
+
+  align-items: center;
+  width: 100%;
+}
+
+.dependencia .nodoConocimientoVistaLista {
+  flex-grow: 1;
+  align-self: normal;
+}
+
+#anuncioCreandoDependencia {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-style: italic;
+  opacity: 0.9;
+  background-color: var(--atlasConocimientoBaseNodo);
+  border: 1px solid var(--atlasConocimientoSeleccion);
+}
+
+/* #endregion */
 
 /* #region zona seleccion fila */
 #zonaSelectorFilas {
