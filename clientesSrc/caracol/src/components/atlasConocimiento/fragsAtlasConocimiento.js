@@ -55,6 +55,14 @@ export const fragmentoNodoConocimiento = gql`
       idRef
       rol
       tipo
+      nodoContraparte{
+        id
+        nombre
+        autoCoords{
+          x
+          y
+        }
+      }
     }
     fuerzaCentroMasa {
       fuerza
@@ -65,6 +73,7 @@ export const fragmentoNodoConocimiento = gql`
       direccion
     }
   }
+
 `;
 
 export const QUERY_NODOS = gql`

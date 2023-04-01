@@ -6,7 +6,7 @@ export const cache=new InMemoryCache(
         typePolicies: {
             Query: {
               fields: {                
-                nodoConocimiento:{
+                nodo:{
                   read(_, {variables, toReference}){
                     if(!variables?.idNodo){
                         return false;

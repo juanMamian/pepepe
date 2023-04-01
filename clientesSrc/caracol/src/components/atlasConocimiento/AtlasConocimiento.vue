@@ -213,8 +213,24 @@
             style="position: absolute"
           />
 
-          <div
-            class="placeholderNodoConocimiento"
+          <nodo-conocimiento-atlas
+            v-for="(nodo, index) in nodosVisibles"
+            :key="nodo.id"
+            :idNodo="nodo.id"
+            :seleccionado="idNodoSeleccionado === nodo.id"
+            :yo="yo"
+            :idsNodosAprendidos="idsNodosAprendidos"
+            :idsNodosRepasar="idsNodosRepasar"
+            :idsNodosEstudiados="idsNodosEstudiados"
+            :idsNodosFrescos="idsNodosFrescos"
+            :idNodoTarget="idNodoTarget"
+            :style="[
+              {
+                top: nodo.coords.y - esquinasDiagrama.y1 + 'px',
+                left: nodo.coords.x - esquinasDiagrama.x1 + 'px',
+              },
+            ]"
+            @setNodoTarget="setNodoTarget"
             @dblclick="
               $router.push({
                 name: 'visorNodoConocimiento',
@@ -222,101 +238,15 @@
               })
             "
             @click.stop="clickNodo(nodo)"
-            :style="[
-              {
-                top: nodo.coords.y - esquinasDiagrama.y1 + 'px',
-                left: nodo.coords.x - esquinasDiagrama.x1 + 'px',
-              },
-            ]"
-            v-for="nodo of nodosVisibles"
-            :key="'placeholderNodo' + nodo.id"
-            :class="{
-              // fantasmeado:
-              //   idNodoSeleccionado &&
-              //   nivelesConexion &&
-              //   !idsRedSeleccion.includes(nodo.id),
-              seleccionado: idNodoSeleccionado === nodo.id,
-              aprendido: idsNodosAprendidos.includes(nodo.id),
-              estudiado: idsNodosEstudiados.includes(nodo.id),
-              fresco: idsNodosFrescos.includes(nodo.id),
-              aprendible:
-                idsNodosEstudiables.includes(nodo.id) ||
-                !nodo.vinculos.some(
-                  (v) => v.tipo === 'continuacion' && v.rol === 'target'
-                ),
-              repasar: idsNodosRepasar.includes(nodo.id),
-            }"
-          >
-            <div
-              class="boton"
-              id="botonRastrear"
-              v-show="idNodoSeleccionado === nodo.id || idNodoTarget == nodo.id"
-            >
-              <img
-                src="@/assets/iconos/crosshairsSolid.svg"
-                alt="Rastrear"
-                :style="[
-                  {
-                    filter:
-                      idNodoTarget === nodo.id
-                        ? 'var(--filtroAtlasSeleccion)'
-                        : 'none',
-                  },
-                ]"
-                @click.stop="
-                  setNodoTarget(idNodoTarget === nodo.id ? null : nodo.id)
-                "
-              />
-            </div>
-            <div class="bolita">
-              <img
-                v-if="nodo.tipoNodo === 'concepto'"
-                src="@/assets/iconos/atlas/lightbulbEmpty.svg"
-                alt="Skill"
-              />
-              <img
-                v-else
-                src="@/assets/iconos/atlas/fireSolid.svg"
-                alt="Skill"
-              />
-            </div>
-
-            <div class="cajaTexto">
-              {{ nodo.nombre }}
-
-              <div
-                class="boton"
-                v-show="idNodoSeleccionado == nodo.id"
-                id="botonAbrir"
-              >
-                <img
-                  src="@/assets/iconos/expandSolid.svg"
-                  alt="Abrir"
-                  @click.stop="
-                    $router.push({
-                      name: 'visorNodoConocimiento',
-                      params: { idNodo: nodo.id },
-                    })
-                  "
-                />
-              </div>
-            </div>
-
-            <div
-              class="lineaVinculo"
-              v-for="vinculo of nodo.vinculos.filter((v) => v.estilo)"
-              :key="vinculo.id"
-              :style="[vinculo.estilo]"
-            >
-              <div class="laLinea"></div>
-            </div>
-          </div>
+          />
         </div>
         <div
           id="indicadorCentroNodosVisibles"
           :style="[estiloIndicadorCentroZonasVisibles]"
+          v-if="usuarioSuperadministrador"
         >
           {{ centroZonaNodosVisibles.x + " " + centroZonaNodosVisibles.y }}
+          {{ nodosVisibles.length }}
         </div>
       </div>
     </div>
@@ -405,6 +335,7 @@ import {
   QUERY_NODOS,
   fragmentoNodoConocimiento,
 } from "./fragsAtlasConocimiento";
+import NodoConocimientoAtlas from "./NodoConocimientoAtlas.vue";
 
 var idTimeoutNodosVisibles = null;
 var apuntadorChunkNodosVisibles = 0;
@@ -417,7 +348,8 @@ export default {
     EnlacesNodoConocimiento,
     PieProgreso,
     ControlesNodo,
-  },
+    NodoConocimientoAtlas
+},
   name: "AtlasConocimiento",
   apollo: {
     todosNodos: {
@@ -428,56 +360,6 @@ export default {
         nuevoTodosNodos.forEach((nodo) => {
           nodo.coordsManuales = nodo.autoCoords;
           nodo.coords = nodo.autoCoords;
-
-
-          nodo.vinculos = nodo.vinculos.map((vinculo) => {
-            if (vinculo.rol === "source") {
-              return {
-                ...vinculo,
-              };
-            }
-
-            let contraparte = nuevoTodosNodos.find(
-              (nodo) => nodo.id === vinculo.idRef
-            );
-            if (!contraparte) {
-              return {
-                ...vinculo,
-              };
-            }
-
-            let idNodoTo = vinculo.idRef;
-
-            let nodoFrom = nodo;
-            let nodoTo = nuevoTodosNodos.find((nodo) => nodo.id === idNodoTo);
-
-
-            let posFrom = nodoFrom.autoCoords;
-            let posTo = nodoTo.autoCoords;
-
-            //Calc angle in radians
-            let angle = Math.atan2(posTo.y - posFrom.y, posTo.x - posFrom.x);
-
-            //Calc distance
-            let distance = Math.sqrt(
-              Math.pow(posTo.y - posFrom.y, 2) + Math.pow(posTo.x - posFrom.x, 2)
-            );
-
-            let diametroBolitas = 100;
-            let largoLinea = distance;
-
-            let estilo = {
-              paddingLeft: Math.round(diametroBolitas / 2) + "px",
-              paddingRight: Math.round(diametroBolitas / 2) + "px",
-              width: Math.round(largoLinea) + "px",
-              transform: "rotate(" + angle + "rad)",
-            };
-
-            return {
-              ...vinculo,
-              estilo,
-            };
-          });
         });
 
         const idLastNodoTarget = localStorage.getItem(
@@ -492,6 +374,7 @@ export default {
         }
         return nuevoTodosNodos;
       },
+      fetchPolicy: "cache-and-network",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
@@ -1516,8 +1399,8 @@ export default {
       this.showingZoomInfo = false;
     }, 1000),
     setCentroZonaNodosVisibles: throttle(function(padded){
-      let nuevoCentroX=this.esquinasDiagrama.x1 + (this.$refs.contenedorDiagrama.scrollLeft / this.factorZoom) + (this.$refs.contenedorDiagrama.clientWidth/(2 * this.factorZoom));
-      let nuevoCentroY=this.esquinasDiagrama.y1 + (this.$refs.contenedorDiagrama.scrollTop / this.factorZoom) + (this.$refs.contenedorDiagrama.clientHeight/(2 * this.factorZoom));
+      let nuevoCentroX=Math.round(this.esquinasDiagrama.x1 + (this.$refs.contenedorDiagrama.scrollLeft / this.factorZoom) + (this.$refs.contenedorDiagrama.clientWidth/(2 * this.factorZoom)));
+      let nuevoCentroY=Math.round(this.esquinasDiagrama.y1 + (this.$refs.contenedorDiagrama.scrollTop / this.factorZoom) + (this.$refs.contenedorDiagrama.clientHeight/(2 * this.factorZoom)));
 
 
       if(padded && Math.abs(nuevoCentroX-this.centroZonaNodosVisibles.x)<(1 - this.paddingRefreshZonaVisible)*this.sizeZonaVisible.x && Math.abs(nuevoCentroY-this.centroZonaNodosVisibles.y)<(1 - this.paddingRefreshZonaVisible)*this.sizeZonaVisible.y){
@@ -1654,7 +1537,6 @@ export default {
 
 <style scoped>
 @import "./estilosGlobalesAtlasConocimiento.css";
-@import "./estiloPlaceholderNodoConocimiento.css";
 </style>
 
 <style>
