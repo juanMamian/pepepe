@@ -243,7 +243,7 @@
         <div
           id="indicadorCentroNodosVisibles"
           :style="[estiloIndicadorCentroZonasVisibles]"
-          v-if="usuarioSuperadministrador"
+          v-if="false && usuarioSuperadministrador"
         >
           {{ centroZonaNodosVisibles.x + " " + centroZonaNodosVisibles.y }}
           {{ nodosVisibles.length }}

@@ -22,7 +22,7 @@
     <div
       class="boton"
       id="botonRastrear"
-      v-show="idNodoSeleccionado === elNodo.id || idNodoTarget == elNodo.id"
+      v-show="seleccionado || idNodoTarget == elNodo.id"
     >
       <img
         src="@/assets/iconos/crosshairsSolid.svg"

@@ -34,7 +34,7 @@ export default {
     elNodo: {
       query: gql`
         query ($idNodo: ID!) {
-          nodoConocimiento(id: $idNodo) {
+          nodo(id: $idNodo) {
             id
             nombre
             tipoNodo
@@ -52,8 +52,8 @@ export default {
           idNodo: this.idNodo,
         };
       },
-      update({nodoConocimiento}) {
-        return nodoConocimiento;
+      update({nodo}) {
+        return nodo;
       },
       fetchPolicy: "cache-first",
     },
