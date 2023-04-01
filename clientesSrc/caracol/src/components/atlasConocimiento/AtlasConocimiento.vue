@@ -1,7 +1,6 @@
 <template>
   <div
     class="atlasConocimiento"
-    :style="{ overflowY: nodoAbierto ? 'scroll' : 'hidden' }"
     @mousedown.left.exact.stop="panningVista = true"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
@@ -193,9 +192,10 @@
 
     <div
       id="contenedorDiagrama"
-      v-show="!$apollo.queries.yo.loading"
       ref="contenedorDiagrama"
+      @scroll="setCentroZonaNodosVisibles(true)"
       @touchmove="touchMoveDiagrama"
+      @touchstart="touchStartDiagrama"
     >
       <div id="contenedorElementosDiagrama">
         <div
@@ -211,7 +211,6 @@
             texto=""
             v-show="posicionCreandoNodo"
             style="position: absolute"
-            :style="[offsetLoadingCreandoNodo]"
           />
 
           <div
@@ -229,17 +228,13 @@
                 left: nodo.coords.x - esquinasDiagrama.x1 + 'px',
               },
             ]"
-            v-for="nodo of nodosRender"
+            v-for="nodo of nodosVisibles"
             :key="'placeholderNodo' + nodo.id"
             :class="{
-              fantasmeado:
-                idNodoSeleccionado &&
-                nivelesConexion &&
-                !idsRedSeleccion.includes(nodo.id),
-              continuacionSeleccionado:
-                nivelesConexion > 0 && idsRedSeleccion.includes(nodo.id),
-              previoSeleccionado:
-                nivelesConexion < 0 && idsRedSeleccion.includes(nodo.id),
+              // fantasmeado:
+              //   idNodoSeleccionado &&
+              //   nivelesConexion &&
+              //   !idsRedSeleccion.includes(nodo.id),
               seleccionado: idNodoSeleccionado === nodo.id,
               aprendido: idsNodosAprendidos.includes(nodo.id),
               estudiado: idsNodosEstudiados.includes(nodo.id),
@@ -313,24 +308,20 @@
               :key="vinculo.id"
               :style="[vinculo.estilo]"
             >
-              <div
-                v-show="
-                  !idNodoSeleccionado ||
-                  !nivelesConexion ||
-                  (idsRedSeleccion.includes(nodo.id) &&
-                    idsRedSeleccion.includes(vinculo.idRef))
-                "
-                class="laLinea"
-              ></div>
+              <div class="laLinea"></div>
             </div>
           </div>
+        </div>
+        <div
+          id="indicadorCentroNodosVisibles"
+          :style="[estiloIndicadorCentroZonasVisibles]"
+        >
+          {{ centroZonaNodosVisibles.x + " " + centroZonaNodosVisibles.y }}
         </div>
       </div>
     </div>
     <transition name="fadeOut">
-      <div v-show="showingZoomInfo || true" id="infoZoom">
-        x{{ factorZoom }}
-      </div>
+      <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
     <div id="barraInferior" @click.stop="">
       <div
@@ -382,9 +373,8 @@
     <controles-nodo
       :yo="yo"
       ref="controlesNodo"
+      style="z-index: 20"
       :elNodo="nodoSeleccionado"
-      :nivelesConexionDeeper="nivelesConexionDeeper"
-      :nivelesConexionHigher="nivelesConexionHigher"
       :nodoCreandoDependencia="nodoCreandoDependencia"
       @setMeTarget="
         setNodoTarget(nodoSeleccionado.id);
@@ -397,12 +387,6 @@
       "
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
     />
-
-    <loading
-      id="simboloDescargandoNodos"
-      v-show="$apollo.queries.yo.loading"
-      texto="descargando nodos de conocimiento"
-    />
   </div>
 </template>
 
@@ -414,12 +398,16 @@ import PanelConjuntosNodos from "./PanelConjuntosNodos.vue";
 import EnlacesNodoConocimiento from "./EnlacesNodoConocimiento.vue";
 import PieProgreso from "../utilidades/PieProgreso.vue";
 import debounce from "debounce";
+import throttle from "lodash/throttle";
 import ControlesNodo from "./controlesNodo.vue";
 import {
   QUERY_DATOS_USUARIO_NODOS,
   QUERY_NODOS,
   fragmentoNodoConocimiento,
 } from "./fragsAtlasConocimiento";
+
+var idTimeoutNodosVisibles = null;
+var apuntadorChunkNodosVisibles = 0;
 
 export default {
   components: {
@@ -590,6 +578,7 @@ export default {
   },
   data() {
     return {
+      montado: false,
       firstLoad: true,
 
       configuracionAtlas: {
@@ -620,14 +609,23 @@ export default {
         },
       },
 
-      centroVistaDecimal: {
+      idsNodosVisibles: [],
+      nodosVisibles: [],
+      apuntadorDeFrontera: 0,
+      centroZonaNodosVisibles: {
         x: 218,
         y: 39,
       },
+      factorZonaVisible:1,
+      paddingRefreshZonaVisible: 0.5,
+      anchoScreen: 0,
+      altoScreen: 0,
+
+
       showingZoomInfo: false,
       zoom: 60,
       minZoom: 20,
-      maxZoom: 200,
+      maxZoom: 70,
       pinching: false,
       lastPinchDistance: 0,
       panningVista: false,
@@ -667,6 +665,22 @@ export default {
     };
   },
   computed: {
+    datosPlusDomReady(){
+      return this.montado && this.todosNodos.length > 0 && this.yo.atlas?.datosNodos;
+    },
+    estiloIndicadorCentroZonasVisibles(){
+      return {
+        left: (this.centroZonaNodosVisibles.x - this.esquinasDiagrama.x1)*this.factorZoom + "px",
+        top: (this.centroZonaNodosVisibles.y - this.esquinasDiagrama.y1)*this.factorZoom + "px",
+      }
+    },
+    sizeZonaVisible(){
+      //Un cinturón alrededor del centro que marca una región de nodos visibles. x y Y marcan el ancho del cinturón. No de la zona.
+      return{
+        x: (this.anchoScreen / this.factorZoom) * this.factorZonaVisible,
+        y: (this.altoScreen / this.factorZoom) * this.factorZonaVisible,
+      }
+    },
     nombreColeccionSeleccionada() {
       if (!this.idColeccionSeleccionada) {
         return "Atlas";
@@ -855,27 +869,6 @@ export default {
     idsNodosRender() {
       return this.nodosRender.map((n) => n.id);
     },
-    idsTodosNodosRender() {
-      return this.nodosRender.map((n) => n.id);
-    },
-    offsetLoadingCreandoNodo() {
-      if (!this.posicionCreandoNodo) {
-        return null;
-      }
-      const left =
-        (this.posicionCreandoNodo.x - this.esquinasDiagrama.x1) *
-        this.factorZoom;
-      const top =
-        (this.posicionCreandoNodo.y - this.esquinasDiagrama.y1) *
-        this.factorZoom;
-      return {
-        left: left + "px",
-        top: top + "px",
-      };
-    },
-    nodoAbierto() {
-      return this.$route.name === "visorNodoConocimiento";
-    },
     idTarget() {
       return this.idNodoTarget || this.idColeccionSeleccionada;
     },
@@ -917,61 +910,19 @@ export default {
 
       return this.idsNodosConectadosSeleccionadoLabelled.flat();
     },
-    nivelesConexionDeeper() {
-      if (!this.nodoSeleccionado) {
-        return false;
-      }
-      if (this.nivelesConexion > 0) {
-        return true;
-      }
-
-      let lastNivel = [];
-      if (this.idsNodosConectadosSeleccionadoLabelled.length > 0) {
-        lastNivel =
-          this.idsNodosConectadosSeleccionadoLabelled[
-          this.idsNodosConectadosSeleccionadoLabelled.length - 1
-          ];
-      }
-      let vinculosSiguienteNivel = this.todosNodos
-        .filter((n) => lastNivel.includes(n.id))
-        .map((n) =>
-          n.vinculos.filter(
-            (v) => v.tipo === "continuacion" && v.rol === "target"
-          )
-        )
-        .flat();
-
-      return vinculosSiguienteNivel.length > 0;
-    },
-    nivelesConexionHigher() {
-      if (!this.nodoSeleccionado) {
-        return false;
-      }
-      if (this.nivelesConexion < 0) {
-        return true;
-      }
-
-      let lastNivel = [];
-      if (this.idsNodosConectadosSeleccionadoLabelled.length > 0) {
-        lastNivel =
-          this.idsNodosConectadosSeleccionadoLabelled[
-          this.idsNodosConectadosSeleccionadoLabelled.length - 1
-          ];
-      }
-
-      let vinculosSiguienteNivel = this.todosNodos
-        .filter((n) => lastNivel.includes(n.id))
-        .map((n) =>
-          n.vinculos.filter(
-            (v) => v.tipo === "continuacion" && v.rol === "source"
-          )
-        )
-        .flat();
-
-      return vinculosSiguienteNivel.length > 0;
-    },
   },
   methods: {
+    touchStartDiagrama(e){
+      if(e.touches.length===2){
+        e.stopPropagation();
+        e.preventDefault();
+
+        // get distance between fingers
+        let distance=Math.sqrt(Math.pow(e.touches[0].clientX-e.touches[1].clientX,2)+Math.pow(e.touches[0].clientY-e.touches[1].clientY,2));
+
+        this.lastPinchingDistance=distance;
+      }
+    },
     touchMoveDiagrama(e){
       if(e.touches.length===2){
         e.stopPropagation();
@@ -998,7 +949,8 @@ export default {
         //set to 1 if postive, -1 if negative
         if(zoomChange!=0){
           zoomChange=zoomChange/Math.abs(zoomChange);
-          this.zoomVista(zoomChange,zoomPosPx );
+
+          throttle(this.zoomVista(zoomChange,zoomPosPx ),1000);
         }
 
         this.lastPinchingDistance=distance;
@@ -1014,6 +966,8 @@ export default {
         this.$refs.controlesNodo.crearDependenciaNodo(nodo);
         return;
       }
+
+
       this.idNodoSeleccionado=nodo.id;
     },
     iniciarCrearDependenciaNodo(nodo){
@@ -1510,7 +1464,7 @@ export default {
         y: posicionPx.y + this.$refs.contenedorDiagrama.scrollTop,
       };
 
-      let step = 5 * cantidad;
+      let step = 20 * cantidad;
       let nuevoZoom = this.zoom + step;
       if (nuevoZoom < this.minZoom) {
         nuevoZoom = this.minZoom;
@@ -1561,6 +1515,65 @@ export default {
     hideZoomInfo: debounce(function () {
       this.showingZoomInfo = false;
     }, 1000),
+    setCentroZonaNodosVisibles: throttle(function(padded){
+      let nuevoCentroX=this.esquinasDiagrama.x1 + (this.$refs.contenedorDiagrama.scrollLeft / this.factorZoom) + (this.$refs.contenedorDiagrama.clientWidth/(2 * this.factorZoom));
+      let nuevoCentroY=this.esquinasDiagrama.y1 + (this.$refs.contenedorDiagrama.scrollTop / this.factorZoom) + (this.$refs.contenedorDiagrama.clientHeight/(2 * this.factorZoom));
+
+
+      if(padded && Math.abs(nuevoCentroX-this.centroZonaNodosVisibles.x)<(1 - this.paddingRefreshZonaVisible)*this.sizeZonaVisible.x && Math.abs(nuevoCentroY-this.centroZonaNodosVisibles.y)<(1 - this.paddingRefreshZonaVisible)*this.sizeZonaVisible.y){
+        return;
+      }
+
+      this.centroZonaNodosVisibles = {
+        x: nuevoCentroX,
+        y: nuevoCentroY,
+      }
+    }, 1000),
+    iniciarCalculoNodosVisibles(){
+      clearTimeout(idTimeoutNodosVisibles);
+
+      //Todos los nodos visibles actuales desaparecen
+      apuntadorChunkNodosVisibles=0;
+      this.$nextTick(()=>{
+        this.apuntadorDeFrontera=this.nodosVisibles.length - 1; // Indica el ultimo nodo no confiable en el array de nodos visibles
+        this.introducirChunkNodosVisibles()
+      })
+    },
+    introducirChunkNodosVisibles(){
+      let chunkSize=20;
+
+      for(let i=apuntadorChunkNodosVisibles; i<apuntadorChunkNodosVisibles+chunkSize; i++){
+        if(i>=this.todosNodos.length){
+          break;
+        }
+        let posNodo = this.todosNodos[i].autoCoords;
+        let limiteIzquierdo=this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen/this.factorZoom);
+        let limiteDerecho=this.centroZonaNodosVisibles.x + (this.factorZonaVisible * this.anchoScreen/this.factorZoom);
+        let limiteSuperior=this.centroZonaNodosVisibles.y - (this.factorZonaVisible * this.altoScreen/this.factorZoom);
+        let limiteInferior=this.centroZonaNodosVisibles.y + (this.factorZonaVisible * this.altoScreen/this.factorZoom);
+
+        if(posNodo.x>limiteIzquierdo && posNodo.x<limiteDerecho && posNodo.y>limiteSuperior && posNodo.y<limiteInferior){
+          this.nodosVisibles.push(this.todosNodos[i]);
+          this.idsNodosVisibles.push(this.todosNodos[i].id);
+        }
+      }
+
+      apuntadorChunkNodosVisibles+=chunkSize;
+
+      if(apuntadorChunkNodosVisibles<this.todosNodos.length){
+        this.$nextTick(()=>{
+          idTimeoutNodosVisibles=setTimeout(()=>{
+              this.introducirChunkNodosVisibles();
+          }, 100)
+        })
+      }
+      else{
+        // Fin de la introducción de nodos visibles. Ahora retirar los que no deberían ser visibles.
+        this.$nextTick(()=>{
+          this.nodosVisibles.splice(0, this.apuntadorDeFrontera + 1);
+        })
+      }
+    },
 
   },
   watch: {
@@ -1594,18 +1607,47 @@ export default {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
     },
+    centroZonaNodosVisibles(){
+
+      this.iniciarCalculoNodosVisibles();
+    },
+    datosPlusDomReady:{
+      handler: function(ready){
+        if(ready){
+          this.$refs.contenedorDiagrama.scrollLeft = this.$refs.contenedorDiagrama.scrollWidth/2 - this.$refs.contenedorDiagrama.clientWidth/2;
+          this.$refs.contenedorDiagrama.scrollTop = this.$refs.contenedorDiagrama.scrollHeight/2 - this.$refs.contenedorDiagrama.clientHeight/2;
+          this.$nextTick(()=>{
+            this.setCentroZonaNodosVisibles();
+          })
+        }
+      },
+    }
 
   },
   mounted() {
+    this.anchoScreen = screen.width;
+    this.altoScreen = screen.height;
     if (screen.width < 600) {
       this.zoom = 40;
     }
+    this.montado=true;
   },
   created() {
     window.addEventListener("wheel", this.zoomWheel, { passive: false });
+    // watch for resize
+    window.addEventListener("resize", function(){
+      this.anchoScreen = screen.width;
+      this.altoScreen = screen.height;
+    });
+
   },
   removed() {
     window.removeEventListener("wheel", this.zoomWheel);
+
+    window.removeEventListener("resize", function(){
+      this.anchoScreen = screen.width;
+      this.altoScreen = screen.height;
+    });
   },
 };
 </script>
@@ -1793,23 +1835,13 @@ export default {
   z-index: 0;
 }
 
-#contenedorVinculosNodos {
-  position: absolute;
-  top: 50px;
-  left: 50px;
-  user-select: none;
-
-  pointer-events: none;
-}
-
 #contenedorNodos {
   position: absolute;
   top: 0px;
   left: 0px;
   transform-origin: left top;
   user-select: none;
-  width: 100%;
-  height: 100%;
+
   z-index: 0;
 }
 
@@ -1896,7 +1928,9 @@ export default {
   opacity: 1;
 }
 
-#centroVista {
+/* Windowing */
+
+#indicadorCentroNodosVisibles {
   position: absolute;
   width: 10px;
   height: 10px;

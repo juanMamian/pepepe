@@ -13,34 +13,7 @@
 
       <div class="subanuncio"></div>
     </div>
-    <div id="centerSignaler" v-show="elNodo"></div>
-    <div
-      id="zonaControlVerConexiones"
-      @click.stop="mostrandoFlechasConexiones = true"
-      v-show="elNodo"
-    >
-      <div id="signaler" :style="[posSignaler]"></div>
-
-      <div id="bloqueFlechasConexiones" v-show="mostrandoFlechasConexiones">
-        <div
-          class="boton botonConexiones"
-          @click.stop="nivelesConexion--"
-          :class="{ deshabilitado: !nivelesConexionDeeper }"
-        >
-          <img src="@/assets/iconos/chevron.svg" alt="Arrow" />
-        </div>
-
-        <div id="indicadorNiveles">{{ Math.abs(nivelesConexion) }}</div>
-        <div
-          class="boton botonConexiones"
-          @click.stop="nivelesConexion++"
-          style="transform: rotate(180deg)"
-          :class="{ deshabilitado: !nivelesConexionHigher }"
-        >
-          <img src="@/assets/iconos/chevron.svg" alt="Arrow" />
-        </div>
-      </div>
-    </div>
+   
 
     <div id="nombre" ref="nombre" @click="toggleDespliege">
       <img
@@ -830,7 +803,7 @@ export default {
 #botonCrearDependenciaNodo img {
   height: 25px;
 }
-.listaDependencias {
+#listaDependencias {
   padding: 10px 0px;
   padding-bottom: 20px;
   display: flex;
@@ -919,7 +892,7 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 30px;
-  z-index: 0;
+  z-index: 1;
 }
 
 #signaler {
