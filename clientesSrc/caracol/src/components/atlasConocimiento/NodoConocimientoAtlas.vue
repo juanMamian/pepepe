@@ -54,7 +54,7 @@
 
       <div
         class="boton"
-        v-show="idNodoSeleccionado == elNodo.id"
+        v-show="seleccionado"
         id="botonAbrir"
       >
         <img
@@ -327,6 +327,9 @@ export default {
 /* #endregion */
 
 /* #region seleccionado */
+.nodoConocimientoAtlas.seleccionado{
+    z-index: 1;
+}
 .nodoConocimientoAtlas.seleccionado .bolita {
   border: 3px solid var(--atlasConocimientoSeleccion);
 }

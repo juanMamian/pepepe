@@ -222,6 +222,7 @@
             :idsNodosAprendidos="idsNodosAprendidos"
             :idsNodosRepasar="idsNodosRepasar"
             :idsNodosEstudiados="idsNodosEstudiados"
+            :idsNodosEstudiables="idsNodosEstudiables"
             :idsNodosFrescos="idsNodosFrescos"
             :idNodoTarget="idNodoTarget"
             :style="[

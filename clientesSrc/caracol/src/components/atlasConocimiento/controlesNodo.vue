@@ -13,7 +13,6 @@
 
       <div class="subanuncio"></div>
     </div>
-   
 
     <div id="nombre" ref="nombre" @click="toggleDespliege">
       <img
@@ -110,7 +109,10 @@
         >
           <div
             class="botonTexto selector botonControl"
-            :class="{ activo: mostrando === 'dependenciasNodo' }"
+            :class="{
+              activo: mostrando === 'dependenciasNodo',
+              deshabilitado: dependenciasNodo.length === 0,
+            }"
             @click="
               mostrando =
                 mostrando === 'dependenciasNodo' ? null : 'dependenciasNodo'
@@ -144,9 +146,7 @@
           <div id="listaDependencias" v-if="elNodo && elNodo.vinculos">
             <div
               class="dependencia"
-              v-for="vinculo of elNodo.vinculos.filter(
-                (v) => v.tipo == 'continuacion' && v.rol === 'target'
-              )"
+              v-for="vinculo of dependenciasNodo"
               :key="vinculo.id"
             >
               <NodoConocimientoVistaLista :idNodo="vinculo.idRef" :yo="yo" />
@@ -162,6 +162,12 @@
                   alt="Eliminar"
                 />
               </div>
+            </div>
+            <div
+              class="anuncioZonaVacia"
+              v-show="dependenciasNodo.length === 0"
+            >
+              Este nodo no tiene dependencias
             </div>
           </div>
         </div>
@@ -281,6 +287,13 @@ export default {
         };
     },
     computed: {
+        dependenciasNodo(){
+            if(!this.elNodo){
+                return [];
+            }
+            return this.elNodo.vinculos.filter(v => v.tipo == 'continuacion' && v.rol === 'target');
+
+        },
         usuarioExpertoNodo(){
           if(!this.elNodo || !this.yo){
             return false;
@@ -808,7 +821,7 @@ export default {
   padding-bottom: 20px;
   display: flex;
   flex-direction: column;
-  max-height: 60vh;
+  max-height: 40vh;
   overflow-y: scroll;
   gap: 10px;
 }
