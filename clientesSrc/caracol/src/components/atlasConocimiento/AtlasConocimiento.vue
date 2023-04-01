@@ -102,7 +102,7 @@
         <div
           class="selectorColeccion"
           @click.stop="setIdColeccionSeleccionada(coleccion.id)"
-          v-for="coleccion of coleccionesUsuario.filter(
+          v-for="coleccion of coleccionesEnriquecidas.filter(
             (col) => idColeccionSeleccionada != col.id
           )"
           :key="coleccion.id"
@@ -549,7 +549,33 @@ export default {
     };
   },
   computed: {
+    coleccionesEnriquecidas(){
+      if(!this.yo.atlas?.colecciones) return [];
+
+      return this.yo.atlas.colecciones.map((col) => {
+        //Get first nodes and go level by level finding dependencies.
+       let idsNodosActuales=col.idsNodos;
+
+        let idsCompletos=[...idsNodosActuales];
+        let guarda = 0;
+
+        while(idsNodosActuales.length>0 && guarda < 100){
+          guarda++;
+          let nodosActuales = this.todosNodos.filter((nodo) => idsNodosActuales.includes(nodo.id));
+          let idsSiguientes=nodosActuales.map((nodo) => nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol == 'target').map((vinculo) => vinculo.idRef)).flat();
+          idsCompletos.push(...idsSiguientes);
+          idsNodosActuales=idsSiguientes;
+
+        }
+
+        return {
+          ...col,
+          idsRedNodos: idsCompletos,
+        }
+      })
+    },
     datosPlusDomReady(){
+
       return this.montado && this.todosNodos.length > 0 && this.yo.atlas?.datosNodos;
     },
     estiloIndicadorCentroZonasVisibles(){
@@ -576,16 +602,9 @@ export default {
       if (!this.idColeccionSeleccionada) {
         return null;
       }
-      return this.coleccionesUsuario.find(
+      return this.coleccionesEnriquecidas.find(
         (col) => col.id === this.idColeccionSeleccionada
       );
-    },
-    coleccionesUsuario() {
-      if (!this.yo?.atlas?.colecciones) {
-        return [];
-      }
-
-      return this.yo.atlas.colecciones;
     },
     nodoSeleccionado: function () {
       if (!this.idNodoSeleccionado) {
@@ -596,6 +615,17 @@ export default {
     nodoTarget() {
       if (!this.idNodoTarget) return null;
       return this.todosNodos.find((n) => n.id === this.idNodoTarget);
+    },
+    
+    idsNodosActivosVista(){
+      if(this.nodoTarget){
+        return this.idsRedUnderNodo(this.nodoTarget);
+      }
+
+      if(this.coleccionSeleccionada){
+        return this.coleccionSeleccionada.idsRedNodos;
+      }
+      return []
     },
     idsNodosEstudiables() {
       if (!this.yo?.atlas?.datosNodos) return [];
@@ -796,6 +826,18 @@ export default {
     },
   },
   methods: {
+    idsRedUnderNodo(nodo){
+      let guarda=0;
+      let idsNodosActuales=[nodo.id];
+      let idsCompletos=[...idsNodosActuales];
+      while(guarda<100 && idsNodosActuales.length>0){
+        guarda++;
+        let nodosActuales = this.todosNodos.filter((nodo) => idsNodosActuales.includes(nodo.id));
+        let idsSiguientes=nodosActuales.map((nodo) => nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol == 'target').map((vinculo) => vinculo.idRef)).flat();
+        idsNodosActuales=idsSiguientes; idsCompletos.push(...idsSiguientes);
+      }
+      return idsCompletos;
+    },
     touchStartDiagrama(e){
       if(e.touches.length===2){
         e.stopPropagation();
@@ -1050,26 +1092,7 @@ export default {
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
 
       this.crearNodo(posicionNuevoNodo);
-    },
-    encontrarNodosNecesariosDeNodo(idNodo, listaTotal) {
-      const elNodo = this.todosNodos.find((n) => n.id == idNodo);
-      if (!elNodo) {
-        return listaTotal;
-      }
-      const necesarios = elNodo.vinculos
-        .filter((v) => v.rol == "target")
-        .map((v) => v.idRef);
-      necesarios.forEach((necesario) => {
-        if (!listaTotal.includes(necesario)) {
-          listaTotal.push(necesario);
-          listaTotal = this.encontrarNodosNecesariosDeNodo(
-            necesario,
-            listaTotal
-          );
-        }
-      });
-      return listaTotal;
-    },
+    },    
     setNodoTargetCache(idNodo) {
       console.log(`Seting en cache al nodo ${idNodo} como target`);
       const store = this.$apollo.provider.defaultClient;
@@ -1416,7 +1439,6 @@ export default {
     iniciarCalculoNodosVisibles(){
       clearTimeout(idTimeoutNodosVisibles);
 
-      //Todos los nodos visibles actuales desaparecen
       apuntadorChunkNodosVisibles=0;
       this.$nextTick(()=>{
         this.apuntadorDeFrontera=this.nodosVisibles.length - 1; // Indica el ultimo nodo no confiable en el array de nodos visibles
@@ -1430,6 +1452,12 @@ export default {
         if(i>=this.todosNodos.length){
           break;
         }
+        let esteNodo=this.todosNodos.find(n=>n.id==this.todosNodos[i].id);
+       if(this.nodoTarget || this.coleccionSeleccionada){
+        if(!this.idsNodosActivosVista.includes(esteNodo.id)){
+          continue;
+        }
+       }
         let posNodo = this.todosNodos[i].autoCoords;
         let limiteIzquierdo=this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen/this.factorZoom);
         let limiteDerecho=this.centroZonaNodosVisibles.x + (this.factorZonaVisible * this.anchoScreen/this.factorZoom);
@@ -1471,6 +1499,10 @@ export default {
       if (idColeccion) {
         console.log("Setting lastTarget");
       }
+
+    },
+    coleccionSeleccionada(){
+      this.iniciarCalculoNodosVisibles();
     },
     seleccionandoColeccion() {
       this.mostrandoOpcionesColeccion = false;
@@ -1478,14 +1510,10 @@ export default {
     idNodoTarget(idNodoTarget) {
       localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
 
-      if (!idNodoTarget) {
-        this.idsNecesariosParaTarget = [];
-        return;
-      }
-      this.idsNecesariosParaTarget = this.encontrarNodosNecesariosDeNodo(
-        idNodoTarget,
-        []
-      );
+     
+    },
+    nodoTarget(){
+      this.iniciarCalculoNodosVisibles();
     },
     zoom() {
       this.showingZoomInfo = true;
@@ -1505,7 +1533,8 @@ export default {
           })
         }
       },
-    }
+    },
+
 
   },
   mounted() {

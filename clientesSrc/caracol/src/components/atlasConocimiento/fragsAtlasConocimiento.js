@@ -30,7 +30,7 @@ export const fragmentoNodoConocimiento = gql`
     descripcion
     expertos
     tipoNodo
-    nivel    
+    nivel   
     coordsManuales {
       x
       y
