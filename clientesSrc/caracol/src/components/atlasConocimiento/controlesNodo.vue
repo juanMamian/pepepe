@@ -1,5 +1,10 @@
 <template>
-  <div class="controlesNodo" :style="estiloPos" @click="clickFuera">
+  <div
+    class="controlesNodo"
+    :style="estiloPos"
+    @click="clickFuera"
+    :class="{ deshabilitado: eliminandose }"
+  >
     <div id="anuncioCreandoDependencia" v-show="nodoCreandoDependencia">
       <div class="anuncio">
         <img
@@ -133,7 +138,12 @@
         </div>
 
         <div class="bloqueControl" v-if="usuarioSuperadministrador">
-          <div class="boton botonControl" @click="eliminarNodo">
+          <Loading v-show="eliminandose" />
+          <div
+            class="boton botonControl"
+            v-show="!eliminandose"
+            @click="eliminarNodo"
+          >
             <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
           </div>
         </div>
@@ -229,7 +239,7 @@
 </template>
 <script lang="js">
 import { gql } from '@apollo/client/core';
-import { QUERY_DATOS_USUARIO_NODOS } from './fragsAtlasConocimiento';
+import { QUERY_DATOS_USUARIO_NODOS, QUERY_NODOS } from './fragsAtlasConocimiento';
 import { fragmentoDatoNodoConocimiento } from './fragsAtlasConocimiento';
 import PieProgreso from '../utilidades/PieProgreso.vue';
 import NodoConocimientoVistaLista from './NodoConocimientoVistaLista.vue';
@@ -237,193 +247,246 @@ import Loading from '../utilidades/Loading.vue';
 
 export default {
 
-    props: {
-        elNodo: {
-            type: Object,
-        },
-        nivelesConexionDeeper: {
-            type: Boolean,
-            default: false,
-        },
-        nivelesConexionHigher: {
-            type: Boolean,
-            default: false,
-        },
-        yo: {
-            type: Object,
-            required: true,
-        },
-        nodoCreandoDependencia: {
-            type: Object,
-        },
+  props: {
+    elNodo: {
+      type: Object,
     },
-    components: {
+    nivelesConexionDeeper: {
+      type: Boolean,
+      default: false,
+    },
+    nivelesConexionHigher: {
+      type: Boolean,
+      default: false,
+    },
+    yo: {
+      type: Object,
+      required: true,
+    },
+    nodoCreandoDependencia: {
+      type: Object,
+    },
+  },
+  components: {
     Loading,
     PieProgreso,
     NodoConocimientoVistaLista,
-},
-    name: "ControlesNodo",
-    data() {
-        return {
-            mostrandoFlechasConexiones: false,
-            desplegado: false,
+  },
+  name: "ControlesNodo",
+  data() {
+    return {
+      eliminandose: false,
+      mostrandoFlechasConexiones: false,
+      desplegado: false,
 
-            filaMostrada: 1,
-            mostrando: "",
+      filaMostrada: 1,
+      mostrando: "",
 
-            montado: false,
-            heightNombre: 0,
-            heigthAll: 0,
-            settingDateEstudiado: false,
+      montado: false,
+      heightNombre: 0,
+      heigthAll: 0,
+      settingDateEstudiado: false,
 
-            diasRepaso: 0,
-            guardandoDiasRepaso: false,
-            settingEstadoAprendido: false,
+      diasRepaso: 0,
+      guardandoDiasRepaso: false,
+      settingEstadoAprendido: false,
 
-            nivelesConexion: 0,
+      nivelesConexion: 0,
 
-            idVinculoEliminando:null,
-            creandoDependencia:false,
-        };
+      idVinculoEliminando: null,
+      creandoDependencia: false,
+    };
+  },
+  computed: {
+    dependenciasNodo() {
+      if (!this.elNodo) {
+        return [];
+      }
+      return this.elNodo.vinculos.filter(v => v.tipo == 'continuacion' && v.rol === 'target');
+
     },
-    computed: {
-        dependenciasNodo(){
-            if(!this.elNodo){
-                return [];
-            }
-            return this.elNodo.vinculos.filter(v => v.tipo == 'continuacion' && v.rol === 'target');
+    usuarioExpertoNodo() {
+      if (!this.elNodo || !this.yo) {
+        return false;
+      }
 
-        },
-        usuarioExpertoNodo(){
-          if(!this.elNodo || !this.yo){
-            return false;
-          }
-
-          return this.elNodo.expertos?.includes(this.yo.id);
-        },
-        estiloPos() {
-            let translation = 0;
-            if (this.elNodo) {
-                translation = this.heightNombre;
-            }
-            if (this.desplegado) {
-                translation = this.heigthAll;
-            }
-            let estilo = {
-                transform: `translate(-50%, -${translation}px)`,
-            };
-            return estilo;
-        },
-        posSignaler() {
-
-
-            let step = 0;
-            if (this.nivelesConexion != 0) {
-                step = 30;
-            }
-
-            if (this.nivelesConexion < 0) {
-                step = -step;
-            }
-
-            return {
-                transform: `translateX(calc(-50% + ${step}px))`,
-            }
-        },
-        datoUsuarioEsteNodo() {
-            if (!this.elNodo || !this.yo?.atlas?.datosNodos) {
-                return null;
-            }
-
-            return this.yo.atlas.datosNodos.find(dato => dato.idNodo === this.elNodo.id);
-        },
-        nodoEstudiado(){
-            if (!this.elNodo) {
-                return false;
-            }
-            if (!this.datoUsuarioEsteNodo) {
-                return false;
-            }
-            return this.datoUsuarioEsteNodo.estudiado;
-        },
-        nodoAprendido() {
-            if (!this.elNodo) {
-                return false;
-            }
-            if (!this.datoUsuarioEsteNodo) {
-                return false;
-            }
-            return this.datoUsuarioEsteNodo.aprendido;
-        },
-        nodoFresco(){
-            if (!this.elNodo) {
-                return false;
-            }
-            if (!this.datoUsuarioEsteNodo?.estudiado || !this.datoUsuarioEsteNodo?.diasRepaso) {
-                return false;
-            }
-
-            if(this.nodoAprendido){
-                return true;
-            }
-
-            let tiempoLimite= (new Date(this.datoUsuarioEsteNodo.estudiado)).getTime() + (this.datoUsuarioEsteNodo.diasRepaso * 86400000);
-
-
-            return Date.now()<tiempoLimite;
-        },
-        nodoRepasar(){
-            return this.nodoEstudiado && !this.nodoFresco && !this.nodoAprendido;
-        },
-
-        porcentajeRepaso() {
-            if (!this.datoUsuarioEsteNodo?.estudiado) {
-                return null;
-            }
-            if (!this.datoUsuarioEsteNodo.diasRepaso) {
-                return null;
-            }
-
-            if (this.nodoAprendido) {
-                return null;
-            }
-            let tiempoTranscurrido = Date.now() - (new Date(this.datoUsuarioEsteNodo.estudiado)).getTime();
-
-            //To day
-            let porcentajeTranscurrido = tiempoTranscurrido / ((this.datoUsuarioEsteNodo.diasRepaso * 86400000) / 100);
-            if (porcentajeTranscurrido > 100) {
-                porcentajeTranscurrido = 100;
-            }
-            if (porcentajeTranscurrido < 0) {
-
-                porcentajeTranscurrido = 0;
-            }
-
-            return 100 - porcentajeTranscurrido;
-        },
-        usuarioExperto() {
-            if (!this.usuario?.id) {
-                return false;
-            }
-            if (!this.elNodo?.expertos) {
-                return false;
-            }
-
-            return this.elNodo.expertos.includes(this.usuario.id);
-        }
+      return this.elNodo.expertos?.includes(this.yo.id);
     },
-    methods: {
-        crearDependenciaNodo(nodoSource){
-        if(!nodoSource || !this.elNodo){
-          return;
-        }
-        let nodoTarget=this.elNodo;
+    estiloPos() {
+      let translation = 0;
+      if (this.elNodo) {
+        translation = this.heightNombre;
+      }
+      if (this.desplegado) {
+        translation = this.heigthAll;
+      }
+      let estilo = {
+        transform: `translate(-50%, -${translation}px)`,
+      };
+      return estilo;
+    },
+    posSignaler() {
 
-        console.log(`Mutando que ${nodoSource.nombre} es dependencia de ${nodoTarget.nombre}`);
 
-        this.creandoDependencia=true;
-        this.$apollo.mutate({
+      let step = 0;
+      if (this.nivelesConexion != 0) {
+        step = 30;
+      }
+
+      if (this.nivelesConexion < 0) {
+        step = -step;
+      }
+
+      return {
+        transform: `translateX(calc(-50% + ${step}px))`,
+      }
+    },
+    datoUsuarioEsteNodo() {
+      if (!this.elNodo || !this.yo?.atlas?.datosNodos) {
+        return null;
+      }
+
+      return this.yo.atlas.datosNodos.find(dato => dato.idNodo === this.elNodo.id);
+    },
+    nodoEstudiado() {
+      if (!this.elNodo) {
+        return false;
+      }
+      if (!this.datoUsuarioEsteNodo) {
+        return false;
+      }
+      return this.datoUsuarioEsteNodo.estudiado;
+    },
+    nodoAprendido() {
+      if (!this.elNodo) {
+        return false;
+      }
+      if (!this.datoUsuarioEsteNodo) {
+        return false;
+      }
+      return this.datoUsuarioEsteNodo.aprendido;
+    },
+    nodoFresco() {
+      if (!this.elNodo) {
+        return false;
+      }
+      if (!this.datoUsuarioEsteNodo?.estudiado || !this.datoUsuarioEsteNodo?.diasRepaso) {
+        return false;
+      }
+
+      if (this.nodoAprendido) {
+        return true;
+      }
+
+      let tiempoLimite = (new Date(this.datoUsuarioEsteNodo.estudiado)).getTime() + (this.datoUsuarioEsteNodo.diasRepaso * 86400000);
+
+
+      return Date.now() < tiempoLimite;
+    },
+    nodoRepasar() {
+      return this.nodoEstudiado && !this.nodoFresco && !this.nodoAprendido;
+    },
+
+    porcentajeRepaso() {
+      if (!this.datoUsuarioEsteNodo?.estudiado) {
+        return null;
+      }
+      if (!this.datoUsuarioEsteNodo.diasRepaso) {
+        return null;
+      }
+
+      if (this.nodoAprendido) {
+        return null;
+      }
+      let tiempoTranscurrido = Date.now() - (new Date(this.datoUsuarioEsteNodo.estudiado)).getTime();
+
+      //To day
+      let porcentajeTranscurrido = tiempoTranscurrido / ((this.datoUsuarioEsteNodo.diasRepaso * 86400000) / 100);
+      if (porcentajeTranscurrido > 100) {
+        porcentajeTranscurrido = 100;
+      }
+      if (porcentajeTranscurrido < 0) {
+
+        porcentajeTranscurrido = 0;
+      }
+
+      return 100 - porcentajeTranscurrido;
+    },
+    usuarioExperto() {
+      if (!this.usuario?.id) {
+        return false;
+      }
+      if (!this.elNodo?.expertos) {
+        return false;
+      }
+
+      return this.elNodo.expertos.includes(this.usuario.id);
+    }
+  },
+  methods: {
+    eliminarNodo() {
+      if (!this.usuarioSuperadministrador) {
+        console.log(`No autorizado`);
+        return;
+      }
+      if (!confirm("¿Seguro de que quieres eliminar este nodo?")) return;
+      let idNodo = this.elNodo.id;
+      this.eliminandose = true;
+      console.log(`enviando mutacion de eliminar nodo`);
+      this.$apollo
+        .mutate({
           mutation: gql`
+            mutation ($idNodo: ID!) {
+              eliminarNodo(idNodo: $idNodo)
+            }
+          `,
+          variables: {
+            idNodo,
+          },
+        })
+        .then(({ data: { eliminarNodo } }) => {
+          this.eliminandose = false;
+          if (!eliminarNodo) {
+            console.log(`Nodo no fue eliminado`);
+            return;
+          }
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: QUERY_NODOS,
+          });
+          var nuevoCache = JSON.parse(JSON.stringify(cache));
+          const indexN = nuevoCache.todosNodos.findIndex(
+            (n) => n.id == idNodo
+          );
+
+          if (indexN === -1) {
+            console.log(`el nodo no estaba presente`);
+            return;
+          }
+            nuevoCache.todosNodos.splice(indexN, 1);
+            store.writeQuery({
+              query: QUERY_NODOS,
+              data: nuevoCache,
+            });
+            this.$emit("nodoEliminado", idNodo);
+
+        })
+        .catch((error) => {
+          this.eliminandose = false;
+          console.log(`Error eliminando nodo. : ${error}`);
+        })
+    },
+    crearDependenciaNodo(nodoSource) {
+      if (!nodoSource || !this.elNodo) {
+        return;
+      }
+      let nodoTarget = this.elNodo;
+
+      console.log(`Mutando que ${nodoSource.nombre} es dependencia de ${nodoTarget.nombre}`);
+
+      this.creandoDependencia = true;
+      this.$apollo.mutate({
+        mutation: gql`
             mutation($tipo: String!, $idSource: ID!, $idTarget: ID!){
               crearVinculo(tipo: $tipo, idSource: $idSource, idTarget: $idTarget){
                 modificados{
@@ -438,30 +501,30 @@ export default {
               }
             }
             `,
-            variables:{
-              tipo: "continuacion",
-              idSource: nodoSource.id,
-              idTarget: nodoTarget.id
-            }
-          }).then(()=>{
-            this.creandoDependencia=false;
-            this.$emit("cancelarCreandoDependencia");
+        variables: {
+          tipo: "continuacion",
+          idSource: nodoSource.id,
+          idTarget: nodoTarget.id
+        }
+      }).then(() => {
+        this.creandoDependencia = false;
+        this.$emit("cancelarCreandoDependencia");
 
-          }).catch((error)=>{
-            console.log('Error: '+ error);
-            this.creandoDependencia=false;
-          })
-        },
-         eliminarVinculo(vinculo){
-          if(!this.usuarioExperto && !this.usuarioSuperadministrador){
-            return;
-          }
+      }).catch((error) => {
+        console.log('Error: ' + error);
+        this.creandoDependencia = false;
+      })
+    },
+    eliminarVinculo(vinculo) {
+      if (!this.usuarioExperto && !this.usuarioSuperadministrador) {
+        return;
+      }
 
-          let idSource= vinculo.idRef;
+      let idSource = vinculo.idRef;
 
-          this.idVinculoEliminando=vinculo.id;
-          this.$apollo.mutate({
-            mutation: gql`
+      this.idVinculoEliminando = vinculo.id;
+      this.$apollo.mutate({
+        mutation: gql`
               mutation($idSource: ID!, $idTarget: ID!){
                 eliminarVinculoFromTo(idSource: $idSource, idTarget: $idTarget){
                   modificados{
@@ -476,30 +539,30 @@ export default {
                 }
               }
               `,
-              variables:{
-                idSource,
-                idTarget: this.elNodo.id,
-              }
-            }).then(()=>{
-              this.idVinculoEliminando=null;
+        variables: {
+          idSource,
+          idTarget: this.elNodo.id,
+        }
+      }).then(() => {
+        this.idVinculoEliminando = null;
 
-            }).catch((error)=>{
-              console.log('Error: '+ error);
-              this.idVinculoEliminando=null;
-            })
-        },
-        toggleDespliege() {
-            if (!this.mostrandoFlechasConexiones) {
-                this.desplegado = !this.desplegado;
-            }
-        },
-        clickFuera() {
-            this.mostrandoFlechasConexiones = false;
-        },
-        marcarEstudiado() {
-            this.settingDateEstudiado = true;
-            this.$apollo.mutate({
-                mutation: gql`
+      }).catch((error) => {
+        console.log('Error: ' + error);
+        this.idVinculoEliminando = null;
+      })
+    },
+    toggleDespliege() {
+      if (!this.mostrandoFlechasConexiones) {
+        this.desplegado = !this.desplegado;
+      }
+    },
+    clickFuera() {
+      this.mostrandoFlechasConexiones = false;
+    },
+    marcarEstudiado() {
+      this.settingDateEstudiado = true;
+      this.$apollo.mutate({
+        mutation: gql`
                     mutation( $idUsuario: ID!, $idNodo: ID!, $fecha: Date!){
                         setDateNodoConocimientoEstudiadoUsuario(idUsuario: $idUsuario, idNodo: $idNodo, fecha: $fecha){
                             ...fragDatoNodoConocimiento
@@ -507,65 +570,65 @@ export default {
                     }
                     ${fragmentoDatoNodoConocimiento}
                     `,
-                variables: {
-                    idUsuario: this.usuario.id,
-                    idNodo: this.elNodo.id,
-                    fecha: new Date(),
-                }
-            }).then(({ data: { setDateNodoConocimientoEstudiadoUsuario } }) => {
-                this.settingDateEstudiado = false;
+        variables: {
+          idUsuario: this.usuario.id,
+          idNodo: this.elNodo.id,
+          fecha: new Date(),
+        }
+      }).then(({ data: { setDateNodoConocimientoEstudiadoUsuario } }) => {
+        this.settingDateEstudiado = false;
 
-                //Add to cache if not already there
-                let store = this.$apollo.provider.defaultClient;
-                let cache = store.readQuery({
-                    query: QUERY_DATOS_USUARIO_NODOS,
-                    variables: {
-                        idUsuario: this.usuario.id,
-                    }
-                });
+        //Add to cache if not already there
+        let store = this.$apollo.provider.defaultClient;
+        let cache = store.readQuery({
+          query: QUERY_DATOS_USUARIO_NODOS,
+          variables: {
+            idUsuario: this.usuario.id,
+          }
+        });
 
-                let indexDN = cache.yo.atlas.datosNodos.indexOf(dn => dn.idNodo === this.elNodo.id);
+        let indexDN = cache.yo.atlas.datosNodos.indexOf(dn => dn.idNodo === this.elNodo.id);
 
-                if (indexDN === -1) { // No habia datos sobre este nodo.
-                    let nuevoCache = JSON.parse(JSON.stringify(cache));
-                    nuevoCache.yo.atlas.datosNodos.push(setDateNodoConocimientoEstudiadoUsuario);
+        if (indexDN === -1) { // No habia datos sobre este nodo.
+          let nuevoCache = JSON.parse(JSON.stringify(cache));
+          nuevoCache.yo.atlas.datosNodos.push(setDateNodoConocimientoEstudiadoUsuario);
 
-                    store.writeQuery({
-                        query: QUERY_DATOS_USUARIO_NODOS,
-                        variables: {
-                            idUsuario: this.usuario.id,
-                        },
-                        data: nuevoCache
-                    });
-                }
+          store.writeQuery({
+            query: QUERY_DATOS_USUARIO_NODOS,
+            variables: {
+              idUsuario: this.usuario.id,
+            },
+            data: nuevoCache
+          });
+        }
 
-            }).catch((error) => {
-                console.log("Error: " + error);
-                this.settingDateEstudiado = false;
-            });
-        },
-        setDiasRepaso() {
-            if (!this.elNodo) {
-                return;
-            }
-            this.diasRepaso = Number(this.$refs.inputDiasRepaso.value);
+      }).catch((error) => {
+        console.log("Error: " + error);
+        this.settingDateEstudiado = false;
+      });
+    },
+    setDiasRepaso() {
+      if (!this.elNodo) {
+        return;
+      }
+      this.diasRepaso = Number(this.$refs.inputDiasRepaso.value);
 
-            if(this.datosUsuarioEsteNodo && this.diasRepaso===this.datoUsuarioEsteNodo.diasRepaso){
-                return;
-            }
+      if (this.datosUsuarioEsteNodo && this.diasRepaso === this.datoUsuarioEsteNodo.diasRepaso) {
+        return;
+      }
 
-            //1 day minimum
-            if (this.diasRepaso < 1) {
-                return
-            }
+      //1 day minimum
+      if (this.diasRepaso < 1) {
+        return
+      }
 
-            if (!this.diasRepaso > 3000) {
-                return
-            }
+      if (!this.diasRepaso > 3000) {
+        return
+      }
 
-            this.guardandoDiasRepaso = true;
-            this.$apollo.mutate({
-                mutation: gql`
+      this.guardandoDiasRepaso = true;
+      this.$apollo.mutate({
+        mutation: gql`
                     mutation($idNodo: ID!, $nuevoDiasRepaso: Int!){
                         setDiasRepasoNodoConocimientoUsuario(idNodo: $idNodo, nuevoDiasRepaso: $nuevoDiasRepaso){
                              ...fragDatoNodoConocimiento
@@ -573,32 +636,32 @@ export default {
                     }
                     ${fragmentoDatoNodoConocimiento}
                     `,
-                variables: {
-                    idNodo: this.elNodo.id,
-                    nuevoDiasRepaso: this.diasRepaso,
-                }
-            }).then(() => {
-                this.guardandoDiasRepaso = false;
-                this.mostrando = '';
+        variables: {
+          idNodo: this.elNodo.id,
+          nuevoDiasRepaso: this.diasRepaso,
+        }
+      }).then(() => {
+        this.guardandoDiasRepaso = false;
+        this.mostrando = '';
 
-            }).catch((error) => {
-                console.log('Error: ' + error);
-                this.guardandoDiasRepaso = false;
-            })
-        },
-        marcarAprendido() {
-            if (!this.elNodo) {
-                return;
-            }
+      }).catch((error) => {
+        console.log('Error: ' + error);
+        this.guardandoDiasRepaso = false;
+      })
+    },
+    marcarAprendido() {
+      if (!this.elNodo) {
+        return;
+      }
 
-            let nuevoEstadoAprendido = true;
-            if (this.datoUsuarioEsteNodo) {
-                nuevoEstadoAprendido = !this.datoUsuarioEsteNodo.aprendido;
-            }
+      let nuevoEstadoAprendido = true;
+      if (this.datoUsuarioEsteNodo) {
+        nuevoEstadoAprendido = !this.datoUsuarioEsteNodo.aprendido;
+      }
 
-            this.settingEstadoAprendido = true;
-            this.$apollo.mutate({
-                mutation: gql`
+      this.settingEstadoAprendido = true;
+      this.$apollo.mutate({
+        mutation: gql`
                     mutation($idNodo: ID!, $nuevoEstadoAprendido: Boolean!){
                         setNodoAtlasAprendidoUsuario(idNodo: $idNodo, nuevoEstadoAprendido: $nuevoEstadoAprendido){
                             ...fragDatoNodoConocimiento
@@ -606,93 +669,93 @@ export default {
                     }
                     ${fragmentoDatoNodoConocimiento}
                     `,
-                variables: {
-                    idNodo: this.elNodo.id,
-                    nuevoEstadoAprendido,
-                }
-            }).then(({data:{setNodoAtlasAprendidoUsuario}}) => {
-                this.settingEstadoAprendido = false;
+        variables: {
+          idNodo: this.elNodo.id,
+          nuevoEstadoAprendido,
+        }
+      }).then(({ data: { setNodoAtlasAprendidoUsuario } }) => {
+        this.settingEstadoAprendido = false;
 
-                //Add datos nodos nuevos al cache
-                let store = this.$apollo.provider.defaultClient;
-                let cache = store.readQuery({
-                    query: QUERY_DATOS_USUARIO_NODOS,
-                    variables: {
-                        idUsuario: this.usuario.id,
-                    }
-                });
+        //Add datos nodos nuevos al cache
+        let store = this.$apollo.provider.defaultClient;
+        let cache = store.readQuery({
+          query: QUERY_DATOS_USUARIO_NODOS,
+          variables: {
+            idUsuario: this.usuario.id,
+          }
+        });
 
-                let nuevosDatosNodos = setNodoAtlasAprendidoUsuario.filter(dn => cache.yo?.atlas?.datosNodos?.findIndex(dn2 => dn2.idNodo === dn.idNodo) === -1);
+        let nuevosDatosNodos = setNodoAtlasAprendidoUsuario.filter(dn => cache.yo?.atlas?.datosNodos?.findIndex(dn2 => dn2.idNodo === dn.idNodo) === -1);
 
-                console.log("Nuevos datos nodos: ", nuevosDatosNodos.length);
+        console.log("Nuevos datos nodos: ", nuevosDatosNodos.length);
 
-                let nuevoCache = JSON.parse(JSON.stringify(cache));
+        let nuevoCache = JSON.parse(JSON.stringify(cache));
 
-                nuevoCache.yo.atlas.datosNodos = nuevoCache.yo.atlas.datosNodos.concat(nuevosDatosNodos);
+        nuevoCache.yo.atlas.datosNodos = nuevoCache.yo.atlas.datosNodos.concat(nuevosDatosNodos);
 
-                store.writeQuery({
-                    query: QUERY_DATOS_USUARIO_NODOS,
-                    variables: {
-                        idUsuario: this.usuario.id,
-                    },
-                    data: nuevoCache
-                });
+        store.writeQuery({
+          query: QUERY_DATOS_USUARIO_NODOS,
+          variables: {
+            idUsuario: this.usuario.id,
+          },
+          data: nuevoCache
+        });
 
-            }).catch((error) => {
-                console.log('Error: ' + error);
-                this.settingEstadoAprendido = false;
-            })
-        },
-        recalcularHeights(){
-          this.$nextTick(() => {
-            this.heightNombre = this.$refs.nombre.clientHeight;
-            this.heigthAll = this.$el.clientHeight;
-          });
-        },
-        iniciarCrearDependenciaNodo(){
-            if(!this.elNodo){
-                return;
-            }
-            this.$emit('iniciarCrearDependenciaNodo');
-        },
+      }).catch((error) => {
+        console.log('Error: ' + error);
+        this.settingEstadoAprendido = false;
+      })
     },
-    watch: {
-        elNodo(nodo) {
-            this.mostrandoFlechasConexiones = false;
-            if (nodo) {
-                this.recalcularHeights();
-            }
-            else {
-              this.desplegado=false;
-                this.mostrando = '';
-                this.heightNombre = 0;
-                this.heigthAll = 0;
-                this.nivelesConexion = 0;
-                this.$emit("cancelarCreandoDependencia");
-            }
-        },
-        datoUsuarioEsteNodo(datos){
-            if(datos){
-                this.diasRepaso = datos.diasRepaso || 0;
-            }
-        },
-        nivelesConexion: {
-            handler(niveles) {
-                this.$emit('nivelesConexion', niveles)
-            },
-            immediate: true
-        },
-        filaMostrada(){
-            this.recalcularHeights();
-        },
-        mostrando(){
-            this.recalcularHeights();
-        },
+    recalcularHeights() {
+      this.$nextTick(() => {
+        this.heightNombre = this.$refs.nombre.clientHeight;
+        this.heigthAll = this.$el.clientHeight;
+      });
     },
-    mounted() {
-        this.montado = true;
+    iniciarCrearDependenciaNodo() {
+      if (!this.elNodo) {
+        return;
+      }
+      this.$emit('iniciarCrearDependenciaNodo');
+    },
+  },
+  watch: {
+    elNodo(nodo) {
+      this.mostrandoFlechasConexiones = false;
+      if (nodo) {
+        this.recalcularHeights();
+      }
+      else {
         this.desplegado = false;
+        this.mostrando = '';
+        this.heightNombre = 0;
+        this.heigthAll = 0;
+        this.nivelesConexion = 0;
+        this.$emit("cancelarCreandoDependencia");
+      }
     },
+    datoUsuarioEsteNodo(datos) {
+      if (datos) {
+        this.diasRepaso = datos.diasRepaso || 0;
+      }
+    },
+    nivelesConexion: {
+      handler(niveles) {
+        this.$emit('nivelesConexion', niveles)
+      },
+      immediate: true
+    },
+    filaMostrada() {
+      this.recalcularHeights();
+    },
+    mostrando() {
+      this.recalcularHeights();
+    },
+  },
+  mounted() {
+    this.montado = true;
+    this.desplegado = false;
+  },
 }
 </script>
 <style lang="css" scoped>
@@ -738,6 +801,7 @@ export default {
   align-items: center;
   cursor: pointer;
 }
+
 #nombre img {
   height: 25px;
   /* filter to white */
@@ -813,9 +877,11 @@ export default {
   background-color: var(--paletaMain);
   height: unset;
 }
+
 #botonCrearDependenciaNodo img {
   height: 25px;
 }
+
 #listaDependencias {
   padding: 10px 0px;
   padding-bottom: 20px;
@@ -825,6 +891,7 @@ export default {
   overflow-y: scroll;
   gap: 10px;
 }
+
 .dependencia {
   display: flex;
 
@@ -874,10 +941,12 @@ export default {
   transform-origin: center;
   border: 1px solid white;
 }
+
 .selectorFila.activo {
   transform: scale(1.2);
   background-color: var(--paletaMain);
 }
+
 /* #endregion */
 
 /* #region controlConexiones */

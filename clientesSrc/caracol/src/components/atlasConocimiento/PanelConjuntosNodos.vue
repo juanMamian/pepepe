@@ -5,6 +5,7 @@
     @mousedown.left.stop=""
     @touchmove.stop=""
     v-show="abierto"
+    @click.stop=""
   >
     <div class="barraSeccion">
       <span @click="idColeccionAbierta = null"> Colecciones</span

@@ -317,6 +317,7 @@
         iniciarCrearDependenciaNodo(nodoSeleccionado)
       "
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
+      @nodoEliminado="reactToNodoEliminado"
     />
   </div>
 </template>
@@ -373,6 +374,7 @@ export default {
             this.idNodoTarget = nodoLast.id;
           }
         }
+        this.firstLoad=true;
         return nuevoTodosNodos;
       },
       fetchPolicy: "cache-and-network",
@@ -463,7 +465,7 @@ export default {
   data() {
     return {
       montado: false,
-      firstLoad: true,
+      firstLoad: false,
 
       configuracionAtlas: {
         posicionando: false,
@@ -549,6 +551,9 @@ export default {
     };
   },
   computed: {
+    domAndNodosReady(){
+      return this.montado && this.firstLoad;
+    },
     coleccionesEnriquecidas(){
       if(!this.yo.atlas?.colecciones) return [];
 
@@ -573,10 +578,6 @@ export default {
           idsRedNodos: idsCompletos,
         }
       })
-    },
-    datosPlusDomReady(){
-
-      return this.montado && this.todosNodos.length > 0 && this.yo.atlas?.datosNodos;
     },
     estiloIndicadorCentroZonasVisibles(){
       return {
@@ -616,7 +617,7 @@ export default {
       if (!this.idNodoTarget) return null;
       return this.todosNodos.find((n) => n.id === this.idNodoTarget);
     },
-    
+
     idsNodosActivosVista(){
       if(this.nodoTarget){
         return this.idsRedUnderNodo(this.nodoTarget);
@@ -826,6 +827,12 @@ export default {
     },
   },
   methods: {
+    reactToNodoEliminado(idNodo){
+     let indexN = this.nodosVisibles.findIndex(n=>n.id===idNodo) ;
+     if(indexN>-1){
+      this.nodosVisibles.splice(indexN, 1);
+     }
+    },
     idsRedUnderNodo(nodo){
       let guarda=0;
       let idsNodosActuales=[nodo.id];
@@ -1092,7 +1099,7 @@ export default {
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
 
       this.crearNodo(posicionNuevoNodo);
-    },    
+    },
     setNodoTargetCache(idNodo) {
       console.log(`Seting en cache al nodo ${idNodo} como target`);
       const store = this.$apollo.provider.defaultClient;
@@ -1202,50 +1209,6 @@ export default {
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
-        });
-    },
-    eliminarNodo(idNodo) {
-      if (!this.usuarioSuperadministrador) {
-        console.log(`No autorizado`);
-        return;
-      }
-      if (!confirm("¿Seguro de que quieres eliminar este nodo?")) return;
-      console.log(`enviando mutacion de eliminar nodo`);
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idNodo: ID!) {
-              eliminarNodo(idNodo: $idNodo)
-            }
-          `,
-          variables: {
-            idNodo,
-          },
-          update(store, { data: { eliminarNodo } }) {
-            if (!eliminarNodo) {
-              console.log(`Nodo no fue eliminado`);
-              return;
-            }
-            const cache = store.readQuery({
-              query: QUERY_NODOS,
-            });
-            var nuevoCache = JSON.parse(JSON.stringify(cache));
-            const indexN = nuevoCache.todosNodos.findIndex(
-              (n) => n.id == idNodo
-            );
-            if (indexN > -1) {
-              nuevoCache.todosNodos.splice(indexN, 1);
-              store.writeQuery({
-                query: QUERY_NODOS,
-                data: nuevoCache,
-              });
-            } else {
-              console.log(`El nodo no estaba presente`);
-            }
-          },
-        })
-        .then((data) => {
-          console.log(`quitando el objeto del array. ${data}`);
         });
     },
     crearNodo(posicion) {
@@ -1438,7 +1401,6 @@ export default {
     }, 1000),
     iniciarCalculoNodosVisibles(){
       clearTimeout(idTimeoutNodosVisibles);
-
       apuntadorChunkNodosVisibles=0;
       this.$nextTick(()=>{
         this.apuntadorDeFrontera=this.nodosVisibles.length - 1; // Indica el ultimo nodo no confiable en el array de nodos visibles
@@ -1510,7 +1472,17 @@ export default {
     idNodoTarget(idNodoTarget) {
       localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
 
-     
+
+    },
+    domAndNodosReady(){
+      console.log("Cambio en domAndNodosReady");
+      let contenedor=this.$refs.contenedorDiagrama;
+      console.log("scrollWidth: " + contenedor.scrollWidth);
+      this.$nextTick(()=>{
+      contenedor.scrollLeft=contenedor.scrollWidth/2;
+        contenedor.scrollTop=contenedor.scrollHeight/2;
+        this.setCentroZonaNodosVisibles();
+      })
     },
     nodoTarget(){
       this.iniciarCalculoNodosVisibles();
@@ -1523,19 +1495,6 @@ export default {
 
       this.iniciarCalculoNodosVisibles();
     },
-    datosPlusDomReady:{
-      handler: function(ready){
-        if(ready){
-          this.$refs.contenedorDiagrama.scrollLeft = this.$refs.contenedorDiagrama.scrollWidth/2 - this.$refs.contenedorDiagrama.clientWidth/2;
-          this.$refs.contenedorDiagrama.scrollTop = this.$refs.contenedorDiagrama.scrollHeight/2 - this.$refs.contenedorDiagrama.clientHeight/2;
-          this.$nextTick(()=>{
-            this.setCentroZonaNodosVisibles();
-          })
-        }
-      },
-    },
-
-
   },
   mounted() {
     this.anchoScreen = screen.width;
