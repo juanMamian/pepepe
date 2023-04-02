@@ -318,6 +318,7 @@
       "
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
       @nodoEliminado="reactToNodoEliminado"
+      @cambioEstadoEstudiadoNodo="this.$apollo"
     />
   </div>
 </template>
@@ -377,7 +378,7 @@ export default {
         this.firstLoad=true;
         return nuevoTodosNodos;
       },
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "cache-first",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
@@ -460,6 +461,8 @@ export default {
       skip() {
         return !this.idColeccionSeleccionada;
       },
+      fetchPolicy:"cache-and-network"
+
     },
   },
   data() {

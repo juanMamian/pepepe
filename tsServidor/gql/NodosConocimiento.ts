@@ -58,7 +58,8 @@ type Vinculo{
     id:ID!,
     tipo: String!,
     idRef: ID!,
-    rol: String!
+    rol: String!,
+    nodoContraparte:NodoConocimiento
 }
 
 
@@ -204,7 +205,7 @@ export const resolvers = {
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             try {
-                var todosNodos = await Nodo.find({}, "nombre tipoNodo nivel descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
+                var todosNodos = await Nodo.find({}).populate("vinculos.nodoContraparte", "nombre autoCoords").exec();
                 console.log(`encontrados ${todosNodos.length} nodos`);
             }
             catch (error) {
@@ -220,88 +221,11 @@ export const resolvers = {
         nodo: async function (_: any, { idNodo }: any) {
             console.log(`Buscando el nodo con id ${idNodo}`);
             try {
-                var elNodo: any = await Nodo.findById(idNodo, "nombre vinculos autoCoords coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos secciones clases").exec();
+                var elNodo: any = await Nodo.findById(idNodo).select("-icono").exec();
                 if (!elNodo) throw "Nodo no encontrado";
             } catch (error) {
                 console.log(`error buscando el nodo. e: ` + error);
                 throw new ApolloError("Error conectando con la base de datos");
-            }
-
-            let tieneForoPublico = true;
-
-            if (!elNodo.idForoPublico) {
-                tieneForoPublico = false;
-            }
-            else {
-                try {
-                    let elForoPublico: any = await Foro.findById(elNodo.idForoPublico).exec();
-                    if (!elForoPublico) {
-                        console.log(`El foro no existía. Se creará uno nuevo`);
-                        tieneForoPublico = false;
-                    }
-                } catch (error) {
-                    console.log(`Error buscando foro público en la base de datos. E :${error}`);
-                }
-            }
-
-            if (!tieneForoPublico) {
-                console.log(`El nodo ${elNodo.nombre} no tenía foro publico. Creando.`);
-                try {
-                    var nuevoForoPublico: any = await Foro.create({
-                        miembros: elNodo.expertos,
-                        acceso: "publico"
-                    });
-                    var idNuevoForoPublico = nuevoForoPublico._id;
-                    await nuevoForoPublico.save();
-                    elNodo.idForoPublico = idNuevoForoPublico;
-                } catch (error) {
-                    console.log(`Error creando el nuevo foro. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-                console.log(`Nuevo foro creado`);
-            }
-
-            let tieneForoExpertos = true;
-
-            if (!elNodo.idForoExpertos) {
-                tieneForoExpertos = false;
-            }
-            else {
-                try {
-                    let elForoExpertos: any = await Foro.findById(elNodo.idForoExpertos).exec();
-                    if (!elForoExpertos) {
-                        console.log(`El foro no existía. Se creará uno nuevo`);
-                        tieneForoExpertos = false;
-                    }
-                } catch (error) {
-                    console.log(`Error buscando foro público en la base de datos. E :${error}`);
-                }
-            }
-
-            if (!tieneForoExpertos) {
-                console.log(`El nodo ${elNodo.nombre} no tenía foro expertos. Creando.`);
-                try {
-                    var nuevoForoExpertos: any = await Foro.create({
-                        miembros: elNodo.expertos,
-                        acceso: "privado"
-                    });
-                    var idNuevoForoExpertos = nuevoForoExpertos._id;
-                    await nuevoForoExpertos.save();
-                    elNodo.idForoExpertos = idNuevoForoExpertos;
-
-                } catch (error) {
-                    console.log(`Error creando el nuevo foro. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-                console.log(`Nuevo foro creado`);
-            }
-            if (!tieneForoExpertos || !tieneForoPublico) {
-                try {
-                    await elNodo.save();
-                } catch (error) {
-                    console.log(`Error guardando el nodo`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
             }
 
             return elNodo;
@@ -1651,7 +1575,6 @@ export const resolvers = {
     }
 };
 
-
 export async function getIdsRedRequerimentosNodo(nodo) {
     console.log(`Getting red previa de ${nodo.nombre}`)
     let idsActuales = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef);
@@ -1684,6 +1607,28 @@ export async function getIdsRedRequerimentosNodo(nodo) {
 
 }
 
+export async function getNodosRedPreviaNodo(nodo){
+    let nodosActuales=[nodo];
+let todosNodos=[...nodosActuales];
+    let guarda=100;
+    
+    while(guarda<100 && nodosActuales.length>0){
+        let idsSiguientes=nodosActuales.map(n=>n.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target').map(v=>v.idRef)).flat();
+
+        let nodosSiguientes:any=[];
+
+        try {
+           nodosSiguientes=await Nodo.find({"_id":{$in:idsSiguientes}}).exec();
+        } catch (error) {
+           console.log("Error getting nodos siguientes :" + error);
+
+        }
+
+        todosNodos.push(...nodosSiguientes);
+        nodosActuales=nodosSiguientes;
+    }
+    return todosNodos;
+}
 
 export async function getIdsRedContinuacionesNodo(nodo) {
     console.log(`Getting red posterior de ${nodo.nombre}`)
@@ -1698,7 +1643,6 @@ export async function getIdsRedContinuacionesNodo(nodo) {
         } catch (error) {
             console.log(`Error getting nodos posteriores : ` + error);
             throw new ApolloError('Error conectando con la base de datos');
-
         }
 
         console.log(`Anteriores: ${losNodosPosteriores.map(n => n.nombre)}`);

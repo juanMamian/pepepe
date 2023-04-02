@@ -9,7 +9,7 @@ import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { permisosEspecialesDefault } from "./Schema";
-import { getIdsRedContinuacionesNodo, getIdsRedRequerimentosNodo } from "./NodosConocimiento";
+import { getIdsRedContinuacionesNodo, getIdsRedRequerimentosNodo, getNodosRedPreviaNodo } from "./NodosConocimiento";
 
 const jwt = require("jsonwebtoken");
 
@@ -267,7 +267,7 @@ export const resolvers = {
             console.log(`Solicitud de la lista de todos los usuarios`);
 
             try {
-                var todosUsuarios:any = await Usuario.find({}).select("nombres objetivos informesMaestraVida apellidos permisos fechaNacimiento email username numeroTel email").exec();
+                var todosUsuarios: any = await Usuario.find({}).select("nombres objetivos informesMaestraVida apellidos permisos fechaNacimiento email username numeroTel email").exec();
             }
             catch (error) {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
@@ -1612,7 +1612,7 @@ export const resolvers = {
             let edadAños = Math.floor(edad / (60 * 60 * 24 * 365 * 1000));
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
-        },        
+        },
         nombre: function (parent: any, _: any, __: any) {
             return parent.username;
         },
@@ -1665,59 +1665,48 @@ export const resolvers = {
 
             //Revisar nodo por nodo
 
-            var todosNodos: Array<any> = [];
+            let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
 
-            var guarda = 0;
-            var idsNodosActuales: Array<any> = parent.idsNodos;
-            var nodosActuales: Array<any>
 
-            while (guarda < 300 && idsNodosActuales.length > 0) {
 
+            for (const nodo of nodosRed) {
+
+                if (nodosRed.length < 1) {
+                    return 0;
+                }
                 try {
-                    nodosActuales = await Nodo.find({ "_id": { $in: idsNodosActuales } }).exec();
-                } catch (error) {
-                    console.log(`Error getting nodos actuales : ` + error);
+                    var elUsuario: any = await Usuario.findById(parent.idUsuario).exec();
+                    if (!elUsuario) throw 'usuario no encontrado';
+                }
+                catch (error) {
+                    console.log("Error getting usuario: " + error);
                     throw new ApolloError('Error conectando con la base de datos');
                 }
+                let idsNodosRed = nodosRed.map(n => n.id);
 
-                let nodosNuevos = nodosActuales.filter(nd => !todosNodos.some(n => n.id === nd.id));
+                const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsNodosRed.includes(dn.idNodo));
+                const nodosFrescos = elUsuario.atlas.datosNodos.filter(dn => idsNodosRed.includes(dn.idNodo)).filter(dn => {
+                    if (!dn.estudiado || !dn.diasRepaso) {
+                        return false;
+                    }
 
-                todosNodos.push(...nodosNuevos);
+                    let tiempoLimite = (new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000);
+                    if (tiempoLimite > Date.now()) {
+                        return true;
+                    }
 
-                idsNodosActuales = nodosNuevos.reduce((acc, n) => {
-                    let vinculosPrevios = n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target');
-                    let idsPrevios = vinculosPrevios.map(v => v.idRef);
-                    let idsNuevos = idsPrevios.filter(id => !acc.includes(id));
+                    return false;
 
-                    return acc.concat(idsNuevos)
-                }, []);
+                })
 
-                guarda++
+                console.log(`nodos en coleccion: ${nodosRed.length}`);
+                console.log(`${nodosAprendidos.length} nodos aprendidos de la colección. Nodos frescos en la coleccion: ${nodosFrescos.length}`);
+                console.table(nodosFrescos.map(n=>{return {nombre: n.nombre}}));
+
+                const progreso = (100 / nodosRed.length) * (nodosAprendidos.length + nodosFrescos.length);
+
+                return Number(progreso.toFixed(2));
             }
-
-            console.log(`Encontrados ${todosNodos.length} nodos relevantes para esta colección`);
-
-            if (todosNodos.length < 1) {
-                return 0;
-            }
-            const idsTodosNodos = todosNodos.map(n => n.id);
-            try {
-                var elUsuario: any = await Usuario.findById(parent.idUsuario).exec();
-                if (!elUsuario) throw 'usuario no encontrado';
-            }
-            catch (error) {
-                console.log("Error getting usuario: " + error);
-                throw new ApolloError('Error conectando con la base de datos');
-            }
-
-            const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsTodosNodos.includes(dn.idNodo));
-
-            console.log(`${nodosAprendidos.length} nodos aprendidos de la colección`);
-
-            const progreso = (100 / todosNodos.length) * nodosAprendidos.length;
-
-
-            return Number(progreso.toFixed(2));
         }
     },
     DatoNodoUsuario: {
@@ -1745,6 +1734,30 @@ export const resolvers = {
             return elProfe.nombres + " " + elProfe.apellidos;
         }
     },
+}
+
+async function getNodosRedByOriginalIds(idsNodos){
+    let idsNodosActuales=idsNodos;
+
+    let todosNodos=[];
+
+    let guarda = 0;
+
+    while(guarda <100 && idsNodosActuales.length >0){
+        guarda++;
+        let estosNodos:any = [];
+        try {
+            estosNodos=await Nodo.find({"_id":{$in:idsNodosActuales}}).exec();
+        } catch (error) {
+           console.log("Error buscando nodos: "+error); 
+           return;
+        }
+        
+        todosNodos.push(...estosNodos);
+        idsNodosActuales=estosNodos.map(n=>n.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target')).flat().map(v=>v.idRef);
+    }
+    return todosNodos;
+
 }
 
 async function migrarPeriodoRepaso() {
@@ -1798,11 +1811,11 @@ async function migrarObjetivos() {
             continue;
         }
 
-        let nombresObjetivo = nodosObjetivo.filter(n => n.nombre!='Nuevo nodo de solidaridad').map(n => n.nombre);
+        let nombresObjetivo = nodosObjetivo.filter(n => n.nombre != 'Nuevo nodo de solidaridad').map(n => n.nombre);
 
         // console.table({usuario: usuario.nombres + " " + usuario.apellidos, objetivos: nombresObjetivo});
-        
-        usuario.objetivos=nombresObjetivo;
+
+        usuario.objetivos = nombresObjetivo;
 
         try {
             await usuario.save();

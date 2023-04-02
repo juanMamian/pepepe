@@ -26,15 +26,21 @@ const EsquemaVinculo=new mongoose.Schema({
     tipo: {
         type: String,
         required: true,
-        default: "continuacion",
-
-        
+        default: "continuacion",        
+    },
+    nodoContraparte:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Nodo",
     }
 })
 
 EsquemaVinculo.pre("save", function(this:any, next){
     if(this.tipo="requiere"){
         this.tipo="continuacion";
+    }
+
+    if(!this.nodoContraparte){
+        this.nodoContraparte=this.idRef;
     }
 
     next();
@@ -58,10 +64,7 @@ var esquemaNodo = new mongoose.Schema({
     },
     keywords:{
         type:String,
-    },
-    icono: {
-        type: Buffer
-    },
+    },    
     tipoNodo:{
         type: String,
         enum: ["concepto", "skill"],

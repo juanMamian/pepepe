@@ -1,8 +1,11 @@
 Atlas de conocimiento.
+
 -En maestra vida asegurarse de que se hace la migración de periodoRepaso y de objetivos.
+-Arreglar el update de info a los nodosVisibles.
 -Que el zoom se haga en donde está el puntero del mouse o el centro del pinching.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.
 -Reparar los foros.
+-Verificar si en el resolver de eliminación de nodos se eliminan los enlaces que lo tenian en idRef.
 
 
 pepepe

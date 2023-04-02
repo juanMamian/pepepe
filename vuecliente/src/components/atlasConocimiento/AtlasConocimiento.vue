@@ -1229,51 +1229,7 @@ export default {
           console.log(`Error: ${error}`);
         });
     },
-    eliminarNodo(idNodo) {
-      if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
-        console.log(`No autorizado`);
-        return;
-      }
-      if (!confirm("¿Seguro de que quieres eliminar este nodo?")) return;
-      console.log(`enviando mutacion de eliminar nodo`);
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idNodo: ID!) {
-              eliminarNodo(idNodo: $idNodo)
-            }
-          `,
-          variables: {
-            idNodo,
-          },
-          update(store, { data: { eliminarNodo } }) {
-            if (!eliminarNodo) {
-              console.log(`Nodo no fue eliminado`);
-              return;
-            }
-            const cache = store.readQuery({
-              query: QUERY_NODOS,
-            });
-            var nuevoCache = JSON.parse(JSON.stringify(cache));
-            const indexN = nuevoCache.todosNodos.findIndex(
-              (n) => n.id == idNodo
-            );
-            if (indexN > -1) {
-              nuevoCache.todosNodos.splice(indexN, 1);
-              store.writeQuery({
-                query: QUERY_NODOS,
-                data: nuevoCache,
-              });
-            } else {
-              console.log(`El nodo no estaba presente`);
-            }
-          },
-        })
-        .then((data) => {
-          console.log(`quitando el objeto del array. ${data}`);
-        });
-    },
-    crearNodo(posicion) {
+        crearNodo(posicion) {
       if (!this.usuarioSuperadministrador && !this.usuarioAdministradorAtlas) {
         console.log(`Error usuario no autorizado`);
         return;
