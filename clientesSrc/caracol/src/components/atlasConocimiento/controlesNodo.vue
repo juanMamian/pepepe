@@ -601,6 +601,7 @@ export default {
             data: nuevoCache
           });
         }
+      this.$emit("cambioEstadoEstudiadoNodo");
 
       }).catch((error) => {
         console.log("Error: " + error);
@@ -700,6 +701,7 @@ export default {
           },
           data: nuevoCache
         });
+        this.$emit("cambioEstadoEstudiadoNodo");
 
       }).catch((error) => {
         console.log('Error: ' + error);

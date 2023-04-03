@@ -37,6 +37,14 @@ export const typeDefs = gql`
         tipo:String,
     }
 
+
+enum EstadoAprendizajeNodo{
+NINGUNO
+ESTUDIADO
+OLVIDADO
+APRENDIDO
+}
+
     type ConfiguracionAtlasUsuario{
         modo:String
     }
@@ -64,6 +72,7 @@ export const typeDefs = gql`
         estudiado: Date,
         periodoRepaso:Float,
         diasRepaso: Int,
+        estadoAprendizaje: EstadoAprendizajeNodo
         iteracionesRepaso: [IteracionRepasoNodoConocimiento]
     }
 
@@ -74,6 +83,8 @@ export const typeDefs = gql`
         nodos:[NodoConocimiento],
         progreso: Float,
         idUsuario: ID,
+        idsRed:[ID],
+
     }
 
     type IteracionRepasoNodoConocimiento{
@@ -1663,8 +1674,6 @@ export const resolvers = {
         progreso: async function (parent: any, _: any, __: any) {
             console.log('\x1b[35m%s\x1b[0m', `Calculando progreso de colección ${parent.nombre} en usuario ${parent.idUsuario}`);
 
-            //Revisar nodo por nodo
-
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
 
 
@@ -1698,15 +1707,20 @@ export const resolvers = {
                     return false;
 
                 })
+                let nodosProgreso=nodosAprendidos.concat(nodosFrescos.filter(n=>!nodosAprendidos.map(n=>n.id).includes(n.id)));
 
                 console.log(`nodos en coleccion: ${nodosRed.length}`);
                 console.log(`${nodosAprendidos.length} nodos aprendidos de la colección. Nodos frescos en la coleccion: ${nodosFrescos.length}`);
                 console.table(nodosFrescos.map(n=>{return {nombre: n.nombre}}));
 
-                const progreso = (100 / nodosRed.length) * (nodosAprendidos.length + nodosFrescos.length);
+                const progreso = (100 / nodosRed.length) * (nodosProgreso.length);
 
                 return Number(progreso.toFixed(2));
             }
+        },
+        idsRed: async function (parent: any, _: any, __: any){
+            let nodosRed=await getNodosRedByOriginalIds(parent.idsNodos);
+            return nodosRed.map(n=>n.id);
         }
     },
     DatoNodoUsuario: {
@@ -1720,7 +1734,20 @@ export const resolvers = {
             }
 
             return elNodo.nombre;
-        }
+        },
+        estadoAprendizaje(parent:any, _:any, __:any){
+            let estado="NINGUNO"
+            if(parent.aprendido){
+                return "APRENDIDO"
+            }
+            if(parent.estudiado){
+                if(parent.diasRepaso && parent.diasRepaso * 86400000 + (new Date(parent.estudiado)).getTime() < Date.now()){
+                    return "OLVIDADO"
+                }
+                return "ESTUDIADO"
+            }
+
+        },
     },
     InformeEstudianteMaestraVida: {
         nombreProfe: async function (parent: any) {
@@ -1753,7 +1780,8 @@ async function getNodosRedByOriginalIds(idsNodos){
            return;
         }
         
-        todosNodos.push(...estosNodos);
+        let nodosNuevos=estosNodos.filter(n=>!todosNodos.map(tn=>tn.id).includes(n.id));
+        todosNodos.push(...nodosNuevos);
         idsNodosActuales=estosNodos.map(n=>n.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target')).flat().map(v=>v.idRef);
     }
     return todosNodos;

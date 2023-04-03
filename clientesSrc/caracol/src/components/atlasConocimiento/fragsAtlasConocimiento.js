@@ -8,6 +8,7 @@ export const fragmentoDatoNodoConocimiento = gql`
     aprendido
     estudiado
     diasRepaso    
+    estadoAprendizaje
   }
 `;
 

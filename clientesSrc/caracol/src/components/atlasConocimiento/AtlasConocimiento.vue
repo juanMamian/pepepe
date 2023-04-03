@@ -6,117 +6,6 @@
     @mouseleave="hovered = false"
     @click="clickFuera"
   >
-    <router-view
-      :yo="yo"
-      :datosNodosRepasar="datosNodosRepasar"
-      :datosNodosUrgentes="datosNodosRepasar"
-      @centrarEnNodo="centrarEnNodoById($event)"
-    />
-    <div
-      id="zonaSeleccionColeccion"
-      v-if="yo.atlas && yo.atlas.colecciones"
-      v-show="!idNodoTarget"
-    >
-      <div
-        id="nombreColeccion"
-        :class="{ seleccionandoColeccion }"
-        @click.stop="seleccionandoColeccion = !seleccionandoColeccion"
-      >
-        <pie-progreso
-          v-if="coleccionSeleccionada && progresoColeccionSeleccionada"
-          :progreso="progresoColeccionSeleccionada"
-          :color-fondo="'transparent'"
-          style="margin-right: 10px"
-        >
-          <img
-            src="@/assets/iconos/atlas/userNodes.png"
-            alt="Colección"
-            id="iconoColeccionSeleccionada"
-          />
-        </pie-progreso>
-        <span style="z-index: 1">
-          {{ nombreColeccionSeleccionada }}
-        </span>
-      </div>
-
-      <div
-        class="boton"
-        id="botonMostrarOpcionesColeccion"
-        v-show="!seleccionandoColeccion"
-        @click="mostrandoOpcionesColeccion = !mostrandoOpcionesColeccion"
-      >
-        <img
-          src="@/assets/iconos/ellipsisVertical.svg"
-          alt="Opciones"
-          style=""
-        />
-      </div>
-
-      <div
-        id="contenedorControlesColeccion"
-        v-show="mostrandoOpcionesColeccion"
-      >
-        <div class="boton controlColeccion" @click="localizarNext('available')">
-          <img
-            src="@/assets/iconos/atlas/locationCrosshair.svg"
-            alt="Localizar"
-          />
-        </div>
-        <div class="boton controlColeccion" @click="localizarNext('check')">
-          <img
-            src="@/assets/iconos/atlas/locationCrosshair.svg"
-            alt="Localizar"
-            style="filter: var(--filtroAtlasCheck)"
-          />
-        </div>
-        <div
-          class="boton controlColeccion"
-          @click="localizarNext('repaso')"
-          :class="{
-            deshabilitado:
-              !idsNodosRepasarPresentes ||
-              idsNodosRepasarPresentes.length === 0,
-          }"
-        >
-          <img
-            src="@/assets/iconos/atlas/locationCrosshair.svg"
-            alt="Localizar"
-            style="filter: var(--filtroAtlasRepaso)"
-          />
-        </div>
-      </div>
-
-      <div id="listaSelectoresColeccion" v-show="seleccionandoColeccion">
-        <div
-          class="selectorColeccion"
-          @click.stop="setIdColeccionSeleccionada(null)"
-          v-show="idColeccionSeleccionada"
-        >
-          <img
-            src="@/assets/iconos/userNodes.png"
-            alt="Coleccion"
-            style="height: 15px"
-          />
-          Atlas
-        </div>
-        <div
-          class="selectorColeccion"
-          @click.stop="setIdColeccionSeleccionada(coleccion.id)"
-          v-for="coleccion of coleccionesEnriquecidas.filter(
-            (col) => idColeccionSeleccionada != col.id
-          )"
-          :key="coleccion.id"
-        >
-          <img
-            src="@/assets/iconos/userNodes.png"
-            alt="Coleccion"
-            style="height: 15px"
-          />
-          {{ coleccion.nombre }}
-        </div>
-      </div>
-    </div>
-
     <div
       id="menuContextual"
       :style="[offsetMenuContextual]"
@@ -132,6 +21,12 @@
         Crear Nodo de conocimiento
       </div>
     </div>
+
+    <gestor-colecciones
+      :yo="yo"
+      :todosNodos="todosNodos"
+      @coleccionSeleccionada="coleccionSeleccionada = $event"
+    />
 
     <div id="zonaNodoTarget" v-show="idNodoTarget">
       <div
@@ -183,13 +78,6 @@
       ref="buscadorNodos"
     />
 
-    <panel-conjuntos-nodos
-      ref="panelConjuntosNodos"
-      :yo="yo"
-      :modoAtlas="modoAtlas"
-      @centrarEnNodo="centrarEnNodo(todosNodos.find((n) => n.id == $event))"
-    />
-
     <div
       id="contenedorDiagrama"
       ref="contenedorDiagrama"
@@ -219,11 +107,10 @@
             :idNodo="nodo.id"
             :seleccionado="idNodoSeleccionado === nodo.id"
             :yo="yo"
-            :idsNodosAprendidos="idsNodosAprendidos"
-            :idsNodosRepasar="idsNodosRepasar"
-            :idsNodosEstudiados="idsNodosEstudiados"
-            :idsNodosEstudiables="idsNodosEstudiables"
-            :idsNodosFrescos="idsNodosFrescos"
+            :idsNodosAprendidos="idsNodosActivosAprendidos"
+            :idsNodosOlvidados="idsNodosActivosOlvidados"
+            :idsNodosEstudiados="idsNodosActivosEstudiados"
+            :idsNodosAccesibles="idsNodosActivosAccesibles"
             :idNodoTarget="idNodoTarget"
             :style="[
               {
@@ -254,52 +141,6 @@
     <transition name="fadeOut">
       <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
     </transition>
-    <div id="barraInferior" @click.stop="">
-      <div
-        class="boton"
-        title="Mostrar colecciones"
-        @click="$refs.panelConjuntosNodos.abierto = true"
-      >
-        <img src="@/assets/iconos/userNodes.png" alt="Nodos de usuario" />
-      </div>
-
-      <div
-        class="boton"
-        :title="
-          'Cambiar a modo ' + modoAtlas === 'experto' ? 'estudiante' : 'experto'
-        "
-        :class="{ deshabilitado: enviandoQueryModo }"
-        @click="setModo(modoAtlas === 'estudiante' ? 'experto' : 'estudiante')"
-      >
-        <img
-          src="@/assets/iconos/teacher.svg"
-          v-if="modoAtlas === 'experto'"
-          alt="Experto"
-        />
-        <img
-          src="@/assets/iconos/estudiante.png"
-          v-if="modoAtlas === 'estudiante'"
-          alt="Estudiante"
-        />
-      </div>
-
-      <div
-        class="boton"
-        title="Mostrar temas para repasar"
-        @click="$router.push({ name: 'ventanaRepasos' })"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-          <path
-            d="M256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256C512 397.4 397.4 512 256 512zM232 256C232 264 236 271.5 242.7 275.1L338.7 339.1C349.7 347.3 364.6 344.3 371.1 333.3C379.3 322.3 376.3 307.4 365.3 300L280 243.2V120C280 106.7 269.3 96 255.1 96C242.7 96 231.1 106.7 231.1 120L232 256z"
-            :fill="
-              datosNodosRepasar.length > 0
-                ? 'var(--atlasConocimientoRepaso)'
-                : ''
-            "
-          />
-        </svg>
-      </div>
-    </div>
 
     <controles-nodo
       :yo="yo"
@@ -314,12 +155,48 @@
       @nivelesConexion="nivelesConexion = $event"
       @click.stop=""
       @iniciarCrearDependenciaNodo="
-        iniciarCrearDependenciaNodo(nodoSeleccionado)
+        marcarNodoEsperandoDependencia(nodoSeleccionado)
       "
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
       @nodoEliminado="reactToNodoEliminado"
-      @cambioEstadoEstudiadoNodo="this.$apollo"
     />
+
+    <div id="zonaLocalizadores">
+      <div
+        class="boton controlColeccion"
+        :class="{ deshabilitado: idsNodosActivosAccesiblesInexplorados.length < 1 }"
+        @click="localizarNext('accesible')"
+      >
+        <img
+          src="@/assets/iconos/atlas/locationCrosshair.svg"
+          alt="Localizar"
+        />
+      </div>
+      <div
+        class="boton controlColeccion"
+        :class="{ deshabilitado: idsNodosActivosEstudiados.length < 1 }"
+        @click="localizarNext('estudiado')"
+      >
+        <img
+          src="@/assets/iconos/atlas/locationCrosshair.svg"
+          alt="Localizar"
+          style="filter: var(--filtroAtlasCheck)"
+        />
+      </div>
+      <div
+        class="boton controlColeccion"
+        @click="localizarNext('olvidado')"
+        :class="{
+          deshabilitado: idsNodosActivosOlvidados.length < 1,
+        }"
+      >
+        <img
+          src="@/assets/iconos/atlas/locationCrosshair.svg"
+          alt="Localizar"
+          style="filter: var(--filtroAtlasRepaso)"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -339,6 +216,7 @@ import {
   fragmentoNodoConocimiento,
 } from "./fragsAtlasConocimiento";
 import NodoConocimientoAtlas from "./NodoConocimientoAtlas.vue";
+import GestorColecciones from "./GestorColecciones.vue";
 
 var idTimeoutNodosVisibles = null;
 var apuntadorChunkNodosVisibles = 0;
@@ -351,7 +229,8 @@ export default {
     EnlacesNodoConocimiento,
     PieProgreso,
     ControlesNodo,
-    NodoConocimientoAtlas
+    NodoConocimientoAtlas,
+    GestorColecciones,
 },
   name: "AtlasConocimiento",
   apollo: {
@@ -375,7 +254,6 @@ export default {
             this.idNodoTarget = nodoLast.id;
           }
         }
-        this.firstLoad=true;
         return nuevoTodosNodos;
       },
       fetchPolicy: "cache-first",
@@ -437,33 +315,6 @@ export default {
         return nodo.porcentajeCompletado;
       },
     },
-    progresoColeccionSeleccionada: {
-      query: gql`
-        query ($idColeccion: ID!, $idUsuario: ID!) {
-          coleccionNodosConocimiento(
-            idColeccion: $idColeccion
-            idUsuario: $idUsuario
-          ) {
-            id
-            progreso
-          }
-        }
-      `,
-      variables() {
-        return {
-          idColeccion: this.idColeccionSeleccionada,
-          idUsuario: this.usuario.id,
-        };
-      },
-      update({ coleccionNodosConocimiento }) {
-        return coleccionNodosConocimiento.progreso;
-      },
-      skip() {
-        return !this.idColeccionSeleccionada;
-      },
-      fetchPolicy:"cache-and-network"
-
-    },
   },
   data() {
     return {
@@ -478,13 +329,13 @@ export default {
       nodosDescargados: false,
       posicionCreandoNodo: null,
       idNodoSeleccionado: null,
+      coleccionSeleccionada: null,
       nivelesConexion: 0,
       factorEscalera: 0.2,
       idsNodosCadenaPreviaSeleccionado: [],
       idNodoMenuCx: null,
       idsNecesariosParaTarget: [],
       enviandoQueryModo: false,
-      modoAtlas: "estudiante",
       enviandoQueryTarget: false,
 
       redibujarEnlacesNodos: 0,
@@ -536,13 +387,12 @@ export default {
       },
       enviandoQueryConfiguracionAtlas: false,
 
-      idColeccionSeleccionada: null,
       seleccionandoColeccion: false,
       mostrandoOpcionesColeccion: false,
 
-      indexLastLocateNextAvailable: 0,
-      indexLastLocateNextCheck: 0,
-      indexLastLocateNextRepaso: 0,
+      indexLocalizadorAccesibles:0,
+      indexLocalizadorOlvidados:0,
+      indexLocalizadorEstudiados:0,
 
       idColeccionTargetOnLastLocalizacion: null,
 
@@ -557,31 +407,7 @@ export default {
     domAndNodosReady(){
       return this.montado && this.firstLoad;
     },
-    coleccionesEnriquecidas(){
-      if(!this.yo.atlas?.colecciones) return [];
 
-      return this.yo.atlas.colecciones.map((col) => {
-        //Get first nodes and go level by level finding dependencies.
-       let idsNodosActuales=col.idsNodos;
-
-        let idsCompletos=[...idsNodosActuales];
-        let guarda = 0;
-
-        while(idsNodosActuales.length>0 && guarda < 100){
-          guarda++;
-          let nodosActuales = this.todosNodos.filter((nodo) => idsNodosActuales.includes(nodo.id));
-          let idsSiguientes=nodosActuales.map((nodo) => nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol == 'target').map((vinculo) => vinculo.idRef)).flat();
-          idsCompletos.push(...idsSiguientes);
-          idsNodosActuales=idsSiguientes;
-
-        }
-
-        return {
-          ...col,
-          idsRedNodos: idsCompletos,
-        }
-      })
-    },
     estiloIndicadorCentroZonasVisibles(){
       return {
         left: (this.centroZonaNodosVisibles.x - this.esquinasDiagrama.x1)*this.factorZoom + "px",
@@ -595,21 +421,7 @@ export default {
         y: (this.altoScreen / this.factorZoom) * this.factorZonaVisible,
       }
     },
-    nombreColeccionSeleccionada() {
-      if (!this.idColeccionSeleccionada) {
-        return "Atlas";
-      }
 
-      return this.coleccionSeleccionada?.nombre || "Cargando";
-    },
-    coleccionSeleccionada() {
-      if (!this.idColeccionSeleccionada) {
-        return null;
-      }
-      return this.coleccionesEnriquecidas.find(
-        (col) => col.id === this.idColeccionSeleccionada
-      );
-    },
     nodoSeleccionado: function () {
       if (!this.idNodoSeleccionado) {
         return null;
@@ -621,92 +433,70 @@ export default {
       return this.todosNodos.find((n) => n.id === this.idNodoTarget);
     },
 
-    idsNodosActivosVista(){
+    idsTodosNodos(){
+      if(!this.todosNodos){
+        return [];
+
+      }
+      return this.todosNodos.map(n=>n.id);
+
+    },
+    idsTodosNodosEstudiados(){
+      if(!this.yo?.atlas?.datosNodos){
+        return []
+      }
+      return this.yo.atlas.datosNodos.filter(dn => dn.estadoAprendizaje==='ESTUDIADO').map(dn=>dn.idNodo);
+
+    },
+    idsTodosNodosAprendidos(){
+      if(!this.yo?.atlas?.datosNodos){
+        return []
+      }
+      return this.yo.atlas.datosNodos.filter(dn=>dn.estadoAprendizaje==='APRENDIDO').map(dn=>dn.idNodo);
+    },
+    idsTodosNodosOlvidados(){
+      if(!this.yo?.atlas?.datosNodos){
+        return []
+      }
+      return this.yo.atlas.datosNodos.filter(dn=>dn.estadoAprendizaje==='OLVIDADO').map(dn=>dn.idNodo);
+    },
+    idsTodosNodosAccesibles(){
+      return this.todosNodos.filter(n=>!n.vinculos.some(v=>v.tipo==='continuacion' && v.rol==='target' && !this.idsTodosNodosAprendidos.includes(v.idRef) && !this.idsTodosNodosEstudiados.includes(v.idRef))).map(nA=>nA.id);
+    },
+
+    nodosActivos(){
+      if(!this.todosNodos){
+        return [];
+      }
       if(this.nodoTarget){
-        return this.idsRedUnderNodo(this.nodoTarget);
+        return this.todosNodos.filter(n=> this.idsRedUnderNodo(this.nodoTarget).includes(n.id));
       }
 
       if(this.coleccionSeleccionada){
-        return this.coleccionSeleccionada.idsRedNodos;
+        return this.todosNodos.filter(n=>this.coleccionSeleccionada.idsRed.includes(n.id));
       }
-      return []
+      return this.todosNodos;
     },
-    idsNodosEstudiables() {
-      if (!this.yo?.atlas?.datosNodos) return [];
 
-      let idsNodosAbrenCamino = [
-        ...this.idsNodosFrescos,
-        ...this.idsNodosAprendidos,
-      ];
-      let nodosAbrenCamino = this.nodosRender.filter((n) =>
-        idsNodosAbrenCamino.includes(n.id)
-      );
+    idsNodosActivos(){
+      return this.nodosActivos.map(na=>na.id);
+    },
+    idsNodosActivosEstudiados(){
+      return this.idsNodosActivos.filter(idN=>this.idsTodosNodosEstudiados.includes(idN));
+    },
+    idsNodosActivosAprendidos(){
+      return this.idsNodosActivos.filter(idN=>this.idsTodosNodosAprendidos.includes(idN));
+    },
+    idsNodosActivosOlvidados(){
+      return this.idsNodosActivos.filter(idN=>this.idsTodosNodosOlvidados.includes(idN));
+    },
+    idsNodosActivosAccesibles(){
+      return this.idsTodosNodosAccesibles.filter(idN=>this.idsNodosActivos.includes(idN));
+    },
+    idsNodosActivosAccesiblesInexplorados(){
+      return this.idsNodosActivosAccesibles.filter(id=>!this.idsNodosActivosAprendidos.includes(id) && !this.idsNodosActivosEstudiados.includes(id) && !this.idsNodosActivosOlvidados.includes(id));
+    },
 
-      let idsNodosAbiertos = nodosAbrenCamino
-        .map((n) =>
-          n.vinculos
-            .filter((v) => v.rol === "source" && v.tipo === "continuacion")
-            .map((v) => v.idRef)
-        )
-        .flat();
-
-      return idsNodosAbiertos;
-    },
-    idsNodosAprendidos() {
-      return this.yo.atlas.datosNodos
-        .filter((n) => n.aprendido === true)
-        .map((n) => n.idNodo);
-    },
-    datosNodosEstudiados() {
-      return this.yo.atlas.datosNodos.filter(
-        (n) => !n.aprendido && n.estudiado
-      );
-    },
-    idsNodosEstudiados() {
-      return this.datosNodosEstudiados.map((ne) => ne.idNodo);
-    },
-    datosNodosRepasar() {
-      if (!this.yo || !this.yo.atlas || !this.yo.atlas.datosNodos) {
-        return [];
-      }
-
-      var datosNodoConRepasoConfigurado = this.datosNodosEstudiados.filter(
-        (dn) => dn.diasRepaso
-      );
-
-      let datosNodoParaRepasar = datosNodoConRepasoConfigurado.filter((dn) => {
-        return (
-          new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000 <
-          Date.now()
-        );
-      });
-      return datosNodoParaRepasar;
-    },
-    idsNodosRepasar() {
-      return this.datosNodosRepasar.map((dn) => dn.idNodo);
-    },
-    idsNodosRepasarPresentes() {
-      if (!this.idTarget) {
-        return this.idsNodosRepasar;
-      }
-
-      return this.idsNodosRepasar.filter((id) =>
-        this.idsNodosRender.includes(id)
-      );
-    },
-    datosNodosFrescos() {
-      return this.datosNodosEstudiados.filter(
-        (dn) => !this.idsNodosRepasar.includes(dn.idNodo)
-      );
-    },
-    idsNodosFrescos() {
-      return this.datosNodosFrescos.map((nf) => nf.idNodo);
-    },
-    idsNodosPresentesCabeza() {
-      return this.idsNodosFrescos
-        .filter((idNe) => !this.idsNodosAprendidos.includes(idNe))
-        .concat(this.idsNodosAprendidos);
-    },
     factorZoom() {
       return Number((this.zoom / 100).toFixed(2));
     },
@@ -744,90 +534,7 @@ export default {
         y2: maxY + padding,
       };
     },
-    nodosRender() {
-      console.log("recalculando nodosRender con idColeccion: ", this.coleccionSeleccionada?.id);
-      if (this.$route.name != "atlas") {
-        return [];
-      }
-      if (this.idNodoTarget) {
-        return this.todosNodos
-          .filter((n) => this.idsNecesariosParaTarget.includes(n.id))
-          .concat([this.todosNodos.find((n) => this.idNodoTarget === n.id)]);
-      }
 
-      if (this.coleccionSeleccionada) {
-        let guarda = 0;
-        let idsNodosActuales = this.coleccionSeleccionada.idsNodos;
-        let todosNodosColeccion = [];
-        let nodosActuales = [];
-
-        while (guarda < 100 && idsNodosActuales.length > 0) {
-          nodosActuales = this.todosNodos.filter((n) =>
-            idsNodosActuales.includes(n.id)
-          );
-          todosNodosColeccion.push(...nodosActuales);
-          let idsTodosNodosColeccion = todosNodosColeccion.map((n) => n.id);
-
-          idsNodosActuales = [];
-          for (const nodoActual of nodosActuales) {
-            let idsVinculosRequeridos = nodoActual.vinculos
-              .filter((v) => v.tipo === "continuacion" && v.rol === "target")
-              .map((v) => v.idRef);
-            let idsVinculosNuevos = idsVinculosRequeridos.filter(
-              (idV) => !idsTodosNodosColeccion.includes(idV)
-            );
-            idsNodosActuales.push(...idsVinculosNuevos);
-          }
-        }
-        return todosNodosColeccion;
-      }
-
-      return this.todosNodos;
-    },
-    idsNodosRender() {
-      return this.nodosRender.map((n) => n.id);
-    },
-    idTarget() {
-      return this.idNodoTarget || this.idColeccionSeleccionada;
-    },
-    idsNodosConectadosSeleccionadoLabelled() {
-      if (!this.nodoSeleccionado) {
-        return [];
-      }
-
-      let rolRelevante = "target";
-      if (this.nivelesConexion > 0) {
-        rolRelevante = "source";
-      }
-
-      //Array of arrays. Each level of conection is an array. We need the last array to know if there are more levels to explore
-      let nodosActuales = [this.nodoSeleccionado];
-      let listaIdsConectados = [[this.nodoSeleccionado.id]];
-      for (let i = 0; i < Math.abs(this.nivelesConexion); i++) {
-        let idsSiguientes = nodosActuales
-          .map((n) =>
-            n.vinculos
-              .filter(
-                (v) => v.tipo === "continuacion" && v.rol === rolRelevante
-              )
-              .map((v) => v.idRef)
-          )
-          .flat();
-        nodosActuales = this.todosNodos.filter((n) =>
-          idsSiguientes.includes(n.id)
-        );
-        listaIdsConectados.push(nodosActuales.map((n) => n.id));
-      }
-
-      return listaIdsConectados;
-    },
-    idsRedSeleccion() {
-      if (!this.nodoSeleccionado) {
-        return [];
-      }
-
-      return this.idsNodosConectadosSeleccionadoLabelled.flat();
-    },
   },
   methods: {
     reactToNodoEliminado(idNodo){
@@ -906,7 +613,7 @@ export default {
 
       this.idNodoSeleccionado=nodo.id;
     },
-    iniciarCrearDependenciaNodo(nodo){
+    marcarNodoEsperandoDependencia(nodo){
       this.nodoCreandoDependencia=nodo;
     },
 
@@ -914,94 +621,44 @@ export default {
       this.seleccionNodo({});
       this.$refs.controlesNodo.clickFuera();
       this.$refs.buscadorNodos.cerrarBusqueda();
-      this.$refs.panelConjuntosNodos.abierto=false;
     },
-    localizarNext(tipo) {
-      let nodosConsiderados = [...this.nodosRender];
+    localizarNext(tipo){
 
-      this.idColeccionTargetOnLastLocalizacion = this.idColeccionSeleccionada;
-      if (tipo === "available") {
-        let indexEncontrados = 0;
-        let nextNodo = nodosConsiderados.find((n) => {
-          if (this.idsNodosPresentesCabeza.includes(n.id)) {
-            return false;
-          }
-
-          if (this.indexLastLocateNextAvailable === n.id) {
-            return false;
-          }
-
-          let idsNodosRequeridos = n.vinculos
-            .filter((v) => v.tipo === "continuacion" && v.rol === "target")
-            .map((v) => v.idRef);
-
-          let nodosRequeridos = nodosConsiderados.filter((n) =>
-            idsNodosRequeridos.includes(n.id)
-          );
-
-          if (
-            nodosRequeridos.some(
-              (nodo) => !this.idsNodosPresentesCabeza.includes(nodo.id)
-            )
-          ) {
-            return false;
-          }
-
-          indexEncontrados++;
-
-          if (indexEncontrados <= this.indexLastLocateNextAvailable) {
-            return false;
-          }
-          return true;
-        });
-
-        if (nextNodo) {
-          this.centrarEnNodoById(nextNodo.id);
-          this.indexLastLocateNextAvailable = indexEncontrados;
-        } else {
-          this.indexLastLocateNextAvailable = 0;
-        }
-      } else if (tipo === "check") {
-        let indexEncontrados = 0;
-        let nextNodo = nodosConsiderados.find((n) => {
-          if (this.idsNodosPresentesCabeza.includes(n.id)) {
-
-            indexEncontrados++;
-
-            if (indexEncontrados <= this.indexLastLocateCheck) {
-              return false;
-            }
-            return true;
-          }
-        });
-
-        if (nextNodo) {
-          this.centrarEnNodoById(nextNodo.id);
-          this.indexLastLocateCheck = indexEncontrados;
-        } else {
-          this.indexLastLocateCheck = 0;
-        }
-      } else if (tipo === "repaso") {
-        if (!this.idsNodosRepasarPresentes?.length > 0) {
+      console.log(`localizando next de tipo ${tipo}`);
+      let nodoNext = null;
+      if (tipo === "accesible") {
+        if(this.idsNodosActivosAccesiblesInexplorados.length < 1){
           return;
         }
-        this.indexLastLocateNextRepaso++;
-        if (
-          this.indexLastLocateNextRepaso >= this.idsNodosRepasarPresentes.length
-        ) {
-          this.indexLastLocateNextRepaso = 0;
+        this.indexLocalizadorAccesibles++;
+        if(this.indexLocalizadorAccesibles >= this.idsNodosActivosAccesiblesInexplorados.length){
+          this.indexLocalizadorAccesibles=0;
         }
+      nodoNext = this.nodosActivos.find(na=>na.id===this.idsNodosActivosAccesiblesInexplorados[this.indexLocalizadorAccesibles]);
 
-        this.centrarEnNodoById(
-          this.idsNodosRepasarPresentes[this.indexLastLocateNextRepaso]
-        );
+      } else if (tipo === "estudiado") {
+        if(this.idsNodosActivosEstudiados.length < 1){
+          return;
+        }
+        this.indexLocalizadorEstudiados++;
+        if(this.indexLocalizadorEstudiados >= this.idsNodosActivosEstudiados.length){
+          this.indexLocalizadorEstudiados=0;
+        }
+        nodoNext = this.nodosActivos.find(n=>n.id===this.idsNodosActivosEstudiados[this.indexLocalizadorEstudiados]);
+      } else if (tipo === "olvidado") {
+        if(this.idsNodosActivosOlvidados.length < 1){
+          return;
+        }
+        this.indexLocalizadorOlvidados++;
+        if(this.indexLocalizadorOlvidados >= this.idsNodosActivosOlvidados.length){
+          this.indexLocalizadorOlvidados=0;
+        }
+        nodoNext = this.nodosActivos.find(na=>na.id === this.idsNodosActivosOlvidados[this.indexLocalizadorOlvidados]);
       }
-    },
-    setIdColeccionSeleccionada(nuevoId) {
-      this.indexLastLocateNextAvailable = 0;
-      this.indexLastLocateNextCheck = 0;
-
-      this.idColeccionSeleccionada = nuevoId;
+      if(nodoNext){
+        this.centrarEnNodo(nodoNext);
+        this.seleccionNodo(nodoNext);
+      }
     },
     iniciarCallingPosiciones() {
       var ciclos = prompt("¿Cuantos ciclos?");
@@ -1115,10 +772,6 @@ export default {
         query: QUERY_DATOS_USUARIO_NODOS,
         data: nuevoCache,
       });
-    },
-    setModo(modo) {
-      if (!this.usuarioLogeado) return;
-      this.modoAtlas = modo;
     },
     setNodoTarget(idNodo) {
       this.idNodoTarget = idNodo;
@@ -1414,30 +1067,26 @@ export default {
       let chunkSize=20;
 
       for(let i=apuntadorChunkNodosVisibles; i<apuntadorChunkNodosVisibles+chunkSize; i++){
-        if(i>=this.todosNodos.length){
+        if(i>=this.nodosActivos.length){
+
           break;
         }
-        let esteNodo=this.todosNodos.find(n=>n.id==this.todosNodos[i].id);
-       if(this.nodoTarget || this.coleccionSeleccionada){
-        if(!this.idsNodosActivosVista.includes(esteNodo.id)){
-          continue;
-        }
-       }
-        let posNodo = this.todosNodos[i].autoCoords;
+        let esteNodo=this.nodosActivos[i];
+        let posNodo = esteNodo.autoCoords;
         let limiteIzquierdo=this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen/this.factorZoom);
         let limiteDerecho=this.centroZonaNodosVisibles.x + (this.factorZonaVisible * this.anchoScreen/this.factorZoom);
         let limiteSuperior=this.centroZonaNodosVisibles.y - (this.factorZonaVisible * this.altoScreen/this.factorZoom);
         let limiteInferior=this.centroZonaNodosVisibles.y + (this.factorZonaVisible * this.altoScreen/this.factorZoom);
 
         if(posNodo.x>limiteIzquierdo && posNodo.x<limiteDerecho && posNodo.y>limiteSuperior && posNodo.y<limiteInferior){
-          this.nodosVisibles.push(this.todosNodos[i]);
-          this.idsNodosVisibles.push(this.todosNodos[i].id);
+          this.nodosVisibles.push(esteNodo);
+          this.idsNodosVisibles.push(esteNodo.id);
         }
       }
 
       apuntadorChunkNodosVisibles+=chunkSize;
 
-      if(apuntadorChunkNodosVisibles<this.todosNodos.length){
+      if(apuntadorChunkNodosVisibles<this.nodosActivos.length){
         this.$nextTick(()=>{
           idTimeoutNodosVisibles=setTimeout(()=>{
               this.introducirChunkNodosVisibles();
@@ -1454,15 +1103,9 @@ export default {
 
   },
   watch: {
-    idColeccionSeleccionada(idColeccion) {
-      console.log(`idColeccionSeleccionada: ${idColeccion}`);
-      this.seleccionandoColeccion = false;
-      localStorage.setItem(
-        "atlasConocimientoIdLastColeccionTarget",
-        idColeccion
-      );
-      if (idColeccion) {
-        console.log("Setting lastTarget");
+    nodosActivos(val){
+      if(val.length > 0){
+        this.firstLoad = true;
       }
 
     },
@@ -1604,82 +1247,12 @@ export default {
   align-items: center;
 }
 
-#zonaSeleccionColeccion {
+.gestorColecciones {
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1;
-}
-
-#iconoColeccionSeleccionada {
-  width: 25px;
-  height: 25px;
-  background-color: rgb(230, 230, 230);
-  border-radius: 50%;
-  align-self: center;
-  opacity: 1;
-}
-
-#iconoColeccionSeleccionada:hover {
-  opacity: 0;
-}
-
-#nombreColeccion {
-  padding: 10px 30px;
-  background-color: var(--atlasConocimientoSeleccion);
-  border-radius: 45px;
-  cursor: pointer;
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-#nombreColeccion.seleccionandoColeccion {
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px;
-}
-
-#listaSelectoresColeccion {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(200px, 90vw);
-}
-
-#botonMostrarOpcionesColeccion {
-  position: absolute;
-  top: 50%;
-  left: calc(100% + 5px);
-  transform: translateY(-50%);
-}
-
-#contenedorControlesColeccion {
-  position: absolute;
-  top: calc(100% + 5px);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-}
-
-.controlColeccion {
-  background-color: rgba(58, 58, 58, 0.445);
-  box-shadow: 2px 2px 2px gray;
-}
-
-.selectorColeccion {
-  padding: 15px 15px;
-  font-size: 16px;
-  cursor: pointer;
-  background-color: var(--mainColor);
-  display: flex;
-  gap: 10px;
-  align-items: center;
 }
 
 #menuContextual {
@@ -1728,9 +1301,6 @@ export default {
   width: min(100vh, 350px);
 }
 
-#panelConjuntosNodos {
-  z-index: 100;
-}
 #infoZoom {
   position: absolute;
   bottom: 2%;
@@ -1802,7 +1372,20 @@ export default {
   opacity: 1;
 }
 
-/* Windowing */
+/* #region localizadores */
+#zonaLocalizadores {
+  position: fixed;
+  bottom: 0px;
+  right: 0px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 20px;
+}
+/* #endregion */
+
+/* #region Windowing */
 
 #indicadorCentroNodosVisibles {
   position: absolute;
@@ -1811,4 +1394,5 @@ export default {
   border-radius: 50%;
   background-color: red;
 }
+/* #endregion */
 </style>

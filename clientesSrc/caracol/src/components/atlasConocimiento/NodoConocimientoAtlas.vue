@@ -6,17 +6,12 @@
       // fantasmeado:
       //   idNodoSeleccionado &&
       //   nivelesConexion &&
-      //   !idsRedSeleccion.includes(elNodo.id),      
+      //   !idsRedSeleccion.includes(elNodo.id),
       seleccionado,
+      accesible: idsNodosAccesibles.includes(elNodo.id),
       aprendido: idsNodosAprendidos.includes(elNodo.id),
       estudiado: idsNodosEstudiados.includes(elNodo.id),
-      fresco: idsNodosFrescos.includes(elNodo.id),
-      aprendible:
-        idsNodosEstudiables.includes(elNodo.id) ||
-        !elNodo.vinculos.some(
-          (v) => v.tipo === 'continuacion' && v.rol === 'target'
-        ),
-      repasar: idsNodosRepasar.includes(elNodo.id),
+      olvidado: idsNodosOlvidados.includes(elNodo.id),
     }"
   >
     <div
@@ -52,11 +47,7 @@
     <div class="cajaTexto">
       {{ elNodo.nombre }}
 
-      <div
-        class="boton"
-        v-show="seleccionado"
-        id="botonAbrir"
-      >
+      <div class="boton" v-show="seleccionado" id="botonAbrir">
         <img
           src="@/assets/iconos/expandSolid.svg"
           alt="Abrir"
@@ -134,17 +125,13 @@ export default {
       type: Array,
       default: () => [],
     },
-    idsNodosFrescos: {
+    idsNodosOlvidados: {
       type: Array,
       default: () => [],
     },
-    idsNodosEstudiables: {
+    idsNodosAccesibles: {
       type: Array,
-      default: () => [],
-    },
-    idsNodosRepasar: {
-      type: Array,
-      default: () => [],
+      default: [],
     },
     idNodoTarget: {
       type: String,
@@ -293,10 +280,10 @@ export default {
 
 /* #endregion */
 
-/* #region aprendible */
-.nodoConocimientoAtlas.aprendible .bolita {
+/* #region accesible */
+.nodoConocimientoAtlas.accesible .bolita {
 }
-.nodoConocimientoAtlas.aprendible .bolita img {
+.nodoConocimientoAtlas.accesible .bolita img {
   opacity: 1;
 }
 
@@ -308,8 +295,9 @@ export default {
 }
 /* #endregion */
 
-/* #region repasar */
-.nodoConocimientoAtlas.repasar .bolita {
+/* #region olvidado*/
+
+.nodoConocimientoAtlas.olvidado .bolita {
   background-color: var(--atlasConocimientoRepasar);
 }
 
@@ -327,8 +315,8 @@ export default {
 /* #endregion */
 
 /* #region seleccionado */
-.nodoConocimientoAtlas.seleccionado{
-    z-index: 1;
+.nodoConocimientoAtlas.seleccionado {
+  z-index: 1;
 }
 .nodoConocimientoAtlas.seleccionado .bolita {
   border: 3px solid var(--atlasConocimientoSeleccion);
