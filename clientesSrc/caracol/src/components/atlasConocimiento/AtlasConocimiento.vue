@@ -22,6 +22,7 @@
       </div>
     </div>
 
+    <RouterView />  
     <gestor-colecciones
       :yo="yo"
       :todosNodos="todosNodos"
@@ -217,6 +218,7 @@ import {
 } from "./fragsAtlasConocimiento";
 import NodoConocimientoAtlas from "./NodoConocimientoAtlas.vue";
 import GestorColecciones from "./GestorColecciones.vue";
+import { RouterView } from "vue-router";
 
 var idTimeoutNodosVisibles = null;
 var apuntadorChunkNodosVisibles = 0;
@@ -231,6 +233,7 @@ export default {
     ControlesNodo,
     NodoConocimientoAtlas,
     GestorColecciones,
+    RouterView
 },
   name: "AtlasConocimiento",
   apollo: {
@@ -624,7 +627,6 @@ export default {
     },
     localizarNext(tipo){
 
-      console.log(`localizando next de tipo ${tipo}`);
       let nodoNext = null;
       if (tipo === "accesible") {
         if(this.idsNodosActivosAccesiblesInexplorados.length < 1){

@@ -6,8 +6,8 @@
       @click.stop="desplegandoLista = !desplegandoLista"
     >
       <pie-progreso
-        v-if="coleccionSeleccionada?.progreso"
-        v-show="this.$apollo.queries.coleccionSeleccionada.loading"
+        v-if="coleccionSeleccionadaNullificable?.progreso"
+        v-show="!this.$apollo.queries.coleccionSeleccionada.loading"
         :progreso="coleccionSeleccionada.progreso"
         :color-fondo="'transparent'"
         style="margin-right: 10px"
@@ -18,11 +18,9 @@
           id="iconoColeccionSeleccionada"
         />
       </pie-progreso>
-      <loading
-        v-show="this.$apollo.queries.coleccionSeleccionada.loading"
-      />
+      <loading v-show="this.$apollo.queries.coleccionSeleccionada.loading" />
       <span style="z-index: 1">
-        {{ coleccionSeleccionada?.nombre || "Atlas" }}
+        {{ coleccionSeleccionadaNullificable?.nombre || "Atlas" }}
       </span>
     </div>
 
@@ -165,18 +163,25 @@ export default {
         };
       });
     },
+    coleccionSeleccionadaNullificable(){
+      if(!this.idColeccionSeleccionada){
+        return null;
+      }
+
+      return this.coleccionSeleccionada;
+    }
   },
   methods: {
     setIdColeccionSeleccionada(nuevoId) {
-      this.indexLastLocateNextAvailable = 0;
-      this.indexLastLocateNextCheck = 0;
-
       this.idColeccionSeleccionada = nuevoId;
     },
   },
   watch: {
-    coleccionSeleccionada(col) {
-      this.$emit("coleccionSeleccionada", col);
+    coleccionSeleccionadaNullificable(col) {
+      console.log("Emitiendo colección");
+      this.$emit(
+        "coleccionSeleccionada", col
+      );
     },
 
     idColeccionSeleccionada(idColeccion) {
