@@ -16,7 +16,7 @@ const httpLink = createHttpLink({
 });
 
 const httpAuthLink = setContext((_, { headers }) => {
-  let elToken=leerToken();
+  let elToken = leerToken();
 
   let authorization = "";
 
@@ -33,8 +33,8 @@ const httpAuthLink = setContext((_, { headers }) => {
 
 const wsLink = new GraphQLWsLink(createClient({
   url: wsServerUrl + "/graphql",
-  connectionParams: ()=> {
-    let token=leerToken();
+  connectionParams: () => {
+    let token = leerToken();
     return {
       authentication: token,
       mensaje: "hola"
@@ -51,7 +51,7 @@ const splitLink = split(
     );
   },
   wsLink,
-  from ([httpAuthLink, httpLink]),
+  from([httpAuthLink, httpLink]),
 );
 
 export const errorLink = onError(({ graphQLErrors, networkError }) => {
@@ -77,7 +77,9 @@ export const apolloClient = new ApolloClient({
 export const apolloProvider = createApolloProvider({
   defaultClient: apolloClient,
   defaultOptions: {
-    $fetchPolicy: "cache-and-network",
+    $query: {
+      fetchPolicy: "cache-and-network",
+    }
   },
 });
 

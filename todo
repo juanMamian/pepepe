@@ -4,6 +4,7 @@ Atlas de conocimiento.
 -Verificar que en el calculador de red de dependendencias de nodo del backend no se repiten nodos. Y que en el calculador de progreso de nodo también en el backend no se cuenta dos veces el nodo fresco y el nodo aprendido.
 -Verificar que la query de coleccion nodos conocimiento sólo la pueda hacer el usuario dueño o un superadministrador.
 -Arreglar el update de info a los nodosVisibles.
+-QUe no se pueda marcar estudiado un nodo que no es accesible.
 -Que el zoom se haga en donde está el puntero del mouse o el centro del pinching.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.
 -Reparar los foros.

@@ -22,11 +22,12 @@
       </div>
     </div>
 
-    <RouterView />  
+    <RouterView />
     <gestor-colecciones
       :yo="yo"
       :todosNodos="todosNodos"
       @coleccionSeleccionada="coleccionSeleccionada = $event"
+      @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
     />
 
     <div id="zonaNodoTarget" v-show="idNodoTarget">
@@ -78,8 +79,8 @@
       @nodoSeleccionado="centrarEnNodo"
       ref="buscadorNodos"
     />
-
     <div
+      v-show="!algoOverlaying"
       id="contenedorDiagrama"
       ref="contenedorDiagrama"
       @scroll="setCentroZonaNodosVisibles(true)"
@@ -147,6 +148,7 @@
       :yo="yo"
       ref="controlesNodo"
       style="z-index: 20"
+      v-show="!algoOverlaying"
       :elNodo="nodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
       @setMeTarget="
@@ -162,10 +164,12 @@
       @nodoEliminado="reactToNodoEliminado"
     />
 
-    <div id="zonaLocalizadores">
+    <div id="zonaLocalizadores" v-show="!algoOverlaying">
       <div
         class="boton controlColeccion"
-        :class="{ deshabilitado: idsNodosActivosAccesiblesInexplorados.length < 1 }"
+        :class="{
+          deshabilitado: idsNodosActivosAccesiblesInexplorados.length < 1,
+        }"
         @click="localizarNext('accesible')"
       >
         <img
@@ -404,11 +408,16 @@ export default {
       nodoCreandoDependencia: null,
       creandoDependencia:false,
       editandoVinculos: false,
+
+      gestorColeccionesMostrandoArbol:false,
     };
   },
   computed: {
     domAndNodosReady(){
       return this.montado && this.firstLoad;
+    },
+    algoOverlaying(){
+      return this.gestorColeccionesMostrandoArbol;
     },
 
     estiloIndicadorCentroZonasVisibles(){

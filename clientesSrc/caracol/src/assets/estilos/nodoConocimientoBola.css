@@ -1,0 +1,161 @@
+
+.nodoConocimientoConBola {
+  position: absolute;
+  cursor: pointer;
+}
+.nodoConocimientoConBola #botonRastrear {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+}
+
+.nodoConocimientoConBola .bolita {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #f2f2f2;
+  padding: 22px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+.nodoConocimientoConBola .bolita img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  opacity: 0.3;
+}
+
+.nodoConocimientoConBola .cajaTexto {
+  position: absolute;
+  top: calc(100% + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.2em;
+  padding: 10px 10px;
+  border-radius: 5px;
+  text-align: center;
+  width: 200%;
+  z-index: 1;
+  color: #030303;
+  background-color: #f2f2f2;
+}
+
+.nodoConocimientoConBola .cajaTexto #botonAbrir {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+}
+
+/* #region conexiones con seleccionado */
+.nodoConocimientoConBola.fantasmeado {
+  opacity: 0.1;
+}
+
+.nodoConocimientoConBola.continuacionSeleccionado .bolita {
+  border: 2px solid var(--atlasConocimientoSeleccion);
+}
+
+.nodoConocimientoConBola.previoSeleccionado .bolita {
+  border: 2px solid var(--atlasConocimientoSeleccion);
+}
+
+/* #endregion */
+
+/* #region accesible */
+.nodoConocimientoConBola.accesible .bolita {
+}
+.nodoConocimientoConBola.accesible .bolita img {
+  opacity: 1;
+}
+
+/* #endregion */
+
+/* #region estudiado */
+.nodoConocimientoConBola.estudiado .bolita {
+  background-color: var(--atlasConocimientoCheck);
+}
+/* #endregion */
+
+/* #region olvidado*/
+
+.nodoConocimientoConBola.olvidado .bolita {
+  background-color: var(--atlasConocimientoRepasar);
+}
+
+/* #endregion */
+
+/* #region Aprendido */
+.nodoConocimientoConBola.aprendido .bolita {
+  background-color: var(--atlasConocimientoCheck);
+}
+
+.nodoConocimientoConBola.aprendido .bolita img {
+  /* filter to white */
+  filter: invert(1);
+}
+/* #endregion */
+
+/* #region seleccionado */
+.nodoConocimientoConBola.seleccionado {
+  z-index: 1;
+}
+.nodoConocimientoConBola.seleccionado .bolita {
+  border: 3px solid var(--atlasConocimientoSeleccion);
+}
+
+.nodoConocimientoConBola.seleccionado .cajaTexto {
+  background-color: var(--atlasConocimientoSeleccion);
+  color: white;
+}
+
+/* #endregion */
+
+/* #region vinculos */
+
+.nodoConocimientoConBola .lineaVinculo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 2px;
+  opacity: 1;
+  transform-origin: left center;
+  z-index: 0;
+  box-sizing: border-box;
+  opacity: 0.8;
+  pointer-events: none;
+}
+.nodoConocimientoConBola .lineaVinculo .laLinea {
+  background-color: black;
+  height: 100%;
+  width: 100%;
+  margin: 0px auto;
+  position: relative;
+}
+
+.nodoConocimientoConBola.seleccionado .lineaVinculo .laLinea {
+  background-color: var(--atlasConocimientoSeleccion);
+}
+
+.nodoConocimientoConBola .lineaVinculo .laLinea::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  content: "";
+  width: 1px;
+  border: 10px solid transparent;
+  border-right: 10px solid black;
+}
+.nodoConocimientoConBola.seleccionado .lineaVinculo .laLinea::after {
+  border-right: 10px solid var(--atlasConocimientoSeleccion);
+}
+
+/* #endregion */

@@ -29,7 +29,7 @@ export default {
   props: {
     colorProgreso:{
       type: String,
-      default: '#04AA6D'
+      default: '#3f7d20'
     },
     mostrarNumero:{
       type: Boolean,
@@ -38,6 +38,10 @@ export default {
     progreso: {
       type: Number,
       default: 0,
+    },
+    factorArco:{
+      type: Number,
+      default: 0.12,
     },
     cifrasDecimales: {
       type: Number,
@@ -86,17 +90,17 @@ export default {
   methods: {
     trazarGraph() {
       const lapiz = this.$refs.canvasProgreso.getContext("2d");
-      const centroCirculo = Math.round(this.size / 2);
+      const radioCirculo = Math.round(this.size / 2);
       const progresoRads = ((2 * Math.PI) / 100) * this.progreso - Math.PI / 2;
 
       lapiz.clearRect(0, 0, this.size, this.size);
       lapiz.beginPath();
       lapiz.strokeStyle = this.colorProgreso || "#04AA6D";
-      lapiz.lineWidth = 5;
+      lapiz.lineWidth = Math.round(this.size * this.factorArco);
       lapiz.arc(
-        centroCirculo,
-        centroCirculo,
-        Math.round(centroCirculo * 0.8),
+        radioCirculo,
+        radioCirculo,
+        Math.round(radioCirculo * (1-this.factorArco)),
         -(Math.PI / 2),
         progresoRads
       );
