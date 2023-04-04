@@ -42,7 +42,7 @@
   padding: 10px 10px;
   border-radius: 5px;
   text-align: center;
-  max-width: calc((var(--sizeBola) * 2) * 1px);
+  width: calc((var(--sizeBola) * 2) * 1px);
   z-index: 1;
   color: #030303;
   background-color: #f2f2f2;
@@ -125,8 +125,8 @@
 
 .nodoConocimientoConBola .lineaVinculo {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: calc((var(--sizeBola)/2) * 1px);
+  left: calc((var(--sizeBola)/1) * 1px);
   height: 2px;
   opacity: 1;
   transform-origin: left center;
