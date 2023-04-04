@@ -3,7 +3,7 @@
     class="nodoConocimientoVistaArbol nodoConocimientoConBola"
     :class="[
       { seleccionado, accesible },
-      datosUsuarioEsteNodo.estadoAprendizaje.toLowerCase(),
+      (datosUsuarioEsteNodo?.estadoAprendizaje || '').toLowerCase(),
     ]"
     @click.stop="$emit('clickEnNodo', idNodo)"
   >
@@ -278,7 +278,7 @@ export default {
         if (elementoArbol) {
           this.anchoArbol = elementoArbol.scrollWidth;
         }
-      }, 1000);
+      }, 700);
     },
   },
 

@@ -1,27 +1,31 @@
 <template>
-  <div class="gestorColecciones">
-    <div id="zonaTitulo" :style="[estiloZonaTitulo]">
-      <div
-        v-show="
-          coleccionSeleccionadaNullificable &&
-          !$apollo.queries.coleccionSeleccionada.loading
-        "
-        class="boton"
-        :class="{activo:mostrandoArbol}"
-        id="botonMostrarArbol"
-        @click="mostrandoArbol = !mostrandoArbol"
-      >
-        <img
-          src="@/assets/iconos/atlas/userNodes.png"
-          alt="Colección"
-          id="iconoColeccionSeleccionada"
-        />
-      </div>
+  <div class="gestorColecciones" :style="[estiloGestorColecciones]">
+    <div
+      id="zonaTitulo"
+      :style="[estiloZonaTitulo]"
+      v-show="!conectandoNodosColeccion"
+    >
       <div
         id="nombreColeccion"
         :class="{ desplegandoLista }"
         @click.stop="desplegandoLista = !desplegandoLista"
       >
+        <div
+          v-show="
+            coleccionSeleccionadaNullificable &&
+            !$apollo.queries.coleccionSeleccionada.loading
+          "
+          class="boton"
+          :class="{ activo: mostrandoArbol }"
+          id="botonMostrarArbol"
+          @click.stop="mostrandoArbol = !mostrandoArbol"
+        >
+          <img
+            src="@/assets/iconos/atlas/userNodes.png"
+            alt="Colección"
+            id="iconoColeccionSeleccionada"
+          />
+        </div>
         <loading v-show="this.$apollo.queries.coleccionSeleccionada.loading" />
         <span style="z-index: 1">
           {{ coleccionSeleccionadaNullificable?.nombre || "Atlas" }}
@@ -64,8 +68,9 @@
         <div
           class="boton"
           id="botonMostrarOpcionesColeccion"
+          v-if="coleccionSeleccionadaNullificable"
           v-show="!desplegandoLista"
-          @click="mostrandoOpcionesColeccion = !mostrandoOpcionesColeccion"
+          @click.stop="mostrandoOpcionesColeccion = !mostrandoOpcionesColeccion"
         >
           <img
             src="@/assets/iconos/ellipsisVertical.svg"
@@ -75,7 +80,39 @@
         </div>
       </div>
     </div>
+    <div id="contenedorOpciones" v-show="mostrandoOpcionesColeccion" v-if="coleccionSeleccionadaNullificable">
+      <div
+        class="botonOpcion botonTexto selector"
+        id="botonConectarNodosColeccion"
+        :class="{ activo: conectandoNodosColeccion }"
+        @click.stop="conectandoNodosColeccion = !conectandoNodosColeccion"
+      >
+        <img src="@/assets/iconos/plugSolid.svg" alt="Conectar" />
+        <span v-show="conectandoNodosColeccion">
+          Editando nodos en la colección
+        </span>
+      </div>
+    </div>
 
+    <div
+      v-if="conectandoNodosColeccion && coleccionSeleccionadaNullificable && idNodoSeleccionado"
+      class="botonTexto"
+      id="botonToggleNodoColeccion"
+      @click.stop="toggleNodoColeccion"
+    >
+    <Loading v-show="togglingNodoColeccion" />
+      <img
+        src="@/assets/iconos/plugSolid.svg"
+        alt="Conectar"
+        v-show="!nodoSeleccionadoBelongs && !togglingNodoColeccion"
+      />
+      <img
+        src="@/assets/iconos/equis.svg"
+        alt="Desconectar"
+        v-show="nodoSeleccionadoBelongs && !togglingNodoColeccion"
+      />
+      <span>{{ nodoSeleccionadoBelongs ? "Desconectar" : "Conectar" }}</span>
+    </div>
     <transition name="travelBottom" appear>
       <div
         ref="diagramaPersonal"
@@ -136,7 +173,7 @@ export default {
     PieProgreso,
     Loading,
     NodoConocimientoVistaArbol,
-  },
+},
   props: {
     yo: {
       type: Object,
@@ -191,6 +228,8 @@ export default {
       desplegandoLista: false,
       idColeccionSeleccionada: null,
       mostrandoOpcionesColeccion: false,
+      conectandoNodosColeccion: false,
+      togglingNodoColeccion:false,
 
       mostrandoArbol: false,
       idNodoSeleccionado: null,
@@ -200,17 +239,34 @@ export default {
     };
   },
   computed: {
-    estiloZonaTitulo(){
-      let color="transparent";
+    estiloGestorColecciones(){
       let width="fit-content";
       if(this.mostrandoArbol){
-        color="var(--colorFondoGestionColecciones)";
         width="100%";
+      }
+      return {
+        width
+      }
+    },
+    nodoSeleccionadoBelongs() {
+      if (!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable) {
+        return false;
+      }
+      return this.coleccionSeleccionadaNullificable.idsNodos.includes(
+        this.idNodoSeleccionado
+      );
+    },
+    estiloZonaTitulo() {
+      let color = "transparent";
+      let width = "fit-content";
+      if (this.mostrandoArbol) {
+        color = "var(--colorFondoGestionColecciones)";
+        width = "100%";
       }
       return {
         backgroundColor: color,
         width,
-      }
+      };
     },
     estiloIconoProgresoUsuario() {
       let left = "50%";
@@ -280,6 +336,35 @@ export default {
     },
   },
   methods: {
+    toggleNodoColeccion(){
+      if(!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable){
+        return
+      }
+     this.togglingNodoColeccion=true;
+     this.$apollo.mutate({
+      mutation: gql`
+        mutation($idColeccion:ID!, $idNodo:ID!, $idUsuario: ID!){
+         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:$idColeccion, idNodo: $idNodo, idUsuario: $idUsuario){
+            id
+            idsNodos
+            idsRed
+          }
+        }
+        `,
+        variables:{
+         idColeccion:this.coleccionSeleccionadaNullificable.id,
+         idNodo: this.idNodoSeleccionado,
+         idUsuario: this.usuario.id
+        }
+      }).then(()=>{
+        this.togglingNodoColeccion=false;
+          
+      }).catch((error)=>{
+        console.log('Error: '+ error);
+        this.togglingNodoColeccion=false;
+      }) 
+      
+    },
     refreshLineas: debounce(function () {
       console.log("activando refresh de línea horizontal");
       this.refreshLineaHorizontal++;
@@ -316,18 +401,31 @@ export default {
       this.$emit("coleccionSeleccionada", col);
       if (!col) {
         this.mostrandoArbol = false;
+        this.mostrandoOpcionesColeccion=false;
         this.idNodoSeleccionado = null;
         this.cadenaTarget = [];
+      } else {
+        this.idNodoSeleccionado = null;
+        this.$emit("idNodoSeleccionado", null);
       }
     },
 
     idColeccionSeleccionada(idColeccion) {
       this.desplegandoLista = false;
+      this.conectandoNodosColeccion = false;
       localStorage.setItem(
         "atlasConocimientoIdLastColeccionTarget",
         idColeccion
       );
     },
+    conectandoNodosColeccion(val) {
+      this.mostrandoArbol = false;
+      if(!val){
+        this.mostrandoOpcionesColeccion=false;
+      }
+      this.$emit("conectandoNodosColeccion", val);
+    },
+
     mostrandoArbol(val) {
       this.$emit("mostrandoArbol", val);
     },
@@ -346,14 +444,17 @@ export default {
 <style scoped lang="css">
 .gestorColecciones {
   width: 100%;
-  --colorFondoGestionColecciones:rgb(233, 233, 233);
+  --colorFondoGestionColecciones: rgb(233, 233, 233);
 }
 #botonMostrarArbol {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 10px);
+  transform: translateY(-50%);
   background-color: var(--mainColor);
   border-radius: 50%;
-  margin-right: 15px;
 }
-#botonMostrarArbol.activo{
+#botonMostrarArbol.activo {
   background-color: var(--atlasConocimientoSeleccion);
 }
 #iconoColeccionSeleccionada {
@@ -362,15 +463,39 @@ export default {
   border-radius: 50%;
   align-self: center;
 }
-#zonaTitulo{
+#zonaTitulo {
   margin: 0px auto;
   display: flex;
   padding: 10px 20px;
- gap: 10px;
- align-items: center; 
- justify-content: center;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
 }
 
+#contenedorOpciones {
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin: 10px auto;
+  margin-top: 0px;
+  width: fit-content;
+}
+#contenedorOpciones .botonOpcion {
+}
+#botonConectarNodosColeccion {
+  background-color: transparent;
+  box-shadow: none;
+}
+#botonConectarNodosColeccion.activo {
+  background-color: var(--atlasConocimientoSeleccion);
+  border-color: transparent;
+}
+#botonToggleNodoColeccion {
+  width: fit-content;
+  margin: 0px auto;
+}
 #nombreColeccion {
   position: relative;
   z-index: 10;
@@ -459,7 +584,7 @@ export default {
 /* #region diagrama arbol */
 #diagramaPersonal {
   padding: 20px 5px;
-  background-color: var(--colorFondoGestionColecciones); 
+  background-color: var(--colorFondoGestionColecciones);
   overflow-x: scroll;
 }
 #iconoProgresoUsuario {

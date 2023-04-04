@@ -24,11 +24,13 @@
 
     <RouterView />
     <gestor-colecciones
+      ref="gestorColecciones"
       :yo="yo"
       :todosNodos="todosNodos"
       @coleccionSeleccionada="coleccionSeleccionada = $event"
       @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
       @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
+      @conectandoNodosColeccion="gestorColeccionesConectandoNodos = $event"
     />
 
     <div id="zonaNodoTarget" v-show="idNodoTarget">
@@ -114,6 +116,15 @@
             :idsNodosOlvidados="idsNodosActivosOlvidados"
             :idsNodosEstudiados="idsNodosActivosEstudiados"
             :idsNodosAccesibles="idsNodosActivosAccesibles"
+            :class="{
+              esperandoClick: gestorColeccionesConectandoNodos,
+              activoSeleccion: coleccionSeleccionada?.idsNodos.includes(
+                nodo.id
+              ),
+              activoSubseleccion: coleccionSeleccionada?.idsRed.includes(
+                nodo.id
+              ),
+            }"
             :idNodoTarget="idNodoTarget"
             :style="[
               {
@@ -237,7 +248,7 @@ export default {
     NodoConocimientoAtlas,
     GestorColecciones,
     RouterView
-},
+  },
   name: "AtlasConocimiento",
   apollo: {
     todosNodos: {
@@ -362,7 +373,7 @@ export default {
         x: 218,
         y: 39,
       },
-      factorZonaVisible:1,
+      factorZonaVisible: 1,
       paddingRefreshZonaVisible: 0.5,
       anchoScreen: 0,
       altoScreen: 0,
@@ -396,38 +407,39 @@ export default {
       seleccionandoColeccion: false,
       mostrandoOpcionesColeccion: false,
 
-      indexLocalizadorAccesibles:0,
-      indexLocalizadorOlvidados:0,
-      indexLocalizadorEstudiados:0,
+      indexLocalizadorAccesibles: 0,
+      indexLocalizadorOlvidados: 0,
+      indexLocalizadorEstudiados: 0,
 
       idColeccionTargetOnLastLocalizacion: null,
 
       idNodoTarget: null,
 
       nodoCreandoDependencia: null,
-      creandoDependencia:false,
+      creandoDependencia: false,
       editandoVinculos: false,
 
-      gestorColeccionesMostrandoArbol:false,
+      gestorColeccionesMostrandoArbol: false,
+      gestorColeccionesConectandoNodos: false,
     };
   },
   computed: {
-    domAndNodosReady(){
+    domAndNodosReady() {
       return this.montado && this.firstLoad;
     },
-    algoOverlaying(){
+    algoOverlaying() {
       return this.gestorColeccionesMostrandoArbol;
     },
 
-    estiloIndicadorCentroZonasVisibles(){
+    estiloIndicadorCentroZonasVisibles() {
       return {
-        left: (this.centroZonaNodosVisibles.x - this.esquinasDiagrama.x1)*this.factorZoom + "px",
-        top: (this.centroZonaNodosVisibles.y - this.esquinasDiagrama.y1)*this.factorZoom + "px",
+        left: (this.centroZonaNodosVisibles.x - this.esquinasDiagrama.x1) * this.factorZoom + "px",
+        top: (this.centroZonaNodosVisibles.y - this.esquinasDiagrama.y1) * this.factorZoom + "px",
       }
     },
-    sizeZonaVisible(){
+    sizeZonaVisible() {
       //Un cinturón alrededor del centro que marca una región de nodos visibles. x y Y marcan el ancho del cinturón. No de la zona.
-      return{
+      return {
         x: (this.anchoScreen / this.factorZoom) * this.factorZonaVisible,
         y: (this.altoScreen / this.factorZoom) * this.factorZonaVisible,
       }
@@ -444,74 +456,74 @@ export default {
       return this.todosNodos.find((n) => n.id === this.idNodoTarget);
     },
 
-    idsTodosNodos(){
-      if(!this.todosNodos){
+    idsTodosNodos() {
+      if (!this.todosNodos) {
         return [];
 
       }
-      return this.todosNodos.map(n=>n.id);
+      return this.todosNodos.map(n => n.id);
 
     },
-    idsTodosNodosEstudiados(){
-      if(!this.yo?.atlas?.datosNodos){
+    idsTodosNodosEstudiados() {
+      if (!this.yo?.atlas?.datosNodos) {
         return []
       }
-      return this.yo.atlas.datosNodos.filter(dn => dn.estadoAprendizaje==='ESTUDIADO').map(dn=>dn.idNodo);
+      return this.yo.atlas.datosNodos.filter(dn => dn.estadoAprendizaje === 'ESTUDIADO').map(dn => dn.idNodo);
 
     },
-    idsTodosNodosAprendidos(){
-      if(!this.yo?.atlas?.datosNodos){
+    idsTodosNodosAprendidos() {
+      if (!this.yo?.atlas?.datosNodos) {
         return []
       }
-      return this.yo.atlas.datosNodos.filter(dn=>dn.estadoAprendizaje==='APRENDIDO').map(dn=>dn.idNodo);
+      return this.yo.atlas.datosNodos.filter(dn => dn.estadoAprendizaje === 'APRENDIDO').map(dn => dn.idNodo);
     },
-    idsTodosNodosOlvidados(){
-      if(!this.yo?.atlas?.datosNodos){
+    idsTodosNodosOlvidados() {
+      if (!this.yo?.atlas?.datosNodos) {
         return []
       }
-      return this.yo.atlas.datosNodos.filter(dn=>dn.estadoAprendizaje==='OLVIDADO').map(dn=>dn.idNodo);
+      return this.yo.atlas.datosNodos.filter(dn => dn.estadoAprendizaje === 'OLVIDADO').map(dn => dn.idNodo);
     },
-    idsTodosNodosAccesibles(){
-      return this.todosNodos.filter(n=>!n.vinculos.some(v=>v.tipo==='continuacion' && v.rol==='target' && !this.idsTodosNodosAprendidos.includes(v.idRef) && !this.idsTodosNodosEstudiados.includes(v.idRef))).map(nA=>nA.id);
+    idsTodosNodosAccesibles() {
+      return this.todosNodos.filter(n => !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !this.idsTodosNodosAprendidos.includes(v.idRef) && !this.idsTodosNodosEstudiados.includes(v.idRef))).map(nA => nA.id);
     },
 
-    nodosActivos(){
-      if(!this.todosNodos){
+    nodosActivos() {
+      if (!this.todosNodos) {
         return [];
       }
-      if(this.nodoTarget){
-        return this.todosNodos.filter(n=> this.idsRedUnderNodo(this.nodoTarget).includes(n.id));
+      if (this.nodoTarget) {
+        return this.todosNodos.filter(n => this.idsRedUnderNodo(this.nodoTarget).includes(n.id));
       }
 
-      if(this.coleccionSeleccionada){
-        return this.todosNodos.filter(n=>this.coleccionSeleccionada.idsRed.includes(n.id));
+      if (this.coleccionSeleccionada && !this.gestorColeccionesConectandoNodos) {
+        return this.todosNodos.filter(n => this.coleccionSeleccionada.idsRed.includes(n.id));
       }
       return this.todosNodos;
     },
 
-    idsNodosActivos(){
-      return this.nodosActivos.map(na=>na.id);
+    idsNodosActivos() {
+      return this.nodosActivos.map(na => na.id);
     },
-    idsNodosActivosEstudiados(){
-      return this.idsNodosActivos.filter(idN=>this.idsTodosNodosEstudiados.includes(idN));
+    idsNodosActivosEstudiados() {
+      return this.idsNodosActivos.filter(idN => this.idsTodosNodosEstudiados.includes(idN));
     },
-    idsNodosActivosAprendidos(){
-      return this.idsNodosActivos.filter(idN=>this.idsTodosNodosAprendidos.includes(idN));
+    idsNodosActivosAprendidos() {
+      return this.idsNodosActivos.filter(idN => this.idsTodosNodosAprendidos.includes(idN));
     },
-    idsNodosActivosOlvidados(){
-      return this.idsNodosActivos.filter(idN=>this.idsTodosNodosOlvidados.includes(idN));
+    idsNodosActivosOlvidados() {
+      return this.idsNodosActivos.filter(idN => this.idsTodosNodosOlvidados.includes(idN));
     },
-    idsNodosActivosAccesibles(){
-      return this.idsTodosNodosAccesibles.filter(idN=>this.idsNodosActivos.includes(idN));
+    idsNodosActivosAccesibles() {
+      return this.idsTodosNodosAccesibles.filter(idN => this.idsNodosActivos.includes(idN));
     },
-    idsNodosActivosAccesiblesInexplorados(){
-      return this.idsNodosActivosAccesibles.filter(id=>!this.idsNodosActivosAprendidos.includes(id) && !this.idsNodosActivosEstudiados.includes(id) && !this.idsNodosActivosOlvidados.includes(id));
+    idsNodosActivosAccesiblesInexplorados() {
+      return this.idsNodosActivosAccesibles.filter(id => !this.idsNodosActivosAprendidos.includes(id) && !this.idsNodosActivosEstudiados.includes(id) && !this.idsNodosActivosOlvidados.includes(id));
     },
 
     factorZoom() {
       return Number((this.zoom / 100).toFixed(2));
     },
-    sizeContenedorNodos(){
+    sizeContenedorNodos() {
       return {
         width: (this.esquinasDiagrama.x2 - this.esquinasDiagrama.x1) + 'px',
         height: (this.esquinasDiagrama.y2 - this.esquinasDiagrama.y1) + 'px',
@@ -548,77 +560,77 @@ export default {
 
   },
   methods: {
-    nodoSeleccionadoEnColecciones(idNodo){
-      this.idNodoSeleccionado=idNodo;
+    nodoSeleccionadoEnColecciones(idNodo) {
+      this.idNodoSeleccionado = idNodo;
 
     },
-    reactToNodoEliminado(idNodo){
-     let indexN = this.nodosVisibles.findIndex(n=>n.id===idNodo) ;
-     if(indexN>-1){
-      this.nodosVisibles.splice(indexN, 1);
-     }
+    reactToNodoEliminado(idNodo) {
+      let indexN = this.nodosVisibles.findIndex(n => n.id === idNodo);
+      if (indexN > -1) {
+        this.nodosVisibles.splice(indexN, 1);
+      }
     },
-    idsRedUnderNodo(nodo){
-      let guarda=0;
-      let idsNodosActuales=[nodo.id];
-      let idsCompletos=[...idsNodosActuales];
-      while(guarda<100 && idsNodosActuales.length>0){
+    idsRedUnderNodo(nodo) {
+      let guarda = 0;
+      let idsNodosActuales = [nodo.id];
+      let idsCompletos = [...idsNodosActuales];
+      while (guarda < 100 && idsNodosActuales.length > 0) {
         guarda++;
         let nodosActuales = this.todosNodos.filter((nodo) => idsNodosActuales.includes(nodo.id));
-        let idsSiguientes=nodosActuales.map((nodo) => nodo.vinculos.filter(v=>v.tipo==='continuacion' && v.rol == 'target').map((vinculo) => vinculo.idRef)).flat();
-        idsNodosActuales=idsSiguientes; idsCompletos.push(...idsSiguientes);
+        let idsSiguientes = nodosActuales.map((nodo) => nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol == 'target').map((vinculo) => vinculo.idRef)).flat();
+        idsNodosActuales = idsSiguientes; idsCompletos.push(...idsSiguientes);
       }
       return idsCompletos;
     },
-    touchStartDiagrama(e){
-      if(e.touches.length===2){
+    touchStartDiagrama(e) {
+      if (e.touches.length === 2) {
         e.stopPropagation();
         e.preventDefault();
 
         // get distance between fingers
-        let distance=Math.sqrt(Math.pow(e.touches[0].clientX-e.touches[1].clientX,2)+Math.pow(e.touches[0].clientY-e.touches[1].clientY,2));
+        let distance = Math.sqrt(Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) + Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2));
 
-        this.lastPinchingDistance=distance;
+        this.lastPinchingDistance = distance;
       }
     },
-    touchMoveDiagrama(e){
-      if(e.touches.length===2){
+    touchMoveDiagrama(e) {
+      if (e.touches.length === 2) {
         e.stopPropagation();
         e.preventDefault();
-        let center={
-          x:(e.touches[0].clientX+e.touches[1].clientX)/2,
-          y:(e.touches[0].clientY+e.touches[1].clientY)/2
+        let center = {
+          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
         }
 
-        let posContenedor=this.$refs.contenedorDiagrama.getBoundingClientRect();
-        let zoomPosPx={
-          x:center.x-posContenedor.left,
-          y:center.y-posContenedor.top
+        let posContenedor = this.$refs.contenedorDiagrama.getBoundingClientRect();
+        let zoomPosPx = {
+          x: center.x - posContenedor.left,
+          y: center.y - posContenedor.top
         }
 
-        let distance=Math.sqrt(Math.pow(e.touches[0].clientX-e.touches[1].clientX,2)+Math.pow(e.touches[0].clientY-e.touches[1].clientY,2));
+        let distance = Math.sqrt(Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) + Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2));
 
-        if(!this.lastPinchingDistance){
-          this.lastPinchingDistance=distance;
+        if (!this.lastPinchingDistance) {
+          this.lastPinchingDistance = distance;
           return;
         }
-        let zoomChange=distance - this.lastPinchingDistance;
+        let zoomChange = distance - this.lastPinchingDistance;
 
         //set to 1 if postive, -1 if negative
-        if(zoomChange!=0){
-          zoomChange=zoomChange/Math.abs(zoomChange);
+        if (zoomChange != 0) {
+          zoomChange = zoomChange / Math.abs(zoomChange);
 
-          throttle(this.zoomVista(zoomChange,zoomPosPx ),1000);
+          throttle(this.zoomVista(zoomChange, zoomPosPx), 1000);
         }
 
-        this.lastPinchingDistance=distance;
+        this.lastPinchingDistance = distance;
 
 
       }
     },
-    clickNodo(nodo){
-      if(this.nodoCreandoDependencia){
-        if(nodo.id===this.nodoCreandoDependencia.id){
+    clickNodo(nodo) {
+      if (this.nodoCreandoDependencia) {
+        if (nodo.id === this.nodoCreandoDependencia.id) {
           return;
         }
         this.$refs.controlesNodo.crearDependenciaNodo(nodo);
@@ -626,10 +638,10 @@ export default {
       }
 
 
-      this.idNodoSeleccionado=nodo.id;
+      this.idNodoSeleccionado = nodo.id;
     },
-    marcarNodoEsperandoDependencia(nodo){
-      this.nodoCreandoDependencia=nodo;
+    marcarNodoEsperandoDependencia(nodo) {
+      this.nodoCreandoDependencia = nodo;
     },
 
     clickFuera() {
@@ -637,39 +649,39 @@ export default {
       this.$refs.controlesNodo.clickFuera();
       this.$refs.buscadorNodos.cerrarBusqueda();
     },
-    localizarNext(tipo){
+    localizarNext(tipo) {
 
       let nodoNext = null;
       if (tipo === "accesible") {
-        if(this.idsNodosActivosAccesiblesInexplorados.length < 1){
+        if (this.idsNodosActivosAccesiblesInexplorados.length < 1) {
           return;
         }
         this.indexLocalizadorAccesibles++;
-        if(this.indexLocalizadorAccesibles >= this.idsNodosActivosAccesiblesInexplorados.length){
-          this.indexLocalizadorAccesibles=0;
+        if (this.indexLocalizadorAccesibles >= this.idsNodosActivosAccesiblesInexplorados.length) {
+          this.indexLocalizadorAccesibles = 0;
         }
-      nodoNext = this.nodosActivos.find(na=>na.id===this.idsNodosActivosAccesiblesInexplorados[this.indexLocalizadorAccesibles]);
+        nodoNext = this.nodosActivos.find(na => na.id === this.idsNodosActivosAccesiblesInexplorados[this.indexLocalizadorAccesibles]);
 
       } else if (tipo === "estudiado") {
-        if(this.idsNodosActivosEstudiados.length < 1){
+        if (this.idsNodosActivosEstudiados.length < 1) {
           return;
         }
         this.indexLocalizadorEstudiados++;
-        if(this.indexLocalizadorEstudiados >= this.idsNodosActivosEstudiados.length){
-          this.indexLocalizadorEstudiados=0;
+        if (this.indexLocalizadorEstudiados >= this.idsNodosActivosEstudiados.length) {
+          this.indexLocalizadorEstudiados = 0;
         }
-        nodoNext = this.nodosActivos.find(n=>n.id===this.idsNodosActivosEstudiados[this.indexLocalizadorEstudiados]);
+        nodoNext = this.nodosActivos.find(n => n.id === this.idsNodosActivosEstudiados[this.indexLocalizadorEstudiados]);
       } else if (tipo === "olvidado") {
-        if(this.idsNodosActivosOlvidados.length < 1){
+        if (this.idsNodosActivosOlvidados.length < 1) {
           return;
         }
         this.indexLocalizadorOlvidados++;
-        if(this.indexLocalizadorOlvidados >= this.idsNodosActivosOlvidados.length){
-          this.indexLocalizadorOlvidados=0;
+        if (this.indexLocalizadorOlvidados >= this.idsNodosActivosOlvidados.length) {
+          this.indexLocalizadorOlvidados = 0;
         }
-        nodoNext = this.nodosActivos.find(na=>na.id === this.idsNodosActivosOlvidados[this.indexLocalizadorOlvidados]);
+        nodoNext = this.nodosActivos.find(na => na.id === this.idsNodosActivosOlvidados[this.indexLocalizadorOlvidados]);
       }
-      if(nodoNext){
+      if (nodoNext) {
         this.centrarEnNodo(nodoNext);
         this.seleccionNodo(nodoNext);
       }
@@ -962,7 +974,7 @@ export default {
         `eliminando un vinculo entre ${idNodoFrom} y ${idNodoTo} `
       );
 
-      this.editandoVinculos=true;
+      this.editandoVinculos = true;
       this.$apollo
         .mutate({
           mutation: gql`
@@ -1055,12 +1067,12 @@ export default {
     hideZoomInfo: debounce(function () {
       this.showingZoomInfo = false;
     }, 1000),
-    setCentroZonaNodosVisibles: throttle(function(padded){
-      let nuevoCentroX=Math.round(this.esquinasDiagrama.x1 + (this.$refs.contenedorDiagrama.scrollLeft / this.factorZoom) + (this.$refs.contenedorDiagrama.clientWidth/(2 * this.factorZoom)));
-      let nuevoCentroY=Math.round(this.esquinasDiagrama.y1 + (this.$refs.contenedorDiagrama.scrollTop / this.factorZoom) + (this.$refs.contenedorDiagrama.clientHeight/(2 * this.factorZoom)));
+    setCentroZonaNodosVisibles: throttle(function (padded) {
+      let nuevoCentroX = Math.round(this.esquinasDiagrama.x1 + (this.$refs.contenedorDiagrama.scrollLeft / this.factorZoom) + (this.$refs.contenedorDiagrama.clientWidth / (2 * this.factorZoom)));
+      let nuevoCentroY = Math.round(this.esquinasDiagrama.y1 + (this.$refs.contenedorDiagrama.scrollTop / this.factorZoom) + (this.$refs.contenedorDiagrama.clientHeight / (2 * this.factorZoom)));
 
 
-      if(padded && Math.abs(nuevoCentroX-this.centroZonaNodosVisibles.x)<(1 - this.paddingRefreshZonaVisible)*this.sizeZonaVisible.x && Math.abs(nuevoCentroY-this.centroZonaNodosVisibles.y)<(1 - this.paddingRefreshZonaVisible)*this.sizeZonaVisible.y){
+      if (padded && Math.abs(nuevoCentroX - this.centroZonaNodosVisibles.x) < (1 - this.paddingRefreshZonaVisible) * this.sizeZonaVisible.x && Math.abs(nuevoCentroY - this.centroZonaNodosVisibles.y) < (1 - this.paddingRefreshZonaVisible) * this.sizeZonaVisible.y) {
         return;
       }
 
@@ -1069,47 +1081,47 @@ export default {
         y: nuevoCentroY,
       }
     }, 1000),
-    iniciarCalculoNodosVisibles(){
+    iniciarCalculoNodosVisibles() {
       clearTimeout(idTimeoutNodosVisibles);
-      apuntadorChunkNodosVisibles=0;
-      this.$nextTick(()=>{
-        this.apuntadorDeFrontera=this.nodosVisibles.length - 1; // Indica el ultimo nodo no confiable en el array de nodos visibles
+      apuntadorChunkNodosVisibles = 0;
+      this.$nextTick(() => {
+        this.apuntadorDeFrontera = this.nodosVisibles.length - 1; // Indica el ultimo nodo no confiable en el array de nodos visibles
         this.introducirChunkNodosVisibles()
       })
     },
-    introducirChunkNodosVisibles(){
-      let chunkSize=20;
+    introducirChunkNodosVisibles() {
+      let chunkSize = 20;
 
-      for(let i=apuntadorChunkNodosVisibles; i<apuntadorChunkNodosVisibles+chunkSize; i++){
-        if(i>=this.nodosActivos.length){
+      for (let i = apuntadorChunkNodosVisibles; i < apuntadorChunkNodosVisibles + chunkSize; i++) {
+        if (i >= this.nodosActivos.length) {
 
           break;
         }
-        let esteNodo=this.nodosActivos[i];
+        let esteNodo = this.nodosActivos[i];
         let posNodo = esteNodo.autoCoords;
-        let limiteIzquierdo=this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen/this.factorZoom);
-        let limiteDerecho=this.centroZonaNodosVisibles.x + (this.factorZonaVisible * this.anchoScreen/this.factorZoom);
-        let limiteSuperior=this.centroZonaNodosVisibles.y - (this.factorZonaVisible * this.altoScreen/this.factorZoom);
-        let limiteInferior=this.centroZonaNodosVisibles.y + (this.factorZonaVisible * this.altoScreen/this.factorZoom);
+        let limiteIzquierdo = this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
+        let limiteDerecho = this.centroZonaNodosVisibles.x + (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
+        let limiteSuperior = this.centroZonaNodosVisibles.y - (this.factorZonaVisible * this.altoScreen / this.factorZoom);
+        let limiteInferior = this.centroZonaNodosVisibles.y + (this.factorZonaVisible * this.altoScreen / this.factorZoom);
 
-        if(posNodo.x>limiteIzquierdo && posNodo.x<limiteDerecho && posNodo.y>limiteSuperior && posNodo.y<limiteInferior){
+        if (posNodo.x > limiteIzquierdo && posNodo.x < limiteDerecho && posNodo.y > limiteSuperior && posNodo.y < limiteInferior) {
           this.nodosVisibles.push(esteNodo);
           this.idsNodosVisibles.push(esteNodo.id);
         }
       }
 
-      apuntadorChunkNodosVisibles+=chunkSize;
+      apuntadorChunkNodosVisibles += chunkSize;
 
-      if(apuntadorChunkNodosVisibles<this.nodosActivos.length){
-        this.$nextTick(()=>{
-          idTimeoutNodosVisibles=setTimeout(()=>{
-              this.introducirChunkNodosVisibles();
+      if (apuntadorChunkNodosVisibles < this.nodosActivos.length) {
+        this.$nextTick(() => {
+          idTimeoutNodosVisibles = setTimeout(() => {
+            this.introducirChunkNodosVisibles();
           }, 100)
         })
       }
-      else{
+      else {
         // Fin de la introducción de nodos visibles. Ahora retirar los que no deberían ser visibles.
-        this.$nextTick(()=>{
+        this.$nextTick(() => {
           this.nodosVisibles.splice(0, this.apuntadorDeFrontera + 1);
         })
       }
@@ -1117,42 +1129,53 @@ export default {
 
   },
   watch: {
-    nodosActivos(val){
-      if(val.length > 0){
+    "nodosActivos.length": function(val, oldVal) {
+      if (val> 0) {
         this.firstLoad = true;
+        if(val!=oldVal){
+          console.log("Recalculando nodos visibles after cambio en nodos activos length");
+          this.iniciarCalculoNodosVisibles();
+        }
       }
 
     },
-    coleccionSeleccionada(){
+    coleccionSeleccionada() {
       this.iniciarCalculoNodosVisibles();
-    },
-    seleccionandoColeccion() {
-      this.mostrandoOpcionesColeccion = false;
     },
     idNodoTarget(idNodoTarget) {
       localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
 
 
     },
-    domAndNodosReady(){
+    domAndNodosReady() {
       console.log("Cambio en domAndNodosReady");
-      let contenedor=this.$refs.contenedorDiagrama;
+      let contenedor = this.$refs.contenedorDiagrama;
       console.log("scrollWidth: " + contenedor.scrollWidth);
-      this.$nextTick(()=>{
-      contenedor.scrollLeft=contenedor.scrollWidth/2;
-        contenedor.scrollTop=contenedor.scrollHeight/2;
+      this.$nextTick(() => {
+        contenedor.scrollLeft = contenedor.scrollWidth / 2;
+        contenedor.scrollTop = contenedor.scrollHeight / 2;
         this.setCentroZonaNodosVisibles();
       })
     },
-    nodoTarget(){
+    nodoTarget() {
       this.iniciarCalculoNodosVisibles();
     },
     zoom() {
       this.showingZoomInfo = true;
       this.hideZoomInfo();
     },
-    centroZonaNodosVisibles(){
+    centroZonaNodosVisibles() {
+
       this.iniciarCalculoNodosVisibles();
+    },
+    idNodoSeleccionado() {
+      if (this.gestorColeccionesConectandoNodos) {
+        if (this.$refs.gestorColecciones) {
+
+          this.$refs.gestorColecciones.idNodoSeleccionado = this.idNodoSeleccionado;
+        }
+      }
+
     },
   },
   mounted() {
@@ -1161,12 +1184,12 @@ export default {
     if (screen.width < 600) {
       this.zoom = 40;
     }
-    this.montado=true;
+    this.montado = true;
   },
   created() {
     window.addEventListener("wheel", this.zoomWheel, { passive: false });
     // watch for resize
-    window.addEventListener("resize", function(){
+    window.addEventListener("resize", function () {
       this.anchoScreen = screen.width;
       this.altoScreen = screen.height;
     });
@@ -1175,7 +1198,7 @@ export default {
   removed() {
     window.removeEventListener("wheel", this.zoomWheel);
 
-    window.removeEventListener("resize", function(){
+    window.removeEventListener("resize", function () {
       this.anchoScreen = screen.width;
       this.altoScreen = screen.height;
     });
@@ -1196,6 +1219,7 @@ export default {
   --atlasConocimientoRepaso: #ff5f5f;
   --atlasConocimientoBaseNodo: #d9d9d9;
   --atlasConocimientoSeleccion: #ad58d8;
+  --atlasConocimientoSubseleccion: #ad58d87c;
   --atlasConocimientoContinuacion: #3066be;
 
   --filtroAtlasSeleccion: invert(43%) sepia(84%) saturate(539%)
@@ -1383,6 +1407,7 @@ export default {
 .fadeOut-leave {
   opacity: 1;
 }
+
 .controlesNodo {
   z-index: 100;
 }
@@ -1398,6 +1423,7 @@ export default {
   align-items: center;
   padding: 20px 20px;
 }
+
 /* #endregion */
 
 /* #region Windowing */
@@ -1409,5 +1435,6 @@ export default {
   border-radius: 50%;
   background-color: red;
 }
+
 /* #endregion */
 </style>

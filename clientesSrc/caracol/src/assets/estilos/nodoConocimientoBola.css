@@ -1,8 +1,7 @@
-
 .nodoConocimientoConBola {
---sizeBola:100;
+  --sizeBola: 100;
   position: absolute;
-  display:flex;
+  display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -36,9 +35,9 @@
 }
 
 .nodoConocimientoConBola .cajaTexto {
-    margin-top: 10px;
-    position:relative;
-  font-size: calc((var(--sizeBola)/80) * 1em);
+  margin-top: 10px;
+  position: relative;
+  font-size: calc((var(--sizeBola) / 80) * 1em);
   padding: 10px 10px;
   border-radius: 5px;
   text-align: center;
@@ -54,7 +53,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: 30px;
-  height:30px; 
+  height: 30px;
 }
 
 /* #region conexiones con seleccionado */
@@ -125,8 +124,8 @@
 
 .nodoConocimientoConBola .lineaVinculo {
   position: absolute;
-  top: calc((var(--sizeBola)/2) * 1px);
-  left: calc((var(--sizeBola)/1) * 1px);
+  top: calc((var(--sizeBola) / 2) * 1px);
+  left: calc((var(--sizeBola) / 1) * 1px);
   height: 2px;
   opacity: 1;
   transform-origin: left center;
@@ -161,4 +160,39 @@
   border-right: 10px solid var(--atlasConocimientoSeleccion);
 }
 
+/* #endregion */
+
+/* #region esperando click */
+.nodoConocimientoConBola.esperandoClick {
+}
+
+.nodoConocimientoConBola.esperandoClick .bolita {
+  border: 2px solid var(--mainColor);
+}
+
+.nodoConocimientoConBola.esperandoClick .cajaTexto {
+  border: 2px solid var(--mainColor);
+}
+
+.nodoConocimientoConBola.esperandoClick.activo .cajaTexto {
+  border: 2px solid var(--mainColor);
+  background-color: var(--mainColor);
+}
+
+.nodoConocimientoConBola.esperandoClick.activoSubseleccion .cajaTexto {
+  border: 2px solid var(--atlasConocimientoSeleccion);
+  background: repeating-linear-gradient(
+    30deg,
+    var(--atlasConocimientoSeleccion),
+    var(--atlasConocimientoSeleccion) 15px,
+    blue 15px,
+    black 20px,
+  );
+  background: repeating-linear-gradient(30deg, white, white 15px, var(--atlasConocimientoSubseleccion) 15px, var(--atlasConocimientoSubseleccion) 30px);
+}
+
+.nodoConocimientoConBola.esperandoClick.activoSeleccion .cajaTexto {
+  background: unset;
+  background-color: var(--atlasConocimientoSeleccion);
+}
 /* #endregion */
