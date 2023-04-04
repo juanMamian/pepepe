@@ -63,7 +63,6 @@
     >
       <div
         id="lineaHorizontal"
-        v-if="montado"
         :style="[estiloLineaHorizontalContenedorArbol]"
       ></div>
       <nodo-conocimiento-vista-arbol
@@ -166,7 +165,6 @@ export default {
 
   methods: {
     nodosUpdated: debounce(function () {
-      console.log("nodosUpdated");
       if (this.$refs?.['contenedorArbol'+this.idNodo]?.scrollWidth != this.anchoArbol) {
         this.anchoArbol = this.$refs['contenedorArbol' + this.idNodo].scrollWidth;
       }
@@ -190,7 +188,6 @@ export default {
       let widthPrimero = this.$refs.subnodo[0].$el.offsetWidth;
       let widthUltimo = this.$refs.subnodo[this.$refs.subnodo.length - 1].$el.offsetWidth;
       let widthLinea =anchoArbol - (widthPrimero / 2) - (widthUltimo / 2) - (2*this.paddingLateralArbol);
-      console.log("recalculando ancho de linea horizontal");
       return {
         width: widthLinea + 'px',
         left: (widthPrimero / 2) + this.paddingLateralArbol + 'px',
@@ -234,24 +231,10 @@ export default {
       return this.yo.atlas.datosNodos.find(dn => dn.idNodo === this.idNodo);
     },
   },
-  watch: {
-    "$refs.contenedorArbol" : function () {
-      console.log("Cargado el contenedor del árbol");
-      if (this.$refs?.contenedorArbol) {
-        this.nextTick(()=>{
-          console.log(`setting ancho árbol`);
-          this.anchoArbol = this.$refs['contenedorArbol' + this.idNodo].scrollWidth;
-        })
-      }
-    }
-  },
-  mounted() {
-    this.montado = true;
-    setTimeout(() => {
-      this.refreshLineaHorizontal++;
-    }, 1000);
-  },
   updated() {
+    this.$emit("componentUpdated");
+  },
+  created(){
     this.$emit("componentUpdated");
   }
 
