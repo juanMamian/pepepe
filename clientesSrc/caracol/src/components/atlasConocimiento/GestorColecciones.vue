@@ -1,95 +1,78 @@
 <template>
   <div class="gestorColecciones">
-    <div
-      id="nombreColeccion"
-      :class="{ desplegandoLista }"
-      @click.stop="desplegandoLista = !desplegandoLista"
-    >
-      <pie-progreso
-        v-if="coleccionSeleccionadaNullificable?.progreso"
-        v-show="!this.$apollo.queries.coleccionSeleccionada.loading"
-        :progreso="coleccionSeleccionada.progreso"
-        :color-fondo="'transparent'"
-        style="margin-right: 10px"
+    <div id="zonaTitulo" :style="[estiloZonaTitulo]">
+      <div
+        v-show="
+          coleccionSeleccionadaNullificable &&
+          !$apollo.queries.coleccionSeleccionada.loading
+        "
+        class="boton"
+        :class="{activo:mostrandoArbol}"
+        id="botonMostrarArbol"
+        @click="mostrandoArbol = !mostrandoArbol"
       >
         <img
           src="@/assets/iconos/atlas/userNodes.png"
           alt="Colección"
           id="iconoColeccionSeleccionada"
         />
-      </pie-progreso>
-      <loading v-show="this.$apollo.queries.coleccionSeleccionada.loading" />
-      <span style="z-index: 1">
-        {{ coleccionSeleccionadaNullificable?.nombre || "Atlas" }}
-      </span>
+      </div>
+      <div
+        id="nombreColeccion"
+        :class="{ desplegandoLista }"
+        @click.stop="desplegandoLista = !desplegandoLista"
+      >
+        <loading v-show="this.$apollo.queries.coleccionSeleccionada.loading" />
+        <span style="z-index: 1">
+          {{ coleccionSeleccionadaNullificable?.nombre || "Atlas" }}
+        </span>
 
-      <div id="listaSelectoresColeccion" v-show="desplegandoLista">
+        <div id="listaSelectoresColeccion" v-show="desplegandoLista">
+          <div
+            class="selectorColeccion"
+            @click.stop="setIdColeccionSeleccionada(null)"
+            v-show="idColeccionSeleccionada"
+          >
+            <img
+              src="@/assets/iconos/userNodes.png"
+              alt="Coleccion"
+              style="height: 15px"
+            />
+            Atlas
+          </div>
+          <div
+            class="selectorColeccion"
+            @click.stop="setIdColeccionSeleccionada(coleccion.id)"
+            v-for="coleccion of coleccionesEnriquecidas.filter(
+              (col) => idColeccionSeleccionada != col.id
+            )"
+            :key="coleccion.id"
+          >
+            <img
+              src="@/assets/iconos/userNodes.png"
+              alt="Coleccion"
+              style="height: 15px"
+            />
+            {{ coleccion.nombre }}
+          </div>
+          <div class="botonTexto" @click.stop="" id="botonCrearColeccion">
+            <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
+            <span>Crear colección</span>
+          </div>
+        </div>
+
         <div
-          class="selectorColeccion"
-          @click.stop="setIdColeccionSeleccionada(null)"
-          v-show="idColeccionSeleccionada"
+          class="boton"
+          id="botonMostrarOpcionesColeccion"
+          v-show="!desplegandoLista"
+          @click="mostrandoOpcionesColeccion = !mostrandoOpcionesColeccion"
         >
           <img
-            src="@/assets/iconos/userNodes.png"
-            alt="Coleccion"
-            style="height: 15px"
+            src="@/assets/iconos/ellipsisVertical.svg"
+            alt="Opciones"
+            style=""
           />
-          Atlas
         </div>
-        <div
-          class="selectorColeccion"
-          @click.stop="setIdColeccionSeleccionada(coleccion.id)"
-          v-for="coleccion of coleccionesEnriquecidas.filter(
-            (col) => idColeccionSeleccionada != col.id
-          )"
-          :key="coleccion.id"
-        >
-          <img
-            src="@/assets/iconos/userNodes.png"
-            alt="Coleccion"
-            style="height: 15px"
-          />
-          {{ coleccion.nombre }}
-        </div>
-        <div class="botonTexto" @click.stop="" id="botonCrearColeccion">
-          <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
-          <span>Crear colección</span>
-        </div>
-      </div>
-
-      <div
-        class="boton"
-        id="botonMostrarOpcionesColeccion"
-        v-show="!desplegandoLista"
-        @click="mostrandoOpcionesColeccion = !mostrandoOpcionesColeccion"
-      >
-        <img
-          src="@/assets/iconos/ellipsisVertical.svg"
-          alt="Opciones"
-          style=""
-        />
-      </div>
-    </div>
-
-    <div
-      id="contenedorSelectoresModoDiagrama"
-      v-show="coleccionSeleccionadaNullificable"
-      @click.stop=""
-    >
-      <div
-        class="selectorModoDiagrama boton"
-        :class="{ activo: !mostrandoArbol }"
-        @click="mostrandoArbol = false"
-      >
-        <img src="@/assets/iconos/codeBranch.svg" alt="Red" />
-      </div>
-
-      <div
-        class="selectorModoDiagrama boton"
-        :class="{ activo: mostrandoArbol }"
-        @click="mostrandoArbol = true"
-      >
-        <img src="@/assets/iconos/userNodes.png" alt="Red" />
       </div>
     </div>
 
@@ -217,6 +200,18 @@ export default {
     };
   },
   computed: {
+    estiloZonaTitulo(){
+      let color="transparent";
+      let width="fit-content";
+      if(this.mostrandoArbol){
+        color="var(--colorFondoGestionColecciones)";
+        width="100%";
+      }
+      return {
+        backgroundColor: color,
+        width,
+      }
+    },
     estiloIconoProgresoUsuario() {
       let left = "50%";
       let anchoAjustado = this.anchoContenedorArbol;
@@ -285,7 +280,7 @@ export default {
     },
   },
   methods: {
-    refreshLineas: debounce(function(){
+    refreshLineas: debounce(function () {
       console.log("activando refresh de línea horizontal");
       this.refreshLineaHorizontal++;
     }, 1000),
@@ -301,10 +296,10 @@ export default {
     },
   },
   watch: {
-    idNodoSeleccionado(val){
+    idNodoSeleccionado(val) {
       this.$emit("idNodoSeleccionado", val);
     },
-    cadenaTarget(){
+    cadenaTarget() {
       console.log("incrementando el refresh de linea horizontal");
       this.refreshLineaHorizontal++;
     },
@@ -351,23 +346,32 @@ export default {
 <style scoped lang="css">
 .gestorColecciones {
   width: 100%;
+  --colorFondoGestionColecciones:rgb(233, 233, 233);
+}
+#botonMostrarArbol {
+  background-color: var(--mainColor);
+  border-radius: 50%;
+  margin-right: 15px;
+}
+#botonMostrarArbol.activo{
+  background-color: var(--atlasConocimientoSeleccion);
 }
 #iconoColeccionSeleccionada {
   width: 25px;
   height: 25px;
-  background-color: rgb(230, 230, 230);
   border-radius: 50%;
   align-self: center;
-  opacity: 1;
 }
-
-#iconoColeccionSeleccionada:hover {
-  opacity: 0;
+#zonaTitulo{
+  margin: 0px auto;
+  display: flex;
+  padding: 10px 20px;
+ gap: 10px;
+ align-items: center; 
+ justify-content: center;
 }
 
 #nombreColeccion {
-  width: fit-content;
-  margin: 10px auto;
   position: relative;
   z-index: 10;
   padding: 10px 30px;
@@ -454,9 +458,8 @@ export default {
 
 /* #region diagrama arbol */
 #diagramaPersonal {
-  box-shadow: 2px 0px 1px 1px rgba(161, 161, 161, 0.479);
   padding: 20px 5px;
-  background-color: rgb(233, 233, 233);
+  background-color: var(--colorFondoGestionColecciones); 
   overflow-x: scroll;
 }
 #iconoProgresoUsuario {
@@ -497,7 +500,6 @@ export default {
 }
 #contenedorArbol {
   margin: 70px auto;
-
   display: flex;
   flex-wrap: wrap;
   gap: 40px;

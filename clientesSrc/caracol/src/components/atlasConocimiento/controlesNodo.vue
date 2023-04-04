@@ -19,7 +19,14 @@
       <div class="subanuncio"></div>
     </div>
 
-    <div id="nombre" ref="nombre" @click="toggleDespliege">
+    <div
+      id="nombre"
+      ref="nombre"
+      @touchstart.stop="inicioTouch"
+      @touchmove.stop="movimientoTouch"
+      @touchend.stop="finTouch"
+      @click="toggleDespliege"
+    >
       <img
         v-if="elNodo && elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
@@ -29,8 +36,8 @@
       {{ elNodo?.nombre || "" }}
     </div>
 
-    <div id="zonaControles" @click="">
-      <div class="filaControles" v-show="filaMostrada === 1">
+    <div id="zonaControles" @click="" v-if="elNodo">
+      <div class="filaControles" v-show="filaMostrada === 2">
         <div class="bloqueControl" style="">
           <div
             class="botonTexto selector botonControl"
@@ -106,7 +113,7 @@
         </div>
       </div>
 
-      <div class="filaControles" v-show="filaMostrada === 2">
+      <div class="filaControles" v-show="filaMostrada === 3">
         <div
           class="bloqueControl"
           id="bloqueControlDependencias"
@@ -183,11 +190,38 @@
         </div>
       </div>
 
+      <div class="filaControles" v-show="filaMostrada === 1">
+        <div id="zonaDescripcionNodo">
+          <div id="descripcionNodo">
+            {{ elNodo.descripcion || "" }}
+            <div
+              class="anuncioZonaVacia"
+              v-if="!elNodo?.descripcion?.length > 0"
+            >
+              Aún no hay descripción
+            </div>
+          </div>
+        </div>
+        <div class="bloqueControl">
+          <router-link
+            :to="{
+              name: 'visorNodoConocimiento',
+              params: { idNodo: elNodo.id },
+            }"
+          >
+            <div class="botonTexto">
+              <img src="@/assets/iconos/expandSolid.svg" alt="Expandir" />
+              Visitar
+            </div>
+          </router-link>
+        </div>
+      </div>
+
       <div id="zonaSelectorFilas">
         <div
           class="selectorFila boton selector"
           :class="{ activo: filaMostrada === index }"
-          v-for="index of 2"
+          v-for="index of cantidadFilas"
           :key="'selectorFila' + index"
           @click.stop="filaMostrada = index"
         ></div>
@@ -279,8 +313,10 @@ export default {
       mostrandoFlechasConexiones: false,
       desplegado: false,
 
+      cantidadFilas:3,
       filaMostrada: 1,
       mostrando: "",
+      touchStartX:null,
 
       montado: false,
       heightNombre: 0,
@@ -424,6 +460,33 @@ export default {
     }
   },
   methods: {
+    movimientoTouch(e){
+      let minMov=60;
+      if(this.touchStartX){
+        
+          let mov=e.touches[0].clientX - this.touchStartX;
+      console.log(`mov de ${mov}`);
+        if(Math.abs(mov) > minMov){
+          let delta=-mov/Math.abs(mov);
+          this.filaMostrada+=delta;
+          if(this.filaMostrada > this.cantidadFilas){
+            this.filaMostrada=1;
+          }
+          if(this.filaMostrada < 1){
+            this.filaMostrada=this.cantidadFilas;
+          }
+          this.touchStartX=null;
+        }
+      }
+    },
+    finTouch(){
+      this.touchStartX=null;
+    },
+    inicioTouch(e){
+      console.log("registro de touchstart");
+      this.touchStartX=e.touches[0].clientX;
+      console.log(`Queda en ${this.touchStartX}`);
+    },
     eliminarNodo() {
       if (!this.usuarioSuperadministrador) {
         console.log(`No autorizado`);
@@ -755,6 +818,7 @@ export default {
     },
   },
   mounted() {
+
     this.montado = true;
     this.desplegado = false;
   },
@@ -843,6 +907,24 @@ export default {
   font-weight: normal;
 }
 
+#zonaDescripcionNodo {
+  width: 100%;
+}
+#zonaDescripcionNodo #descripcionNodo {
+  padding: 10px 10px;
+  margin: 10px 6%;
+  margin-top: 20px;
+  margin-bottom: 0px;
+  font-style: normal;
+  font-size: 0.9em;
+  text-align: center;
+  border-radius: 10px;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(255 255 255 / 35%);
+}
 #botonMarcarAprendido.activo {
   background-color: transparent;
   border: 2px solid var(--atlasConocimientoCheck);

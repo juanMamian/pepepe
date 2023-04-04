@@ -1262,7 +1262,6 @@ export default {
 
 .gestorColecciones {
   position: absolute;
-  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1;
@@ -1384,7 +1383,7 @@ export default {
 .fadeOut-leave {
   opacity: 1;
 }
-.controlesNodo{
+.controlesNodo {
   z-index: 100;
 }
 
