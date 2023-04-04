@@ -5,10 +5,7 @@
       { seleccionado, accesible },
       datosUsuarioEsteNodo.estadoAprendizaje.toLowerCase(),
     ]"
-    @click.stop="
-      $emit('clickEnNodo', idNodo);
-      refreshLineaHorizontal++;
-    "
+    @click.stop="$emit('clickEnNodo', idNodo)"
   >
     <div
       id="lineaReceptora"
@@ -75,7 +72,8 @@
         :yo="yo"
         :nivelArbol="nivelArbol + 1"
         :idNodoUp="idNodo"
-        @componentUpdated="nodosUpdated"
+        :refreshLineaHorizontal="refreshLineaHorizontal"
+        @componentUpdated="$emit('componentUpdated')"
         @accionTargetNodo="updateCadenaTarget(idNodo)"
         @clickEnNodo="$emit('clickEnNodo', $event)"
         @updateCadenaTarget="$emit('updateCadenaTarget', $event)"
@@ -83,6 +81,7 @@
     </div>
   </div>
 </template>
+
 <script lang="js">
 import { gql } from "@apollo/client/core"
 import debounce from "debounce"
@@ -123,7 +122,7 @@ export default {
       default: null,
     },
     cadenaTarget: {
-      type: Array, 
+      type: Array,
       default: [],
     },
     yo: {
@@ -131,6 +130,10 @@ export default {
       required: true,
     },
     nivelArbol: {
+      type: Number,
+      default: 0,
+    },
+    refreshLineaHorizontal: {
       type: Number,
       default: 0,
     }
@@ -162,7 +165,6 @@ export default {
       paddingTopArbol: 50,
       paddingLateralArbol: 30,
       montado: false,
-      refreshLineaHorizontal: 0,
       anchoArbol: 0,
 
     }
@@ -177,12 +179,12 @@ export default {
       }
       else {//Entrando a la cadena. Solo lo puede hacer si su nodo up está en la cadena. O si es el primer nodo del árbol.
         if (this.cadenaTarget.length > 0) {
-          let indexUp=this.cadenaTarget.indexOf(this.idNodoUp);
+          let indexUp = this.cadenaTarget.indexOf(this.idNodoUp);
           if (indexUp < 0) {//Este nodo se está intentando introducir a la cadena target pero su nodo up no está en la cadena.
             console.log('Error. tratando de push nuevo target que no estaba bajo un nodo de la cadena');
             return;
           }
-          nuevaCadena=nuevaCadena.slice(0, indexUp + 1);
+          nuevaCadena = nuevaCadena.slice(0, indexUp + 1);
         }
         else {//La cadena estaba vacía. Sólo debería poder entrar el primer nodo del árbol.
           if (this.nivelArbol > 0) { //Está entrando un nodo que no es el primero.
@@ -196,11 +198,6 @@ export default {
       this.$emit('updateCadenaTarget', nuevaCadena);
     },
 
-    nodosUpdated: debounce(function () {
-      if (this.$refs?.['contenedorArbol' + this.idNodo]?.scrollWidth != this.anchoArbol) {
-        this.anchoArbol = this.$refs['contenedorArbol' + this.idNodo].scrollWidth;
-      }
-    }, 300),
 
   },
   computed: {
@@ -263,12 +260,27 @@ export default {
       return this.yo.atlas.datosNodos.find(dn => dn.idNodo === this.idNodo);
     },
   },
-  updated() {
-    this.$emit("componentUpdated");
+  watch: {
+    refreshLineaHorizontal() {
+      if (!this.$refs) {
+        return;
+      }
+      let elementoArbol = this.$refs['contenedorArbol' + this.idNodo];
+      if (elementoArbol && elementoArbol.scrollWidth != this.anchoArbol) {
+        console.log(`${this.elNodo.nombre} refreshing its linea horizontal`);
+        this.$nextTick(() => {
+          this.anchoArbol = elementoArbol.scrollWidth;
+        })
+      }
+
+      setTimeout(() => {
+        let elementoArbol = this.$refs['contenedorArbol' + this.idNodo];
+        if (elementoArbol) {
+          this.anchoArbol = elementoArbol.scrollWidth;
+        }
+      }, 1000);
+    },
   },
-  created() {
-    this.$emit("componentUpdated");
-  }
 
 }
 </script>

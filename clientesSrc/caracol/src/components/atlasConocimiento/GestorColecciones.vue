@@ -95,7 +95,7 @@
 
     <transition name="travelBottom" appear>
       <div
-      ref="diagramaPersonal"
+        ref="diagramaPersonal"
         id="diagramaPersonal"
         v-if="coleccionSeleccionadaNullificable"
         v-show="mostrandoArbol"
@@ -131,7 +131,7 @@
             :idNodoSeleccionado="idNodoSeleccionado"
             :cadenaTarget="cadenaTarget"
             :yo="yo"
-            @componentUpdated="nodosUpdated"
+            :refreshLineaHorizontal="refreshLineaHorizontal"
             @clickEnNodo="clickNodo"
             @updateCadenaTarget="updateCadenaTarget"
           />
@@ -199,6 +199,7 @@ export default {
     return {
       montado: false,
       anchoContenedorArbol: null,
+      refreshLineaHorizontal: 0,
 
       coleccionSeleccionada: {
         idsNodos: [],
@@ -210,7 +211,7 @@ export default {
 
       mostrandoArbol: false,
       idNodoSeleccionado: null,
-      cadenaTarget:[],
+      cadenaTarget: [],
 
       refreshPosiciones: 0,
     };
@@ -276,7 +277,7 @@ export default {
         return [];
       }
       //Cuando hay nodo target él es el único presente. Él mismo mostrará sus dependencias.
-      if (this.cadenaTarget.length > 0 ) {
+      if (this.cadenaTarget.length > 0) {
         return [this.cadenaTarget[0]];
       }
 
@@ -284,15 +285,13 @@ export default {
     },
   },
   methods: {
-    updateCadenaTarget(nuevaCadena){
-      console.log(`setting cadena target to : ${nuevaCadena}`);
-      this.cadenaTarget=nuevaCadena;
+    refreshLineas: debounce(function(){
+      console.log("activando refresh de línea horizontal");
+      this.refreshLineaHorizontal++;
+    }, 1000),
+    updateCadenaTarget(nuevaCadena) {
+      this.cadenaTarget = nuevaCadena;
     },
-    nodosUpdated: debounce(function () {
-      if (this.$refs?.contenedorArbol?.scrollWidth != this.anchoContenedorArbol) {
-        this.anchoContenedorArbol = this.$refs.contenedorArbol.scrollWidth;
-      }
-    }, 300),
     clickNodo(idNodo) {
       this.idNodoSeleccionado =
         this.idNodoSeleccionado === idNodo ? null : idNodo;
@@ -302,6 +301,10 @@ export default {
     },
   },
   watch: {
+    cadenaTarget(){
+      console.log("incrementando el refresh de linea horizontal");
+      this.refreshLineaHorizontal++;
+    },
     estiloIconoProgresoUsuario() {
       if (this.$refs?.imagenUsuario && this.$refs.diagramaPersonal) {
         this.$nextTick(() => {
@@ -316,7 +319,7 @@ export default {
       if (!col) {
         this.mostrandoArbol = false;
         this.idNodoSeleccionado = null;
-        this.cadenaTarget= [];
+        this.cadenaTarget = [];
       }
     },
 
