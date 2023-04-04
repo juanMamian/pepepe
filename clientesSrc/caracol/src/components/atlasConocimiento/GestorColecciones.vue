@@ -95,11 +95,12 @@
 
     <transition name="travelBottom" appear>
       <div
+      ref="diagramaPersonal"
         id="diagramaPersonal"
         v-if="coleccionSeleccionadaNullificable"
         v-show="mostrandoArbol"
       >
-        <div id="iconoProgresoUsuario">
+        <div id="iconoProgresoUsuario" :style="[estiloIconoProgresoUsuario]">
           <pie-progreso
             :progreso="coleccionSeleccionada.progreso"
             :size="120"
@@ -108,25 +109,31 @@
           >
             <div id="contenedorFotoUsuario">
               <img
+                ref="imagenUsuario"
                 :src="serverUrl + '/api/usuarios/fotografias/' + usuario.id"
                 alt="Fotografía"
               />
             </div>
           </pie-progreso>
+          <div id="indicadorProgreso" v-if="coleccionSeleccionadaNullificable">
+            {{ coleccionSeleccionada.progreso }}%
+          </div>
         </div>
-        <div id="indicadorProgreso" v-if="coleccionSeleccionadaNullificable">
-          {{ coleccionSeleccionada.progreso }}%
-        </div>
-        <div id="contenedorArbol">
+        <div
+          ref="contenedorArbol"
+          id="contenedorArbol"
+          :style="[estiloContenedorArbol]"
+        >
           <nodo-conocimiento-vista-arbol
-            v-for="idNodo of coleccionSeleccionada.idsNodos"
+            v-for="idNodo of idsNodosPresentes"
             :key="idNodo"
             :idNodo="idNodo"
-            :seleccionado="idNodoSeleccionado === idNodo"
-            :targeted="idNodoTarget === idNodo"
+            :idNodoSeleccionado="idNodoSeleccionado"
+            :idNodoTarget="idNodoTarget"
             :yo="yo"
-            @toggleMeTargetted="toggleTarget(idNodo)"
-            @click="clickNodo(idNodo)"
+            @componentUpdated="nodosUpdated"
+            @accionTargetNodo="toggleTarget($event)"
+            @clickEnNodo="clickNodo"
           />
         </div>
       </div>
@@ -138,6 +145,7 @@ import { gql } from "@apollo/client/core";
 import PieProgreso from "@/components/utilidades/PieProgreso.vue";
 import Loading from "@/components/utilidades/Loading.vue";
 import NodoConocimientoVistaArbol from "@/components/atlasConocimiento/NodoConocimientoVistaArbol.vue";
+import debounce from "debounce";
 
 export default {
   name: "GestorColecciones",
@@ -189,6 +197,9 @@ export default {
   },
   data() {
     return {
+      montado: false,
+      anchoContenedorArbol: null,
+
       coleccionSeleccionada: {
         idsNodos: [],
         idsRed: [],
@@ -200,9 +211,27 @@ export default {
       mostrandoArbol: false,
       idNodoSeleccionado: null,
       idNodoTarget: null,
+
+      refreshPosiciones: 0,
     };
   },
   computed: {
+    estiloIconoProgresoUsuario() {
+      let left = "50%";
+      let anchoAjustado = this.anchoContenedorArbol;
+      if (anchoAjustado) {
+        left = anchoAjustado / 2 + "px";
+      }
+      return {
+        left: left,
+      };
+    },
+    estiloContenedorArbol() {
+      let overflowX = "unset";
+      return {
+        overflowX,
+      };
+    },
     coleccionesEnriquecidas() {
       if (!this.yo.atlas?.colecciones) return [];
 
@@ -242,8 +271,24 @@ export default {
 
       return this.coleccionSeleccionada;
     },
+    idsNodosPresentes() {
+      if (!this.coleccionSeleccionadaNullificable) {
+        return [];
+      }
+      //Cuando hay nodo target él es el único presente. Él mismo mostrará sus dependencias.
+      if (this.idNodoTarget) {
+        return [this.idNodoTarget];
+      }
+
+      return this.coleccionSeleccionadaNullificable.idsNodos;
+    },
   },
   methods: {
+    nodosUpdated: debounce(function () {
+      if (this.$refs?.contenedorArbol?.scrollWidth != this.anchoContenedorArbol) {
+        this.anchoContenedorArbol = this.$refs.contenedorArbol.scrollWidth;
+      }
+    }, 300),
     clickNodo(idNodo) {
       this.idNodoSeleccionado =
         this.idNodoSeleccionado === idNodo ? null : idNodo;
@@ -256,10 +301,21 @@ export default {
     },
   },
   watch: {
+    estiloIconoProgresoUsuario() {
+      if (this.$refs?.imagenUsuario && this.$refs.diagramaPersonal) {
+        this.$nextTick(() => {
+          let screenWidth = screen.width;
+          this.$refs.diagramaPersonal.scrollLeft =
+            this.$refs.diagramaPersonal.scrollWidth / 2 - screenWidth / 2;
+        });
+      }
+    },
     coleccionSeleccionadaNullificable(col) {
       this.$emit("coleccionSeleccionada", col);
       if (!col) {
         this.mostrandoArbol = false;
+        this.idNodoSeleccionado = null;
+        this.idNodoTarget = null;
       }
     },
 
@@ -273,6 +329,15 @@ export default {
     mostrandoArbol(val) {
       this.$emit("mostrandoArbol", val);
     },
+    "$refs.contenedorArbol": function () {
+      this.anchoContenedorArbol = this.$refs.anchoContenedorArbol.offsetWidth;
+    },
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.montado = true;
+      this.refreshPosiciones++;
+    });
   },
 };
 </script>
@@ -385,12 +450,13 @@ export default {
   box-shadow: 2px 0px 1px 1px rgba(161, 161, 161, 0.479);
   padding: 20px 5px;
   background-color: rgb(233, 233, 233);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  overflow-x: scroll;
 }
-
+#iconoProgresoUsuario {
+  width: fit-content;
+  position: relative;
+  transform: translateX(-50%);
+}
 #contenedorSelectoresModoDiagrama {
   display: flex;
   gap: 20px;
@@ -416,25 +482,26 @@ export default {
 #contenedorFotoUsuario img {
   height: 100%;
 }
-#indicadorProgreso{
+#indicadorProgreso {
   font-size: 0.7em;
   text-align: center;
   margin: 10px auto;
-margin-top:0px;
+  margin-top: 0px;
 }
 #contenedorArbol {
+  margin: 70px auto;
+
   display: flex;
   flex-wrap: wrap;
   gap: 40px;
   row-gap: 60px;
-  justify-content: center;
-  align-items: center;
-  padding-bottom:50px;
+  align-items: flex-start;
+  padding-bottom: 50px;
+}
+#contenedorArbol > .nodoConocimientoVistaArbol {
+  margin: 0px auto;
+  flex-shrink: 0;
 }
 
-#contenedorArbol .nodoConocimientoVistaArbol {
-  transform: scale(0.5);
-  transform-origin: center;
-}
 /* #endregion */
 </style>

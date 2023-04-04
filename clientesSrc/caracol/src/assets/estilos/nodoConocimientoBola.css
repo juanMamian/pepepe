@@ -1,6 +1,11 @@
 
 .nodoConocimientoConBola {
+--sizeBola:100;
   position: absolute;
+  display:flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
 }
 .nodoConocimientoConBola #botonRastrear {
@@ -8,16 +13,16 @@
   bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
-  width: 50px;
-  height: 50px;
+  width: 30px;
+  height: 30px;
 }
 
 .nodoConocimientoConBola .bolita {
-  width: 100px;
-  height: 100px;
+  width: calc(var(--sizeBola) * 1px);
+  height: calc(var(--sizeBola) * 1px);
   border-radius: 50%;
   background-color: #f2f2f2;
-  padding: 22px;
+  padding: calc((var(--sizeBola) / 5) * 1px);
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -31,15 +36,13 @@
 }
 
 .nodoConocimientoConBola .cajaTexto {
-  position: absolute;
-  top: calc(100% + 20px);
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.2em;
+    margin-top: 10px;
+    position:relative;
+  font-size: calc((var(--sizeBola)/80) * 1em);
   padding: 10px 10px;
   border-radius: 5px;
   text-align: center;
-  width: 200%;
+  max-width: calc((var(--sizeBola) * 2) * 1px);
   z-index: 1;
   color: #030303;
   background-color: #f2f2f2;
@@ -50,8 +53,8 @@
   top: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
-  width: 50px;
-  height: 50px;
+  width: 30px;
+  height:30px; 
 }
 
 /* #region conexiones con seleccionado */
@@ -107,11 +110,11 @@
 .nodoConocimientoConBola.seleccionado {
   z-index: 1;
 }
-.nodoConocimientoConBola.seleccionado .bolita {
+.nodoConocimientoConBola.seleccionado > .bolita {
   border: 3px solid var(--atlasConocimientoSeleccion);
 }
 
-.nodoConocimientoConBola.seleccionado .cajaTexto {
+.nodoConocimientoConBola.seleccionado > .cajaTexto {
   background-color: var(--atlasConocimientoSeleccion);
   color: white;
 }

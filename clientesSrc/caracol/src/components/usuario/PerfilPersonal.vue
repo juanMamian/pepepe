@@ -18,7 +18,7 @@
     <div id="contenido" v-if="!$apollo.queries.esteUsuario.loading">
       <div id="zonaInformacionPersonal" v-show="seccion === 'informacionPersonal'">
         <div id="fotografia" @click="$refs.inputFotoUsuario.click()">
-          <img :src="this.serverUrl + '/api/usuarios/fotografias/' + usuario.id + '?v=' + versionFoto" alt="Fotografía" />
+          <img :src="serverUrl + '/api/usuarios/fotografias/' + usuario.id + '?v=' + versionFoto" alt="Fotografía" />
           <input type="file" ref="inputFotoUsuario" v-show="false" @change="uploadNuevaFoto" />
         </div>
         <div id="zonaCamposEditablesInformacionPersonal">
