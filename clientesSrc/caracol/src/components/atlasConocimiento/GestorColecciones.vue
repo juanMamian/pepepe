@@ -301,6 +301,9 @@ export default {
     },
   },
   watch: {
+    idNodoSeleccionado(val){
+      this.$emit("idNodoSeleccionado", val);
+    },
     cadenaTarget(){
       console.log("incrementando el refresh de linea horizontal");
       this.refreshLineaHorizontal++;

@@ -28,6 +28,7 @@
       :todosNodos="todosNodos"
       @coleccionSeleccionada="coleccionSeleccionada = $event"
       @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
+      @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
     />
 
     <div id="zonaNodoTarget" v-show="idNodoTarget">
@@ -147,8 +148,6 @@
     <controles-nodo
       :yo="yo"
       ref="controlesNodo"
-      style="z-index: 20"
-      v-show="!algoOverlaying"
       :elNodo="nodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
       @setMeTarget="
@@ -549,6 +548,10 @@ export default {
 
   },
   methods: {
+    nodoSeleccionadoEnColecciones(idNodo){
+      this.idNodoSeleccionado=idNodo;
+
+    },
     reactToNodoEliminado(idNodo){
      let indexN = this.nodosVisibles.findIndex(n=>n.id===idNodo) ;
      if(indexN>-1){
@@ -1149,7 +1152,6 @@ export default {
       this.hideZoomInfo();
     },
     centroZonaNodosVisibles(){
-
       this.iniciarCalculoNodosVisibles();
     },
   },
@@ -1381,6 +1383,9 @@ export default {
 
 .fadeOut-leave {
   opacity: 1;
+}
+.controlesNodo{
+  z-index: 100;
 }
 
 /* #region localizadores */
