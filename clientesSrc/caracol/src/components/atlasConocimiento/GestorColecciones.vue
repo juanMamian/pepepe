@@ -129,11 +129,11 @@
             :key="idNodo"
             :idNodo="idNodo"
             :idNodoSeleccionado="idNodoSeleccionado"
-            :idNodoTarget="idNodoTarget"
+            :cadenaTarget="cadenaTarget"
             :yo="yo"
             @componentUpdated="nodosUpdated"
-            @accionTargetNodo="toggleTarget($event)"
             @clickEnNodo="clickNodo"
+            @updateCadenaTarget="updateCadenaTarget"
           />
         </div>
       </div>
@@ -210,7 +210,7 @@ export default {
 
       mostrandoArbol: false,
       idNodoSeleccionado: null,
-      idNodoTarget: null,
+      cadenaTarget:[],
 
       refreshPosiciones: 0,
     };
@@ -276,14 +276,18 @@ export default {
         return [];
       }
       //Cuando hay nodo target él es el único presente. Él mismo mostrará sus dependencias.
-      if (this.idNodoTarget) {
-        return [this.idNodoTarget];
+      if (this.cadenaTarget.length > 0 ) {
+        return [this.cadenaTarget[0]];
       }
 
       return this.coleccionSeleccionadaNullificable.idsNodos;
     },
   },
   methods: {
+    updateCadenaTarget(nuevaCadena){
+      console.log(`setting cadena target to : ${nuevaCadena}`);
+      this.cadenaTarget=nuevaCadena;
+    },
     nodosUpdated: debounce(function () {
       if (this.$refs?.contenedorArbol?.scrollWidth != this.anchoContenedorArbol) {
         this.anchoContenedorArbol = this.$refs.contenedorArbol.scrollWidth;
@@ -295,9 +299,6 @@ export default {
     },
     setIdColeccionSeleccionada(nuevoId) {
       this.idColeccionSeleccionada = nuevoId;
-    },
-    toggleTarget(idNodo) {
-      this.idNodoTarget = this.idNodoTarget === idNodo ? null : idNodo;
     },
   },
   watch: {
@@ -315,7 +316,7 @@ export default {
       if (!col) {
         this.mostrandoArbol = false;
         this.idNodoSeleccionado = null;
-        this.idNodoTarget = null;
+        this.cadenaTarget= [];
       }
     },
 

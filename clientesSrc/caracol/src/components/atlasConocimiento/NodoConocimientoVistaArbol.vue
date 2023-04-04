@@ -13,7 +13,7 @@
     <div
       id="lineaReceptora"
       :style="[estiloLineaReceptora]"
-      v-show="idNodoTarget && nivelArbol > 0"
+      v-show="cadenaTarget.length > 0 && nivelArbol > 0"
     ></div>
     <div class="boton" id="botonRastrear" v-show="seleccionado || targeted">
       <img
@@ -24,7 +24,7 @@
             filter: targeted ? 'var(--filtroAtlasSeleccion)' : 'none',
           },
         ]"
-        @click.stop="$emit('accionTargetNodo', idNodo)"
+        @click.stop="toggleInCadenaTarget"
       />
     </div>
 
@@ -56,8 +56,8 @@
 
     <div
       id="contenedorArbol"
-      :ref="'contenedorArbol'+idNodo"
-      v-if="idNodoTarget && nivelArbol < 1"
+      :ref="'contenedorArbol' + idNodo"
+      v-if="targeted"
       :style="[estiloContenedorArbol]"
       @click.stop=""
     >
@@ -71,12 +71,14 @@
         :key="idSubnodo"
         :idNodo="idSubnodo"
         :idNodoSeleccionado="idNodoSeleccionado"
-        :idNodoTarget="idNodoTarget"
+        :cadenaTarget="cadenaTarget"
         :yo="yo"
         :nivelArbol="nivelArbol + 1"
+        :idNodoUp="idNodo"
         @componentUpdated="nodosUpdated"
-        @accionTargetNodo="$emit('accionTargetNodo', $event)"
+        @accionTargetNodo="updateCadenaTarget(idNodo)"
         @clickEnNodo="$emit('clickEnNodo', $event)"
+        @updateCadenaTarget="$emit('updateCadenaTarget', $event)"
       />
     </div>
   </div>
@@ -109,6 +111,9 @@ export default {
 
   name: "NodoConocimientoVistaArbol",
   props: {
+    idNodoUp: {
+      type: String,
+    },
     idNodo: {
       type: String,
       required: true,
@@ -117,9 +122,9 @@ export default {
       type: String,
       default: null,
     },
-    idNodoTarget: {
-      type: String,
-      default: null,
+    cadenaTarget: {
+      type: Array, 
+      default: [],
     },
     yo: {
       type: Object,
@@ -155,17 +160,44 @@ export default {
         vinculos: []
       },
       paddingTopArbol: 50,
-      paddingLateralArbol:30,
+      paddingLateralArbol: 30,
       montado: false,
       refreshLineaHorizontal: 0,
       anchoArbol: 0,
-      
+
     }
   },
 
   methods: {
+    toggleInCadenaTarget() {
+      let indexT = this.cadenaTarget.indexOf(this.idNodo);
+      let nuevaCadena = [...this.cadenaTarget];
+      if (indexT > -1) {
+        nuevaCadena = nuevaCadena.slice(0, indexT);
+      }
+      else {//Entrando a la cadena. Solo lo puede hacer si su nodo up está en la cadena. O si es el primer nodo del árbol.
+        if (this.cadenaTarget.length > 0) {
+          let indexUp=this.cadenaTarget.indexOf(this.idNodoUp);
+          if (indexUp < 0) {//Este nodo se está intentando introducir a la cadena target pero su nodo up no está en la cadena.
+            console.log('Error. tratando de push nuevo target que no estaba bajo un nodo de la cadena');
+            return;
+          }
+          nuevaCadena=nuevaCadena.slice(0, indexUp + 1);
+        }
+        else {//La cadena estaba vacía. Sólo debería poder entrar el primer nodo del árbol.
+          if (this.nivelArbol > 0) { //Está entrando un nodo que no es el primero.
+            console.log("Error: tratando de introducir a la cadena target un nodo que no es el primero cuando la cadena estaba vacía");
+            return;
+          }
+        }
+        nuevaCadena.push(this.idNodo);
+      }
+
+      this.$emit('updateCadenaTarget', nuevaCadena);
+    },
+
     nodosUpdated: debounce(function () {
-      if (this.$refs?.['contenedorArbol'+this.idNodo]?.scrollWidth != this.anchoArbol) {
+      if (this.$refs?.['contenedorArbol' + this.idNodo]?.scrollWidth != this.anchoArbol) {
         this.anchoArbol = this.$refs['contenedorArbol' + this.idNodo].scrollWidth;
       }
     }, 300),
@@ -187,7 +219,7 @@ export default {
       }
       let widthPrimero = this.$refs.subnodo[0].$el.offsetWidth;
       let widthUltimo = this.$refs.subnodo[this.$refs.subnodo.length - 1].$el.offsetWidth;
-      let widthLinea =anchoArbol - (widthPrimero / 2) - (widthUltimo / 2) - (2*this.paddingLateralArbol);
+      let widthLinea = anchoArbol - (widthPrimero / 2) - (widthUltimo / 2) - (2 * this.paddingLateralArbol);
       return {
         width: widthLinea + 'px',
         left: (widthPrimero / 2) + this.paddingLateralArbol + 'px',
@@ -196,13 +228,13 @@ export default {
     estiloContenedorArbol() {
       let paddingTop = this.paddingTopArbol;
       let paddingBottom = 100;
-      let paddingLeft=this.paddingLateralArbol;
-      let paddingRight=this.paddingLateralArbol;
+      let paddingLeft = this.paddingLateralArbol;
+      let paddingRight = this.paddingLateralArbol;
 
       return {
         paddingTop: paddingTop + 'px',
         paddingBottom: paddingBottom + 'px',
-        paddingLeft: paddingLeft+'px',
+        paddingLeft: paddingLeft + 'px',
         paddingRight: paddingRight + 'px',
       }
     },
@@ -219,7 +251,7 @@ export default {
       return this.idNodoSeleccionado === this.idNodo;
     },
     targeted() {
-      return this.idNodoTarget === this.idNodo;
+      return this.cadenaTarget.includes(this.idNodo);
     },
     accesible() {
       return !this.elNodo.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !this.idsNodosVerdes.includes(v.idRef));
@@ -234,7 +266,7 @@ export default {
   updated() {
     this.$emit("componentUpdated");
   },
-  created(){
+  created() {
     this.$emit("componentUpdated");
   }
 
