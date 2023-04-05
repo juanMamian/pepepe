@@ -145,5 +145,14 @@
 			"console.log('\\x1b[35m%s\\x1b[0m', `$1`);"
 		]
 		
+	},
+	"Bloque para vue options":{
+		"scope": "javascript",
+		"prefix": "bloquevue",
+		"body": [
+			"$1(){",
+			"\t$2",
+			"},",
+		]
 	}
 }

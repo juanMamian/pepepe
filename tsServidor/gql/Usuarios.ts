@@ -1113,10 +1113,11 @@ export const resolvers = {
                     throw new ApolloError('Error conectando con la base de datos');
                 };
 
-                const idsRedContinuacion = await getIdsRedContinuacionesNodo(elNodo);
-                if (laColeccion.idsNodos.some(id => idsRedContinuacion.includes(id))) {
-                    console.log(`Error porque era un nodo que ya estaba incluido como parte de la red de requerimentos de otro`);
-                    throw new UserInputError('Este nodo ya estaba incluido como parte del camino a otro nodo');
+                let idsRed=(await getNodosRedByOriginalIds(laColeccion.idsNodos)).map(n=>n.id);
+                
+                if(idsRed.includes(idNodo)){
+                    console.log("Se intentaba introducir un nodo que ya hacía parte de la red.");
+                    throw new UserInputError("El nodo ya estaba en la colección como dependencia de otro");
                 }
 
                 laColeccion.idsNodos.push(idNodo);

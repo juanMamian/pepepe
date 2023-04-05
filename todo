@@ -9,6 +9,8 @@ Atlas de conocimiento.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.
 -Reparar los foros.
 -Verificar si en el resolver de eliminación de nodos se eliminan los enlaces que lo tenian en idRef.
+-Verificar que no se formen dependencias redundantes en el backend.
+-Hacer que al set idNodoSeleccionado en el atlas de conocimiento, haga una query apollo. Así queda prevista la seleccion de nodos no descargados.
 
 
 pepepe
