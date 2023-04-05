@@ -23,31 +23,22 @@
     </div>
 
     <RouterView />
-    <gestor-colecciones
-      ref="gestorColecciones"
-      :yo="yo"
-      :todosNodos="todosNodos"
-      @coleccionSeleccionada="coleccionSeleccionada = $event"
-      @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
-      @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
-      @conectandoNodosColeccion="gestorColeccionesConectandoNodos = $event"
-    />
-
-    <div id="zonaNodoTarget" v-show="idNodoTarget">
-      <div
-        id="nombreNodoTarget"
-        v-if="nodoTarget"
-        @click="centrarEnNodo(nodoTarget)"
-      >
-        <pie-progreso
-          v-show="
-            progresoNodoTarget != null &&
-            !$apollo.queries.progresoNodoTarget.loading
-          "
-          :progreso="progresoNodoTarget"
-          :size="40"
-          :cifrasDecimales="0"
-          :color-fondo="'transparent'"
+    <div id="contenedorOverlays" :style="[estiloContenedorOverlays]">
+      <gestor-colecciones
+      v-show="!idNodoTarget"
+        ref="gestorColecciones"
+        :yo="yo"
+        :todosNodos="todosNodos"
+        @coleccionSeleccionada="coleccionSeleccionada = $event"
+        @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
+        @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
+        @conectandoNodosColeccion="gestorColeccionesConectandoNodos = $event"
+      />
+      <div id="zonaNodoTarget" v-show="idNodoTarget">
+        <div
+          id="nombreNodoTarget"
+          v-if="nodoTarget"
+          @click="centrarEnNodo(nodoTarget)"
         >
           <img
             style="height: 25px"
@@ -55,17 +46,17 @@
             alt="Target"
             id="iconoNodoTarget"
           />
-        </pie-progreso>
 
-        {{ nodoTarget.nombre }}
-      </div>
+          {{ nodoTarget.nombre }}
+        </div>
 
-      <div
-        class="boton"
-        id="botonCancelarNodoTarget"
-        @click.stop="setNodoTarget(null)"
-      >
-        <img src="@/assets/iconos/equis.svg" alt="Equis" />
+        <div
+          class="boton"
+          id="botonCancelarNodoTarget"
+          @click.stop="setNodoTarget(null)"
+        >
+          <img src="@/assets/iconos/equis.svg" alt="Equis" />
+        </div>
       </div>
     </div>
 
@@ -161,6 +152,7 @@
       ref="controlesNodo"
       :elNodo="nodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
+      :idNodoTarget="idNodoTarget"
       @setMeTarget="
         setNodoTarget(nodoSeleccionado.id);
         centrarEnNodoById(nodoSeleccionado.id);
@@ -172,6 +164,7 @@
       "
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
       @nodoEliminado="reactToNodoEliminado"
+      @setNodoTarget="setNodoTarget"
     />
 
     <div id="zonaLocalizadores" v-show="!algoOverlaying">
@@ -425,6 +418,15 @@ export default {
     };
   },
   computed: {
+    estiloContenedorOverlays(){
+      let width="fit-content";
+      if(this.gestorColeccionesMostrandoArbol){
+        width="100%";
+      }
+      return {
+        width
+      }
+    },
     domAndNodosReady() {
       return this.montado && this.firstLoad;
     },
@@ -796,19 +798,6 @@ export default {
 
       this.crearNodo(posicionNuevoNodo);
     },
-    setNodoTargetCache(idNodo) {
-      console.log(`Seting en cache al nodo ${idNodo} como target`);
-      const store = this.$apollo.provider.defaultClient;
-      const cache = store.readQuery({
-        query: QUERY_DATOS_USUARIO_NODOS,
-      });
-      var nuevoCache = JSON.parse(JSON.stringify(cache));
-      nuevoCache.yo.atlas.idNodoTarget = idNodo;
-      store.writeQuery({
-        query: QUERY_DATOS_USUARIO_NODOS,
-        data: nuevoCache,
-      });
-    },
     setNodoTarget(idNodo) {
       this.idNodoTarget = idNodo;
     },
@@ -1114,7 +1103,7 @@ export default {
       this.$nextTick(() => {
         this.introducirChunkNodosVisibles()
       })
-    }, 400),
+    }, 700),
     introducirChunkNodosVisibles() {
       console.log("Introduciendo chunks verificando que no sea uno de los " + this.idsNodosAlreadyRendered.length + "nodos already rendered");
       let chunkSize = 20;
@@ -1262,11 +1251,17 @@ export default {
   overflow-x: hidden;
 }
 
-#zonaNodoTarget {
+#contenedorOverlays{
   position: absolute;
-  top: 0px;
-  left: 50%;
-  transform: translate(-50%);
+  top:0px;
+  left:50%;
+  transform: translateX(-50%);
+  z-index:1;
+}
+
+#zonaNodoTarget {
+  margin: 10px auto;
+
   display: flex;
   align-items: center;
   padding: 10px;
@@ -1285,15 +1280,11 @@ export default {
 #iconoNodoTarget {
   width: 25px;
   height: 25px;
-  background-color: rgb(230, 230, 230);
   border-radius: 50%;
+  margin: 0px 10px;
   align-self: center;
-  opacity: 1;
 }
 
-#iconoNodoTarget:hover {
-  opacity: 0;
-}
 
 #nombreNodoTarget {
   background-color: var(--atlasConocimientoSeleccion);
@@ -1307,9 +1298,7 @@ export default {
 }
 
 .gestorColecciones {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  margin: 0px auto;
   z-index: 1;
 }
 

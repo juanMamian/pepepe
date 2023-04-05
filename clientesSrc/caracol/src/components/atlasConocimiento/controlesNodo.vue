@@ -215,6 +215,15 @@
             </div>
           </router-link>
         </div>
+        <div class="bloqueControl" id="bloqueControlTarget">
+          <div class="botonTexto selector" :class="{activo: elNodo.id === idNodoTarget}" @click="$emit('setNodoTarget', elNodo.id)">
+            <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira">
+            Apuntar
+          </div>
+          <div class="botonTexto" v-show="elNodo.id===idNodoTarget" @click.stop="$emit('setNodoTarget', null)" style="align-self:stretch">
+            <img src="@/assets/iconos/equis.svg" alt="Cancelar">
+          </div>
+        </div>
       </div>
 
       <div id="zonaSelectorFilas">
@@ -300,6 +309,10 @@ export default {
     nodoCreandoDependencia: {
       type: Object,
     },
+    idNodoTarget:{
+      type: String,
+      
+    }
   },
   components: {
     Loading,

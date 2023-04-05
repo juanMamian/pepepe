@@ -14,28 +14,20 @@
       olvidado: idsNodosOlvidados.includes(elNodo.id),
     }"
   >
-    <div
-      class="boton"
-      id="botonRastrear"
-      v-show="seleccionado || idNodoTarget == elNodo.id"
-    >
+    <div class="bolita">
       <img
         src="@/assets/iconos/crosshairsSolid.svg"
-        alt="Rastrear"
-        :style="[
-          {
-            filter:
-              idNodoTarget === elNodo.id
-                ? 'var(--filtroAtlasSeleccion)'
-                : 'none',
-          },
-        ]"
-        @click.stop="
-          $emit('setNodoTarget', idNodoTarget === elNodo.id ? null : elNodo.id)
+        alt="Mira"
+        style="
+          filter: var(--filtroAtlasSeleccion);
+          transform: translate(-50%, -50%) scale(1.9);
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          opacity: 1;
         "
+        v-if="idNodoTarget === elNodo.id"
       />
-    </div>
-    <div class="bolita">
       <img
         v-if="elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
@@ -47,18 +39,6 @@
     <div class="cajaTexto">
       {{ elNodo.nombre }}
 
-      <div class="boton" v-show="seleccionado" id="botonAbrir">
-        <img
-          src="@/assets/iconos/expandSolid.svg"
-          alt="Abrir"
-          @click.stop="
-            $router.push({
-              name: 'visorNodoConocimiento',
-              params: { idNodo: elNodo.id },
-            })
-          "
-        />
-      </div>
     </div>
 
     <div

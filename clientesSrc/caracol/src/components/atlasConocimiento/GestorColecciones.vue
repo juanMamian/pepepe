@@ -1,5 +1,5 @@
 <template>
-  <div class="gestorColecciones" :style="[estiloGestorColecciones]">
+  <div class="gestorColecciones">
     <div
       id="zonaTitulo"
       :style="[estiloZonaTitulo]"
@@ -80,7 +80,11 @@
         </div>
       </div>
     </div>
-    <div id="contenedorOpciones" v-show="mostrandoOpcionesColeccion" v-if="coleccionSeleccionadaNullificable">
+    <div
+      id="contenedorOpciones"
+      v-show="mostrandoOpcionesColeccion"
+      v-if="coleccionSeleccionadaNullificable"
+    >
       <div
         class="botonOpcion botonTexto selector"
         id="botonConectarNodosColeccion"
@@ -95,12 +99,16 @@
     </div>
 
     <div
-      v-if="conectandoNodosColeccion && coleccionSeleccionadaNullificable && idNodoSeleccionado"
+      v-if="
+        conectandoNodosColeccion &&
+        coleccionSeleccionadaNullificable &&
+        idNodoSeleccionado
+      "
       class="botonTexto"
       id="botonToggleNodoColeccion"
       @click.stop="toggleNodoColeccion"
     >
-    <Loading v-show="togglingNodoColeccion" />
+      <Loading v-show="togglingNodoColeccion" />
       <img
         src="@/assets/iconos/plugSolid.svg"
         alt="Conectar"
@@ -173,7 +181,7 @@ export default {
     PieProgreso,
     Loading,
     NodoConocimientoVistaArbol,
-},
+  },
   props: {
     yo: {
       type: Object,
@@ -229,7 +237,7 @@ export default {
       idColeccionSeleccionada: null,
       mostrandoOpcionesColeccion: false,
       conectandoNodosColeccion: false,
-      togglingNodoColeccion:false,
+      togglingNodoColeccion: false,
 
       mostrandoArbol: false,
       idNodoSeleccionado: null,
@@ -239,15 +247,6 @@ export default {
     };
   },
   computed: {
-    estiloGestorColecciones(){
-      let width="fit-content";
-      if(this.mostrandoArbol){
-        width="100%";
-      }
-      return {
-        width
-      }
-    },
     nodoSeleccionadoBelongs() {
       if (!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable) {
         return false;
@@ -336,34 +335,39 @@ export default {
     },
   },
   methods: {
-    toggleNodoColeccion(){
-      if(!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable){
-        return
+    toggleNodoColeccion() {
+      if (!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable) {
+        return;
       }
-     this.togglingNodoColeccion=true;
-     this.$apollo.mutate({
-      mutation: gql`
-        mutation($idColeccion:ID!, $idNodo:ID!, $idUsuario: ID!){
-         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:$idColeccion, idNodo: $idNodo, idUsuario: $idUsuario){
-            id
-            idsNodos
-            idsRed
-          }
-        }
-        `,
-        variables:{
-         idColeccion:this.coleccionSeleccionadaNullificable.id,
-         idNodo: this.idNodoSeleccionado,
-         idUsuario: this.usuario.id
-        }
-      }).then(()=>{
-        this.togglingNodoColeccion=false;
-          
-      }).catch((error)=>{
-        console.log('Error: '+ error);
-        this.togglingNodoColeccion=false;
-      }) 
-      
+      this.togglingNodoColeccion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!, $idNodo: ID!, $idUsuario: ID!) {
+              toggleNodoColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+                idNodo: $idNodo
+                idUsuario: $idUsuario
+              ) {
+                id
+                idsNodos
+                idsRed
+              }
+            }
+          `,
+          variables: {
+            idColeccion: this.coleccionSeleccionadaNullificable.id,
+            idNodo: this.idNodoSeleccionado,
+            idUsuario: this.usuario.id,
+          },
+        })
+        .then(() => {
+          this.togglingNodoColeccion = false;
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.togglingNodoColeccion = false;
+        });
     },
     refreshLineas: debounce(function () {
       console.log("activando refresh de línea horizontal");
@@ -401,7 +405,7 @@ export default {
       this.$emit("coleccionSeleccionada", col);
       if (!col) {
         this.mostrandoArbol = false;
-        this.mostrandoOpcionesColeccion=false;
+        this.mostrandoOpcionesColeccion = false;
         this.idNodoSeleccionado = null;
         this.cadenaTarget = [];
       } else {
@@ -420,8 +424,8 @@ export default {
     },
     conectandoNodosColeccion(val) {
       this.mostrandoArbol = false;
-      if(!val){
-        this.mostrandoOpcionesColeccion=false;
+      if (!val) {
+        this.mostrandoOpcionesColeccion = false;
       }
       this.$emit("conectandoNodosColeccion", val);
     },
@@ -473,7 +477,6 @@ export default {
 }
 
 #contenedorOpciones {
-
   display: flex;
   justify-content: center;
   align-items: center;
