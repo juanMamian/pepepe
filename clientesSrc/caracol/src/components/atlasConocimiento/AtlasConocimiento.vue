@@ -85,13 +85,16 @@
             :idsUnderTargetActivos="idsUnderTargetActivos"
             :class="{
               esperandoClick: gestorColeccionesConectandoNodos,
-              conectadoSeleccionado: nodoTarget && idsUnderTarget[nivelesUnderTarget] && idsUnderTarget[nivelesUnderTarget].includes(nodo.id),
-              activoSeleccion: gestorColeccionesConectandoNodos && coleccionSeleccionada?.idsNodos.includes(
-                nodo.id
-              ),
-              activoSubseleccion:gestorColeccionesConectandoNodos && coleccionSeleccionada?.idsRed.includes(
-                nodo.id
-              ),
+              conectadoSeleccionado:
+                nodoTarget &&
+                idsUnderTarget[nivelesUnderTarget] &&
+                idsUnderTarget[nivelesUnderTarget].includes(nodo.id),
+              activoSeleccion:
+                gestorColeccionesConectandoNodos &&
+                coleccionSeleccionada?.idsNodos.includes(nodo.id),
+              activoSubseleccion:
+                gestorColeccionesConectandoNodos &&
+                coleccionSeleccionada?.idsRed.includes(nodo.id),
             }"
             :idNodoTarget="idNodoTarget"
             :style="[
@@ -109,9 +112,19 @@
             "
             @click.stop="clickNodo(nodo)"
           >
-          <template #imagenBolita v-if="gestorColeccionesConectandoNodos && coleccionSeleccionada?.idsNodos.includes(nodo.id)">
-            <img src="@/assets/iconos/plugSolid.svg" style="transform:scale(0.7); filter: invert(1)" alt="Conectado">
-          </template>
+            <template
+              #imagenBolita
+              v-if="
+                gestorColeccionesConectandoNodos &&
+                coleccionSeleccionada?.idsNodos.includes(nodo.id)
+              "
+            >
+              <img
+                src="@/assets/iconos/plugSolid.svg"
+                style="transform: scale(0.7); filter: invert(1)"
+                alt="Conectado"
+              />
+            </template>
           </nodo-conocimiento-atlas>
         </div>
         <div

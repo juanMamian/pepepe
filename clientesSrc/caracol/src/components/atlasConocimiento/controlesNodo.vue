@@ -22,10 +22,9 @@
       class="anuncio"
       :class="{
         anuncioSeleccion: idNodoTarget === elNodo?.id,
-        fantasmeado: elNodo && elNodo.id != idNodoTarget,
       }"
       id="anuncioNodoTarget"
-      v-show="idNodoTarget"
+      v-show="idNodoTarget && (!elNodo || elNodo.id == idNodoTarget)"
       @click="$emit('centerEnTarget')"
       @mouseenter="$emit('hoveringAnuncioTarget', true)"
       @mouseleave="$emit('hoveringAnuncioTarget', false)"

@@ -26,7 +26,6 @@
           left: 50%;
           opacity: 1;
         "
-        v-show="!!$slots.imagenBolita"
         v-if="idNodoTarget === elNodo.id"
       />
       <slot name="imagenBolita">
@@ -45,11 +44,6 @@
 
     <div
       class="lineaVinculo"
-      :class="{
-        fantasmeado:
-          idsUnderTargetActivos &&
-          !idsUnderTargetActivos.includes(vinculo.idRef),
-      }"
       v-for="vinculo of vinculosConEstilo.filter((v) => v.estilo)"
       :key="vinculo.id"
       :style="[vinculo.estilo]"
@@ -190,6 +184,7 @@ export default {
           transform: "rotate(" + angle + "rad)",
         };
         if (
+          this.idNodoTarget &&
           this.idsUnderTargetActivos &&
           !this.idsUnderTargetActivos.includes(vinculo.idRef)
         ) {
