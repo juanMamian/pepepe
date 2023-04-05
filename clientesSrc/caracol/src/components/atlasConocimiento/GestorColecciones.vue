@@ -88,13 +88,26 @@
       <div
         class="botonOpcion botonTexto selector"
         id="botonConectarNodosColeccion"
-        :class="{ activo: conectandoNodosColeccion }"
-        @click.stop="conectandoNodosColeccion = !conectandoNodosColeccion"
+        v-show="!conectandoNodosColeccion"
+        @click.stop="conectandoNodosColeccion = true"
       >
         <img src="@/assets/iconos/plugSolid.svg" alt="Conectar" />
-        <span v-show="conectandoNodosColeccion">
-          Editando nodos en la colección
-        </span>
+      </div>
+    </div>
+    <div
+      class="anuncio anuncioSeleccion"
+      id="anuncioConectandoNodos"
+      v-show="conectandoNodosColeccion"
+    >
+      <img src="@/assets/iconos/userNodes.png" alt="Nodos" />
+      Editando nodos de la coleccion
+      <div
+        class="boton"
+        id="botonCancelarConectarNodosColeccion"
+        v-show="!idNodoSeleccionado"
+        @click.stop="conectandoNodosColeccion = false"
+      >
+        <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
       </div>
     </div>
 
@@ -491,9 +504,15 @@ export default {
   background-color: transparent;
   box-shadow: none;
 }
-#botonConectarNodosColeccion.activo {
-  background-color: var(--atlasConocimientoSeleccion);
-  border-color: transparent;
+#anuncioConectandoNodos {
+  position: relative;
+}
+#botonCancelarConectarNodosColeccion {
+  background-color: var(--mainColor);
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
 }
 #botonToggleNodoColeccion {
   width: fit-content;

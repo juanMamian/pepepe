@@ -295,10 +295,18 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-style: italic;
 }
 
 .anuncio img{
   height: 20px;
+}
+.anuncio.anuncioSeleccion{
+
+  background-color: var(--atlasConocimientoBaseNodo);
+  border: 1px solid var(--atlasConocimientoSeleccion);
 }
 .anuncioZonaVacia {
   font-size: 13px;

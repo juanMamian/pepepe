@@ -6,7 +6,7 @@
     :class="{ deshabilitado: eliminandose }"
   >
     <div id="anuncioCreandoDependencia" v-show="nodoCreandoDependencia">
-      <div class="anuncio">
+      <div class="anuncio anuncioSeleccion">
         <img
           v-show="!creandoDependencia"
           src="@/assets/iconos/codeBranch.svg"
@@ -1006,17 +1006,10 @@ export default {
   bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
   justify-content: center;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  border-radius: 10px;
-  font-style: italic;
   opacity: 0.9;
-  background-color: var(--atlasConocimientoBaseNodo);
-  border: 1px solid var(--atlasConocimientoSeleccion);
 }
 
 /* #endregion */
