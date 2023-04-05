@@ -184,14 +184,7 @@
 
 .nodoConocimientoConBola.esperandoClick.activoSubseleccion .cajaTexto {
   border: 2px solid var(--atlasConocimientoSeleccion);
-  background: repeating-linear-gradient(
-    30deg,
-    var(--atlasConocimientoSeleccion),
-    var(--atlasConocimientoSeleccion) 15px,
-    blue 15px,
-    black 20px,
-  );
-  background: repeating-linear-gradient(30deg, white, white 15px, var(--atlasConocimientoSubseleccion) 15px, var(--atlasConocimientoSubseleccion) 30px);
+  background: repeating-linear-gradient(30deg, white, white 7px, var(--atlasConocimientoSubseleccion) 12px, var(--atlasConocimientoSubseleccion) 30px, white 35px);
 }
 
 .nodoConocimientoConBola.esperandoClick.activoSeleccion .cajaTexto {

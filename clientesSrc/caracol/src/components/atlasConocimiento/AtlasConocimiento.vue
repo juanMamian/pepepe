@@ -25,7 +25,6 @@
     <RouterView />
     <div id="contenedorOverlays" :style="[estiloContenedorOverlays]">
       <gestor-colecciones
-      v-show="!idNodoTarget"
         ref="gestorColecciones"
         :yo="yo"
         :todosNodos="todosNodos"
@@ -34,30 +33,6 @@
         @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
         @conectandoNodosColeccion="gestorColeccionesConectandoNodos = $event"
       />
-      <div id="zonaNodoTarget" v-show="idNodoTarget">
-        <div
-          id="nombreNodoTarget"
-          v-if="nodoTarget"
-          @click="centrarEnNodo(nodoTarget)"
-        >
-          <img
-            style="height: 25px"
-            src="@/assets/iconos/crosshairsSolid.svg"
-            alt="Target"
-            id="iconoNodoTarget"
-          />
-
-          {{ nodoTarget.nombre }}
-        </div>
-
-        <div
-          class="boton"
-          id="botonCancelarNodoTarget"
-          @click.stop="setNodoTarget(null)"
-        >
-          <img src="@/assets/iconos/equis.svg" alt="Equis" />
-        </div>
-      </div>
     </div>
 
     <div
@@ -107,6 +82,7 @@
             :idsNodosOlvidados="idsNodosActivosOlvidados"
             :idsNodosEstudiados="idsNodosActivosEstudiados"
             :idsNodosAccesibles="idsNodosActivosAccesibles"
+            :idsUnderTargetActivos="idsUnderTargetActivos"
             :class="{
               esperandoClick: gestorColeccionesConectandoNodos,
               activoSeleccion: coleccionSeleccionada?.idsNodos.includes(
@@ -165,6 +141,7 @@
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
       @nodoEliminado="reactToNodoEliminado"
       @setNodoTarget="setNodoTarget"
+      @centerEnTarget="centrarEnNodoById(idNodoTarget)"
     />
 
     <div id="zonaLocalizadores" v-show="!algoOverlaying">
@@ -361,7 +338,7 @@ export default {
 
       idsNodosVisibles: [],
       nodosVisibles: [],
-      idsNodosAlreadyRendered:[],
+      idsNodosAlreadyRendered: [],
       apuntadorDeFrontera: 0,
       centroZonaNodosVisibles: {
         x: 218,
@@ -408,6 +385,7 @@ export default {
       idColeccionTargetOnLastLocalizacion: null,
 
       idNodoTarget: null,
+      nivelesUnderTarget: 1,
 
       nodoCreandoDependencia: null,
       creandoDependencia: false,
@@ -418,10 +396,29 @@ export default {
     };
   },
   computed: {
-    estiloContenedorOverlays(){
-      let width="fit-content";
-      if(this.gestorColeccionesMostrandoArbol){
-        width="100%";
+    idsUnderTarget() {
+      // Array de arrays. Cada array es los ids de un nivel de nodos under target.
+      if (!this.nodoTarget) {
+        return [];
+      }
+
+      let nodosActuales = [this.nodoTarget];
+      let nivelCero = [this.nodoTarget.id];
+      let todosIds = [nivelCero];
+      for (let i = 1; i <= this.nivelesUnderTarget + 1; i++) { //Se calcula un nivel extra para saber en todo momento si se puede ampliar el rango de nodos under Target.
+        let siguientesIds = nodosActuales.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef)).flat();
+        let nuevosIds = siguientesIds.filter(id => !todosIds.includes(id));
+        todosIds.push(nuevosIds);
+      }
+      return todosIds;
+    },
+    idsUnderTargetActivos() {
+      return this.idsUnderTarget.slice(0, this.nivelesUnderTarget + 1).flat();
+    },
+    estiloContenedorOverlays() {
+      let width = "fit-content";
+      if (this.gestorColeccionesMostrandoArbol) {
+        width = "100%";
       }
       return {
         width
@@ -494,14 +491,16 @@ export default {
       if (!this.todosNodos) {
         return [];
       }
-      if (this.nodoTarget) {
-        return this.todosNodos.filter(n => this.idsRedUnderNodo(this.nodoTarget).includes(n.id));
-      }
+      let campo = this.todosNodos;
 
       if (this.coleccionSeleccionada && !this.gestorColeccionesConectandoNodos) {
-        return this.todosNodos.filter(n => this.coleccionSeleccionada.idsRed.includes(n.id));
+        campo = campo.filter(n => this.coleccionSeleccionada.idsRed.includes(n.id));
       }
-      return this.todosNodos;
+      if (this.nodoTarget) {
+        campo = campo.filter(n => this.idsUnderTargetActivos.includes(n.id));
+
+      }
+      return campo;
     },
 
     idsNodosActivos() {
@@ -820,6 +819,9 @@ export default {
       this.seleccionNodo(n);
     },
     centrarEnNodoById(idNodo) {
+      if (!idNodo) {
+        return
+      }
       console.log(`Centrando en nodo con id ${idNodo}`);
       var elNodo = this.todosNodos.find((n) => n.id === idNodo);
       if (elNodo) {
@@ -1071,7 +1073,7 @@ export default {
       let nuevoCentroX = Math.round(this.esquinasDiagrama.x1 + (this.$refs.contenedorDiagrama.scrollLeft / this.factorZoom) + (this.$refs.contenedorDiagrama.clientWidth / (2 * this.factorZoom)));
       let nuevoCentroY = Math.round(this.esquinasDiagrama.y1 + (this.$refs.contenedorDiagrama.scrollTop / this.factorZoom) + (this.$refs.contenedorDiagrama.clientHeight / (2 * this.factorZoom)));
 
-// Padded indica que se respetará un padding respecto del último centro. Si !padded entonces se hace un nuevo set de centro no matter what.
+      // Padded indica que se respetará un padding respecto del último centro. Si !padded entonces se hace un nuevo set de centro no matter what.
       if (padded && Math.abs(nuevoCentroX - this.centroZonaNodosVisibles.x) < (1 - this.paddingRefreshZonaVisible) * this.sizeZonaVisible.x && Math.abs(nuevoCentroY - this.centroZonaNodosVisibles.y) < (1 - this.paddingRefreshZonaVisible) * this.sizeZonaVisible.y) {
         return;
       }
@@ -1085,14 +1087,14 @@ export default {
       console.log("iniciando cálculo de nodos visibles");
 
       // Sacando del array de nodos visibles a todos los que no están en el rango.
-      this.idsNodosAlreadyRendered=[];
+      this.idsNodosAlreadyRendered = [];
       console.log(`había ${this.nodosVisibles.length} nodos visibles`);
       for (let i = this.nodosVisibles.length - 1; i >= 0; i--) {
-        let elNodo=this.nodosVisibles[i];
-        if(!this.nodoEnRangoVista(elNodo) || !this.idsNodosActivos.includes(elNodo.id)){
+        let elNodo = this.nodosVisibles[i];
+        if (!this.nodoEnRangoVista(elNodo) || !this.idsNodosActivos.includes(elNodo.id)) {
           this.nodosVisibles.splice(i, 1);
         }
-        else{
+        else {
           this.idsNodosAlreadyRendered.push(elNodo.id);
         }
 
@@ -1116,7 +1118,7 @@ export default {
         let esteNodo = this.nodosActivos[i];
 
         //Check if nodo already in nodosVisibles
-        if(this.idsNodosAlreadyRendered.includes(esteNodo.id)){
+        if (this.idsNodosAlreadyRendered.includes(esteNodo.id)) {
           continue;
         }
 
@@ -1151,6 +1153,7 @@ export default {
 
     },
     coleccionSeleccionada() {
+      this.idNodoTarget = null;
       this.iniciarCalculoNodosVisibles();
     },
     idNodoTarget(idNodoTarget) {
@@ -1251,12 +1254,12 @@ export default {
   overflow-x: hidden;
 }
 
-#contenedorOverlays{
+#contenedorOverlays {
   position: absolute;
-  top:0px;
-  left:50%;
+  top: 0px;
+  left: 50%;
   transform: translateX(-50%);
-  z-index:1;
+  z-index: 1;
 }
 
 #zonaNodoTarget {
@@ -1284,7 +1287,6 @@ export default {
   margin: 0px 10px;
   align-self: center;
 }
-
 
 #nombreNodoTarget {
   background-color: var(--atlasConocimientoSeleccion);

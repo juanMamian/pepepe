@@ -38,11 +38,15 @@
 
     <div class="cajaTexto">
       {{ elNodo.nombre }}
-
     </div>
 
     <div
       class="lineaVinculo"
+      :class="{
+        fantasmeado:
+          idsUnderTargetActivos &&
+          !idsUnderTargetActivos.includes(vinculo.idRef),
+      }"
       v-for="vinculo of vinculosConEstilo.filter((v) => v.estilo)"
       :key="vinculo.id"
       :style="[vinculo.estilo]"
@@ -117,6 +121,9 @@ export default {
       type: String,
       default: null,
     },
+    idsUnderTargetActivos: {
+      type: Array,
+    },
   },
   apollo: {
     elNodo: {
@@ -179,6 +186,9 @@ export default {
           width: Math.round(largoLinea) + "px",
           transform: "rotate(" + angle + "rad)",
         };
+        if(this.idsUnderTargetActivos && !this.idsUnderTargetActivos.includes(vinculo.idRef)){
+        estilo.opacity=0.1;  
+        }
 
         return {
           ...vinculo,

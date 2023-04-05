@@ -18,6 +18,19 @@
 
       <div class="subanuncio"></div>
     </div>
+    <div
+      class="anuncio"
+      :class="{
+        anuncioSeleccion: idNodoTarget === elNodo?.id,
+        fantasmeado: elNodo && elNodo.id != idNodoTarget,
+      }"
+      id="anuncioNodoTarget"
+      v-show="idNodoTarget"
+      @click="$emit('centerEnTarget')"
+    >
+      <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
+      <span>Nodo en la mira</span>
+    </div>
 
     <div
       id="nombre"
@@ -216,12 +229,21 @@
           </router-link>
         </div>
         <div class="bloqueControl" id="bloqueControlTarget">
-          <div class="botonTexto selector" :class="{activo: elNodo.id === idNodoTarget}" @click="$emit('setNodoTarget', elNodo.id)">
-            <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira">
-            Apuntar
+          <div
+            class="botonTexto selector"
+            :class="{ activo: elNodo.id === idNodoTarget }"
+            @click="$emit('setNodoTarget', elNodo.id)"
+          >
+            <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
+            En la mira
           </div>
-          <div class="botonTexto" v-show="elNodo.id===idNodoTarget" @click.stop="$emit('setNodoTarget', null)" style="align-self:stretch">
-            <img src="@/assets/iconos/equis.svg" alt="Cancelar">
+          <div
+            class="botonTexto"
+            v-show="elNodo.id === idNodoTarget"
+            @click.stop="$emit('setNodoTarget', null)"
+            style="align-self: stretch"
+          >
+            <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
           </div>
         </div>
       </div>
@@ -311,7 +333,7 @@ export default {
     },
     idNodoTarget:{
       type: String,
-      
+
     }
   },
   components: {
@@ -476,7 +498,7 @@ export default {
     movimientoTouch(e){
       let minMov=60;
       if(this.touchStartX){
-        
+
           let mov=e.touches[0].clientX - this.touchStartX;
       console.log(`mov de ${mov}`);
         if(Math.abs(mov) > minMov){
@@ -1010,6 +1032,16 @@ export default {
   flex-direction: column;
   align-items: center;
   opacity: 0.9;
+}
+
+#anuncioNodoTarget {
+  cursor: pointer;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  justify-content: center;
+  align-items: center;
 }
 
 /* #endregion */

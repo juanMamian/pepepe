@@ -515,8 +515,9 @@ export default {
   transform: translateX(-50%);
 }
 #botonToggleNodoColeccion {
+
   width: fit-content;
-  margin: 0px auto;
+  margin: 10px auto;
 }
 #nombreColeccion {
   position: relative;
