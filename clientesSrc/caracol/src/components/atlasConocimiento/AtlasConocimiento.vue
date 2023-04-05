@@ -85,10 +85,11 @@
             :idsUnderTargetActivos="idsUnderTargetActivos"
             :class="{
               esperandoClick: gestorColeccionesConectandoNodos,
-              activoSeleccion: coleccionSeleccionada?.idsNodos.includes(
+              conectadoSeleccionado: nodoTarget && idsUnderTarget[nivelesUnderTarget] && idsUnderTarget[nivelesUnderTarget].includes(nodo.id),
+              activoSeleccion: gestorColeccionesConectandoNodos && coleccionSeleccionada?.idsNodos.includes(
                 nodo.id
               ),
-              activoSubseleccion: coleccionSeleccionada?.idsRed.includes(
+              activoSubseleccion:gestorColeccionesConectandoNodos && coleccionSeleccionada?.idsRed.includes(
                 nodo.id
               ),
             }"
@@ -107,7 +108,11 @@
               })
             "
             @click.stop="clickNodo(nodo)"
-          />
+          >
+          <template #imagenBolita v-if="gestorColeccionesConectandoNodos && coleccionSeleccionada?.idsNodos.includes(nodo.id)">
+            <img src="@/assets/iconos/plugSolid.svg" style="transform:scale(0.7); filter: invert(1)" alt="Conectado">
+          </template>
+          </nodo-conocimiento-atlas>
         </div>
         <div
           id="indicadorCentroNodosVisibles"
@@ -142,6 +147,8 @@
       @nodoEliminado="reactToNodoEliminado"
       @setNodoTarget="setNodoTarget"
       @centerEnTarget="centrarEnNodoById(idNodoTarget)"
+      @hoveringAnuncioTarget="hoveringAnuncioTarget = $event"
+      @stepNivelesUnderTarget="stepNivelesUnderTarget"
     />
 
     <div id="zonaLocalizadores" v-show="!algoOverlaying">
@@ -386,6 +393,7 @@ export default {
 
       idNodoTarget: null,
       nivelesUnderTarget: 1,
+      hoveringAnuncioTarget: false,
 
       nodoCreandoDependencia: null,
       creandoDependencia: false,
@@ -409,6 +417,7 @@ export default {
         let siguientesIds = nodosActuales.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef)).flat();
         let nuevosIds = siguientesIds.filter(id => !todosIds.includes(id));
         todosIds.push(nuevosIds);
+        nodosActuales=this.todosNodos.filter(n=>nuevosIds.includes(n.id));
       }
       return todosIds;
     },
@@ -562,6 +571,15 @@ export default {
 
   },
   methods: {
+    stepNivelesUnderTarget: throttle(function(step) {
+      let nuevoNiveles = this.nivelesUnderTarget + step;
+      if(nuevoNiveles < 0){
+        nuevoNiveles=0;
+      }
+      if (this.idsUnderTarget[nuevoNiveles]) {
+        this.nivelesUnderTarget = nuevoNiveles;
+      }
+    }, 800),
     nodoEnRangoVista(nodo) {
       let posNodo = nodo.autoCoords;
       let limiteIzquierdo = this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
@@ -1043,6 +1061,15 @@ export default {
       this.showingZoomInfo = true;
     },
     zoomWheel(e) {
+      //Verificar si es para set nivelesUnderTarget
+      if (this.hoveringAnuncioTarget) {
+        e.preventDefault();
+        let direccionScroll = e.deltaY;
+        let delta = direccionScroll / Math.abs(direccionScroll);
+        this.stepNivelesUnderTarget(delta);
+        return;
+      }
+
       if (!this.hovered || !e.ctrlKey) {
         return;
       }
@@ -1084,11 +1111,9 @@ export default {
       }
     }, 1000),
     iniciarCalculoNodosVisibles: debounce(function () {
-      console.log("iniciando cálculo de nodos visibles");
 
       // Sacando del array de nodos visibles a todos los que no están en el rango.
       this.idsNodosAlreadyRendered = [];
-      console.log(`había ${this.nodosVisibles.length} nodos visibles`);
       for (let i = this.nodosVisibles.length - 1; i >= 0; i--) {
         let elNodo = this.nodosVisibles[i];
         if (!this.nodoEnRangoVista(elNodo) || !this.idsNodosActivos.includes(elNodo.id)) {
@@ -1099,7 +1124,6 @@ export default {
         }
 
       }
-      console.log(`Quedaron ${this.nodosVisibles.length}. Y ${this.idsNodosAlreadyRendered.length} nodos already rendered.`);
       clearTimeout(idTimeoutNodosVisibles);
       apuntadorChunkNodosVisibles = 0;
       this.$nextTick(() => {
@@ -1107,7 +1131,6 @@ export default {
       })
     }, 700),
     introducirChunkNodosVisibles() {
-      console.log("Introduciendo chunks verificando que no sea uno de los " + this.idsNodosAlreadyRendered.length + "nodos already rendered");
       let chunkSize = 20;
 
       for (let i = apuntadorChunkNodosVisibles; i < apuntadorChunkNodosVisibles + chunkSize; i++) {
@@ -1172,6 +1195,7 @@ export default {
       })
     },
     nodoTarget() {
+      this.nivelesUnderTarget=1;
       this.iniciarCalculoNodosVisibles();
     },
     zoom() {

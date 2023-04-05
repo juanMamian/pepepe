@@ -120,6 +120,12 @@
   background-color: var(--atlasConocimientoSeleccion);
   color: white;
 }
+.nodoConocimientoConBola.conectadoSeleccionado > .cajaTexto {
+  border: 6px solid var(--atlasConocimientoSeleccion);
+}
+.nodoConocimientoConBola.conectadoSeleccionado > .bolita{
+  border: 6px solid var(--atlasConocimientoSeleccion);
+}
 
 /* #endregion */
 
@@ -171,24 +177,22 @@
 
 .nodoConocimientoConBola.esperandoClick .bolita {
   border: 2px solid var(--mainColor);
+  background-color: var(--atlasConocimientoBaseNodo);
 }
 
 .nodoConocimientoConBola.esperandoClick .cajaTexto {
   border: 2px solid var(--mainColor);
 }
 
-.nodoConocimientoConBola.esperandoClick.activo .cajaTexto {
+.nodoConocimientoConBola.esperandoClick.activoSubseleccion .bolita {
   border: 2px solid var(--mainColor);
+  background: repeating-linear-gradient(20deg, white, white 7px, var(--mainColor) 12px, var(--mainColor) 19px, white 24px);
+}
+
+.nodoConocimientoConBola.esperandoClick.activoSeleccion .bolita {
+  border: 2px solid var(--mainColor);
+  background: none;
   background-color: var(--mainColor);
 }
 
-.nodoConocimientoConBola.esperandoClick.activoSubseleccion .cajaTexto {
-  border: 2px solid var(--atlasConocimientoSeleccion);
-  background: repeating-linear-gradient(30deg, white, white 7px, var(--atlasConocimientoSubseleccion) 12px, var(--atlasConocimientoSubseleccion) 30px, white 35px);
-}
-
-.nodoConocimientoConBola.esperandoClick.activoSeleccion .cajaTexto {
-  background: unset;
-  background-color: var(--atlasConocimientoSeleccion);
-}
 /* #endregion */

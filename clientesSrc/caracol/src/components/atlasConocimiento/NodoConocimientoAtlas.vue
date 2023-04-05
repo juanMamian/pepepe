@@ -26,14 +26,17 @@
           left: 50%;
           opacity: 1;
         "
+        v-show="!!$slots.imagenBolita"
         v-if="idNodoTarget === elNodo.id"
       />
-      <img
-        v-if="elNodo.tipoNodo === 'concepto'"
-        src="@/assets/iconos/atlas/lightbulbEmpty.svg"
-        alt="Skill"
-      />
-      <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" />
+      <slot name="imagenBolita">
+        <img
+          v-if="elNodo.tipoNodo === 'concepto'"
+          src="@/assets/iconos/atlas/lightbulbEmpty.svg"
+          alt="Skill"
+        />
+        <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" />
+      </slot>
     </div>
 
     <div class="cajaTexto">
@@ -186,8 +189,11 @@ export default {
           width: Math.round(largoLinea) + "px",
           transform: "rotate(" + angle + "rad)",
         };
-        if(this.idsUnderTargetActivos && !this.idsUnderTargetActivos.includes(vinculo.idRef)){
-        estilo.opacity=0.1;  
+        if (
+          this.idsUnderTargetActivos &&
+          !this.idsUnderTargetActivos.includes(vinculo.idRef)
+        ) {
+          estilo.opacity = 0.1;
         }
 
         return {

@@ -27,6 +27,11 @@
       id="anuncioNodoTarget"
       v-show="idNodoTarget"
       @click="$emit('centerEnTarget')"
+      @mouseenter="$emit('hoveringAnuncioTarget', true)"
+      @mouseleave="$emit('hoveringAnuncioTarget', false)"
+      @touchstart="startTouchAnuncioTarget"
+      @touchmove="moveTouchAnuncioTarget"
+      @touchend="endTouchAnuncioTarget"
     >
       <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
       <span>Nodo en la mira</span>
@@ -331,7 +336,7 @@ export default {
     nodoCreandoDependencia: {
       type: Object,
     },
-    idNodoTarget:{
+    idNodoTarget: {
       type: String,
 
     }
@@ -348,10 +353,10 @@ export default {
       mostrandoFlechasConexiones: false,
       desplegado: false,
 
-      cantidadFilas:3,
+      cantidadFilas: 3,
       filaMostrada: 1,
       mostrando: "",
-      touchStartX:null,
+      touchStartX: null,
 
       montado: false,
       heightNombre: 0,
@@ -366,6 +371,8 @@ export default {
 
       idVinculoEliminando: null,
       creandoDependencia: false,
+
+      startTouchTargetX: null,
     };
   },
   computed: {
@@ -495,31 +502,50 @@ export default {
     }
   },
   methods: {
-    movimientoTouch(e){
-      let minMov=60;
-      if(this.touchStartX){
+    startTouchAnuncioTarget(e) {
+      this.startTouchTargetX = e.touches[0].clientX;
 
-          let mov=e.touches[0].clientX - this.touchStartX;
-      console.log(`mov de ${mov}`);
-        if(Math.abs(mov) > minMov){
-          let delta=-mov/Math.abs(mov);
-          this.filaMostrada+=delta;
-          if(this.filaMostrada > this.cantidadFilas){
-            this.filaMostrada=1;
-          }
-          if(this.filaMostrada < 1){
-            this.filaMostrada=this.cantidadFilas;
-          }
-          this.touchStartX=null;
+    },
+    moveTouchAnuncioTarget(e) {
+
+      let minMov = 40;
+      if (this.startTouchTargetX) {
+        let mov = e.touches[0].clientX - this.startTouchTargetX;
+        if (Math.abs(mov) > minMov) {
+          let delta = -mov / Math.abs(mov);
+          this.$emit('stepNivelesUnderTarget', delta);
+          this.startTouchTargetX = null;
         }
       }
     },
-    finTouch(){
-      this.touchStartX=null;
+    endTouchAnuncioTarget() {
+      this.startTouchTargetX = null;
     },
-    inicioTouch(e){
+    movimientoTouch(e) {
+      let minMov = 60;
+      if (this.touchStartX) {
+
+        let mov = e.touches[0].clientX - this.touchStartX;
+        console.log(`mov de ${mov}`);
+        if (Math.abs(mov) > minMov) {
+          let delta = -mov / Math.abs(mov);
+          this.filaMostrada += delta;
+          if (this.filaMostrada > this.cantidadFilas) {
+            this.filaMostrada = 1;
+          }
+          if (this.filaMostrada < 1) {
+            this.filaMostrada = this.cantidadFilas;
+          }
+          this.touchStartX = null;
+        }
+      }
+    },
+    finTouch() {
+      this.touchStartX = null;
+    },
+    inicioTouch(e) {
       console.log("registro de touchstart");
-      this.touchStartX=e.touches[0].clientX;
+      this.touchStartX = e.touches[0].clientX;
       console.log(`Queda en ${this.touchStartX}`);
     },
     eliminarNodo() {
@@ -561,12 +587,12 @@ export default {
             console.log(`el nodo no estaba presente`);
             return;
           }
-            nuevoCache.todosNodos.splice(indexN, 1);
-            store.writeQuery({
-              query: QUERY_NODOS,
-              data: nuevoCache,
-            });
-            this.$emit("nodoEliminado", idNodo);
+          nuevoCache.todosNodos.splice(indexN, 1);
+          store.writeQuery({
+            query: QUERY_NODOS,
+            data: nuevoCache,
+          });
+          this.$emit("nodoEliminado", idNodo);
 
         })
         .catch((error) => {
@@ -699,7 +725,7 @@ export default {
             data: nuevoCache
           });
         }
-      this.$emit("cambioEstadoEstudiadoNodo");
+        this.$emit("cambioEstadoEstudiadoNodo");
 
       }).catch((error) => {
         console.log("Error: " + error);
@@ -945,6 +971,7 @@ export default {
 #zonaDescripcionNodo {
   width: 100%;
 }
+
 #zonaDescripcionNodo #descripcionNodo {
   padding: 10px 10px;
   margin: 10px 6%;
@@ -960,6 +987,7 @@ export default {
   justify-content: center;
   background-color: rgb(255 255 255 / 35%);
 }
+
 #botonMarcarAprendido.activo {
   background-color: transparent;
   border: 2px solid var(--atlasConocimientoCheck);
