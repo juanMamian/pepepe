@@ -1026,7 +1026,7 @@ export default {
         y: posicionPx.y + this.$refs.contenedorDiagrama.scrollTop,
       };
 
-      let step = 20 * cantidad;
+      let step = 8 * cantidad;
       let nuevoZoom = this.zoom + step;
       if (nuevoZoom < this.minZoom) {
         nuevoZoom = this.minZoom;
@@ -1047,6 +1047,7 @@ export default {
       this.$nextTick(() => {
         contenedor.scrollLeft = Math.round(nuevoScrollLeft);
         contenedor.scrollTop = Math.round(nuevoScrollTop);
+        this.setCentroZonaNodosVisibles();
       });
       this.showingZoomInfo = true;
     },
@@ -1081,7 +1082,7 @@ export default {
       let nuevoCentroX = Math.round(this.esquinasDiagrama.x1 + (this.$refs.contenedorDiagrama.scrollLeft / this.factorZoom) + (this.$refs.contenedorDiagrama.clientWidth / (2 * this.factorZoom)));
       let nuevoCentroY = Math.round(this.esquinasDiagrama.y1 + (this.$refs.contenedorDiagrama.scrollTop / this.factorZoom) + (this.$refs.contenedorDiagrama.clientHeight / (2 * this.factorZoom)));
 
-
+// Padded indica que se respetará un padding respecto del último centro. Si !padded entonces se hace un nuevo set de centro no matter what.
       if (padded && Math.abs(nuevoCentroX - this.centroZonaNodosVisibles.x) < (1 - this.paddingRefreshZonaVisible) * this.sizeZonaVisible.x && Math.abs(nuevoCentroY - this.centroZonaNodosVisibles.y) < (1 - this.paddingRefreshZonaVisible) * this.sizeZonaVisible.y) {
         return;
       }
@@ -1099,7 +1100,7 @@ export default {
       console.log(`había ${this.nodosVisibles.length} nodos visibles`);
       for (let i = this.nodosVisibles.length - 1; i >= 0; i--) {
         let elNodo=this.nodosVisibles[i];
-        if(!this.nodoEnRangoVista(elNodo)){
+        if(!this.nodoEnRangoVista(elNodo) || !this.idsNodosActivos.includes(elNodo.id)){
           this.nodosVisibles.splice(i, 1);
         }
         else{
