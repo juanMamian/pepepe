@@ -368,6 +368,7 @@ export default {
 
       idsNodosVisibles: [],
       nodosVisibles: [],
+      idsNodosAlreadyRendered:[],
       apuntadorDeFrontera: 0,
       centroZonaNodosVisibles: {
         x: 218,
@@ -560,6 +561,15 @@ export default {
 
   },
   methods: {
+    nodoEnRangoVista(nodo) {
+      let posNodo = nodo.autoCoords;
+      let limiteIzquierdo = this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
+      let limiteDerecho = this.centroZonaNodosVisibles.x + (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
+      let limiteSuperior = this.centroZonaNodosVisibles.y - (this.factorZonaVisible * this.altoScreen / this.factorZoom);
+      let limiteInferior = this.centroZonaNodosVisibles.y + (this.factorZonaVisible * this.altoScreen / this.factorZoom);
+      return posNodo.x > limiteIzquierdo && posNodo.x < limiteDerecho && posNodo.y > limiteSuperior && posNodo.y < limiteInferior;
+
+    },
     nodoSeleccionadoEnColecciones(idNodo) {
       this.idNodoSeleccionado = idNodo;
 
@@ -1081,15 +1091,31 @@ export default {
         y: nuevoCentroY,
       }
     }, 1000),
-    iniciarCalculoNodosVisibles() {
+    iniciarCalculoNodosVisibles: debounce(function () {
+      console.log("iniciando cálculo de nodos visibles");
+
+      // Sacando del array de nodos visibles a todos los que no están en el rango.
+      this.idsNodosAlreadyRendered=[];
+      console.log(`había ${this.nodosVisibles.length} nodos visibles`);
+      for (let i = this.nodosVisibles.length - 1; i >= 0; i--) {
+        let elNodo=this.nodosVisibles[i];
+        if(!this.nodoEnRangoVista(elNodo)){
+          this.nodosVisibles.splice(i, 1);
+        }
+        else{
+          this.idsNodosAlreadyRendered.push(elNodo.id);
+        }
+
+      }
+      console.log(`Quedaron ${this.nodosVisibles.length}. Y ${this.idsNodosAlreadyRendered.length} nodos already rendered.`);
       clearTimeout(idTimeoutNodosVisibles);
       apuntadorChunkNodosVisibles = 0;
       this.$nextTick(() => {
-        this.apuntadorDeFrontera = this.nodosVisibles.length - 1; // Indica el ultimo nodo no confiable en el array de nodos visibles
         this.introducirChunkNodosVisibles()
       })
-    },
+    }, 400),
     introducirChunkNodosVisibles() {
+      console.log("Introduciendo chunks verificando que no sea uno de los " + this.idsNodosAlreadyRendered.length + "nodos already rendered");
       let chunkSize = 20;
 
       for (let i = apuntadorChunkNodosVisibles; i < apuntadorChunkNodosVisibles + chunkSize; i++) {
@@ -1098,16 +1124,17 @@ export default {
           break;
         }
         let esteNodo = this.nodosActivos[i];
-        let posNodo = esteNodo.autoCoords;
-        let limiteIzquierdo = this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
-        let limiteDerecho = this.centroZonaNodosVisibles.x + (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
-        let limiteSuperior = this.centroZonaNodosVisibles.y - (this.factorZonaVisible * this.altoScreen / this.factorZoom);
-        let limiteInferior = this.centroZonaNodosVisibles.y + (this.factorZonaVisible * this.altoScreen / this.factorZoom);
 
-        if (posNodo.x > limiteIzquierdo && posNodo.x < limiteDerecho && posNodo.y > limiteSuperior && posNodo.y < limiteInferior) {
+        //Check if nodo already in nodosVisibles
+        if(this.idsNodosAlreadyRendered.includes(esteNodo.id)){
+          continue;
+        }
+
+        if (this.nodoEnRangoVista(esteNodo)) {
           this.nodosVisibles.push(esteNodo);
           this.idsNodosVisibles.push(esteNodo.id);
         }
+
       }
 
       apuntadorChunkNodosVisibles += chunkSize;
@@ -1119,20 +1146,14 @@ export default {
           }, 100)
         })
       }
-      else {
-        // Fin de la introducción de nodos visibles. Ahora retirar los que no deberían ser visibles.
-        this.$nextTick(() => {
-          this.nodosVisibles.splice(0, this.apuntadorDeFrontera + 1);
-        })
-      }
     },
 
   },
   watch: {
-    "nodosActivos.length": function(val, oldVal) {
-      if (val> 0) {
+    "nodosActivos.length": function (val, oldVal) {
+      if (val > 0) {
         this.firstLoad = true;
-        if(val!=oldVal){
+        if (val != oldVal) {
           console.log("Recalculando nodos visibles after cambio en nodos activos length");
           this.iniciarCalculoNodosVisibles();
         }
