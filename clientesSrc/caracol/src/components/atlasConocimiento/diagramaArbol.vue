@@ -11,7 +11,7 @@
         :refreshLineaHorizontal="refreshLineaHorizontal"
         @updateCadenaUnfold="updateCadenaUnfold"
         @scrollMe="scrollNodoIntoView"
-        @click.stop="clickEnNodo(idNodo)"
+        @clickEnNodo="clickEnNodo"
       >
       </nodo-conocimiento-vista-arbol>
     </div>
