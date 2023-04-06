@@ -15,11 +15,25 @@
 
     <div class="bolita">
       <img
+        v-show="!targeted"
         v-if="elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
         alt="Skill"
       />
-      <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" />
+      <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" v-show="!targeted" />
+      <img
+        src="@/assets/iconos/crosshairsSolid.svg"
+        alt="Mira"
+        style="
+          filter: var(--filtroMainColor);
+          transform: translate(-50%, -50%) scale(1);
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          opacity: 1;
+        "
+        v-if="targeted"
+      />
     </div>
 
     <div class="cajaTexto">
@@ -105,6 +119,7 @@
 <script lang="js">
 import { gql } from "@apollo/client/core"
 import debounce from "debounce"
+import { QUERY_DATOS_USUARIO_NODOS } from "./fragsAtlasConocimiento"
 
 const QUERY_NODO = gql`
     query($idNodo:ID!){
@@ -155,24 +170,9 @@ export default {
     }
   },
   apollo: {
-    yo: {
-      query: gql`
-        query {
-          yo {
-            atlas {
-              datosNodos {
-                id
-                idNodo
-                estadoAprendizaje
-              }
-            }
-          }
-        }
-      `,
-      fetchPolicy: "cache-first",
-      skip() {
-        return !this.usuarioLogeado;
-      },
+    yo:{
+      query: QUERY_DATOS_USUARIO_NODOS,
+      fetchPolicy: "cache-first"
     },
     elNodo: {
       query: QUERY_NODO,
@@ -308,6 +308,9 @@ export default {
 
   },
   computed: {
+    targeted(){
+      return this.yo?.atlas?.idNodoTarget===this.elNodo.id;
+    },
    passedOver() {
 
       return this.nivelArbol < this.cadenaUnfold.length - 1; //En el siguiente nivel hay unfolding. Este sólo debe presentar su nodo unfolded.

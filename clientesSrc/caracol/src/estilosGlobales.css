@@ -1,6 +1,8 @@
 /* #region variables globales */
 :root {
   --mainColor: #f49e4c;
+  --filtroMainColor: invert(66%) sepia(95%) saturate(493%) hue-rotate(326deg) brightness(103%) contrast(91%);
+
   --mainColorDark: #f49e4c;
   --mainColorLight: #e99e58;
   --colorChecked: #4d8b31;

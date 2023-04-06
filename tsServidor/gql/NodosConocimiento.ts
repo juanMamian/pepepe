@@ -186,7 +186,6 @@ export const NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS = "nodos_de_atlas_conocimient
 export const resolvers = {
     Query: {
         busquedaAmplia: async function (_: any, { palabrasBuscadas }, __: any) {
-            console.log(`buscando nodos de conocimientos que contengan: ${palabrasBuscadas}`);
             // console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
             if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
@@ -199,7 +198,6 @@ export const resolvers = {
                 console.log(". E: " + error);
                 throw new ApolloError("");
             }
-            console.log(`${opciones.length} opciones: ${opciones}`);
             return opciones
         },
         todosNodos: async function () {

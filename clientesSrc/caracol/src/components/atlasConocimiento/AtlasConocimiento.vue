@@ -266,7 +266,7 @@ export default {
         }
         return nuevoTodosNodos;
       },
-      fetchPolicy: "cache-first",
+      fetchPolicy: "cache-and-network",
     },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
