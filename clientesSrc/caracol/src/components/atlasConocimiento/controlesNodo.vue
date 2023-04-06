@@ -236,7 +236,7 @@
           <div
             class="botonTexto selector"
             :class="{ activo: elNodo.id === idNodoTarget }"
-            @click="$emit('setNodoTarget', elNodo.id)"
+            @click="setNodoTarget(elNodo.id)"
           >
             <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
             En la mira
@@ -244,8 +244,8 @@
           <div
             class="botonTexto"
             v-show="elNodo.id === idNodoTarget"
-            @click.stop="$emit('setNodoTarget', null)"
             style="align-self: stretch"
+            @click="setNodoTarget(null)"
           >
             <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
           </div>
@@ -308,7 +308,7 @@
 </template>
 <script lang="js">
 import { gql } from '@apollo/client/core';
-import { QUERY_DATOS_USUARIO_NODOS, QUERY_NODOS } from './fragsAtlasConocimiento';
+import { fragmentoColecciones, QUERY_DATOS_USUARIO_NODOS, QUERY_NODOS } from './fragsAtlasConocimiento';
 import { fragmentoDatoNodoConocimiento } from './fragsAtlasConocimiento';
 import PieProgreso from '../utilidades/PieProgreso.vue';
 import NodoConocimientoVistaLista from './NodoConocimientoVistaLista.vue';
@@ -320,16 +320,14 @@ export default {
     elNodo: {
       type: Object,
     },
-    yo: {
-      type: Object,
-      required: true,
-    },
     nodoCreandoDependencia: {
       type: Object,
     },
-    idNodoTarget: {
-      type: String,
-
+  },
+  apollo: {
+    yo:{
+      query: QUERY_DATOS_USUARIO_NODOS,
+      fetchPolicy: "cache-first"
     }
   },
   components: {
@@ -340,6 +338,12 @@ export default {
   name: "ControlesNodo",
   data() {
     return {
+      yo:{
+        atlas:{
+          datosNodos:[],
+          colecciones:[],
+        }
+      },
       eliminandose: false,
       mostrandoFlechasConexiones: false,
       desplegado: false,
@@ -367,6 +371,9 @@ export default {
     };
   },
   computed: {
+    idNodoTarget() {
+      return this.yo.atlas.idNodoTarget
+    },
     dependenciasNodo() {
       if (!this.elNodo) {
         return [];
@@ -493,6 +500,37 @@ export default {
     }
   },
   methods: {
+    setNodoTarget(nuevoIdNodoTarget = this.idNodo) {
+      const QUERY_NODO_TARGET = gql`
+          query{
+           yo{
+            id
+             atlas{
+             id
+               idNodoTarget
+             }
+            }
+         }
+        `;
+      nuevoIdNodoTarget = nuevoIdNodoTarget === this.idNodoTarget ? null : nuevoIdNodoTarget;
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_NODO_TARGET,
+      });
+      if (!cache.yo?.atlas) {
+        return;
+      }
+      if (nuevoIdNodoTarget === cache.yo.atlas.idNodoTarget) {
+        return;
+      }
+      let nuevoCache = JSON.parse(JSON.stringify(cache));
+      nuevoCache.yo.atlas.idNodoTarget = nuevoIdNodoTarget;
+
+      store.writeQuery({
+        query: QUERY_NODO_TARGET,
+        data: nuevoCache
+      });
+    },
     startTouchAnuncioTarget(e) {
       this.startTouchTargetX = e.touches[0].clientX;
 
@@ -870,7 +908,6 @@ export default {
     },
   },
   mounted() {
-
     this.montado = true;
     this.desplegado = false;
   },

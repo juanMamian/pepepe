@@ -407,7 +407,6 @@ export default {
 
       idColeccionTargetOnLastLocalizacion: null,
 
-      idNodoTarget: null,
       nivelesUnderTarget: 1,
       hoveringAnuncioTarget: false,
 
@@ -420,6 +419,21 @@ export default {
     };
   },
   computed: {
+
+    nodoTargetRelevante(){
+      if(!this.idNodoTarget){
+        return false;
+      }
+
+      if(!this.coleccionSeleccionada){
+        return true
+      }
+      return this.coleccionSeleccionada.idsRed.includes(this.idNodoTarget);
+
+    },
+    idNodoTarget(){
+      return this.yo?.atlas?.idNodoTarget;
+    },
     estiloGestor(){
 
       let color = "transparent";
@@ -533,7 +547,7 @@ export default {
       if (this.coleccionSeleccionada && !this.gestorColeccionesConectandoNodos) {
         campo = campo.filter(n => this.coleccionSeleccionada.idsRed.includes(n.id));
       }
-      if (this.nodoTarget) {
+      if (this.nodoTargetRelevante && this.nodoTarget) {
         campo = campo.filter(n => this.idsUnderTargetActivos.includes(n.id));
 
       }
@@ -1204,7 +1218,6 @@ export default {
 
     },
     coleccionSeleccionada() {
-      this.idNodoTarget = null;
       this.iniciarCalculoNodosVisibles();
     },
     idNodoTarget(idNodoTarget) {

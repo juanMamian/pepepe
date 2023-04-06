@@ -54,6 +54,7 @@
 </template>
 <script>
 import { gql } from "@apollo/client/core";
+import { QUERY_DATOS_USUARIO_NODOS } from "./fragsAtlasConocimiento";
 
 const QUERY_ESTE_NODO = gql`
   query ($idNodo: ID!) {
@@ -114,10 +115,6 @@ export default {
       type: Array,
       default: [],
     },
-    idNodoTarget: {
-      type: String,
-      default: null,
-    },
     idsUnderTargetActivos: {
       type: Array,
     },
@@ -135,6 +132,10 @@ export default {
       },
       fetchPolicy: "cache-first",
     },
+    yo:{
+      query: QUERY_DATOS_USUARIO_NODOS,
+      fetchPolicy: "cache-first"
+    }
   },
   data() {
     return {
@@ -144,6 +145,9 @@ export default {
     };
   },
   computed: {
+    idNodoTarget(){
+      return this.yo?.atlas?.idNodoTarget;
+    },
     vinculosConEstilo() {
       if (!this.elNodo?.vinculos) return [];
 

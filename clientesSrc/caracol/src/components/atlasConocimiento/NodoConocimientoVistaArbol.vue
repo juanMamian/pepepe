@@ -218,9 +218,7 @@ export default {
 
   methods: {
     updateMeasurements(){
-      console.log(`${this.elNodo.nombre} calcula el ancho de su propio árbol`);
       if(!this.$refs?.contenedorArbol){
-        console.log("no tenia subnodos");
         this.anchoMiArbol=0;
         return
       }
@@ -228,11 +226,9 @@ export default {
       this.anchoMiArbol=this.$refs.contenedorArbol.offsetWidth;
 
       if(!this.$refs?.subnodo){
-        console.log("No tenía subnodos");
         return;
       }
       let subnodos=this.$refs.subnodo;
-      console.log(`Y el ancho de la linea del árbol basándose en ${subnodos.length} subnodos`);
 
       if(subnodos.length < 2){
        this.anchoMiLinea = 0;
@@ -378,7 +374,6 @@ export default {
       }
       let elementoArbol = this.$refs['contenedorArbol' + this.idNodo];
       if (elementoArbol && elementoArbol.scrollWidth != this.anchoArbol) {
-        console.log(`${this.elNodo.nombre} refreshing its linea horizontal`);
         this.$nextTick(() => {
           this.anchoArbol = elementoArbol.scrollWidth;
         })

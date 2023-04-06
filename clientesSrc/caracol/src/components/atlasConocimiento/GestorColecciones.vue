@@ -378,7 +378,6 @@ export default {
       if (!col) {
         this.mostrandoArbol = false;
         this.mostrandoOpcionesColeccion = false;
-        this.idNodoSeleccionado = null;
       }
     },
 

@@ -125,37 +125,6 @@
         </router-link>
       </div>
       <div id="botonesNavDerecha">
-        <div
-          id="bloqueNotificaciones"
-          v-if="usuarioLogeado"
-          v-show="
-            yo.notificaciones.length > 0 ||
-            yo.notificacionesActividadForos.length > 0
-          "
-        >
-          <span id="numeroNotificaciones">{{
-            yo.notificaciones.length + yo.notificacionesActividadForos.length
-          }}</span>
-          <img
-            src="@/assets/iconos/campanita.png"
-            alt="Notificaciones"
-            :title="yo.notificaciones.length + 'Notificaciones'"
-            id="imagenCampanita"
-            @click="mostrandoNotificaciones = !mostrandoNotificaciones"
-          />
-          <div id="contenedorNotificaciones" v-show="mostrandoNotificaciones">
-            <notificacion-actividad-foros
-              :estaNotificacion="notificacionActividadForos"
-              :key="notificacionActividadForos.id"
-              v-for="notificacionActividadForos of yo.notificacionesActividadForos"
-            />
-            <notificacion
-              :key="notificacion.id"
-              v-for="notificacion of notificacionesOrdenadas"
-              :estaNotificacion="notificacion"
-            />
-          </div>
-        </div>
         <template v-if="usuarioLogeado">
           <div
             class="botonNavBarra botonNav navLogin hoverNegro"
@@ -216,34 +185,7 @@ export const QUERY_YO = gql`
       id
       nombres
       apellidos
-      notificaciones {
-        id
-        fecha
-        texto
-        elementoTarget {
-          tipo
-          id
-          nombre
-        }
-        causante {
-          id
-          tipo
-        }
-      }
-      notificacionesActividadForos {
-        idParent
-        tipoParent
-        numeroRespuestasNuevas
-        nombreParent
-      }
       permisos
-      foros {
-        idForo
-        conversaciones {
-          idConversacion
-          respuestasLeidas
-        }
-      }
     }
   }
 `;
@@ -493,35 +435,6 @@ export default {
 #botonesNavDerecha {
   margin-left: auto;
   display: flex;
-}
-
-#bloqueNotificaciones {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-right: 10px;
-}
-
-#contenedorNotificaciones {
-  position: absolute;
-  top: 100%;
-  right: 0%;
-  align-items: center;
-}
-
-#numeroNotificaciones {
-  font-size: 20px;
-  color: white;
-  margin-right: 3px;
-}
-
-#imagenCampanita {
-  width: 25px;
-  height: 25px;
-  background-color: white;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 50%;
 }
 
 #botonesLogeado {

@@ -93,6 +93,7 @@ APRENDIDO
     }    
 
     type InfoAtlas{
+        id: ID,
         centroVista:Coords,
         datosNodos:[DatoNodoUsuario],
         idNodoTarget:ID,
@@ -1113,9 +1114,9 @@ export const resolvers = {
                     throw new ApolloError('Error conectando con la base de datos');
                 };
 
-                let idsRed=(await getNodosRedByOriginalIds(laColeccion.idsNodos)).map(n=>n.id);
-                
-                if(idsRed.includes(idNodo)){
+                let idsRed = (await getNodosRedByOriginalIds(laColeccion.idsNodos)).map(n => n.id);
+
+                if (idsRed.includes(idNodo)) {
                     console.log("Se intentaba introducir un nodo que ya hacía parte de la red.");
                     throw new UserInputError("El nodo ya estaba en la colección como dependencia de otro");
                 }
@@ -1708,20 +1709,20 @@ export const resolvers = {
                     return false;
 
                 })
-                let nodosProgreso=nodosAprendidos.concat(nodosFrescos.filter(n=>!nodosAprendidos.map(n=>n.id).includes(n.id)));
+                let nodosProgreso = nodosAprendidos.concat(nodosFrescos.filter(n => !nodosAprendidos.map(n => n.id).includes(n.id)));
 
                 console.log(`nodos en coleccion: ${nodosRed.length}`);
                 console.log(`${nodosAprendidos.length} nodos aprendidos de la colección. Nodos frescos en la coleccion: ${nodosFrescos.length}`);
-                console.table(nodosFrescos.map(n=>{return {nombre: n.nombre}}));
+                console.table(nodosFrescos.map(n => { return { nombre: n.nombre } }));
 
                 const progreso = (100 / nodosRed.length) * (nodosProgreso.length);
 
                 return Number(progreso.toFixed(2));
             }
         },
-        idsRed: async function (parent: any, _: any, __: any){
-            let nodosRed=await getNodosRedByOriginalIds(parent.idsNodos);
-            return nodosRed.map(n=>n.id);
+        idsRed: async function (parent: any, _: any, __: any) {
+            let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
+            return nodosRed.map(n => n.id);
         }
     },
     DatoNodoUsuario: {
@@ -1736,13 +1737,13 @@ export const resolvers = {
 
             return elNodo.nombre;
         },
-        estadoAprendizaje(parent:any, _:any, __:any){
-            let estado="NINGUNO"
-            if(parent.aprendido){
+        estadoAprendizaje(parent: any, _: any, __: any) {
+            let estado = "NINGUNO"
+            if (parent.aprendido) {
                 return "APRENDIDO"
             }
-            if(parent.estudiado){
-                if(parent.diasRepaso && parent.diasRepaso * 86400000 + (new Date(parent.estudiado)).getTime() < Date.now()){
+            if (parent.estudiado) {
+                if (parent.diasRepaso && parent.diasRepaso * 86400000 + (new Date(parent.estudiado)).getTime() < Date.now()) {
                     return "OLVIDADO"
                 }
                 return "ESTUDIADO"
@@ -1764,31 +1765,32 @@ export const resolvers = {
     },
 }
 
-async function getNodosRedByOriginalIds(idsNodos){
-    let idsNodosActuales=idsNodos;
+async function getNodosRedByOriginalIds(idsNodos) {
+    let idsNodosActuales = idsNodos;
 
-    let todosNodos=[];
+    let todosNodos = [];
 
     let guarda = 0;
 
-    while(guarda <100 && idsNodosActuales.length >0){
+    while (guarda < 100 && idsNodosActuales.length > 0) {
         guarda++;
-        let estosNodos:any = [];
+        let estosNodos: any = [];
         try {
-            estosNodos=await Nodo.find({"_id":{$in:idsNodosActuales}}).exec();
+            estosNodos = await Nodo.find({ "_id": { $in: idsNodosActuales } }).exec();
         } catch (error) {
-           console.log("Error buscando nodos: "+error); 
-           return;
+            console.log("Error buscando nodos: " + error);
+            return;
         }
-        
-        let nodosNuevos=estosNodos.filter(n=>!todosNodos.map(tn=>tn.id).includes(n.id));
+
+        let nodosNuevos = estosNodos.filter(n => !todosNodos.map(tn => tn.id).includes(n.id));
         todosNodos.push(...nodosNuevos);
-        idsNodosActuales=estosNodos.map(n=>n.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target')).flat().map(v=>v.idRef);
+        idsNodosActuales = estosNodos.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target')).flat().map(v => v.idRef);
     }
     return todosNodos;
 
 }
 
+// migrarPeriodoRepaso();
 async function migrarPeriodoRepaso() {
     console.log("Migrando periodo repaso a dias repaso");
     let todosUsuarios: any;
@@ -1817,8 +1819,8 @@ async function migrarPeriodoRepaso() {
     }
 }
 
-// migrarPeriodoRepaso();
 
+//migrarObjetivos();
 async function migrarObjetivos() {
     console.log("Migrando objetivos de usuarios a una lista simple");
     let todosUsuarios: any;
@@ -1859,4 +1861,24 @@ async function migrarObjetivos() {
 
 }
 
-//migrarObjetivos();
+async function resetInfoAtlas() {
+    let todosUsuarios: any = [];
+    try {
+        let todosUsuarios = await Usuario.find({}).exec();
+    } catch (error) {
+        console.log("Error descargando todos los usuarios." + error);
+        return
+
+    }
+
+    for (let us of todosUsuarios) {
+        try {
+            await us.save();
+        } catch (error) {
+            console.log("Error guardando usuario: " + error);
+            return;
+        }
+    }
+}
+
+resetInfoAtlas();
