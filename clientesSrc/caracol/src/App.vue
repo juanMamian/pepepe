@@ -3,10 +3,18 @@
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
       <div id="zonaIcono" @click="mostrandoNav = !mostrandoNav">
-        <img id="botonDesplegarNav" src="@/assets/iconos/stream.svg" alt="Menu" />
+        <img
+          id="botonDesplegarNav"
+          src="@/assets/iconos/stream.svg"
+          alt="Menu"
+        />
         <div id="logoPepepe">Pepepe</div>
       </div>
-      <div id="botonesNavEnlaces" :class="{ enlacesOcultos: !mostrandoNav }" @click="mostrandoNav = false">
+      <div
+        id="botonesNavEnlaces"
+        :class="{ enlacesOcultos: !mostrandoNav }"
+        @click="mostrandoNav = false"
+      >
         <!-- <router-link
           to="/actividadesVirtuales2021"
           v-if="
@@ -23,12 +31,18 @@
           </div>
         </router-link> -->
 
-        <router-link to="/foros" v-if="
-          usuarioLogeado == true &&
-          usuario.permisos &&
-          usuario.permisos.includes('maestraVida')
-        ">
-          <div class="botonNavBarra botonNav hoverNegro" id="navActividadesVirtuales">
+        <router-link
+          to="/foros"
+          v-if="
+            usuarioLogeado == true &&
+            usuario.permisos &&
+            usuario.permisos.includes('maestraVida')
+          "
+        >
+          <div
+            class="botonNavBarra botonNav hoverNegro"
+            id="navActividadesVirtuales"
+          >
             Foros
           </div>
         </router-link>
@@ -71,21 +85,29 @@
           </div>
           <div id="enlacesHijosHerramientas" class="contenedorHijos">
             <router-link to="/atlas">
-              <div class="botonNavBarra botonNav hoverNegro botonNavHijo" id="navAtlas">
+              <div
+                class="botonNavBarra botonNav hoverNegro botonNavHijo"
+                id="navAtlas"
+              >
                 Atlas de conocimientos
               </div>
             </router-link>
-           
           </div>
         </div>
 
         <router-link to="/personas" v-if="usuarioLogeado">
-          <div class="botonNavBarra botonNav hoverNegro" id="navActividadesVirtuales">
+          <div
+            class="botonNavBarra botonNav hoverNegro"
+            id="navActividadesVirtuales"
+          >
             Personas
           </div>
         </router-link>
         <router-link to="/espacios">
-          <div class="botonNavBarra botonNav hoverNegro" id="navActividadesVirtuales">
+          <div
+            class="botonNavBarra botonNav hoverNegro"
+            id="navActividadesVirtuales"
+          >
             Horario semanal
           </div>
         </router-link>
@@ -94,53 +116,84 @@
             Mi ruta de grado
           </div>
         </router-link>
-        <router-link to="/registro" id="navRegistro" v-if="usuarioSuperadministrador">
-          <div class="botonNavBarra botonNav hoverNegro">
-            Registrar usuario
-          </div>
+        <router-link
+          to="/registro"
+          id="navRegistro"
+          v-if="usuarioSuperadministrador"
+        >
+          <div class="botonNavBarra botonNav hoverNegro">Registrar usuario</div>
         </router-link>
       </div>
       <div id="botonesNavDerecha">
-        <div id="bloqueNotificaciones" v-if="usuarioLogeado" v-show="
-          yo.notificaciones.length > 0 ||
-          yo.notificacionesActividadForos.length > 0
-        ">
+        <div
+          id="bloqueNotificaciones"
+          v-if="usuarioLogeado"
+          v-show="
+            yo.notificaciones.length > 0 ||
+            yo.notificacionesActividadForos.length > 0
+          "
+        >
           <span id="numeroNotificaciones">{{
             yo.notificaciones.length + yo.notificacionesActividadForos.length
           }}</span>
-          <img src="@/assets/iconos/campanita.png" alt="Notificaciones"
-            :title="yo.notificaciones.length + 'Notificaciones'" id="imagenCampanita"
-            @click="mostrandoNotificaciones = !mostrandoNotificaciones" />
+          <img
+            src="@/assets/iconos/campanita.png"
+            alt="Notificaciones"
+            :title="yo.notificaciones.length + 'Notificaciones'"
+            id="imagenCampanita"
+            @click="mostrandoNotificaciones = !mostrandoNotificaciones"
+          />
           <div id="contenedorNotificaciones" v-show="mostrandoNotificaciones">
-            <notificacion-actividad-foros :estaNotificacion="notificacionActividadForos"
+            <notificacion-actividad-foros
+              :estaNotificacion="notificacionActividadForos"
               :key="notificacionActividadForos.id"
-              v-for="notificacionActividadForos of yo.notificacionesActividadForos" />
-            <notificacion :key="notificacion.id" v-for="notificacion of notificacionesOrdenadas"
-              :estaNotificacion="notificacion" />
+              v-for="notificacionActividadForos of yo.notificacionesActividadForos"
+            />
+            <notificacion
+              :key="notificacion.id"
+              v-for="notificacion of notificacionesOrdenadas"
+              :estaNotificacion="notificacion"
+            />
           </div>
         </div>
         <template v-if="usuarioLogeado">
-          <div class="botonNavBarra botonNav navLogin hoverNegro" id="navLogged"
-            @click="accionesLogeado = !accionesLogeado" @mouseleave="accionesLogeado = false">
+          <div
+            class="botonNavBarra botonNav navLogin hoverNegro"
+            id="navLogged"
+            @click="accionesLogeado = !accionesLogeado"
+            @mouseleave="accionesLogeado = false"
+          >
             {{ username }}
             <div id="botonesLogeado" v-if="accionesLogeado">
               <router-link to="/miperfil">
                 <div class="botonesLogeado hoverNegro" id="Perfil">Perfil</div>
               </router-link>
-              <div class="botonesLogeado hoverNegro" id="desconexion" @click="deslogearse">
+              <div
+                class="botonesLogeado hoverNegro"
+                id="desconexion"
+                @click="deslogearse"
+              >
                 Desconexion
               </div>
             </div>
           </div>
         </template>
         <template v-else>
-          <router-link to="/login" class="botonNavBarra botonNav navLogin hoverNegro" id="navLogin">
+          <router-link
+            to="/login"
+            class="botonNavBarra botonNav navLogin hoverNegro"
+            id="navLogin"
+          >
             <div>Login</div>
           </router-link>
         </template>
       </div>
     </div>
-    <router-view @logearse="logearUsuario" id="visorRouter" :yo="yo"></router-view>
+    <router-view
+      @logearse="logearUsuario"
+      id="visorRouter"
+      :yo="yo"
+    ></router-view>
     <cuadrito-mensaje-usuario style="z-index: 100" :mensajes="this.errores" />
   </div>
 </template>
@@ -149,11 +202,11 @@
 import gql from "graphql-tag";
 import Notificacion from "./components/usuario/Notificacion.vue";
 import NotificacionActividadForos from "./components/usuario/NotificacionActividadForos.vue";
-import CuadritoMensajeUsuario from './components/utilidades/CuadritoMensajeUsuario.vue';
-import {QUERY_AUTH_USUARIO} from "./globalMixin.js";
+import CuadritoMensajeUsuario from "./components/utilidades/CuadritoMensajeUsuario.vue";
+import { QUERY_AUTH_USUARIO } from "./globalMixin.js";
 
 export const QUERY_ESTADO_RED = gql`
-  query{
+  query {
     estadoRed
   }
 `;
@@ -215,13 +268,17 @@ export default {
   apollo: {
     yo: {
       query: QUERY_YO,
-      fetchPolicy: "network-only",      
+      fetchPolicy: "network-only",
       skip() {
         return !this.usuarioLogeado;
       },
     },
   },
-  components: { Notificacion, NotificacionActividadForos, CuadritoMensajeUsuario },
+  components: {
+    Notificacion,
+    NotificacionActividadForos,
+    CuadritoMensajeUsuario,
+  },
   data() {
     return {
       accionesLogeado: false,
@@ -234,7 +291,7 @@ export default {
       mostrandoNav: false,
       navSeleccionado: "home",
 
-      errores:[],
+      errores: [],
     };
   },
   computed: {
@@ -246,7 +303,7 @@ export default {
     username: function () {
       return this.usuario.username;
     },
-    
+
     colorBlancoAccionLogeado: function () {
       if (this.accionesLogeado) {
         return {
@@ -272,9 +329,9 @@ export default {
       store.writeQuery({
         query: QUERY_ESTADO_RED,
         data: {
-          estadoRed: navigator.onLine
-        }
-      })
+          estadoRed: navigator.onLine,
+        },
+      });
       // if (navigator.onLine) {
       //   this.sincronizarMovsDineroShifting();
       // }
@@ -285,13 +342,12 @@ export default {
 
       const store = this.$apollo.provider.defaultClient;
 
-
       let nuevosDatos = {
         id: datosUsuario.id,
         username: datosUsuario.username,
         permisos: datosUsuario.permisos,
         token,
-      }
+      };
 
       store.writeQuery({
         query: QUERY_AUTH_USUARIO,
@@ -313,17 +369,19 @@ export default {
       console.log("On loginArea");
 
       this.$nextTick(() => {
-        store.resetStore().then(() => {
-          console.log("Store reset");
-          this.setEstadoRed();
-        }).catch((error) => {
-          console.log("Error resetting store: " + error);
-          this.setEstadoRed();
-        });
-      })
-
+        store
+          .resetStore()
+          .then(() => {
+            console.log("Store reset");
+            this.setEstadoRed();
+          })
+          .catch((error) => {
+            console.log("Error resetting store: " + error);
+            this.setEstadoRed();
+          });
+      });
     },
-  },  
+  },
   created() {
     this.setEstadoRed();
     window.addEventListener("online", this.setEstadoRed);

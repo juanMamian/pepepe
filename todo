@@ -10,6 +10,10 @@ Atlas de conocimiento.
 -Verificar que no se formen dependencias redundantes en el backend.
 -Hacer que al set idNodoSeleccionado en el atlas de conocimiento, haga una query apollo. Así queda prevista la seleccion de nodos no descargados.
 
+-Que controles nodo ya no reciba el objeto yo como una prop sino más bien que lo sace de apollo. No olvidar el fetch policy cache-first.
+-Que controles nodo ponga target al nodo en apollo.
+-verificar que la modificación de dependencias, eliminar y otras funciones están protegida solo para admins en controlesNodo.
+
 
 pepepe
 

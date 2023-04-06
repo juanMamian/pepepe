@@ -11,19 +11,30 @@
         :refreshLineaHorizontal="refreshLineaHorizontal"
         @updateCadenaUnfold="updateCadenaUnfold"
         @scrollMe="scrollNodoIntoView"
+        @click.stop="clickEnNodo(idNodo)"
       >
       </nodo-conocimiento-vista-arbol>
     </div>
+
+    <teleport to="body">
+      <controles-nodo
+        :yo="yo"
+        :elNodo="nodoSeleccionadoNullificable"
+      ></controles-nodo>
+    </teleport>
   </div>
 </template>
 <script>
 import { gql } from "@apollo/client/core";
 import NodoConocimientoVistaArbol from "./NodoConocimientoVistaArbol.vue";
+import ControlesNodo from "./controlesNodo.vue";
+import { QUERY_NODO_CONOCIMIENTO_ESTANDAR } from "./fragsAtlasConocimiento";
 
 export default {
   name: "DiagramaArbol",
   components: {
     NodoConocimientoVistaArbol,
+    ControlesNodo,
   },
   props: {
     idsRoot: {
@@ -40,6 +51,9 @@ export default {
               datosNodos {
                 id
                 idNodo
+                estudiado
+                aprendido
+                diasRepaso
                 estadoAprendizaje
               }
             }
@@ -50,6 +64,21 @@ export default {
       skip() {
         return !this.usuarioLogeado;
       },
+    },
+    nodoSeleccionado: {
+      query: QUERY_NODO_CONOCIMIENTO_ESTANDAR,
+      variables() {
+        return {
+          idNodo: this.idNodoSeleccionado,
+        };
+      },
+      update({ nodo }) {
+        return nodo;
+      },
+      skip() {
+        return !this.idNodoSeleccionado;
+      },
+      fetchPolicy: "cache-first",
     },
   },
   data() {
@@ -64,13 +93,22 @@ export default {
       refreshLineaHorizontal: 0,
     };
   },
+  computed: {
+    nodoSeleccionadoNullificable() {
+      return this.idNodoSeleccionado ? this.nodoSeleccionado : null;
+    },
+  },
   methods: {
+    clickEnNodo(idNodo) {
+      this.idNodoSeleccionado =
+        this.idNodoSeleccionado === idNodo ? null : idNodo;
+    },
     scrollNodoIntoView({ elem, xCentro }) {
       this.$nextTick(() => {
         let layoutElem = elem.$el.getBoundingClientRect();
         let nuevoXCentro = layoutElem.left + layoutElem.width / 2;
 
-        let scroll=nuevoXCentro - xCentro;
+        let scroll = nuevoXCentro - xCentro;
         this.$refs.elDiagrama.scrollLeft += nuevoXCentro - xCentro;
       });
     },
@@ -82,14 +120,16 @@ export default {
 </script>
 <style scoped>
 .diagramaArbol {
-  border: 1px solid gray;
 }
 
 #elDiagrama {
   display: flex;
   gap: 100px;
-  overflow: scroll;
+  overflow-x: scroll;
   padding: 20px 20px;
   align-items: flex-start;
+}
+.controlesNodo {
+  z-index: 10;
 }
 </style>

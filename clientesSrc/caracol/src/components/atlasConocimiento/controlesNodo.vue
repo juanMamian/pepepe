@@ -320,14 +320,6 @@ export default {
     elNodo: {
       type: Object,
     },
-    nivelesConexionDeeper: {
-      type: Boolean,
-      default: false,
-    },
-    nivelesConexionHigher: {
-      type: Boolean,
-      default: false,
-    },
     yo: {
       type: Object,
       required: true,
@@ -888,7 +880,7 @@ export default {
 .controlesNodo {
   position: fixed;
   border-radius: 10px;
-  top: 100%;
+  top: 100vh;
   left: 50%;
   transform: translateX(-50%);
   background-color: var(--atlasConocimientoSeleccion);

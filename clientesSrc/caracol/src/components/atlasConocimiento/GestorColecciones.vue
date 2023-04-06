@@ -99,7 +99,7 @@
       id="anuncioConectandoNodos"
       v-show="conectandoNodosColeccion"
     >
-      <img src="@/assets/iconos/userNodes.png" alt="Nodos" />
+      <img src="@/assets/iconos/plugSolid.svg" alt="Nodos" />
       Editando nodos de la coleccion
       <div
         class="boton"
@@ -160,14 +160,9 @@
             {{ coleccionSeleccionada.progreso }}%
           </div>
         </div>
-        <div
-          ref="listaNodosColeccion"
-          id="listaNodosColeccion"
-          v-if="coleccionSeleccionadaNullificable"
-        >
-        </div>
         <diagrama-arbol
           v-if="coleccionSeleccionadaNullificable"
+          ref="diagramaArbol"
           :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
         ></diagrama-arbol>
       </div>
@@ -264,14 +259,11 @@ export default {
       );
     },
     estiloZonaTitulo() {
-      let color = "transparent";
       let width = "fit-content";
       if (this.mostrandoArbol) {
-        color = "var(--colorFondoGestionColecciones)";
         width = "100%";
       }
       return {
-        backgroundColor: color,
         width,
       };
     },
@@ -408,6 +400,7 @@ export default {
 
     mostrandoArbol(val) {
       this.$emit("mostrandoArbol", val);
+      this.$refs.diagramaArbol.idNodoSeleccionado = null;
     },
   },
   mounted() {
@@ -446,6 +439,7 @@ export default {
   gap: 10px;
   align-items: center;
   justify-content: center;
+  background-color: inherit;
 }
 
 #contenedorOpciones {

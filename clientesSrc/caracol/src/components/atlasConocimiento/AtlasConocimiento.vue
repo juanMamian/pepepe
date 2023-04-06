@@ -29,6 +29,7 @@
         :yo="yo"
         :todosNodos="todosNodos"
         :idNodoSeleccionado="idNodoSeleccionado"
+        :style="[estiloGestor]"
         @coleccionSeleccionada="coleccionSeleccionada = $event"
         @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
         @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
@@ -148,6 +149,7 @@
       :elNodo="nodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
       :idNodoTarget="idNodoTarget"
+      v-show="!gestorColeccionesMostrandoArbol"
       @setMeTarget="
         setNodoTarget(nodoSeleccionado.id);
         centrarEnNodoById(nodoSeleccionado.id);
@@ -418,6 +420,18 @@ export default {
     };
   },
   computed: {
+    estiloGestor(){
+
+      let color = "transparent";
+      if(this.gestorColeccionesMostrandoArbol){
+
+        color = "var(--colorFondoGestionColecciones)";
+      }
+      return {
+        backgroundColor:color,
+
+      }
+    },
     idsUnderTarget() {
       // Array de arrays. Cada array es los ids de un nivel de nodos under target.
       if (!this.nodoTarget) {
@@ -1219,15 +1233,6 @@ export default {
     centroZonaNodosVisibles() {
 
       this.iniciarCalculoNodosVisibles();
-    },
-    idNodoSeleccionado() {
-      if (this.gestorColeccionesConectandoNodos) {
-        if (this.$refs.gestorColecciones) {
-
-          this.$refs.gestorColecciones.idNodoSeleccionado = this.idNodoSeleccionado;
-        }
-      }
-
     },
   },
   mounted() {

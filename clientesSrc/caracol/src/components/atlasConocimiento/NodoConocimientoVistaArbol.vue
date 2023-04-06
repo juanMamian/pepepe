@@ -233,7 +233,7 @@ export default {
       }
       let subnodos=this.$refs.subnodo;
       console.log(`Y el ancho de la linea del árbol basándose en ${subnodos.length} subnodos`);
-      
+
       if(subnodos.length < 2){
        this.anchoMiLinea = 0;
        return
