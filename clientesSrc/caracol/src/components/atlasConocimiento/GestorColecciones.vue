@@ -163,6 +163,7 @@
         <diagrama-arbol
           v-if="coleccionSeleccionadaNullificable"
           ref="diagramaArbol"
+          :visible="mostrandoArbol"
           :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
         ></diagrama-arbol>
       </div>

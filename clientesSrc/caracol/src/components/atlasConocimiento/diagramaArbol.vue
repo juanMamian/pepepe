@@ -18,6 +18,7 @@
 
     <teleport to="body">
       <controles-nodo
+        v-show="visible"
         :yo="yo"
         :elNodo="nodoSeleccionadoNullificable"
       ></controles-nodo>
@@ -37,6 +38,10 @@ export default {
     ControlesNodo,
   },
   props: {
+    visible: {
+      type: Boolean,
+      default: true,
+    },
     idsRoot: {
       type: Array,
       default: [],
