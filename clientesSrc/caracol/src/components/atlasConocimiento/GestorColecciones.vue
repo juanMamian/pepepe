@@ -161,22 +161,15 @@
           </div>
         </div>
         <div
-          ref="contenedorArbol"
-          id="contenedorArbol"
-          :style="[estiloContenedorArbol]"
+          ref="listaNodosColeccion"
+          id="listaNodosColeccion"
+          v-if="coleccionSeleccionadaNullificable"
         >
-          <nodo-conocimiento-vista-arbol
-            v-for="idNodo of idsNodosPresentes"
-            :key="idNodo"
-            :idNodo="idNodo"
-            :idNodoSeleccionado="idNodoSeleccionado"
-            :cadenaTarget="cadenaTarget"
-            :yo="yo"
-            :refreshLineaHorizontal="refreshLineaHorizontal"
-            @clickEnNodo="clickNodo"
-            @updateCadenaTarget="updateCadenaTarget"
-          />
         </div>
+        <diagrama-arbol
+          v-if="coleccionSeleccionadaNullificable"
+          :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
+        ></diagrama-arbol>
       </div>
     </transition>
   </div>
@@ -186,6 +179,7 @@ import { gql } from "@apollo/client/core";
 import PieProgreso from "@/components/utilidades/PieProgreso.vue";
 import Loading from "@/components/utilidades/Loading.vue";
 import NodoConocimientoVistaArbol from "@/components/atlasConocimiento/NodoConocimientoVistaArbol.vue";
+import DiagramaArbol from "./diagramaArbol.vue";
 import debounce from "debounce";
 
 export default {
@@ -194,6 +188,7 @@ export default {
     PieProgreso,
     Loading,
     NodoConocimientoVistaArbol,
+    DiagramaArbol,
   },
   props: {
     yo: {
@@ -203,6 +198,10 @@ export default {
     todosNodos: {
       type: Array,
       default: [],
+    },
+    idNodoSeleccionado: {
+      type: String,
+      default: "",
     },
   },
   apollo: {
@@ -253,10 +252,6 @@ export default {
       togglingNodoColeccion: false,
 
       mostrandoArbol: false,
-      idNodoSeleccionado: null,
-      cadenaTarget: [],
-
-      refreshPosiciones: 0,
     };
   },
   computed: {
@@ -288,12 +283,6 @@ export default {
       }
       return {
         left: left,
-      };
-    },
-    estiloContenedorArbol() {
-      let overflowX = "unset";
-      return {
-        overflowX,
       };
     },
     coleccionesEnriquecidas() {
@@ -335,17 +324,6 @@ export default {
 
       return this.coleccionSeleccionada;
     },
-    idsNodosPresentes() {
-      if (!this.coleccionSeleccionadaNullificable) {
-        return [];
-      }
-      //Cuando hay nodo target él es el único presente. Él mismo mostrará sus dependencias.
-      if (this.cadenaTarget.length > 0) {
-        return [this.cadenaTarget[0]];
-      }
-
-      return this.coleccionSeleccionadaNullificable.idsNodos;
-    },
   },
   methods: {
     toggleNodoColeccion() {
@@ -382,13 +360,6 @@ export default {
           this.togglingNodoColeccion = false;
         });
     },
-    refreshLineas: debounce(function () {
-      console.log("activando refresh de línea horizontal");
-      this.refreshLineaHorizontal++;
-    }, 1000),
-    updateCadenaTarget(nuevaCadena) {
-      this.cadenaTarget = nuevaCadena;
-    },
     clickNodo(idNodo) {
       this.idNodoSeleccionado =
         this.idNodoSeleccionado === idNodo ? null : idNodo;
@@ -400,10 +371,6 @@ export default {
   watch: {
     idNodoSeleccionado(val) {
       this.$emit("idNodoSeleccionado", val);
-    },
-    cadenaTarget() {
-      console.log("incrementando el refresh de linea horizontal");
-      this.refreshLineaHorizontal++;
     },
     estiloIconoProgresoUsuario() {
       if (this.$refs?.imagenUsuario && this.$refs.diagramaPersonal) {
@@ -420,10 +387,6 @@ export default {
         this.mostrandoArbol = false;
         this.mostrandoOpcionesColeccion = false;
         this.idNodoSeleccionado = null;
-        this.cadenaTarget = [];
-      } else {
-        this.idNodoSeleccionado = null;
-        this.$emit("idNodoSeleccionado", null);
       }
     },
 
@@ -446,14 +409,10 @@ export default {
     mostrandoArbol(val) {
       this.$emit("mostrandoArbol", val);
     },
-    "$refs.contenedorArbol": function () {
-      this.anchoContenedorArbol = this.$refs.anchoContenedorArbol.offsetWidth;
-    },
   },
   mounted() {
     this.$nextTick(() => {
       this.montado = true;
-      this.refreshPosiciones++;
     });
   },
 };
@@ -515,7 +474,6 @@ export default {
   transform: translateX(-50%);
 }
 #botonToggleNodoColeccion {
-
   width: fit-content;
   margin: 10px auto;
 }
@@ -646,7 +604,7 @@ export default {
   margin: 10px auto;
   margin-top: 0px;
 }
-#contenedorArbol {
+#listaNodosColeccion {
   margin: 70px auto;
   display: flex;
   flex-wrap: wrap;

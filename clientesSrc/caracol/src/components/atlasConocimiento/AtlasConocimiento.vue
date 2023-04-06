@@ -28,6 +28,7 @@
         ref="gestorColecciones"
         :yo="yo"
         :todosNodos="todosNodos"
+        :idNodoSeleccionado="idNodoSeleccionado"
         @coleccionSeleccionada="coleccionSeleccionada = $event"
         @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
         @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
