@@ -69,21 +69,13 @@ export default {
       this.$nextTick(() => {
         let layoutElem = elem.$el.getBoundingClientRect();
         let nuevoXCentro = layoutElem.left + layoutElem.width / 2;
-        console.log(`nuevoXCentro: ${nuevoXCentro}`);
 
         let scroll=nuevoXCentro - xCentro;
-        console.log(`scroll: ${scroll}`);
         this.$refs.elDiagrama.scrollLeft += nuevoXCentro - xCentro;
       });
     },
     updateCadenaUnfold(nuevaCadena) {
       this.cadenaUnfold = nuevaCadena;
-    },
-  },
-  watch: {
-    cadenaUnfold() {
-      console.log("incrementando el refresh de linea horizontal");
-      this.refreshLineaHorizontal++;
     },
   },
 };

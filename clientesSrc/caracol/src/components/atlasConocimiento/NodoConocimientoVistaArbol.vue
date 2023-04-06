@@ -37,7 +37,7 @@
     >
       <img
         style="transform: scale(0.6)"
-        src="@/assets/iconos/folderClosed.svg"
+        src="@/assets/iconos/ellipsisVertical.svg"
         alt="Cerrado"
         v-show="!selfUnfolded"
       />
@@ -48,15 +48,23 @@
       />
     </div>
     <transition
-      :name="idsDependencias.length>1?'unfoldHorizontally':'unfoldVertically'"
+      :name="
+        idsDependencias.length > 1 ? 'unfoldHorizontally' : 'unfoldVertically'
+      "
       @before-enter="prepareDataScroll"
-      @enter="askScrollMe"
+      @enter="
+        askScrollMe();
+        calcularAnchoMiArbol();
+      "
       @before-leave="prepareDataScroll"
-      @after-leave="askScrollMe"
+      @after-leave="
+        askScrollMe();
+        calcularAnchoMiArbol();
+      "
     >
       <div
         id="contenedorArbol"
-        :ref="'contenedorArbol' + idNodo"
+        ref="contenedorArbol"
         v-if="selfUnfolded"
         :style="[estiloContenedorArbol]"
         @click.stop=""
@@ -86,6 +94,7 @@
             @componentUpdated="$emit('componentUpdated')"
             @clickEnNodo="$emit('clickEnNodo', $event)"
             @updateCadenaUnfold="middlewareUpdateCadenaUnfold"
+            @anchoUpdated="calcularAnchoMiArbol"
           />
         </transition-group>
       </div>
@@ -191,31 +200,70 @@ export default {
       paddingTopArbol: 50,
       paddingLateralArbol: 30,
       montado: false,
-      anchoArbol: 0,
 
       selfUnfolded:false,
 
       xCentro:0,
       yCentro:0,
+
+      anchosSubnodos: [],
+      gapSubnodos:100,
+      anchoMiArbol:100,
+      anchoMiLinea:0,
+      leftMiLinea:0,
+
     }
 
   },
 
   methods: {
+    updateMeasurements(){
+      console.log(`${this.elNodo.nombre} calcula el ancho de su propio árbol`);
+      if(!this.$refs?.contenedorArbol){
+        console.log("no tenia subnodos");
+        this.anchoMiArbol=0;
+        return
+      }
+
+      this.anchoMiArbol=this.$refs.contenedorArbol.offsetWidth;
+
+      if(!this.$refs?.subnodo){
+        console.log("No tenía subnodos");
+        return;
+      }
+      let subnodos=this.$refs.subnodo;
+      console.log(`Y el ancho de la linea del árbol basándose en ${subnodos.length} subnodos`);
+      
+      if(subnodos.length < 2){
+       this.anchoMiLinea = 0;
+       return
+      }
+
+      let primero=subnodos[0];
+      let segundo=subnodos[subnodos.length-1];
+      let anchoPrimero=primero.$el.offsetWidth;
+      let anchoSegundo=segundo.$el.offsetWidth;
+      this.anchoMiLinea=this.anchoMiArbol - (anchoPrimero/2) - (anchoSegundo/2) - (2 * this.paddingLateralArbol);
+      this.leftMiLinea=(anchoPrimero/2) + this.paddingLateralArbol;
+
+    },
+    calcularAnchoMiArbol(){
+      this.updateMeasurements();
+
+      this.$nextTick(()=>{
+        this.$emit('anchoUpdated');
+      })
+    },
     prepareDataScroll(){
       let layoutElem=this.$el.getBoundingClientRect();
       this.xCentro=layoutElem.left+(layoutElem.width/2);
       this.yCentro=layoutElem.top+(layoutElem.height/2);
     },
     forwardScrollMe(elem){
-      console.log("forwarding scroll me");
       this.$emit('scrollMe', elem);
     },
     askScrollMe(){
       let elem=this;
-      console.log(`xCentro: ${this.xCentro}`);
-      console.log(`yCentro: ${this.yCentro}`);
-      console.log("emitiendo scroll me");
 
       this.$emit('scrollMe', {
         elem,
@@ -275,19 +323,10 @@ export default {
       }
     },
     estiloLineaHorizontalContenedorArbol() {
-      let anchoArbol = this.anchoArbol;
-      if (this.passedOver || !this.$refs?.subnodo?.length >0) {
 
-        return {
-          width: '0px',
-        }
-      }
-      let widthPrimero = this.$refs.subnodo[0].$el.offsetWidth;
-      let widthUltimo = this.$refs.subnodo[this.$refs.subnodo.length - 1].$el.offsetWidth;
-      let widthLinea = anchoArbol - (widthPrimero / 2) - (widthUltimo / 2) - (2 * this.paddingLateralArbol);
       return {
-        width: widthLinea + 'px',
-        left: (widthPrimero / 2) + this.paddingLateralArbol + 'px',
+        width: this.anchoMiLinea+ 'px',
+        left: this.leftMiLinea + 'px',
       }
     },
     estiloContenedorArbol() {
@@ -295,12 +334,14 @@ export default {
       let paddingBottom = 100;
       let paddingLeft = this.paddingLateralArbol;
       let paddingRight = this.paddingLateralArbol;
+      let gap=this.gapSubnodos;
 
       return {
         paddingTop: paddingTop + 'px',
         paddingBottom: paddingBottom + 'px',
         paddingLeft: paddingLeft + 'px',
         paddingRight: paddingRight + 'px',
+        gap: gap + 'px',
       }
     },
     idsDependencias() {
