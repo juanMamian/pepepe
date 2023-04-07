@@ -2,7 +2,7 @@
   <div
     class="nodoConocimientoVistaArbol nodoConocimientoConBola"
     :class="[
-      { seleccionado, accesible },
+      { seleccionado, accesible, targeted },
       (datosUsuarioEsteNodo?.estadoAprendizaje || '').toLowerCase(),
     ]"
     @click.stop="$emit('clickEnNodo', idNodo)"
@@ -12,28 +12,20 @@
       :style="[estiloLineaReceptora]"
       v-show="nivelArbol > 0"
     ></div>
+      <img
+        src="@/assets/iconos/crosshairsSolid.svg"
+        alt="Mira"
+        id="iconoTargeted"
+        v-if="targeted"
+      />
 
     <div class="bolita">
       <img
-        v-show="!targeted"
         v-if="elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
         alt="Skill"
       />
-      <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" v-show="!targeted" />
-      <img
-        src="@/assets/iconos/crosshairsSolid.svg"
-        alt="Mira"
-        style="
-          filter: var(--filtroMainColor);
-          transform: translate(-50%, -50%) scale(1);
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          opacity: 1;
-        "
-        v-if="targeted"
-      />
+      <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" />
     </div>
 
     <div class="cajaTexto">

@@ -1,5 +1,5 @@
 <template>
-  <div class="diagramaArbol">
+  <div class="diagramaArbol" @click="clickFondo">
     <div id="elDiagrama" ref="elDiagrama">
       <nodo-conocimiento-vista-arbol
         v-for="idNodo of idsRoot"
@@ -104,6 +104,9 @@ export default {
     },
   },
   methods: {
+    clickFondo(){
+      this.idNodoSeleccionado=null;
+    },
     clickEnNodo(idNodo) {
       this.idNodoSeleccionado =
         this.idNodoSeleccionado === idNodo ? null : idNodo;
@@ -131,7 +134,11 @@ export default {
   display: flex;
   gap: 100px;
   overflow-x: scroll;
-  padding: 20px 20px;
+  padding: 30px 20px;
+  height: 100%;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px auto;
   align-items: flex-start;
 }
 .controlesNodo {

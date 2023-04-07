@@ -412,6 +412,9 @@ export default {
 </script>
 <style scoped lang="css">
 .gestorColecciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
   --colorFondoGestionColecciones: rgb(233, 233, 233);
 }
@@ -556,32 +559,17 @@ export default {
   align-items: center;
 }
 
-/* #region diagrama arbol */
 #diagramaPersonal {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
   padding: 20px 5px;
   background-color: var(--colorFondoGestionColecciones);
-  overflow-x: scroll;
 }
 #iconoProgresoUsuario {
   width: fit-content;
   position: relative;
   transform: translateX(-50%);
-}
-#contenedorSelectoresModoDiagrama {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 10px;
-  margin: 0px auto;
-}
-.selectorModoDiagrama {
-  height: 20px;
-  width: 20px;
-  opacity: 0.5;
-}
-.selectorModoDiagrama.activo {
-  opacity: 1;
 }
 #contenedorFotoUsuario {
   border-radius: 50%;
@@ -598,19 +586,8 @@ export default {
   margin: 10px auto;
   margin-top: 0px;
 }
-#listaNodosColeccion {
-  margin: 70px auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
-  row-gap: 60px;
-  align-items: flex-start;
-  padding-bottom: 50px;
-}
-#contenedorArbol > .nodoConocimientoVistaArbol {
-  margin: 0px auto;
-  flex-shrink: 0;
-}
 
-/* #endregion */
+.diagramaArbol{
+  flex-grow: 1;
+}
 </style>

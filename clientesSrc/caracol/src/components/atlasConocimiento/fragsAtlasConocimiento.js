@@ -110,7 +110,7 @@ export const QUERY_DATOS_USUARIO_NODOS = gql`
     yo {
       id
       atlas {
-      id
+        id
         idNodoTarget
         datosNodos {
           ...fragDatoNodoConocimiento
@@ -127,3 +127,4 @@ export const QUERY_DATOS_USUARIO_NODOS = gql`
   ${fragmentoDatoNodoConocimiento}
   ${fragmentoColecciones}
 `;
+

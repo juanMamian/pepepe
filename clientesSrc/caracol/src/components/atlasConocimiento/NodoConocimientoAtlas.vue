@@ -12,22 +12,16 @@
       aprendido: idsNodosAprendidos.includes(elNodo.id),
       estudiado: idsNodosEstudiados.includes(elNodo.id),
       olvidado: idsNodosOlvidados.includes(elNodo.id),
+      targeted,
     }"
   >
-    <div class="bolita">
       <img
+      id="iconoTargeted"
         src="@/assets/iconos/crosshairsSolid.svg"
         alt="Mira"
-        style="
-          filter: var(--filtroAtlasSeleccion);
-          transform: translate(-50%, -50%) scale(1.9);
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          opacity: 1;
-        "
         v-if="idNodoTarget === elNodo.id"
       />
+    <div class="bolita">
       <slot name="imagenBolita">
         <img
           v-if="elNodo.tipoNodo === 'concepto'"
@@ -145,6 +139,9 @@ export default {
     };
   },
   computed: {
+    targeted(){
+      return this.idNodoTarget===this.elNodo.id;
+    },
     idNodoTarget(){
       return this.yo?.atlas?.idNodoTarget;
     },
@@ -206,4 +203,8 @@ export default {
 </script>
 <style scoped>
 @import url("@/assets/estilos/nodoConocimientoBola.css");
+.nodoConocimientoAtlas.targeted #iconoTargeted{
+  width: 50px;
+  height: 50px;
+}
 </style>

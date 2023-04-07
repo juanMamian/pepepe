@@ -435,14 +435,15 @@ export default {
       return this.yo?.atlas?.idNodoTarget;
     },
     estiloGestor(){
-
+      let height='unset';
       let color = "transparent";
       if(this.gestorColeccionesMostrandoArbol){
-
+        height='100%';
         color = "var(--colorFondoGestionColecciones)";
       }
       return {
         backgroundColor:color,
+        height,
 
       }
     },
@@ -468,11 +469,14 @@ export default {
     },
     estiloContenedorOverlays() {
       let width = "fit-content";
+      let height='unset';
       if (this.gestorColeccionesMostrandoArbol) {
         width = "100%";
+        height = "100%";
       }
       return {
-        width
+        width,
+        height,
       }
     },
     domAndNodosReady() {
