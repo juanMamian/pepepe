@@ -97,6 +97,18 @@
       >
         <img src="@/assets/iconos/plugSolid.svg" alt="Conectar" />
       </div>
+      <div
+        class="botonOpcion boton"
+        @click.stop="eliminarColeccion"
+        v-show="mostrandoArbol"
+      >
+        <loading v-show="eliminandoColeccion" />
+        <img
+          src="@/assets/iconos/trash.svg"
+          alt="Eliminar"
+          v-show="!eliminandoColeccion"
+        />
+      </div>
     </div>
     <div
       class="anuncio anuncioSeleccion"
@@ -160,7 +172,11 @@
               />
             </div>
           </pie-progreso>
-          <div id="indicadorProgreso" v-if="coleccionSeleccionadaNullificable" v-show="coleccionSeleccionada?.progreso">
+          <div
+            id="indicadorProgreso"
+            v-if="coleccionSeleccionadaNullificable"
+            v-show="coleccionSeleccionada?.progreso"
+          >
             {{ coleccionSeleccionada.progreso }}%
           </div>
         </div>
@@ -273,6 +289,8 @@ export default {
   },
   data() {
     return {
+      eliminandoColeccion: false,
+
       preparandoNuevaColeccion: false,
       creandoNuevaColeccion: false,
 
@@ -370,6 +388,100 @@ export default {
     },
   },
   methods: {
+    eliminarColeccion() {
+      console.log("Eliminando colección seleccionada");
+      if (!this.coleccionSeleccionadaNullificable) {
+        return;
+      }
+      if (
+        !confirm(
+          "¿Confirmar la eliminación de la colección? (Esta acción no puede deshacerse)"
+        )
+      ) {
+        return;
+      }
+      let idColeccion = this.coleccionSeleccionadaNullificable.id;
+      console.log("con id " + idColeccion);
+      this.eliminandoColeccion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!) {
+              eliminarColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+              )
+            }
+          `,
+          variables: {
+            idColeccion,
+          },
+        })
+        .then(() => {
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: gql`
+              query {
+                yo {
+                  atlas {
+                    colecciones {
+                      ...fragColecciones
+                    }
+                  }
+                }
+              }
+              ${fragmentoColecciones}
+            `,
+          });
+          let nuevoCache = JSON.parse(JSON.stringify(cache));
+          let indexC = nuevoCache.yo.atlas.colecciones.findIndex(
+            (c) => c.id === idColeccion
+          );
+          if (indexC < 0) {
+            console.log("La colección no estaba en el caché");
+            return;
+          }
+          nuevoCache.yo.atlas.colecciones.splice(indexC, 1);
+
+          // Seleccionar el index de la colección que quedará seleccionada.
+          if (nuevoCache.yo.atlas.colecciones.length < 1) {
+            this.idColeccionSeleccionada = null;
+          } else {
+            let siguienteIndex = indexC - 1;
+            if (siguienteIndex < 0) {
+              siguienteIndex = nuevoCache.yo.atlas.colecciones.length - 1;
+            }
+            console.log("pasando a la coleccion " + siguienteIndex);
+            console.table(nuevoCache.yo.atlas.colecciones);
+            this.idColeccionSeleccionada =
+              nuevoCache.yo.atlas.colecciones[siguienteIndex].id;
+          }
+          // Seleccionado el id de la nueva coleccion seleccionada.
+
+          store.writeQuery({
+            query: gql`
+              query {
+                yo {
+                  atlas {
+                    colecciones {
+                      ...fragColecciones
+                    }
+                  }
+                }
+              }
+              ${fragmentoColecciones}
+            `,
+            data: nuevoCache,
+          });
+          //Cambiar a otra colección después de eliminar esta.
+
+          this.eliminandoColeccion = false;
+          this.mostrandoOpcionesColeccion = false;
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.eliminandoColeccion = false;
+        });
+    },
     crearNuevaColeccion() {
       console.log("Creando nueva coleccion");
       let nombre = this.$refs.inputNombreNuevaColeccion.value.trim();
@@ -602,6 +714,7 @@ export default {
   width: fit-content;
 }
 #contenedorOpciones .botonOpcion {
+  height: 20px;
 }
 #botonConectarNodosColeccion {
   background-color: transparent;
