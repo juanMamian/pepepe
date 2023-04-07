@@ -7,7 +7,7 @@
     >
       <div
         id="nombreColeccion"
-        :class="{ desplegandoLista }"
+        :class="{ desplegandoLista, mostrandoArbol }"
         @click.stop="desplegandoLista = !desplegandoLista"
       >
         <div
@@ -59,7 +59,11 @@
             />
             {{ coleccion.nombre }}
           </div>
-          <div class="botonTexto" @click.stop="" id="botonCrearColeccion">
+          <div
+            class="botonTexto"
+            @click.stop="iniciarCreacionColeccion"
+            id="botonCrearColeccion"
+          >
             <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
             <span>Crear colección</span>
           </div>
@@ -156,7 +160,7 @@
               />
             </div>
           </pie-progreso>
-          <div id="indicadorProgreso" v-if="coleccionSeleccionadaNullificable">
+          <div id="indicadorProgreso" v-if="coleccionSeleccionadaNullificable" v-show="coleccionSeleccionada?.progreso">
             {{ coleccionSeleccionada.progreso }}%
           </div>
         </div>
@@ -165,9 +169,44 @@
           ref="diagramaArbol"
           :visible="mostrandoArbol"
           :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
+          :idsRed="coleccionSeleccionadaNullificable.idsRed"
         ></diagrama-arbol>
       </div>
     </transition>
+    <teleport to="body">
+      <div
+        id="splashCrearColeccion"
+        class="bloqueSplash"
+        v-show="preparandoNuevaColeccion"
+      >
+        <div class="botonEquis">
+          <img
+            src="@/assets/iconos/equis.svg"
+            alt="Salir"
+            @click.stop="preparandoNuevaColeccion = false"
+          />
+        </div>
+        <div class="tituloSplash">
+          <img src="@/assets/iconos/userNodes.png" alt="Coleccion" />
+          <span>Crear una colección</span>
+        </div>
+        <div class="descripcionSplash">
+          Ingresa el nombre de la nueva colección
+        </div>
+        <input
+          type="text"
+          ref="inputNombreNuevaColeccion"
+          @keypress.enter="$refs.botonCrearNuevaColeccion.click()"
+        />
+        <div
+          class="botonTexto"
+          @click="crearNuevaColeccion"
+          ref="botonCrearNuevaColeccion"
+        >
+          Crear
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 <script>
@@ -177,6 +216,7 @@ import Loading from "@/components/utilidades/Loading.vue";
 import NodoConocimientoVistaArbol from "@/components/atlasConocimiento/NodoConocimientoVistaArbol.vue";
 import DiagramaArbol from "./diagramaArbol.vue";
 import debounce from "debounce";
+import { fragmentoColecciones } from "./fragsAtlasConocimiento";
 
 export default {
   name: "GestorColecciones",
@@ -233,6 +273,9 @@ export default {
   },
   data() {
     return {
+      preparandoNuevaColeccion: false,
+      creandoNuevaColeccion: false,
+
       montado: false,
       anchoContenedorArbol: null,
       refreshLineaHorizontal: 0,
@@ -251,6 +294,14 @@ export default {
     };
   },
   computed: {
+    nodoTargetRelevante() {
+      return (
+        this.idNodoTarget &&
+        this.coleccionSeleccionadaNullificable?.idsRed.includes(
+          this.idNodoTarget
+        )
+      );
+    },
     nodoSeleccionadoBelongs() {
       if (!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable) {
         return false;
@@ -319,6 +370,101 @@ export default {
     },
   },
   methods: {
+    crearNuevaColeccion() {
+      console.log("Creando nueva coleccion");
+      let nombre = this.$refs.inputNombreNuevaColeccion.value.trim();
+
+      console.log(`Con nombre ${nombre}`);
+      if (!nombre || nombre.length < 1) {
+        console.log("Se debe introducir un nombre");
+        return;
+      }
+      if (nombre.length > 30) {
+        console.log("El nombre es demasiado largo");
+        return;
+      }
+
+      this.creandoNuevaColeccion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($nombre: String, $idsNodos: [String]) {
+              crearColeccionNodosAtlasConocimientoUsuario(
+                nombre: $nombre
+                idsNodos: $idsNodos
+              ) {
+                ...fragColecciones
+              }
+            }
+            ${fragmentoColecciones}
+          `,
+          variables: {
+            nombre,
+            idsNodos: [],
+          },
+        })
+        .then(({ data: { crearColeccionNodosAtlasConocimientoUsuario } }) => {
+          this.creandoNuevaColeccion = false;
+          this.preparandoNuevaColeccion = false;
+
+          const store = this.$apollo.provider.defaultClient;
+          const cache = store.readQuery({
+            query: gql`
+              query {
+                yo {
+                  atlas {
+                    colecciones {
+                      ...fragColecciones
+                    }
+                  }
+                }
+              }
+              ${fragmentoColecciones}
+            `,
+          });
+          let nuevoCache = JSON.parse(JSON.stringify(cache));
+          let indexC = nuevoCache.yo.atlas.colecciones.findIndex(
+            (c) => c.id === crearColeccionNodosAtlasConocimientoUsuario.id
+          );
+          if (indexC >= 0) {
+            console.log("La colección ya estaba en el caché");
+            return;
+          }
+          nuevoCache.yo.atlas.colecciones.push(
+            crearColeccionNodosAtlasConocimientoUsuario
+          );
+
+          store.writeQuery({
+            query: gql`
+              query {
+                yo {
+                  atlas {
+                    colecciones {
+                      ...fragColecciones
+                    }
+                  }
+                }
+              }
+              ${fragmentoColecciones}
+            `,
+            data: nuevoCache,
+          });
+          this.idColeccionSeleccionada =
+            crearColeccionNodosAtlasConocimientoUsuario.id;
+          this.mostrandoArbol = false;
+
+          this.$nextTick(() => {
+            this.conectandoNodosColeccion = true;
+          });
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.creandoNuevaColeccion = false;
+        });
+    },
+    iniciarCreacionColeccion() {
+      this.preparandoNuevaColeccion = true;
+    },
     toggleNodoColeccion() {
       if (!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable) {
         return;
@@ -395,6 +541,7 @@ export default {
       if (!val) {
         this.mostrandoOpcionesColeccion = false;
       }
+      console.log("Emitiendo un cambio en conectandoNodosColeccion");
       this.$emit("conectandoNodosColeccion", val);
     },
 
@@ -486,6 +633,11 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   justify-content: center;
+  transition: border-radius 0.2s;
+}
+
+#nombreColeccion.mostrandoArbol {
+  border-radius: 5px;
 }
 
 #nombreColeccion.desplegandoLista {
@@ -587,7 +739,7 @@ export default {
   margin-top: 0px;
 }
 
-.diagramaArbol{
+.diagramaArbol {
   flex-grow: 1;
 }
 </style>

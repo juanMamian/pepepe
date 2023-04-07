@@ -1,6 +1,7 @@
 /* #region variables globales */
 :root {
   --mainColor: #f49e4c;
+  --secondaryColor: #FCFF77;
   --filtroMainColor: invert(66%) sepia(95%) saturate(493%) hue-rotate(326deg) brightness(103%) contrast(91%);
 
   --mainColorDark: #f49e4c;
@@ -444,6 +445,7 @@ input {
   align-items: center;
   justify-content: center;
   gap: 30px;
+  background-color: var(--secondaryColor);
   border: 1px solid var(--mainColorLight);
   z-index: 100;
   padding: 40px 8%;

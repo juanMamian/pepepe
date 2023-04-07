@@ -5,35 +5,38 @@
     @click="clickFuera"
     :class="{ deshabilitado: eliminandose }"
   >
-    <div id="anuncioCreandoDependencia" v-show="nodoCreandoDependencia">
-      <div class="anuncio anuncioSeleccion">
-        <img
-          v-show="!creandoDependencia"
-          src="@/assets/iconos/codeBranch.svg"
-          alt="Dependencia"
-        />
-        <Loading v-show="creandoDependencia" />
-        <span> Creando dependencia </span>
-      </div>
+    <div id="contenedorAnuncios">
+      <div id="anuncioCreandoDependencia" v-show="nodoCreandoDependencia">
+        <div class="anuncio anuncioSeleccion">
+          <img
+            v-show="!creandoDependencia"
+            src="@/assets/iconos/codeBranch.svg"
+            alt="Dependencia"
+          />
+          <Loading v-show="creandoDependencia" />
+          <span> Creando dependencia </span>
+        </div>
 
-      <div class="subanuncio"></div>
-    </div>
-    <div
-      class="anuncio"
-      :class="{
-        anuncioSeleccion: idNodoTarget === elNodo?.id,
-      }"
-      id="anuncioNodoTarget"
-      v-show="idNodoTarget && (!elNodo || elNodo.id == idNodoTarget)"
-      @click="$emit('centerEnTarget')"
-      @mouseenter="$emit('hoveringAnuncioTarget', true)"
-      @mouseleave="$emit('hoveringAnuncioTarget', false)"
-      @touchstart="startTouchAnuncioTarget"
-      @touchmove="moveTouchAnuncioTarget"
-      @touchend="endTouchAnuncioTarget"
-    >
-      <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
-      <span>Nodo en la mira</span>
+        <div class="subanuncio"></div>
+      </div>
+      <div
+        class="anuncio"
+        :class="{
+          anuncioSeleccion: idNodoTarget === elNodo?.id,
+          deshabilitado: !nodoTargetRelevante,
+        }"
+        id="anuncioNodoTarget"
+        v-show="idNodoTarget && (!elNodo || elNodo.id == idNodoTarget)"
+        @click="$emit('centerEnTarget')"
+        @mouseenter="$emit('hoveringAnuncioTarget', true)"
+        @mouseleave="$emit('hoveringAnuncioTarget', false)"
+        @touchstart="startTouchAnuncioTarget"
+        @touchmove="moveTouchAnuncioTarget"
+        @touchend="endTouchAnuncioTarget"
+      >
+        <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
+        <span>Nodo en la mira</span>
+      </div>
     </div>
 
     <div
@@ -322,6 +325,10 @@ export default {
     },
     nodoCreandoDependencia: {
       type: Object,
+    },
+    nodoTargetRelevante:{
+      type: Boolean,
+      default:true,
     },
   },
   apollo: {
@@ -1078,24 +1085,23 @@ export default {
   flex-grow: 1;
   align-self: normal;
 }
-
-#anuncioCreandoDependencia {
+#contenedorAnuncios{
   position: absolute;
   bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
+  gap: 20px;
   justify-content: center;
   flex-direction: column;
   align-items: center;
   opacity: 0.9;
 }
+#anuncioCreandoDependencia {
+  opacity: 0.9;
+}
 
 #anuncioNodoTarget {
   cursor: pointer;
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
   justify-content: center;
   align-items: center;
 }

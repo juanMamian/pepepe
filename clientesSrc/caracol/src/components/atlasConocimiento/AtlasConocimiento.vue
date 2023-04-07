@@ -149,6 +149,7 @@
       :elNodo="nodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
       :idNodoTarget="idNodoTarget"
+      :nodoTargetRelevante="nodoTargetRelevante"
       v-show="!gestorColeccionesMostrandoArbol"
       @setMeTarget="
         setNodoTarget(nodoSeleccionado.id);
@@ -1226,8 +1227,6 @@ export default {
     },
     idNodoTarget(idNodoTarget) {
       localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
-
-
     },
     domAndNodosReady() {
       console.log("Cambio en domAndNodosReady");

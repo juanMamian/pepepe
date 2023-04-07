@@ -21,6 +21,7 @@
         v-show="visible"
         :yo="yo"
         :elNodo="nodoSeleccionadoNullificable"
+        :nodoTargetRelevante="nodoTargetRelevante"
       ></controles-nodo>
     </teleport>
   </div>
@@ -29,7 +30,7 @@
 import { gql } from "@apollo/client/core";
 import NodoConocimientoVistaArbol from "./NodoConocimientoVistaArbol.vue";
 import ControlesNodo from "./controlesNodo.vue";
-import { QUERY_NODO_CONOCIMIENTO_ESTANDAR } from "./fragsAtlasConocimiento";
+import { QUERY_DATOS_USUARIO_NODOS, QUERY_NODO_CONOCIMIENTO_ESTANDAR } from "./fragsAtlasConocimiento";
 
 export default {
   name: "DiagramaArbol",
@@ -46,29 +47,15 @@ export default {
       type: Array,
       default: [],
     },
+    idsRed:{
+      type: Array,
+      default:[],
+    }
   },
   apollo: {
-    yo: {
-      query: gql`
-        query {
-          yo {
-            atlas {
-              datosNodos {
-                id
-                idNodo
-                estudiado
-                aprendido
-                diasRepaso
-                estadoAprendizaje
-              }
-            }
-          }
-        }
-      `,
-      fetchPolicy: "cache-first",
-      skip() {
-        return !this.usuarioLogeado;
-      },
+    yo:{
+      query: QUERY_DATOS_USUARIO_NODOS,
+      fetchPolicy: "cache-first"
     },
     nodoSeleccionado: {
       query: QUERY_NODO_CONOCIMIENTO_ESTANDAR,
@@ -99,6 +86,12 @@ export default {
     };
   },
   computed: {
+    idNodoTarget(){
+      return this.yo?.atlas?.idNodoTarget;
+    },
+    nodoTargetRelevante(){
+      return this.idNodoTarget && this.idsRed.includes(this.idNodoTarget);
+    },
     nodoSeleccionadoNullificable() {
       return this.idNodoSeleccionado ? this.nodoSeleccionado : null;
     },
