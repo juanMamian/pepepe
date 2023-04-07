@@ -420,7 +420,6 @@ const esquemaUsuario = new mongoose.Schema({
 
 esquemaUsuario.pre("save", function (this: any, next) {
     var nuevoDatosNodos: Array<any> = [];
-    console.log("Revisando si hay datos nodo repetidos");
     if (!this.atlas.datosNodos) {
         next();
     }

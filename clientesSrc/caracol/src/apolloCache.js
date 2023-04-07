@@ -17,6 +17,18 @@ export const cache=new InMemoryCache(
                     })
                   }
                 },        
+                coleccionNodosConocimiento:{
+                  read(_, {variables, toReference}){
+                    if(!variables?.idColeccion){
+                      return false
+                    }
+                    return toReference({
+                      __typename: "ColeccionNodosAtlasConocimiento",
+                      id: variables.idColeccion
+                    })
+                  }
+                }
+
               }
             },            
           }

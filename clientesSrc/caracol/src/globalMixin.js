@@ -1,4 +1,5 @@
 import gql from "graphql-tag";
+import { QUERY_ACCIONES } from "./components/gestorAcciones/frags";
 import { serverUrl } from "./hostConfig";
 
 var formatter = new Intl.NumberFormat('en-US', {
@@ -65,6 +66,28 @@ export const globalMixin = {
    
   },
   methods:{
+    raiseAccion(mensaje, tipo){
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_ACCIONES,
+      });
+      let nuevoCache = JSON.parse(JSON.stringify(cache));
+      if(!nuevoCache){
+        nuevoCache={}
+      }
+      if(!nuevoCache.acciones){
+        nuevoCache.acciones=[];
+      }
+      nuevoCache.acciones.push({
+        mensaje,
+        tipo:tipo || "accion"
+      })
+      
+      store.writeQuery({
+        query: QUERY_ACCIONES,
+        data: nuevoCache,
+      });
+    },
     selectTargetFocus(e){
       if(e.target){
         let target = e.target;

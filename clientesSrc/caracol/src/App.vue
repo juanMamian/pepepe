@@ -163,16 +163,15 @@
       id="visorRouter"
       :yo="yo"
     ></router-view>
-    <cuadrito-mensaje-usuario style="z-index: 100" :mensajes="this.errores" />
+    <gestor-acciones />
+
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
-import Notificacion from "./components/usuario/Notificacion.vue";
-import NotificacionActividadForos from "./components/usuario/NotificacionActividadForos.vue";
-import CuadritoMensajeUsuario from "./components/utilidades/CuadritoMensajeUsuario.vue";
 import { QUERY_AUTH_USUARIO } from "./globalMixin.js";
+import GestorAcciones from "./components/gestorAcciones/GestorAcciones.vue"
 
 export const QUERY_ESTADO_RED = gql`
   query {
@@ -217,18 +216,11 @@ export default {
     },
   },
   components: {
-    Notificacion,
-    NotificacionActividadForos,
-    CuadritoMensajeUsuario,
+    GestorAcciones
   },
   data() {
     return {
       accionesLogeado: false,
-      mostrandoNotificaciones: false,
-      yo: {
-        notificaciones: [],
-        notificacionesActividadForos: [],
-      },
 
       mostrandoNav: false,
       navSeleccionado: "home",
@@ -253,14 +245,6 @@ export default {
         };
       }
       return {};
-    },
-    notificacionesOrdenadas: function () {
-      var lasNotificaciones = JSON.parse(
-        JSON.stringify(this.yo.notificaciones)
-      );
-      return lasNotificaciones.sort((a, b) => {
-        return new Date(b.fecha) - new Date(a.fecha);
-      });
     },
   },
   methods: {

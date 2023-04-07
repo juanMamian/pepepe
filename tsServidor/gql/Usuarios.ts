@@ -10,6 +10,7 @@ import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { permisosEspecialesDefault } from "./Schema";
 import { getIdsRedContinuacionesNodo, getIdsRedRequerimentosNodo, getNodosRedPreviaNodo } from "./NodosConocimiento";
+import { validatorNombreCosa } from "../model/config";
 
 const jwt = require("jsonwebtoken");
 
@@ -214,9 +215,9 @@ APRENDIDO
 
         setPlegarNodoSolidaridadUsuario(idNodo:ID!):Usuario,
 
-        crearColeccionNodosAtlasConocimientoUsuario:ColeccionNodosAtlasConocimiento,
+        crearColeccionNodosAtlasConocimientoUsuario(nombre: String, idsNodos:[String]):ColeccionNodosAtlasConocimiento,
         eliminarColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!):Boolean,
-        setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):Usuario,
+        setNombreColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, nuevoNombre:String!):ColeccionNodosAtlasConocimiento,
         removeNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!):Boolean,
         toggleNodoColeccionNodosAtlasConocimientoUsuario(idColeccion:ID!, idNodo:ID!, idUsuario:ID!):ColeccionNodosAtlasConocimiento,
         
@@ -936,7 +937,7 @@ export const resolvers = {
             return elUsuario;
         },
 
-        async crearColeccionNodosAtlasConocimientoUsuario(_: any, __: any, contexto: contextoQuery) {
+        async crearColeccionNodosAtlasConocimientoUsuario(_: any, { nombre, idsNodos }: any, contexto: contextoQuery) {
             const credencialesUsuario = contexto.usuario;
 
             if (!credencialesUsuario.id) {
@@ -953,8 +954,20 @@ export const resolvers = {
                 console.log(`Error buscando el usuario en la base de datos`);
                 throw new ApolloError("Usuario no encontrado");
             }
+            let infoNuevaColeccion: { nombre?: string, idsNodos?: string[] } = {};
+            if (nombre) {
+                nombre = nombre.trim();
+                if (!validatorNombreCosa.validator(nombre)) {
+                    throw new UserInputError("Nombre de colección inválido");
+                }
 
-            var nuevaColeccion = elUsuario.atlas.colecciones.create();
+                infoNuevaColeccion.nombre = nombre;
+            }
+            if (idsNodos) {
+                infoNuevaColeccion.idsNodos = idsNodos;
+            }
+
+            var nuevaColeccion = elUsuario.atlas.colecciones.create(infoNuevaColeccion);
             elUsuario.atlas.colecciones.push(nuevaColeccion);
 
             try {
@@ -1025,7 +1038,9 @@ export const resolvers = {
 
             const indexC = elUsuario.atlas.colecciones.findIndex(c => c.id === idColeccion);
 
+            let laColeccion:any={};
             if (indexC > -1) {
+                
                 elUsuario.atlas.colecciones[indexC].nombre = nuevoNombre;
             }
             else {
@@ -1039,7 +1054,7 @@ export const resolvers = {
                 throw new ApolloError("Error conectando con la base de datos");
             }
 
-            return elUsuario;
+            return laColeccion;
 
         },
 
@@ -1729,7 +1744,7 @@ export const resolvers = {
         nombreNodo: async function (parent: any, _: any, __: any) {
             try {
                 var elNodo: any = await Nodo.findById(parent.idNodo).select("nombre").exec();
-                if (!elNodo) throw "Nodo no encontrado resolviendo nombre de dato nodo"
+                if (!elNodo) throw "Nodo no encontrado resolviendo nombre de dato nodo con id " + parent.idNodo
             } catch (error) {
                 console.log(`error: ${error}`);
                 return "";
@@ -1864,7 +1879,7 @@ async function migrarObjetivos() {
 async function resetInfoAtlas() {
     let todosUsuarios: any = [];
     try {
-        let todosUsuarios = await Usuario.find({}).exec();
+        todosUsuarios = await Usuario.find({}).exec();
     } catch (error) {
         console.log("Error descargando todos los usuarios." + error);
         return
@@ -1872,6 +1887,47 @@ async function resetInfoAtlas() {
     }
 
     for (let us of todosUsuarios) {
+        //Check if deleted nodos en datosUsuario.
+        let datosNodos = us.atlas.datosNodos;
+        let nuevoDatosNodos: Array<any> = [];
+        for (const dn of datosNodos) {
+            let existe: Boolean = true;
+            try {
+                existe = await Nodo.countDocuments({ "_id": dn.idNodo }).exec() > 0;
+            } catch (error) {
+                console.log("Error contando nodos para ver si existen. " + error);
+                return
+            }
+            if (existe) {
+                nuevoDatosNodos.push(dn);
+            }
+            else {
+                console.log(`Usuario ${us.nombres} tenia datos nodo de un nodo eliminado con id ${dn.idNodo}`);
+            }
+        }
+        us.atlas.datosNodos = nuevoDatosNodos;
+
+        // Revisando si colecciones con nodos eliminados.
+        for (let col of us.atlas.colecciones) {
+            let nuevoIdsNodos: string[] = [];
+            for (const idN of col.idsNodos) {
+                let existe: Boolean = true;
+                try {
+                    existe = await Nodo.countDocuments({ "_id": idN }).exec() > 0;
+                } catch (error) {
+                    console.log("Error contando nodos para ver si existen " + error);
+                    return
+                }
+                if (existe) {
+                    nuevoIdsNodos.push(idN);
+
+                }
+                else {
+                    console.log(`El usuario ${us.nombres} tenía en la colección ${col.nombre} a un nodo eliminado con id ${idN}`);
+                }
+            }
+            col.idsNodos = nuevoIdsNodos;
+        }
         try {
             await us.save();
         } catch (error) {

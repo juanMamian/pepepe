@@ -18,7 +18,7 @@
           class="boton"
           :class="{ activo: mostrandoArbol }"
           id="botonMostrarArbol"
-          @click.stop="mostrandoArbol = !mostrandoArbol"
+          @click.stop="toggleMostrandoArbol"
         >
           <img
             src="@/assets/iconos/atlas/userNodes.png"
@@ -28,7 +28,11 @@
         </div>
         <loading v-show="this.$apollo.queries.coleccionSeleccionada.loading" />
         <span style="z-index: 1">
-          {{ coleccionSeleccionadaNullificable?.nombre || "Atlas" }}
+          {{
+            coleccionSeleccionadaNullificable
+              ? coleccionSeleccionada.nombre || "Atlas"
+              : "Atlas"
+          }}
         </span>
 
         <div id="listaSelectoresColeccion" v-show="desplegandoLista">
@@ -86,16 +90,22 @@
     </div>
     <div
       id="contenedorOpciones"
-      v-show="mostrandoOpcionesColeccion"
+      v-show="mostrandoOpcionesColeccion && !conectandoNodosColeccion"
       v-if="coleccionSeleccionadaNullificable"
     >
       <div
         class="botonOpcion botonTexto selector"
         id="botonConectarNodosColeccion"
-        v-show="!conectandoNodosColeccion"
+        v-show="!conectandoNodosColeccion && !mostrandoArbol"
         @click.stop="conectandoNodosColeccion = true"
       >
         <img src="@/assets/iconos/plugSolid.svg" alt="Conectar" />
+      </div>
+      <div
+        class="botonOpcion boton"
+        @click.stop="iniciarEdicionNombreColeccion"
+      >
+        <img src="@/assets/iconos/edit.svg" alt="Editar" />
       </div>
       <div
         class="botonOpcion boton"
@@ -222,6 +232,43 @@
           Crear
         </div>
       </div>
+
+      <div
+        class="bloqueSplash"
+        id="splashEditarColeccion"
+        v-if="coleccionSeleccionadaNullificable && editandoColeccion"
+      >
+        <div class="botonEquis" @click="editandoColeccion = false">
+          <img src="@/assets/iconos/equis.svg" alt="Salir" />
+        </div>
+        <div class="tituloSplash">
+          <img src="@/assets/iconos/edit.svg" alt="Editar" />
+          <span>Editando {{ coleccionSeleccionadaNullificable.nombre }}</span>
+        </div>
+        <div class="descripcionSplash">
+          Introduce un nuevo nombre para esta colección.
+        </div>
+        <input
+          type="text"
+          ref="inputNuevoNombreColeccion"
+          @keypress.enter="$refs.botonGuardarNuevoNombreColeccion.click()"
+        />
+
+        <div
+          class="botonTexto"
+          @click="guardarNuevoNombreColeccion"
+          ref="botonGuardarNuevoNombreColeccion"
+          :class="{ deshabilitado: guardandoNuevoNombreColeccion }"
+        >
+          <loading v-show="guardandoNuevoNombreColeccion" />
+          <img
+            src="@/assets/iconos/save.svg"
+            alt="Guardar"
+            v-show="!guardandoNuevoNombreColeccion"
+          />
+          Guardar
+        </div>
+      </div>
     </teleport>
   </div>
 </template>
@@ -231,7 +278,7 @@ import PieProgreso from "@/components/utilidades/PieProgreso.vue";
 import Loading from "@/components/utilidades/Loading.vue";
 import NodoConocimientoVistaArbol from "@/components/atlasConocimiento/NodoConocimientoVistaArbol.vue";
 import DiagramaArbol from "./diagramaArbol.vue";
-import debounce from "debounce";
+import { validarNombreCosa } from "../../utilidades/validacion";
 import { fragmentoColecciones } from "./fragsAtlasConocimiento";
 
 export default {
@@ -289,6 +336,9 @@ export default {
   },
   data() {
     return {
+      editandoColeccion: false,
+      guardandoNuevoNombreColeccion: false,
+
       eliminandoColeccion: false,
 
       preparandoNuevaColeccion: false,
@@ -307,11 +357,12 @@ export default {
       mostrandoOpcionesColeccion: false,
       conectandoNodosColeccion: false,
       togglingNodoColeccion: false,
-
-      mostrandoArbol: false,
     };
   },
   computed: {
+    mostrandoArbol() {
+      return this.$route.name === "coleccionNodosConocimiento";
+    },
     nodoTargetRelevante() {
       return (
         this.idNodoTarget &&
@@ -388,6 +439,85 @@ export default {
     },
   },
   methods: {
+    toggleMostrandoArbol() {
+      if (!this.idColeccionSeleccionada) {
+        return;
+      }
+      if (!this.mostrandoArbol) {
+        this.$router.push({
+          name: "coleccionNodosConocimiento",
+          params: { idColeccion: this.idColeccionSeleccionada },
+        });
+        return;
+      }
+      this.$router.go(-1);
+    },
+    iniciarEdicionNombreColeccion() {
+      if (!this.coleccionSeleccionadaNullificable) {
+        console.log(
+          "Error tratando de editar nombre de colección mientras no había colección seleccionada"
+        );
+      }
+      this.editandoColeccion = true;
+      this.inputNombreEditarColeccion =
+        this.coleccionSeleccionadaNullificable.nombre;
+    },
+    guardarNuevoNombreColeccion() {
+      if (!this.coleccionSeleccionadaNullificable) {
+        console.log(
+          "Error: Tratando de guardar un nuevo nombre de colección pero no hay colección seleccionada"
+        );
+        return;
+      }
+      let nuevoNombre = this.$refs.inputNuevoNombreColeccion.value;
+      if (!nuevoNombre) {
+        console.log("Se debe introducir un nombre");
+        this.raiseAccion("Debes escribir un nombre");
+        return;
+      }
+      nuevoNombre = nuevoNombre.trim();
+      if (!validarNombreCosa()) {
+        console.log("Nombre no válido");
+        return;
+      }
+      if (nuevoNombre === this.coleccionSeleccionadaNullificable.nombre) {
+        this.raiseAccion("El nombre no ha sido modificado");
+        return;
+      }
+      let idColeccion = this.coleccionSeleccionadaNullificable.id;
+
+      this.guardandoNuevoNombreColeccion = true;
+      this.mostrandoOpcionesColeccion = false;
+      console.log("Se guardará la colección con nuevo nombre: " + nuevoNombre);
+      this.enviandoOperacion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($nuevoNombre: String!, $idColeccion: ID!) {
+              setNombreColeccionNodosAtlasConocimientoUsuario(
+                nuevoNombre: $nuevoNombre
+                idColeccion: $idColeccion
+              ) {
+                id
+                nombre
+              }
+            }
+          `,
+          variables: {
+            nuevoNombre,
+            idColeccion,
+          },
+        })
+        .then(() => {
+          this.guardandoNuevoNombreColeccion = false;
+          this.raiseAccion("Nombre de colección guardado");
+          this.$apollo.queries.coleccionSeleccionada.refetch();
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.guardandoNuevoNombreColeccion == false;
+        });
+    },
     eliminarColeccion() {
       console.log("Eliminando colección seleccionada");
       if (!this.coleccionSeleccionadaNullificable) {
@@ -563,7 +693,6 @@ export default {
           });
           this.idColeccionSeleccionada =
             crearColeccionNodosAtlasConocimientoUsuario.id;
-          this.mostrandoArbol = false;
 
           this.$nextTick(() => {
             this.conectandoNodosColeccion = true;
@@ -632,14 +761,16 @@ export default {
         });
       }
     },
-    coleccionSeleccionadaNullificable(col) {
-      this.$emit("coleccionSeleccionada", col);
-      if (!col) {
-        this.mostrandoArbol = false;
-        this.mostrandoOpcionesColeccion = false;
-      }
+    coleccionSeleccionadaNullificable: {
+      handler: function (col) {
+        this.$emit("coleccionSeleccionada", col);
+        if (!col) {
+          this.mostrandoOpcionesColeccion = false;
+          this.$router.push({ name: "atlas" });
+        }
+      },
+      immediate: true,
     },
-
     idColeccionSeleccionada(idColeccion) {
       this.desplegandoLista = false;
       this.conectandoNodosColeccion = false;
@@ -649,17 +780,18 @@ export default {
       );
     },
     conectandoNodosColeccion(val) {
-      this.mostrandoArbol = false;
       if (!val) {
         this.mostrandoOpcionesColeccion = false;
       }
+      this.$router.push({ name: "atlas" });
       console.log("Emitiendo un cambio en conectandoNodosColeccion");
       this.$emit("conectandoNodosColeccion", val);
     },
-
     mostrandoArbol(val) {
       this.$emit("mostrandoArbol", val);
-      this.$refs.diagramaArbol.idNodoSeleccionado = null;
+      if (this.$refs.diagramaArbol) {
+        this.$refs.diagramaArbol.idNodoSeleccionado = null;
+      }
     },
   },
   mounted() {
@@ -721,6 +853,7 @@ export default {
   box-shadow: none;
 }
 #anuncioConectandoNodos {
+  top: 10px;
   position: relative;
 }
 #botonCancelarConectarNodosColeccion {

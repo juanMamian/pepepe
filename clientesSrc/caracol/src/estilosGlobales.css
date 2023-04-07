@@ -442,7 +442,7 @@ input {
   align-items: center;
   justify-content: center;
   gap: 30px;
-  background-color: var(--secondaryColor);
+  background-color: var(--atlasConocimientoBaseNodo);
   border: 1px solid var(--mainColorLight);
   z-index: 100;
   padding: 40px 8%;
@@ -458,6 +458,12 @@ input {
   transform: translate(50%, -50%);
   background-color: inherit;
   border: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bloqueSplash .botonEquis img{
+ height: 100%; 
 }
 
 .tituloSplash {

@@ -25,6 +25,10 @@ const router = createRouter({
           component: VisorNodoConocimiento,
           name: "visorNodoConocimiento"
         },
+        {
+          path: "coleccion/:idColeccion",
+          name: "coleccionNodosConocimiento"
+        }
        
       ]
     },

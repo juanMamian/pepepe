@@ -7,16 +7,16 @@ const esquemaClase = new mongoose.Schema({
         type: String,
         default: "Nombre"
     },
-    descripion:{
-        type:String,
-        default:""
+    descripion: {
+        type: String,
+        default: ""
     },
 })
 
-const EsquemaVinculo=new mongoose.Schema({
+const EsquemaVinculo = new mongoose.Schema({
     idRef: {
         type: String,
-        required:true
+        required: true
     },
     rol: {
         type: String,
@@ -26,21 +26,21 @@ const EsquemaVinculo=new mongoose.Schema({
     tipo: {
         type: String,
         required: true,
-        default: "continuacion",        
+        default: "continuacion",
     },
-    nodoContraparte:{
+    nodoContraparte: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Nodo",
     }
 })
 
-EsquemaVinculo.pre("save", function(this:any, next){
-    if(this.tipo="requiere"){
-        this.tipo="continuacion";
+EsquemaVinculo.pre("save", function (this: any, next) {
+    if (this.tipo = "requiere") {
+        this.tipo = "continuacion";
     }
 
-    if(!this.nodoContraparte){
-        this.nodoContraparte=this.idRef;
+    if (!this.nodoContraparte) {
+        this.nodoContraparte = this.idRef;
     }
 
     next();
@@ -55,132 +55,132 @@ var esquemaNodo = new mongoose.Schema({
         required: true,
         default: "nodo de conocimiento"
     },
-    nivel:{
-        type:Number,
-        default:0        
+    nivel: {
+        type: Number,
+        default: 0
     },
-    descripcion:{
-        type:String
+    descripcion: {
+        type: String
     },
-    keywords:{
-        type:String,
-    },    
-    tipoNodo:{
+    keywords: {
+        type: String,
+    },
+    tipoNodo: {
         type: String,
         enum: ["concepto", "skill"],
         default: "concepto",
     },
-    vinculos:{
-        type:[EsquemaVinculo],
-        default:[]
-    } ,
-    coordsManuales:{
+    vinculos: {
+        type: [EsquemaVinculo],
+        default: []
+    },
+    coordsManuales: {
         x: Number,
-        y:Number
+        y: Number
     },
-    coords:{
-        x:Number,
-        y:Number,
+    coords: {
+        x: Number,
+        y: Number,
     },
-    autoCoords:{
-        x:Number,
-        y:Number,
+    autoCoords: {
+        x: Number,
+        y: Number,
     },
-    centroMasa:{
-        x:Number,
-        y:Number,
+    centroMasa: {
+        x: Number,
+        y: Number,
     },
-    stuck:Boolean,
-    puntaje:Number,
-    resumen:{
-        type:String,
-        max:2000,
+    stuck: Boolean,
+    puntaje: Number,
+    resumen: {
+        type: String,
+        max: 2000,
     },
     expertos: {
         type: [String],
-        required:true,
+        required: true,
         default: []
     },
-    clases:{
+    clases: {
         type: [esquemaClase],
-        default:[],
+        default: [],
     },
     posiblesExpertos: {
         type: [String],
-        required:true,
+        required: true,
         default: []
     },
-    idForoPublico:{
-        type:String,
-        required:true,
+    idForoPublico: {
+        type: String,
+        required: true,
     },
-    idForoExpertos:{
-        type:String,
-        required:true,
+    idForoExpertos: {
+        type: String,
+        required: true,
     },
-    secciones:{
-        type:[{
+    secciones: {
+        type: [{
             nombre: {
-                type:String,
-                max:40,
-                min:2,
-                default: "Nueva sección"                
+                type: String,
+                max: 40,
+                min: 2,
+                default: "Nueva sección"
             },
-            idCarpeta:{
-                type:String,
+            idCarpeta: {
+                type: String,
             },
-            modo:{
-                type:String,
-                default:"archivo",
+            modo: {
+                type: String,
+                default: "archivo",
                 enum: ["archivo", "enlace"]
             },
-            enlace:{
+            enlace: {
                 type: String,
-                
+
             }
         }],
-        default:[]
+        default: []
     },
-    fuerzaCentroMasa:{
-        fuerza:{
+    fuerzaCentroMasa: {
+        fuerza: {
             type: Number,
-            default:0
+            default: 0
         },
-        direccion:{
-            type:Number,
-            default:0
+        direccion: {
+            type: Number,
+            default: 0
         }
     },
-    fuerzaColision:{
-        fuerza:{
+    fuerzaColision: {
+        fuerza: {
             type: Number,
-            default:0
+            default: 0
         },
-        direccion:{
-            type:Number,
-            default:0
+        direccion: {
+            type: Number,
+            default: 0
         }
     },
-    coordx:Number,
-    coordy:Number,
+    coordx: Number,
+    coordy: Number,
     radio: Number,
     angulo: Number,
-    direccion:Number,
-    ubicado:Boolean
+    direccion: Number,
+    ubicado: Boolean
 
 });
 
 
 
 
-esquemaNodo.methods.verificarVinculo=function(this:any,idRef, eliminar){
+esquemaNodo.methods.verificarVinculo = function (this: any, idRef, eliminar) {
     console.log(`${this.nombre} está buscando un vinculo con ${idRef}. Eliminar es ${eliminar}`);
-    var respuesta=false;
-    for(var vinculo of this.vinculos){
-        if(vinculo.idRef==idRef){
+    var respuesta = false;
+    for (var vinculo of this.vinculos) {
+        if (vinculo.idRef == idRef) {
             console.log(`encontrado`);
-            respuesta=true;
-            if(eliminar){
+            respuesta = true;
+            if (eliminar) {
                 console.log(`eliminando`);
                 vinculo.remove();
             }
@@ -189,6 +189,6 @@ esquemaNodo.methods.verificarVinculo=function(this:any,idRef, eliminar){
     return respuesta;
 }
 
-esquemaNodo.index({nombre:"text", keywords: "text", descripcion:"text"});
+esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" });
 
 export const ModeloNodo = mongoose.model("Nodo", esquemaNodo);
