@@ -421,29 +421,29 @@ export default {
   },
   computed: {
 
-    nodoTargetRelevante(){
-      if(!this.idNodoTarget){
+    nodoTargetRelevante() {
+      if (!this.idNodoTarget) {
         return false;
       }
 
-      if(!this.coleccionSeleccionada){
+      if (!this.coleccionSeleccionada) {
         return true
       }
       return this.coleccionSeleccionada.idsRed.includes(this.idNodoTarget);
 
     },
-    idNodoTarget(){
+    idNodoTarget() {
       return this.yo?.atlas?.idNodoTarget;
     },
-    estiloGestor(){
-      let height='unset';
+    estiloGestor() {
+      let height = 'unset';
       let color = "transparent";
-      if(this.gestorColeccionesMostrandoArbol){
-        height='100%';
+      if (this.gestorColeccionesMostrandoArbol) {
+        height = '100%';
         color = "var(--colorFondoGestionColecciones)";
       }
       return {
-        backgroundColor:color,
+        backgroundColor: color,
         height,
 
       }
@@ -461,7 +461,7 @@ export default {
         let siguientesIds = nodosActuales.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef)).flat();
         let nuevosIds = siguientesIds.filter(id => !todosIds.includes(id));
         todosIds.push(nuevosIds);
-        nodosActuales=this.todosNodos.filter(n=>nuevosIds.includes(n.id));
+        nodosActuales = this.todosNodos.filter(n => nuevosIds.includes(n.id));
       }
       return todosIds;
     },
@@ -470,7 +470,7 @@ export default {
     },
     estiloContenedorOverlays() {
       let width = "fit-content";
-      let height='unset';
+      let height = 'unset';
       if (this.gestorColeccionesMostrandoArbol) {
         width = "100%";
         height = "100%";
@@ -544,12 +544,14 @@ export default {
     },
 
     nodosActivos() {
+      console.log("gestor conectando nodos " + this.gestorColeccionesConectandoNodos);
       if (!this.todosNodos) {
         return [];
       }
       let campo = this.todosNodos;
 
       if (this.coleccionSeleccionada && !this.gestorColeccionesConectandoNodos) {
+        console.log("Filtrando nodos. Solo siguen los que salen en la red de la colección seleccionada");
         campo = campo.filter(n => this.coleccionSeleccionada.idsRed.includes(n.id));
       }
       if (this.nodoTargetRelevante && this.nodoTarget) {
@@ -618,10 +620,10 @@ export default {
 
   },
   methods: {
-    stepNivelesUnderTarget: throttle(function(step) {
+    stepNivelesUnderTarget: throttle(function (step) {
       let nuevoNiveles = this.nivelesUnderTarget + step;
-      if(nuevoNiveles < 0){
-        nuevoNiveles=0;
+      if (nuevoNiveles < 0) {
+        nuevoNiveles = 0;
       }
       if (this.idsUnderTarget[nuevoNiveles]) {
         this.nivelesUnderTarget = nuevoNiveles;
@@ -1215,10 +1217,10 @@ export default {
     "nodosActivos.length": function (val, oldVal) {
       if (val > 0) {
         this.firstLoad = true;
-        if (val != oldVal) {
-          console.log("Recalculando nodos visibles after cambio en nodos activos length");
-          this.iniciarCalculoNodosVisibles();
-        }
+      }
+      if (val != oldVal) {
+        console.log("Recalculando nodos visibles after cambio en nodos activos length");
+        this.iniciarCalculoNodosVisibles();
       }
 
     },
@@ -1239,7 +1241,7 @@ export default {
       })
     },
     nodoTarget() {
-      this.nivelesUnderTarget=1;
+      this.nivelesUnderTarget = 1;
       this.iniciarCalculoNodosVisibles();
     },
     zoom() {
