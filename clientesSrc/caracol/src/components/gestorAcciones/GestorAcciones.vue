@@ -3,6 +3,7 @@
     <transition name="fade">
       <div
         id="lastAccion"
+        class="anuncio"
         v-if="lastAccion"
         v-show="!mostrandoListaAcciones && poppingLastAccion"
       >
@@ -22,15 +23,8 @@
 import {gql} from "@apollo/client/core";
 import debounce from "debounce"
 import Accion from "./Accion.vue"
+import { QUERY_ACCIONES } from "./frags";
 
-const QUERY_ACCIONES = gql`
-  query {
-    acciones @client {
-      mensaje
-      tipo
-    }
-  }
-`;
 export default {
   name: "GestorAcciones",
   components:{
@@ -43,6 +37,7 @@ export default {
   },
   data() {
     return {
+        mostrandoListaAcciones:false,
       poppingLastAccion: false,
     };
   },
@@ -57,11 +52,11 @@ export default {
   methods: {
     unpop: debounce(function () {
       this.poppingLastAccion = false;
-    }, 2000),
+    }, 2600),
   },
   watch: {
     lastAccion() {
-      this.poppingLastAccion.true;
+      this.poppingLastAccion=true;
       this.unpop();
     },
   },
@@ -73,5 +68,16 @@ export default {
   top: 100vh;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 1000;
+}
+#lastAccion{
+    position: absolute;
+    bottom: calc(100% + 40px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.6em;
+    width: max-content;
+    text-align: center;
+    max-width: 50vw;
 }
 </style>
