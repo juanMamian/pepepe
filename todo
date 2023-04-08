@@ -2,23 +2,12 @@ Atlas de conocimiento.
 
 
 
--Que el id nodo target se fije hacia la red después de colocarlo en el cache local.
 -en moviles la ruta de grado se sale por la izquierda y no se ve. Debe ser por el center del flex.
 -Que escoja una colección no completada para la landing perks.
+-Tal vez que se pausen todo apollo durante el logout.
 
 -En maestra vida asegurarse de que se hace la migración de periodoRepaso y de objetivos y de personas.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.
 -Reparar los foros.
 -APLAZADO Verificar si en el resolver de eliminación de nodos se eliminan los enlaces que lo tenian en idRef.
-
-
-pepepe
-
--Configurar el cache para que pueda encontrar documentos específicos que ya han sido descargados en bulk. Como en Coordi.
--En el MixinBasicoEventosPublicos hay demasiadas versiones de horarioLegible, depurar.
--Desarrollar el limite de cupos de los eventos publicos.
--Resolver qué debe hacer un evento publico que está siendo modificado (Por ejemplo sus horarios) con los eventos personales que estaban asistiendo..
--Reparar pubsub.
--Al eliminar eventos en masa (Como al limpiar una semana de eventos). Recordar eliminar los eventosPersonales enmarcados(Y sin parent) en los eventos públicos eliminados.
--verificar que los chicos de maestra vida tengan el permiso "maestraVida-estudiante". y especificar que los profes de maestra vida pueden alienar los estudiantes de maestra vida en el handler de la query "alienarUsuario"
 -temporalmente en el back end los usuarios con permiso "maestraVida-profesor" están en los permisos especiales de algunas mutaciones de eventos. Deshacer cuando ya no haya necesidad.

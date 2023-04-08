@@ -2,7 +2,7 @@
   <div class="rutaGrado" @click="idNodoSeleccionado = null">
     <div id="titulo" class="tituloComponente">Ruta de grado</div>
 
-    <div id="laRutaGrado">
+    <div id="laRutaGrado" ref="laRutaGrado">
       <div class="subruta" v-for="ruta of subrutas" :key="ruta.id">
         <div class="lineaRuta"></div>
         <nodo-grado
@@ -79,43 +79,58 @@ export default {
       nodosCompletados: [],
       idNodoSeleccionado: null,
 
-      settingColorSubruta:false,
+      settingColorSubruta: false,
     };
   },
-  methods:{
-    setColorSubruta(idSubruta){
-      let nuevoColor=prompt("Introduce el código del nuevo color");
+  methods: {
+    setColorSubruta(idSubruta) {
+      let nuevoColor = prompt("Introduce el código del nuevo color");
 
-      this.settingColorSubruta=true;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idSubruta: ID!, $nuevoColor: String!){
-            setColorSubrutaGrado(idSubruta: $idSubruta, nuevoColor: $nuevoColor){
-               id
-               color
+      this.settingColorSubruta = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idSubruta: ID!, $nuevoColor: String!) {
+              setColorSubrutaGrado(
+                idSubruta: $idSubruta
+                nuevoColor: $nuevoColor
+              ) {
+                id
+                color
+              }
             }
-          }
           `,
-          variables:{
+          variables: {
             idSubruta,
-            nuevoColor
-          }
-        }).then(()=>{
-          this.settingColorSubruta=false;
-            
-        }).catch((error)=>{
-          console.log('Error: '+ error);
-          this.settingColorSubruta=false;
+            nuevoColor,
+          },
+        })
+        .then(() => {
+          this.settingColorSubruta = false;
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.settingColorSubruta = false;
         });
-    }
-  }
+    },
+  },
+  watch: {
+    subrutas() {
+      this.$nextTick(() => {
+        let anchoScroll = this.$refs.laRutaGrado.scrollWidth;
+        console.log("anchoScroll: " + anchoScroll);
+        let anchoVisible = this.$refs.laRutaGrado.offsetWidth;
+        console.log("ancho visible: " + anchoVisible);
+        this.$refs.laRutaGrado.scrollLeft = (anchoScroll - anchoVisible) / 2;
+      });
+    },
+  },
 };
 </script>
 
 <style scoped>
 #laRutaGrado {
   display: flex;
-  justify-content: center;
   gap: 0px;
   padding: 20px 0px;
   max-height: 100vh;
