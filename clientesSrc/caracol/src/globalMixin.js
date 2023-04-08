@@ -25,15 +25,15 @@ export const QUERY_AUTH_USUARIO = gql`
 
 export const globalMixin = {
   apollo: {
-    usuario:{
-        query: QUERY_AUTH_USUARIO,
-        fetchPolicy: "cache-only",
-        update({auth_usuario}){
-            return auth_usuario;
-        }
+    usuario: {
+      query: QUERY_AUTH_USUARIO,
+      fetchPolicy: "cache-only",
+      update({ auth_usuario }) {
+        return auth_usuario;
+      }
     },
-    estadoRed:{
-        query: gql`
+    estadoRed: {
+      query: gql`
             query{
                 estadoRed @client
             }
@@ -44,16 +44,16 @@ export const globalMixin = {
   data() {
     return {
       serverUrl,
-      usuario: null,      
+      usuario: null,
     };
   },
   computed: {
     usuarioLogeado() {
-      return this.usuario!=null && this.usuario.id;
+      return this.usuario != null && this.usuario.id;
     },
-    usuarioSuperadministrador: function () {      
+    usuarioSuperadministrador: function () {
       return this.usuario?.permisos?.includes("superadministrador");
-    },    
+    },
     produccion() {
       return process.env.NODE_ENV === "production";
     },
@@ -63,36 +63,36 @@ export const globalMixin = {
         "maestraVida-profesor"
       );
     },
-    usuarioEscuelaMaestraVida(){
+    usuarioEscuelaMaestraVida() {
       return this.usuario?.permisos.includes("maestraVida-profesor") || this.usuario?.permisos.includes("maestraVida-estudiante") || this.usuario?.permisos.includes("maestraVida-acompañante");
     }
-   
+
   },
-  methods:{
-    raiseAccion(mensaje, tipo){
+  methods: {
+    raiseAccion(mensaje, tipo) {
       const store = this.$apollo.provider.defaultClient;
       const cache = store.readQuery({
         query: QUERY_ACCIONES,
       });
       let nuevoCache = JSON.parse(JSON.stringify(cache));
-      if(!nuevoCache){
-        nuevoCache={}
+      if (!nuevoCache) {
+        nuevoCache = {}
       }
-      if(!nuevoCache.acciones){
-        nuevoCache.acciones=[];
+      if (!nuevoCache.acciones) {
+        nuevoCache.acciones = [];
       }
       nuevoCache.acciones.push({
         mensaje,
-        tipo:tipo || "accion"
+        tipo: tipo || "accion"
       })
-      
+
       store.writeQuery({
         query: QUERY_ACCIONES,
         data: nuevoCache,
       });
     },
-    selectTargetFocus(e){
-      if(e.target){
+    selectTargetFocus(e) {
+      if (e.target) {
         let target = e.target;
         target.select();
       }
@@ -170,9 +170,9 @@ export const globalMixin = {
       return this.enrichedToReadableDate(fecha) + " - " + this.toReadableTime(fecha);
     },
     toReadableMoney(valor) {
-      
-      
-      var stringFinal= formatter.format(valor);
+
+
+      var stringFinal = formatter.format(valor);
       return stringFinal;
     }
   }

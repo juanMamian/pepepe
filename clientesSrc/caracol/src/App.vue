@@ -1,11 +1,11 @@
 <template>
-  <div id="app">
+  <div id="app" @click="cerrarMenus">
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
       <div
         id="botonMenuNav"
         class="boton"
-        @click="mostrandoNav = !mostrandoNav"
+        @click.stop="mostrandoNav = !mostrandoNav"
       >
         <img
           id="botonDesplegarNav"
@@ -19,6 +19,10 @@
         @click.stop="cerrarMenus"
         :class="{ desplegado: mostrandoNav }"
       >
+        <router-link to="/" class="botonNav" id="navHome">
+          <img src="@/assets/iconos/home.svg" alt="Compás" />
+          Inicio
+        </router-link>
         <router-link to="/atlas" class="botonNav" id="navAtlas">
           <img src="@/assets/iconos/compassRegular.svg" alt="Compás" />
           Atlas de conocimientos
@@ -34,7 +38,10 @@
           Personas
         </router-link>
 
-        <div class="bloqueNav" v-if="usuarioLogeado && usuarioEscuelaMaestraVida">
+        <div
+          class="bloqueNav"
+          v-if="usuarioLogeado && usuarioEscuelaMaestraVida"
+        >
           <div class="tituloBloqueNav">Escuela</div>
           <router-link
             to="/espacios"
@@ -233,16 +240,16 @@ export default {
       this.setEstadoRed();
     },
     async deslogearse() {
-      const store = this.$apollo.provider.defaultClient;
-      store.writeQuery({
-        query: QUERY_AUTH_USUARIO,
-        data: { auth_usuario: null },
-      });
       console.log("Navegando a loginArea");
-      await this.$router.push({ name: "loginArea" });
-      console.log("On loginArea");
+      this.$router.push({ name: "loginScreen" });
 
       this.$nextTick(() => {
+        const store = this.$apollo.provider.defaultClient;
+        store.writeQuery({
+          query: QUERY_AUTH_USUARIO,
+          data: { auth_usuario: null },
+        });
+
         store
           .resetStore()
           .then(() => {
@@ -254,6 +261,18 @@ export default {
             this.setEstadoRed();
           });
       });
+    },
+  },
+  watch: {
+    mostrandoNav(mostrando) {
+      if (mostrando) {
+        this.mostrandoNavUsuario = false;
+      }
+    },
+    mostrandoNavUsuario(mostrando) {
+      if (mostrando) {
+        this.mostrandoNav = false;
+      }
     },
   },
   created() {
@@ -281,7 +300,7 @@ export default {
   background: linear-gradient(
     190.19deg,
     #fcff77 7.52%,
-    rgba(242, 81, 71, 0.75) 82.52%
+    rgba(235, 85, 21, 0.75) 73.16%
   );
 }
 
@@ -308,6 +327,7 @@ export default {
   top: 100%;
   flex-direction: column;
   background-color: var(--mainColor);
+  box-shadow: 2px 2px 2px 2px rgba(128, 128, 128, 0.493);
 }
 .menuNavDesplegable.desplegado {
   display: flex;
@@ -339,13 +359,14 @@ export default {
 }
 #botonMenuNavUsuario {
   margin-left: auto;
+  margin-right: 5px;
   font-size: 0.7em;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 #botonMenuNavUsuario img {
-  height: 20px;
+  height: 18px;
 }
 #contenedorBotonesUsuario {
   right: 0px;

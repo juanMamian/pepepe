@@ -96,7 +96,7 @@
           class="boton"
           @click="alienar"
           title="alienar"
-          v-show="usuarioProfe || usuarioAdministrador"
+          v-show="usuarioProfe || usuarioSuperadministrador"
         >
           <img src="@/assets/iconos/alienar.svg" alt="Virus" />
         </div>
@@ -771,9 +771,9 @@ export default {
           this.periodoInforme
       );
 
-      this.creandoDocumentoInforme = true;  
+      this.creandoDocumentoInforme = true;
 
-      console.log("informesObjetivos " + informesObjetivos.length); 
+      console.log("informesObjetivos " + informesObjetivos.length);
 
       var filaObjetivos = new TableRow({
         children: [

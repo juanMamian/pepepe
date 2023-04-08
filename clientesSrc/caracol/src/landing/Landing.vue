@@ -121,7 +121,7 @@
               $apollo.queries.yo.loading
                 ? ""
                 : coleccionMostrada.nombre ||
-                  "¡Aún no has creado tu primero colección!"
+                  "¡Aún no has creado tu primera colección!"
             }}
           </div>
         </router-link>
@@ -200,7 +200,7 @@ export default {
         return coleccionNodosConocimiento;
       },
       skip() {
-        return !this.usuarioLogeado || !this.idColeccionMostrada;
+        return !this.usuario?.id || !this.idColeccionMostrada;
       },
     },
     nodoTarget: {

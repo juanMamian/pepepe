@@ -295,7 +295,11 @@ const esquemaUsuario = new mongoose.Schema({
     },
     atlas: {
         type: esquemaEstadoAtlas,
-        default: {},
+        default: {
+           datosNodos:[],
+           colecciones:[],
+
+        },
     },
     atlasSolidaridad: {
         coordsVista: {
@@ -420,6 +424,16 @@ const esquemaUsuario = new mongoose.Schema({
 
 esquemaUsuario.pre("save", function (this: any, next) {
     var nuevoDatosNodos: Array<any> = [];
+    if(!this.atlas){
+        this.atlas={}
+    }
+    if(!this.atlas.datosNodos){
+        this.atlas.datosNodos=[]
+    }
+
+    if(!this.atlas.colecciones){
+        this.atlas.colecciones=[]
+    }
     if (!this.atlas.datosNodos) {
         next();
     }

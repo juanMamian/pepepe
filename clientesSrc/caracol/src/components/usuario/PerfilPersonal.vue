@@ -2,10 +2,18 @@
   <div class="perfilPersonal" v-if="usuarioLogeado">
     <loading texto="Cargando" v-show="$apollo.queries.esteUsuario.loading" />
     <div id="zonaSelectores" class="contenedorControles">
-      <div class="boton" title="Información personal" @click="seccion = 'informacionPersonal'">
+      <div
+        class="boton"
+        title="Información personal"
+        @click="seccion = 'informacionPersonal'"
+      >
         <img src="@/assets/iconos/info.svg" alt="Informacion" />
       </div>
-      <div class="boton" title="Cambiar contraseña" @click="seccion = 'cambiarPass'">
+      <div
+        class="boton"
+        title="Cambiar contraseña"
+        @click="seccion = 'cambiarPass'"
+      >
         <img src="@/assets/iconos/key.svg" alt="Pass" />
       </div>
       <div class="boton" title="Mi calendario" @click="seccion = 'calendario'">
@@ -16,27 +24,63 @@
       </div> -->
     </div>
     <div id="contenido" v-if="!$apollo.queries.esteUsuario.loading">
-      <div id="zonaInformacionPersonal" v-show="seccion === 'informacionPersonal'">
+      <div
+        id="zonaInformacionPersonal"
+        v-show="seccion === 'informacionPersonal'"
+      >
         <div id="fotografia" @click="$refs.inputFotoUsuario.click()">
-          <img :src="serverUrl + '/api/usuarios/fotografias/' + usuario.id + '?v=' + versionFoto" alt="Fotografía" />
-          <input type="file" ref="inputFotoUsuario" v-show="false" @change="uploadNuevaFoto" />
+          <img
+            :src="
+              serverUrl +
+              '/api/usuarios/fotografias/' +
+              usuario.id +
+              '?v=' +
+              versionFoto
+            "
+            alt="Fotografía"
+          />
+          <input
+            type="file"
+            ref="inputFotoUsuario"
+            v-show="false"
+            @change="uploadNuevaFoto"
+          />
         </div>
         <div id="zonaCamposEditablesInformacionPersonal">
-          <div class="informacionPersonal" id="nombres" style="align-self: center">
+          <div
+            class="informacionPersonal"
+            id="nombres"
+            style="align-self: center"
+          >
             {{ esteUsuario.nombres }}
           </div>
-          <div class="informacionPersonal" id="apellidos" style="align-self: center">
+          <div
+            class="informacionPersonal"
+            id="apellidos"
+            style="align-self: center"
+          >
             {{ esteUsuario.apellidos }}
           </div>
           <div class="informacionPersonal" id="email">
-            <img src="@/assets/iconos/envelope.svg" alt="Mail" class="iconoInformacionPersonal"
-              title="Correo electrónico" />
+            <img
+              src="@/assets/iconos/envelope.svg"
+              alt="Mail"
+              class="iconoInformacionPersonal"
+              title="Correo electrónico"
+            />
             <span> {{ esteUsuario.email }}</span>
           </div>
-          <img src="@/assets/iconos/whatsapp.svg" alt="Mail" class="iconoInformacionPersonal"
-            title="Añdir un número móvil" />
-          <div class="informacionPersonal numeroMovil" v-for="numeroMovil of esteUsuario.numerosMovil"
-            :key="numeroMovil.id">
+          <img
+            src="@/assets/iconos/whatsapp.svg"
+            alt="Mail"
+            class="iconoInformacionPersonal"
+            title="Añdir un número móvil"
+          />
+          <div
+            class="informacionPersonal numeroMovil"
+            v-for="numeroMovil of esteUsuario.numerosMovil"
+            :key="numeroMovil.id"
+          >
             <span>
               {{ esteUsuario.numeroMovil }}
             </span>
@@ -46,21 +90,48 @@
 
       <div id="zonaCambiarPass" v-show="seccion === 'cambiarPass'">
         <div class="tituloSeccion">Cambio de contraseña</div>
-        <input v-model="inputCurrentPass" placeholder="Contraseña actual" type="password" id="inputCurrentPass"
-          class="inputCambiarPass" />
-        <div id="instruccionesNuevoPass" v-show="newPassIlegal && !inputCurrentPassIlegal">
+        <input
+          v-model="inputCurrentPass"
+          placeholder="Contraseña actual"
+          type="password"
+          id="inputCurrentPass"
+          class="inputCambiarPass"
+        />
+        <div
+          id="instruccionesNuevoPass"
+          v-show="newPassIlegal && !inputCurrentPassIlegal"
+        >
           La contraseña debe tener al menos 8 caracteres y no contener espacios.
         </div>
-        <input v-model="newPass" v-show="!inputCurrentPassIlegal" placeholder="Nueva contraseña" type="password"
-          id="inputNuevoPass" class="inputCambiarPass" :class="{ aprobado: !newPassIlegal }" />
-        <input :disabled="newPassIlegal" v-model="newPass2" v-show="!newPassIlegal"
-          placeholder="Nueva contraseña (Otra vez)" type="password" id="inputNuevoPass2" class="inputCambiarPass"
-          :class="{ aprobado: !newPassIlegal && !newPass2Ilegal }" @keypress.enter="enviarCambioPass" />
+        <input
+          v-model="newPass"
+          v-show="!inputCurrentPassIlegal"
+          placeholder="Nueva contraseña"
+          type="password"
+          id="inputNuevoPass"
+          class="inputCambiarPass"
+          :class="{ aprobado: !newPassIlegal }"
+        />
+        <input
+          :disabled="newPassIlegal"
+          v-model="newPass2"
+          v-show="!newPassIlegal"
+          placeholder="Nueva contraseña (Otra vez)"
+          type="password"
+          id="inputNuevoPass2"
+          class="inputCambiarPass"
+          :class="{ aprobado: !newPassIlegal && !newPass2Ilegal }"
+          @keypress.enter="enviarCambioPass"
+        />
 
-        <div id="botonEnviarNuevoPass" @click="enviarCambioPass" :class="{
-          deshabilitado:
-            newPassIlegal || newPass2Ilegal || enviandoCambioPass,
-        }">
+        <div
+          id="botonEnviarNuevoPass"
+          @click="enviarCambioPass"
+          :class="{
+            deshabilitado:
+              newPassIlegal || newPass2Ilegal || enviandoCambioPass,
+          }"
+        >
           <span> Enviar</span>
           <loading texto="" v-show="enviandoCambioPass" />
         </div>
@@ -71,7 +142,11 @@
       </div>
 
       <div id="zonaCalendario" v-if="seccion === 'calendario'">
-        <calendario v-if="usuarioLogeado" :enfasis="'eventosPersonales'" :idUsuarioTarget="this.usuario.id" />
+        <calendario
+          v-if="usuarioLogeado"
+          :enfasis="'eventosPersonales'"
+          :idUsuarioTarget="this.usuario.id"
+        />
       </div>
 
       <div id="zonaOrganizadorSemanal" v-if="seccion === 'organizadorSemanal'">
@@ -93,7 +168,7 @@ import axios from "axios";
 import gql from "graphql-tag";
 import Loading from "../utilidades/Loading.vue";
 import Calendario from "../utilidades/Calendario.vue";
-import OrganizadorHorarioSemanal from '../calendario/OrganizadorHorarioSemanal.vue';
+import OrganizadorHorarioSemanal from "../calendario/OrganizadorHorarioSemanal.vue";
 export default {
   components: { Loading, Calendario, OrganizadorHorarioSemanal },
   name: "PerfilPersonal",
@@ -238,10 +313,15 @@ export default {
 </script>
 
 <style scoped>
-.perfilPersonal {}
+.perfilPersonal {
+}
 
 #contenido {
   width: 100%;
+}
+.boton {
+  height: 20px;
+  width: 20px;
 }
 
 #zonaInformacionPersonal {

@@ -89,13 +89,16 @@ export default {
   methods: {
     enviarRegistro() {
       let datosIntroducidos = new Object();
-      if(!this.datosRegistro.username){
-        this.datosRegistro.username = this.datosRegistro.nombres.split(' ')[0] + this.datosRegistro.apellidos.split(' ')[0]
+      if (!this.datosRegistro.username) {
+        this.datosRegistro.username =
+          this.datosRegistro.nombres.split(" ")[0] +
+          this.datosRegistro.apellidos.split(" ")[0];
       }
-      if(!this.datosRegistro.password){
-        this.datosRegistro.password =this.datosRegistro.nombres.split(' ')[0] + this.datosRegistro.apellidos.split(' ')[0]
+      if (!this.datosRegistro.password) {
+        this.datosRegistro.password =
+          this.datosRegistro.nombres.split(" ")[0] +
+          this.datosRegistro.apellidos.split(" ")[0];
       }
-
 
       for (let campo in this.datosRegistro) {
         if (!this.datosRegistro[campo]) {
@@ -157,5 +160,8 @@ export default {
 .registro {
   padding-left: 15%;
   padding-top: 5%;
+}
+input {
+  padding: 5px;
 }
 </style>

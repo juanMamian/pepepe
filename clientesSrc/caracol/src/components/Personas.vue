@@ -142,7 +142,7 @@ import Loading from "./utilidades/Loading.vue";
 import PersonaVistaLista from "./usuario/personaVistaLista.vue";
 import debounce from "debounce";
 // import { similarity } from "./utilidades/funciones";
-import {stringSimilarity} from "string-similarity";
+import { stringSimilarity } from "string-similarity";
 
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
 
@@ -172,25 +172,25 @@ export default {
         return todosUsuarios;
       },
       fetchPolicy: "network-only",
-    },   
-    personasConEspacio:{
+    },
+    personasConEspacio: {
       query: gql`
-        query($dateActual: Date){
-          todosUsuarios(dateActual: $dateActual){
+        query ($dateActual: Date) {
+          todosUsuarios(dateActual: $dateActual) {
             id
             espacioActual
           }
         }
       `,
-      variables(){
+      variables() {
         return {
           dateActual: Date.now(),
-        }
+        };
       },
-      update({todosUsuarios}){
-        return todosUsuarios
-      }
-    }
+      update({ todosUsuarios }) {
+        return todosUsuarios;
+      },
+    },
   },
   data() {
     const stringConfiguracion = localStorage.getItem("configuracionPersonas");
@@ -202,7 +202,7 @@ export default {
     }
     return {
       personas: [],
-      personasConEspacio:[],
+      personasConEspacio: [],
       nodosSolidaridadPublicitados: [],
       idPersonaMenuCx: null,
       idPersonaSeleccionada: null,
@@ -230,7 +230,6 @@ export default {
       const objeto = {
         mostrarEspacioActual: this.mostrarEspacioActual,
       };
-
 
       const objetoString = JSON.stringify(objeto);
 
