@@ -132,6 +132,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 50px;
+  margin-bottom: 90px;
 }
 #tituloZona {
   font-size: 1em;
