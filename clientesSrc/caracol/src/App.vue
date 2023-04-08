@@ -422,4 +422,8 @@ export default {
   opacity: 0.8;
   pointer-events: none;
 }
+
+@media screen and (min-width: 900px){
+  
+}
 </style>

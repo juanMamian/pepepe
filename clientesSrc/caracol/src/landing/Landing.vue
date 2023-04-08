@@ -126,19 +126,18 @@
           </div>
         </router-link>
       </div>
-
-      <router-link :to="{ name: 'atlas' }" id="bigBotonAtlas" class="bigBoton">
-        <div class="ladoTexto">
-          <div class="tituloBigBoton">Atlas de conocimiento</div>
-          <div class="subtituloBigBoton">
-            Explora un universo de conocimientos y habilidades.
-          </div>
-        </div>
-        <div class="ladoImagen">
-          <img src="@/assets/landing/bigBotonAtlas.png" alt="Atlas" />
-        </div>
-      </router-link>
     </div>
+    <router-link :to="{ name: 'atlas' }" id="bigBotonAtlas" class="bigBoton">
+      <div class="ladoTexto">
+        <div class="tituloBigBoton">Atlas de conocimiento</div>
+        <div class="subtituloBigBoton">
+          Explora un universo de conocimientos y habilidades.
+        </div>
+      </div>
+      <div class="ladoImagen">
+        <img src="@/assets/landing/bigBotonAtlas.png" alt="Atlas" />
+      </div>
+    </router-link>
   </div>
 </template>
 <script>
@@ -287,7 +286,10 @@ export default {
 </script>
 <style scoped>
 .landing {
+  display: flex;
+  flex-direction: column;
   padding: 6vh 8vw;
+  align-items: center;
 }
 #bloquePortada {
   display: flex;
@@ -394,7 +396,8 @@ export default {
     rgba(255, 216, 216, 0.49) 35.75%,
     rgba(255, 255, 255, 0) 106.41%
   );
-  padding: 8%;
+  padding: 10px 40px;
+  width: min(400px, 90vw);
   border-radius: 15px;
 }
 .ladoTexto {
@@ -416,5 +419,40 @@ export default {
 }
 .ladoImagen img {
   width: 100%;
+}
+@media screen and (min-width: 900px) {
+  .landing {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15vw ;
+  }
+
+  #bloquePortada {
+    flex-direction: column-reverse;
+    align-items: center;
+    width: 37vw;
+    flex-shrink: 0;
+    flex-grow: 0;
+  }
+  #contenedorImagen {
+    width: 30vw;
+    flex-grow: 0;
+  }
+  #titulo {
+    font-size: 5em;
+  }
+  #subtitulo {
+    font-size: 1em;
+  }
+  .bigBoton{
+    width: min(500px, 90vw);
+  }
+  .tituloBigBoton{
+    font-size: 1.4em;
+  }
+  .subtituloBigBoton{
+    font-size: 0.7em;
+  }
 }
 </style>

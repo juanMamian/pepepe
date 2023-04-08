@@ -46,7 +46,7 @@
 </template>
 <script>
 import Loading from "../components/utilidades/Loading.vue";
-import {gql} from "@apollo/client/core"
+import { gql } from "@apollo/client/core";
 
 export default {
   name: "LoginScreen",
@@ -67,7 +67,7 @@ export default {
     enviarLogin() {
       let username = this.validarUsername();
       let password = this.validarPassword();
-      if(!username || !password){
+      if (!username || !password) {
         return;
       }
 
@@ -86,7 +86,7 @@ export default {
         })
         .then(({ data: { login } }) => {
           this.$emit("logearse", login);
-          this.$router.push({name: "home"});
+          this.$router.push({ name: "home" });
 
           this.enviandoLogin = false;
         })
@@ -131,15 +131,20 @@ export default {
 .loginScreen {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 50px;
 }
 #tituloZona {
   font-size: 1em;
   margin: 30px 0px;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .bloqueInput {
   position: relative;
+  width: min(600px, 70%);
+  
+  margin: 0px auto;
 }
 #bloqueInputUsername::after {
   content: "Nombre de usuario";
@@ -154,7 +159,6 @@ export default {
   bottom: 10px;
   font-size: 0.7em;
   transition: bottom 0.3s ease-out, opacity 0.3s, font-size 0.3s;
-  margin-right: 10px;
   pointer-events: none;
   color: gray;
 }
@@ -169,10 +173,27 @@ export default {
   border-bottom-color: gray;
   text-decoration: none;
   outline: none;
+  display: block;
+  margin: 0px auto;
+  width: 100%;
 }
 
 #botonEnviarLogin {
-  margin: 30px auto;
+  margin: 0px auto;
   width: fit-content;
+}
+
+@media screen and (min-width: 900px) {
+  .loginScreen {
+    align-self: center;
+    width: 40vw;
+    flex-grow: 0;
+    margin-left:auto;
+    gap: 100px;
+  }
+  #tituloZona{
+    margin-bottom: 30px;
+    text-align: center;
+  }
 }
 </style>
