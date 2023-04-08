@@ -43,6 +43,7 @@ export const globalMixin = {
   },
   data() {
     return {
+      widthScreen:100,
       serverUrl,
       usuario: null,
     };
@@ -175,5 +176,9 @@ export const globalMixin = {
       var stringFinal = formatter.format(valor);
       return stringFinal;
     }
-  }
+  },
+  mounted() {
+    this.widthScreen = screen.width;
+  },
+
 };

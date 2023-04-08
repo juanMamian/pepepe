@@ -108,7 +108,7 @@
           <pie-progreso
             :mostrarNumero="false"
             :progreso="coleccionMostrada ? coleccionMostrada.progreso : 0"
-            :size="50"
+            :size="widthScreen < 900 ? 50 : 75"
           >
             <img
               src="@/assets/iconos/userNodes.png"
@@ -425,13 +425,13 @@ export default {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 15vw ;
+    gap: 15vw;
   }
 
   #bloquePortada {
     flex-direction: column-reverse;
     align-items: center;
-    width: 37vw;
+    width: 27vw;
     flex-shrink: 0;
     flex-grow: 0;
   }
@@ -445,13 +445,37 @@ export default {
   #subtitulo {
     font-size: 1em;
   }
-  .bigBoton{
+  #contenedorFotoUsuario {
+    width: 100%;
+  }
+  #nombreUsuario {
+    font-size: 1em;
+    margin-top: 20px;
+  }
+  .perkStatus {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  .perkStatus img {
+    height: 45px;
+  }
+  .perkTexto {
+    font-size: 0.7em;
+    text-align: center;
+    max-height: 6em;
+    overflow-y: hidden;
+  }
+
+  .bigBoton {
     width: min(500px, 90vw);
   }
-  .tituloBigBoton{
+  .tituloBigBoton {
     font-size: 1.4em;
   }
-  .subtituloBigBoton{
+  .subtituloBigBoton {
     font-size: 0.7em;
   }
 }

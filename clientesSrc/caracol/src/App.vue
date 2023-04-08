@@ -49,37 +49,41 @@
           v-if="usuarioLogeado && usuarioEscuelaMaestraVida"
         >
           <div class="tituloBloqueNav">Escuela</div>
-          <router-link
-            to="/espacios"
-            class="botonNav"
-            id="navActividadesVirtuales"
-          >
-            <img src="@/assets/iconos/calendarWeek.svg" alt="Calendario" />
-            Horario semanal
-          </router-link>
-          <router-link
-            v-if="yo && yo.id"
-            :to="'/rutaGrado/' + yo.id"
-            class="botonNav"
-            id="navRutaGrado"
-          >
-            <img src="@/assets/iconos/routeSolid.svg" alt="Calendario" />
-            Mi ruta de grado
-          </router-link>
+          <div class="desplegableBloqueNav">
+            <router-link
+              to="/espacios"
+              class="botonNav"
+              id="navActividadesVirtuales"
+            >
+              <img src="@/assets/iconos/calendarWeek.svg" alt="Calendario" />
+              Horario semanal
+            </router-link>
+            <router-link
+              v-if="yo && yo.id"
+              :to="'/rutaGrado/' + yo.id"
+              class="botonNav"
+              id="navRutaGrado"
+            >
+              <img src="@/assets/iconos/routeSolid.svg" alt="Calendario" />
+              Mi ruta de grado
+            </router-link>
+          </div>
         </div>
 
         <div class="bloqueNav" v-if="usuarioSuperadministrador">
           <div class="tituloBloqueNav">Administración</div>
 
-          <router-link
-            to="/registro"
-            id="navRegistro"
-            class="botonNav"
-            v-if="usuarioSuperadministrador"
-          >
-            <img src="@/assets/iconos/userPlus.svg" alt="Crear usuario" />
-            Registrar usuario
-          </router-link>
+          <div class="desplegableBloqueNav">
+            <router-link
+              to="/registro"
+              id="navRegistro"
+              class="botonNav"
+              v-if="usuarioSuperadministrador"
+            >
+              <img src="@/assets/iconos/userPlus.svg" alt="Crear usuario" />
+              Registrar usuario
+            </router-link>
+          </div>
         </div>
       </div>
 
@@ -281,7 +285,7 @@ export default {
             .then(() => {
               console.log("Store reset");
               this.setEstadoRed();
-              this.$router.push({name: "loginScreen"});
+              this.$router.push({ name: "loginScreen" });
             })
             .catch((error) => {
               console.log("Error resetting store: " + error);
@@ -348,11 +352,11 @@ export default {
   padding: 10px 10px;
   flex-shrink: 0;
 }
-#botonDesplegarNav {
+#botonMenuNav {
   width: 20px;
   height: 20px;
 }
-#botonDesplegarNav img {
+#botonMenuNav img {
   height: 100%;
 }
 .menuNavDesplegable {
@@ -375,12 +379,17 @@ export default {
   display: flex;
   flex-direction: column;
 }
+.desplegableBloqueNav {
+  display: flex;
+  flex-direction: column;
+}
 .tituloBloqueNav {
   font-size: 0.9em;
   text-align: center;
   font-style: italic;
 }
 .botonNav {
+  cursor: pointer;
   padding: 25px 33px;
   display: flex;
   align-items: center;
@@ -392,6 +401,7 @@ export default {
   height: 19px;
 }
 #botonMenuNavUsuario {
+  cursor: pointer;
   margin-left: auto;
   margin-right: 5px;
   font-size: 0.7em;
@@ -423,7 +433,74 @@ export default {
   pointer-events: none;
 }
 
-@media screen and (min-width: 900px){
-  
+@media screen and (min-width: 900px) {
+  #botonMenuNav {
+    display: none;
+  }
+  #navBar {
+    padding: 10px 10px;
+  }
+  #contenedorBotonesNav {
+    position: relative;
+    top: 0px;
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  .botonNav {
+    background-color: transparent;
+    font-size:0.8em;
+  }
+  .botonNav img{
+    height: 15px;
+  }
+  .bloqueNav {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-left: 2px solid transparent; 
+  }
+  .bloqueNav:hover {
+    border-left: 2px solid var(--mainColor);
+  }
+  .bloqueNav:hover .desplegableBloqueNav{
+    border-left: 2px solid var(--mainColor);
+  }
+  .tituloBloqueNav {
+    cursor: pointer;
+    font-size:0.8em;
+    padding: 10px 10px;
+  }
+  .desplegableBloqueNav {
+    position: absolute;
+    top: 100%;
+    left: -2px;
+    box-shadow: 2px 2px 2px 2px rgba(117, 117, 117, 0.418);
+  }
+  .bloqueNav:not(:hover) .desplegableBloqueNav {
+    display: none;
+  }
+
+  .bloqueNav:hover .desplegableBloqueNav {
+    display: flex;
+    min-width: 200px;
+  }
+  .desplegableBloqueNav .botonNav {
+    background-color: var(--mainColor);
+    width: 100%;
+  }
+}
+@media (pointer: fine){
+  .botonNav, .tituloBloqueNav{
+    color: rgb(85, 85, 85);
+  }
+  .botonNav:hover, .tituloBloqueNav:hover{
+    color: black;
+  }
 }
 </style>
