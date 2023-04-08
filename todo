@@ -4,6 +4,7 @@ Atlas de conocimiento.
 
 -Que el id nodo target se fije hacia la red después de colocarlo en el cache local.
 -en moviles la ruta de grado se sale por la izquierda y no se ve. Debe ser por el center del flex.
+-Que escoja una colección no completada para la landing perks.
 
 -En maestra vida asegurarse de que se hace la migración de periodoRepaso y de objetivos y de personas.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.

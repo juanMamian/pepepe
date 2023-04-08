@@ -1,5 +1,11 @@
 <template>
-  <div id="app" @click="cerrarMenus">
+  <div
+    id="app"
+    @click="cerrarMenus"
+    :class="{
+      landing: $route.name === 'home' || $route.name === 'loginScreen',
+    }"
+  >
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
       <div
@@ -104,6 +110,7 @@
 
     <router-view
       @logearse="logearUsuario"
+      @alienandoPersona="alienarPersona"
       id="visorRouter"
       :yo="yo"
     ></router-view>
@@ -180,6 +187,20 @@ export default {
     };
   },
   computed: {
+    estiloBackground() {
+      let primerColor = "#fcff77";
+
+      let segundoColor = "rgba(235, 85, 21, 0.75) 73.16%";
+
+      return {
+        background:
+          "linear-gradient( 190.19deg, " +
+          primerColor +
+          " 7.52%, " +
+          segundoColor +
+          " 73.16%)",
+      };
+    },
     tallerCuentosUrl() {
       return process.env.NODE_ENV === "production"
         ? "https://192.168.1.100:3000"
@@ -199,6 +220,11 @@ export default {
     },
   },
   methods: {
+    alienarPersona(token) {
+      console.log("alienando persona");
+      this.$router.push("/home");
+      this.logearUsuario(token);
+    },
     cerrarMenus() {
       this.mostrandoNav = false;
       this.mostrandoNavUsuario = false;
@@ -242,25 +268,27 @@ export default {
     async deslogearse() {
       console.log("Navegando a loginArea");
       this.$router.push({ name: "loginScreen" });
-
-      this.$nextTick(() => {
-        const store = this.$apollo.provider.defaultClient;
-        store.writeQuery({
-          query: QUERY_AUTH_USUARIO,
-          data: { auth_usuario: null },
-        });
-
-        store
-          .resetStore()
-          .then(() => {
-            console.log("Store reset");
-            this.setEstadoRed();
-          })
-          .catch((error) => {
-            console.log("Error resetting store: " + error);
-            this.setEstadoRed();
+      setTimeout(() => {
+        this.$nextTick(() => {
+          const store = this.$apollo.provider.defaultClient;
+          store.writeQuery({
+            query: QUERY_AUTH_USUARIO,
+            data: { auth_usuario: null },
           });
-      });
+
+          store
+            .resetStore()
+            .then(() => {
+              console.log("Store reset");
+              this.setEstadoRed();
+              this.$router.push({name: "loginScreen"});
+            })
+            .catch((error) => {
+              console.log("Error resetting store: " + error);
+              this.setEstadoRed();
+            });
+        });
+      }, 1000);
     },
   },
   watch: {
@@ -297,11 +325,17 @@ export default {
   flex-direction: column;
   box-sizing: border-box;
   z-index: 0;
+}
+#app.landing {
   background: linear-gradient(
     190.19deg,
-    #fcff77 7.52%,
-    rgba(235, 85, 21, 0.75) 73.16%
+    var(--gradienteFondo1Start) 7.52%,
+    var(--gradienteFondo1End) 73.16%
   );
+}
+#app:not(.landing) {
+  background: "unset";
+  background-color: whitesmoke;
 }
 
 #navBar {

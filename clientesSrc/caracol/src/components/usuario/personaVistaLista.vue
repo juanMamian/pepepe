@@ -523,8 +523,8 @@ export default {
         .then(({ data: { alienarUsuario } }) => {
           console.log(`Alienando`);
           this.alienando = true;
+          this.$emit("alienandoPersona", alienarUsuario);
           // this.$store.commit("logearse", alienarUsuario);
-          this.$router.push("/miPerfil");
         })
         .catch((error) => {
           console.log(`Error: ${error}`);

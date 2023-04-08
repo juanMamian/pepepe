@@ -95,18 +95,6 @@ const router = createRouter({
         }
       ]
     },
-    {
-      path: "/", redirect() {
-        console.log(`Redirecting`);
-        let datosUsuario = apolloClient.readQuery({
-          query: QUERY_AUTH_USUARIO
-        });
-        if (datosUsuario?.auth_usuario?.id) {
-          return {name: "perfilPersonal"}
-        }
-        return {name: "loginArea"}
-      }
-    },
     { path: "/:catchAll(.*)", redirect() { return "/" } },
   ]
 })
@@ -121,11 +109,9 @@ router.beforeEach(async (to, from) => {
     query: QUERY_AUTH_USUARIO
   });
 
-
-
   if (datosUsuario?.auth_usuario?.id) {
     if (to.name == 'loginScreen') {
-      return { name: "perfilPersonal" }
+      return { name: "home" }
     }
   }
   else {

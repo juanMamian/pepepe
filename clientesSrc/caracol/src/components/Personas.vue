@@ -131,6 +131,7 @@
         :personasConEspacio="personasConEspacio"
         :mostrarEspacioActual="mostrarEspacioActual"
         @click.native="idPersonaSeleccionada = persona.id"
+        @alienandoPersona="$emit('alienandoPersona', $event)"
       />
     </div>
   </div>

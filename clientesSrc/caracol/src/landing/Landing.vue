@@ -61,7 +61,7 @@
         </router-link>
         <router-link
           :to="
-            nodoOlvidado.id
+            nodoOlvidado?.id
               ? {
                   name: 'visorNodoConocimiento',
                   params: { idNodo: nodoOlvidado.id },
@@ -95,7 +95,7 @@
         </router-link>
         <router-link
           :to="
-            coleccionMostrada.id
+            coleccionMostrada?.id
               ? {
                   name: 'coleccionNodosConocimiento',
                   params: { idColeccion: coleccionMostrada.id },
@@ -193,7 +193,7 @@ export default {
       variables() {
         return {
           idColeccion: this.idColeccionMostrada,
-          idUsuario: this.usuario.id,
+          idUsuario: this.usuario?.id,
         };
       },
       update({ coleccionNodosConocimiento }) {

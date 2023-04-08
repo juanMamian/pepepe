@@ -7,6 +7,7 @@ import { globalMixin } from "./globalMixin";
 import { persistor } from "./apolloCache";
 import "./estilosGlobales.css"
 import "@/assets/estilos/animacionesGenerales.css"
+import "@/assets/estilos/paleta.css"
 
 
 const iniciarVue = async function () {

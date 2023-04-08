@@ -24,7 +24,7 @@
       <input
         :type="mostrandoPassword ? 'text' : 'password'"
         ref="campoPassword"
-        id="inputUsername"
+        id="inputPassword"
         class="inputLogin"
         v-model="inputPassword"
         @keypress.enter="$refs.botonEnviarLogin.click()"
