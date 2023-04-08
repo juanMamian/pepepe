@@ -2,176 +2,112 @@
   <div id="app">
     <div id="navBar">
       <!-- <div class="botonNav" id="navHome" to="/">Home</div> -->
-      <div id="zonaIcono" @click="mostrandoNav = !mostrandoNav">
+      <div
+        id="botonMenuNav"
+        class="boton"
+        @click="mostrandoNav = !mostrandoNav"
+      >
         <img
           id="botonDesplegarNav"
           src="@/assets/iconos/stream.svg"
           alt="Menu"
         />
-        <div id="logoPepepe">Pepepe</div>
       </div>
       <div
-        id="botonesNavEnlaces"
-        :class="{ enlacesOcultos: !mostrandoNav }"
-        @click="mostrandoNav = false"
+        id="contenedorBotonesNav"
+        class="menuNavDesplegable"
+        @click.stop="cerrarMenus"
+        :class="{ desplegado: mostrandoNav }"
       >
-        <!-- <router-link
-          to="/actividadesVirtuales2021"
-          v-if="
-            usuarioLogeado == true &&
-            usuario.permisos &&
-            usuario.permisos.includes('maestraVida')
-          "
-        >
-          <div
-            class="botonNavBarra botonNav hoverNegro"
-            id="navActividadesVirtuales"
-          >
-            Actividades virtuales
-          </div>
-        </router-link> -->
-
-        <router-link
-          to="/foros"
-          v-if="
-            usuarioLogeado == true &&
-            usuario.permisos &&
-            usuario.permisos.includes('maestraVida')
-          "
-        >
-          <div
-            class="botonNavBarra botonNav hoverNegro"
-            id="navActividadesVirtuales"
-          >
-            Foros
-          </div>
+        <router-link to="/atlas" class="botonNav" id="navAtlas">
+          <img src="@/assets/iconos/compassRegular.svg" alt="Compás" />
+          Atlas de conocimientos
         </router-link>
 
-        <!-- <div
-          id="bloqueProyectos"
-          class="bloqueBotones"
-          v-if="
-            usuario &&
-            usuario.permisos &&
-            usuario.permisos.includes('maestraVida')
-          "
+        <router-link
+          to="/personas"
+          v-if="usuarioLogeado"
+          class="botonNav"
+          id="navActividadesVirtuales"
         >
-          <router-link to="/proyectos" v-if="usuarioLogeado == true">
-            <div class="botonNavBarra botonNav hoverNegro" id="navProyectos">
-              Grupos
-            </div>
-          </router-link>       
-        </div> -->
+          <img src="@/assets/iconos/users.svg" alt="Usuarios" />
+          Personas
+        </router-link>
 
-        <!-- <div id="bloqueSolidaridad" class="bloqueBotones">
-          <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
-            Solidaridad
-          </div>
-          <div id="enlacesHijosSolidaridad" class="contenedorHijos">
-            <router-link to="/atlasSolidaridad">
-              <div
-                class="botonNavBarra botonNav hoverNegro botonNavHijo"
-                id="navAtlasSolidaridad"
-              >
-                Atlas de solidaridad
-              </div>
-            </router-link>
-          </div>
-        </div> -->
-
-        <div id="bloqueHerramientas" class="bloqueBotones">
-          <div class="botonNavBarra botonNav hoverNegro" id="navAtlas">
-            Herramientas
-          </div>
-          <div id="enlacesHijosHerramientas" class="contenedorHijos">
-            <router-link to="/atlas">
-              <div
-                class="botonNavBarra botonNav hoverNegro botonNavHijo"
-                id="navAtlas"
-              >
-                Atlas de conocimientos
-              </div>
-            </router-link>
-          </div>
+        <div class="bloqueNav" v-if="usuarioLogeado && usuarioEscuelaMaestraVida">
+          <div class="tituloBloqueNav">Escuela</div>
+          <router-link
+            to="/espacios"
+            class="botonNav"
+            id="navActividadesVirtuales"
+          >
+            <img src="@/assets/iconos/calendarWeek.svg" alt="Calendario" />
+            Horario semanal
+          </router-link>
+          <router-link
+            v-if="yo && yo.id"
+            :to="'/rutaGrado/' + yo.id"
+            class="botonNav"
+            id="navRutaGrado"
+          >
+            <img src="@/assets/iconos/routeSolid.svg" alt="Calendario" />
+            Mi ruta de grado
+          </router-link>
         </div>
 
-        <router-link to="/personas" v-if="usuarioLogeado">
-          <div
-            class="botonNavBarra botonNav hoverNegro"
-            id="navActividadesVirtuales"
-          >
-            Personas
-          </div>
-        </router-link>
-        <router-link to="/espacios">
-          <div
-            class="botonNavBarra botonNav hoverNegro"
-            id="navActividadesVirtuales"
-          >
-            Horario semanal
-          </div>
-        </router-link>
-        <router-link v-if="yo && yo.id" :to="'/rutaGrado/' + yo.id">
-          <div class="botonNavBarra botonNav hoverNegro" id="navRutaGrado">
-            Mi ruta de grado
-          </div>
-        </router-link>
-        <router-link
-          to="/registro"
-          id="navRegistro"
-          v-if="usuarioSuperadministrador"
-        >
-          <div class="botonNavBarra botonNav hoverNegro">Registrar usuario</div>
-        </router-link>
-      </div>
-      <div id="botonesNavDerecha">
-        <template v-if="usuarioLogeado">
-          <div
-            class="botonNavBarra botonNav navLogin hoverNegro"
-            id="navLogged"
-            @click="accionesLogeado = !accionesLogeado"
-            @mouseleave="accionesLogeado = false"
-          >
-            {{ username }}
-            <div id="botonesLogeado" v-if="accionesLogeado">
-              <router-link to="/miperfil">
-                <div class="botonesLogeado hoverNegro" id="Perfil">Perfil</div>
-              </router-link>
-              <div
-                class="botonesLogeado hoverNegro"
-                id="desconexion"
-                @click="deslogearse"
-              >
-                Desconexion
-              </div>
-            </div>
-          </div>
-        </template>
-        <template v-else>
+        <div class="bloqueNav" v-if="usuarioSuperadministrador">
+          <div class="tituloBloqueNav">Administración</div>
+
           <router-link
-            to="/login"
-            class="botonNavBarra botonNav navLogin hoverNegro"
-            id="navLogin"
+            to="/registro"
+            id="navRegistro"
+            class="botonNav"
+            v-if="usuarioSuperadministrador"
           >
-            <div>Login</div>
+            <img src="@/assets/iconos/userPlus.svg" alt="Crear usuario" />
+            Registrar usuario
           </router-link>
-        </template>
+        </div>
+      </div>
+
+      <div
+        id="botonMenuNavUsuario"
+        @click.stop="mostrandoNavUsuario = !mostrandoNavUsuario"
+        v-if="usuarioLogeado"
+      >
+        <span>{{ yo.nombres }}</span>
+        <img src="@/assets/iconos/user.svg" alt="Usuario" />
+      </div>
+      <div
+        v-if="usuarioLogeado"
+        id="contenedorBotonesUsuario"
+        class="menuNavDesplegable"
+        :class="{ desplegado: mostrandoNavUsuario }"
+        @click.stop="cerrarMenus"
+      >
+        <router-link :to="{ name: 'perfilPersonal' }" class="botonNav">
+          <img src="@/assets/iconos/idBadge.svg" alt="Identificación" /> Perfil
+          personal
+        </router-link>
+        <div class="botonNav" @click="deslogearse">
+          <img src="@/assets/iconos/xMark.svg" alt="Identificación" /> Salir
+        </div>
       </div>
     </div>
+
     <router-view
       @logearse="logearUsuario"
       id="visorRouter"
       :yo="yo"
     ></router-view>
     <gestor-acciones />
-
   </div>
 </template>
 
 <script>
 import gql from "graphql-tag";
 import { QUERY_AUTH_USUARIO } from "./globalMixin.js";
-import GestorAcciones from "./components/gestorAcciones/GestorAcciones.vue"
+import GestorAcciones from "./components/gestorAcciones/GestorAcciones.vue";
 
 export const QUERY_ESTADO_RED = gql`
   query {
@@ -216,11 +152,19 @@ export default {
     },
   },
   components: {
-    GestorAcciones
+    GestorAcciones,
   },
   data() {
     return {
+      mostrandoNavUsuario: false,
       accionesLogeado: false,
+
+      yo: {
+        atlas: {
+          colecciones: [],
+          datosNodo: [],
+        },
+      },
 
       mostrandoNav: false,
       navSeleccionado: "home",
@@ -248,6 +192,10 @@ export default {
     },
   },
   methods: {
+    cerrarMenus() {
+      this.mostrandoNav = false;
+      this.mostrandoNavUsuario = false;
+    },
     setEstadoRed() {
       console.log(`Detectado estado de red en ${navigator.onLine}`);
       const store = this.$apollo.provider.defaultClient;
@@ -330,50 +278,77 @@ export default {
   flex-direction: column;
   box-sizing: border-box;
   z-index: 0;
-  background: linear-gradient(190.19deg, #FCFF77 7.52%, rgba(242, 81, 71, 0.75) 82.52%);
+  background: linear-gradient(
+    190.19deg,
+    #fcff77 7.52%,
+    rgba(242, 81, 71, 0.75) 82.52%
+  );
 }
 
 #navBar {
   width: 100%;
-  height: 60px;
+  height: 50px;
   align-items: center;
   display: flex;
   z-index: 100;
   position: relative;
+  padding: 10px 10px;
+  flex-shrink: 0;
 }
-
-#zonaIcono {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
 #botonDesplegarNav {
-  display: block;
-  width: 35px;
-  height: 35px;
-  border-radius: 10px;
-  padding: 10px;
+  width: 20px;
+  height: 20px;
 }
-
-#logoPepepe {
-  font-size: 18px;
-  font-family: Salsa, cursive;
+#botonDesplegarNav img {
+  height: 100%;
 }
-
-#botonesNavEnlaces {
+.menuNavDesplegable {
+  display: none;
   position: absolute;
   top: 100%;
+  flex-direction: column;
+  background-color: var(--mainColor);
+}
+.menuNavDesplegable.desplegado {
+  display: flex;
+}
+#contenedorBotonesNav {
+  flex-direction: column;
   left: 0px;
-  background-color: rgb(239, 174, 74);
 }
 
-.enlacesOcultos {
-  display: none;
+.bloqueNav {
+  display: flex;
+  flex-direction: column;
 }
-
-.router-link-active {
-  background-color: rgba(0, 0, 0, 0.247);
+.tituloBloqueNav {
+  font-size: 0.9em;
+  text-align: center;
+  font-style: italic;
+}
+.botonNav {
+  padding: 25px 33px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 1.1em;
+  max-width: 90vw;
+}
+.botonNav img {
+  height: 19px;
+}
+#botonMenuNavUsuario {
+  margin-left: auto;
+  font-size: 0.7em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#botonMenuNavUsuario img {
+  height: 20px;
+}
+#contenedorBotonesUsuario {
+  right: 0px;
 }
 
 #visorRouter {
@@ -388,67 +363,8 @@ export default {
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
     0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
-
-#navLogged {
-  position: relative;
-}
-
-.botonNav {
-  padding-top: 13px;
-  padding-left: 15px;
-  padding-right: 15px;
-  cursor: pointer;
-  user-select: none;
-  font-size: 15px;
-  font-family: "Poppins", sans-serif;
-  color: black;
-  box-sizing: border-box;
-  background-color: var(--mainColor);
-}
-
-.botonNavBarra {
-  padding: 10px 10px;
-}
-
-.botonNavHijo {
-  padding-bottom: 30px;
-  padding-left: 25px;
-}
-
-#botonesNavDerecha {
-  margin-left: auto;
-  display: flex;
-}
-
-#botonesLogeado {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  background-color: rgb(243, 138, 58);
-}
-
-.botonesLogeado {
-  padding-top: 10px;
-  padding-left: 15px;
-  padding-bottom: 5px;
-  padding-right: 35px;
-  min-width: 150px;
-}
-
 .disabled {
   opacity: 0.8;
   pointer-events: none;
-}
-
-.bloqueBotones {
-  position: relative;
-}
-
-.contenedorHijos {
-  display: block;
-}
-
-.botonNavHijo {
-  padding-bottom: 15px;
 }
 </style>

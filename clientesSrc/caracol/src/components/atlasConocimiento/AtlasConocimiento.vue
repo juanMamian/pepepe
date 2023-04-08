@@ -105,7 +105,6 @@
                 left: nodo.coords.x - esquinasDiagrama.x1 + 'px',
               },
             ]"
-            @setNodoTarget="setNodoTarget"
             @dblclick="
               $router.push({
                 name: 'visorNodoConocimiento',
@@ -151,10 +150,6 @@
       :idNodoTarget="idNodoTarget"
       :nodoTargetRelevante="nodoTargetRelevante"
       v-show="!gestorColeccionesMostrandoArbol"
-      @setMeTarget="
-        setNodoTarget(nodoSeleccionado.id);
-        centrarEnNodoById(nodoSeleccionado.id);
-      "
       @nivelesConexion="nivelesConexion = $event"
       @click.stop=""
       @iniciarCrearDependenciaNodo="
@@ -162,7 +157,6 @@
       "
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
       @nodoEliminado="reactToNodoEliminado"
-      @setNodoTarget="setNodoTarget"
       @centerEnTarget="centrarEnNodoById(idNodoTarget)"
       @hoveringAnuncioTarget="hoveringAnuncioTarget = $event"
       @stepNivelesUnderTarget="stepNivelesUnderTarget"
@@ -271,16 +265,6 @@ export default {
           nodo.coords = nodo.autoCoords;
         });
 
-        const idLastNodoTarget = localStorage.getItem(
-          "atlasConocimientoIdLastNodoTarget"
-        );
-
-        if (idLastNodoTarget) {
-          const nodoLast = todosNodos.find((n) => n.id === idLastNodoTarget);
-          if (nodoLast) {
-            this.idNodoTarget = nodoLast.id;
-          }
-        }
         return nuevoTodosNodos;
       },
       fetchPolicy: "cache-and-network",
@@ -887,9 +871,6 @@ export default {
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
 
       this.crearNodo(posicionNuevoNodo);
-    },
-    setNodoTarget(idNodo) {
-      this.idNodoTarget = idNodo;
     },
 
     centrarEnNodo(n) {

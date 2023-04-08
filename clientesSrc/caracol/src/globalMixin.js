@@ -63,6 +63,9 @@ export const globalMixin = {
         "maestraVida-profesor"
       );
     },
+    usuarioEscuelaMaestraVida(){
+      return this.usuario?.permisos.includes("maestraVida-profesor") || this.usuario?.permisos.includes("maestraVida-estudiante") || this.usuario?.permisos.includes("maestraVida-acompañante");
+    }
    
   },
   methods:{
