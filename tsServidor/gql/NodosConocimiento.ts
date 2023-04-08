@@ -1,4 +1,5 @@
 import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
+import mongoose from "mongoose"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloUsuario as Usuario } from "../model/Usuario";
@@ -8,6 +9,7 @@ import { EsquemaVinculosNodosProyecto } from "../model/VinculosNodosProyecto";
 import { ModeloEventoPublico as EventoPublico } from "../model/Evento";
 import { ejecutarPosicionamientoNodosConocimientoByFuerzas } from "../controlAtlasConocimiento";
 import { charProhibidosNombreCosa } from "../model/config";
+import { purgarIdNodo } from "./Usuarios";
 
 export const idAtlasConocimiento = "61ea0b0f17a5d80da7e94320";
 const permisosEspecialesAtlas = ["superadministrador", "atlasAdministrador"]
@@ -351,16 +353,10 @@ export const resolvers = {
             } catch (error) {
                 console.log(`error eliminando nodo`);
             }
+            purgarIdNodo(idNodo);
             console.log(`nodo ${idNodo} eliminado`);
 
-            //Eliminar foros del nodo
-
-            try {
-                await Foro.findByIdAndDelete(elNodo.idForoPublico).exec();
-                await Foro.findByIdAndDelete(elNodo.idForoExpertos).exec();
-            } catch (error) {
-                console.log(`Error buscando los foros para ser eliminados`);
-            }
+            //Eliminar vinculos que lo tuvieran en idRef.
 
             return idNodo;
 
@@ -452,7 +448,7 @@ export const resolvers = {
 
             let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
 
-            if(idSource == idTarget) throw new UserInputError('No se puede vincular un nodo consigo mismo');
+            if (idSource == idTarget) throw new UserInputError('No se puede vincular un nodo consigo mismo');
 
             if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
@@ -1591,12 +1587,14 @@ export async function getIdsRedRequerimentosNodo(nodo) {
 
         console.log(`Anteriores: ${losNodosAnteriores.map(n => n.nombre)}`);
 
-        idsActuales = losNodosAnteriores.reduce((acc, nod) => {
+        let idsProx = losNodosAnteriores.reduce((acc, nod) => {
             let idsPrevios = nod.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef);
             return acc.concat(idsPrevios);
         }, []);
+        let idsNuevos = idsProx.filter(id => !todosIds.includes(id));
 
-        todosIds.push(...idsActuales);
+        idsActuales = idsNuevos;
+        todosIds.push(...idsNuevos);
 
         guarda++
     }
@@ -1605,25 +1603,26 @@ export async function getIdsRedRequerimentosNodo(nodo) {
 
 }
 
-export async function getNodosRedPreviaNodo(nodo){
-    let nodosActuales=[nodo];
-let todosNodos=[...nodosActuales];
-    let guarda=100;
-    
-    while(guarda<100 && nodosActuales.length>0){
-        let idsSiguientes=nodosActuales.map(n=>n.vinculos.filter(v=>v.tipo==='continuacion' && v.rol==='target').map(v=>v.idRef)).flat();
+export async function getNodosRedPreviaNodo(nodo) {
+    let nodosActuales = [nodo];
+    let todosNodos = [...nodosActuales];
+    let guarda = 0;
 
-        let nodosSiguientes:any=[];
+    while (guarda < 300 && nodosActuales.length > 0) {
+        guarda++;
+        let idsSiguientes = nodosActuales.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef)).flat();
+
+        let nodosNext: any = [];
 
         try {
-           nodosSiguientes=await Nodo.find({"_id":{$in:idsSiguientes}}).exec();
+            nodosNext = await Nodo.find({ "_id": { $in: idsSiguientes } }).exec();
         } catch (error) {
-           console.log("Error getting nodos siguientes :" + error);
-
+            console.log("Error getting nodos siguientes :" + error);
         }
+        let nodosNuevos = nodosNext.filter(n => !todosNodos.map(tn => tn.id).includes(n.id));
 
-        todosNodos.push(...nodosSiguientes);
-        nodosActuales=nodosSiguientes;
+        todosNodos.push(...nodosNuevos);
+        nodosActuales = nodosNuevos;
     }
     return todosNodos;
 }
@@ -1658,4 +1657,5 @@ export async function getIdsRedContinuacionesNodo(nodo) {
     return todosIds;
 
 }
+
 

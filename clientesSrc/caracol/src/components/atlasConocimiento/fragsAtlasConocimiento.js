@@ -86,6 +86,36 @@ export const QUERY_NODOS = gql`
   ${fragmentoNodoConocimiento}
 `;
 
+export const QUERY_NODO_CONOCIMIENTO_ATLAS = gql`
+  query($idNodo:ID!){
+    nodo(idNodo:$idNodo){
+      id
+      nombre
+      vinculos{
+        id
+        idRef
+        tipo
+        rol
+        nodoContraparte{
+         id
+         nombre
+         autoCoords{
+           x
+           y
+         }
+        }
+      }
+      descripcion
+      tipoNodo
+      expertos
+      autoCoords{
+        x
+        y
+      }
+      
+    }
+  }
+`;
 export const QUERY_NODO_CONOCIMIENTO_ESTANDAR = gql`
   query($idNodo:ID!){
     nodo(idNodo:$idNodo){

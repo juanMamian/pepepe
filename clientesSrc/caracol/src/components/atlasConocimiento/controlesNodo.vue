@@ -56,8 +56,16 @@
       {{ elNodo?.nombre || "" }}
     </div>
 
-    <div id="zonaControles" @click="" v-if="elNodo">
+    <div
+      id="zonaControles"
+      @click=""
+      v-if="elNodo && !$apollo.queries.elNodoDB.loading"
+    >
       <div class="filaControles" v-show="filaMostrada === 2">
+        <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
+          <img src="@/assets/iconos/exclamationCircle.svg" alt="Alerta" />
+          ¡Tienes nodos por completar que son necesarios para este!
+        </div>
         <div class="bloqueControl" style="">
           <div
             class="botonTexto selector botonControl"
@@ -134,11 +142,7 @@
       </div>
 
       <div class="filaControles" v-show="filaMostrada === 3">
-        <div
-          class="bloqueControl"
-          id="bloqueControlDependencias"
-          v-if="usuarioExperto || usuarioSuperadministrador"
-        >
+        <div class="bloqueControl" id="bloqueControlDependencias">
           <div
             class="botonTexto selector botonControl"
             :class="{
@@ -188,6 +192,7 @@
             >
               <NodoConocimientoVistaLista :idNodo="vinculo.idRef" :yo="yo" />
               <div
+                v-if="usuarioExperto"
                 class="botonTexto botonEliminarDependencia"
                 :class="{ deshabilitado: idVinculoEliminando === vinculo.id }"
                 @click.stop="eliminarVinculo(vinculo)"
@@ -224,6 +229,7 @@
         </div>
         <div class="bloqueControl">
           <router-link
+            v-if="elNodo?.id"
             :to="{
               name: 'visorNodoConocimiento',
               params: { idNodo: elNodo.id },
@@ -311,7 +317,7 @@
 </template>
 <script lang="js">
 import { gql } from '@apollo/client/core';
-import { fragmentoColecciones, QUERY_DATOS_USUARIO_NODOS, QUERY_NODOS } from './fragsAtlasConocimiento';
+import { fragmentoColecciones, QUERY_DATOS_USUARIO_NODOS, QUERY_NODOS, QUERY_NODO_CONOCIMIENTO_ESTANDAR } from './fragsAtlasConocimiento';
 import { fragmentoDatoNodoConocimiento } from './fragsAtlasConocimiento';
 import PieProgreso from '../utilidades/PieProgreso.vue';
 import NodoConocimientoVistaLista from './NodoConocimientoVistaLista.vue';
@@ -320,22 +326,38 @@ import Loading from '../utilidades/Loading.vue';
 export default {
 
   props: {
-    elNodo: {
-      type: Object,
-    },
     nodoCreandoDependencia: {
       type: Object,
     },
-    nodoTargetRelevante:{
+    nodoTargetRelevante: {
       type: Boolean,
-      default:true,
+      default: true,
     },
+    idNodoSeleccionado:{
+      type: String,
+    }
   },
   apollo: {
-    yo:{
+    yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
       fetchPolicy: "cache-first"
-    }
+    },
+    elNodoDB:{
+      query: QUERY_NODO_CONOCIMIENTO_ESTANDAR,
+      variables(){
+        return {
+          idNodo: this.idNodoSeleccionado,
+        }
+      },
+      skip(){
+        return !this.idNodoSeleccionado;
+      },
+      update({nodo}){
+        return nodo
+      },
+      fetchPolicy: "cache-first"
+
+    },
   },
   components: {
     Loading,
@@ -345,10 +367,15 @@ export default {
   name: "ControlesNodo",
   data() {
     return {
-      yo:{
-        atlas:{
-          datosNodos:[],
-          colecciones:[],
+      elNodoDB:{
+        vinculos:[],
+        expertos:[],
+      },
+
+      yo: {
+        atlas: {
+          datosNodos: [],
+          colecciones: [],
         }
       },
       eliminandose: false,
@@ -378,6 +405,12 @@ export default {
     };
   },
   computed: {
+    elNodo(){
+    if(!this.idNodoSeleccionado){
+      return null
+    }
+      return this.elNodoDB;
+    },
     idNodoTarget() {
       return this.yo.atlas.idNodoTarget
     },
@@ -393,7 +426,7 @@ export default {
         return false;
       }
 
-      return this.elNodo.expertos?.includes(this.yo.id);
+      return this.elNodo.expertos?.includes(this.usuario.id);
     },
     estiloPos() {
       let translation = 0;
@@ -430,6 +463,25 @@ export default {
       }
 
       return this.yo.atlas.datosNodos.find(dato => dato.idNodo === this.elNodo.id);
+    },
+    nodoAccesible() {
+      let idsNodosVerdesUsuario = this.yo.atlas.datosNodos.filter(dn => {
+        if (dn.aprendido) {
+          return true;
+        }
+        //estudiados
+        if (!dn.estudiado || !dn.diasRepaso) {
+          return false;
+        }
+        let timeLimite = (new Date(dn.estudiado)).getTime() + (dn.diasRepaso * 86400000);
+        if (timeLimite < Date.now()) {
+          return false;
+        }
+
+        // Sí está estudiado y no ha pasasdo el tiempo límite
+        return true
+      }).map(dn => dn.idNodo);
+      return !this.elNodo.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !idsNodosVerdesUsuario.includes(v.idRef));
     },
     nodoEstudiado() {
       if (!this.elNodo) {
@@ -672,6 +724,7 @@ export default {
 
       }).catch((error) => {
         console.log('Error: ' + error);
+        this.raiseAccion("Error creando dependencia", "error");
         this.creandoDependencia = false;
       })
     },
@@ -1085,7 +1138,8 @@ export default {
   flex-grow: 1;
   align-self: normal;
 }
-#contenedorAnuncios{
+
+#contenedorAnuncios {
   position: absolute;
   bottom: calc(100% + 10px);
   left: 50%;
@@ -1096,6 +1150,7 @@ export default {
   align-items: center;
   opacity: 0.9;
 }
+
 #anuncioCreandoDependencia {
   opacity: 0.9;
 }

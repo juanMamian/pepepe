@@ -329,6 +329,7 @@ export default {
   flex-direction: column;
   box-sizing: border-box;
   z-index: 0;
+  background: linear-gradient(190.19deg, #FCFF77 7.52%, rgba(242, 81, 71, 0.75) 82.52%);
 }
 
 #navBar {
@@ -337,7 +338,6 @@ export default {
   align-items: center;
   display: flex;
   z-index: 100;
-  background-color: var(--mainColor);
   position: relative;
 }
 

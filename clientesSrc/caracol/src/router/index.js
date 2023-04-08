@@ -13,10 +13,16 @@ import Personas from '../components/Personas.vue'
 import Espacios from '../components/Espacios.vue'
 import VentanaEventoPublico from '../components/utilidades/VentanaEventoPublico.vue'
 import VentanaEventoPersonal from '../components/utilidades/VentanaEventoPersonal.vue'
+import Landing from "../landing/Landing.vue"
+import LoginScreen from "../landing/LoginScreen.vue"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path:"/", name: "home", component: Landing, children:[{path: "login", name: "loginScreen", component: LoginScreen}],
+
+    },
 
     {
       path: "/atlas", name: "atlas", component: atlasConocimiento, children: [

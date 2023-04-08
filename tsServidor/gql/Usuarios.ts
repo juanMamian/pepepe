@@ -1038,9 +1038,9 @@ export const resolvers = {
 
             const indexC = elUsuario.atlas.colecciones.findIndex(c => c.id === idColeccion);
 
-            let laColeccion:any={};
+            let laColeccion: any = {};
             if (indexC > -1) {
-                
+
                 elUsuario.atlas.colecciones[indexC].nombre = nuevoNombre;
             }
             else {
@@ -1805,6 +1805,47 @@ async function getNodosRedByOriginalIds(idsNodos) {
 
 }
 
+// Funcion que retira un idNodo de todas las colecciones y datos nodos de los usuarios.
+export async function purgarIdNodo(idNodo) {
+
+    let losUsuarios: any[] = [];
+
+    try {
+        losUsuarios = await Usuario.find({ $or: [{ "atlas.colecciones.idsNodos": idNodo }, { "atlas.datosNodos.idNodo": idNodo }] }).exec();
+    } catch (error) {
+        console.log("Error buscando usuarios con el idNodo necesario: " + error);
+        return
+    }
+    console.log(`Encontrados ${losUsuarios.length} usuarios con el nodo ${idNodo} en sus datos Atlas`);
+
+    for (let us of losUsuarios) {
+        console.log(`Usuario ${us.nombres} analiza.`);
+        // Eliminar idNodo de cada una de las colecciones que lo contenga.
+        for (let col of us.atlas.colecciones) {
+            if (!col.idsNodos.includes(idNodo)) {
+                continue
+            }
+            console.log(`Sacando de ${col.nombre}`);
+
+            col.idsNodos = col.idsNodos.filter(id => id != idNodo);
+        }
+        if (us.atlas?.datosNodos) {
+            console.log("Elimina de sus datos nodos");
+            us.atlas.datosNodos = us.atlas.datosNodos.filter(dn => dn.idNodo != idNodo);
+        }
+
+
+        try {
+            us.save();
+        } catch (error) {
+            console.log("Error guardando un usuario después de retirar el id nodo");
+
+        }
+    }
+}
+
+
+
 // migrarPeriodoRepaso();
 async function migrarPeriodoRepaso() {
     console.log("Migrando periodo repaso a dias repaso");
@@ -1833,7 +1874,6 @@ async function migrarPeriodoRepaso() {
         }
     }
 }
-
 
 //migrarObjetivos();
 async function migrarObjetivos() {
@@ -1876,6 +1916,7 @@ async function migrarObjetivos() {
 
 }
 
+// Reset info de datos nodos y colecciones para que no contengan referencias a nodos eliminados.
 async function resetInfoAtlas() {
     let todosUsuarios: any = [];
     try {

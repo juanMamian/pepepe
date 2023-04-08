@@ -31,7 +31,7 @@ export default {
     },
   },
   apollo: {
-    elNodo: {
+    elNodoDB: {
       query: gql`
         query ($idNodo: ID!) {
           nodo(id: $idNodo) {
@@ -60,12 +60,18 @@ export default {
   },
   data() {
     return {
-      elNodo: {
+      elNodoDB: {
         vinculos: [],
       },
     };
   },
   computed: {
+    elNodo(){
+      if(!this.idNodo){
+        return null
+      }
+      return this.elNodoDB;
+    },
     datoUsuarioEsteNodo() {
       return this.yo?.datosUsuario?.find(
         (datoUsuario) => datoUsuario.idNodo === this.idNodo

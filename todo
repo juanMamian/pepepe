@@ -1,19 +1,9 @@
 Atlas de conocimiento.
 
--En maestra vida asegurarse de que se hace la migración de periodoRepaso y de objetivos.
--Verificar que en el calculador de red de dependendencias de nodo del backend no se repiten nodos. Y que en el calculador de progreso de nodo también en el backend no se cuenta dos veces el nodo fresco y el nodo aprendido.
--Verificar que la query de coleccion nodos conocimiento sólo la pueda hacer el usuario dueño o un superadministrador.
--QUe no se pueda marcar estudiado un nodo que no es accesible.
+-En maestra vida asegurarse de que se hace la migración de periodoRepaso y de objetivos y de personas.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.
 -Reparar los foros.
--Verificar si en el resolver de eliminación de nodos se eliminan los enlaces que lo tenian en idRef.
--Verificar que no se formen dependencias redundantes en el backend.
--Hacer que al set idNodoSeleccionado en el atlas de conocimiento, haga una query apollo. Así queda prevista la seleccion de nodos no descargados.
-
--Que controles nodo ya no reciba el objeto yo como una prop sino más bien que lo sace de apollo. No olvidar el fetch policy cache-first.
--Que controles nodo ponga target al nodo en apollo.
--verificar que la modificación de dependencias, eliminar y otras funciones están protegida solo para admins en controlesNodo.
--Después de eliminar nodo se debería desaparecer de las colecciones y de los datosNodos de cada usuario.
+-APLAZADO Verificar si en el resolver de eliminación de nodos se eliminan los enlaces que lo tenian en idRef.
 
 
 pepepe

@@ -146,7 +146,7 @@
     <controles-nodo
       :yo="yo"
       ref="controlesNodo"
-      :elNodo="nodoSeleccionado"
+      :idNodoSeleccionado="idNodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
       :idNodoTarget="idNodoTarget"
       :nodoTargetRelevante="nodoTargetRelevante"
@@ -223,6 +223,7 @@ import {
   QUERY_DATOS_USUARIO_NODOS,
   QUERY_NODOS,
   fragmentoNodoConocimiento,
+QUERY_NODO_CONOCIMIENTO_ATLAS,
 } from "./fragsAtlasConocimiento";
 import NodoConocimientoAtlas from "./NodoConocimientoAtlas.vue";
 import GestorColecciones from "./GestorColecciones.vue";
@@ -245,6 +246,21 @@ export default {
   },
   name: "AtlasConocimiento",
   apollo: {
+    nodoSeleccionadoDB:{
+      query: QUERY_NODO_CONOCIMIENTO_ATLAS,
+      variables(){
+        return {
+          idNodo: this.idNodoSeleccionado,
+        }
+      },
+      skip(){
+        return !this.idNodoSeleccionado;
+      },
+      update({nodo}){
+        return nodo
+      },
+      fetchPolicy: "cache-first",
+    },
     todosNodos: {
       query: QUERY_NODOS,
       update({ todosNodos }) {
@@ -329,6 +345,12 @@ export default {
   },
   data() {
     return {
+      idNodoSeleccionado: null,
+      nodoSeleccionadoDB:{
+        vinculos:[],
+        expertos:[],
+      },
+
       montado: false,
       firstLoad: false,
 
@@ -339,7 +361,6 @@ export default {
       todosNodos: [],
       nodosDescargados: false,
       posicionCreandoNodo: null,
-      idNodoSeleccionado: null,
       coleccionSeleccionada: null,
       nivelesConexion: 0,
       factorEscalera: 0.2,
@@ -505,7 +526,7 @@ export default {
       if (!this.idNodoSeleccionado) {
         return null;
       }
-      return this.todosNodos.find((n) => n.id === this.idNodoSeleccionado);
+      return this.nodoSeleccionadoDB;
     },
     nodoTarget() {
       if (!this.idNodoTarget) return null;

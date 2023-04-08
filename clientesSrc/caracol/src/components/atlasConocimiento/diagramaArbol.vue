@@ -20,7 +20,7 @@
       <controles-nodo
         v-show="visible"
         :yo="yo"
-        :elNodo="nodoSeleccionadoNullificable"
+        :idNodoSeleccionado="idNodoSeleccionado"
         :nodoTargetRelevante="nodoTargetRelevante"
       ></controles-nodo>
     </teleport>
