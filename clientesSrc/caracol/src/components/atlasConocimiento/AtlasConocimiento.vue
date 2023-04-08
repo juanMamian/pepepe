@@ -566,6 +566,9 @@ export default {
 
     nodosActivos() {
       console.log("gestor conectando nodos " + this.gestorColeccionesConectandoNodos);
+      if(this.$route.name!='atlas'){
+        return [];
+      }
       if (!this.todosNodos) {
         return [];
       }

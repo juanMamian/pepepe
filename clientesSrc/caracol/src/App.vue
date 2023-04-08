@@ -324,6 +324,7 @@ export default {
 #app {
   width: 100vw;
   height: 100vh;
+  overflow-y: scroll;
 
   display: flex;
   flex-direction: column;

@@ -135,6 +135,7 @@ export const QUERY_NODO_CONOCIMIENTO_ESTANDAR = gql`
   }
 `;
 
+
 export const QUERY_DATOS_USUARIO_NODOS = gql`
   query {
     yo {

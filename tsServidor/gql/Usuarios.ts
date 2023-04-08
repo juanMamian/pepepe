@@ -202,7 +202,7 @@ APRENDIDO
         eliminarNotificacion(idNotificacion:ID!):Boolean,
         eliminarNotificacionActividadForos(idParent:ID!):Boolean,
         setNodoAtlasAprendidoUsuario(idNodo:ID!, nuevoEstadoAprendido:Boolean):[DatoNodoUsuario]        
-        setNodoAtlasTarget(idNodo:ID!):Boolean,
+        setNodoAtlasTarget(idNodo:ID):Boolean,
         nulificarNodoTargetUsuarioAtlas:Boolean,
         setModoUsuarioAtlas(idUsuario:ID!, nuevoModo:String!):Usuario,
 

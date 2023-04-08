@@ -29,12 +29,26 @@
         <div id="nombreUsuario">{{ yo.nombres + " " + yo.apellidos }}</div>
       </div>
       <div id="contenedorPerksUsuario">
-        <div id="perkNodoTarget" class="perkStatus">
+        <router-link
+          :to="
+            nodoTarget.id
+              ? {
+                  name: 'visorNodoConocimiento',
+                  params: { idNodo: nodoTarget.id },
+                }
+              : ''
+          "
+          id="perkNodoTarget"
+          class="perkStatus"
+        >
           <div class="contenedorImagenPerk">
             <img
               class="perkImage"
               src="@/assets/iconos/crosshairsSolid.svg"
               alt="Mira"
+              :style="[
+                { filter: nodoTarget.id ? 'var(--filtroAtlasSeleccion)' : '' },
+              ]"
             />
           </div>
           <div class="perkTexto">
@@ -44,8 +58,16 @@
                 : "¡Aún no tienes un nodo en la mira!"
             }}
           </div>
-        </div>
-        <div
+        </router-link>
+        <router-link
+          :to="
+            nodoOlvidado.id
+              ? {
+                  name: 'visorNodoConocimiento',
+                  params: { idNodo: nodoOlvidado.id },
+                }
+              : ''
+          "
           id="perkNodoOlvidado"
           v-if="idNodoOlvidado && nodoOlvidado.tipoNodo"
           class="perkStatus"
@@ -70,8 +92,19 @@
           <div class="perkTexto">
             {{ nodoOlvidado.nombre }}
           </div>
-        </div>
-        <div id="perkColeccion" class="perkStatus">
+        </router-link>
+        <router-link
+          :to="
+            coleccionMostrada.id
+              ? {
+                  name: 'coleccionNodosConocimiento',
+                  params: { idColeccion: coleccionMostrada.id },
+                }
+              : ''
+          "
+          id="perkColeccion"
+          class="perkStatus"
+        >
           <pie-progreso
             :mostrarNumero="false"
             :progreso="coleccionMostrada ? coleccionMostrada.progreso : 0"
@@ -91,8 +124,20 @@
                   "¡Aún no has creado tu primero colección!"
             }}
           </div>
-        </div>
+        </router-link>
       </div>
+
+      <router-link :to="{ name: 'atlas' }" id="bigBotonAtlas" class="bigBoton">
+        <div class="ladoTexto">
+          <div class="tituloBigBoton">Atlas de conocimiento</div>
+          <div class="subtituloBigBoton">
+            Explora un universo de conocimientos y habilidades.
+          </div>
+        </div>
+        <div class="ladoImagen">
+          <img src="@/assets/landing/bigBotonAtlas.png" alt="Atlas" />
+        </div>
+      </router-link>
     </div>
   </div>
 </template>
@@ -112,6 +157,7 @@ export default {
             nombres
             apellidos
             atlas {
+              id
               idNodoTarget
               colecciones {
                 id
@@ -320,6 +366,8 @@ export default {
 .perkTexto {
   font-size: 0.6em;
   text-align: center;
+  max-height: 4em;
+  overflow-y: hidden;
 }
 .contenedorImagenPerk {
   display: flex;
@@ -336,5 +384,37 @@ export default {
 }
 .bolitaPerkNodo .img {
   height: 100%;
+}
+.bigBoton {
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  background: linear-gradient(
+    173.19deg,
+    rgba(255, 216, 216, 0.49) 35.75%,
+    rgba(255, 255, 255, 0) 106.41%
+  );
+  padding: 8%;
+  border-radius: 15px;
+}
+.ladoTexto {
+  display: flex;
+  flex-direction: column;
+  align-items: baseline;
+  gap: 20px;
+  flex-grow: 3;
+}
+.subtituloBigBoton {
+  font-size: 0.5em;
+}
+.ladoImagen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 2;
+  width: 40%;
+}
+.ladoImagen img {
+  width: 100%;
 }
 </style>

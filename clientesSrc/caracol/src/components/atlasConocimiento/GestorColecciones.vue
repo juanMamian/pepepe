@@ -191,7 +191,7 @@
           </div>
         </div>
         <diagrama-arbol
-          v-if="coleccionSeleccionadaNullificable"
+          v-if="coleccionSeleccionadaNullificable && mostrandoArbol"
           ref="diagramaArbol"
           :visible="mostrandoArbol"
           :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
@@ -450,7 +450,8 @@ export default {
         });
         return;
       }
-      this.$router.go(-1);
+      console.log("regresando ruta");
+      this.$router.push({ name: "atlas" });
     },
     iniciarEdicionNombreColeccion() {
       if (!this.coleccionSeleccionadaNullificable) {
@@ -766,18 +767,13 @@ export default {
         this.$emit("coleccionSeleccionada", col);
         if (!col) {
           this.mostrandoOpcionesColeccion = false;
-          this.$router.push({ name: "atlas" });
         }
       },
       immediate: true,
     },
-    idColeccionSeleccionada(idColeccion) {
+    idColeccionSeleccionada() {
       this.desplegandoLista = false;
       this.conectandoNodosColeccion = false;
-      localStorage.setItem(
-        "atlasConocimientoIdLastColeccionTarget",
-        idColeccion
-      );
     },
     conectandoNodosColeccion(val) {
       if (!val) {
@@ -787,11 +783,22 @@ export default {
       console.log("Emitiendo un cambio en conectandoNodosColeccion");
       this.$emit("conectandoNodosColeccion", val);
     },
-    mostrandoArbol(val) {
-      this.$emit("mostrandoArbol", val);
-      if (this.$refs.diagramaArbol) {
-        this.$refs.diagramaArbol.idNodoSeleccionado = null;
-      }
+    mostrandoArbol: {
+      handler: function (val) {
+        this.$emit("mostrandoArbol", val);
+        if (this.$refs.diagramaArbol) {
+          this.$refs.diagramaArbol.idNodoSeleccionado = null;
+        }
+      },
+      immediate: true,
+    },
+    $route: {
+      handler: function ({ name, params }) {
+        if (name === "coleccionNodosConocimiento" && params?.idColeccion) {
+          this.idColeccionSeleccionada = params.idColeccion;
+        }
+      },
+      immediate: true,
     },
   },
   mounted() {

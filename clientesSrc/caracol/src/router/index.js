@@ -124,13 +124,13 @@ router.beforeEach(async (to, from) => {
 
 
   if (datosUsuario?.auth_usuario?.id) {
-    if (to.name == 'loginArea') {
+    if (to.name == 'loginScreen') {
       return { name: "perfilPersonal" }
     }
   }
   else {
-    if (to.name != 'loginArea') {
-      return { name: "loginArea" }
+    if (to.name != 'loginScreen') {
+      return { name: "loginScreen" }
     }
   }
 })

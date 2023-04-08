@@ -589,6 +589,20 @@ export default {
         query: QUERY_NODO_TARGET,
         data: nuevoCache
       });
+
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodo: ID){
+            setNodoAtlasTarget(idNodo:$idNodo)
+          }
+        `,
+        variables:{
+          idNodo: nuevoIdNodoTarget
+        }
+
+      }).catch((error)=>{
+        console.log(`Error sincronizando nodo target: ${error}`);
+      })
     },
     startTouchAnuncioTarget(e) {
       this.startTouchTargetX = e.touches[0].clientX;
