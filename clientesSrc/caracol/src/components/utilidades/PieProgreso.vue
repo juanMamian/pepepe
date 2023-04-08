@@ -55,7 +55,7 @@ export default {
     },
     colorFondo:{
       type: String,
-      default: '#f5f5f59c'
+      default: 'transparent'
     }
   },
   data() {

@@ -10,10 +10,7 @@
       </div>
     </div>
 
-
-    <router-view @logearse="$emit('logearse', $event)">
-
-    </router-view>
+    <router-view @logearse="$emit('logearse', $event)"> </router-view>
     <div id="bloqueInfoUsuario" v-if="usuarioLogeado">
       <div id="bloquePersonal">
         <div id="contenedorFotoUsuario">
@@ -28,49 +25,223 @@
             alt="Fotografía"
           />
         </div>
-        
-      </div>
-      <div id="bloqueDatosUsuario">
 
-        <div id="nombreUsuario">{{ yo.nombres + ' ' + yo.apellidos }}</div>
-        
+        <div id="nombreUsuario">{{ yo.nombres + " " + yo.apellidos }}</div>
+      </div>
+      <div id="contenedorPerksUsuario">
+        <div id="perkNodoTarget" class="perkStatus">
+          <div class="contenedorImagenPerk">
+            <img
+              class="perkImage"
+              src="@/assets/iconos/crosshairsSolid.svg"
+              alt="Mira"
+            />
+          </div>
+          <div class="perkTexto">
+            {{
+              idNodoTarget
+                ? nodoTarget.nombre || ""
+                : "¡Aún no tienes un nodo en la mira!"
+            }}
+          </div>
+        </div>
+        <div
+          id="perkNodoOlvidado"
+          v-if="idNodoOlvidado && nodoOlvidado.tipoNodo"
+          class="perkStatus"
+        >
+          <div
+            class="bolitaPerkNodo contenedorImagenPerk"
+            style="background-color: var(--atlasConocimientoRepasar)"
+          >
+            <img
+              v-if="nodoOlvidado.tipoNodo === 'concepto'"
+              class="perkImage"
+              src="@/assets/iconos/atlas/lightbulbEmpty.svg"
+              alt="Skill"
+            />
+            <img
+              v-else
+              src="@/assets/iconos/atlas/fireSolid.svg"
+              alt="Skill"
+              class="perkImage"
+            />
+          </div>
+          <div class="perkTexto">
+            {{ nodoOlvidado.nombre }}
+          </div>
+        </div>
+        <div id="perkColeccion" class="perkStatus">
+          <pie-progreso
+            :mostrarNumero="false"
+            :progreso="coleccionMostrada ? coleccionMostrada.progreso : 0"
+            :size="50"
+          >
+            <img
+              src="@/assets/iconos/userNodes.png"
+              alt="Coleccion"
+              class="perkImage"
+            />
+          </pie-progreso>
+          <div class="perkTexto">
+            {{
+              $apollo.queries.yo.loading
+                ? ""
+                : coleccionMostrada.nombre ||
+                  "¡Aún no has creado tu primero colección!"
+            }}
+          </div>
+        </div>
       </div>
     </div>
-    
   </div>
 </template>
 <script>
-import {gql} from "@apollo/client/core"
+import { gql } from "@apollo/client/core";
+import PieProgreso from "../components/utilidades/PieProgreso.vue";
 export default {
   name: "Landing",
-  apollo:{
-    yo:{
+  components: {
+    PieProgreso,
+  },
+  apollo: {
+    yo: {
       query: gql`
-        query{
-          yo{
+        query {
+          yo {
             nombres
             apellidos
+            atlas {
+              idNodoTarget
+              colecciones {
+                id
+                nombre
+              }
+              datosNodos {
+                id
+                idNodo
+                estadoAprendizaje
+              }
+            }
           }
-        }  
+        }
       `,
-      fetchPolicy:"cache-first",
-      skip(){
+      fetchPolicy: "cache-first",
+      skip() {
         return !this.usuarioLogeado;
-      }
-    }
+      },
+    },
+    coleccionMostrada: {
+      query: gql`
+        query ($idColeccion: ID!, $idUsuario: ID!) {
+          coleccionNodosConocimiento(
+            idColeccion: $idColeccion
+            idUsuario: $idUsuario
+          ) {
+            id
+            nombre
+            progreso
+          }
+        }
+      `,
+      variables() {
+        return {
+          idColeccion: this.idColeccionMostrada,
+          idUsuario: this.usuario.id,
+        };
+      },
+      update({ coleccionNodosConocimiento }) {
+        return coleccionNodosConocimiento;
+      },
+      skip() {
+        return !this.usuarioLogeado || !this.idColeccionMostrada;
+      },
+    },
+    nodoTarget: {
+      query: gql`
+        query ($idNodo: ID!) {
+          nodo(idNodo: $idNodo) {
+            id
+            nombre
+          }
+        }
+      `,
+      variables() {
+        return {
+          idNodo: this.idNodoTarget,
+        };
+      },
+      update({ nodo }) {
+        return nodo;
+      },
+      skip() {
+        return !this.idNodoTarget;
+      },
+    },
+    nodoOlvidado: {
+      query: gql`
+        query ($idNodo: ID!) {
+          nodo(idNodo: $idNodo) {
+            id
+            nombre
+            tipoNodo
+          }
+        }
+      `,
+      variables() {
+        return {
+          idNodo: this.idNodoOlvidado,
+        };
+      },
+      update({ nodo }) {
+        return nodo;
+      },
+      skip() {
+        return !this.idNodoOlvidado;
+      },
+    },
   },
   data() {
     return {
-      yo:{},
-      versionFoto:0,
+      coleccionMostrada: {
+        idsNodos: [],
+        idsRed: [],
+      },
+      yo: {
+        atlas: {
+          colecciones: [],
+          datosNodos: [],
+        },
+      },
+      nodoTarget: {},
+      nodoOlvidado: {},
+      versionFoto: 0,
     };
+  },
+  computed: {
+    idColeccionMostrada() {
+      let colecciones = this.yo.atlas.colecciones;
+      let cant = colecciones.length;
+      if (cant < 1) {
+        return;
+      }
+      return colecciones[Math.floor(Math.random() * cant)].id;
+    },
+    idNodoTarget() {
+      return this.yo.atlas.idNodoTarget;
+    },
+    idNodoOlvidado() {
+      let datoNodoOlvidado = this.yo.atlas.datosNodos.find(
+        (dn) => dn.estadoAprendizaje === "OLVIDADO"
+      );
+      return datoNodoOlvidado?.idNodo;
+    },
   },
 };
 </script>
 <style scoped>
-.landing{
-    padding: 6vh 8vw;
-    
+.landing {
+  padding: 6vh 8vw;
 }
 #bloquePortada {
   display: flex;
@@ -90,46 +261,80 @@ export default {
   gap: 20px;
 }
 #titulo {
-  font-size:1.3em;
+  font-size: 1.3em;
 }
 #subtitulo {
   font-size: 0.6em;
   font-style: normal;
 }
-#bloqueInfoUsuario{
+#bloqueInfoUsuario {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   margin: 90px auto;
   gap: 8vw;
 }
-#bloquePersonal{
-
+#bloquePersonal {
   width: 50%;
 }
-#contenedorFotoUsuario{
+#contenedorFotoUsuario {
   width: 50%;
   margin: 0px auto;
   overflow: hidden;
   border-radius: 50%;
 }
 
-#contenedorFotoUsuario img{
+#contenedorFotoUsuario img {
   width: 100%;
 }
-#bloqueDatosUsuario{
-
+#bloqueDatosUsuario {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap:20px;
+  gap: 20px;
 }
-#nombreUsuario{
-  text-align:center;
-  font-size:0.7em;
+#nombreUsuario {
+  text-align: center;
+  font-size: 0.7em;
 }
-#contenedorPerksUsuario{
+#contenedorPerksUsuario {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
-  justify-content:center;
+  justify-content: center;
+}
+#contenedorPerksUsuario {
+  display: flex;
+  gap: 30px;
+}
+.perkStatus {
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.perkStatus img {
+  height: 30px;
+}
+.perkTexto {
+  font-size: 0.6em;
+  text-align: center;
+}
+.contenedorImagenPerk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 25%;
+  border-radius: 50%;
+  height: 30px;
+  width: 30px;
+  overflow: hidden;
+}
+.bolitaPerkNodo {
+}
+.bolitaPerkNodo .img {
+  height: 100%;
 }
 </style>
