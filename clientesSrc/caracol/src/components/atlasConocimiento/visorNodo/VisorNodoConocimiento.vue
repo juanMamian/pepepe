@@ -59,6 +59,12 @@
             id="nombreSeccionSeleccionada"
             @click="mostrandoMenuSecciones = true"
           >
+            <img
+              class="iconoMenuSecciones"
+              src="@/assets/iconos/stream.svg"
+              alt="Menu"
+              v-if="esteNodo?.secciones?.length > 0"
+            />
             {{
               seccionSeleccionada ? seccionSeleccionada.nombre : "Descripción"
             }}
@@ -82,13 +88,37 @@
             <div class="nombreSeccionSelector">
               {{ seccion.nombre }}
             </div>
-            <div class="contenedorBotonesSelectorSeccion" v-if="usuarioExperto || usuarioSuperadministrador" v-show="mostrandoBotonesSeccion===seccion.id" @click.stop="">
-              <div class="boton" @click="cambiarIndexSeccion(seccion.id, -1)" v-show="steppingSeccion != seccion.id && indexS > 0">
-                <img style="transform: rotate(90deg);" src="@/assets/iconos/chevron.svg" alt="arrow">
+            <div
+              class="contenedorBotonesSelectorSeccion"
+              v-if="usuarioExperto || usuarioSuperadministrador"
+              v-show="mostrandoBotonesSeccion === seccion.id"
+              @click.stop=""
+            >
+              <div
+                class="boton"
+                @click="cambiarIndexSeccion(seccion.id, -1)"
+                v-show="steppingSeccion != seccion.id && indexS > 0"
+              >
+                <img
+                  style="transform: rotate(90deg)"
+                  src="@/assets/iconos/chevron.svg"
+                  alt="arrow"
+                />
               </div>
-              <loading v-show="steppingSeccion===seccion.id" />
-              <div class="boton" @click="cambiarIndexSeccion(seccion.id, 1)" v-show="steppingSeccion != seccion.id && indexS < esteNodo.secciones.length-1" >
-                <img style="transform: rotate(-90deg);" src="@/assets/iconos/chevron.svg" alt="arrow">
+              <loading v-show="steppingSeccion === seccion.id" />
+              <div
+                class="boton"
+                @click="cambiarIndexSeccion(seccion.id, 1)"
+                v-show="
+                  steppingSeccion != seccion.id &&
+                  indexS < esteNodo.secciones.length - 1
+                "
+              >
+                <img
+                  style="transform: rotate(-90deg)"
+                  src="@/assets/iconos/chevron.svg"
+                  alt="arrow"
+                />
               </div>
               <div
                 class="boton"
@@ -99,8 +129,15 @@
                 <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
               </div>
             </div>
-            <div class="boton botonMostrarBotonesSeccion" v-if="usuarioExperto || usuarioSuperadministrador" @click.stop="mostrandoBotonesSeccion=mostrandoBotonesSeccion===seccion.id?null:seccion.id">
-              <img src="@/assets/iconos/ellipsisVertical.svg" alt="Opciones">
+            <div
+              class="boton botonMostrarBotonesSeccion"
+              v-if="usuarioExperto || usuarioSuperadministrador"
+              @click.stop="
+                mostrandoBotonesSeccion =
+                  mostrandoBotonesSeccion === seccion.id ? null : seccion.id
+              "
+            >
+              <img src="@/assets/iconos/ellipsisVertical.svg" alt="Opciones" />
             </div>
           </div>
           <div
@@ -326,8 +363,8 @@ export default {
         expertos: [],
         posiblesExpertos: [],
       },
-      steppingSeccion:null,
-      mostrandoBotonesSeccion:null,
+      steppingSeccion: null,
+      mostrandoBotonesSeccion: null,
 
       mostrandoContenido: "estudiar",
       mostrandoSeccion: null,
@@ -344,46 +381,56 @@ export default {
     };
   },
   methods: {
-    cambiarIndexSeccion(idSeccion, step){
-      if(!this.usuarioExperto && !this.usuarioAdministrador){
+    cambiarIndexSeccion(idSeccion, step) {
+      if (!this.usuarioExperto && !this.usuarioAdministrador) {
         console.log("No autorizado");
-        return
+        return;
       }
-      
-      let indexActual=this.esteNodo.secciones.findIndex(s=>s.id===idSeccion);
-      if(indexActual < 0){
+
+      let indexActual = this.esteNodo.secciones.findIndex(
+        (s) => s.id === idSeccion
+      );
+      if (indexActual < 0) {
         console.log("Sección no encontrada");
         return;
       }
-      if(indexActual===0 || indexActual === this.esteNodo.secciones.length -1 ){
+      if (
+        indexActual === 0 ||
+        indexActual === this.esteNodo.secciones.length - 1
+      ) {
         console.log("Estaba en el borde");
       }
 
-      this.steppingSeccion=idSeccion;
-      this.$apollo.mutate({
-        mutation: gql`
-          mutation($idNodo: ID!, $idSeccion: ID!, $step: Int!){
-            moverSeccionNodoConocimiento(idNodo: $idNodo, idSeccion: $idSeccion, movimiento: $step){
-              id
-              secciones{
+      this.steppingSeccion = idSeccion;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idNodo: ID!, $idSeccion: ID!, $step: Int!) {
+              moverSeccionNodoConocimiento(
+                idNodo: $idNodo
+                idSeccion: $idSeccion
+                movimiento: $step
+              ) {
                 id
+                secciones {
+                  id
+                }
               }
             }
-          }
-        `,
-        variables:{
-          idNodo:this.esteNodo.id,
-          idSeccion,
-          step,
-        }
-      }).then(()=>{
-        this.steppingSeccion=null;
-      }).catch((error)=>{
-
-      this.steppingSeccion=null;
-        console.log("Error steping sección: " + error);
-      })
-
+          `,
+          variables: {
+            idNodo: this.esteNodo.id,
+            idSeccion,
+            step,
+          },
+        })
+        .then(() => {
+          this.steppingSeccion = null;
+        })
+        .catch((error) => {
+          this.steppingSeccion = null;
+          console.log("Error steping sección: " + error);
+        });
     },
     deleteArchivoSeccionCache(nombreArchivo, idSeccion) {
       const store = this.$apollo.provider.defaultClient;
@@ -776,13 +823,13 @@ export default {
       };
     },
   },
-  watch:{
-    mostrandoMenuSecciones(mostrando){
-      if(!mostrando){
-        this.mostrandoBotonesSeccion=null;
+  watch: {
+    mostrandoMenuSecciones(mostrando) {
+      if (!mostrando) {
+        this.mostrandoBotonesSeccion = null;
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -825,10 +872,15 @@ export default {
   padding: 25px 0px;
 }
 #nombreSeccionSeleccionada {
-  text-align: center;
   border-bottom: 2px solid var(--paletaMain);
   width: min(300px, 50vw);
   margin: 0px auto;
+  gap: 10px;
+  padding: 3px 3px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #contenedorSelectoresSeccion {
   width: min(400px, 90vw);
@@ -846,20 +898,22 @@ export default {
   align-items: center;
   cursor: pointer;
 }
+.iconoMenuSecciones{
+  height: 15px;
+}
 .nombreSeccionSelector {
   margin: 0px auto;
   text-align: center;
   width: 80%;
   margin-left: 10%;
 }
-.contenedorBotonesSelectorSeccion{
+.contenedorBotonesSelectorSeccion {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 20px;
-  
 }
-.contenedorBotonesSelectorSeccion .boton{
+.contenedorBotonesSelectorSeccion .boton {
   width: 25px;
   height: 25px;
 }
