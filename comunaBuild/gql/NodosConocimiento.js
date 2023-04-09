@@ -122,7 +122,7 @@ extend type Mutation{
 
     crearNuevaSeccionNodoConocimiento(idNodo:ID!):SeccionContenidoNodo,
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
-    moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):Boolean,
+    moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):NodoConocimiento,
     editarNombreSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, nuevoNombre: String!):SeccionContenidoNodo,
     setNuevoEnlaceSeccionNodo(idNodo: ID!, idSeccion:ID!, nuevoEnlace:String!):SeccionContenidoNodo,
 
@@ -955,7 +955,7 @@ export const resolvers = {
                 console.log(`Error pulling la seccion`);
                 ApolloError("Error conectando con la base de datos");
             }
-            return true;
+            return elNodo;
         },
         async editarNombreSeccionNodoConocimiento(_, { idNodo, idSeccion, nuevoNombre }, contexto) {
             console.log(`cambiando el nombre del seccion con id ${idSeccion} del nodoConocimiento con id ${idNodo}`);
