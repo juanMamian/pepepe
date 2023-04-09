@@ -76,12 +76,12 @@
           v-show="mostrandoMenuSecciones"
           @click="mostrandoMenuSecciones = false"
         >
-          <div class="selectorSeccion" @click="mostrandoSeccion = null">
+          <div class="selectorSeccion" @click="idSeccionVisible = null">
             Descripcion
           </div>
           <div
             class="selectorSeccion"
-            @click="mostrandoSeccion = seccion.id"
+            @click="idSeccionVisible = seccion.id"
             v-for="(seccion, indexS) of esteNodo.secciones"
             :key="seccion.id"
           >
@@ -209,6 +209,32 @@
             setPrimarioSeccionCache($event, seccionSeleccionada.id)
           "
         />
+        <div
+          id="contenedorSteppersSeccion"
+          v-if="esteNodo?.secciones?.length > 0"
+        >
+          <div
+            class="stepperSeccion boton"
+            :class="{ deshabilitado: !seccionSeleccionada }"
+            @click="stepSeccionVisible(-1)"
+          >
+            <img
+              src="@/assets/iconos/step.svg"
+              style="transform: rotate(180deg)"
+              alt="step"
+            />
+          </div>
+          <div
+            class="stepperSeccion boton"
+            :class="{
+              deshabilitado:
+                indexSeccionSeleccionada >= esteNodo.secciones.length - 1,
+            }"
+            @click="stepSeccionVisible(1)"
+          >
+            <img src="@/assets/iconos/step.svg" alt="step" />
+          </div>
+        </div>
       </div>
 
       <div id="zonaExpertos" v-show="mostrandoContenido === 'expertos'">
@@ -367,7 +393,7 @@ export default {
       mostrandoBotonesSeccion: null,
 
       mostrandoContenido: "estudiar",
-      mostrandoSeccion: null,
+      idSeccionVisible: null,
       mostrandoMenuSecciones: false,
       creandoNuevaSeccion: false,
       idExpertoSeleccionado: null,
@@ -381,6 +407,21 @@ export default {
     };
   },
   methods: {
+    stepSeccionVisible(step) {
+      if (!this.esteNodo?.secciones) {
+        return;
+      }
+      let nuevoIndex = this.indexSeccionSeleccionada != null? this.indexSeccionSeleccionada + step: 0;
+      console.log(`Pasando a la sección ${nuevoIndex}`);
+      if (nuevoIndex >= this.esteNodo.secciones.length) {
+        return;
+      }
+      if(nuevoIndex < 0){ //Desseleccionar secciones para que quede visible la descripción. Descripción es visible cuando idSeccionVisible=null
+        this.idSeccionVisible=null;
+        return
+      }
+      this.idSeccionVisible = this.esteNodo.secciones[nuevoIndex].id;
+    },
     cambiarIndexSeccion(idSeccion, step) {
       if (!this.usuarioExperto && !this.usuarioAdministrador) {
         console.log("No autorizado");
@@ -797,10 +838,18 @@ export default {
     },
   },
   computed: {
+    indexSeccionSeleccionada() {
+      if (!this.seccionSeleccionada) {
+        return null;
+      }
+      return this.esteNodo.secciones.findIndex(
+        (s) => s.id === this.idSeccionVisible
+      );
+    },
     seccionSeleccionada() {
-      if (!this.mostrandoSeccion) return null;
+      if (!this.idSeccionVisible) return null;
       return this.esteNodo.secciones.find(
-        (s) => s.id === this.mostrandoSeccion
+        (s) => s.id === this.idSeccionVisible
       );
     },
     usuarioExperto: function () {
@@ -898,7 +947,7 @@ export default {
   align-items: center;
   cursor: pointer;
 }
-.iconoMenuSecciones{
+.iconoMenuSecciones {
   height: 15px;
 }
 .nombreSeccionSelector {
@@ -928,6 +977,16 @@ export default {
   padding: 20px;
   width: min(300px, 90vw);
   margin: 0px auto;
+}
+#contenedorSteppersSeccion{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  margin: 50px auto;
+}
+.steperSeccion{
+
 }
 
 #zonaExpertos {
