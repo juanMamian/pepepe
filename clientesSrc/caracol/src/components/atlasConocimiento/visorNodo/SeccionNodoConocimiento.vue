@@ -103,9 +103,9 @@
 import axios from "axios";
 
 import ArchivoSeccionNodo from "./archivoSeccionNodo.vue";
-import Loading from "../utilidades/Loading.vue";
-import { charProhibidosNombreCosa } from "../configs";
-import gql from "graphql-tag";
+import Loading from "../../utilidades/Loading.vue";
+import { charProhibidosNombreCosa } from "../../configs";
+import {gql} from "@apollo/client/core";
 
 export default {
   props: {

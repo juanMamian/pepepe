@@ -484,12 +484,10 @@
 </template>
 
 <script>
-import gql from "graphql-tag";
-import Loading from "./utilidades/Loading.vue";
-import IconoPersonaAutonomo from "./usuario/IconoPersonaAutonomo.vue";
-import Foro from "./Foro.vue";
+import {gql} from "@apollo/client/core";
+import Loading from "../../utilidades/Loading.vue";
+import IconoPersonaAutonomo from "../../usuario/IconoPersonaAutonomo.vue";
 import axios from "axios";
-import ClaseNodo from "./visorNodoConocimiento/ClaseNodo.vue";
 
 const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
@@ -536,7 +534,7 @@ const QUERY_NODO = gql`
 `;
 
 export default {
-  components: { Loading, IconoPersonaAutonomo, Foro, ClaseNodo },
+  components: { Loading, IconoPersonaAutonomo },
   name: "VisorNodoConocimiento",
   apollo: {
     esteNodo: {

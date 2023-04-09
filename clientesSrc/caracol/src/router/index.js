@@ -4,7 +4,7 @@ import { QUERY_AUTH_USUARIO } from '../globalMixin'
 
 import atlasConocimiento from '../components/atlasConocimiento/AtlasConocimiento.vue'
 import adminNodosConocimiento from '../components/atlasConocimiento/adminNodosConocimiento.vue'
-import VisorNodoConocimiento from '../components/visorNodoConocimiento/VisorNodoConocimiento.vue'
+import VisorNodoConocimiento from '../components/atlasConocimiento/visorNodo/VisorNodoConocimiento.vue'
 import RutaGrado from '../components/usuario/RutaGrado.vue'
 import loginArea from '../components/LoginArea.vue'
 import perfilPersonal from '../components/usuario/PerfilPersonal.vue'

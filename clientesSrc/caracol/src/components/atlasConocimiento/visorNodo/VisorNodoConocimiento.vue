@@ -43,7 +43,7 @@
         <img src="@/assets/iconos/teacher.svg" alt="Teacher" />
       </div>
       <div
-        class="boton selectorContenido selector"
+        class="boton selectorContenido selector deshabilitado"
         :class="{ activo: mostrandoContenido === 'foros' }"
         :title="mostrandoContenido != 'foros' ? 'Mostrar foros' : ''"
         @click="mostrandoContenido = 'foros'"
@@ -70,18 +70,6 @@
           v-show="mostrandoMenuSecciones"
           @click="mostrandoMenuSecciones = false"
         >
-          <div class="contenedorControles">
-            <div
-              class="boton"
-              title="Crear nueva sección"
-              v-if="usuarioExperto"
-              v-show="!creandoNuevaSeccion"
-              @click.stop="crearNuevaSeccion"
-            >
-              <img src="@/assets/iconos/plusCircle.svg" alt="Plus" />
-            </div>
-            <loading text="" v-show="creandoNuevaSeccion" />
-          </div>
           <div class="selectorSeccion" @click="mostrandoSeccion = null">
             Descripcion
           </div>
@@ -94,14 +82,39 @@
             <div class="nombreSeccionSelector">
               {{ seccion.nombre }}
             </div>
-            <div
-              class="boton"
-              title="Eliminar"
-              v-show="usuarioExperto || usuarioSuperadministrador"
-              @click.stop="eliminarSeccion(seccion.id)"
-            >
-              <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
+            <div class="contenedorBotonesSelectorSeccion" v-if="usuarioExperto || usuarioSuperadministrador" v-show="mostrandoBotonesSeccion===seccion.id" @click.stop="">
+              <div class="boton" @click="cambiarIndexSeccion(seccion.id, -1)" v-show="steppingSeccion != seccion.id">
+                <img style="transform: rotate(90deg);" src="@/assets/iconos/chevron.svg" alt="arrow">
+              </div>
+              <loading v-show="steppingSeccion===seccion.id" />
+              <div class="boton" @click="cambiarIndexSeccion(seccion.id, 1)" v-show="steppingSeccion != seccion.id">
+                <img style="transform: rotate(-90deg);" src="@/assets/iconos/chevron.svg" alt="arrow">
+              </div>
+              <div
+                class="boton"
+                title="Eliminar"
+                v-show="usuarioExperto || usuarioSuperadministrador"
+                @click.stop="eliminarSeccion(seccion.id)"
+              >
+                <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
+              </div>
             </div>
+            <div class="boton botonMostrarBotonesSeccion" v-if="usuarioExperto || usuarioSuperadministrador" @click.stop="mostrandoBotonesSeccion=mostrandoBotonesSeccion===seccion.id?null:seccion.id">
+              <img src="@/assets/iconos/ellipsisVertical.svg" alt="Opciones">
+            </div>
+          </div>
+          <div
+            class="selectorSeccion botonTexto"
+            @click.stop="crearNuevaSeccion"
+            v-if="usuarioExperto"
+          >
+            <loading v-show="creandoNuevaSeccion" />
+            <img
+              src="@/assets/iconos/plusCircle.svg"
+              alt="Plus"
+              v-show="!creandoNuevaSeccion"
+            />
+            <span>Crear sección</span>
           </div>
         </div>
         <div
@@ -209,7 +222,11 @@
           </div>
           <loading texto="" v-show="enviandoQueryExpertos" />
         </div>
-        <div id="listaExpertos" class="listaPersonas" @click.self="idExpertoSeleccionado = null">
+        <div
+          id="listaExpertos"
+          class="listaPersonas"
+          @click.self="idExpertoSeleccionado = null"
+        >
           <icono-persona-autonomo
             texto=""
             v-for="idExperto of esteNodo.expertos.concat(
@@ -233,26 +250,17 @@
         v-show="mostrandoContenido == 'foros'"
       >
         <div class="nombreForo" v-if="usuarioExperto">Foro expertos</div>
-        <foro
-          :parent="infoAsParent"
-          v-if="usuarioExperto"
-          :idForo="esteNodo.idForoExpertos"
-        />
-        <br v-if="usuarioExperto" />
-        <div class="nombreForo">Foro público</div>
-        <foro :parent="infoAsParent" :idForo="esteNodo.idForoPublico" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import gql from "graphql-tag";
+import { gql } from "@apollo/client/core";
 import SeccionNodoConocimiento from "./SeccionNodoConocimiento.vue";
-import Loading from "../utilidades/Loading.vue";
-import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
-import Foro from "../Foro.vue";
-import { charProhibidosNombreCosa } from "../configs";
+import Loading from "../../utilidades/Loading.vue";
+import IconoPersonaAutonomo from "../../usuario/IconoPersonaAutonomo.vue";
+import { charProhibidosNombreCosa } from "../../configs";
 
 const QUERY_NODO = gql`
   query ($idNodo: ID!) {
@@ -296,7 +304,7 @@ const QUERY_NODO = gql`
 `;
 
 export default {
-  components: { SeccionNodoConocimiento, Loading, IconoPersonaAutonomo, Foro },
+  components: { SeccionNodoConocimiento, Loading, IconoPersonaAutonomo },
   name: "VisorNodoConocimiento",
   apollo: {
     esteNodo: {
@@ -307,7 +315,7 @@ export default {
         };
       },
       update({ nodo }) {
-        document.title=nodo.nombre;
+        document.title = nodo.nombre;
         return nodo;
       },
     },
@@ -318,6 +326,9 @@ export default {
         expertos: [],
         posiblesExpertos: [],
       },
+      steppingSeccion:null,
+      mostrandoBotonesSeccion:null,
+
       mostrandoContenido: "estudiar",
       mostrandoSeccion: null,
       mostrandoMenuSecciones: false,
@@ -333,6 +344,47 @@ export default {
     };
   },
   methods: {
+    cambiarIndexSeccion(idSeccion, step){
+      if(!this.usuarioExperto && !this.usuarioAdministrador){
+        console.log("No autorizado");
+        return
+      }
+      
+      let indexActual=this.esteNodo.secciones.findIndex(s=>s.id===idSeccion);
+      if(indexActual < 0){
+        console.log("Sección no encontrada");
+        return;
+      }
+      if(indexActual===0 || indexActual === this.esteNodo.secciones.length -1 ){
+        console.log("Estaba en el borde");
+      }
+
+      this.steppingSeccion=idSeccion;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodo: ID!, $idSeccion: ID!, $step: Int!){
+            moverSeccionNodoConocimiento(idNodo: $idNodo, idSeccion: $idSeccion, movimiento: $step){
+              id
+              secciones{
+                id
+              }
+            }
+          }
+        `,
+        variables:{
+          idNodo:this.esteNodo.id,
+          idSeccion,
+          step,
+        }
+      }).then(()=>{
+        this.steppingSeccion=null;
+      }).catch((error)=>{
+
+      this.steppingSeccion=null;
+        console.log("Error steping sección: " + error);
+      })
+
+    },
     deleteArchivoSeccionCache(nombreArchivo, idSeccion) {
       const store = this.$apollo.provider.defaultClient;
 
@@ -463,6 +515,7 @@ export default {
                   nombre
                   primario
                 }
+                enlace
                 tipoPrimario
               }
             }
@@ -660,8 +713,8 @@ export default {
         });
       }
     },
-    guardarNuevoDescripcion() {      
-      var nuevoDescripcion=this.$refs.inputNuevoDescripcion.value;
+    guardarNuevoDescripcion() {
+      var nuevoDescripcion = this.$refs.inputNuevoDescripcion.value;
       if (nuevoDescripcion == this.esteNodo.descripcion) {
         this.editandoDescripcion = false;
         return;
@@ -671,10 +724,7 @@ export default {
       this.$apollo
         .mutate({
           mutation: gql`
-            mutation (
-              $idNodo: ID!
-              $nuevoDescripcion: String!
-            ) {
+            mutation ($idNodo: ID!, $nuevoDescripcion: String!) {
               editarDescripcionNodoConocimiento(
                 idNodo: $idNodo
                 nuevoDescripcion: $nuevoDescripcion
@@ -716,9 +766,7 @@ export default {
     },
     usuarioAdministradorAtlas: function () {
       if (!this.usuario.permisos) return false;
-      return this.usuario.permisos.includes("atlasAdminstrador")
-        ? true
-        : false;
+      return this.usuario.permisos.includes("atlasAdminstrador") ? true : false;
     },
     infoAsParent() {
       return {
@@ -728,14 +776,19 @@ export default {
       };
     },
   },
-  
+  watch:{
+    mostrandoMenuSecciones(mostrando){
+      if(!mostrando){
+        this.mostrandoBotonesSeccion=null;
+      }
+    }
+  }
 };
 </script>
 
 <style scoped>
 .visorNodoConocimiento {
   font-family: Salsa, cursive;
-  
 }
 #zonaTitulo {
   display: flex;
@@ -799,6 +852,17 @@ export default {
   width: 80%;
   margin-left: 10%;
 }
+.contenedorBotonesSelectorSeccion{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  
+}
+.contenedorBotonesSelectorSeccion .boton{
+  width: 25px;
+  height: 25px;
+}
 .selectorSeccion .boton {
   margin-left: auto;
   margin-right: 10px;
@@ -824,5 +888,3 @@ export default {
   overflow-y: scroll;
 }
 </style>
-
-

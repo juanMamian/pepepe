@@ -25,8 +25,8 @@
 </template>
 
 <script>
-import gql from "graphql-tag";
-import Loading from '../utilidades/Loading.vue';
+import {gql} from "@apollo/client/core";
+import Loading from '../../utilidades/Loading.vue';
 export default {
   components: { Loading },
   name: "ArchivoSeccionNodo",
