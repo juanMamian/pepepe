@@ -76,18 +76,18 @@
           <div
             class="selectorSeccion"
             @click="mostrandoSeccion = seccion.id"
-            v-for="seccion of esteNodo.secciones"
+            v-for="(seccion, indexS) of esteNodo.secciones"
             :key="seccion.id"
           >
             <div class="nombreSeccionSelector">
               {{ seccion.nombre }}
             </div>
             <div class="contenedorBotonesSelectorSeccion" v-if="usuarioExperto || usuarioSuperadministrador" v-show="mostrandoBotonesSeccion===seccion.id" @click.stop="">
-              <div class="boton" @click="cambiarIndexSeccion(seccion.id, -1)" v-show="steppingSeccion != seccion.id">
+              <div class="boton" @click="cambiarIndexSeccion(seccion.id, -1)" v-show="steppingSeccion != seccion.id && indexS > 0">
                 <img style="transform: rotate(90deg);" src="@/assets/iconos/chevron.svg" alt="arrow">
               </div>
               <loading v-show="steppingSeccion===seccion.id" />
-              <div class="boton" @click="cambiarIndexSeccion(seccion.id, 1)" v-show="steppingSeccion != seccion.id">
+              <div class="boton" @click="cambiarIndexSeccion(seccion.id, 1)" v-show="steppingSeccion != seccion.id && indexS < esteNodo.secciones.length-1" >
                 <img style="transform: rotate(-90deg);" src="@/assets/iconos/chevron.svg" alt="arrow">
               </div>
               <div
