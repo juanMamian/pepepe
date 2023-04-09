@@ -177,7 +177,7 @@
             <div id="contenedorFotoUsuario">
               <img
                 ref="imagenUsuario"
-                :src="serverUrl + '/api/usuarios/fotografias/' + usuario.id"
+                :src="serverUrl + '/api/usuarios/fotografias/' + usuario?.id"
                 alt="Fotografía"
               />
             </div>
@@ -322,7 +322,7 @@ export default {
       variables() {
         return {
           idColeccion: this.idColeccionSeleccionada,
-          idUsuario: this.usuario.id,
+          idUsuario: this.usuario?.id,
         };
       },
       update({ coleccionNodosConocimiento }) {

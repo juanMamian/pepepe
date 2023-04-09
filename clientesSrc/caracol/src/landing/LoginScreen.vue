@@ -125,6 +125,9 @@ export default {
       return password;
     },
   },
+  mounted(){
+    this.$apollo.skipAll=false;
+  }
 };
 </script>
 <style scoped>

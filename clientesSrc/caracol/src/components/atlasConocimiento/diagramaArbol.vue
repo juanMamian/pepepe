@@ -55,7 +55,10 @@ export default {
   apollo: {
     yo:{
       query: QUERY_DATOS_USUARIO_NODOS,
-      fetchPolicy: "cache-first"
+      fetchPolicy: "cache-first",
+      skip(){
+        return !this.usuario?.id;
+      }
     },
     nodoSeleccionado: {
       query: QUERY_NODO_CONOCIMIENTO_ESTANDAR,

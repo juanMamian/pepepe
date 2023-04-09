@@ -173,7 +173,7 @@ export default {
       `,
       fetchPolicy: "cache-first",
       skip() {
-        return !this.usuarioLogeado;
+        return !this.usuario?.id;
       },
     },
     coleccionMostrada: {

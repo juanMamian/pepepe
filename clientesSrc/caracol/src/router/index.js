@@ -15,6 +15,7 @@ import VentanaEventoPublico from '../components/utilidades/VentanaEventoPublico.
 import VentanaEventoPersonal from '../components/utilidades/VentanaEventoPersonal.vue'
 import Landing from "../landing/Landing.vue"
 import LoginScreen from "../landing/LoginScreen.vue"
+import LogoutScreen from "../landing/LogoutScreen.vue"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,7 +24,7 @@ const router = createRouter({
       path:"/", name: "home", component: Landing, children:[{path: "login", name: "loginScreen", component: LoginScreen}],
 
     },
-
+    {path: "/logout", name: "logoutScreen", component: LogoutScreen},
     {
       path: "/atlas", name: "atlas", component: atlasConocimiento, children: [
         {

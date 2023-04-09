@@ -163,9 +163,9 @@ export default {
   apollo: {
     yo: {
       query: QUERY_YO,
-      fetchPolicy: "network-only",
+      fetchPolicy: "cache-and-network",
       skip() {
-        return !this.usuarioLogeado;
+        return !this.usuario?.id;
       },
     },
   },
@@ -270,29 +270,33 @@ export default {
       this.setEstadoRed();
     },
     async deslogearse() {
-      console.log("Navegando a loginArea");
-      this.$router.push({ name: "loginScreen" });
-      setTimeout(() => {
-        this.$nextTick(() => {
-          const store = this.$apollo.provider.defaultClient;
-          store.writeQuery({
-            query: QUERY_AUTH_USUARIO,
-            data: { auth_usuario: null },
-          });
+      this.$router.push({name: "logoutScreen"});
+      // console.log("skipping queries");
+      // this.$apollo.skipAll = true;
+      // console.log("Navegando a loginArea");
+      // this.$router.push({ name: "loginScreen" });
+      // this.$nextTick(() => {
+      //   const store = this.$apollo.provider.defaultClient;
+      //   store.writeQuery({
+      //     query: QUERY_AUTH_USUARIO,
+      //     data: { auth_usuario: null },
+      //   });
 
-          store
-            .resetStore()
-            .then(() => {
-              console.log("Store reset");
-              this.setEstadoRed();
-              this.$router.push({ name: "loginScreen" });
-            })
-            .catch((error) => {
-              console.log("Error resetting store: " + error);
-              this.setEstadoRed();
-            });
-        });
-      }, 1000);
+      //   store
+      //     .resetStore()
+      //     .then(() => {
+      //       console.log("Store reset");
+      //       this.setEstadoRed();
+      //       this.$router.push({ name: "loginScreen" });
+      //       console.log("Unskipping queries");
+      //       this.$apollo.skipAll = false;
+      //     })
+      //     .catch((error) => {
+      //       console.log("Error resetting store: " + error);
+      //       this.setEstadoRed();
+      //       this.$apollo.skipAll = false;
+      //     });
+      // });
     },
   },
   watch: {
@@ -452,9 +456,9 @@ export default {
 
   .botonNav {
     background-color: transparent;
-    font-size:0.8em;
+    font-size: 0.8em;
   }
-  .botonNav img{
+  .botonNav img {
     height: 15px;
   }
   .bloqueNav {
@@ -463,17 +467,17 @@ export default {
     align-items: center;
     justify-content: center;
 
-    border-left: 2px solid transparent; 
+    border-left: 2px solid transparent;
   }
   .bloqueNav:hover {
     border-left: 2px solid var(--mainColor);
   }
-  .bloqueNav:hover .desplegableBloqueNav{
+  .bloqueNav:hover .desplegableBloqueNav {
     border-left: 2px solid var(--mainColor);
   }
   .tituloBloqueNav {
     cursor: pointer;
-    font-size:0.8em;
+    font-size: 0.8em;
     padding: 10px 10px;
   }
   .desplegableBloqueNav {
@@ -495,11 +499,13 @@ export default {
     width: 100%;
   }
 }
-@media (pointer: fine){
-  .botonNav, .tituloBloqueNav{
+@media (pointer: fine) {
+  .botonNav,
+  .tituloBloqueNav {
     color: rgb(85, 85, 85);
   }
-  .botonNav:hover, .tituloBloqueNav:hover{
+  .botonNav:hover,
+  .tituloBloqueNav:hover {
     color: black;
   }
 }

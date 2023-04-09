@@ -128,7 +128,10 @@ export default {
     },
     yo:{
       query: QUERY_DATOS_USUARIO_NODOS,
-      fetchPolicy: "cache-first"
+      fetchPolicy: "cache-first",
+      skip(){
+        return !this.usuario?.id
+      }
     }
   },
   data() {
