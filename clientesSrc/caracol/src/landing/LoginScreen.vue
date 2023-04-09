@@ -87,12 +87,11 @@ export default {
         .then(({ data: { login } }) => {
           this.$emit("logearse", login);
           this.$router.push({ name: "home" });
-
           this.enviandoLogin = false;
         })
         .catch((error) => {
           console.log(`Error: ${error}`);
-          this.raiseAccion("Datos incorrectos", "error");
+          this.$refs.campoPassword.select();
           this.enviandoLogin = false;
         });
     },

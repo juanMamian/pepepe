@@ -298,12 +298,12 @@ export const resolvers = {
 
             try {
                 var elUsuario: any = await Usuario.findOne({ username }, "username password permisos").exec();
-                if (!elUsuario) throw "Usuario no encontrado"
             } catch (error) {
                 console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
                 ApolloError("Error conectando con la base de datos");
-
             }
+
+            if (!elUsuario) UserInputError("Datos inválidos");
 
             const correctLogin = await bcrypt.compare(password, elUsuario.password);
             if (!correctLogin) {
@@ -825,7 +825,7 @@ export const resolvers = {
 
         },
 
-      
+
 
         async crearColeccionNodosAtlasConocimientoUsuario(_: any, { nombre, idsNodos }: any, contexto: contextoQuery) {
             const credencialesUsuario = contexto.usuario;

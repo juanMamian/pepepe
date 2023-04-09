@@ -23,7 +23,6 @@ export default {
 </script>
 <style scoped>
 .accion {
-    border: 1px solid var(--mainColor);
     padding: 5px 10px;
 }
 

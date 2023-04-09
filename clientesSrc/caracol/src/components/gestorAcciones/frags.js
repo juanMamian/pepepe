@@ -4,6 +4,7 @@ export const QUERY_ACCIONES = gql`
     acciones @client {
       mensaje
       tipo
+      timestamp
     }
   }
 `;

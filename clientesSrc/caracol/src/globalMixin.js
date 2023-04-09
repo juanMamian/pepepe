@@ -84,7 +84,8 @@ export const globalMixin = {
       }
       nuevoCache.acciones.push({
         mensaje,
-        tipo: tipo || "accion"
+        tipo: tipo || "accion",
+        timestamp: Date.now(),
       })
 
       store.writeQuery({

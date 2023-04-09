@@ -8,6 +8,7 @@ import { createClient } from "graphql-ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 
 import { serverUrl, wsServerUrl } from "./hostConfig";
+import { QUERY_ACCIONES } from "./components/gestorAcciones/frags";
 
 
 
@@ -58,11 +59,32 @@ export const errorLink = onError(({ graphQLErrors, networkError }) => {
   console.log("NODE_ENV: " + process.env.NODE_ENV);
   if (process.env.NODE_ENV !== "production") {
     if (graphQLErrors)
-      graphQLErrors.map(({ message, locations, path }) =>
+      graphQLErrors.forEach(({ message, locations, path, extensions }) => {
+        if (extensions?.code === 'BAD_USER_INPUT') {
+
+          let cache = apolloClient.readQuery({
+            query: QUERY_ACCIONES,
+          });
+          let nuevoCache = JSON.parse(JSON.stringify(cache || {}));
+          if (!nuevoCache.acciones) {
+            nuevoCache.acciones = [];
+          }
+          let nuevaAccion = {
+            mensaje: message,
+            tipo: "error",
+            timestamp: Date.now(),
+          }
+          nuevoCache.acciones.push(nuevaAccion);
+          apolloClient.writeQuery({
+            query: QUERY_ACCIONES,
+            data: nuevoCache,
+          });
+        }
+
         console.log(
           `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
         )
-      );
+      });
 
     if (networkError) console.log(`[Network error]: ${networkError}`);
   }

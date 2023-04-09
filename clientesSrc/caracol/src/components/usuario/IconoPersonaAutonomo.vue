@@ -1,5 +1,5 @@
 <template>
-  <div class="iconoPersonaAutonomo" :class="{ yo: soyYo }" :style="[offsetIcono]">
+  <div class="iconoPersonaAutonomo" v-if="estaPersona?.id" :class="{ yo: soyYo }" :style="[offsetIcono]">
     <img
       class="fotografia"
       :src="this.serverUrl + '/api/usuarios/fotografias/' + idPersona"

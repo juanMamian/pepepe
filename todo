@@ -1,12 +1,5 @@
 Atlas de conocimiento.
 
--Que la ruta root del servidor sirva Caracol en vez de pepepe.
--que el splash de editar nombre de coleccion se cierre on update success.
--El anuncio de accion sale con el borde dentro del padding.
--No está funcionando la búsqueda de personas.
--icono y nombre de pestañas.
--Que escoja una colección no completada para la landing perks.
--Que el splash incluya un fondo opaco.
 
 -En maestra vida asegurarse de que se hace la migración de objetivos de chicxs, periodoRepaso y de objetivos y de personas.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.

@@ -126,7 +126,7 @@
       v-show="conectandoNodosColeccion"
     >
       <img src="@/assets/iconos/plugSolid.svg" alt="Nodos" />
-      Editando nodos de la coleccion
+      Editando nodos de <span style="margin-left: -5px; font-weight: bold; color: var(--atlasConocimientoSeleccion)">{{coleccionSeleccionada?coleccionSeleccionada.nombre:''}}</span>
       <div
         class="boton"
         id="botonCancelarConectarNodosColeccion"
@@ -201,72 +201,76 @@
     </transition>
     <teleport to="body">
       <div
-        id="splashCrearColeccion"
-        class="bloqueSplash"
+        class="ventanaSplash"
         v-show="preparandoNuevaColeccion"
+        @click.self="preparandoNuevaColeccion = false"
       >
-        <div class="botonEquis">
-          <img
-            src="@/assets/iconos/equis.svg"
-            alt="Salir"
-            @click.stop="preparandoNuevaColeccion = false"
+        <div id="splashCrearColeccion" class="bloqueSplash">
+          <div class="botonEquis">
+            <img
+              src="@/assets/iconos/equis.svg"
+              alt="Salir"
+              @click.stop="preparandoNuevaColeccion = false"
+            />
+          </div>
+          <div class="tituloSplash">
+            <img src="@/assets/iconos/userNodes.png" alt="Coleccion" />
+            <span>Crear una colección</span>
+          </div>
+          <div class="descripcionSplash">
+            Ingresa el nombre de la nueva colección
+          </div>
+          <input
+            type="text"
+            ref="inputNombreNuevaColeccion"
+            @keypress.enter="$refs.botonCrearNuevaColeccion.click()"
           />
-        </div>
-        <div class="tituloSplash">
-          <img src="@/assets/iconos/userNodes.png" alt="Coleccion" />
-          <span>Crear una colección</span>
-        </div>
-        <div class="descripcionSplash">
-          Ingresa el nombre de la nueva colección
-        </div>
-        <input
-          type="text"
-          ref="inputNombreNuevaColeccion"
-          @keypress.enter="$refs.botonCrearNuevaColeccion.click()"
-        />
-        <div
-          class="botonTexto"
-          @click="crearNuevaColeccion"
-          ref="botonCrearNuevaColeccion"
-        >
-          Crear
+          <div
+            class="botonTexto"
+            @click="crearNuevaColeccion"
+            ref="botonCrearNuevaColeccion"
+          >
+            Crear
+          </div>
         </div>
       </div>
 
       <div
-        class="bloqueSplash"
-        id="splashEditarColeccion"
+        class="ventanaSplash"
         v-if="coleccionSeleccionadaNullificable && editandoColeccion"
+        @click.self="editandoColeccion=false"
       >
-        <div class="botonEquis" @click="editandoColeccion = false">
-          <img src="@/assets/iconos/equis.svg" alt="Salir" />
-        </div>
-        <div class="tituloSplash">
-          <img src="@/assets/iconos/edit.svg" alt="Editar" />
-          <span>Editando {{ coleccionSeleccionadaNullificable.nombre }}</span>
-        </div>
-        <div class="descripcionSplash">
-          Introduce un nuevo nombre para esta colección.
-        </div>
-        <input
-          type="text"
-          ref="inputNuevoNombreColeccion"
-          @keypress.enter="$refs.botonGuardarNuevoNombreColeccion.click()"
-        />
-
-        <div
-          class="botonTexto"
-          @click="guardarNuevoNombreColeccion"
-          ref="botonGuardarNuevoNombreColeccion"
-          :class="{ deshabilitado: guardandoNuevoNombreColeccion }"
-        >
-          <loading v-show="guardandoNuevoNombreColeccion" />
-          <img
-            src="@/assets/iconos/save.svg"
-            alt="Guardar"
-            v-show="!guardandoNuevoNombreColeccion"
+        <div class="bloqueSplash" id="splashEditarColeccion">
+          <div class="botonEquis" @click="editandoColeccion = false">
+            <img src="@/assets/iconos/equis.svg" alt="Salir" />
+          </div>
+          <div class="tituloSplash">
+            <img src="@/assets/iconos/edit.svg" alt="Editar" />
+            <span>Editando {{ coleccionSeleccionadaNullificable.nombre }}</span>
+          </div>
+          <div class="descripcionSplash">
+            Introduce un nuevo nombre para esta colección.
+          </div>
+          <input
+            type="text"
+            ref="inputNuevoNombreColeccion"
+            @keypress.enter="$refs.botonGuardarNuevoNombreColeccion.click()"
           />
-          Guardar
+
+          <div
+            class="botonTexto"
+            @click="guardarNuevoNombreColeccion"
+            ref="botonGuardarNuevoNombreColeccion"
+            :class="{ deshabilitado: guardandoNuevoNombreColeccion }"
+          >
+            <loading v-show="guardandoNuevoNombreColeccion" />
+            <img
+              src="@/assets/iconos/save.svg"
+              alt="Guardar"
+              v-show="!guardandoNuevoNombreColeccion"
+            />
+            Guardar
+          </div>
         </div>
       </div>
     </teleport>
@@ -511,6 +515,7 @@ export default {
         })
         .then(() => {
           this.guardandoNuevoNombreColeccion = false;
+          this.editandoColeccion = false;
           this.raiseAccion("Nombre de colección guardado");
           this.$apollo.queries.coleccionSeleccionada.refetch();
         })

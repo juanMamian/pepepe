@@ -228,6 +228,7 @@
             class="stepperSeccion boton"
             :class="{
               deshabilitado:
+                indexSeccionSeleccionada != null &&
                 indexSeccionSeleccionada >= esteNodo.secciones.length - 1,
             }"
             @click="stepSeccionVisible(1)"
@@ -411,14 +412,18 @@ export default {
       if (!this.esteNodo?.secciones) {
         return;
       }
-      let nuevoIndex = this.indexSeccionSeleccionada != null? this.indexSeccionSeleccionada + step: 0;
+      let nuevoIndex =
+        this.indexSeccionSeleccionada != null
+          ? this.indexSeccionSeleccionada + step
+          : 0;
       console.log(`Pasando a la sección ${nuevoIndex}`);
       if (nuevoIndex >= this.esteNodo.secciones.length) {
         return;
       }
-      if(nuevoIndex < 0){ //Desseleccionar secciones para que quede visible la descripción. Descripción es visible cuando idSeccionVisible=null
-        this.idSeccionVisible=null;
-        return
+      if (nuevoIndex < 0) {
+        //Desseleccionar secciones para que quede visible la descripción. Descripción es visible cuando idSeccionVisible=null
+        this.idSeccionVisible = null;
+        return;
       }
       this.idSeccionVisible = this.esteNodo.secciones[nuevoIndex].id;
     },
@@ -878,6 +883,15 @@ export default {
         this.mostrandoBotonesSeccion = null;
       }
     },
+    elNodo(nodo) {
+      if (nodo) {
+        let elNombre = nodo.nombre;
+        if (elNombre.length > 20) {
+          elNombre = elNombre.slice(0, 20) + "...";
+        }
+        window.title = elNombre;
+      }
+    },
   },
 };
 </script>
@@ -978,15 +992,14 @@ export default {
   width: min(300px, 90vw);
   margin: 0px auto;
 }
-#contenedorSteppersSeccion{
+#contenedorSteppersSeccion {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 40px;
   margin: 50px auto;
 }
-.steperSeccion{
-
+.steperSeccion {
 }
 
 #zonaExpertos {

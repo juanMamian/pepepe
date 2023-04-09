@@ -143,7 +143,7 @@ import Loading from "./utilidades/Loading.vue";
 import PersonaVistaLista from "./usuario/personaVistaLista.vue";
 import debounce from "debounce";
 // import { similarity } from "./utilidades/funciones";
-import { stringSimilarity } from "string-similarity";
+import stringSimilarity from "string-similarity";
 
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
 
