@@ -276,13 +276,13 @@ export const resolvers = {
             }
             try {
                 var elUsuario = await Usuario.findOne({ username }, "username password permisos").exec();
-                if (!elUsuario)
-                    throw "Usuario no encontrado";
             }
             catch (error) {
                 console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
                 ApolloError("Error conectando con la base de datos");
             }
+            if (!elUsuario)
+                UserInputError("Datos inválidos");
             const correctLogin = await bcrypt.compare(password, elUsuario.password);
             if (!correctLogin) {
                 console.log(`Contraseña errada. Rechazando`);
