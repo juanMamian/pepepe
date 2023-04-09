@@ -271,32 +271,6 @@ export default {
     },
     async deslogearse() {
       this.$router.push({name: "logoutScreen"});
-      // console.log("skipping queries");
-      // this.$apollo.skipAll = true;
-      // console.log("Navegando a loginArea");
-      // this.$router.push({ name: "loginScreen" });
-      // this.$nextTick(() => {
-      //   const store = this.$apollo.provider.defaultClient;
-      //   store.writeQuery({
-      //     query: QUERY_AUTH_USUARIO,
-      //     data: { auth_usuario: null },
-      //   });
-
-      //   store
-      //     .resetStore()
-      //     .then(() => {
-      //       console.log("Store reset");
-      //       this.setEstadoRed();
-      //       this.$router.push({ name: "loginScreen" });
-      //       console.log("Unskipping queries");
-      //       this.$apollo.skipAll = false;
-      //     })
-      //     .catch((error) => {
-      //       console.log("Error resetting store: " + error);
-      //       this.setEstadoRed();
-      //       this.$apollo.skipAll = false;
-      //     });
-      // });
     },
   },
   watch: {

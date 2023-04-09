@@ -1,7 +1,7 @@
 Atlas de conocimiento.
 
--Tal vez que se pausen todas las queries de apollo durante el logout.
 -Que la ruta root del servidor sirva Caracol en vez de pepepe.
+-que el splash de editar nombre de coleccion se cierre on update success.
 -El anuncio de accion sale con el borde dentro del padding.
 -No está funcionando la búsqueda de personas.
 -icono y nombre de pestañas.

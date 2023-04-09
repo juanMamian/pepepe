@@ -24,16 +24,10 @@ if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
     console.log("Usando cors");
     app.use(cors());
 }
-//Rutas pepepe
-console.log(`Carpeta estatica en ${__dirname + '/pepepe'}`);
-app.use("/assetsAtlas/contenidosNodos/:idNodo/:nombreCategoria/default", express.static(__dirname + '/assetsAtlas/contenidosNodos/default/'));
-app.use("/pepepe", express.static(__dirname + '/clientes/pepepe'));
-app.get("/pepepe", function (req, res) {
-    res.sendFile(__dirname + "/clientes/pepepe/index.html");
-});
-//Rutas pepepe
+//Rutas caracol 
 console.log(`Carpeta estatica en ${__dirname + '/caracol'}`);
 app.use("/caracol", express.static(__dirname + '/clientes/caracol'));
+app.use("/assetsAtlas/contenidosNodos/:idNodo/:nombreCategoria/default", express.static(__dirname + '/assetsAtlas/contenidosNodos/default/'));
 app.get("/caracol", function (req, res) {
     res.sendFile(__dirname + "/clientes/caracol/index.html");
 });
@@ -85,7 +79,7 @@ app.use("/api/usuarios", cors(), ejwt({ secret: process.env.JWT_SECRET, algorith
 app.use("/api/atlas", cors(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaIconos, rutaContenidosSeccion] }), routesNodos);
 app.use("/apiCuentos", cors(), ejwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }).unless({ path: [rutaArchivosCuadroImagen, rutaArchivosAudioTexto, rutaArchivosAudioImagen] }), routesCuentos);
 app.get("/", function (req, res) {
-    return res.redirect("/pepepe");
+    return res.redirect("/caracol");
 });
 const port = process.env.PORT || 3000;
 iniciarMongoose();
