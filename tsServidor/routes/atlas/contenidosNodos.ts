@@ -1,10 +1,14 @@
-const router = require("express").Router();
+import express from "express"
+let router=express.Router();
 import fs from "fs";
-import path from "path"
 import { promisify } from "util";
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../../model/CarpetaArchivos";
 import { ModeloNodo as Nodo } from "../../model/atlas/Nodo";
 
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const access = promisify(fs.access);
 
 router.get("/:idNodo/:idSeccion/:nombreArchivo", async function (req, res) {
@@ -56,7 +60,7 @@ router.get("/:idNodo/:idSeccion/:nombreArchivo", async function (req, res) {
 
 });
 
-router.get("/:idNodo/:idSeccion", async function (req, res) {
+router.get("/:idNodo/:idSeccion", async function (req:any, res) {
     console.log('\x1b[35m%s\x1b[0m', `(2)Acceso a un archivo primario de contenido de sección ${req.params.idSeccion} de nodo`);
     const idNodo = req.params.idNodo;
     const idSeccion=req.params.idSeccion;
@@ -106,4 +110,4 @@ router.get("/:idNodo/:idSeccion", async function (req, res) {
 
 });
 
-module.exports = router;
+export default router;

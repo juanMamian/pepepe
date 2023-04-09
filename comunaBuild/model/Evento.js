@@ -1,14 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloEventoPublico = exports.ModeloEventoPersonal = exports.esquemaEventoPublico = exports.esquemaEventoPersonal = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const config_1 = require("./config");
+import mongoose from "mongoose";
+import { validatorNombreCosa, validatorTexto } from "./config";
 const maxDuracionEventos = 1000 * 60 * 60 * 10; //10 horas
 const minDuracionEventos = 1000 * 60 * 5; //5 minutos
-exports.esquemaEventoPersonal = new mongoose_1.default.Schema({
+export const esquemaEventoPersonal = new mongoose.Schema({
     idPersona: {
         type: String,
         required: true,
@@ -40,12 +34,12 @@ exports.esquemaEventoPersonal = new mongoose_1.default.Schema({
         type: String,
         minLength: 3,
         maxLength: 1024,
-        validate: config_1.validatorNombreCosa,
+        validate: validatorNombreCosa,
         default: "Nuevo evento"
     },
     descripcion: {
         type: String,
-        validate: config_1.validatorTexto,
+        validate: validatorTexto,
         maxLength: 2000
     },
     horarioInicio: {
@@ -77,17 +71,17 @@ exports.esquemaEventoPersonal = new mongoose_1.default.Schema({
         type: String,
     },
 });
-exports.esquemaEventoPublico = new mongoose_1.default.Schema({
+export const esquemaEventoPublico = new mongoose.Schema({
     nombre: {
         type: String,
         minLength: 3,
         maxLength: 1024,
-        validate: config_1.validatorNombreCosa,
+        validate: validatorNombreCosa,
         default: "Nuevo evento"
     },
     descripcion: {
         type: String,
-        validate: config_1.validatorTexto,
+        validate: validatorTexto,
         maxLength: 2000
     },
     idAdministrador: {
@@ -133,5 +127,5 @@ exports.esquemaEventoPublico = new mongoose_1.default.Schema({
         }
     }
 });
-exports.ModeloEventoPersonal = mongoose_1.default.model("EventoPersonal", exports.esquemaEventoPersonal);
-exports.ModeloEventoPublico = mongoose_1.default.model("EventoPublico", exports.esquemaEventoPublico);
+export const ModeloEventoPersonal = mongoose.model("EventoPersonal", esquemaEventoPersonal);
+export const ModeloEventoPublico = mongoose.model("EventoPublico", esquemaEventoPublico);

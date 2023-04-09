@@ -1,12 +1,17 @@
-const multer = require("multer");
+import multer from "multer"
 const upload = multer({ limits: { fileSize: 10000000 } });
-const router = require("express").Router();
+import express from "express"
+let router=express.Router();
 import {ModeloUsuario as Usuario} from "../../model/Usuario";
 import { ModeloNodo as Nodo } from "../../model/atlas/Nodo";
 import {ModeloCarpetaArchivos as CarpetasArchivos} from "../../model/CarpetaArchivos";
-import path from "path";
 
-router.post("/updateIcono", upload.single("nuevoIcono"), async function (req, res) {
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+router.post("/updateIcono", upload.single("nuevoIcono"), async function (req:any, res) {
 
     try {
         var elNodo: any = await Nodo.findById(req.body.idNodo, "nombre icono");
@@ -57,7 +62,7 @@ router.post("/subirArchivoContenidoSeccionNodo", upload.single("nuevoArchivo"), 
     let mensaje = "Archivo no permitido";
     if (err.message == "File too large") mensaje = "Archivo demasiado grande"
     return res.status(400).send({ msjUsuario: mensaje });
-}, async function (req, res) {
+}, async function (req:any, res) {
     console.log(`Recibiendo un archivo [${req.file.mimetype}] para una carpeta de contenidos de seccion de nodo de conocimiento`);
     try {
         var elNodo: any = await Nodo.findById(req.body.idNodo, "nombre expertos secciones");
@@ -155,4 +160,4 @@ router.post("/subirArchivoContenidoSeccionNodo", upload.single("nuevoArchivo"), 
     
     res.send({ resultado: "ok", infoArchivo:{nombre: req.file.originalname, primario: nuevoArchivo.primario, __typename:"InfoArchivoContenidoNodo"} });
 });
-module.exports = router;
+export default router;

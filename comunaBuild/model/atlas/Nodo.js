@@ -1,11 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloNodo = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const esquemaClase = new mongoose_1.default.Schema({
+import mongoose from "mongoose";
+const esquemaClase = new mongoose.Schema({
     idExperto: String,
     interesados: [String],
     nombre: {
@@ -17,7 +11,7 @@ const esquemaClase = new mongoose_1.default.Schema({
         default: ""
     },
 });
-const EsquemaVinculo = new mongoose_1.default.Schema({
+const EsquemaVinculo = new mongoose.Schema({
     idRef: {
         type: String,
         required: true
@@ -31,15 +25,22 @@ const EsquemaVinculo = new mongoose_1.default.Schema({
         type: String,
         required: true,
         default: "continuacion",
+    },
+    nodoContraparte: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Nodo",
     }
 });
 EsquemaVinculo.pre("save", function (next) {
     if (this.tipo = "requiere") {
         this.tipo = "continuacion";
     }
+    if (!this.nodoContraparte) {
+        this.nodoContraparte = this.idRef;
+    }
     next();
 });
-var esquemaNodo = new mongoose_1.default.Schema({
+var esquemaNodo = new mongoose.Schema({
     nombre: {
         type: String,
         min: 3,
@@ -56,9 +57,6 @@ var esquemaNodo = new mongoose_1.default.Schema({
     },
     keywords: {
         type: String,
-    },
-    icono: {
-        type: Buffer
     },
     tipoNodo: {
         type: String,
@@ -178,4 +176,4 @@ esquemaNodo.methods.verificarVinculo = function (idRef, eliminar) {
     return respuesta;
 };
 esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" });
-exports.ModeloNodo = mongoose_1.default.model("Nodo", esquemaNodo);
+export const ModeloNodo = mongoose.model("Nodo", esquemaNodo);

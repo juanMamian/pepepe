@@ -1,67 +1,8 @@
-import { ModeloNodoSolidaridad as NodoSolidaridad } from "./model/atlasSolidaridad/NodoSolidaridad";
-import { ModeloAdministracionAtlas as AdministracionAtlas } from "./model/atlasSolidaridad/AdministracionAtlasSolidaridad";
-import { idAtlasSolidaridad, NODOS_ATLAS_POSICIONADOS } from "./gql/AtlasSolidaridad";
-import {pubsub} from "./index"
-import { ModeloUsuario as Usuario } from "./model/Usuario";
 
 const anchoCeldas = 400;
 // const nodoDeInteres = 'Que la casa de Maestra Vida esté en condiciones óptimas para habitarla y disfrutarla.';
 const nodoDeInteres = null;
 
-export async function ejecutarPosicionamientoNodosSolidaridadByFuerzas(ciclos, timeCalled, force) {
-
-    //Check si ha habido reposicionamiento después de timeCalled
-    if (!force) {
-        try {
-            var administracion: any = await AdministracionAtlas.findById(idAtlasSolidaridad).exec();
-        } catch (error) {
-            console.log(`Error buscando administracion de atlas`);
-            return
-        }
-        if (administracion.lastPosicionamientoNodos.getTime() > timeCalled) {
-            console.log(`Hubo un posicionamiento después del timeCalled. Cancelando`);
-            return
-        }
-    }
-    const maxCiclos=1000;
-    if(ciclos>maxCiclos)ciclos=maxCiclos;
-    console.log(`Iniciando un posicionamiento de fuerzas de ${ciclos} ciclos`);
-    try {
-        var todosNodosSolidaridad:any = await NodoSolidaridad.find({}).exec();
-        var todosPersonas:any= await Usuario.find({}).exec();
-        todosPersonas.forEach(p=>p.nombre=p.username);
-        var todosNodos=todosNodosSolidaridad.concat(todosPersonas);
-        console.log(`Total: ${todosNodos.length} nodos y ${todosPersonas.length} personas`);
-    }
-    catch (error) {
-        console.log(`error getting todos nodos. e: ` + error);
-        return;
-    }
-
-    filtrarVinculosHuerfanos(todosNodos);
-    setInformacionRelevante(todosNodos)
-    //Iniciar coordenadas
-    todosNodos.forEach(nodo => {
-        if (!nodo.autoCoords.x) nodo.autoCoords.x = nodo.coords.x || Math.round(Math.random()*700);
-        if (!nodo.autoCoords.y) nodo.autoCoords.y = nodo.coords.y || Math.round(Math.random()*700);
-
-        // if(nodo.descripcion==="Sin descripcion" || nodo.descripcion==="Sin descripción")nodo.descripcion=null;
-        // nodo.autoCoords.x=Math.round(Math.random()*100);
-        // nodo.autoCoords.y=Math.round(Math.random()*100);
-    });
-    var celdas = setCeldas(todosNodos);
-    // console.log(`Hay ${nodosCompletados.length} nodos completados`);
-
-    for (var ciclo = 0; ciclo < ciclos; ciclo++) {
-        posicionar(todosNodos, celdas);
-
-    }
-    console.log(`Uploading...`);
-    await uploadNodos(todosNodos);
-    pubsub.publish(NODOS_ATLAS_POSICIONADOS, {nodosAtlasPosicionados:idAtlasSolidaridad})
-    // await sleep(10000);
-
-}
 
 function posicionar(todosNodos, celdas) {
     todosNodos = todosNodos.sort((a, b) => b.peso - a.peso);

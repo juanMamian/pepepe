@@ -1,62 +1,46 @@
-"use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.posicionAutomaticaConocimiento = void 0;
-const mongoose = require("mongoose");
-const ConfiguracionAtlas_1 = require("./model/ConfiguracionAtlas");
-const Nodo_1 = require("./model/atlas/Nodo");
+import { ModeloConfiguracionAtlas as ConfiguracionAtlas } from "./model/ConfiguracionAtlas";
+import { ModeloNodo as NodoConocimiento } from "./model/atlas/Nodo";
 const anchoCeldas = 400;
 const nodoDeInteres = null;
 //const nodoDeInteres = "Realizar una limpieza de los computadores de Maloka";
 const soloCalcular = false;
-function posicionAutomaticaConocimiento() {
-    return __awaiter(this, void 0, void 0, function* () {
+export async function posicionAutomaticaConocimiento() {
+    try {
+        var todosNodos = await NodoConocimiento.find({}).exec();
+        console.log(`Total: ${todosNodos.length} nodos`);
+    }
+    catch (error) {
+        console.log(`error getting todos nodos. e: ` + error);
+        return;
+    }
+    filtrarVinculosHuerfanos(todosNodos);
+    //Iniciar coordenadas
+    todosNodos.forEach(nodo => {
+        if (!nodo.autoCoords.x)
+            nodo.autoCoords.x = nodo.coords.x;
+        if (!nodo.autoCoords.y)
+            nodo.autoCoords.y = nodo.coords.y;
+    });
+    var celdas = setCeldas(todosNodos);
+    // console.log(`Hay ${nodosCompletados.length} nodos completados`);
+    while (true) {
+        var configuracion = {
+            posicionando: false,
+        };
         try {
-            var todosNodos = yield Nodo_1.ModeloNodo.find({}).exec();
-            console.log(`Total: ${todosNodos.length} nodos`);
+            configuracion = await ConfiguracionAtlas.findOne({ nombre: "conocimiento" }).exec();
         }
         catch (error) {
-            console.log(`error getting todos nodos. e: ` + error);
-            return;
+            console.log(`Error descargando configuración del atlas: ${error}`);
         }
-        filtrarVinculosHuerfanos(todosNodos);
-        //Iniciar coordenadas
-        todosNodos.forEach(nodo => {
-            if (!nodo.autoCoords.x)
-                nodo.autoCoords.x = nodo.coords.x;
-            if (!nodo.autoCoords.y)
-                nodo.autoCoords.y = nodo.coords.y;
-        });
-        var celdas = setCeldas(todosNodos);
-        // console.log(`Hay ${nodosCompletados.length} nodos completados`);
-        while (true) {
-            var configuracion = {
-                posicionando: false,
-            };
-            try {
-                configuracion = yield ConfiguracionAtlas_1.ModeloConfiguracionAtlas.findOne({ nombre: "conocimiento" }).exec();
-            }
-            catch (error) {
-                console.log(`Error descargando configuración del atlas: ${error}`);
-            }
-            if (configuracion.posicionando) {
-                yield posicionar(todosNodos, celdas);
-                console.log(`Posicionando nodos conocimiento...`);
-                yield uploadNodos(todosNodos);
-            }
-            yield sleep(10000);
+        if (configuracion.posicionando) {
+            await posicionar(todosNodos, celdas);
+            console.log(`Posicionando nodos conocimiento...`);
+            await uploadNodos(todosNodos);
         }
-    });
+        await sleep(10000);
+    }
 }
-exports.posicionAutomaticaConocimiento = posicionAutomaticaConocimiento;
 function posicionar(todosNodos, celdas) {
     todosNodos.forEach(nodo => {
         setFuerzaCentroMasa(nodo, todosNodos);
@@ -281,20 +265,16 @@ function getCeldaV(coords) {
     const celda = Math.floor(coords.y / anchoCeldas);
     return celda;
 }
-function uploadNodos(todosNodos) {
-    return __awaiter(this, void 0, void 0, function* () {
-        todosNodos.forEach(function (nodo) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!nodoDeInteres || nodoDeInteres === nodo.nombre) {
-                    try {
-                        yield nodo.save();
-                    }
-                    catch (error) {
-                        console.log(`error guardando el nodo. e: ` + error);
-                    }
-                }
-            });
-        });
+async function uploadNodos(todosNodos) {
+    todosNodos.forEach(async function (nodo) {
+        if (!nodoDeInteres || nodoDeInteres === nodo.nombre) {
+            try {
+                await nodo.save();
+            }
+            catch (error) {
+                console.log(`error guardando el nodo. e: ` + error);
+            }
+        }
     });
 }
 function sleep(ms) {

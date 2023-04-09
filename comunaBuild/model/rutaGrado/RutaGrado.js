@@ -1,11 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloSubrutaGrado = exports.laRutaProyectoMediaTecnica = exports.laRutaProyectoSocial = exports.laRutaNodosConocimiento = exports.EsquemaRutaGrado = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const EsquemaNodoRutaGrado = new mongoose_1.default.Schema({
+import mongoose from "mongoose";
+const EsquemaNodoRutaGrado = new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
@@ -17,7 +11,7 @@ const EsquemaNodoRutaGrado = new mongoose_1.default.Schema({
         maxLength: 5000,
     },
 });
-const EsquemaSubrutaGrado = new mongoose_1.default.Schema({
+const EsquemaSubrutaGrado = new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
@@ -30,16 +24,16 @@ const EsquemaSubrutaGrado = new mongoose_1.default.Schema({
         type: String,
     }
 });
-exports.EsquemaRutaGrado = new mongoose_1.default.Schema({
+export const EsquemaRutaGrado = new mongoose.Schema({
     subrutas: {
         type: [EsquemaSubrutaGrado],
         default: [],
     }
 });
-exports.EsquemaRutaGrado.virtual("idUsuario").get(function () {
+EsquemaRutaGrado.virtual("idUsuario").get(function () {
     return this.parent()._id;
 });
-exports.laRutaNodosConocimiento = {
+export const laRutaNodosConocimiento = {
     nombre: "Los nodos de conocimiento",
     nodos: [
         {
@@ -56,7 +50,7 @@ exports.laRutaNodosConocimiento = {
         },
     ]
 };
-exports.laRutaProyectoSocial = {
+export const laRutaProyectoSocial = {
     nombre: "Proyecto social",
     nodos: [
         {
@@ -89,7 +83,7 @@ exports.laRutaProyectoSocial = {
         },
     ]
 };
-exports.laRutaProyectoMediaTecnica = {
+export const laRutaProyectoMediaTecnica = {
     nombre: "Proyecto agroecológico de media técnica",
     nodos: [
         {
@@ -122,4 +116,4 @@ exports.laRutaProyectoMediaTecnica = {
         },
     ]
 };
-exports.ModeloSubrutaGrado = mongoose_1.default.model("SubrutaGrado", EsquemaSubrutaGrado);
+export const ModeloSubrutaGrado = mongoose.model("SubrutaGrado", EsquemaSubrutaGrado);

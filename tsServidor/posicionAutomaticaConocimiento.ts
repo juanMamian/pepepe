@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose"
 
 
 import { ModeloConfiguracionAtlas as ConfiguracionAtlas } from "./model/ConfiguracionAtlas";

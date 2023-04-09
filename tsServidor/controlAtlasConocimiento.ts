@@ -1,8 +1,4 @@
 import { ModeloNodo as NodoConocimiento } from "./model/atlas/Nodo";
-import { ModeloAdministracionAtlas as AdministracionAtlas } from "./model/atlasSolidaridad/AdministracionAtlasSolidaridad";
-import { idAtlasConocimiento, NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS } from "./gql/NodosConocimiento";
-import { pubsub } from "./index"
-import { ModeloUsuario as Usuario } from "./model/Usuario";
 
 const anchoCeldas = 400;
 // const nodoDeInteres = 'Que la casa de Maestra Vida esté en condiciones óptimas para habitarla y disfrutarla.';
@@ -10,19 +6,7 @@ const nodoDeInteres = null;
 
 export async function ejecutarPosicionamientoNodosConocimientoByFuerzas(ciclos, timeCalled, force) {
 
-    //Check si ha habido reposicionamiento después de timeCalled
-    if (!force) {
-        try {
-            var administracion: any = await AdministracionAtlas.findById(idAtlasConocimiento).exec();
-        } catch (error) {
-            console.log(`Error buscando administracion de atlas`);
-            return
-        }
-        if (administracion.lastPosicionamientoNodos.getTime() > timeCalled) {
-            console.log(`Hubo un posicionamiento después del timeCalled. Cancelando`);
-            return
-        }
-    }
+  
     const maxCiclos = 1000;
     if (ciclos > maxCiclos) ciclos = maxCiclos;
     console.log(`Iniciando un posicionamiento de fuerzas de ${ciclos} ciclos`);
@@ -54,7 +38,6 @@ export async function ejecutarPosicionamientoNodosConocimientoByFuerzas(ciclos, 
     }
     console.log(`Uploading...`);
     await uploadNodos(todosNodos);
-    pubsub.publish(NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS, { nodosAtlasPosicionados: idAtlasConocimiento })
     // await sleep(10000);
 
 }

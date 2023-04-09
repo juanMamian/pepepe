@@ -1,11 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloConfiguracionAtlas = exports.esquemaConfiguracionAtlas = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-exports.esquemaConfiguracionAtlas = new mongoose_1.default.Schema({
+import mongoose from "mongoose";
+export const esquemaConfiguracionAtlas = new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
@@ -16,4 +10,4 @@ exports.esquemaConfiguracionAtlas = new mongoose_1.default.Schema({
         default: false,
     }
 });
-exports.ModeloConfiguracionAtlas = mongoose_1.default.model("ConfiguracionAtlas", exports.esquemaConfiguracionAtlas, "configuracionesAtlas");
+export const ModeloConfiguracionAtlas = mongoose.model("ConfiguracionAtlas", esquemaConfiguracionAtlas, "configuracionesAtlas");

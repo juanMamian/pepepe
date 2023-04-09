@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { EsquemaVinculosNodosSolidaridad } from "./atlasSolidaridad/VinculosNodosSolidaridad";
 import { EsquemaRutaGrado } from "./rutaGrado/RutaGrado";
 
 export const permisosDeUsuario = [
@@ -356,10 +355,6 @@ const esquemaUsuario = new mongoose.Schema({
                 default: []
             }
         }]
-    },
-    vinculos: {
-        type: [EsquemaVinculosNodosSolidaridad],
-        default: []
     },
     coords: {
         x: {
