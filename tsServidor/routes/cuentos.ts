@@ -1,7 +1,8 @@
-const multer = require("multer");
+import multer from "multer"
 const upload = multer({ limits: { fileSize: 7000000 } });
-const router = require("express").Router();
-const path = require("path");
+import express from "express"
+let router=express.Router();
+import path from "path"
 
 import { ModeloLibro as Libro } from "../model/cuentos/Libro"
 import sharp from "sharp";
@@ -99,12 +100,12 @@ router.get("/audioImagen/:idLibro/:idPagina/:idCuadroImagen", async function (re
     return;
 });
 
-router.post("/subirArchivoCuadroImagen", upload.single("imagen"), function (err, req, res, next) {
+router.post("/subirArchivoCuadroImagen", upload.single("imagen"), function (err, req:any, res, next) {
     console.log(`Errores: <<${err.message}>>`)
     var mensaje = "Archivo no permitido";
     if (err.message == "File too large") mensaje = "Archivo demasiado grande"
     return res.status(400).send({ msjUsuario: mensaje });
-}, async function (req, res) {
+}, async function (req:any, res) {
     console.log(`Uploading archivo para cuadroImagen de un cuento con id ${req.body.idLibro}`);
     var success = false;
     if (!("user" in req)) {
@@ -128,16 +129,16 @@ router.post("/subirArchivoCuadroImagen", upload.single("imagen"), function (err,
             try {
                 let imgOriginal = await sharp(await sharp(req.file.buffer).rotate().toBuffer());
                 let metadata = await imgOriginal.metadata();
-                let anchoOriginal = metadata.width;
+                let anchoOriginal = metadata.width || 0;
                 //let altoOriginal=await imgOriginal.metadata().height;                
 
                 var imgFinal = imgOriginal;
                 console.log(`Ancho: ${anchoOriginal}`);
                 if (anchoOriginal > 800) {
                     console.log(`Empequeñeciendo a 800 width. Tenía ${anchoOriginal}`);
-                    imgFinal = await imgOriginal.resize({ width: 800 }).toBuffer();
+                    imgFinal = await sharp(await imgOriginal.resize({ width: 800 }).toBuffer());
                 } else {
-                    imgFinal = await imgOriginal.toBuffer();
+                    imgFinal = await sharp(await imgOriginal.toBuffer());
                 }
                 archivoFinal = imgFinal;
             } catch (error) {
@@ -198,7 +199,7 @@ router.post("/subirArchivoAudioCuadroTexto", upload.single("audio"), function (e
     var mensaje = "Archivo no permitido";
     if (err.message == "File too large") mensaje = "Archivo demasiado grande"
     return res.status(400).send({ msjUsuario: mensaje });
-}, async function (req, res) {
+}, async function (req:any, res) {
     console.log(`Uploading archivo de audio para cuadroTexto de un cuento con id ${req.body.idLibro}`);
     var success = false;
     if (!("user" in req)) {
@@ -299,7 +300,7 @@ router.post("/subirArchivoAudioCuadroImagen", upload.single("audio"), function (
     var mensaje = "Archivo no permitido";
     if (err.message == "File too large") mensaje = "Archivo demasiado grande"
     return res.status(400).send({ msjUsuario: mensaje });
-}, async function (req, res) {
+}, async function (req:any, res) {
     console.log(`Uploading archivo de audio para cuadroImagen de un cuento con id ${req.body.idLibro}`);
     var success = false;
     if (!("user" in req)) {
@@ -395,4 +396,4 @@ router.post("/subirArchivoAudioCuadroImagen", upload.single("audio"), function (
     res.send(success);
 });
 
-module.exports = router;
+export default router;

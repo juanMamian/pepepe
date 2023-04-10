@@ -1,15 +1,17 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloNodoSolidaridad = exports.esquemaNodoSolidaridad = exports.charProhibidosNombreRecursoExterno = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const VinculosNodosSolidaridad_1 = require("./VinculosNodosSolidaridad");
-const index_1 = require("../../index");
-const AtlasSolidaridad_1 = require("../../gql/AtlasSolidaridad");
-const Misc_1 = require("../Misc");
-const EsquemaEvento = new mongoose_1.default.Schema({
+import mongoose from "mongoose";
+import { esquemaArchivo } from "../Misc";
+const EsquemaVinculosNodosSolidaridad = new mongoose.Schema({
+    idRef: {
+        type: String,
+        required: true,
+    },
+    tipo: {
+        type: String,
+        required: true,
+        enum: ["requiere"]
+    },
+});
+const EsquemaEvento = new mongoose.Schema({
     fecha: {
         type: Date,
         required: true,
@@ -34,7 +36,7 @@ const EsquemaEvento = new mongoose_1.default.Schema({
         maxLength: 500,
     },
 });
-const esquemaMovimientoDinero = new mongoose_1.default.Schema({
+const esquemaMovimientoDinero = new mongoose.Schema({
     fecha: {
         type: Date,
         required: true,
@@ -75,11 +77,11 @@ const esquemaMovimientoDinero = new mongoose_1.default.Schema({
         default: false,
     },
     adjuntos: {
-        type: [Misc_1.esquemaArchivo],
+        type: [esquemaArchivo],
         default: []
     }
 });
-const esquemaMaterial = new mongoose_1.default.Schema({
+const esquemaMaterial = new mongoose.Schema({
     nombre: {
         type: String,
         required: true,
@@ -102,8 +104,8 @@ const esquemaMaterial = new mongoose_1.default.Schema({
         default: 0,
     }
 });
-exports.charProhibidosNombreRecursoExterno = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
-const esquemaRecursoExterno = new mongoose_1.default.Schema({
+export const charProhibidosNombreRecursoExterno = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+const esquemaRecursoExterno = new mongoose.Schema({
     nombre: {
         type: String,
         min: 2,
@@ -126,8 +128,8 @@ const esquemaRecursoExterno = new mongoose_1.default.Schema({
         default: "vacio",
     }
 });
-exports.esquemaNodoSolidaridad = new mongoose_1.default.Schema();
-exports.esquemaNodoSolidaridad.add({
+export var esquemaNodoSolidaridad = new mongoose.Schema();
+esquemaNodoSolidaridad.add({
     nombre: {
         type: String,
         required: true,
@@ -186,7 +188,7 @@ exports.esquemaNodoSolidaridad.add({
         type: String,
     },
     vinculos: {
-        type: [VinculosNodosSolidaridad_1.EsquemaVinculosNodosSolidaridad],
+        type: [EsquemaVinculosNodosSolidaridad],
         default: []
     },
     keywords: {
@@ -298,16 +300,12 @@ esquemaMovimientoDinero.pre("save", function (next) {
     }
     next();
 });
-exports.esquemaNodoSolidaridad.post("save", function (nodo) {
+esquemaNodoSolidaridad.post("save", function (nodo) {
     if (!nodo.posicionadoByFuerzas) {
-        index_1.pubsub.publish(AtlasSolidaridad_1.NODO_EDITADO, { nodoEditado: nodo });
-        index_1.pubsub.publish(AtlasSolidaridad_1.NODO_FAMILY_EDITADO, { nodoSolidaridadFamilyEditado: nodo });
     }
 });
-exports.esquemaNodoSolidaridad.post("remove", function (nodo) {
+esquemaNodoSolidaridad.post("remove", function (nodo) {
     console.log(`Publicando la removida de un nodo`);
-    index_1.pubsub.publish(AtlasSolidaridad_1.NODO_ELIMINADO, { nodoEliminado: nodo.id, elNodoEliminado: nodo });
-    index_1.pubsub.publish(AtlasSolidaridad_1.NODO_FAMILY_ELIMINADO, { nodoSolidaridadFamilyEliminado: nodo.id, elNodoEliminado: nodo });
 });
-exports.esquemaNodoSolidaridad.index({ nombre: "text", keywords: "text", descripcion: "text" });
-exports.ModeloNodoSolidaridad = mongoose_1.default.model("NodoSolidaridad", exports.esquemaNodoSolidaridad);
+esquemaNodoSolidaridad.index({ nombre: "text", keywords: "text", descripcion: "text" });
+export const ModeloNodoSolidaridad = mongoose.model("NodoSolidaridad", esquemaNodoSolidaridad);

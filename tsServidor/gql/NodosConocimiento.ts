@@ -1,13 +1,14 @@
-import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
+import mongoose from "mongoose"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloUsuario as Usuario } from "../model/Usuario";
-import { ModeloForo as Foro } from "../model/Foros/Foro"
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
 import { EsquemaVinculosNodosProyecto } from "../model/VinculosNodosProyecto";
 import { ModeloEventoPublico as EventoPublico } from "../model/Evento";
 import { ejecutarPosicionamientoNodosConocimientoByFuerzas } from "../controlAtlasConocimiento";
 import { charProhibidosNombreCosa } from "../model/config";
+import { purgarIdNodo } from "./Usuarios";
+import { ApolloError, AuthenticationError, UserInputError } from "./misc";
 
 export const idAtlasConocimiento = "61ea0b0f17a5d80da7e94320";
 const permisosEspecialesAtlas = ["superadministrador", "atlasAdministrador"]
@@ -53,12 +54,13 @@ interface Vinculo {
 
 
 
-export const typeDefs = gql`
+export const typeDefs = `#graphql
 type Vinculo{
     id:ID!,
     tipo: String!,
     idRef: ID!,
-    rol: String!
+    rol: String!,
+    nodoContraparte:NodoConocimiento
 }
 
 
@@ -110,6 +112,7 @@ type NodoConocimiento{
     expertos: [String],
     posiblesExpertos:[String],
     secciones:[SeccionContenidoNodo],
+    nivel: Int,
     angulo:Float
     fuerzaCentroMasa:FuerzaPolar,
     fuerzaColision:FuerzaPolar
@@ -121,7 +124,6 @@ input NodoConocimientoInput{
     coordsManuales:CoordsInput,
     coords:CoordsInput,
     autoCoords:CoordsInput,
-    vinculos:[vinculoInput]
 }
 
 type Error{
@@ -138,8 +140,9 @@ extend type Query{
     ping: String,
     nodo(idNodo: ID!): NodoConocimiento,
     nodosConocimientoByIds(idsNodos: [ID!]!):[NodoConocimiento],
-    busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento]
+    busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento],
 
+    idsMisNodosEstudiables:[String],
 
 },
 
@@ -165,7 +168,7 @@ extend type Mutation{
 
     crearNuevaSeccionNodoConocimiento(idNodo:ID!):SeccionContenidoNodo,
     eliminarSeccionNodoConocimiento(idNodo:ID!, idSeccion:ID!):Boolean,
-    moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):Boolean,
+    moverSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, movimiento: Int!):NodoConocimiento,
     editarNombreSeccionNodoConocimiento(idNodo:ID!, idSeccion: ID!, nuevoNombre: String!):SeccionContenidoNodo,
     setNuevoEnlaceSeccionNodo(idNodo: ID!, idSeccion:ID!, nuevoEnlace:String!):SeccionContenidoNodo,
 
@@ -183,7 +186,6 @@ export const NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS = "nodos_de_atlas_conocimient
 export const resolvers = {
     Query: {
         busquedaAmplia: async function (_: any, { palabrasBuscadas }, __: any) {
-            console.log(`buscando nodos de conocimientos que contengan: ${palabrasBuscadas}`);
             // console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
             if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
@@ -194,15 +196,14 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(". E: " + error);
-                throw new ApolloError("");
+                ApolloError("");
             }
-            console.log(`${opciones.length} opciones: ${opciones}`);
             return opciones
         },
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             try {
-                var todosNodos = await Nodo.find({}, "nombre tipoNodo descripcion expertos vinculos secciones coordsManuales autoCoords coords centroMasa stuck angulo puntaje coordx coordy ubicado clases fuerzaCentroMasa fuerzaColision").exec();
+                var todosNodos = await Nodo.find({}).populate("vinculos.nodoContraparte", "nombre autoCoords").exec();
                 console.log(`encontrados ${todosNodos.length} nodos`);
             }
             catch (error) {
@@ -218,95 +219,18 @@ export const resolvers = {
         nodo: async function (_: any, { idNodo }: any) {
             console.log(`Buscando el nodo con id ${idNodo}`);
             try {
-                var elNodo: any = await Nodo.findById(idNodo, "nombre vinculos autoCoords coordsManuales descripcion idForoExpertos idForoPublico expertos posiblesExpertos secciones clases").exec();
+                var elNodo: any = await Nodo.findById(idNodo).select("-icono").exec();
                 if (!elNodo) throw "Nodo no encontrado";
             } catch (error) {
                 console.log(`error buscando el nodo. e: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-
-            let tieneForoPublico = true;
-
-            if (!elNodo.idForoPublico) {
-                tieneForoPublico = false;
-            }
-            else {
-                try {
-                    let elForoPublico: any = await Foro.findById(elNodo.idForoPublico).exec();
-                    if (!elForoPublico) {
-                        console.log(`El foro no existía. Se creará uno nuevo`);
-                        tieneForoPublico = false;
-                    }
-                } catch (error) {
-                    console.log(`Error buscando foro público en la base de datos. E :${error}`);
-                }
-            }
-
-            if (!tieneForoPublico) {
-                console.log(`El nodo ${elNodo.nombre} no tenía foro publico. Creando.`);
-                try {
-                    var nuevoForoPublico: any = await Foro.create({
-                        miembros: elNodo.expertos,
-                        acceso: "publico"
-                    });
-                    var idNuevoForoPublico = nuevoForoPublico._id;
-                    await nuevoForoPublico.save();
-                    elNodo.idForoPublico = idNuevoForoPublico;
-                } catch (error) {
-                    console.log(`Error creando el nuevo foro. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-                console.log(`Nuevo foro creado`);
-            }
-
-            let tieneForoExpertos = true;
-
-            if (!elNodo.idForoExpertos) {
-                tieneForoExpertos = false;
-            }
-            else {
-                try {
-                    let elForoExpertos: any = await Foro.findById(elNodo.idForoExpertos).exec();
-                    if (!elForoExpertos) {
-                        console.log(`El foro no existía. Se creará uno nuevo`);
-                        tieneForoExpertos = false;
-                    }
-                } catch (error) {
-                    console.log(`Error buscando foro público en la base de datos. E :${error}`);
-                }
-            }
-
-            if (!tieneForoExpertos) {
-                console.log(`El nodo ${elNodo.nombre} no tenía foro expertos. Creando.`);
-                try {
-                    var nuevoForoExpertos: any = await Foro.create({
-                        miembros: elNodo.expertos,
-                        acceso: "privado"
-                    });
-                    var idNuevoForoExpertos = nuevoForoExpertos._id;
-                    await nuevoForoExpertos.save();
-                    elNodo.idForoExpertos = idNuevoForoExpertos;
-
-                } catch (error) {
-                    console.log(`Error creando el nuevo foro. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-                console.log(`Nuevo foro creado`);
-            }
-            if (!tieneForoExpertos || !tieneForoPublico) {
-                try {
-                    await elNodo.save();
-                } catch (error) {
-                    console.log(`Error guardando el nodo`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
+                ApolloError("Error conectando con la base de datos");
             }
 
             return elNodo;
         },
         async nodosConocimientoByIds(_: any, { idsNodos }: any, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -317,7 +241,7 @@ export const resolvers = {
                 var losNodos: any = await Nodo.find({ "_id": { $in: idsNodos } }).exec();
             } catch (error) {
                 console.log(`Error getting nodosConocimiento by ids : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
 
@@ -325,6 +249,75 @@ export const resolvers = {
 
             return losNodos;
         },
+
+        async idsMisNodosEstudiables(_: any, __: any, contexto: contextoQuery) {
+            if (!contexto.usuario?.id) {
+                AuthenticationError('loginRequerido');
+            }
+
+            const credencialesUsuario = contexto.usuario;
+            console.log("Getting ids de mis nodos estudiables");
+
+            try {
+                var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
+                if (!elUsuario) throw 'Usuario no encontrado';
+            }
+            catch (error) {
+                ApolloError('Error conectando con la base de datos');
+            }
+
+            let datosAtlasConocimiento = elUsuario.atlas.datosNodos;
+            let datosNodosEstudiados = datosAtlasConocimiento.filter((dato: any) => dato.estudiado);
+            let datosNodosAprendidos = datosAtlasConocimiento.filter((dato: any) => dato.aprendido);
+
+            datosNodosEstudiados = datosNodosEstudiados.filter((dato: any) => {
+
+                let dateEstudiado = new Date(dato.estudiado);
+                let millisLimite = dateEstudiado.getTime() + dato.periodoRepaso;
+
+                if (millisLimite > new Date().getTime()) return true;
+            });
+
+            let todosNodosSabidos = [...datosNodosEstudiados, ...datosNodosAprendidos];
+            let idsTodosNodosSabidos = todosNodosSabidos.map((dato: any) => dato.idNodo);
+
+            console.log(`Retornando ${idsTodosNodosSabidos.length} ids de nodos sabidos`);
+
+            try {
+                var losNodosSabidos: any = await Nodo.find({ "_id": { $in: idsTodosNodosSabidos } }).exec();
+            } catch (error) {
+                console.log('Error descargando nodos de la base de datos: ' + error)
+                ApolloError('Error conectando con la base de datos');
+            };
+
+            console.log(`Retornando ${losNodosSabidos.length} nodos sabidos`)
+
+            //Get  ids continuaciones. Ellos son los aprendibles
+
+            let vinculosRelevantes = losNodosSabidos.map((nodo: any) => nodo.vinculos.filter((vinculo: any) => vinculo.tipo == "continuacion" && vinculo.rol === 'source')).flat();
+            let idsNodosContinuacion = vinculosRelevantes.map((vinculo: any) => vinculo.idRef);
+            try {
+                var losNodosContinuacion: any = await Nodo.find({ "_id": { $in: idsNodosContinuacion } }).exec();
+            } catch (error) {
+                console.log('Error descargando nodos de la base de datos: ' + error)
+                ApolloError('Error conectando con la base de datos');
+
+            };
+
+            let nodosAprendibles = losNodosContinuacion.filter((nodo: any) => {
+                let idsDependencias = nodo.vinculos.filter((vinculo: any) => vinculo.tipo == "continuacion" && vinculo.rol === "target").map((vinculo: any) => vinculo.idRef);
+
+                if (idsDependencias.every((id: any) => idsTodosNodosSabidos.includes(id))) return true;
+
+                return false;
+            })
+
+            let idsNodosAprendibles = nodosAprendibles.map((nodo: any) => nodo.id);
+
+            return idsNodosAprendibles;
+        }
+
+
     },
     Mutation: {
         async posicionarNodosConocimientoByFuerzas(_: any, { ciclos }: any, contexto: contextoQuery) {
@@ -343,14 +336,14 @@ export const resolvers = {
 
             if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
                 var elNodo: any = await Nodo.findById(idNodo);
                 if (!elNodo) throw "Nodo a eliminar no encontrado"
             } catch (error) {
-                throw new ApolloError("Error buscando el nodo a eliminar");
+                ApolloError("Error buscando el nodo a eliminar");
             }
 
             try {
@@ -358,16 +351,10 @@ export const resolvers = {
             } catch (error) {
                 console.log(`error eliminando nodo`);
             }
+            purgarIdNodo(idNodo);
             console.log(`nodo ${idNodo} eliminado`);
 
-            //Eliminar foros del nodo
-
-            try {
-                await Foro.findByIdAndDelete(elNodo.idForoPublico).exec();
-                await Foro.findByIdAndDelete(elNodo.idForoExpertos).exec();
-            } catch (error) {
-                console.log(`Error buscando los foros para ser eliminados`);
-            }
+            //Eliminar vinculos que lo tuvieran en idRef.
 
             return idNodo;
 
@@ -377,47 +364,21 @@ export const resolvers = {
             let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];;
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
             console.log(`Creando nuevo nodo de conocimiento`);
 
-            try {
-                var nuevoForoPublico: any = await Foro.create({
-                    acceso: "publico",
-                    miembros: [],
-                });
-                var idForoPublico = nuevoForoPublico._id;
-                await nuevoForoPublico.save();
-            } catch (error) {
-                console.log(`Error creando el nuevo foro publico. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-            console.log(`Nuevo foro publico creado`);
-
-            try {
-                var nuevoForoExpertos: any = await Foro.create({
-                    acceso: "privado",
-                    miembros: [],
-                });
-                var idForoExpertos = nuevoForoExpertos._id;
-                await nuevoForoExpertos.save();
-            } catch (error) {
-                console.log(`Error creando el nuevo foro expertos. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
-            }
-            console.log(`Nuevo foro expertos creado`);
+            
 
             try {
                 var nuevoNodo: any = new Nodo({
-                    ...infoNodo,
-                    idForoPublico,
-                    idForoExpertos,
+                    ...infoNodo,                   
                     expertos: [credencialesUsuario.id]
                 });
                 await nuevoNodo.save();
             } catch (error) {
                 console.log(`error guardando el nuevo nodo en la base de datos. E: ${error}`);
-                throw new ApolloError("Error guardando en base de datos");
+                ApolloError("Error guardando en base de datos");
             }
             console.log(`nuevo nodo de conocimiento creado: ${nuevoNodo} `);
             return nuevoNodo
@@ -431,7 +392,7 @@ export const resolvers = {
 
             if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
             let modificados: Array<NodoConocimiento> = new Array();
 
@@ -452,20 +413,22 @@ export const resolvers = {
             return { modificados };
 
         },
-        crearVinculo: async function (_: any, args: any, contexto: contextoQuery) {
+        crearVinculo: async function (_: any, { idSource, idTarget }: any, contexto: contextoQuery) {
             let modificados: Array<NodoConocimiento> = [];
-            console.log(`recibida una peticion de vincular nodos con args: ${JSON.stringify(args)}`);
+            console.log(`recibida una peticion de vincular nodos  ${idSource} y ${idTarget}`);
             let credencialesUsuario = contexto.usuario;
 
             let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
 
+            if (idSource == idTarget) UserInputError('No se puede vincular un nodo consigo mismo');
+
             if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
             try {
-                var nodoSource: any = await Nodo.findById(args.idSource, "vinculos nombre").exec();
-                var nodoTarget: any = await Nodo.findById(args.idTarget, "vinculos nombre").exec();
+                var nodoSource: any = await Nodo.findById(idSource, "vinculos nombre").exec();
+                var nodoTarget: any = await Nodo.findById(idTarget, "vinculos nombre").exec();
             }
             catch (error) {
                 console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
@@ -475,30 +438,30 @@ export const resolvers = {
 
             let idsRedPrevia = await getIdsRedRequerimentosNodo(nodoSource);
             if (idsRedPrevia.includes(nodoTarget.id)) {
-                throw new UserInputError('Una vinculación entre estos nodos produce loop');
+                UserInputError('Una vinculación entre estos nodos produce loop');
             }
 
             console.log(`Los ids previos de la red son: ${idsRedPrevia}`);
 
             //Buscar y eliminar vinculos previos entre estos dos nodos.
             for (var vinculo of nodoSource.vinculos) {
-                if (vinculo.idRef == args.idTarget) {
+                if (vinculo.idRef == idTarget) {
                     vinculo.remove();
                     console.log(`encontrado un vinculo viejo en el Source. Eliminando`);
                 }
             }
             for (var vinculo of nodoTarget.vinculos) {
-                if (vinculo.idRef == args.idSource) {
+                if (vinculo.idRef == idSource) {
                     vinculo.remove();
                     console.log(`encontrado un vinculo viejo en el target. Eliminando`);
                 }
             }
             const vinculoSourceTarget = {
-                idRef: args.idTarget,
+                idRef: idTarget,
                 rol: "source"
             }
             const vinculoTargetSource = {
-                idRef: args.idSource,
+                idRef: idSource,
                 rol: "target"
             }
             nodoSource.vinculos.push(vinculoSourceTarget);
@@ -512,7 +475,7 @@ export const resolvers = {
             }
             modificados.push(nodoSource);
             modificados.push(nodoTarget);
-            console.log(`vinculo entre ${args.idSource} y ${args.idTarget} creado`);
+            console.log(`vinculo entre ${idSource} y ${idTarget} creado`);
             return { modificados };
         },
         eliminarVinculoFromTo: async function (_: any, args: any, contexto: contextoQuery) {
@@ -524,7 +487,7 @@ export const resolvers = {
 
             if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
             try {
                 var elUno: any = await Nodo.findById(args.idSource, "nombre vinculos").exec();
@@ -571,13 +534,13 @@ export const resolvers = {
 
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             nuevoNombre = nuevoNombre.trim();
             const charProhibidosNombreNodo = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
             if (charProhibidosNombreNodo.test(nuevoNombre)) {
-                throw new ApolloError("Nombre ilegal");
+                ApolloError("Nombre ilegal");
             }
 
             elNodo.nombre = nuevoNombre;
@@ -602,7 +565,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             let credencialesUsuario = contexto.usuario;
@@ -611,14 +574,14 @@ export const resolvers = {
 
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
 
             const charProhibidosDescripcionNodo = /[^\n\r a-zA-ZÀ-ž0-9_():;.,+¡!¿?"@=-]/;
 
             if (charProhibidosDescripcionNodo.test(nuevoDescripcion)) {
-                throw new ApolloError("Descripcion ilegal");
+                ApolloError("Descripcion ilegal");
             }
 
             nuevoDescripcion = nuevoDescripcion.trim();
@@ -643,7 +606,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             let credencialesUsuario = contexto.usuario;
@@ -652,14 +615,14 @@ export const resolvers = {
 
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
 
             const charProhibidosKeywordsNodo = /[^ a-zA-Z0-9]/;
 
             if (charProhibidosKeywordsNodo.test(nuevoKeywords)) {
-                throw new ApolloError("Keywords ilegal");
+                ApolloError("Keywords ilegal");
             }
 
             nuevoKeywords = nuevoKeywords.trim();
@@ -677,7 +640,7 @@ export const resolvers = {
             console.log('\x1b[35m%s\x1b[0m', `Solicitud de add un usuario con id ${idUsuario} como experto a un nodo con id ${idNodo}`);
 
             if (!contexto.usuario) {
-                throw new AuthenticationError("Login requerido");
+                AuthenticationError("Login requerido");
             }
             const credencialesUsuario = contexto.usuario;
 
@@ -689,7 +652,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error buscando el nodo en la base de datos. E: " + error);
-                throw new ApolloError("Error de conexión con la base de datos");
+                ApolloError("Error de conexión con la base de datos");
             }
 
             //Authorización
@@ -699,24 +662,24 @@ export const resolvers = {
             const usuarioExperto = elNodo.expertos.includes(credencialesUsuario.id);
             if (idUsuario != credencialesUsuario.id && !usuarioExperto && !permisosEspeciales.some(p => credencialesUsuario.permisos.includes(p)) && !elNodo.expertos.includes(credencialesUsuario.id)) {
                 console.log(`Error de autenticacion.`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
-                    throw new ApolloError("Error buscando al usuario en la base de datos");
+                    ApolloError("Error buscando al usuario en la base de datos");
                 }
             }
             catch (error) {
                 console.log("Error buscando al usuario en la base de datos. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             if (elNodo.expertos.includes(idUsuario)) {
                 console.log(`El usuario ya era experto de este nodo`);
-                throw new ApolloError("El usuario ya estaba incluido");
+                ApolloError("El usuario ya estaba incluido");
             }
 
             let indexPosibleExperto = elNodo.posiblesExpertos.indexOf(idUsuario);
@@ -735,7 +698,7 @@ export const resolvers = {
                 console.log(`Usuario añadido a la lista de posibles expertos`);
             }
             else {
-                throw new UserInputError("El usuario no podía ser added to expertos")
+                UserInputError("El usuario no podía ser added to expertos")
             }
 
             try {
@@ -743,16 +706,10 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error guardando datos en la base de datos. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
-            //Mirror expertos del nodo hacia miembros del foro
-            try {
-                await Foro.findByIdAndUpdate(elNodo.idForoExpertos, { miembros: elNodo.expertos });
-                await Foro.findByIdAndUpdate(elNodo.idForoPublico, { miembros: elNodo.expertos });
-            } catch (error) {
-                console.log(`Error mirroring expertos del nodo hacia miembros del foro. E: ${error}`);
-            }
+            
             console.log(`Nodo guardado`);
             return elNodo
 
@@ -768,30 +725,30 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error buscando el nodo en la base de datos. E: " + error);
-                throw new ApolloError("Error de conexión con la base de datos");
+                ApolloError("Error de conexión con la base de datos");
             }
 
             //Authorización
 
             if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
                 console.log(`Error de autenticacion añadiendo posible experto del nodo`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             if (elNodo.posiblesExpertos.includes(idUsuario) || elNodo.expertos.includes(idUsuario)) {
                 console.log(`el usuario ya estaba en la lista`);
-                throw new ApolloError("El usuario ya estaba en la lista");
+                ApolloError("El usuario ya estaba en la lista");
             }
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
-                    throw new ApolloError("Error buscando al usuario en la base de datos");
+                    ApolloError("Error buscando al usuario en la base de datos");
                 }
             }
             catch (error) {
                 console.log("Error buscando al usuario en la base de datos. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
 
@@ -801,7 +758,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error guardando datos en la base de datos. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             console.log(`Nodo guardado`);
             return elNodo
@@ -810,7 +767,7 @@ export const resolvers = {
             console.log('\x1b[35m%s\x1b[0m', `Solicitud de remover un usuario con id ${idUsuario} de la lista de expertos de un nodo con id ${idNodo}`);
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Usuario no logeado`);
-                throw new AuthenticationError("Login requerido");
+                AuthenticationError("Login requerido");
             }
             const credencialesUsuario = contexto.usuario;
 
@@ -822,26 +779,26 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error buscando el nodo en la base de datos. E: " + error);
-                throw new ApolloError("Error de conexión con la base de datos");
+                ApolloError("Error de conexión con la base de datos");
             }
 
             //Authorización
 
             if (idUsuario != credencialesUsuario.id && !credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador")) {
                 console.log(`Error de autenticacion removiendo experto o posible experto de nodo`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
                 if (!elUsuario) {
                     console.log(`No se pudo encontrar al usuario con id ${idUsuario} en la base de datos`);
-                    throw new ApolloError("Error buscando al usuario en la base de datos");
+                    ApolloError("Error buscando al usuario en la base de datos");
                 }
             }
             catch (error) {
                 console.log("Error buscando al usuario en la base de datos. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             let indexPosibleExperto = elNodo.posiblesExpertos.indexOf(idUsuario);
@@ -863,16 +820,10 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error guardando datos en la base de datos. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
-            //Mirror expertos del nodo hacia miembros del foro
-            try {
-                await Foro.findByIdAndUpdate(elNodo.idForoPublico, { miembros: elNodo.expertos });
-                await Foro.findByIdAndUpdate(elNodo.idForoExpertos, { miembros: elNodo.expertos });
-            } catch (error) {
-                console.log(`Error mirroring expertos del nodo hacia miembros del foro. E: ${error}`);
-            }
+         
 
             console.log(`Nodo guardado`);
             return elNodo
@@ -880,7 +831,7 @@ export const resolvers = {
         },
         setTipoNodo: async function (_: any, { idNodo, nuevoTipoNodo }: any, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -891,14 +842,14 @@ export const resolvers = {
                 if (!elNodo) throw 'Nodo no encontrado';
             } catch (error) {
                 console.log('Error descargando el nodo de la base de datos: ' + error)
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             };
 
             const esExperto = elNodo.expertos.includes(credencialesUsuario.id);
             const tienePermisosEspeciales = permisosEspecialesAtlas.some(p => credencialesUsuario.permisos.includes(p));
 
             if (!esExperto && !tienePermisosEspeciales) {
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             elNodo.tipoNodo = nuevoTipoNodo;
@@ -907,7 +858,7 @@ export const resolvers = {
                 await elNodo.save();
             } catch (error) {
                 console.log(`Error guardando el nodo: ${error}`);
-                throw new ApolloError(`Error conectando con la base de datos`);
+                ApolloError(`Error conectando con la base de datos`);
             }
 
             return elNodo;
@@ -923,7 +874,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             let credencialesUsuario = contexto.usuario;
@@ -932,18 +883,18 @@ export const resolvers = {
 
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laSeccion = elNodo.secciones.id(idSeccion);
             if (!laSeccion) {
                 console.log(`Sección no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos")
+                ApolloError("Error conectando con la base de datos")
             }
 
             if (!laSeccion.idCarpeta) {
                 console.log(`Carpeta no especificada`);
-                throw new ApolloError("Informacion de la seccion inesperada");
+                ApolloError("Informacion de la seccion inesperada");
             }
 
             try {
@@ -951,7 +902,7 @@ export const resolvers = {
                 if (!laCarpeta) throw "Carpeta no encontrada"
             } catch (error) {
                 console.log(`Error buscando la carpeta de la seccion`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             laCarpeta.archivos.forEach(archivo => {
@@ -964,7 +915,7 @@ export const resolvers = {
             }
             else {
                 console.log(`Archivo no encontrado`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -972,7 +923,7 @@ export const resolvers = {
                 await laCarpeta.save();
             } catch (error) {
                 console.log(`Error guardando carpeta. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`Archivo eliminado`);
@@ -987,7 +938,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -996,18 +947,18 @@ export const resolvers = {
 
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laSeccion = elNodo.secciones.id(idSeccion);
             if (!laSeccion) {
                 console.log(`Sección no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos")
+                ApolloError("Error conectando con la base de datos")
             }
 
             if (!laSeccion.idCarpeta) {
                 console.log(`Carpeta no especificada`);
-                throw new ApolloError("Informacion de la seccion inesperada");
+                ApolloError("Informacion de la seccion inesperada");
             }
             laSeccion.modo = "archivo";
 
@@ -1016,7 +967,7 @@ export const resolvers = {
                 if (!laCarpeta) throw "Carpeta no encontrada"
             } catch (error) {
                 console.log(`Error buscando la carpeta de la seccion`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var encontrado = false;
@@ -1038,13 +989,13 @@ export const resolvers = {
                 await laCarpeta.save();
             } catch (error) {
                 console.log(`Error guardando carpeta. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             try {
                 await elNodo.save();
             } catch (error) {
                 console.log(`Error guardando nodo. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`Archivo seteado`);
@@ -1053,7 +1004,7 @@ export const resolvers = {
 
         crearNuevaSeccionNodoConocimiento: async function (_: any, { idNodo }: any, contexto: contextoQuery) {
             if (!contexto.usuario) {
-                throw new AuthenticationError("Login requerido");
+                AuthenticationError("Login requerido");
             }
             let credencialesUsuario = contexto.usuario;
 
@@ -1064,13 +1015,13 @@ export const resolvers = {
                 }
             } catch (error) {
                 console.log(`Error buscando el nodo`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             //Authorización
             const permisosEspeciales = ["superadministrador, atlasAdministrador"];
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !elNodo.expertos.includes(credencialesUsuario.id)) {
                 console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador o un experto`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var nuevaSeccion = elNodo.secciones.create({});
@@ -1081,7 +1032,7 @@ export const resolvers = {
                 await elNodo.save();
             } catch (error) {
                 console.log(`Error guardando el nodo`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return nuevaSeccion;
@@ -1095,20 +1046,20 @@ export const resolvers = {
                 }
             } catch (error) {
                 console.log(`Error buscando el nodo`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             //Authorización
 
             if (!credencialesUsuario.permisos.includes("superadministrador") && !credencialesUsuario.permisos.includes("atlasAdministrador") && !elNodo.expertos.includes(credencialesUsuario.id)) {
                 console.log(`Error de autenticacion. Solo lo puede realizar un superadministrador o un atlasAdministrador`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
 
 
             var laSeccion = elNodo.secciones.id(idSeccion);
             if (!laSeccion) {
-                throw new ApolloError("Sección no encontrada");
+                ApolloError("Sección no encontrada");
             }
 
             const idCarpeta = laSeccion.idCarpeta;
@@ -1125,7 +1076,7 @@ export const resolvers = {
                 await Nodo.findByIdAndUpdate(idNodo, { $pull: { secciones: { _id: idSeccion } } });
             } catch (error) {
                 console.log(`Error pulling la seccion`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return true;
@@ -1140,7 +1091,7 @@ export const resolvers = {
                 }
             } catch (error) {
                 console.log(`Error buscando el nodo`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             const usuarioExperto = elNodo.expertos.includes(credencialesUsuario.id);
@@ -1150,12 +1101,12 @@ export const resolvers = {
 
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !usuarioExperto) {
                 console.log(`Error de autenticacion. Solo lo puede realizar un experto, superadministrador o un atlasAdministrador`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laSeccion = elNodo.secciones.id(idSeccion);
             if (!laSeccion) {
-                throw new ApolloError("Sección no encontrada");
+                ApolloError("Sección no encontrada");
             }
             console.log(`Secciones estaba: ${elNodo.secciones.map(s => s.nombre)}`);
 
@@ -1163,22 +1114,22 @@ export const resolvers = {
             if (indexS > -1) {
                 const nuevoIndexS = indexS + movimiento;
                 if (nuevoIndexS < 0 || nuevoIndexS >= elNodo.secciones.length) {
-                    throw new ApolloError("Movimiento ilegal");
+                    ApolloError("Movimiento ilegal");
                 }
                 elNodo.secciones.splice(nuevoIndexS, 0, elNodo.secciones.splice(indexS, 1)[0]);
             }
             else {
-                throw new ApolloError("Error buscando la sección en la base de datos");
+                ApolloError("Error buscando la sección en la base de datos");
             }
             console.log(`Secciones quedó: ${elNodo.secciones.map(s => s.nombre)}`);
             try {
                 await elNodo.save();
             } catch (error) {
                 console.log(`Error pulling la seccion`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
-            return true;
+            return elNodo;
         },
         async editarNombreSeccionNodoConocimiento(_: any, { idNodo, idSeccion, nuevoNombre }, contexto: contextoQuery) {
 
@@ -1193,7 +1144,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error buscando el nodoConocimiento. E: " + error);
-                throw new ApolloError("Erro en la conexión con la base de datos");
+                ApolloError("Erro en la conexión con la base de datos");
             }
 
             //Authorización
@@ -1203,12 +1154,12 @@ export const resolvers = {
 
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando artículo de seccion de nodoConocimiento`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
             if (charProhibidosNombreCosa.test(nuevoNombre)) {
-                throw new ApolloError("Nombre ilegal");
+                ApolloError("Nombre ilegal");
             }
 
             nuevoNombre = nuevoNombre.trim();
@@ -1225,14 +1176,14 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error cambiando el artículo en la base de datos. E: " + error);
-                throw new ApolloError("Error guardando el artículo en la base de datos");
+                ApolloError("Error guardando el artículo en la base de datos");
             }
             try {
                 await elNodo.save();
             }
             catch (error) {
                 console.log("Error guardando el seccion creado en el nodoConocimiento. E: " + error);
-                throw new ApolloError("Error introduciendo el seccion en el nodoConocimiento");
+                ApolloError("Error introduciendo el seccion en el nodoConocimiento");
             }
             console.log(`Nombre de sección cambiado`);
             return laSeccion;
@@ -1248,7 +1199,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error buscando el nodoConocimiento. E: " + error);
-                throw new ApolloError("Erro en la conexión con la base de datos");
+                ApolloError("Erro en la conexión con la base de datos");
             }
 
             //Authorización
@@ -1258,7 +1209,7 @@ export const resolvers = {
 
             if (!elNodo.expertos.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando artículo de seccion de nodoConocimiento`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
@@ -1272,14 +1223,14 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error cambiando el artículo en la base de datos. E: " + error);
-                throw new ApolloError("Error guardando el artículo en la base de datos");
+                ApolloError("Error guardando el artículo en la base de datos");
             }
             try {
                 await elNodo.save();
             }
             catch (error) {
                 console.log("Error guardando el seccion creado en el nodoConocimiento. E: " + error);
-                throw new ApolloError("Error introduciendo el seccion en el nodoConocimiento");
+                ApolloError("Error introduciendo el seccion en el nodoConocimiento");
             }
             console.log(`Enlace cambiado`);
             return laSeccion;
@@ -1295,7 +1246,7 @@ export const resolvers = {
                 }
             } catch (error) {
                 console.log(`Error buscando el nodo`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             const usuarioExperto = elNodo.expertos.includes(credencialesUsuario.id);
@@ -1305,7 +1256,7 @@ export const resolvers = {
 
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !usuarioExperto) {
                 console.log(`Error de autenticacion. Solo lo puede realizar un experto, superadministrador o un atlasAdministrador`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var nuevaClase = elNodo.clases.create({
@@ -1319,7 +1270,7 @@ export const resolvers = {
                 await elNodo.save();
             } catch (error) {
                 console.log(`Error guardando el nodo con la nueva clase`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return nuevaClase;
@@ -1334,7 +1285,7 @@ export const resolvers = {
                 }
             } catch (error) {
                 console.log(`Error buscando el nodo`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             const usuarioExperto = elNodo.expertos.includes(credencialesUsuario.id);
@@ -1344,7 +1295,7 @@ export const resolvers = {
 
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !usuarioExperto) {
                 console.log(`Error de autenticacion. Solo lo puede realizar un experto, superadministrador o un atlasAdministrador`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var indexClase = elNodo.clases.findIndex(c => c.id === idClase);
@@ -1354,7 +1305,7 @@ export const resolvers = {
             }
             else {
                 console.log(`Error: No existía la clase ${idClase} en el nodo ${idNodo}`);
-                throw new UserInputError("La clase no existía en este nodo");
+                UserInputError("La clase no existía en este nodo");
             }
 
             //Eliminar los eventos de esta clase
@@ -1369,7 +1320,7 @@ export const resolvers = {
                 await elNodo.save();
             } catch (error) {
                 console.log(`Error guardando el nodo con la nueva clase`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return true;
@@ -1381,7 +1332,7 @@ export const resolvers = {
 
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && credencialesUsuario.id != idUsuario) {
                 console.log(`Error de autenticacion.`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
@@ -1391,19 +1342,19 @@ export const resolvers = {
                 }
             } catch (error) {
                 console.log(`Error buscando el nodo`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
 
             var laClase = elNodo.clases.find(c => c.id === idClase);
             if (!laClase) {
                 console.log(`Clase ${idClase} no encontrada`);
-                throw new UserInputError("Datos incorrectos");
+                UserInputError("Datos incorrectos");
             }
 
             if (idUsuario === laClase.idExperto) {
                 console.log(`El dictador de la clase pretendia participar. Abortando`);
-                throw new UserInputError("El usuario que dictará la clase no puede ser un participante");
+                UserInputError("El usuario que dictará la clase no puede ser un participante");
             }
 
 
@@ -1419,7 +1370,7 @@ export const resolvers = {
                 await elNodo.save();
             } catch (error) {
                 console.log(`Error guardando el nodo con interesado nuevo en clase`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return laClase;
@@ -1431,7 +1382,7 @@ export const resolvers = {
 
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && credencialesUsuario.id != idUsuario) {
                 console.log(`Error de autenticacion.`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
@@ -1441,13 +1392,13 @@ export const resolvers = {
                 }
             } catch (error) {
                 console.log(`Error buscando el nodo`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var laClase = elNodo.clases.find(c => c.id === idClase);
             if (!laClase) {
                 console.log(`Clase ${idClase} no encontrada`);
-                throw new UserInputError("Datos incorrectos");
+                UserInputError("Datos incorrectos");
             }
 
             var indexU = laClase.interesados.indexOf(idUsuario);
@@ -1457,14 +1408,14 @@ export const resolvers = {
             }
             else {
                 console.log(`El usuario ${idUsuario} a eliminar no estaba en la lista de interesados de la clase ${idClase}`);
-                throw new UserInputError("Datos incorrectos");
+                UserInputError("Datos incorrectos");
             }
 
             try {
                 await elNodo.save();
             } catch (error) {
                 console.log(`Error guardando el nodo con interesado nuevo en clase`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return laClase;
@@ -1518,7 +1469,7 @@ export const resolvers = {
         async porcentajeCompletado(parent: any, { }: any, contexto: contextoQuery) {
 
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -1528,7 +1479,7 @@ export const resolvers = {
                 if (!elUsuario) throw 'Usuario no encontrado';
             }
             catch (error) {
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             }
 
             let datosNodos = elUsuario.atlas.datosNodos;
@@ -1550,7 +1501,7 @@ export const resolvers = {
                     nodosActuales = await Nodo.find({ "_id": { $in: idsActuales } }).exec();
                 } catch (error) {
                     console.log(`Error getting nodos actuales : ` + error);
-                    throw new ApolloError('Error conectando con la base de datos');
+                    ApolloError('Error conectando con la base de datos');
                 }
 
                 let nodosNuevos = nodosActuales.filter(n => !nodosRed.some(nr => nr.id === n.id));
@@ -1578,7 +1529,6 @@ export const resolvers = {
     }
 };
 
-
 export async function getIdsRedRequerimentosNodo(nodo) {
     console.log(`Getting red previa de ${nodo.nombre}`)
     let idsActuales = nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef);
@@ -1591,18 +1541,20 @@ export async function getIdsRedRequerimentosNodo(nodo) {
             losNodosAnteriores = await Nodo.find({ "_id": { $in: idsActuales } }).exec();
         } catch (error) {
             console.log(`Error getting nodos anteriores : ` + error);
-            throw new ApolloError('Error conectando con la base de datos');
+            ApolloError('Error conectando con la base de datos');
 
         }
 
         console.log(`Anteriores: ${losNodosAnteriores.map(n => n.nombre)}`);
 
-        idsActuales = losNodosAnteriores.reduce((acc, nod) => {
+        let idsProx = losNodosAnteriores.reduce((acc, nod) => {
             let idsPrevios = nod.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef);
             return acc.concat(idsPrevios);
         }, []);
+        let idsNuevos = idsProx.filter(id => !todosIds.includes(id));
 
-        todosIds.push(...idsActuales);
+        idsActuales = idsNuevos;
+        todosIds.push(...idsNuevos);
 
         guarda++
     }
@@ -1611,6 +1563,29 @@ export async function getIdsRedRequerimentosNodo(nodo) {
 
 }
 
+export async function getNodosRedPreviaNodo(nodo) {
+    let nodosActuales = [nodo];
+    let todosNodos = [...nodosActuales];
+    let guarda = 0;
+
+    while (guarda < 300 && nodosActuales.length > 0) {
+        guarda++;
+        let idsSiguientes = nodosActuales.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef)).flat();
+
+        let nodosNext: any = [];
+
+        try {
+            nodosNext = await Nodo.find({ "_id": { $in: idsSiguientes } }).exec();
+        } catch (error) {
+            console.log("Error getting nodos siguientes :" + error);
+        }
+        let nodosNuevos = nodosNext.filter(n => !todosNodos.map(tn => tn.id).includes(n.id));
+
+        todosNodos.push(...nodosNuevos);
+        nodosActuales = nodosNuevos;
+    }
+    return todosNodos;
+}
 
 export async function getIdsRedContinuacionesNodo(nodo) {
     console.log(`Getting red posterior de ${nodo.nombre}`)
@@ -1624,8 +1599,7 @@ export async function getIdsRedContinuacionesNodo(nodo) {
             losNodosPosteriores = await Nodo.find({ "_id": { $in: idsActuales } }).exec();
         } catch (error) {
             console.log(`Error getting nodos posteriores : ` + error);
-            throw new ApolloError('Error conectando con la base de datos');
-
+            ApolloError('Error conectando con la base de datos');
         }
 
         console.log(`Anteriores: ${losNodosPosteriores.map(n => n.nombre)}`);
@@ -1643,4 +1617,5 @@ export async function getIdsRedContinuacionesNodo(nodo) {
     return todosIds;
 
 }
+
 

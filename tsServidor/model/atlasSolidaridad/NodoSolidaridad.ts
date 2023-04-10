@@ -1,8 +1,19 @@
 import mongoose from "mongoose";
-import { EsquemaVinculosNodosSolidaridad } from "./VinculosNodosSolidaridad";
-import { pubsub } from "../../index"
-import { NODO_EDITADO, NODO_FAMILY_EDITADO, NODO_ELIMINADO, NODO_FAMILY_ELIMINADO } from "../../gql/AtlasSolidaridad"
 import { esquemaArchivo } from "../Misc";
+ const EsquemaVinculosNodosSolidaridad = new mongoose.Schema(
+    {
+        idRef: {
+            type: String,
+            required: true,
+        },
+        tipo: {
+            type: String,
+            required: true,
+            enum: ["requiere"]
+        },       
+    });
+
+
 
 const EsquemaEvento=new mongoose.Schema({
     fecha:{
@@ -309,15 +320,11 @@ esquemaMovimientoDinero.pre("save", function(this:any, next){
 
 esquemaNodoSolidaridad.post("save", function (nodo) {
     if(!nodo.posicionadoByFuerzas){    
-        pubsub.publish(NODO_EDITADO, { nodoEditado: nodo });
-        pubsub.publish(NODO_FAMILY_EDITADO, {nodoSolidaridadFamilyEditado:nodo});
     }
     
 });
 esquemaNodoSolidaridad.post("remove", function(nodo){ 
     console.log(`Publicando la removida de un nodo`);   
-    pubsub.publish(NODO_ELIMINADO, {nodoEliminado:nodo.id, elNodoEliminado:nodo})
-    pubsub.publish(NODO_FAMILY_ELIMINADO, {nodoSolidaridadFamilyEliminado: nodo.id, elNodoEliminado:nodo})
 });
 
 esquemaNodoSolidaridad.index({ nombre: "text", keywords: "text", descripcion: "text" });

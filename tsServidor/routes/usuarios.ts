@@ -1,13 +1,17 @@
-const multer = require("multer");
+import multer from "multer"
 const upload = multer();
-const router = require("express").Router();
+import express from "express"
+let router = express.Router();
 import { ModeloUsuario as Usuario, validarDatosUsuario } from "../model/Usuario";
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const path = require("path");
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
 import sharp from "sharp"
 import { errorApi } from "../errorHandling"
 import { Request, Response } from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 var charProhibidosUsername = /[^a-zA-ZñÑ0-9_]/g;
 var charProhibidosPassword = /[^a-zA-Z0-9ñÑ*@_-]/g;
@@ -76,14 +80,14 @@ router.post("/registro", async (req: Request, res: Response) => {
         var nuevoUsuario: any = new Usuario({ ...nuevoU });
     }
     catch (error) {
-        let respuesta = errorApi(error, "database", "Error creando el objeto mongoose antes de subirlo a la DB", null);
+        let respuesta = errorApi(error as string, "database", "Error creando el objeto mongoose antes de subirlo a la DB", null);
         return res.status(400).send(respuesta);
     }
 
     try {
         await nuevoUsuario.save();
     } catch (error) {
-        let respuesta = errorApi(error, "database", "Error guardando el objeto en mongoDB", null);
+        let respuesta = errorApi(error as string, "database", "Error guardando el objeto en mongoDB", null);
         return res.status(400).send(respuesta);
     }
     console.log(`Registro exitoso de ${nuevoUsuario.username} con id ${nuevoUsuario._id}`);
@@ -124,7 +128,11 @@ router.post("/login", async (req: Request, res: Response) => {
             id: elUsuario._id,
             permisos: elUsuario.permisos,
             username: elUsuario.username,
-            version:1,
+            version: 1,
+        }
+
+        if (!process.env.JWT_SECRET) {
+            throw "ENV JWT SECRET no configurado";
         }
         let token = jwt.sign(datosToken, process.env.JWT_SECRET,);
         let respuesta = {
@@ -141,7 +149,8 @@ router.post("/login", async (req: Request, res: Response) => {
     }
 });
 
-router.post("/updatePassword", async (req, res) => {
+router.post("/updatePassword", async (req:any, res) => {
+    
 
     if (!req.user) {
         console.log(`No habia info del bearer`);
@@ -204,7 +213,7 @@ router.post("/updatePassword", async (req, res) => {
     }
 });
 
-router.post("/resetearPassUsuario", async (req, res) => {
+router.post("/resetearPassUsuario", async (req:any, res) => {
 
     if (!req.user) {
         console.log(`No habia info del bearer`);
@@ -239,7 +248,7 @@ router.post("/resetearPassUsuario", async (req, res) => {
 
 });
 
-router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res) {
+router.post("/updateFoto", upload.single("nuevaFoto"), async function (req:any, res) {
 
     console.log(`Recibida peticion de subir foto por el usuario ${req.user.username}`);
 
@@ -262,17 +271,17 @@ router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res)
     }
 
     try {
-        const imagen=await sharp(req.file.buffer);
+        const imagen = await sharp(req.file.buffer);
 
-        const imagenPeque=await imagen
-        .resize({width: 300, height:300, options:{fit:"outside"} })
-        .rotate()
-        .toBuffer();    
+        const imagenPeque = await imagen
+            .resize({ width: 300, height: 300, fit: "outside" })
+            .rotate()
+            .toBuffer();
         elUsuario.fotografia = imagenPeque;
     } catch (error) {
         console.log(`Error resizing imagen. E: ${error}`);
     }
-            
+
     try {
         await elUsuario.save();
     }
@@ -306,4 +315,4 @@ router.get("/fotografias/:id", async function (req, res) {
     return;
 });
 
-module.exports = router;
+export default router;

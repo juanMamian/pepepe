@@ -1,11 +1,10 @@
-import { ApolloError, AuthenticationError, gql, withFilter } from "apollo-server-express";
 import { lexicographicSortSchema } from "graphql";
 import mongoose from "mongoose";
 import { ModeloLibro as Libro } from "../../model/cuentos/Libro";
+import { ApolloError, AuthenticationError } from "../misc";
 import { contextoQuery } from "../tsObjetos";
-import { ModeloForo as Foro } from "../../model/Foros/Foro"
 
-export const typeDefs = gql`
+export const typeDefs = `#graphql
 
     type AudioEmbedded{
         tipoReproduccion:String,
@@ -99,49 +98,11 @@ export const resolvers = {
                 if (!elLibro) throw "libro no encontrado"
             } catch (error) {
                 console.log(`Error buscando libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
-            var tieneForo=true;
-
-            if (!elLibro.idForo) {
-                tieneForo = false;
-            }
-            else {
-                try {
-                    let elForo: any = await Foro.findById(elLibro.idForo).exec();
-                    if (!elForo) {
-                        console.log(`El foro no existía. Se creará uno nuevo`);
-                        tieneForo = false;
-                    }
-                } catch (error) {
-                    console.log(`Error buscando foro en la base de datos. E :${error}`);
-                }
-            }
-
-            if (!tieneForo) {
-                console.log(`El libro ${elLibro.titulo} no tenía foro. Creando con miembros: ${elLibro.idsEditores}.`);
-                try {
-                    var nuevoForo: any = await Foro.create({
-                        miembros: elLibro.idsEditores,
-                        acceso: "privado"
-                    });
-                    var idNuevoForo = nuevoForo._id;
-                    await nuevoForo.save();
-                } catch (error) {
-                    console.log(`Error creando el nuevo foro. E: ${error}`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-                console.log(`Nuevo foro con id ${idNuevoForo} creado`);
-                try {
-                    elLibro.idForo = idNuevoForo;
-                    await elLibro.save();
-                } catch (error) {
-                    console.log(`Error guardando el libro`);
-                    throw new ApolloError("Error conectando con la base de datos");
-                }
-            }
-
+           
+          
             console.log(`enviando libro ${elLibro.id}`);
 
             return elLibro;
@@ -155,7 +116,7 @@ export const resolvers = {
                 var losLibros: any = await Libro.find({ idsEditores: usuario.id }).exec();
             } catch (error) {
                 console.log(`Error buscando misLibros. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`Enviando ${losLibros.length} libros`);
@@ -169,14 +130,14 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion pidiendo todosLibros`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
                 var losLibros: any = await Libro.find({}).exec();
             } catch (error) {
                 console.log(`Error buscando misLibros. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`Enviando ${losLibros.length} libros`);
@@ -188,14 +149,14 @@ export const resolvers = {
             
             if (!credencialesUsuario.id || credencialesUsuario.id.length<1) {
                 console.log(`Error de autenticacion pidiendo libros publicos`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
                 var losLibros: any = await Libro.find({publico: true}).exec();
             } catch (error) {
                 console.log(`Error buscando misLibros. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`Enviando ${losLibros.length} libros publicos`);
@@ -220,7 +181,7 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando titulo de libro`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
@@ -228,7 +189,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error eliminando la página ${idPagina} del libro`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return true;
         },
@@ -248,13 +209,13 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando color de página de libro`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina=elLibro.paginas.id(idPagina);
             if(!laPagina){
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             laPagina.color=nuevoColor;
 
@@ -262,7 +223,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error cambiando color de la página ${idPagina} del libro`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return true;
         },
@@ -272,7 +233,7 @@ export const resolvers = {
             const usuario = contexto.usuario;
 
             if (usuario.id.length == 0) {
-                throw new AuthenticationError("No logeado");
+                AuthenticationError("No logeado");
             }
 
             try {
@@ -282,7 +243,7 @@ export const resolvers = {
                 await nuevoLibro.save();
             } catch (error) {
                 console.log(`Error creando el nuevo libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos.");
+                ApolloError("Error conectando con la base de datos.");
             }
             return nuevoLibro;
         },
@@ -302,14 +263,14 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando titulo de libro`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             const charProhibidosTituloLibro = /[^ a-zA-ZÀ-ž0-9_():.,-¿?¡!]/;
 
             nuevoTitulo = nuevoTitulo.replace(/\s\s+/g, " ");
             if (charProhibidosTituloLibro.test(nuevoTitulo)) {
-                throw new ApolloError("Titulo ilegal");
+                ApolloError("Titulo ilegal");
             }
 
 
@@ -340,14 +301,14 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion eliminando libro`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
                 await Libro.findByIdAndDelete(idLibro).exec();                
             } catch (error) {
                 console.log(`Error eliminando el libro`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return true;
         },
@@ -367,7 +328,7 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion eliminando libro`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             elLibro.publico=nuevoEstado;
@@ -376,7 +337,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro con nuevo estado publico ${nuevoEstado}. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return true;
@@ -399,7 +360,7 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando titulo de libro`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var nuevaPagina = elLibro.paginas.create({
@@ -411,7 +372,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro con la nueva página`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return nuevaPagina;
@@ -436,13 +397,13 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion insertando cuadro de texto`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var nuevoCuadroTexto = laPagina.cuadrosTexto.create({
@@ -455,7 +416,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Erro guardando el libro con el nuevo cuadro texto`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return nuevoCuadroTexto;
@@ -478,19 +439,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion updating texto de cuadro de texto`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var elCuadroTexto = laPagina.cuadrosTexto.id(idCuadroTexto);
             if (!elCuadroTexto) {
                 console.log(`CuadroTexto no encontrado`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -498,7 +459,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return elCuadroTexto
         },
@@ -519,19 +480,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion updating size de cuadro de texto`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var elCuadroTexto = laPagina.cuadrosTexto.id(idCuadroTexto);
             if (!elCuadroTexto) {
                 console.log(`CuadroTexto no encontrado`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -539,7 +500,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return elCuadroTexto
         },
@@ -560,19 +521,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion updating posicion de cuadro de texto`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var elCuadroTexto = laPagina.cuadrosTexto.id(idCuadroTexto);
             if (!elCuadroTexto) {
                 console.log(`CuadroTexto no encontrado`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -580,7 +541,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return elCuadroTexto
         },
@@ -601,19 +562,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion updating posicionZ de cuadro de texto`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var elCuadroTexto = laPagina.cuadrosTexto.id(idCuadroTexto);
             if (!elCuadroTexto) {
                 console.log(`CuadroTexto no encontrado`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -621,7 +582,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return elCuadroTexto
         },
@@ -642,13 +603,13 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion eliminando cuadro de texto`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -656,7 +617,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return true;
         },
@@ -679,13 +640,13 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion insertando cuadro de imágen`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var nuevoCuadroImagen = laPagina.cuadrosImagen.create({
@@ -698,7 +659,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Erro guardando el libro con el nuevo cuadro texto`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return nuevoCuadroImagen;
@@ -721,19 +682,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion updating size de cuadro de imágen`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var elCuadroImagen = laPagina.cuadrosImagen.id(idCuadroImagen);
             if (!elCuadroImagen) {
                 console.log(`CuadroImagen no encontrado`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -741,7 +702,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return elCuadroImagen
         },
@@ -762,19 +723,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion updating posicionZ de cuadro de imágen`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var elCuadroImagen = laPagina.cuadrosImagen.id(idCuadroImagen);
             if (!elCuadroImagen) {
                 console.log(`CuadroImagen no encontrado`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -782,7 +743,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return elCuadroImagen
         },
@@ -803,19 +764,19 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion updating posicion de cuadro de imágen`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             var elCuadroImagen = laPagina.cuadrosImagen.id(idCuadroImagen);
             if (!elCuadroImagen) {
                 console.log(`CuadroImagen no encontrado`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -823,7 +784,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return elCuadroImagen
         },
@@ -844,13 +805,13 @@ export const resolvers = {
             let permisosEspeciales = ["superadministrador"];
             if (!elLibro.idsEditores.includes(credencialesUsuario.id) && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion eliminando cuadro de imagen`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laPagina = elLibro.paginas.id(idPagina);
             if (!laPagina) {
                 console.log(`Pagina no encontrada`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             try {
@@ -858,7 +819,7 @@ export const resolvers = {
                 await elLibro.save();
             } catch (error) {
                 console.log(`Error guardando el libro. E: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             return true;
         },  

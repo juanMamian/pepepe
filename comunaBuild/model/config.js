@@ -1,17 +1,14 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.validatorTexto = exports.validatorNombreCosa = exports.charProhibidosTexto = exports.charProhibidosNombreCosa = void 0;
-exports.charProhibidosNombreCosa = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
-exports.charProhibidosTexto = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
-exports.validatorNombreCosa = {
+export const charProhibidosNombreCosa = /[^ a-zA-ZÀ-ž0-9_():.,-]/;
+export const charProhibidosTexto = /[^\n\r a-zA-ZÀ-ž0-9_()":;.,+¡!¿?@=-]/;
+export const validatorNombreCosa = {
     validator: function (n) {
-        return !exports.charProhibidosNombreCosa.test(n);
+        return !charProhibidosNombreCosa.test(n);
     },
     message: props => `${props.value} contiene caracteres ilegales!`
 };
-exports.validatorTexto = {
+export const validatorTexto = {
     validator: function (n) {
-        return !exports.charProhibidosTexto.test(n);
+        return !charProhibidosTexto.test(n);
     },
     message: props => `${props.value} contiene caracteres ilegales!`
 };

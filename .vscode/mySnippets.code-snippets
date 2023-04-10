@@ -145,5 +145,36 @@
 			"console.log('\\x1b[35m%s\\x1b[0m', `$1`);"
 		]
 		
+	},
+	"Bloque para vue options":{
+		"scope": "javascript",
+		"prefix": "bloquevue",
+		"body": [
+			"$1(){",
+			"\t$2",
+			"},",
+		]
+	},
+	"Acceso a cached query de apollo":{
+		"scope": "javascript",
+		"prefix":"storeapollo",
+		"body":[
+			"const store = this.\\$apollo.provider.defaultClient;",
+			"const cache = store.readQuery({",
+			"\tquery: $1,",
+			"\tvariables:{",
+			"\t\t$2",
+			"\t}",
+			"});",
+			"let nuevoCache = JSON.parse(JSON.stringify(cache));",
+			"",
+			"store.writeQuery({",
+			"\tquery: $1,",
+			"\tvariables:{",
+			"\t\t$2",
+			"\t},",
+			"\tdata: nuevoCache,"
+			"});"
+		]
 	}
 }

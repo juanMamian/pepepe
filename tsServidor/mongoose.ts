@@ -1,18 +1,13 @@
-const mongoose = require("mongoose");
-import { funcionesInicioRutaGrado } from "./gql/RutaGrado";
-import {posicionAutomaticaConocimiento} from "./posicionAutomaticaConocimiento"
-
+import mongoose from "mongoose"
 
 export var dbConectada=false;
-mongoose.set('useFindAndModify', false);
 export const iniciarMongoose = async () => {
+    if(!process.env.DB_CONNECT){
+        throw "ENV DE CONEXION A DB NO CONFIGURADO"
+    }
     try {
         await mongoose.connect(
-            process.env.DB_CONNECT,
-            {
-                useNewUrlParser: true,
-                useUnifiedTopology: true
-            }
+            process.env.DB_CONNECT,            
         );
     } catch (error) {
         console.log(`Error conectando con la base de datos: E:${error}`);

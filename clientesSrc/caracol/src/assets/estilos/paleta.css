@@ -1,0 +1,9 @@
+:root{
+    --gradienteFondo1Start: #fcff77;
+    --gradienteFondo1End: rgba(235, 85, 21, 0.75);
+
+
+    --gradienteFondo2Start:rgba(252, 255, 119, 0.46);
+    --gradienteFondo2End: rgba(235, 85, 21, 0.05); 
+
+}

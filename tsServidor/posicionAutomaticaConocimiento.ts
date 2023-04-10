@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose"
 
 
 import { ModeloConfiguracionAtlas as ConfiguracionAtlas } from "./model/ConfiguracionAtlas";
@@ -54,7 +54,7 @@ export async function posicionAutomaticaConocimiento() {
 }
 
 function posicionar(todosNodos, celdas) {
-    todosNodos.forEach(nodo => {        
+    todosNodos.forEach(nodo => {    
         setFuerzaCentroMasa(nodo, todosNodos);
         setFuerzaColision(nodo, celdas, todosNodos);
         moverNodo(nodo, celdas);        

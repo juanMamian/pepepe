@@ -1,12 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloUsuario = exports.minLengthUsername = exports.minLengthEmail = exports.maxLengthPassword = exports.minLengthPassword = exports.minLengthApellidosUsuario = exports.minLengthNombresUsuario = exports.emailValidator = exports.charProhibidosPassword = exports.charProhibidosUsername = exports.charProhibidosNombresUsuario = exports.validarDatosUsuario = exports.ModeloNotificacion = exports.permisosDeUsuario = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const VinculosNodosSolidaridad_1 = require("./atlasSolidaridad/VinculosNodosSolidaridad");
-exports.permisosDeUsuario = [
+import mongoose from "mongoose";
+export const permisosDeUsuario = [
     "usuario",
     "administrador",
     "atlasAdministrador",
@@ -22,13 +15,13 @@ exports.permisosDeUsuario = [
     "maestraVida-graduado",
     "comunere"
 ];
-const esquemaIteracionRepaso = new mongoose_1.default.Schema({
+const esquemaIteracionRepaso = new mongoose.Schema({
     intervalo: {
         type: Number,
         default: 86400000
     }
 });
-const EsquemaInformeUsuario = new mongoose_1.default.Schema({
+const EsquemaInformeUsuario = new mongoose.Schema({
     year: {
         type: Number,
         required: true,
@@ -51,7 +44,7 @@ const EsquemaInformeUsuario = new mongoose_1.default.Schema({
         type: String,
     }
 });
-const esquemaColeccionNodosAtlasConocimiento = new mongoose_1.default.Schema({
+const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({
     nombre: {
         type: String,
         default: "Nueva colección",
@@ -66,7 +59,7 @@ const esquemaColeccionNodosAtlasConocimiento = new mongoose_1.default.Schema({
 esquemaColeccionNodosAtlasConocimiento.virtual("idUsuario").get(function () {
     return this.ownerDocument()._id;
 });
-const esquemaNotificacion = new mongoose_1.default.Schema({
+const esquemaNotificacion = new mongoose.Schema({
     texto: {
         type: String,
         default: "Nueva notificacion",
@@ -88,7 +81,7 @@ const esquemaNotificacion = new mongoose_1.default.Schema({
         default: Date.now
     }
 });
-const esquemaNotificacionEventoAtlasSolidaridad = new mongoose_1.default.Schema({
+const esquemaNotificacionEventoAtlasSolidaridad = new mongoose.Schema({
     texto: {
         type: String,
         default: "Nueva notificacion",
@@ -106,7 +99,7 @@ const esquemaNotificacionEventoAtlasSolidaridad = new mongoose_1.default.Schema(
         default: Date.now
     }
 });
-const esquemaNotificacionActividadForo = new mongoose_1.default.Schema({
+const esquemaNotificacionActividadForo = new mongoose.Schema({
     idParent: {
         type: String,
         required: true
@@ -126,13 +119,9 @@ const esquemaNotificacionActividadForo = new mongoose_1.default.Schema({
         default: 1
     }
 });
-const esquemaDatoNodo = new mongoose_1.default.Schema({
+const esquemaDatoNodo = new mongoose.Schema({
     idNodo: {
         type: String, required: true
-    },
-    objetivo: {
-        type: Boolean,
-        default: false
     },
     aprendido: {
         type: Boolean,
@@ -146,31 +135,59 @@ const esquemaDatoNodo = new mongoose_1.default.Schema({
         min: 86400000,
         default: 86400000 * 2,
     },
+    diasRepaso: {
+        type: Number,
+        min: 1,
+        default: 2,
+        max: 1000,
+    },
     iteracionesRepaso: {
         type: [esquemaIteracionRepaso],
         default: []
     },
 });
 esquemaDatoNodo.pre("save", function (next) {
-    if (this.aprendido) {
-        this.iteracionesRepaso = [];
+    if (!this.diasRepaso && this.periodoRepaso) {
+        //Periodo repaso in milliseconds to diasRepaso in days
+        this.diasRepaso = this.periodoRepaso / 86400000;
     }
-    else if (this.estudiado) {
-        if (!this.iteracionesRepaso)
-            this.iteracionesRepaso = [];
-        if (this.iteracionesRepaso.length < 1) {
-            this.iteracionesRepaso.push({
-                intervalo: 172800000
-            });
-        }
-    }
-    else {
-        this.iteracionesRepaso = [];
+    if (this.estudiado && !this.diasRepaso) {
+        this.diastRepaso = 2;
     }
     next();
 });
-exports.ModeloNotificacion = mongoose_1.default.model("Notificacion", esquemaNotificacion);
-const esquemaUsuario = new mongoose_1.default.Schema({
+const esquemaEstadoAtlas = new mongoose.Schema({
+    centroVista: {
+        x: {
+            type: Number,
+            required: true,
+            default: 0
+        },
+        y: {
+            type: Number,
+            required: true,
+            default: 0
+        }
+    },
+    datosNodos: {
+        type: [esquemaDatoNodo],
+        default: []
+    },
+    configuracion: {
+        modo: {
+            type: String,
+            default: 'estudiante',
+            enum: ['estudiante', 'experto']
+        }
+    },
+    colecciones: {
+        type: [esquemaColeccionNodosAtlasConocimiento],
+        default: []
+    },
+    idNodoTarget: String,
+});
+export const ModeloNotificacion = mongoose.model("Notificacion", esquemaNotificacion);
+const esquemaUsuario = new mongoose.Schema({
     username: {
         type: String,
         min: 3,
@@ -198,6 +215,10 @@ const esquemaUsuario = new mongoose_1.default.Schema({
         max: Date.now,
         min: new Date('1890-01-01'),
         default: Date.now
+    },
+    objetivos: {
+        type: [String],
+        default: [],
     },
     informesMaestraVida: {
         type: [EsquemaInformeUsuario],
@@ -227,6 +248,10 @@ const esquemaUsuario = new mongoose_1.default.Schema({
                 type: String,
             }
         }],
+    nodosCompletadosRutaGrado: {
+        type: [String],
+        default: []
+    },
     password: {
         type: String,
         required: true,
@@ -239,37 +264,14 @@ const esquemaUsuario = new mongoose_1.default.Schema({
         max: 100,
         min: 2,
         default: ["usuario"],
-        enum: exports.permisosDeUsuario
+        enum: permisosDeUsuario
     },
     atlas: {
-        centroVista: {
-            x: {
-                type: Number,
-                required: true,
-                default: 0
-            },
-            y: {
-                type: Number,
-                required: true,
-                default: 0
-            }
+        type: esquemaEstadoAtlas,
+        default: {
+            datosNodos: [],
+            colecciones: [],
         },
-        datosNodos: {
-            type: [esquemaDatoNodo],
-            default: []
-        },
-        configuracion: {
-            modo: {
-                type: String,
-                default: 'estudiante',
-                enum: ['estudiante', 'experto']
-            }
-        },
-        colecciones: {
-            type: [esquemaColeccionNodosAtlasConocimiento],
-            default: []
-        },
-        idNodoTarget: String,
     },
     atlasSolidaridad: {
         coordsVista: {
@@ -326,10 +328,6 @@ const esquemaUsuario = new mongoose_1.default.Schema({
                     default: []
                 }
             }]
-    },
-    vinculos: {
-        type: [VinculosNodosSolidaridad_1.EsquemaVinculosNodosSolidaridad],
-        default: []
     },
     coords: {
         x: {
@@ -392,7 +390,18 @@ const esquemaUsuario = new mongoose_1.default.Schema({
 });
 esquemaUsuario.pre("save", function (next) {
     var nuevoDatosNodos = [];
-    console.log("Revisando si hay datos nodo repetidos");
+    if (!this.atlas) {
+        this.atlas = {};
+    }
+    if (!this.atlas.datosNodos) {
+        this.atlas.datosNodos = [];
+    }
+    if (!this.atlas.colecciones) {
+        this.atlas.colecciones = [];
+    }
+    if (!this.atlas.datosNodos) {
+        next();
+    }
     for (const dato of this.atlas.datosNodos) {
         if (!nuevoDatosNodos.map(dn => dn.idNodo).includes(dato.idNodo)) {
             nuevoDatosNodos.push(dato);
@@ -416,7 +425,7 @@ var charProhibidosNombre = /[^ a-zA-ZÀ-žñÑ]/g;
 var charProhibidosNumeroTel = /[^0-9+-]/g;
 var emailChars = /\S+@\S+\.\S+/;
 var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
-const validarDatosUsuario = function (datosUsuario) {
+export const validarDatosUsuario = function (datosUsuario) {
     var errores = [];
     for (let dato in datosUsuario) {
         if (!datosUsuario[dato]) {
@@ -475,7 +484,7 @@ const validarDatosUsuario = function (datosUsuario) {
             if (datosUsuario.password.length < 6 || datosUsuario.password.length > 32) {
                 errores.push("Tu contraseña debe contener entre 6 y 32 caracteres");
             }
-            if (exports.charProhibidosPassword.test(datosUsuario.password)) {
+            if (charProhibidosPassword.test(datosUsuario.password)) {
                 errores.push("Tu password contiene caracteres no permitidos");
             }
         }
@@ -485,15 +494,14 @@ const validarDatosUsuario = function (datosUsuario) {
     }
     return errores;
 };
-exports.validarDatosUsuario = validarDatosUsuario;
-exports.charProhibidosNombresUsuario = /[^ a-zA-ZÀ-ž]/;
-exports.charProhibidosUsername = /[^ a-zA-ZÀ-ž0-9_-]/;
-exports.charProhibidosPassword = /\s\s+/;
-exports.emailValidator = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-exports.minLengthNombresUsuario = 2;
-exports.minLengthApellidosUsuario = 2;
-exports.minLengthPassword = 6;
-exports.maxLengthPassword = 40;
-exports.minLengthEmail = 7;
-exports.minLengthUsername = 7;
-exports.ModeloUsuario = mongoose_1.default.model("Usuario", esquemaUsuario);
+export const charProhibidosNombresUsuario = /[^ a-zA-ZÀ-ž]/;
+export const charProhibidosUsername = /[^ a-zA-ZÀ-ž0-9_-]/;
+export const charProhibidosPassword = /\s\s+/;
+export const emailValidator = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+export const minLengthNombresUsuario = 2;
+export const minLengthApellidosUsuario = 2;
+export const minLengthPassword = 6;
+export const maxLengthPassword = 40;
+export const minLengthEmail = 7;
+export const minLengthUsername = 7;
+export const ModeloUsuario = mongoose.model("Usuario", esquemaUsuario);

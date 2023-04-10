@@ -1,14 +1,13 @@
-import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
 import { charProhibidosNombreCosa, charProhibidosTexto } from "../model/config";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { contextoQuery } from "./tsObjetos";
 import { ModeloEventoPublico as EventoPublico, ModeloEventoPersonal as EventoPersonal } from "../model/Evento";
-import { reScheduleEventosEnmarcadosEnEventoPublicoEliminado } from "./Eventos";
 import { permisosEspecialesDefault } from "./Schema";
+import { ApolloError, AuthenticationError, UserInputError } from "./misc";
 
 
 
-export const typeDefs = gql`
+export const typeDefs = `#graphql
 
     type IteracionSemanalEspacio{
         id: ID,
@@ -69,7 +68,7 @@ export const resolvers = {
                 var elEspacio: any = await Espacio.findById(idEspacio).exec();
             } catch (error) {
                 console.log(`Error buscando espacio: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return elEspacio
@@ -79,7 +78,7 @@ export const resolvers = {
                 var losEspacios: any = await Espacio.find({}).exec();
             } catch (error) {
                 console.log(`Error buscando espacios: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return losEspacios
@@ -90,7 +89,7 @@ export const resolvers = {
                 var losEspacios: any = await Espacio.find({ idAdministrador: idsUsuarios }).exec();
             } catch (error) {
                 console.log(`Error getting espacios : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
 
@@ -102,7 +101,7 @@ export const resolvers = {
                 var losEspacios: any = await Espacio.find({ idAdministrador: { $in: idsAdministradores } }).exec();
             } catch (error) {
                 console.log(`Error getting espacios de los administradores : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
 
@@ -116,7 +115,7 @@ export const resolvers = {
         },
         async bloquesHorarioUsuarioAsiste(_:any, __:any, contexto: contextoQuery){
           if(!contexto.usuario?.id){
-            throw new AuthenticationError('loginRequerido');
+            AuthenticationError('loginRequerido');
           }
           
           const credencialesUsuario=contexto.usuario;
@@ -126,7 +125,7 @@ export const resolvers = {
             var losEspacios:any=await Espacio.find({"iteracionesSemanales.idsParticipantesConstantes": credencialesUsuario.id}).exec();
           } catch (error) {
             console.log(`Error getting espacios : `+ error);
-            throw new ApolloError('Error conectando con la base de datos');            
+            ApolloError('Error conectando con la base de datos');            
           }
 
           var losBloques:Array<any>=[];
@@ -141,7 +140,7 @@ export const resolvers = {
         },
         async espaciosControladosUsuario(_:any, {}:any, contexto: contextoQuery){
             if(!contexto.usuario?.id){
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
             
             const credencialesUsuario=contexto.usuario;
@@ -157,7 +156,7 @@ export const resolvers = {
                 var losEspacios:any=await Espacio.find(queryOpts).exec();
             } catch (error) {
                 console.log(`Error getting espacios : `+ error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
                 
             }
 
@@ -182,7 +181,7 @@ export const resolvers = {
     Mutation: {
         async crearEspacio(_: any, { info }: any, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -195,7 +194,7 @@ export const resolvers = {
                 await nuevoEspacio.save();
             } catch (error) {
                 console.log(`Error creando el nuevo espacio: ${error}`);
-                throw new ApolloError("Error guardando");
+                ApolloError("Error guardando");
             }
 
             return nuevoEspacio;
@@ -203,7 +202,7 @@ export const resolvers = {
         async eliminarEspacio(_: any, { idEspacio }: any, contexto: contextoQuery) {
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Usuario no logeado`);
-                throw new AuthenticationError("Login requerido");
+                AuthenticationError("Login requerido");
             }
 
             console.log(`Query de eliminar espaciocon id ${idEspacio}`);
@@ -212,7 +211,7 @@ export const resolvers = {
                 var elEspacio: any = await Espacio.findById(idEspacio).exec();
             } catch (error) {
                 console.log(`Error buscando el espacio: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             //Authorización
@@ -220,30 +219,27 @@ export const resolvers = {
             const credencialesUsuario = contexto.usuario;
             if (elEspacio.idAdministrador != credencialesUsuario.id && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion eliminando espacio`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
                 var losEventosAsociados: any = await EventoPublico.find({ "idParent": elEspacio.id }).exec();
             } catch (error) {
                 console.log(`Error buscando eventos asociados al espacio que se eliminará: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             console.log(`Había ${losEventosAsociados.length} eventos publicos asociados a este espacio. Se eliminarán`);
             console.log(`${losEventosAsociados.map(e => e.horarioInicio)}`);
             const listaIds = losEventosAsociados.map(e => e._id);
 
-            losEventosAsociados.forEach(async (eventoPublico) => {
-                await reScheduleEventosEnmarcadosEnEventoPublicoEliminado(eventoPublico);
-            })
-
+           
             try {
                 await EventoPublico.deleteMany({ _id: { $in: listaIds } })
                 await Espacio.findByIdAndRemove(idEspacio).exec();
             } catch (error) {
                 console.log(`Error removiendo el espacio: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             console.log(`Espacio eliminado`);
             return true
@@ -252,13 +248,13 @@ export const resolvers = {
             console.log(`Query de cambiar el nombre del espacio con id ${idEspacio}`);
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Sin credenciales de usuario`);
-                throw new AuthenticationError("Login requerido");
+                AuthenticationError("Login requerido");
             }
             nuevoNombre = nuevoNombre.trim();
             nuevoNombre = nuevoNombre.replace(/[\n\r]/g, " ");
             nuevoNombre = nuevoNombre.replace(/\s\s+/g, " ");
             if (charProhibidosNombreCosa.test(nuevoNombre)) {
-                throw new UserInputError("Nombre ilegal");
+                UserInputError("Nombre ilegal");
             }
 
             try {
@@ -269,7 +265,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error buscando el espacio a cambiar nombre en la base de datos. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             //Authorización
@@ -277,7 +273,7 @@ export const resolvers = {
             const credencialesUsuario = contexto.usuario;
             if (elEspacio.idAdministrador != credencialesUsuario.id && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion editando nombre de espacio`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
             elEspacio.nombre = nuevoNombre;
 
@@ -286,7 +282,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error guardando el espacio con nuevo nombre. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
             console.log(`Nombre cambiado`);
             return elEspacio;
@@ -296,10 +292,10 @@ export const resolvers = {
             console.log(`Query de cambiar la descripcion del espacio con id ${idEspacio}`);
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Sin credenciales de usuario`);
-                throw new AuthenticationError("Login requerido");
+                AuthenticationError("Login requerido");
             }
             if (charProhibidosTexto.test(nuevoDescripcion)) {
-                throw new ApolloError("Descripcion ilegal");
+                ApolloError("Descripcion ilegal");
             }
 
             nuevoDescripcion = nuevoDescripcion.trim();
@@ -312,7 +308,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error buscando el espacio a cambiar descripción en la base de datos. E: " + error);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             //Authorización
@@ -321,7 +317,7 @@ export const resolvers = {
             const credencialesUsuario = contexto.usuario;
             if (elEspacio.idAdministrador != credencialesUsuario.id && !credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p))) {
                 console.log(`Error de autenticacion`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             elEspacio.descripcion = nuevoDescripcion;
@@ -332,7 +328,7 @@ export const resolvers = {
             }
             catch (error) {
                 console.log("Error guardando el espacio con nueva descripción. E: " + error);
-                throw new ApolloError("Error de conexión con la base de datos");
+                ApolloError("Error de conexión con la base de datos");
             }
             console.log(`Descripcion cambiado`);
 
@@ -350,7 +346,7 @@ export const resolvers = {
 
             console.log('\x1b[35m%s\x1b[0m', `Mutación de set estado en ${nuevoEstado} para el espacio ${idEspacio}`);
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -360,7 +356,7 @@ export const resolvers = {
                 if (!elEspacio) throw 'Espacio no encontrado';
             }
             catch (error) {
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             }
 
             //Authorization
@@ -370,7 +366,7 @@ export const resolvers = {
 
 
             if (!esAdministradorEspacio && !tienePermisosEspeciales) {
-                throw new AuthenticationError('No autorizado');
+                AuthenticationError('No autorizado');
             }
 
             elEspacio.paraChiquis = nuevoEstado;
@@ -379,7 +375,7 @@ export const resolvers = {
                 await elEspacio.save();
             }
             catch (error) {
-                throw new ApolloError('Error guardando espacio después de set paraChiquis');
+                ApolloError('Error guardando espacio después de set paraChiquis');
             }
 
             console.log(`Estado para chiquis guardado`);
@@ -393,7 +389,7 @@ export const resolvers = {
             console.log('\x1b[35m%s\x1b[0m', `Query de crear iteración semanal de espacio ${idEspacio} con inicio ${millisInicio} y final ${millisFinal} en dia ${diaSemana} de la semana`);
 
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -404,7 +400,7 @@ export const resolvers = {
                 if (!elEspacio) throw 'Espacio no encontrado';
             } catch (error) {
                 console.log('Error descargando el espacio de la base de datos: ' + error)
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             };
 
             //Authorization
@@ -413,7 +409,7 @@ export const resolvers = {
             const tienePermisosEspeciales = permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
 
             if (!esAdministradorEspacio && !tienePermisosEspeciales) {
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var nuevoBloque = elEspacio.iteracionesSemanales.create({ millisInicio, millisFinal, diaSemana });
@@ -424,7 +420,7 @@ export const resolvers = {
                 await elEspacio.save();
             } catch (error) {
                 console.log(`Error guardando espacio con nuevo bloque de horario : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             }
 
             console.log("Iteración Semanal creada");
@@ -435,7 +431,7 @@ export const resolvers = {
             console.log('\x1b[35m%s\x1b[0m', `Query de set tiempos de iteración semanal de espacio ${idEspacio} con id de iteración ${idIteracion} en inicio ${Math.round(millisInicio / 60000)}minutos y final ${Math.round(millisFinal / 60000)}minutos`);
 
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -445,7 +441,7 @@ export const resolvers = {
                 if (!elEspacio) throw "Espacio no encontrado";
             } catch (error) {
                 console.log(`Error getting espacio : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
 
@@ -455,13 +451,13 @@ export const resolvers = {
             const tienePermisosEspeciales = permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
 
             if (!esAdministradorEspacio && !tienePermisosEspeciales) {
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             var laIteracion = elEspacio.iteracionesSemanales.id(idIteracion);
 
             if (!laIteracion) {
-                throw new UserInputError("Iteración no encontrada");
+                UserInputError("Iteración no encontrada");
             }
 
             laIteracion.millisInicio = millisInicio;
@@ -471,7 +467,7 @@ export const resolvers = {
                 await elEspacio.save();
             } catch (error) {
                 console.log(`Error guardando espacio después de set tiempos de iteración : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
 
@@ -482,7 +478,7 @@ export const resolvers = {
             console.log('\x1b[35m%s\x1b[0m', `Query de eliminar iteración semanal de espacio ${idEspacio} con id de iteración ${idIteracion}`);
 
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -493,20 +489,20 @@ export const resolvers = {
                 if (!elEspacio) throw "Espacio no encontrado";
             } catch (error) {
                 console.log(`Error getting espacio : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
             const esAdministradorEspacio = elEspacio.idAdministrador === credencialesUsuario.id;
             const tienePermisosEspeciales = permisosEspecialesDefault.some(p => credencialesUsuario.permisos.includes(p));
 
             if (!esAdministradorEspacio && !tienePermisosEspeciales) {
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             const laIteracion = elEspacio.iteracionesSemanales.find(iteracion => iteracion.id === idIteracion);
 
             if (!laIteracion) {
-                throw new UserInputError("Iteración no encontrada");
+                UserInputError("Iteración no encontrada");
             }
 
 
@@ -516,7 +512,7 @@ export const resolvers = {
                 await elEspacio.save();
             } catch (error) {
                 console.log(`Error saving espacio tras eliminación de iteración : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
             console.log("Eliminada");
@@ -524,7 +520,7 @@ export const resolvers = {
         },
         async addAsistenteIteracionSemanalEspacio(_: any, { idEspacio, idIteracion, idAsistente }: any, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -535,13 +531,13 @@ export const resolvers = {
                 if (!elEspacio) throw 'Espacio no encontrado';
             } catch (error) {
                 console.log('Error descargando el Espacio de la base de datos: ' + error)
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             };
 
             var laIteracion = elEspacio.iteracionesSemanales.id(idIteracion);
 
             if (!laIteracion) {
-                throw new UserInputError("Iteración no encontrada");
+                UserInputError("Iteración no encontrada");
             }
 
             // auth
@@ -551,13 +547,13 @@ export const resolvers = {
 
 
             if (!esAdministradorEspacio && !tienePermisosEspeciales) {
-                throw new AuthenticationError('No autorizado');
+                AuthenticationError('No autorizado');
             }
 
             const indexA = laIteracion.idsParticipantesConstantes.indexOf(idAsistente);
             if (indexA > -1) {
                 console.log("El asistente ya estaba incluido");
-                throw new UserInputError("Asistente ya estaba registrado");
+                UserInputError("Asistente ya estaba registrado");
             }
 
             laIteracion.idsParticipantesConstantes.push(idAsistente);
@@ -566,7 +562,7 @@ export const resolvers = {
                 await elEspacio.save();
             } catch (error) {
                 console.log(`Error guardando el espacio con nuevo asistente en iteración semanal : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
 
@@ -576,7 +572,7 @@ export const resolvers = {
         },
         async removeAsistenteIteracionSemanalEspacio(_: any, { idEspacio, idIteracion, idAsistente }: any, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -587,13 +583,13 @@ export const resolvers = {
                 if (!elEspacio) throw 'Espacio no encontrado';
             } catch (error) {
                 console.log('Error descargando el Espacio de la base de datos: ' + error)
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             };
 
             var laIteracion = elEspacio.iteracionesSemanales.id(idIteracion);
 
             if (!laIteracion) {
-                throw new UserInputError("Iteración no encontrada");
+                UserInputError("Iteración no encontrada");
             }
 
             // auth
@@ -603,13 +599,13 @@ export const resolvers = {
 
 
             if (!esAdministradorEspacio && !tienePermisosEspeciales) {
-                throw new AuthenticationError('No autorizado');
+                AuthenticationError('No autorizado');
             }
 
             const indexA = laIteracion.idsParticipantesConstantes.indexOf(idAsistente);
             if (indexA === -1) {
                 console.log("El asistente no estaba incluido");
-                throw new UserInputError("Asistente no estaba registrado");
+                UserInputError("Asistente no estaba registrado");
             }
 
             laIteracion.idsParticipantesConstantes.splice(indexA, 1);
@@ -618,7 +614,7 @@ export const resolvers = {
                 await elEspacio.save();
             } catch (error) {
                 console.log(`Error guardando el espacio con asistente removido de iteración semanal : ` + error);
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
 
             }
 

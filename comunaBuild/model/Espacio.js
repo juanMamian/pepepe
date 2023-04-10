@@ -1,12 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloEspacio = exports.esquemaEspacio = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const config_1 = require("./config");
-const EsquemaIteracionSemanal = new mongoose_1.default.Schema({
+import mongoose from "mongoose";
+import { charProhibidosNombreCosa, charProhibidosTexto } from "./config";
+const EsquemaIteracionSemanal = new mongoose.Schema({
     diaSemana: {
         type: Number,
         min: 0,
@@ -51,13 +45,13 @@ EsquemaIteracionSemanal.virtual('idEspacio').get(function () {
 EsquemaIteracionSemanal.virtual('paraChiquis').get(function () {
     return this.parent().paraChiquis;
 });
-exports.esquemaEspacio = new mongoose_1.default.Schema({
+export const esquemaEspacio = new mongoose.Schema({
     nombre: {
         type: String,
         default: "Nuevo espacio",
         validate: {
             validator: function (n) {
-                return !config_1.charProhibidosNombreCosa.test(n);
+                return !charProhibidosNombreCosa.test(n);
             },
             message: props => `${props.value} contiene caracteres ilegales!`
         },
@@ -68,7 +62,7 @@ exports.esquemaEspacio = new mongoose_1.default.Schema({
         type: String,
         validate: {
             validator: function (d) {
-                return !config_1.charProhibidosTexto.test(d);
+                return !charProhibidosTexto.test(d);
             },
             message: props => `${props.value} contiene caracteres ilegales`
         }
@@ -86,4 +80,4 @@ exports.esquemaEspacio = new mongoose_1.default.Schema({
         default: false,
     }
 });
-exports.ModeloEspacio = mongoose_1.default.model("Espacio", exports.esquemaEspacio);
+export const ModeloEspacio = mongoose.model("Espacio", esquemaEspacio);

@@ -1,78 +1,7 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ejecutarPosicionamientoNodosSolidaridadByFuerzas = void 0;
-const NodoSolidaridad_1 = require("./model/atlasSolidaridad/NodoSolidaridad");
-const AdministracionAtlasSolidaridad_1 = require("./model/atlasSolidaridad/AdministracionAtlasSolidaridad");
-const AtlasSolidaridad_1 = require("./gql/AtlasSolidaridad");
-const index_1 = require("./index");
-const Usuario_1 = require("./model/Usuario");
 const anchoCeldas = 400;
 // const nodoDeInteres = 'Que la casa de Maestra Vida esté en condiciones óptimas para habitarla y disfrutarla.';
 const nodoDeInteres = null;
-function ejecutarPosicionamientoNodosSolidaridadByFuerzas(ciclos, timeCalled, force) {
-    return __awaiter(this, void 0, void 0, function* () {
-        //Check si ha habido reposicionamiento después de timeCalled
-        if (!force) {
-            try {
-                var administracion = yield AdministracionAtlasSolidaridad_1.ModeloAdministracionAtlas.findById(AtlasSolidaridad_1.idAtlasSolidaridad).exec();
-            }
-            catch (error) {
-                console.log(`Error buscando administracion de atlas`);
-                return;
-            }
-            if (administracion.lastPosicionamientoNodos.getTime() > timeCalled) {
-                console.log(`Hubo un posicionamiento después del timeCalled. Cancelando`);
-                return;
-            }
-        }
-        const maxCiclos = 1000;
-        if (ciclos > maxCiclos)
-            ciclos = maxCiclos;
-        console.log(`Iniciando un posicionamiento de fuerzas de ${ciclos} ciclos`);
-        try {
-            var todosNodosSolidaridad = yield NodoSolidaridad_1.ModeloNodoSolidaridad.find({}).exec();
-            var todosPersonas = yield Usuario_1.ModeloUsuario.find({}).exec();
-            todosPersonas.forEach(p => p.nombre = p.username);
-            var todosNodos = todosNodosSolidaridad.concat(todosPersonas);
-            console.log(`Total: ${todosNodos.length} nodos y ${todosPersonas.length} personas`);
-        }
-        catch (error) {
-            console.log(`error getting todos nodos. e: ` + error);
-            return;
-        }
-        filtrarVinculosHuerfanos(todosNodos);
-        setInformacionRelevante(todosNodos);
-        //Iniciar coordenadas
-        todosNodos.forEach(nodo => {
-            if (!nodo.autoCoords.x)
-                nodo.autoCoords.x = nodo.coords.x || Math.round(Math.random() * 700);
-            if (!nodo.autoCoords.y)
-                nodo.autoCoords.y = nodo.coords.y || Math.round(Math.random() * 700);
-            // if(nodo.descripcion==="Sin descripcion" || nodo.descripcion==="Sin descripción")nodo.descripcion=null;
-            // nodo.autoCoords.x=Math.round(Math.random()*100);
-            // nodo.autoCoords.y=Math.round(Math.random()*100);
-        });
-        var celdas = setCeldas(todosNodos);
-        // console.log(`Hay ${nodosCompletados.length} nodos completados`);
-        for (var ciclo = 0; ciclo < ciclos; ciclo++) {
-            posicionar(todosNodos, celdas);
-        }
-        console.log(`Uploading...`);
-        yield uploadNodos(todosNodos);
-        index_1.pubsub.publish(AtlasSolidaridad_1.NODOS_ATLAS_POSICIONADOS, { nodosAtlasPosicionados: AtlasSolidaridad_1.idAtlasSolidaridad });
-        // await sleep(10000);
-    });
-}
-exports.ejecutarPosicionamientoNodosSolidaridadByFuerzas = ejecutarPosicionamientoNodosSolidaridadByFuerzas;
 function posicionar(todosNodos, celdas) {
     todosNodos = todosNodos.sort((a, b) => b.peso - a.peso);
     todosNodos.forEach(nodo => {
@@ -321,23 +250,19 @@ function getCeldaV(coords) {
     var celda = Math.floor(coords.y / anchoCeldas);
     return celda;
 }
-function uploadNodos(todosNodos) {
-    return __awaiter(this, void 0, void 0, function* () {
-        todosNodos.forEach(function (nodo) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (nodo.nombre === nodoDeInteres || !nodoDeInteres) {
-                    try {
-                        nodo.fuerzaColision.fuerza = Math.round(nodo.fuerzaColision.fuerza);
-                        nodo.fuerzaCentroMasa.fuerza = Math.round(nodo.fuerzaCentroMasa.fuerza);
-                        nodo.posicionadoByFuerzas = true;
-                        yield nodo.save();
-                    }
-                    catch (error) {
-                        console.log(`error guardando el nodo ${nodo.nombre}. e: ` + error);
-                    }
-                }
-            });
-        });
+async function uploadNodos(todosNodos) {
+    todosNodos.forEach(async function (nodo) {
+        if (nodo.nombre === nodoDeInteres || !nodoDeInteres) {
+            try {
+                nodo.fuerzaColision.fuerza = Math.round(nodo.fuerzaColision.fuerza);
+                nodo.fuerzaCentroMasa.fuerza = Math.round(nodo.fuerzaCentroMasa.fuerza);
+                nodo.posicionadoByFuerzas = true;
+                await nodo.save();
+            }
+            catch (error) {
+                console.log(`error guardando el nodo ${nodo.nombre}. e: ` + error);
+            }
+        }
     });
 }
 function sleep(ms) {

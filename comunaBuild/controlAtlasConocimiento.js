@@ -1,78 +1,45 @@
-"use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ejecutarPosicionamientoNodosConocimientoByFuerzas = void 0;
-const Nodo_1 = require("./model/atlas/Nodo");
-const AdministracionAtlasSolidaridad_1 = require("./model/atlasSolidaridad/AdministracionAtlasSolidaridad");
-const NodosConocimiento_1 = require("./gql/NodosConocimiento");
-const index_1 = require("./index");
+import { ModeloNodo as NodoConocimiento } from "./model/atlas/Nodo";
 const anchoCeldas = 400;
 // const nodoDeInteres = 'Que la casa de Maestra Vida esté en condiciones óptimas para habitarla y disfrutarla.';
 const nodoDeInteres = null;
-function ejecutarPosicionamientoNodosConocimientoByFuerzas(ciclos, timeCalled, force) {
-    return __awaiter(this, void 0, void 0, function* () {
-        //Check si ha habido reposicionamiento después de timeCalled
-        if (!force) {
-            try {
-                var administracion = yield AdministracionAtlasSolidaridad_1.ModeloAdministracionAtlas.findById(NodosConocimiento_1.idAtlasConocimiento).exec();
-            }
-            catch (error) {
-                console.log(`Error buscando administracion de atlas`);
-                return;
-            }
-            if (administracion.lastPosicionamientoNodos.getTime() > timeCalled) {
-                console.log(`Hubo un posicionamiento después del timeCalled. Cancelando`);
-                return;
-            }
-        }
-        const maxCiclos = 1000;
-        if (ciclos > maxCiclos)
-            ciclos = maxCiclos;
-        console.log(`Iniciando un posicionamiento de fuerzas de ${ciclos} ciclos`);
-        try {
-            var todosNodos = yield Nodo_1.ModeloNodo.find({}).exec();
-            console.log(`Total: ${todosNodos.length} nodos`);
-        }
-        catch (error) {
-            console.log(`error getting todos nodos. e: ` + error);
-            return;
-        }
-        filtrarVinculosHuerfanos(todosNodos);
-        setInformacionRelevante(todosNodos);
-        //Iniciar coordenadas
-        todosNodos.forEach(nodo => {
-            if (!nodo.autoCoords.x)
-                nodo.autoCoords.x = nodo.coords.x || Math.round(Math.random() * 700);
-            if (!nodo.autoCoords.y)
-                nodo.autoCoords.y = nodo.coords.y || Math.round(Math.random() * 700);
-            // if(nodo.descripcion==="Sin descripcion" || nodo.descripcion==="Sin descripción")nodo.descripcion=null;
-            // nodo.autoCoords.x=Math.round(Math.random()*100);
-            // nodo.autoCoords.y=Math.round(Math.random()*100);
-        });
-        var celdas = setCeldas(todosNodos);
-        // console.log(`Hay ${nodosCompletados.length} nodos completados`);
-        for (var ciclo = 0; ciclo < ciclos; ciclo++) {
-            posicionar(todosNodos, celdas);
-        }
-        console.log(`Uploading...`);
-        yield uploadNodos(todosNodos);
-        index_1.pubsub.publish(NodosConocimiento_1.NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS, { nodosAtlasPosicionados: NodosConocimiento_1.idAtlasConocimiento });
-        // await sleep(10000);
+export async function ejecutarPosicionamientoNodosConocimientoByFuerzas(ciclos, timeCalled, force) {
+    const maxCiclos = 1000;
+    if (ciclos > maxCiclos)
+        ciclos = maxCiclos;
+    console.log(`Iniciando un posicionamiento de fuerzas de ${ciclos} ciclos`);
+    try {
+        var todosNodos = await NodoConocimiento.find({}).exec();
+        console.log(`Total: ${todosNodos.length} nodos`);
+    }
+    catch (error) {
+        console.log(`error getting todos nodos. e: ` + error);
+        return;
+    }
+    filtrarVinculosHuerfanos(todosNodos);
+    setInformacionRelevante(todosNodos);
+    //Iniciar coordenadas
+    todosNodos.forEach(nodo => {
+        if (!nodo.autoCoords.x)
+            nodo.autoCoords.x = nodo.coords.x || Math.round(Math.random() * 700);
+        if (!nodo.autoCoords.y)
+            nodo.autoCoords.y = nodo.coords.y || Math.round(Math.random() * 700);
+        // if(nodo.descripcion==="Sin descripcion" || nodo.descripcion==="Sin descripción")nodo.descripcion=null;
+        // nodo.autoCoords.x=Math.round(Math.random()*100);
+        // nodo.autoCoords.y=Math.round(Math.random()*100);
     });
+    var celdas = setCeldas(todosNodos);
+    for (var ciclo = 0; ciclo < ciclos; ciclo++) {
+        posicionar(todosNodos, celdas);
+    }
+    console.log(`Uploading...`);
+    await uploadNodos(todosNodos);
+    // await sleep(10000);
 }
-exports.ejecutarPosicionamientoNodosConocimientoByFuerzas = ejecutarPosicionamientoNodosConocimientoByFuerzas;
 function posicionar(todosNodos, celdas) {
     todosNodos = todosNodos.sort((a, b) => b.peso - a.peso);
     todosNodos.forEach(nodo => {
         if (nodo.nombre === nodoDeInteres || !nodoDeInteres) {
+            setNivel(nodo, todosNodos);
             setFuerzaCentroMasa(nodo, todosNodos);
             setFuerzaColision(nodo, celdas, todosNodos);
             moverNodo(nodo, celdas);
@@ -84,11 +51,6 @@ function moverNodo(nodo, celdas) {
         x: getCeldaH(nodo.autoCoords),
         y: getCeldaV(nodo.autoCoords),
     };
-    if (nodo.nombre === nodoDeInteres) {
-        console.log(`Moviendo ${nodo.nombre} desde ${nodo.autoCoords}`);
-        console.log(`Fuerza colision: ${nodo.fuerzaColision.fuerza} en dirección ${nodo.fuerzaColision.direccion}`);
-        console.log(`Fuerza Centro masa: ${nodo.fuerzaCentroMasa.fuerza} en dirección ${nodo.fuerzaCentroMasa.direccion}`);
-    }
     const maxDesplazamiento = 50;
     var movimiento = {
         x: (nodo.fuerzaCentroMasa.fuerza * Math.cos(nodo.fuerzaCentroMasa.direccion)) + (nodo.fuerzaColision.fuerza * Math.cos(nodo.fuerzaColision.direccion)),
@@ -104,9 +66,6 @@ function moverNodo(nodo, celdas) {
         movimiento.y = -maxDesplazamiento;
     nodo.autoCoords.x = Math.round(nodo.autoCoords.x + movimiento.x);
     nodo.autoCoords.y = Math.round(nodo.autoCoords.y + movimiento.y);
-    if (nodo.nombre === nodoDeInteres) {
-        console.log(`Queda en ${nodo.autoCoords}`);
-    }
     const nuevaCelda = {
         x: getCeldaH(nodo.autoCoords),
         y: getCeldaV(nodo.autoCoords),
@@ -136,6 +95,38 @@ function moverNodo(nodo, celdas) {
         }
     }
 }
+function setNivel(nodo, todosNodos) {
+    nodo.nivel = 0;
+    let vinculosActuales = nodo.vinculos;
+    if (nodo.nombre === nodoDeInteres) {
+        //Log in yellow        
+        console.log(`\x1b[33m%s\x1b[0m`, `Tiene: ${vinculosActuales.length} vinculos`);
+    }
+    while (vinculosActuales.length > 0) {
+        nodo.nivel++;
+        if (nodo.nombre === nodoDeInteres) {
+            console.log(`Pasa a nivel ${nodo.nivel}`);
+        }
+        //prevent infinite loop
+        if (nodo.nivel > 100)
+            break;
+        let vinculosRelevantes = vinculosActuales.filter(v => v.tipo == "continuacion" && v.rol == "target");
+        console.log(`con ${vinculosRelevantes.length} vinculos relevantes con ids ${vinculosRelevantes.map(v => v.idRef).join(", ")}`);
+        let idsSiguientesNodos = vinculosRelevantes.map(v => v.idRef);
+        console.log(`Buscando ${idsSiguientesNodos.length} siguientes nodos en ${todosNodos.length} nodos`);
+        let siguientesNodos = todosNodos.filter(nd => idsSiguientesNodos.includes(nd.id));
+        if (nodo.nombre === nodoDeInteres) {
+            console.log(`Siguientes nodos: ${siguientesNodos.map(n => n.nombre).join(", ")}`);
+        }
+        vinculosActuales = siguientesNodos.reduce((acc, n) => acc.concat(n.vinculos), []);
+        console.log(`con ${vinculosActuales.length} vinculos`);
+        //prevent repetition
+        vinculosActuales = vinculosActuales.filter(v => !idsSiguientesNodos.includes(v.idRef));
+        //purge repeated items
+        vinculosActuales = vinculosActuales.filter((v, i) => vinculosActuales.findIndex(v2 => v2.idRef === v.idRef) === i);
+        console.log(`Purgados quedan ${vinculosActuales.length} vinculos`);
+    }
+}
 function setFuerzaColision(nodo, celdas, todosNodos) {
     const celdaX = getCeldaH(nodo.autoCoords);
     const celdaY = getCeldaV(nodo.autoCoords);
@@ -156,35 +147,29 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
         idsNodosRelevantes.splice(indexN, 1);
     }
     var nodosRelevantes = todosNodos.filter(n => idsNodosRelevantes.includes(n.id));
-    const rangoColision = 400; //Rango de acción de colisión
-    const colisionMaxima = 500; //Colision maxima generada en distancia 0
-    const factorFuerza = colisionMaxima / Math.pow(rangoColision, 2);
+    const rangoColision = 600; //Rango de acción de colisión
+    const colisionMaxima = 900; //Colision maxima generada en distancia 0
+    let factorFuerza = colisionMaxima / Math.pow(rangoColision, 2);
+    //FactorFuerza grows linearlly in such a way that doubles if nivel is 3
+    factorFuerza = factorFuerza * (1 + nodo.nivel / 3);
     var coordsFuerzaTotal = {
         x: 0,
         y: 0
     };
-    // console.log(`---FuerzaTotal: ${JSON.stringify(coordsFuerzaTotal)}`);
     if (nodoDeInteres === nodo.nombre) {
-        console.log(`Calculando fuerza colisión en ${JSON.stringify(nodo.autoCoords)} con ${nodosRelevantes.length} nodos relevantes: `);
     }
     nodosRelevantes.forEach(nodoR => {
-        if (nodoDeInteres === nodo.nombre) {
-            console.log(`-${nodoR.nombre}, ${JSON.stringify(nodoR.autoCoords)}:`);
-        }
         let coordsDistancia = {
             x: nodo.autoCoords.x - nodoR.autoCoords.x,
             y: nodo.autoCoords.y - nodoR.autoCoords.y
         };
         if (nodoDeInteres === nodo.nombre) {
-            console.log(`CoordsDistancia: ${JSON.stringify(coordsDistancia)}`);
         }
         let vectorDistancia = cartesian2Polar(coordsDistancia.x, coordsDistancia.y);
         if (nodoDeInteres === nodo.nombre) {
-            console.log(`vectorDistancia: ${JSON.stringify(vectorDistancia)}`);
         }
         if (vectorDistancia.fuerza > rangoColision)
             vectorDistancia.fuerza = rangoColision;
-        // console.log(`Se suma ${JSON.stringify(vectorDistancia)}`);
         let fuerzaColision = factorFuerza * Math.pow(rangoColision - vectorDistancia.fuerza, 2);
         if (!nodo.idsNodosConectados.includes(nodoR.id)) { //Colisión con un nodo no conectado (Mayor colisión)
             fuerzaColision = fuerzaColision * 1.1;
@@ -193,19 +178,11 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
         let compy = Math.sin(vectorDistancia.direccion) * fuerzaColision;
         coordsFuerzaTotal.x += compx;
         coordsFuerzaTotal.y += compy;
-        if (nodoDeInteres === nodo.nombre) {
-            console.log(`=(${compx}, ${compy}), ${vectorDistancia.direccion} *${factorFuerza}`);
-        }
     });
-    // console.log(`FuerzaTotal queda en: ${JSON.stringify(coordsFuerzaTotal)}`);
     var fuerzaPolar = cartesian2Polar(coordsFuerzaTotal.x, coordsFuerzaTotal.y);
     nodo.fuerzaColision = fuerzaPolar;
 }
 function setFuerzaCentroMasa(nodo, todosNodos) {
-    if (nodoDeInteres === nodo.nombre) {
-        console.log('\x1b[33m%s\x1b[0m', `Calculando fuerza centro masa con ${nodo.idsNodosConectados.length} nodos relevantes:`);
-        console.log(`Nodo autoCoords: ${nodo.autoCoords}`);
-    }
     var nodosRelevantes = todosNodos.filter(n => nodo.idsNodosConectados.includes(n.id));
     const distanciaUmbral = 400;
     const factorFuerza = 100 / Math.pow(distanciaUmbral, 2);
@@ -217,21 +194,11 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
         y: vectorCentro.fuerza * Math.sin(vectorCentro.direccion),
     };
     nodosRelevantes.forEach(nodoR => {
-        if (nodoDeInteres === nodo.nombre) {
-            console.log(`-${nodoR.nombre}, ${JSON.stringify(nodoR.autoCoords)}:`);
-        }
         let coordsDistancia = {
             x: nodoR.autoCoords.x - nodo.autoCoords.x,
             y: nodoR.autoCoords.y - nodo.autoCoords.y
         };
-        if (nodoDeInteres === nodo.nombre) {
-            console.log(`CoordsDistancia: ${JSON.stringify(coordsDistancia)}`);
-        }
         let vectorDistancia = cartesian2Polar(coordsDistancia.x, coordsDistancia.y);
-        if (nodoDeInteres === nodo.nombre) {
-            console.log(`vectorDistancia: ${JSON.stringify(vectorDistancia)}`);
-        }
-        // console.log(`Se suma ${JSON.stringify(vectorDistancia)}`);
         let fuerzaCentroMasa = factorFuerza * Math.pow(vectorDistancia.fuerza, 2);
         if (nodo.idsRequeridos.includes(nodoR.id)) { //Fuerza de atracción de nodos requeridos
             if (nodoR.nodoParent === nodo.id) { //Fuerza de atracción de nodos chidlren.
@@ -253,18 +220,9 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
         let compy = Math.sin(vectorDistancia.direccion) * fuerzaCentroMasa;
         coordsFuerzaTotal.x += compx;
         coordsFuerzaTotal.y += compy;
-        if (nodoDeInteres === nodo.nombre) {
-            console.log(`=(${compx}, ${compy}), ${vectorDistancia.direccion} *${factorFuerza}`);
-        }
     });
-    if (nodoDeInteres === nodo.nombre) {
-        console.log(`Fuerza centro masa total: ${JSON.stringify(coordsFuerzaTotal)}`);
-    }
     var fuerzaPolar = cartesian2Polar(coordsFuerzaTotal.x, coordsFuerzaTotal.y);
     nodo.fuerzaCentroMasa = fuerzaPolar;
-    if (nodoDeInteres === nodo.nombre) {
-        console.log(`Fuerza centro masa queda: ${JSON.stringify(nodo.fuerzaCentroMasa)}`);
-    }
 }
 function filtrarVinculosHuerfanos(todosNodos) {
     todosNodos.forEach(nodo => {
@@ -307,24 +265,20 @@ function getCeldaV(coords) {
     var celda = Math.floor(coords.y / anchoCeldas);
     return celda;
 }
-function uploadNodos(todosNodos) {
-    return __awaiter(this, void 0, void 0, function* () {
-        todosNodos.forEach(function (nodo) {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (nodo.nombre === nodoDeInteres || !nodoDeInteres) {
-                    try {
-                        nodo.fuerzaColision.fuerza = Math.round(nodo.fuerzaColision.fuerza);
-                        nodo.fuerzaCentroMasa.fuerza = Math.round(nodo.fuerzaCentroMasa.fuerza);
-                        nodo.posicionadoByFuerzas = true;
-                        console.log(`Guardando ${nodo.nombre}`);
-                        yield nodo.save();
-                    }
-                    catch (error) {
-                        console.log(`error guardando el nodo ${nodo.nombre}. e: ` + error);
-                    }
-                }
-            });
-        });
+async function uploadNodos(todosNodos) {
+    todosNodos.forEach(async function (nodo) {
+        if (nodo.nombre === nodoDeInteres || !nodoDeInteres) {
+            try {
+                nodo.fuerzaColision.fuerza = Math.round(nodo.fuerzaColision.fuerza);
+                nodo.fuerzaCentroMasa.fuerza = Math.round(nodo.fuerzaCentroMasa.fuerza);
+                nodo.posicionadoByFuerzas = true;
+                console.log(`Guardando ${nodo.nombre} con nivel ${nodo.nivel}`);
+                await nodo.save();
+            }
+            catch (error) {
+                console.log(`error guardando el nodo ${nodo.nombre}. e: ` + error);
+            }
+        }
     });
 }
 function sleep(ms) {

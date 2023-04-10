@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { EsquemaVinculosNodosSolidaridad } from "./atlasSolidaridad/VinculosNodosSolidaridad";
 import { EsquemaRutaGrado } from "./rutaGrado/RutaGrado";
 
 export const permisosDeUsuario = [
@@ -67,7 +66,7 @@ const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({
     { strict: true }
 );
 
-esquemaColeccionNodosAtlasConocimiento.virtual("idUsuario").get( function(this:any){
+esquemaColeccionNodosAtlasConocimiento.virtual("idUsuario").get(function (this: any) {
     return this.ownerDocument()._id;
 })
 
@@ -136,24 +135,26 @@ const esquemaNotificacionActividadForo = new mongoose.Schema({
 })
 
 const esquemaDatoNodo = new mongoose.Schema({
-    idNodo: { 
-        type: String, required: true 
+    idNodo: {
+        type: String, required: true
     },
-    objetivo: { 
-        type: Boolean, 
-        default: false 
+    aprendido: {
+        type: Boolean,
+        default: false
     },
-    aprendido: { 
-        type: Boolean, 
-        default: false 
+    estudiado: {
+        type: Date
     },
-    estudiado: { 
-        type: Date 
-    },
-    periodoRepaso:{
+    periodoRepaso: {
         type: Number,
         min: 86400000, //24 horas
-        default:86400000*2,
+        default: 86400000 * 2,
+    },
+    diasRepaso: {
+        type: Number,
+        min: 1,
+        default: 2,
+        max: 1000,
     },
     iteracionesRepaso: {
         type: [esquemaIteracionRepaso],
@@ -162,24 +163,52 @@ const esquemaDatoNodo = new mongoose.Schema({
 })
 
 esquemaDatoNodo.pre("save", function (this: any, next) {
-    if (this.aprendido) {
-        this.iteracionesRepaso = [];
+
+    if (!this.diasRepaso && this.periodoRepaso) {
+
+        //Periodo repaso in milliseconds to diasRepaso in days
+
+        this.diasRepaso = this.periodoRepaso / 86400000;
     }
-    else if (this.estudiado) {
-        if (!this.iteracionesRepaso) this.iteracionesRepaso = [];
-        if (this.iteracionesRepaso.length < 1) {
-            this.iteracionesRepaso.push({
-                intervalo: 172800000
-            })
-        }
-    }
-    else {
-        this.iteracionesRepaso = [];
+
+    if (this.estudiado && !this.diasRepaso) {
+        this.diastRepaso = 2;
     }
     next();
 
 })
 
+const esquemaEstadoAtlas = new mongoose.Schema({
+    centroVista: {
+        x: {
+            type: Number,
+            required: true,
+            default: 0
+        },
+        y: {
+            type: Number,
+            required: true,
+            default: 0
+        }
+    },
+    datosNodos: {
+        type: [esquemaDatoNodo],
+        default: []
+    },
+    configuracion: {
+        modo: {
+            type: String,
+            default: 'estudiante',
+            enum: ['estudiante', 'experto']
+        }
+    },
+    colecciones: {
+        type: [esquemaColeccionNodosAtlasConocimiento],
+        default: []
+    },
+    idNodoTarget: String,
+
+})
 
 export const ModeloNotificacion = mongoose.model("Notificacion", esquemaNotificacion);
 
@@ -206,12 +235,16 @@ const esquemaUsuario = new mongoose.Schema({
     titulo: {
         type: String,
         maxLength: 300,
-    },   
+    },
     fechaNacimiento: {
         type: Date,
         max: Date.now,
         min: new Date('1890-01-01'),
         default: Date.now
+    },
+    objetivos: {
+        type: [String],
+        default: [],
     },
     informesMaestraVida: {
         type: [EsquemaInformeUsuario],
@@ -241,9 +274,9 @@ const esquemaUsuario = new mongoose.Schema({
             type: String,
         }
     }],
-    nodosCompletadosRutaGrado:{
-        type: [String],        
-        default:[]
+    nodosCompletadosRutaGrado: {
+        type: [String],
+        default: []
     },
     password: {
         type: String,
@@ -260,34 +293,12 @@ const esquemaUsuario = new mongoose.Schema({
         enum: permisosDeUsuario
     },
     atlas: {
-        centroVista: {
-            x: {
-                type: Number,
-                required: true,
-                default: 0
-            },
-            y: {
-                type: Number,
-                required: true,
-                default: 0
-            }
+        type: esquemaEstadoAtlas,
+        default: {
+           datosNodos:[],
+           colecciones:[],
+
         },
-        datosNodos: {
-            type: [esquemaDatoNodo],
-            default: []
-        },
-        configuracion: {
-            modo: {
-                type: String,
-                default: 'estudiante',
-                enum: ['estudiante', 'experto']
-            }
-        },
-        colecciones: {
-            type: [esquemaColeccionNodosAtlasConocimiento],
-            default: []
-        },
-        idNodoTarget: String,
     },
     atlasSolidaridad: {
         coordsVista: {
@@ -344,10 +355,6 @@ const esquemaUsuario = new mongoose.Schema({
                 default: []
             }
         }]
-    },
-    vinculos: {
-        type: [EsquemaVinculosNodosSolidaridad],
-        default: []
     },
     coords: {
         x: {
@@ -410,22 +417,31 @@ const esquemaUsuario = new mongoose.Schema({
 
 });
 
-esquemaUsuario.pre("save", function(this:any, next){
-    var nuevoDatosNodos:Array<any>=[];
-    console.log("Revisando si hay datos nodo repetidos");
+esquemaUsuario.pre("save", function (this: any, next) {
+    var nuevoDatosNodos: Array<any> = [];
+    if(!this.atlas){
+        this.atlas={}
+    }
     if(!this.atlas.datosNodos){
+        this.atlas.datosNodos=[]
+    }
+
+    if(!this.atlas.colecciones){
+        this.atlas.colecciones=[]
+    }
+    if (!this.atlas.datosNodos) {
         next();
     }
-    for(const dato of this.atlas.datosNodos){
-        if(!nuevoDatosNodos.map(dn=>dn.idNodo).includes(dato.idNodo)){
+    for (const dato of this.atlas.datosNodos) {
+        if (!nuevoDatosNodos.map(dn => dn.idNodo).includes(dato.idNodo)) {
             nuevoDatosNodos.push(dato);
         }
-        else{
+        else {
             console.log("Habia un dato nodo repetido");
         }
     }
 
-    this.atlas.datosNodos=nuevoDatosNodos;
+    this.atlas.datosNodos = nuevoDatosNodos;
     next();
 })
 

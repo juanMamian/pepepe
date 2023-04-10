@@ -1,1 +1,0 @@
-*Verificar si hay un riesgo de seguridad en el modulo loginArea. El username y passsword están conectados mediante v-model con una propiedad reactiva de vue. Me pregunto si esa propiedad puede verse desde el navegador con vue dev tools (O similar): Espero que en produccion esas variables sean inaccesibles.

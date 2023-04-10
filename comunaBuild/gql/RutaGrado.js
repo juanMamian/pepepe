@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -13,6 +14,11 @@ exports.funcionesInicioRutaGrado = exports.resolvers = exports.typeDefs = void 0
 const apollo_server_express_1 = require("apollo-server-express");
 const RutaGrado_1 = require("../model/rutaGrado/RutaGrado");
 exports.typeDefs = apollo_server_express_1.gql `
+=======
+import { laRutaNodosConocimiento, laRutaProyectoMediaTecnica, laRutaProyectoSocial, ModeloSubrutaGrado as Subruta } from "../model/rutaGrado/RutaGrado";
+import { ApolloError, AuthenticationError } from "./misc";
+export const typeDefs = `#graphql
+>>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205
 
     type NodoRutaGrado{
         id: ID,
@@ -38,6 +44,7 @@ exports.typeDefs = apollo_server_express_1.gql `
 
    
 `;
+<<<<<<< HEAD
 exports.resolvers = {
     Query: {
         subrutasGradoMaestraVida(_, {}, contexto) {
@@ -116,3 +123,74 @@ const funcionesInicioRutaGrado = function () {
     });
 };
 exports.funcionesInicioRutaGrado = funcionesInicioRutaGrado;
+=======
+export const resolvers = {
+    Query: {
+        async subrutasGradoMaestraVida(_, {}, contexto) {
+            if (!contexto.usuario?.id) {
+                AuthenticationError('loginRequerido');
+            }
+            const credencialesUsuario = contexto.usuario;
+            try {
+                var lasSubrutas = await Subruta.find({}).exec();
+            }
+            catch (error) {
+                ApolloError('Error conectando con la base de datos');
+            }
+            return lasSubrutas;
+        },
+    },
+    Mutation: {
+        async setColorSubrutaGrado(_, { idSubruta, nuevoColor }, contexto) {
+            if (!contexto.usuario?.id) {
+                AuthenticationError('loginRequerido');
+            }
+            const credencialesUsuario = contexto.usuario;
+            if (!credencialesUsuario.permisos.includes("superadministrador")) {
+                AuthenticationError("No autorizado");
+            }
+            try {
+                var laSubruta = await Subruta.findById(idSubruta).exec();
+                if (!laSubruta)
+                    throw 'Subruta no encontrado';
+            }
+            catch (error) {
+                ApolloError('Error conectando con la base de datos');
+            }
+            laSubruta.color = nuevoColor;
+            try {
+                await laSubruta.save();
+            }
+            catch (error) {
+                ApolloError('Error guardando la subruta: ' + error);
+            }
+            return laSubruta;
+        },
+    }
+};
+export const funcionesInicioRutaGrado = async function () {
+    console.log("Inicializando subrutas de grado");
+    try {
+        var lasSubrutas = await Subruta.find({}).exec();
+    }
+    catch (error) {
+        ApolloError('Error conectando con la base de datos');
+    }
+    if (lasSubrutas.length > 0) {
+        console.log("Inicialización innecesaria");
+    }
+    console.log("No había subrutas, creando");
+    var rutaNodos = new Subruta(laRutaNodosConocimiento);
+    var rutaProyectoSocial = new Subruta(laRutaProyectoSocial);
+    var rutaProyectoMediaTecnica = new Subruta(laRutaProyectoMediaTecnica);
+    try {
+        await rutaNodos.save();
+        await rutaProyectoSocial.save();
+        await rutaProyectoMediaTecnica.save();
+    }
+    catch (error) {
+        console.log("Error creando subrutas de grado: " + error);
+    }
+    console.log("Subrutas de grado inicializadas");
+};
+>>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205

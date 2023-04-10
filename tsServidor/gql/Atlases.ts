@@ -1,9 +1,9 @@
-import { ApolloError, AuthenticationError, gql, UserInputError, withFilter } from "apollo-server-express";
 import { ModeloConfiguracionAtlas as ConfiguracionAtlas } from "../model/ConfiguracionAtlas"
+import { ApolloError, AuthenticationError } from "./misc";
 import { contextoQuery } from "./tsObjetos"
 
 
-export const typeDefs = gql`
+export const typeDefs = `#graphql
 
     type ConfiguracionAtlas{
         id:ID,
@@ -40,7 +40,7 @@ export const resolvers = {
             //Authorización
             if (!credencialesUsuario.permisos.includes("superadministrador")) {
                 console.log(`Error de autenticacion toggling posicionamiento automático`);
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
@@ -48,7 +48,7 @@ export const resolvers = {
 
             } catch (error) {
                 console.log(`error buscando configuración del atlas: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
 
             }
             console.log(`De ${configuracion.posicionando}`);
@@ -60,7 +60,7 @@ export const resolvers = {
                 await configuracion.save();
             } catch (error) {
                 console.log(`Error guardando la nueva configuración del atlas: ${error}`);
-                throw new ApolloError("Error conectando con la base de datos");
+                ApolloError("Error conectando con la base de datos");
             }
 
             return configuracion;

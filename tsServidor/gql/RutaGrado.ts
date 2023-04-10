@@ -1,10 +1,10 @@
-import { ApolloError, AuthenticationError, gql, UserInputError } from "apollo-server-express";
 import { contextoQuery } from "./tsObjetos"
 import { charProhibidosNombreCosa, charProhibidosTexto } from "../model/config";
 import { laRutaNodosConocimiento, laRutaProyectoMediaTecnica, laRutaProyectoSocial, ModeloSubrutaGrado as Subruta } from "../model/rutaGrado/RutaGrado";
+import { ApolloError, AuthenticationError } from "./misc";
 
 
-export const typeDefs = gql`
+export const typeDefs = `#graphql
 
     type NodoRutaGrado{
         id: ID,
@@ -35,7 +35,7 @@ export const resolvers = {
     Query: {
         async subrutasGradoMaestraVida(_: any, { }: any, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
 
             const credencialesUsuario = contexto.usuario;
@@ -44,7 +44,7 @@ export const resolvers = {
                 var lasSubrutas: any = await Subruta.find({}).exec();
             }
             catch (error) {
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             }
 
 
@@ -54,12 +54,12 @@ export const resolvers = {
     Mutation:{
         async setColorSubrutaGrado(_:any, {idSubruta, nuevoColor}:any, contexto: contextoQuery){
             if(!contexto.usuario?.id){
-                throw new AuthenticationError('loginRequerido');
+                AuthenticationError('loginRequerido');
             }
             
             const credencialesUsuario=contexto.usuario;
             if(!credencialesUsuario.permisos.includes("superadministrador")){
-                throw new AuthenticationError("No autorizado");
+                AuthenticationError("No autorizado");
             }
 
             try {
@@ -67,7 +67,7 @@ export const resolvers = {
                 if(!laSubruta) throw 'Subruta no encontrado';
             }
             catch(error) {
-                throw new ApolloError('Error conectando con la base de datos');
+                ApolloError('Error conectando con la base de datos');
             }
             
             laSubruta.color=nuevoColor;
@@ -76,7 +76,7 @@ export const resolvers = {
                 await laSubruta.save();
             }
             catch(error) {
-                throw new ApolloError('Error guardando la subruta: '+error);
+                ApolloError('Error guardando la subruta: '+error);
             }
 
             return laSubruta
@@ -92,7 +92,7 @@ export const funcionesInicioRutaGrado = async function(){
         var lasSubrutas: any = await Subruta.find({}).exec();
     }
     catch (error) {
-        throw new ApolloError('Error conectando con la base de datos');
+        ApolloError('Error conectando con la base de datos');
     }
 
     if(lasSubrutas.length>0){
