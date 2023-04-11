@@ -1,19 +1,10 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 
-const esquemaClase = new mongoose.Schema({
-    idExperto: String,
-    interesados: [String],
-    nombre: {
-        type: String,
-        default: "Nombre"
-    },
-    descripion: {
-        type: String,
-        default: ""
-    },
-})
 
 const EsquemaVinculo = new mongoose.Schema({
+    id:{
+        type: mongoose.Types.ObjectId,
+    },
     idRef: {
         type: String,
         required: true
@@ -34,6 +25,9 @@ const EsquemaVinculo = new mongoose.Schema({
     }
 })
 
+type Vinculo = InferSchemaType<typeof EsquemaVinculo>
+
+
 EsquemaVinculo.pre("save", function (this: any, next) {
     if (this.tipo = "requiere") {
         this.tipo = "continuacion";
@@ -48,6 +42,9 @@ EsquemaVinculo.pre("save", function (this: any, next) {
 
 
 var esquemaNodo = new mongoose.Schema({
+    id:{
+        type: mongoose.Types.ObjectId,
+    },
     nombre: {
         type: String,
         min: 3,
@@ -100,10 +97,6 @@ var esquemaNodo = new mongoose.Schema({
         type: [String],
         required: true,
         default: []
-    },
-    clases: {
-        type: [esquemaClase],
-        default: [],
     },
     posiblesExpertos: {
         type: [String],
@@ -170,24 +163,8 @@ var esquemaNodo = new mongoose.Schema({
 
 });
 
+export type NodoConocimiento = InferSchemaType<typeof esquemaNodo>;
 
-
-
-esquemaNodo.methods.verificarVinculo = function (this: any, idRef, eliminar) {
-    console.log(`${this.nombre} está buscando un vinculo con ${idRef}. Eliminar es ${eliminar}`);
-    var respuesta = false;
-    for (var vinculo of this.vinculos) {
-        if (vinculo.idRef == idRef) {
-            console.log(`encontrado`);
-            respuesta = true;
-            if (eliminar) {
-                console.log(`eliminando`);
-                vinculo.remove();
-            }
-        }
-    }
-    return respuesta;
-}
 
 esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" });
 
