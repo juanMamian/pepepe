@@ -23,18 +23,92 @@
     </div>
 
     <RouterView />
-    <div id="contenedorOverlays" v-if="$route.name==='atlas'" :style="[estiloContenedorOverlays]">
+    <div
+      id="contenedorOverlays"
+      v-if="$route.name === 'atlas'"
+      :style="[estiloContenedorOverlays]"
+    >
       <gestor-colecciones
         ref="gestorColecciones"
-        :yo="yo"
-        :todosNodos="todosNodos"
-        :idNodoSeleccionado="idNodoSeleccionado"
         :style="[estiloGestor]"
+        v-show="!conectandoNodosColeccion"
+        :opcionNull="'Atlas'"
         @coleccionSeleccionada="coleccionSeleccionada = $event"
         @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
         @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
-        @conectandoNodosColeccion="gestorColeccionesConectandoNodos = $event"
-      />
+        @conectandoNodosColeccion="conectandoNodosColeccion = $event"
+      >
+        <template #botonesOpcion>
+          <router-link
+            class="boton botonOpcion"
+            v-if="coleccionSeleccionada?.id"
+            :to="{
+              name: 'browseColeccion',
+              params: {
+                idColeccion: coleccionSeleccionada.id,
+              },
+            }"
+          >
+            <img src="@/assets/iconos/codeBranch.svg" alt="Red" />
+          </router-link>
+          <div
+            class="botonOpcion botonTexto selector"
+            id="botonConectarNodosColeccion"
+            v-show="!conectandoNodosColeccion"
+            @click.stop="conectandoNodosColeccion = true"
+          >
+            <img src="@/assets/iconos/plugSolid.svg" alt="Conectar" />
+          </div>
+        </template>
+      </gestor-colecciones>
+
+      <div
+        class="anuncio anuncioSeleccion"
+        id="anuncioConectandoNodos"
+        v-show="conectandoNodosColeccion"
+      >
+        <img src="@/assets/iconos/plugSolid.svg" alt="Nodos" />
+        Editando nodos de
+        <span
+          style="
+            margin-left: -5px;
+            font-weight: bold;
+            color: var(--atlasConocimientoSeleccion);
+          "
+          >{{ coleccionSeleccionada ? coleccionSeleccionada.nombre : "" }}</span
+        >
+        <div
+          class="boton"
+          id="botonCancelarConectarNodosColeccion"
+          @click.stop="conectandoNodosColeccion = false"
+        >
+          <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
+        </div>
+      </div>
+
+      <div
+        v-if="
+          conectandoNodosColeccion &&
+          coleccionSeleccionada &&
+          idNodoSeleccionado
+        "
+        class="botonTexto"
+        id="botonToggleNodoColeccion"
+        @click.stop="toggleNodoColeccion"
+      >
+        <Loading v-show="togglingNodoColeccion" />
+        <img
+          src="@/assets/iconos/plugSolid.svg"
+          alt="Conectar"
+          v-show="!nodoSeleccionadoBelongsColeccionSeleccionada && !togglingNodoColeccion"
+        />
+        <img
+          src="@/assets/iconos/equis.svg"
+          alt="Desconectar"
+          v-show="nodoSeleccionadoBelongsColeccionSeleccionada && !togglingNodoColeccion"
+        />
+        <span>{{ nodoSeleccionadoBelongsColeccionSeleccionada ? "Desconectar" : "Conectar" }}</span>
+      </div>
     </div>
 
     <div
@@ -51,10 +125,9 @@
       ref="buscadorNodos"
     />
     <div
-      v-show="!algoOverlaying"
+      v-show="$route.name==='atlas'"
       id="contenedorDiagrama"
       ref="contenedorDiagrama"
-      v-if="$route.name==='atlas'"
       @scroll="setCentroZonaNodosVisibles(true)"
       @touchmove="touchMoveDiagrama"
       @touchstart="touchStartDiagrama"
@@ -87,16 +160,16 @@
             :idsNodosAccesibles="idsNodosActivosAccesibles"
             :idsUnderTargetActivos="idsUnderTargetActivos"
             :class="{
-              esperandoClick: gestorColeccionesConectandoNodos,
+              esperandoClick: conectandoNodosColeccion,
               conectadoSeleccionado:
                 nodoTarget &&
                 idsUnderTarget[nivelesUnderTarget] &&
                 idsUnderTarget[nivelesUnderTarget].includes(nodo.id),
               activoSeleccion:
-                gestorColeccionesConectandoNodos &&
+                conectandoNodosColeccion &&
                 coleccionSeleccionada?.idsNodos.includes(nodo.id),
               activoSubseleccion:
-                gestorColeccionesConectandoNodos &&
+                conectandoNodosColeccion &&
                 coleccionSeleccionada?.idsRed.includes(nodo.id),
             }"
             :idNodoTarget="idNodoTarget"
@@ -117,7 +190,7 @@
             <template
               #imagenBolita
               v-if="
-                gestorColeccionesConectandoNodos &&
+                conectandoNodosColeccion &&
                 coleccionSeleccionada?.idsNodos.includes(nodo.id)
               "
             >
@@ -163,7 +236,7 @@
       @stepNivelesUnderTarget="stepNivelesUnderTarget"
     />
 
-    <div id="zonaLocalizadores" v-show="!algoOverlaying">
+    <div id="zonaLocalizadores">
       <div
         class="boton controlColeccion"
         :class="{
@@ -330,6 +403,8 @@ export default {
   },
   data() {
     return {
+      togglingNodoColeccion: false,
+
       idNodoSeleccionado: null,
       nodoSeleccionadoDB:{
         vinculos:[],
@@ -422,11 +497,18 @@ export default {
       editandoVinculos: false,
 
       gestorColeccionesMostrandoArbol: false,
-      gestorColeccionesConectandoNodos: false,
+      conectandoNodosColeccion: false,
     };
   },
   computed: {
-
+    nodoSeleccionadoBelongsColeccionSeleccionada() {
+      if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
+        return false;
+      }
+      return this.coleccionSeleccionada.idsNodos.includes(
+        this.idNodoSeleccionado
+      );
+    },
     nodoTargetRelevante() {
       if (!this.idNodoTarget) {
         return false;
@@ -489,10 +571,6 @@ export default {
     domAndNodosReady() {
       return this.montado && this.firstLoad;
     },
-    algoOverlaying() {
-      return this.gestorColeccionesMostrandoArbol;
-    },
-
     estiloIndicadorCentroZonasVisibles() {
       return {
         left: (this.centroZonaNodosVisibles.x - this.esquinasDiagrama.x1) * this.factorZoom + "px",
@@ -550,7 +628,7 @@ export default {
     },
 
     nodosActivos() {
-      console.log("gestor conectando nodos " + this.gestorColeccionesConectandoNodos);
+      console.log("gestor conectando nodos " + this.conectandoNodosColeccion);
       if(this.$route.name!='atlas'){
         return [];
       }
@@ -559,7 +637,7 @@ export default {
       }
       let campo = this.todosNodos;
 
-      if (this.coleccionSeleccionada && !this.gestorColeccionesConectandoNodos) {
+      if (this.coleccionSeleccionada && !this.conectandoNodosColeccion) {
         console.log("Filtrando nodos. Solo siguen los que salen en la red de la colección seleccionada");
         campo = campo.filter(n => this.coleccionSeleccionada.idsRed.includes(n.id));
       }
@@ -629,6 +707,40 @@ export default {
 
   },
   methods: {
+    toggleNodoColeccion() {
+      if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
+        return;
+      }
+      this.togglingNodoColeccion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!, $idNodo: ID!, $idUsuario: ID!) {
+              toggleNodoColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+                idNodo: $idNodo
+                idUsuario: $idUsuario
+              ) {
+                id
+                idsNodos
+                idsRed
+              }
+            }
+          `,
+          variables: {
+            idColeccion: this.coleccionSeleccionada.id,
+            idNodo: this.idNodoSeleccionado,
+            idUsuario: this.usuario.id,
+          },
+        })
+        .then(() => {
+          this.togglingNodoColeccion = false;
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.togglingNodoColeccion = false;
+        });
+    },
     stepNivelesUnderTarget: throttle(function (step) {
       let nuevoNiveles = this.nivelesUnderTarget + step;
       if (nuevoNiveles < 0) {
@@ -1369,6 +1481,14 @@ export default {
 .gestorColecciones {
   margin: 0px auto;
   z-index: 1;
+}
+#botonConectarNodosColeccion {
+  background-color: transparent;
+  box-shadow: none;
+}
+#botonToggleNodoColeccion {
+  width: fit-content;
+  margin: 10px auto;
 }
 
 #menuContextual {

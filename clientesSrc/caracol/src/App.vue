@@ -192,7 +192,7 @@ export default {
   },
   computed: {
     estiloBackground() {
-      let primerColor = "#fcff77";
+      let primerColor = "";
 
       let segundoColor = "rgba(235, 85, 21, 0.75) 73.16%";
 
@@ -317,7 +317,7 @@ export default {
 }
 #app:not(.landing) {
   background: "unset";
-  background-color: whitesmoke;
+  background-color: #d7d7d7;
 }
 
 #navBar {

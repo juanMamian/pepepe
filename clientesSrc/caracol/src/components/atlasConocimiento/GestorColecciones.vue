@@ -23,6 +23,7 @@
           <div
             class="selectorColeccion"
             @click.stop="setIdColeccionSeleccionada(null)"
+            v-if="opcionNull"
             v-show="idColeccionSeleccionada"
           >
             <img
@@ -30,12 +31,12 @@
               alt="Coleccion"
               style="height: 15px"
             />
-            Atlas
+            {{ opcionNull }}
           </div>
           <div
             class="selectorColeccion"
             @click.stop="setIdColeccionSeleccionada(coleccion.id)"
-            v-for="coleccion of coleccionesEnriquecidas.filter(
+            v-for="coleccion of yo.atlas.colecciones.filter(
               (col) => idColeccionSeleccionada != col.id
             )"
             :key="coleccion.id"
@@ -77,25 +78,7 @@
       v-show="mostrandoOpcionesColeccion && !conectandoNodosColeccion"
       v-if="coleccionSeleccionadaNullificable"
     >
-      <router-link class="boton botonOpcion"
-        v-if="coleccionSeleccionadaNullificable?.id"
-        :to="{
-          name: 'browseColeccion',
-          params: {
-            idColeccion: coleccionSeleccionadaNullificable.id,
-          },
-        }"
-      >
-        <img src="@/assets/iconos/codeBranch.svg" alt="Red" />
-      </router-link>
-      <div
-        class="botonOpcion botonTexto selector"
-        id="botonConectarNodosColeccion"
-        v-show="!conectandoNodosColeccion && !mostrandoArbol"
-        @click.stop="conectandoNodosColeccion = true"
-      >
-        <img src="@/assets/iconos/plugSolid.svg" alt="Conectar" />
-      </div>
+      <slot name="botonesOpcion"> </slot>
       <div
         class="botonOpcion boton"
         @click.stop="iniciarEdicionNombreColeccion"
@@ -115,54 +98,7 @@
         />
       </div>
     </div>
-    <div
-      class="anuncio anuncioSeleccion"
-      id="anuncioConectandoNodos"
-      v-show="conectandoNodosColeccion"
-    >
-      <img src="@/assets/iconos/plugSolid.svg" alt="Nodos" />
-      Editando nodos de
-      <span
-        style="
-          margin-left: -5px;
-          font-weight: bold;
-          color: var(--atlasConocimientoSeleccion);
-        "
-        >{{ coleccionSeleccionada ? coleccionSeleccionada.nombre : "" }}</span
-      >
-      <div
-        class="boton"
-        id="botonCancelarConectarNodosColeccion"
-        v-show="!idNodoSeleccionado"
-        @click.stop="conectandoNodosColeccion = false"
-      >
-        <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
-      </div>
-    </div>
 
-    <div
-      v-if="
-        conectandoNodosColeccion &&
-        coleccionSeleccionadaNullificable &&
-        idNodoSeleccionado
-      "
-      class="botonTexto"
-      id="botonToggleNodoColeccion"
-      @click.stop="toggleNodoColeccion"
-    >
-      <Loading v-show="togglingNodoColeccion" />
-      <img
-        src="@/assets/iconos/plugSolid.svg"
-        alt="Conectar"
-        v-show="!nodoSeleccionadoBelongs && !togglingNodoColeccion"
-      />
-      <img
-        src="@/assets/iconos/equis.svg"
-        alt="Desconectar"
-        v-show="nodoSeleccionadoBelongs && !togglingNodoColeccion"
-      />
-      <span>{{ nodoSeleccionadoBelongs ? "Desconectar" : "Conectar" }}</span>
-    </div>
     <teleport to="body">
       <div
         class="ventanaSplash"
@@ -247,7 +183,10 @@ import Loading from "@/components/utilidades/Loading.vue";
 import NodoConocimientoVistaArbol from "@/components/atlasConocimiento/NodoConocimientoVistaArbol.vue";
 import DiagramaArbol from "./diagramaArbol.vue";
 import { validarNombreCosa } from "../../utilidades/validacion";
-import { fragmentoColecciones } from "./fragsAtlasConocimiento";
+import {
+  fragmentoColecciones,
+  QUERY_DATOS_USUARIO_NODOS,
+} from "./fragsAtlasConocimiento";
 
 export default {
   name: "GestorColecciones",
@@ -258,17 +197,11 @@ export default {
     DiagramaArbol,
   },
   props: {
-    yo: {
-      type: Object,
-      required: true,
-    },
-    todosNodos: {
-      type: Array,
-      default: [],
-    },
-    idNodoSeleccionado: {
+    idColeccionInicial: {
       type: String,
-      default: "",
+    },
+    opcionNull: {
+      type: String,
     },
   },
   apollo: {
@@ -301,6 +234,13 @@ export default {
       },
       fetchPolicy: "cache-and-network",
     },
+    yo: {
+      query: QUERY_DATOS_USUARIO_NODOS,
+      fetchPolicy: "cache-first",
+      skip() {
+        return !this.usuario?.id;
+      },
+    },
   },
   data() {
     return {
@@ -312,7 +252,6 @@ export default {
       preparandoNuevaColeccion: false,
       creandoNuevaColeccion: false,
 
-      montado: false,
       anchoContenedorArbol: null,
       refreshLineaHorizontal: 0,
       coleccionSeleccionada: {
@@ -323,7 +262,6 @@ export default {
       idColeccionSeleccionada: null,
       mostrandoOpcionesColeccion: false,
       conectandoNodosColeccion: false,
-      togglingNodoColeccion: false,
     };
   },
   computed: {
@@ -336,14 +274,6 @@ export default {
         this.coleccionSeleccionadaNullificable?.idsRed.includes(
           this.idNodoTarget
         )
-      );
-    },
-    nodoSeleccionadoBelongs() {
-      if (!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable) {
-        return false;
-      }
-      return this.coleccionSeleccionadaNullificable.idsNodos.includes(
-        this.idNodoSeleccionado
       );
     },
     estiloZonaTitulo() {
@@ -364,38 +294,6 @@ export default {
       return {
         left: left,
       };
-    },
-    coleccionesEnriquecidas() {
-      if (!this.yo.atlas?.colecciones) return [];
-
-      return this.yo.atlas.colecciones.map((col) => {
-        //Get first nodes and go level by level finding dependencies.
-        let idsNodosActuales = col.idsNodos;
-
-        let idsCompletos = [...idsNodosActuales];
-        let guarda = 0;
-
-        while (idsNodosActuales.length > 0 && guarda < 100) {
-          guarda++;
-          let nodosActuales = this.todosNodos.filter((nodo) =>
-            idsNodosActuales.includes(nodo.id)
-          );
-          let idsSiguientes = nodosActuales
-            .map((nodo) =>
-              nodo.vinculos
-                .filter((v) => v.tipo === "continuacion" && v.rol == "target")
-                .map((vinculo) => vinculo.idRef)
-            )
-            .flat();
-          idsCompletos.push(...idsSiguientes);
-          idsNodosActuales = idsSiguientes;
-        }
-
-        return {
-          ...col,
-          idsRedNodos: idsCompletos,
-        };
-      });
     },
     coleccionSeleccionadaNullificable() {
       if (!this.idColeccionSeleccionada) {
@@ -662,10 +560,6 @@ export default {
           });
           this.idColeccionSeleccionada =
             crearColeccionNodosAtlasConocimientoUsuario.id;
-
-          this.$nextTick(() => {
-            this.conectandoNodosColeccion = true;
-          });
         })
         .catch((error) => {
           console.log("Error: " + error);
@@ -674,40 +568,6 @@ export default {
     },
     iniciarCreacionColeccion() {
       this.preparandoNuevaColeccion = true;
-    },
-    toggleNodoColeccion() {
-      if (!this.idNodoSeleccionado || !this.coleccionSeleccionadaNullificable) {
-        return;
-      }
-      this.togglingNodoColeccion = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idColeccion: ID!, $idNodo: ID!, $idUsuario: ID!) {
-              toggleNodoColeccionNodosAtlasConocimientoUsuario(
-                idColeccion: $idColeccion
-                idNodo: $idNodo
-                idUsuario: $idUsuario
-              ) {
-                id
-                idsNodos
-                idsRed
-              }
-            }
-          `,
-          variables: {
-            idColeccion: this.coleccionSeleccionadaNullificable.id,
-            idNodo: this.idNodoSeleccionado,
-            idUsuario: this.usuario.id,
-          },
-        })
-        .then(() => {
-          this.togglingNodoColeccion = false;
-        })
-        .catch((error) => {
-          console.log("Error: " + error);
-          this.togglingNodoColeccion = false;
-        });
     },
     clickNodo(idNodo) {
       this.idNodoSeleccionado =
@@ -718,61 +578,22 @@ export default {
     },
   },
   watch: {
-    idNodoSeleccionado(val) {
-      this.$emit("idNodoSeleccionado", val);
-    },
-    estiloIconoProgresoUsuario() {
-      if (this.$refs?.imagenUsuario && this.$refs.diagramaPersonal) {
-        this.$nextTick(() => {
-          let screenWidth = screen.width;
-          this.$refs.diagramaPersonal.scrollLeft =
-            this.$refs.diagramaPersonal.scrollWidth / 2 - screenWidth / 2;
-        });
-      }
-    },
     coleccionSeleccionadaNullificable: {
       handler: function (col) {
         this.$emit("coleccionSeleccionada", col);
+        this.desplegandoLista = false;
         if (!col) {
           this.mostrandoOpcionesColeccion = false;
         }
       },
       immediate: true,
     },
-    idColeccionSeleccionada() {
-      this.desplegandoLista = false;
-      this.conectandoNodosColeccion = false;
-    },
-    conectandoNodosColeccion(val) {
-      if (!val) {
-        this.mostrandoOpcionesColeccion = false;
-      }
-      this.$router.push({ name: "atlas" });
-      console.log("Emitiendo un cambio en conectandoNodosColeccion");
-      this.$emit("conectandoNodosColeccion", val);
-    },
-    mostrandoArbol: {
-      handler: function (val) {
-        this.$emit("mostrandoArbol", val);
-        if (this.$refs.diagramaArbol) {
-          this.$refs.diagramaArbol.idNodoSeleccionado = null;
-        }
+    idColeccionInicial: {
+      handler: function (idCol) {
+        this.idColeccionSeleccionada = idCol;
       },
       immediate: true,
     },
-    $route: {
-      handler: function ({ name, params }) {
-        if (name === "coleccionNodosConocimiento" && params?.idColeccion) {
-          this.idColeccionSeleccionada = params.idColeccion;
-        }
-      },
-      immediate: true,
-    },
-  },
-  mounted() {
-    this.$nextTick(() => {
-      this.montado = true;
-    });
   },
 };
 </script>
@@ -823,10 +644,6 @@ export default {
 #contenedorOpciones .botonOpcion {
   height: 20px;
 }
-#botonConectarNodosColeccion {
-  background-color: transparent;
-  box-shadow: none;
-}
 #anuncioConectandoNodos {
   top: 10px;
   position: relative;
@@ -837,10 +654,6 @@ export default {
   top: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
-}
-#botonToggleNodoColeccion {
-  width: fit-content;
-  margin: 10px auto;
 }
 #nombreColeccion {
   position: relative;
@@ -931,5 +744,4 @@ export default {
   gap: 10px;
   align-items: center;
 }
-
 </style>

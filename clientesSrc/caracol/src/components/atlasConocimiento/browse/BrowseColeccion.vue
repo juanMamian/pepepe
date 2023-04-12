@@ -1,18 +1,18 @@
 <template>
   <div class="browseColeccion">
-    <div id="zonaTitulo">
-      <div id="nombreColeccion">
-        <img src="@/assets/iconos/userNodes.png" alt="Nodos" />
-        {{ coleccionSeleccionadaNullificable.nombre }}
-      </div>
-    </div>
+    <gestor-colecciones
+      v-if="idColeccion"
+      :idColeccionInicial="idColeccion"
+      @coleccionSeleccionada="cambiarDeColeccion"
+    >
+    </gestor-colecciones>
     <div
       id="iconoProgresoUsuario"
       :style="[estiloIconoProgresoUsuario]"
-      v-if="coleccionSeleccionadaNullificable"
+      v-if="coleccionSeleccionada"
     >
       <pie-progreso
-        :progreso="coleccionSeleccionadaNullificable.progreso"
+        :progreso="coleccionSeleccionada.progreso"
         :size="120"
         :factorArco="0.1"
         v-if="usuario?.id"
@@ -28,17 +28,17 @@
       </pie-progreso>
       <div
         id="indicadorProgreso"
-        v-if="coleccionSeleccionadaNullificable"
+        v-if="coleccionSeleccionada"
         v-show="coleccionSeleccionada?.progreso"
       >
-        {{ coleccionSeleccionadaNullificable.progreso }}%
+        {{ coleccionSeleccionada.progreso }}%
       </div>
     </div>
     <diagrama-arbol
-      v-if="coleccionSeleccionadaNullificable"
+      v-if="coleccionSeleccionada"
       ref="diagramaArbol"
-      :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
-      :idsRed="coleccionSeleccionadaNullificable.idsRed"
+      :idsRoot="coleccionSeleccionada.idsNodos"
+      :idsRed="coleccionSeleccionada.idsRed"
     ></diagrama-arbol>
   </div>
 </template>
@@ -46,6 +46,7 @@
 <script>
 import diagramaArbol from "../diagramaArbol.vue";
 import PieProgreso from "../../utilidades/PieProgreso.vue";
+import GestorColecciones from "../GestorColecciones.vue";
 
 import { gql } from "@apollo/client/core";
 const QUERY_COLECCION = gql`
@@ -68,29 +69,14 @@ export default {
   components: {
     PieProgreso,
     diagramaArbol,
+    GestorColecciones,
   },
   props: {
     idColeccion: {
       type: String,
     },
   },
-  apollo: {
-    coleccionSeleccionada: {
-      query: QUERY_COLECCION,
-      variables() {
-        return {
-          idColeccion: this.idColeccion,
-          idUsuario: this.usuario.id,
-        };
-      },
-      skip() {
-        return !this.idColeccion || !this.usuario?.id;
-      },
-      update({ coleccionNodosConocimiento }) {
-        return coleccionNodosConocimiento;
-      },
-    },
-  },
+  apollo: {},
   data() {
     return {
       coleccionSeleccionada: {
@@ -101,11 +87,6 @@ export default {
     };
   },
   computed: {
-    coleccionSeleccionadaNullificable() {
-      return this.$apollo.queries.coleccionSeleccionada.skip
-        ? null
-        : this.coleccionSeleccionada;
-    },
     estiloIconoProgresoUsuario() {
       let left = "50%";
       let anchoAjustado = this.anchoContenedorArbol;
@@ -115,6 +96,28 @@ export default {
       return {
         left: left,
       };
+    },
+  },
+  methods: {
+    cambiarDeColeccion(coleccion) {
+      if (coleccion?.id) {
+        this.coleccionSeleccionada = coleccion;
+        this.$router.push({
+          name: "browseColeccion",
+          params: { idColeccion: coleccion.id },
+        });
+      } else {
+      }
+    },
+  },
+  watch: {
+    coleccionSeleccionada: {
+      handler: function (col) {
+        if (col?.nombre) {
+          document.title = col.nombre;
+        }
+      },
+      immediate: true,
     },
   },
 };
@@ -127,7 +130,7 @@ export default {
   gap: 30px;
 }
 #iconoProgresoUsuario {
-    align-self: flex-start;
+  align-self: flex-start;
   width: fit-content;
   position: relative;
   transform: translateX(-50%);
@@ -153,12 +156,11 @@ export default {
   gap: 10px;
   justify-content: center;
 }
-#nombreColeccion img{
-    height: 20px;
-
+#nombreColeccion img {
+  height: 20px;
 }
-.diagramaArbol{
-    width: 100%;
-    align-self: flex-start;
+.diagramaArbol {
+  width: 100%;
+  align-self: flex-start;
 }
 </style>
