@@ -23,6 +23,7 @@
       />
     <div class="bolita">
       <slot name="imagenBolita">
+      <img src="@/assets/iconos/lockSolid.svg" alt="Lock" id="iconoInaccesible" v-if="!idsNodosAccesibles.includes(elNodo.id)" style="height: 30px">
         <img
           v-if="elNodo.tipoNodo === 'concepto'"
           src="@/assets/iconos/atlas/lightbulbEmpty.svg"

@@ -20,6 +20,7 @@
       />
 
     <div class="bolita">
+      <img src="@/assets/iconos/lockSolid.svg" alt="Lock" id="iconoInaccesible" v-if="!accesible">
       <img
         v-if="elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
@@ -389,7 +390,7 @@ export default {
 
 }
 </script>
-<style scoped lang="css">
+<style scoped>
 @import url("@/assets/estilos/nodoConocimientoBola.css");
 
 .nodoConocimientoVistaArbol {

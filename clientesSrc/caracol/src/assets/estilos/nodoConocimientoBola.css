@@ -7,6 +7,14 @@
   align-items: center;
   cursor: pointer;
 }
+.nodoConocimientoConBola #iconoInaccesible{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 15px;
+  opacity: 0.9;
+}
 .nodoConocimientoConBola #botonRastrear {
   position: absolute;
   bottom: calc(100% + 10px);
@@ -16,7 +24,7 @@
   height: 30px;
 }
 
-.nodoConocimientoConBola .bolita {
+.nodoConocimientoConBola > .bolita {
   width: calc(var(--sizeBola) * 1px);
   height: calc(var(--sizeBola) * 1px);
   border-radius: 50%;
@@ -30,11 +38,11 @@
   align-items:center;
 }
 
-.nodoConocimientoConBola .bolita img {
+.nodoConocimientoConBola > .bolita img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  opacity: 0.3;
+  opacity: 0.2;
 }
 
 .nodoConocimientoConBola .cajaTexto {
@@ -50,7 +58,7 @@
   background-color: #f2f2f2;
 }
 
-.nodoConocimientoConBola .cajaTexto #botonAbrir {
+.nodoConocimientoConBola > .cajaTexto #botonAbrir {
   position: absolute;
   top: calc(100% + 10px);
   left: 50%;
@@ -64,45 +72,47 @@
   opacity: 0.1;
 }
 
-.nodoConocimientoConBola.continuacionSeleccionado .bolita {
+.nodoConocimientoConBola.continuacionSeleccionado > .bolita {
   border: 2px solid var(--atlasConocimientoSeleccion);
 }
 
-.nodoConocimientoConBola.previoSeleccionado .bolita {
+.nodoConocimientoConBola.previoSeleccionado > .bolita {
   border: 2px solid var(--atlasConocimientoSeleccion);
 }
 
 /* #endregion */
 
 /* #region accesible */
-.nodoConocimientoConBola.accesible .bolita {
+.nodoConocimientoConBola.accesible > .bolita {
+
+  box-shadow: 2px 2px 2px 4px rgba(128, 128, 128, 0.281);
 }
-.nodoConocimientoConBola.accesible .bolita img {
+.nodoConocimientoConBola.accesible > .bolita img {
   opacity: 1;
 }
 
 /* #endregion */
 
 /* #region estudiado */
-.nodoConocimientoConBola.estudiado .bolita {
+.nodoConocimientoConBola.estudiado > .bolita {
   background-color: var(--atlasConocimientoCheck);
 }
 /* #endregion */
 
 /* #region olvidado*/
 
-.nodoConocimientoConBola.olvidado .bolita {
+.nodoConocimientoConBola.olvidado > .bolita {
   background-color: var(--atlasConocimientoRepasar);
 }
 
 /* #endregion */
 
 /* #region Aprendido */
-.nodoConocimientoConBola.aprendido .bolita {
+.nodoConocimientoConBola.aprendido > .bolita {
   background-color: var(--atlasConocimientoCheck);
 }
 
-.nodoConocimientoConBola.aprendido .bolita img {
+.nodoConocimientoConBola.aprendido > .bolita img {
   /* filter to white */
   filter: invert(1);
 }
@@ -175,7 +185,7 @@
 .nodoConocimientoConBola.esperandoClick {
 }
 
-.nodoConocimientoConBola.esperandoClick .bolita {
+.nodoConocimientoConBola.esperandoClick > .bolita {
   border: 2px solid var(--mainColor);
   background-color: var(--atlasConocimientoBaseNodo);
 }
@@ -184,12 +194,12 @@
   border: 2px solid var(--mainColor);
 }
 
-.nodoConocimientoConBola.esperandoClick.activoSubseleccion .bolita {
+.nodoConocimientoConBola.esperandoClick.activoSubseleccion > .bolita {
   border: 2px solid var(--mainColor);
   background: repeating-linear-gradient(20deg, white, white 7px, var(--mainColor) 12px, var(--mainColor) 19px, white 24px);
 }
 
-.nodoConocimientoConBola.esperandoClick.activoSeleccion .bolita {
+.nodoConocimientoConBola.esperandoClick.activoSeleccion > .bolita {
   border: 2px solid var(--mainColor);
   background: none;
   background-color: var(--mainColor);

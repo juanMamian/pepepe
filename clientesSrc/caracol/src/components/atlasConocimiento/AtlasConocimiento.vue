@@ -54,6 +54,7 @@
       v-show="!algoOverlaying"
       id="contenedorDiagrama"
       ref="contenedorDiagrama"
+      v-if="$route.name==='atlas'"
       @scroll="setCentroZonaNodosVisibles(true)"
       @touchmove="touchMoveDiagrama"
       @touchstart="touchStartDiagrama"
