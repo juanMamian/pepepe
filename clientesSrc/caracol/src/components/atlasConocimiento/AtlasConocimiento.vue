@@ -23,7 +23,7 @@
     </div>
 
     <RouterView />
-    <div id="contenedorOverlays" :style="[estiloContenedorOverlays]">
+    <div id="contenedorOverlays" v-if="$route.name==='atlas'" :style="[estiloContenedorOverlays]">
       <gestor-colecciones
         ref="gestorColecciones"
         :yo="yo"

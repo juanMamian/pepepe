@@ -10,22 +10,6 @@
         :class="{ desplegandoLista, mostrandoArbol }"
         @click.stop="desplegandoLista = !desplegandoLista"
       >
-        <div
-          v-show="
-            coleccionSeleccionadaNullificable &&
-            !$apollo.queries.coleccionSeleccionada.loading
-          "
-          class="boton"
-          :class="{ activo: mostrandoArbol }"
-          id="botonMostrarArbol"
-          @click.stop="toggleMostrandoArbol"
-        >
-          <img
-            src="@/assets/iconos/atlas/userNodes.png"
-            alt="Colección"
-            id="iconoColeccionSeleccionada"
-          />
-        </div>
         <loading v-show="this.$apollo.queries.coleccionSeleccionada.loading" />
         <span style="z-index: 1">
           {{
@@ -93,6 +77,17 @@
       v-show="mostrandoOpcionesColeccion && !conectandoNodosColeccion"
       v-if="coleccionSeleccionadaNullificable"
     >
+      <router-link class="boton botonOpcion"
+        v-if="coleccionSeleccionadaNullificable?.id"
+        :to="{
+          name: 'browseColeccion',
+          params: {
+            idColeccion: coleccionSeleccionadaNullificable.id,
+          },
+        }"
+      >
+        <img src="@/assets/iconos/codeBranch.svg" alt="Red" />
+      </router-link>
       <div
         class="botonOpcion botonTexto selector"
         id="botonConectarNodosColeccion"
@@ -126,7 +121,15 @@
       v-show="conectandoNodosColeccion"
     >
       <img src="@/assets/iconos/plugSolid.svg" alt="Nodos" />
-      Editando nodos de <span style="margin-left: -5px; font-weight: bold; color: var(--atlasConocimientoSeleccion)">{{coleccionSeleccionada?coleccionSeleccionada.nombre:''}}</span>
+      Editando nodos de
+      <span
+        style="
+          margin-left: -5px;
+          font-weight: bold;
+          color: var(--atlasConocimientoSeleccion);
+        "
+        >{{ coleccionSeleccionada ? coleccionSeleccionada.nombre : "" }}</span
+      >
       <div
         class="boton"
         id="botonCancelarConectarNodosColeccion"
@@ -160,45 +163,6 @@
       />
       <span>{{ nodoSeleccionadoBelongs ? "Desconectar" : "Conectar" }}</span>
     </div>
-    <transition name="travelBottom" appear>
-      <div
-        ref="diagramaPersonal"
-        id="diagramaPersonal"
-        v-if="coleccionSeleccionadaNullificable"
-        v-show="mostrandoArbol"
-      >
-        <div id="iconoProgresoUsuario" :style="[estiloIconoProgresoUsuario]">
-          <pie-progreso
-            :progreso="coleccionSeleccionada.progreso"
-            :size="120"
-            :factorArco="0.1"
-            colorFondo="transparent"
-          >
-            <div id="contenedorFotoUsuario">
-              <img
-                ref="imagenUsuario"
-                :src="serverUrl + '/api/usuarios/fotografias/' + usuario?.id"
-                alt="Fotografía"
-              />
-            </div>
-          </pie-progreso>
-          <div
-            id="indicadorProgreso"
-            v-if="coleccionSeleccionadaNullificable"
-            v-show="coleccionSeleccionada?.progreso"
-          >
-            {{ coleccionSeleccionada.progreso }}%
-          </div>
-        </div>
-        <diagrama-arbol
-          v-if="coleccionSeleccionadaNullificable && mostrandoArbol"
-          ref="diagramaArbol"
-          :visible="mostrandoArbol"
-          :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
-          :idsRed="coleccionSeleccionadaNullificable.idsRed"
-        ></diagrama-arbol>
-      </div>
-    </transition>
     <teleport to="body">
       <div
         class="ventanaSplash"
@@ -238,7 +202,7 @@
       <div
         class="ventanaSplash"
         v-if="coleccionSeleccionadaNullificable && editandoColeccion"
-        @click.self="editandoColeccion=false"
+        @click.self="editandoColeccion = false"
       >
         <div class="bloqueSplash" id="splashEditarColeccion">
           <div class="botonEquis" @click="editandoColeccion = false">
@@ -351,7 +315,6 @@ export default {
       montado: false,
       anchoContenedorArbol: null,
       refreshLineaHorizontal: 0,
-
       coleccionSeleccionada: {
         idsNodos: [],
         idsRed: [],
@@ -969,35 +932,4 @@ export default {
   align-items: center;
 }
 
-#diagramaPersonal {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px 5px;
-  background-color: var(--colorFondoGestionColecciones);
-}
-#iconoProgresoUsuario {
-  width: fit-content;
-  position: relative;
-  transform: translateX(-50%);
-}
-#contenedorFotoUsuario {
-  border-radius: 50%;
-  height: 100px;
-  width: 100px;
-  overflow: hidden;
-}
-#contenedorFotoUsuario img {
-  height: 100%;
-}
-#indicadorProgreso {
-  font-size: 0.7em;
-  text-align: center;
-  margin: 10px auto;
-  margin-top: 0px;
-}
-
-.diagramaArbol {
-  flex-grow: 1;
-}
 </style>
