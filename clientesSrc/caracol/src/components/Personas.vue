@@ -207,7 +207,7 @@ export default {
       nodosSolidaridadPublicitados: [],
       idPersonaMenuCx: null,
       idPersonaSeleccionada: null,
-      tipoMostrarUsuarios: "todos",
+      tipoMostrarUsuarios: "estudiantes",
 
       permisoInput: "",
       textoBuscar: null,

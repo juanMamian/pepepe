@@ -94,10 +94,11 @@
           </div>
         </router-link>
         <router-link
+          v-if="coleccionMostrada"
           :to="
             coleccionMostrada?.id
               ? {
-                  name: 'coleccionNodosConocimiento',
+                  name: 'browseColeccion',
                   params: { idColeccion: coleccionMostrada.id },
                 }
               : ''
