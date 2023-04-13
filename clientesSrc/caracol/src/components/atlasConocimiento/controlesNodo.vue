@@ -39,14 +39,7 @@
       </div>
     </div>
 
-    <div
-      id="nombre"
-      ref="nombre"
-      @touchstart.stop="inicioTouch"
-      @touchmove.stop="movimientoTouch"
-      @touchend.stop="finTouch"
-      @click="toggleDespliege"
-    >
+    <div id="nombre" ref="nombre" @click="toggleDespliege">
       <img
         v-if="elNodo && elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
@@ -60,226 +53,230 @@
       id="zonaControles"
       @click=""
       v-if="elNodo && !$apollo.queries.elNodoDB.loading"
+      @touchstart.stop="inicioTouch"
+      @touchmove.stop="movimientoTouch"
+      @touchend.stop="finTouch"
     >
-      <div class="filaControles" v-show="filaMostrada === 2">
-        <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
-          <img src="@/assets/iconos/exclamationCircle.svg" alt="Alerta" />
-          ¡Tienes nodos por completar que son necesarios para este!
-        </div>
-        <div class="bloqueControl" style="">
-          <div
-            class="botonTexto selector botonControl"
-            :class="{
-              deshabilitado: nodoAprendido,
-              checked: nodoFresco,
-            }"
-            @click="marcarEstudiado"
-            @dblclick="marcarAprendido"
-            style="
-              align-self: normal;
-              border-top-right-radius: 0px;
-              border-bottom-right-radius: 0px;
-              flex-grow: 1;
-              flex-shrink: 1;
-            "
-          >
-            <loading v-show="settingDateEstudiado" />
-
-            <img
-              src="@/assets/iconos/bookSolid.svg"
-              v-show="!settingDateEstudiado"
-              alt="Repaso"
-            />
-
-            Estudiado
+      <transition-group name="pan" @after-enter="recalcularHeights" :class="[direccionTransicion]" tag="div" id="transicionFilas">
+        <div class="filaControles" key="fila1" v-show="filaMostrada === 2">
+          <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
+            <img src="@/assets/iconos/exclamationCircle.svg" alt="Alerta" />
+            ¡Tienes nodos por completar que son necesarios para este!
           </div>
-          <div
-            class="botonTexto botonControl"
-            style="
-              border-top-left-radius: 0px;
-              border-bottom-left-radius: 0px;
-              align-self: normal;
-            "
-            v-show="
-              datoUsuarioEsteNodo &&
-              datoUsuarioEsteNodo.estudiado &&
-              datoUsuarioEsteNodo.diasRepaso &&
-              !nodoAprendido
-            "
-            @click.stop="
-              mostrando = mostrando === 'tiempoRepaso' ? '' : 'tiempoRepaso'
-            "
-          >
-            <pie-progreso
-              :mostrarNumero="false"
-              :color-progreso="'#3f7d20'"
-              :color-fondo="'transparent'"
-              :progreso="porcentajeRepaso"
-              :size="40"
-            >
-              <img src="@/assets/iconos/stopwatchSolid.svg" alt="Repaso" />
-            </pie-progreso>
-
-            {{ datoUsuarioEsteNodo ? datoUsuarioEsteNodo.diasRepaso : "" }}
-          </div>
-          <div
-            class="botonTexto selector botonControl"
-            id="botonMarcarAprendido"
-            :class="{ checked: nodoAprendido }"
-            style="width: 100%"
-            @click="marcarAprendido"
-          >
-            <loading v-show="settingEstadoAprendido" />
-            <img
-              src="@/assets/iconos/circlecheckSolid.svg"
-              v-show="!settingEstadoAprendido"
-              alt="Check"
-            />
-
-            {{ "Aprendido" }}
-          </div>
-        </div>
-      </div>
-
-      <div class="filaControles" v-show="filaMostrada === 3">
-        <div class="bloqueControl" id="bloqueControlDependencias">
-          <div
-            class="botonTexto selector botonControl"
-            :class="{
-              activo: mostrando === 'dependenciasNodo',
-              deshabilitado: dependenciasNodo.length === 0,
-            }"
-            @click="
-              mostrando =
-                mostrando === 'dependenciasNodo' ? null : 'dependenciasNodo'
-            "
-          >
-            <img src="@/assets/iconos/codeBranch.svg" alt="Repaso" />
-            Dependencias
-          </div>
-          <div
-            class="botonTexto"
-            :class="{ deshabilitado: nodoCreandoDependencia }"
-            id="botonCrearDependenciaNodo"
-            v-if="usuarioSuperadministrador || usuarioExpertoNodo"
-            @click.stop="iniciarCrearDependenciaNodo"
-          >
-            <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
-          </div>
-        </div>
-
-        <div class="bloqueControl" v-if="usuarioSuperadministrador">
-          <Loading v-show="eliminandose" />
-          <div
-            class="boton botonControl"
-            v-show="!eliminandose"
-            @click="eliminarNodo"
-          >
-            <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
-          </div>
-        </div>
-
-        <div
-          class="contenidoMostrado"
-          id="zonaGestionDependencias"
-          v-show="mostrando === 'dependenciasNodo'"
-        >
-          <div id="listaDependencias" v-if="elNodo && elNodo.vinculos">
+          <div class="bloqueControl" style="">
             <div
-              class="dependencia"
-              v-for="vinculo of dependenciasNodo"
-              :key="vinculo.id"
+              class="botonTexto selector botonControl"
+              :class="{
+                deshabilitado: nodoAprendido,
+                checked: nodoFresco,
+              }"
+              @click="marcarEstudiado"
+              @dblclick="marcarAprendido"
+              style="
+                align-self: normal;
+                border-top-right-radius: 0px;
+                border-bottom-right-radius: 0px;
+                flex-grow: 1;
+                flex-shrink: 1;
+              "
             >
-              <NodoConocimientoVistaLista :idNodo="vinculo.idRef" :yo="yo" />
-              <div
-                v-if="usuarioExperto"
-                class="botonTexto botonEliminarDependencia"
-                :class="{ deshabilitado: idVinculoEliminando === vinculo.id }"
-                @click.stop="eliminarVinculo(vinculo)"
+              <loading v-show="settingDateEstudiado" />
+
+              <img
+                src="@/assets/iconos/bookSolid.svg"
+                v-show="!settingDateEstudiado"
+                alt="Repaso"
+              />
+
+              Estudiado
+            </div>
+            <div
+              class="botonTexto botonControl"
+              style="
+                border-top-left-radius: 0px;
+                border-bottom-left-radius: 0px;
+                align-self: normal;
+              "
+              v-show="
+                datoUsuarioEsteNodo &&
+                datoUsuarioEsteNodo.estudiado &&
+                datoUsuarioEsteNodo.diasRepaso &&
+                !nodoAprendido
+              "
+              @click.stop="
+                mostrando = mostrando === 'tiempoRepaso' ? '' : 'tiempoRepaso'
+              "
+            >
+              <pie-progreso
+                :mostrarNumero="false"
+                :color-progreso="'#3f7d20'"
+                :color-fondo="'transparent'"
+                :progreso="porcentajeRepaso"
+                :size="40"
               >
-                <Loading v-show="idVinculoEliminando === vinculo.id" />
-                <img
-                  v-show="idVinculoEliminando != vinculo.id"
-                  src="@/assets/iconos/equis.svg"
-                  alt="Eliminar"
-                />
+                <img src="@/assets/iconos/stopwatchSolid.svg" alt="Repaso" />
+              </pie-progreso>
+
+              {{ datoUsuarioEsteNodo ? datoUsuarioEsteNodo.diasRepaso : "" }}
+            </div>
+            <div
+              class="botonTexto selector botonControl"
+              id="botonMarcarAprendido"
+              :class="{ checked: nodoAprendido }"
+              style="width: 100%"
+              @click="marcarAprendido"
+            >
+              <loading v-show="settingEstadoAprendido" />
+              <img
+                src="@/assets/iconos/circlecheckSolid.svg"
+                v-show="!settingEstadoAprendido"
+                alt="Check"
+              />
+
+              {{ "Aprendido" }}
+            </div>
+          </div>
+        </div>
+
+        <div class="filaControles" key="fila2" v-show="filaMostrada === 3">
+          <div class="bloqueControl" id="bloqueControlDependencias">
+            <div
+              class="botonTexto selector botonControl"
+              :class="{
+                activo: mostrando === 'dependenciasNodo',
+                deshabilitado: dependenciasNodo.length === 0,
+              }"
+              @click="
+                mostrando =
+                  mostrando === 'dependenciasNodo' ? null : 'dependenciasNodo'
+              "
+            >
+              <img src="@/assets/iconos/codeBranch.svg" alt="Repaso" />
+              Dependencias
+            </div>
+            <div
+              class="botonTexto"
+              :class="{ deshabilitado: nodoCreandoDependencia }"
+              id="botonCrearDependenciaNodo"
+              v-if="usuarioSuperadministrador || usuarioExpertoNodo"
+              @click.stop="iniciarCrearDependenciaNodo"
+            >
+              <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
+            </div>
+          </div>
+
+          <div class="bloqueControl" v-if="usuarioSuperadministrador">
+            <Loading v-show="eliminandose" />
+            <div
+              class="boton botonControl"
+              v-show="!eliminandose"
+              @click="eliminarNodo"
+            >
+              <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
+            </div>
+          </div>
+
+          <div
+            class="contenidoMostrado"
+            id="zonaGestionDependencias"
+            v-show="mostrando === 'dependenciasNodo'"
+          >
+            <div id="listaDependencias" v-if="elNodo && elNodo.vinculos">
+              <div
+                class="dependencia"
+                v-for="vinculo of dependenciasNodo"
+                :key="vinculo.id"
+              >
+                <NodoConocimientoVistaLista :idNodo="vinculo.idRef" :yo="yo" />
+                <div
+                  v-if="usuarioExperto"
+                  class="botonTexto botonEliminarDependencia"
+                  :class="{ deshabilitado: idVinculoEliminando === vinculo.id }"
+                  @click.stop="eliminarVinculo(vinculo)"
+                >
+                  <Loading v-show="idVinculoEliminando === vinculo.id" />
+                  <img
+                    v-show="idVinculoEliminando != vinculo.id"
+                    src="@/assets/iconos/equis.svg"
+                    alt="Eliminar"
+                  />
+                </div>
+              </div>
+              <div
+                class="anuncioZonaVacia"
+                v-show="dependenciasNodo.length === 0"
+              >
+                Este nodo no tiene dependencias
               </div>
             </div>
-            <div
-              class="anuncioZonaVacia"
-              v-show="dependenciasNodo.length === 0"
-            >
-              Este nodo no tiene dependencias
-            </div>
           </div>
         </div>
-      </div>
 
-      <div class="filaControles" v-show="filaMostrada === 1">
-        <div id="zonaDescripcionNodo">
-          <div id="descripcionNodo">
-            {{ elNodo.descripcion || "" }}
-            <div
-              class="anuncioZonaVacia"
-              v-if="!elNodo?.descripcion?.length > 0"
+        <div class="filaControles" key="fila3" v-show="filaMostrada === 1">
+          <div id="zonaDescripcionNodo">
+            <div id="descripcionNodo">
+              {{ elNodo.descripcion || "" }}
+              <div
+                class="anuncioZonaVacia"
+                v-if="!elNodo?.descripcion?.length > 0"
+              >
+                Aún no hay descripción
+              </div>
+            </div>
+          </div>
+          <div class="bloqueControl">
+            <router-link
+              v-if="elNodo?.id"
+              :to="{
+                name: 'visorNodoConocimiento',
+                params: { idNodo: elNodo.id },
+              }"
             >
-              Aún no hay descripción
+              <div class="botonTexto">
+                <img src="@/assets/iconos/expandSolid.svg" alt="Expandir" />
+                Visitar
+              </div>
+            </router-link>
+          </div>
+          <div class="bloqueControl" id="bloqueControlBrowse" v-if="elNodo?.id">
+            <router-link
+              :to="{
+                name: 'browseNodoConocimiento',
+                params: { idNodo: elNodo.id },
+              }"
+              class="botonTexto"
+            >
+              <img src="@/assets/iconos/codeBranch.svg" alt="Ramas" />
+              Explorar
+            </router-link>
+          </div>
+          <div class="bloqueControl" id="bloqueControlTarget">
+            <div
+              class="botonTexto selector"
+              :class="{ activo: elNodo.id === idNodoTarget }"
+              @click="setNodoTarget(elNodo.id)"
+            >
+              <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
+              En la mira
+            </div>
+            <div
+              class="botonTexto"
+              v-show="elNodo.id === idNodoTarget"
+              style="align-self: stretch"
+              @click="setNodoTarget(null)"
+            >
+              <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
             </div>
           </div>
         </div>
-        <div class="bloqueControl">
-          <router-link
-            v-if="elNodo?.id"
-            :to="{
-              name: 'visorNodoConocimiento',
-              params: { idNodo: elNodo.id },
-            }"
-          >
-            <div class="botonTexto">
-              <img src="@/assets/iconos/expandSolid.svg" alt="Expandir" />
-              Visitar
-            </div>
-          </router-link>
-        </div>
-        <div class="bloqueControl" id="bloqueControlBrowse" v-if="elNodo?.id">
-          <router-link
-            :to="{
-              name: 'browseNodoConocimiento',
-              params: { idNodo: elNodo.id },
-            }"
-            class="botonTexto"
-          >
-            <img src="@/assets/iconos/codeBranch.svg" alt="Ramas" />
-            Explorar
-          </router-link>
-        </div>
-        <div class="bloqueControl" id="bloqueControlTarget">
-          <div
-            class="botonTexto selector"
-            :class="{ activo: elNodo.id === idNodoTarget }"
-            @click="setNodoTarget(elNodo.id)"
-          >
-            <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
-            En la mira
-          </div>
-          <div
-            class="botonTexto"
-            v-show="elNodo.id === idNodoTarget"
-            style="align-self: stretch"
-            @click="setNodoTarget(null)"
-          >
-            <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
-          </div>
-        </div>
-      </div>
-
+      </transition-group>
       <div id="zonaSelectorFilas">
         <div
           class="selectorFila boton selector"
           :class="{ activo: filaMostrada === index }"
           v-for="index of cantidadFilas"
           :key="'selectorFila' + index"
-          @click.stop="filaMostrada = index"
+          @click.stop="setFilaMostrada(index)"
         ></div>
       </div>
     </div>
@@ -379,6 +376,7 @@ export default {
   name: "ControlesNodo",
   data() {
     return {
+      direccionTransicion: 'normal',
       elNodoDB:{
         vinculos:[],
         expertos:[],
@@ -571,6 +569,16 @@ export default {
     }
   },
   methods: {
+    setFilaMostrada(index){
+      if(this.filaMostrada < index || this.filaMostrada===1){
+       this.direccionTransicion='reverse';
+      }
+      else{
+        this.direccionTransicion='normal'
+      }
+      this.filaMostrada=index;
+
+    },
     setNodoTarget(nuevoIdNodoTarget = this.idNodo) {
       const QUERY_NODO_TARGET = gql`
           query{
@@ -638,11 +646,12 @@ export default {
     movimientoTouch(e) {
       let minMov = 60;
       if (this.touchStartX) {
-
         let mov = e.touches[0].clientX - this.touchStartX;
         console.log(`mov de ${mov}`);
         if (Math.abs(mov) > minMov) {
+
           let delta = -mov / Math.abs(mov);
+          this.direccionTransicion=delta > 0? 'reverse':'normal'
           this.filaMostrada += delta;
           if (this.filaMostrada > this.cantidadFilas) {
             this.filaMostrada = 1;
@@ -986,9 +995,6 @@ export default {
       },
       immediate: true
     },
-    filaMostrada() {
-      this.recalcularHeights();
-    },
     mostrando() {
       this.recalcularHeights();
     },
@@ -1061,6 +1067,12 @@ export default {
   padding: 20px 20px;
 }
 
+#transicionFilas.normal .filaControles{
+  animation-direction: normal;
+}
+#transicionFilas.reverse .filaControles{
+  animation-direction: reverse;
+}
 .filaControles {
   display: flex;
   flex-wrap: wrap;
