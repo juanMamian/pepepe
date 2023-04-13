@@ -100,14 +100,24 @@
         <img
           src="@/assets/iconos/plugSolid.svg"
           alt="Conectar"
-          v-show="!nodoSeleccionadoBelongsColeccionSeleccionada && !togglingNodoColeccion"
+          v-show="
+            !nodoSeleccionadoBelongsColeccionSeleccionada &&
+            !togglingNodoColeccion
+          "
         />
         <img
           src="@/assets/iconos/equis.svg"
           alt="Desconectar"
-          v-show="nodoSeleccionadoBelongsColeccionSeleccionada && !togglingNodoColeccion"
+          v-show="
+            nodoSeleccionadoBelongsColeccionSeleccionada &&
+            !togglingNodoColeccion
+          "
         />
-        <span>{{ nodoSeleccionadoBelongsColeccionSeleccionada ? "Desconectar" : "Conectar" }}</span>
+        <span>{{
+          nodoSeleccionadoBelongsColeccionSeleccionada
+            ? "Desconectar"
+            : "Conectar"
+        }}</span>
       </div>
     </div>
 
@@ -125,7 +135,7 @@
       ref="buscadorNodos"
     />
     <div
-      v-show="$route.name==='atlas'"
+      v-show="$route.name === 'atlas'"
       id="contenedorDiagrama"
       ref="contenedorDiagrama"
       @scroll="setCentroZonaNodosVisibles(true)"
@@ -1224,7 +1234,14 @@ export default {
       this.showingZoomInfo = true;
     },
     zoomWheel(e) {
-      //Verificar si es para set nivelesUnderTarget
+      //Verificar si es para un subnodo.
+      console.log("Wheel");
+      if(this.$refs.controlesNodo.zoomWheel(e)){
+        console.log("atrapado en controlesNodo");
+        return;
+      }
+
+      console.log("wheel en atlas");
       if (this.hoveringAnuncioTarget) {
         e.preventDefault();
         let direccionScroll = e.deltaY;

@@ -53,12 +53,24 @@
       id="zonaControles"
       @click=""
       v-if="elNodo && !$apollo.queries.elNodoDB.loading"
+      @mouseenter="hovered = true"
+      @mouseleave="hovered = false"
       @touchstart.stop="inicioTouch"
       @touchmove.stop="movimientoTouch"
       @touchend.stop="finTouch"
     >
-      <transition-group name="pan" @after-enter="recalcularHeights" :class="[direccionTransicion]" tag="div" id="transicionFilas">
-        <div class="filaControles" key="fila1" v-show="filaMostrada === 2">
+      <transition-group
+        name="pan"
+        @after-leave="recalcularHeights"
+        tag="div"
+        id="transicionFilas"
+      >
+        <div
+          class="filaControles"
+          :class="[direccionTransicion]"
+          key="fila1"
+          v-show="filaMostrada === 2"
+        >
           <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
             <img src="@/assets/iconos/exclamationCircle.svg" alt="Alerta" />
             ¡Tienes nodos por completar que son necesarios para este!
@@ -138,7 +150,12 @@
           </div>
         </div>
 
-        <div class="filaControles" key="fila2" v-show="filaMostrada === 3">
+        <div
+          class="filaControles"
+          :class="[direccionTransicion]"
+          key="fila2"
+          v-show="filaMostrada === 3"
+        >
           <div class="bloqueControl" id="bloqueControlDependencias">
             <div
               class="botonTexto selector botonControl"
@@ -212,7 +229,12 @@
           </div>
         </div>
 
-        <div class="filaControles" key="fila3" v-show="filaMostrada === 1">
+        <div
+          class="filaControles"
+          :class="[direccionTransicion]"
+          key="fila3"
+          v-show="filaMostrada === 1"
+        >
           <div id="zonaDescripcionNodo">
             <div id="descripcionNodo">
               {{ elNodo.descripcion || "" }}
@@ -331,6 +353,7 @@ import { fragmentoDatoNodoConocimiento } from './fragsAtlasConocimiento';
 import PieProgreso from '../utilidades/PieProgreso.vue';
 import NodoConocimientoVistaLista from './NodoConocimientoVistaLista.vue';
 import Loading from '../utilidades/Loading.vue';
+import throttle from 'lodash/throttle';
 
 export default {
 
@@ -342,7 +365,7 @@ export default {
       type: Boolean,
       default: true,
     },
-    idNodoSeleccionado:{
+    idNodoSeleccionado: {
       type: String,
     }
   },
@@ -351,17 +374,17 @@ export default {
       query: QUERY_DATOS_USUARIO_NODOS,
       fetchPolicy: "cache-first"
     },
-    elNodoDB:{
+    elNodoDB: {
       query: QUERY_NODO_CONOCIMIENTO_ESTANDAR,
-      variables(){
+      variables() {
         return {
           idNodo: this.idNodoSeleccionado,
         }
       },
-      skip(){
+      skip() {
         return !this.idNodoSeleccionado;
       },
-      update({nodo}){
+      update({ nodo }) {
         return nodo
       },
       fetchPolicy: "cache-first"
@@ -376,10 +399,11 @@ export default {
   name: "ControlesNodo",
   data() {
     return {
+      hovered:false,
       direccionTransicion: 'normal',
-      elNodoDB:{
-        vinculos:[],
-        expertos:[],
+      elNodoDB: {
+        vinculos: [],
+        expertos: [],
       },
 
       yo: {
@@ -415,10 +439,10 @@ export default {
     };
   },
   computed: {
-    elNodo(){
-    if(!this.idNodoSeleccionado){
-      return null
-    }
+    elNodo() {
+      if (!this.idNodoSeleccionado) {
+        return null
+      }
       return this.elNodoDB;
     },
     idNodoTarget() {
@@ -569,14 +593,14 @@ export default {
     }
   },
   methods: {
-    setFilaMostrada(index){
-      if(this.filaMostrada < index || this.filaMostrada===1){
-       this.direccionTransicion='reverse';
+    setFilaMostrada(index) {
+      if (this.filaMostrada < index || this.filaMostrada === 1) {
+        this.direccionTransicion = 'left';
       }
-      else{
-        this.direccionTransicion='normal'
+      else {
+        this.direccionTransicion = 'right'
       }
-      this.filaMostrada=index;
+      this.filaMostrada = index;
 
     },
     setNodoTarget(nuevoIdNodoTarget = this.idNodo) {
@@ -616,11 +640,11 @@ export default {
             setNodoAtlasTarget(idNodo:$idNodo)
           }
         `,
-        variables:{
+        variables: {
           idNodo: nuevoIdNodoTarget
         }
 
-      }).catch((error)=>{
+      }).catch((error) => {
         console.log(`Error sincronizando nodo target: ${error}`);
       })
     },
@@ -649,19 +673,22 @@ export default {
         let mov = e.touches[0].clientX - this.touchStartX;
         console.log(`mov de ${mov}`);
         if (Math.abs(mov) > minMov) {
-
           let delta = -mov / Math.abs(mov);
-          this.direccionTransicion=delta > 0? 'reverse':'normal'
-          this.filaMostrada += delta;
+          this.stepFilaMostrada(delta);
+          this.touchStartX = null;
+        }
+      }
+    },
+    stepFilaMostrada(step){
+          this.direccionTransicion = step > 0 ? 'left' : 'right'
+          this.filaMostrada += step;
           if (this.filaMostrada > this.cantidadFilas) {
             this.filaMostrada = 1;
           }
           if (this.filaMostrada < 1) {
             this.filaMostrada = this.cantidadFilas;
           }
-          this.touchStartX = null;
-        }
-      }
+
     },
     finTouch() {
       this.touchStartX = null;
@@ -968,6 +995,16 @@ export default {
       }
       this.$emit('iniciarCrearDependenciaNodo');
     },
+    zoomWheel: throttle(function(e) {
+      if (!this.hovered) {
+        return;
+      }
+      e.preventDefault();
+      let direccionScroll = e.deltaY;
+      let delta = direccionScroll / Math.abs(direccionScroll);
+      this.stepFilaMostrada(delta);
+      return true;
+    }, 500)
   },
   watch: {
     elNodo(nodo) {
@@ -995,7 +1032,7 @@ export default {
       },
       immediate: true
     },
-    mostrando() {
+    mostrando(mostrando) {
       this.recalcularHeights();
     },
   },
@@ -1065,14 +1102,17 @@ export default {
   justify-content: center;
   gap: 20px;
   padding: 20px 20px;
+  overflow-x: hidden;
 }
 
-#transicionFilas.normal .filaControles{
+#transicionFilas.normal .filaControles {
   animation-direction: normal;
 }
-#transicionFilas.reverse .filaControles{
+
+#transicionFilas.reverse .filaControles {
   animation-direction: reverse;
 }
+
 .filaControles {
   display: flex;
   flex-wrap: wrap;

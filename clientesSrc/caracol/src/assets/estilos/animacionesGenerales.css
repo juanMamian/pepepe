@@ -70,26 +70,38 @@
   }
 }
 
-.pan-enter-active {
+.left.pan-enter-active {
+  animation: panInFromLeft 0.1s linear;
+  filter: blur(2px);
+  
+}
+.right.pan-enter-active {
   animation: panInFromRight 0.1s linear;
 }
 .pan-leave-active {
-  
 }
 
 @keyframes panInFromRight {
   0% {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
-  100%{
+  100% {
     transform: translateX(0%);
   }
 }
-@keyframes panOutToLeft{
+@keyframes panInFromLeft {
+  0% {
+    transform: translateX(50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+@keyframes panOutToLeft {
   0% {
     transform: translateX(0%);
   }
-  100%{
+  100% {
     transform: translateX(100%);
   }
 }
