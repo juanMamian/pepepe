@@ -423,7 +423,6 @@ export default {
     top: 0px;
     display: flex;
     flex-direction: row;
-    gap: 30px;
     background-color: transparent;
     box-shadow: none;
   }

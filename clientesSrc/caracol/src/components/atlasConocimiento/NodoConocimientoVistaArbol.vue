@@ -6,21 +6,32 @@
       (datosUsuarioEsteNodo?.estadoAprendizaje || '').toLowerCase(),
     ]"
     @click.stop="$emit('clickEnNodo', idNodo)"
+    @dblclick.stop="
+      $router.push({
+        name: 'visorNodoConocimiento',
+        params: { idNodo: idNodo },
+      })
+    "
   >
     <div
       id="lineaReceptora"
       :style="[estiloLineaReceptora]"
       v-show="nivelArbol > 0"
     ></div>
-      <img
-        src="@/assets/iconos/crosshairsSolid.svg"
-        alt="Mira"
-        id="iconoTargeted"
-        v-if="targeted"
-      />
+    <img
+      src="@/assets/iconos/crosshairsSolid.svg"
+      alt="Mira"
+      id="iconoTargeted"
+      v-if="targeted"
+    />
 
     <div class="bolita">
-      <img src="@/assets/iconos/lockSolid.svg" alt="Lock" id="iconoInaccesible" v-if="!accesible">
+      <img
+        src="@/assets/iconos/lockSolid.svg"
+        alt="Lock"
+        id="iconoInaccesible"
+        v-if="!accesible"
+      />
       <img
         v-if="elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
