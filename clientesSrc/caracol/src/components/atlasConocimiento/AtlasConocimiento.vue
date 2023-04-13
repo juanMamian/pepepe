@@ -246,7 +246,7 @@
       @stepNivelesUnderTarget="stepNivelesUnderTarget"
     />
 
-    <div id="zonaLocalizadores">
+    <div id="zonaLocalizadores" @click.stop="">
       <div
         class="boton controlColeccion"
         :class="{
@@ -261,17 +261,6 @@
       </div>
       <div
         class="boton controlColeccion"
-        :class="{ deshabilitado: idsNodosActivosEstudiados.length < 1 }"
-        @click="localizarNext('estudiado')"
-      >
-        <img
-          src="@/assets/iconos/atlas/locationCrosshair.svg"
-          alt="Localizar"
-          style="filter: var(--filtroAtlasCheck)"
-        />
-      </div>
-      <div
-        class="boton controlColeccion"
         @click="localizarNext('olvidado')"
         :class="{
           deshabilitado: idsNodosActivosOlvidados.length < 1,
@@ -281,6 +270,19 @@
           src="@/assets/iconos/atlas/locationCrosshair.svg"
           alt="Localizar"
           style="filter: var(--filtroAtlasRepaso)"
+        />
+      </div>
+      <div
+        class="boton controlColeccion"
+        @click="localizarNext('top')"
+        :class="{
+          deshabilitado: !idsNodosTop || idsNodosTop.length < 1,
+        }"
+      >
+        <img
+          src="@/assets/iconos/atlas/locationCrosshair.svg"
+          alt="Localizar"
+          style="filter: var(--filtroAtlasTop)"
         />
       </div>
     </div>
@@ -413,6 +415,7 @@ export default {
   },
   data() {
     return {
+      gettingNodoNext:false,
       togglingNodoColeccion: false,
 
       idNodoSeleccionado: null,
@@ -495,7 +498,7 @@ export default {
 
       indexLocalizadorAccesibles: 0,
       indexLocalizadorOlvidados: 0,
-      indexLocalizadorEstudiados: 0,
+      indexLocalizadorTops: 0,
 
       idColeccionTargetOnLastLocalizacion: null,
 
@@ -511,6 +514,12 @@ export default {
     };
   },
   computed: {
+    idsNodosTop(){
+      if(!this.coleccionSeleccionada){
+        return [];
+      }
+      return this.coleccionSeleccionada.idsNodos;
+    },
     nodoSeleccionadoBelongsColeccionSeleccionada() {
       if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
         return false;
@@ -857,6 +866,7 @@ export default {
     localizarNext(tipo) {
 
       let nodoNext = null;
+      let idNodoNext=null;
       if (tipo === "accesible") {
         if (this.idsNodosActivosAccesiblesInexplorados.length < 1) {
           return;
@@ -867,15 +877,6 @@ export default {
         }
         nodoNext = this.nodosActivos.find(na => na.id === this.idsNodosActivosAccesiblesInexplorados[this.indexLocalizadorAccesibles]);
 
-      } else if (tipo === "estudiado") {
-        if (this.idsNodosActivosEstudiados.length < 1) {
-          return;
-        }
-        this.indexLocalizadorEstudiados++;
-        if (this.indexLocalizadorEstudiados >= this.idsNodosActivosEstudiados.length) {
-          this.indexLocalizadorEstudiados = 0;
-        }
-        nodoNext = this.nodosActivos.find(n => n.id === this.idsNodosActivosEstudiados[this.indexLocalizadorEstudiados]);
       } else if (tipo === "olvidado") {
         if (this.idsNodosActivosOlvidados.length < 1) {
           return;
@@ -886,9 +887,51 @@ export default {
         }
         nodoNext = this.nodosActivos.find(na => na.id === this.idsNodosActivosOlvidados[this.indexLocalizadorOlvidados]);
       }
+      else if(tipo==='top'){
+        if(!this.idsNodosTop || this.idsNodosTop.length < 1){
+          return;
+        }
+        this.indexLocalizadorTops++;
+        if(this.indexLocalizadorTops >= this.idsNodosTop.length){
+          this.indexLocalizadorTops=0;
+        }
+        console.log("saltando al nodo top " + this.indexLocalizadorTops);
+        console.log(`De ${this.idsNodosTop.length}`);
+        idNodoNext=this.idsNodosTop[this.indexLocalizadorTops];
+        console.log(`Con id ${idNodoNext}`);
+        if(this.coleccionSeleccionada){//Buscar en los nodos activos
+          nodoNext=this.nodosActivos.find(n=>n.id===idNodoNext);
+        }
+      }
+
       if (nodoNext) {
         this.centrarEnNodo(nodoNext);
         this.seleccionNodo(nodoNext);
+        return;
+      }
+      if(idNodoNext){
+        this.gettingNodoNext=true;
+        this.$apollo.query({
+          query: gql`
+            query($idNodo:ID!){
+              nodo(idNodo:$idNodo){
+                ...fragNodoConocimiento
+              }
+            }
+            ${fragmentoNodoConocimiento}
+          `,
+          variables:{
+            idNodo: idNodoNext,
+          }
+        }).then(({data:{nodo}})=>{
+          this.gettingNodoNext=false;
+          this.centrarEnNodo(nodoNext);
+          this.seleccionNodo(nodoNext);
+          return;
+        }).catch((error)=>{
+          this.gettingNodoNext=false;
+          console.log(`Error getting nodo next: ${error}`);
+        });
       }
     },
     iniciarCallingPosiciones() {
@@ -1236,7 +1279,7 @@ export default {
     zoomWheel(e) {
       //Verificar si es para un subnodo.
       console.log("Wheel");
-      if(this.$refs.controlesNodo.zoomWheel(e)){
+      if(this.$refs.controlesNodo?.zoomWheel(e)){
         console.log("atrapado en controlesNodo");
         return;
       }
@@ -1401,9 +1444,8 @@ export default {
     });
 
   },
-  removed() {
-    window.removeEventListener("wheel", this.zoomWheel);
-
+  destroyed() {
+    window.removeEventListener("wheel", this.zoomWheel, {passive: false});
     window.removeEventListener("resize", function () {
       this.anchoScreen = screen.width;
       this.altoScreen = screen.height;
@@ -1426,10 +1468,13 @@ export default {
   --atlasConocimientoBaseNodo: #d9d9d9;
   --atlasConocimientoSeleccion: #ad58d8;
   --atlasConocimientoSubseleccion: #ad58d87c;
-  --atlasConocimientoContinuacion: #3066be;
+  --atlasConocimientoTop: #3066be;
 
   --filtroAtlasSeleccion: invert(43%) sepia(84%) saturate(539%)
     hue-rotate(236deg) brightness(88%) contrast(92%);
+
+  --filtroAtlasTop: invert(33%) sepia(98%) saturate(632%) hue-rotate(185deg)
+    brightness(89%) contrast(93%);
 
   --filtroAtlasAvailable: invert(79%) sepia(70%) saturate(443%)
     hue-rotate(349deg) brightness(92%) contrast(91%);
@@ -1629,7 +1674,7 @@ export default {
 #zonaLocalizadores {
   position: fixed;
   bottom: 0px;
-  right: 0px;
+  right: 20px;
   display: flex;
   gap: 10px;
   justify-content: center;

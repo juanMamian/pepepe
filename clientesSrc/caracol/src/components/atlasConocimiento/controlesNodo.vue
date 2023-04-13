@@ -72,7 +72,7 @@
           v-show="filaMostrada === 2"
         >
           <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
-            <img src="@/assets/iconos/exclamationCircle.svg" alt="Alerta" />
+            <img src="@/assets/iconos/lockSolid.svg" alt="Bloqueo" style="height: 15px" />
             ¡Tienes nodos por completar que son necesarios para este!
           </div>
           <div class="bloqueControl" style="">
