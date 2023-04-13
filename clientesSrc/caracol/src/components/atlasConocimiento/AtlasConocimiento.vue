@@ -641,10 +641,6 @@ export default {
         console.log("Filtrando nodos. Solo siguen los que salen en la red de la colección seleccionada");
         campo = campo.filter(n => this.coleccionSeleccionada.idsRed.includes(n.id));
       }
-      if (this.nodoTargetRelevante && this.nodoTarget) {
-        campo = campo.filter(n => this.idsUnderTargetActivos.includes(n.id));
-
-      }
       return campo;
     },
 

@@ -85,11 +85,7 @@
       >
         <img src="@/assets/iconos/edit.svg" alt="Editar" />
       </div>
-      <div
-        class="botonOpcion boton"
-        @click.stop="eliminarColeccion"
-        v-show="mostrandoArbol"
-      >
+      <div class="botonOpcion boton" @click.stop="eliminarColeccion">
         <loading v-show="eliminandoColeccion" />
         <img
           src="@/assets/iconos/trash.svg"
