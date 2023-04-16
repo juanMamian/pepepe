@@ -61,13 +61,8 @@
           :idsNodosOlvidados="idsNodosActivosOlvidados"
           :idsNodosEstudiados="idsNodosActivosEstudiados"
           :idsNodosAccesibles="idsNodosActivosAccesibles"
-          :idsUnderTargetActivos="idsUnderTargetActivos"
           :class="{
             esperandoClick: conectandoNodosColeccion,
-            conectadoSeleccionado:
-              nodoTarget &&
-              idsUnderTarget[nivelesUnderTarget] &&
-              idsUnderTarget[nivelesUnderTarget].includes(nodo.id),
             activoSeleccion:
               conectandoNodosColeccion &&
               coleccionSeleccionada?.idsNodos.includes(nodo.id),
@@ -329,45 +324,8 @@ export default {
       }
       return this.coleccionSeleccionada.idsNodos;
     },
-    nodoTargetRelevante() {
-      if (!this.idNodoTarget) {
-        return false;
-      }
-
-      if (!this.coleccionSeleccionada) {
-        return true;
-      }
-      return this.coleccionSeleccionada.idsRed.includes(this.idNodoTarget);
-    },
     idNodoTarget() {
       return this.yo?.atlas?.idNodoTarget;
-    },
-    idsUnderTarget() {
-      // Array de arrays. Cada array es los ids de un nivel de nodos under target.
-      if (!this.nodoTarget) {
-        return [];
-      }
-
-      let nodosActuales = [this.nodoTarget];
-      let nivelCero = [this.nodoTarget.id];
-      let todosIds = [nivelCero];
-      for (let i = 1; i <= this.nivelesUnderTarget + 1; i++) {
-        //Se calcula un nivel extra para saber en todo momento si se puede ampliar el rango de nodos under Target.
-        let siguientesIds = nodosActuales
-          .map((n) =>
-            n.vinculos
-              .filter((v) => v.tipo === "continuacion" && v.rol === "target")
-              .map((v) => v.idRef)
-          )
-          .flat();
-        let nuevosIds = siguientesIds.filter((id) => !todosIds.includes(id));
-        todosIds.push(nuevosIds);
-        nodosActuales = this.todosNodos.filter((n) => nuevosIds.includes(n.id));
-      }
-      return todosIds;
-    },
-    idsUnderTargetActivos() {
-      return this.idsUnderTarget.slice(0, this.nivelesUnderTarget + 1).flat();
     },
     domAndNodosReady() {
       return this.montado && this.firstLoad;

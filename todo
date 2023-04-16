@@ -1,8 +1,9 @@
 Atlas de conocimiento.
 
--que el localizador de nodo next no busque en nodos activos cuando se está en el atlas sino en la red.
 -Que el localizador de nodo next pueda buscar en el diagrama árbol.
 -Revisar qué pasa si se usa el localizador mientras se está creando dependencia de nodo. Creo que el método seleccionNodo de AtlasConocimiento termina asignándo el nodo localizado como dependencia de manera automática.
+-Que en browseNodo también salga el anuncio de nodoTarget relevante.
+-Que en la vista mapa otra vez se pueda recorrer hacia atrás la lista de dependencias. O hacia adelante.
 
 -En maestra vida asegurarse de que se hace la migración de objetivos de chicxs, periodoRepaso y de objetivos y de personas.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.

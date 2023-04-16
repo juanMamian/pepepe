@@ -163,6 +163,7 @@
       ref="controlesNodo"
       :idNodoSeleccionado="idNodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
+      :nodoTargetRelevante="nodoTargetRelevante"
       @click.stop=""
       @iniciarCrearDependenciaNodo="marcarNodoEsperandoDependencia($event)"
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
@@ -229,6 +230,25 @@ export default {
     };
   },
   computed: {
+    nodoTargetRelevante() {
+      if (!this.idNodoTarget) {
+        return false;
+      }
+      if (this.tipoBrowse === "mapa" && !this.coleccionSeleccionada) {
+        return true;
+      }
+
+      if (this.tipoBrowse === "browseColeccion" || this.tipoBrowse === "mapa") {
+        if (this.coleccionSeleccionada?.idsRed?.includes(this.idNodoTarget)) {
+          return true;
+        }
+        return false;
+      }
+
+      if (this.tipoBrowse === "browseNodo") {
+        return false;
+      }
+    },
     nodoSeleccionadoBelongsColeccionSeleccionada() {
       if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
         return false;
