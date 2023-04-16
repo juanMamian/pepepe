@@ -110,14 +110,6 @@ var esquemaNodo = new mongoose.Schema({
         required: true,
         default: []
     },
-    idForoPublico: {
-        type: String,
-        required: true,
-    },
-    idForoExpertos: {
-        type: String,
-        required: true,
-    },
     secciones: {
         type: [{
             nombre: {

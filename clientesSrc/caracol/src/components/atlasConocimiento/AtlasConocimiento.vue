@@ -1,8 +1,6 @@
 <template>
   <div
     class="atlasConocimiento"
-    @mouseenter="hovered = true"
-    @mouseleave="hovered = false"
     @click="clickFuera"
   >
     <RouterView id="viewerNodo" />
@@ -169,9 +167,7 @@
       :idNodoSeleccionado="idNodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
       @click.stop=""
-      @iniciarCrearDependenciaNodo="
-        marcarNodoEsperandoDependencia(nodoSeleccionado)
-      "
+      @iniciarCrearDependenciaNodo="marcarNodoEsperandoDependencia($event)"
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
       @nodoEliminado="reactToNodoEliminado"
       @centerEnTarget="centerEnTarget"
@@ -257,7 +253,7 @@ export default {
         console.log("wheel atrapado en controlesNodo");
         return;
       }
-      if (this.$refs?.mapaAtlas) {
+      if (this.tipoBrowse==='mapa' && this.$refs?.mapaAtlas) {
         this.$refs.mapaAtlas.zoomWheel(e);
       }
     },
@@ -300,6 +296,9 @@ export default {
       this.$refs.controlesNodo.clickFuera();
       if (this.$refs?.buscadorNodos) {
         this.$refs.buscadorNodos.cerrarBusqueda();
+      }
+      if(this.$refs.mapaAtlas){
+        this.$refs.mapaAtlas.cerrarMenuContextual();
       }
     },
     localizarNext(tipo) {
@@ -431,7 +430,8 @@ export default {
         });
     },
     reactToNodoBuscadoSeleccionado(nodo) {
-      if (this.$route.tipoBrowse === "mapa") {
+      console.log("reacting to nodo buscado seleccionado");
+      if (this.$route?.params?.tipoBrowse === "mapa" && this.$refs?.mapaAtlas) {
         this.$refs.mapaAtlas.centrarEnNodoById(nodo.id);
       }
     },
@@ -446,13 +446,16 @@ export default {
       if (this.$refs?.mapaAtlas) {
         this.$refs.mapaAtlas.reactToNodoEliminado(idNodo);
       }
+      if(idNodo===this.idNodoSeleccionado){
+        this.seleccionNodo(null);
+      }
     },
     seleccionNodo(idNodo) {
       if (this.nodoCreandoDependencia) {
-        if (nodo.id === this.nodoCreandoDependencia.id) {
+        if (idNodo === this.nodoCreandoDependencia.id) {
           return;
         }
-        this.$refs.controlesNodo.crearDependenciaNodo(nodo);
+        this.$refs.controlesNodo.crearDependenciaNodo(idNodo);
         return;
       }
       this.idNodoSeleccionado = idNodo;
@@ -603,6 +606,7 @@ export default {
 }
 
 #botonCallingPosiciones {
+  pointer-events: all;
   width: 20px;
   height: 20px;
   border-radius: 50%;

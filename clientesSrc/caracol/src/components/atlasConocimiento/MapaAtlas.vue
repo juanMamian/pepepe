@@ -3,6 +3,9 @@
     class="mapaAtlas"
     @touchmove="touchMoveDiagrama"
     @touchstart="touchStartDiagrama"
+    @contextmenu.self.exact.stop.prevent="abrirMenuContextual"
+    @mouseenter="hovered=true"
+    @mouseleave="hovered=true"
   >
     <div
       id="contenedorElementosDiagrama"
@@ -38,8 +41,9 @@
       >
         <loading
           texto=""
-          v-show="posicionCreandoNodo"
+          v-if="posicionCreandoNodo"
           style="position: absolute"
+          :style="[{top: (posicionCreandoNodo.y - esquinasDiagrama.y1)+ 'px', left: (posicionCreandoNodo.x - esquinasDiagrama.x1) + 'px'}]"
         />
 
         <nodo-conocimiento-atlas
@@ -113,7 +117,10 @@ import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
 import debounce from "debounce";
 import throttle from "lodash/throttle";
-import { QUERY_NODO_CONOCIMIENTO_ESTANDAR, fragmentoNodoConocimiento } from "./fragsAtlasConocimiento";
+import {
+  QUERY_NODO_CONOCIMIENTO_ESTANDAR,
+  fragmentoNodoConocimiento,
+} from "./fragsAtlasConocimiento";
 import {
   QUERY_NODOS,
   QUERY_DATOS_USUARIO_NODOS,
@@ -127,11 +134,11 @@ var apuntadorChunkNodosVisibles = 0;
 export default {
   name: "MapaAtlas",
   props: {
-    nodoSeleccionadoBelongsColeccionSeleccionada:{
-        type: Boolean,
+    nodoSeleccionadoBelongsColeccionSeleccionada: {
+      type: Boolean,
     },
-    conectandoNodosColeccion:{
-        type: Boolean,
+    conectandoNodosColeccion: {
+      type: Boolean,
     },
     nodoCreandoDependencia: {
       type: Object,
@@ -224,7 +231,6 @@ export default {
   },
   data() {
     return {
-
       nodoSeleccionadoDB: {
         vinculos: [],
         expertos: [],
@@ -286,10 +292,6 @@ export default {
       cerrarBusqueda: 0,
 
       mostrandoMenuContextual: false,
-      offsetMenuContextual: {
-        top: "0px",
-        left: "0px",
-      },
       enviandoQueryConfiguracionAtlas: false,
 
       seleccionandoColeccion: false,
@@ -303,10 +305,19 @@ export default {
       creandoDependencia: false,
       editandoVinculos: false,
 
-      gestorColeccionesMostrandoArbol: false,
+      posMenuContextual:{
+        x:0,
+        y:0,
+      }
     };
   },
   computed: {
+    offsetMenuContextual(){
+     return {
+      left: this.posMenuContextual.x + "px",
+      top: this.posMenuContextual.y + "px"
+     }
+    },
     idsNodosTop() {
       if (!this.coleccionSeleccionada) {
         return [];
@@ -654,52 +665,35 @@ export default {
           this.enviandoQueryConfiguracionAtlas = false;
         });
     },
+    cerrarMenuContextual() {
+      this.mostrandoMenuContextual = false;
+    },
     abrirMenuContextual(e) {
-      let posDiagrama =
-        this.$refs.contenedorElementosDiagrama.getBoundingClientRect();
+      let contenedor = this.$refs.contenedorElementosDiagrama;
+      let posDiagrama = contenedor.getBoundingClientRect();
 
-      let topClick = Math.round(e.pageY - posDiagrama.top);
-      let leftClick = Math.round(e.pageX - posDiagrama.left);
-
-      this.offsetMenuContextual.top = topClick + "px";
-      this.offsetMenuContextual.left = leftClick + "px";
-
+      let topClick = Math.round(e.pageY + contenedor.scrollTop - posDiagrama.top);
+      let leftClick = Math.round(e.pageX + contenedor.scrollLeft - posDiagrama.left);
+      
+      this.posMenuContextual={
+        x: leftClick,
+        y: topClick
+      }
       this.mostrandoMenuContextual = true;
       //this.crearNodo({x: leftClick, y: topClick});
     },
     crearNodoEnMenuContextual() {
-      const posContenedorNodos =
-        this.$refs.contenedorNodos.getBoundingClientRect();
-      const distanciaLeftPx =
-        parseInt(this.offsetMenuContextual.left) -
-        parseInt(posContenedorNodos.left);
-      const distanciaTopPx =
-        parseInt(this.offsetMenuContextual.top) -
-        (parseInt(posContenedorNodos.top) - parseInt(this.$el.offsetTop));
-
-      const posPxX = distanciaLeftPx;
-      const posPxY = distanciaTopPx;
-
-      console.log(`xPix: ${parseInt(this.offsetMenuContextual.left)}`);
-      console.log(
-        `posXContenedorNodos: ${parseInt(posContenedorNodos.left)}, ${
-          posContenedorNodos.top
-        }`
-      );
-      console.log(`distanciaLeftPx: ${distanciaLeftPx}`);
-      console.log(`distanciaTopPx: ${distanciaTopPx}`);
-      console.log(
-        `Scroll x contenedorDiagrama: ${this.$refs.contenedorElementosDiagrama.scrollLeft}`
-      );
+      let contenedor=this.$refs.contenedorElementosDiagrama;
+      
 
       var posicionNuevoNodo = {
-        x: parseInt(posPxX / this.factorZoom + this.esquinasDiagrama.x1),
-        y: parseInt(posPxY / this.factorZoom + this.esquinasDiagrama.y1),
+        x: parseInt(this.posMenuContextual.x / this.factorZoom + this.esquinasDiagrama.x1),
+        y: parseInt(this.posMenuContextual.y / this.factorZoom + this.esquinasDiagrama.y1),
       };
 
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
 
-      this.crearNodo(posicionNuevoNodo);
+       this.crearNodo(posicionNuevoNodo);
     },
 
     centrarEnNodo(n) {
@@ -798,26 +792,17 @@ export default {
     },
     crearNodo(posicion) {
       if (!this.usuarioSuperadministrador) {
-        console.log(`Error usuario no autorizado`);
+        console.log(`Error. Usuario no autorizado`);
         return;
       }
       console.log(`enviando una mutación de crear nodo`);
 
       let infoNodo = {
-        coordsManuales: {
-          x: posicion.x,
-          y: posicion.y,
-        },
-        coords: {
-          x: posicion.x,
-          y: posicion.y,
-        },
         autoCoords: {
           x: posicion.x,
           y: posicion.y,
         },
       };
-      console.log(`en las coordenadas: ${posicion.x}, ${posicion.y} `);
       this.posicionCreandoNodo = {
         x: posicion.x,
         y: posicion.y,
@@ -843,9 +828,7 @@ export default {
             query: QUERY_NODOS,
           });
           var nuevoCache = JSON.parse(JSON.stringify(cache));
-          console.log(`1`);
           var losNodos = nuevoCache.todosNodos;
-          console.log(`2`);
 
           const indexN = losNodos.findIndex((n) => n.id === crearNodo.id);
           if (indexN > -1) {
@@ -943,16 +926,6 @@ export default {
       this.showingZoomInfo = true;
     },
     zoomWheel(e) {
-      //Verificar si es para controlesNodo.
-
-      if (this.hoveringAnuncioTarget) {
-        e.preventDefault();
-        let direccionScroll = e.deltaY;
-        let delta = direccionScroll / Math.abs(direccionScroll);
-        this.stepNivelesUnderTarget(delta);
-        return;
-      }
-
       if (!this.hovered || !e.ctrlKey) {
         return;
       }
@@ -1116,18 +1089,18 @@ export default {
     }
     this.montado = true;
   },
-  created(){
+  created() {
     window.addEventListener("resize", function () {
       this.anchoScreen = screen.width;
       this.altoScreen = screen.height;
     });
   },
-  destroyed(){
+  destroyed() {
     window.removeEventListener("resize", function () {
       this.anchoScreen = screen.width;
       this.altoScreen = screen.height;
     });
-  }
+  },
 };
 </script>
 <style scoped>
@@ -1171,7 +1144,7 @@ export default {
 #menuContextual {
   position: absolute;
   background-color: gray;
-  z-index: 110;
+  z-index: 2;
 }
 
 .botonMenuContextual {

@@ -135,9 +135,6 @@ const QUERY_NODO = gql`
                 tipo
                 rol
                 idRef
-                nodoContraparte{
-                    id
-                }
             }
         }
     }

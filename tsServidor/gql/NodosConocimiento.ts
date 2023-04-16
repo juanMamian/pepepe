@@ -368,11 +368,9 @@ export const resolvers = {
             }
             console.log(`Creando nuevo nodo de conocimiento`);
 
-            
-
             try {
                 var nuevoNodo: any = new Nodo({
-                    ...infoNodo,                   
+                    ...infoNodo,
                     expertos: [credencialesUsuario.id]
                 });
                 await nuevoNodo.save();
@@ -483,26 +481,29 @@ export const resolvers = {
             console.log(`desvinculando ${args.idSource} de ${args.idTarget}`);
             let credencialesUsuario = contexto.usuario;
 
-            let permisosValidos = ["atlasAdministrador", "administrador", "superadministrador"];
+            let permisosEspeciales = ["atlasAdministrador", "administrador", "superadministrador"];
 
-            if (!credencialesUsuario.permisos.some(p => permisosValidos.includes(p))) {
-                console.log(`El usuario no tenia permisos para efectuar esta operación`);
-                AuthenticationError("No autorizado");
-            }
+            let elUno: any = null;
+            let elOtro: any = null;
             try {
-                var elUno: any = await Nodo.findById(args.idSource, "nombre vinculos").exec();
-                var elOtro: any = await Nodo.findById(args.idTarget, "nombre vinculos").exec();
+                elUno = await Nodo.findById(args.idSource, "nombre expertos vinculos").exec();
+                elOtro = await Nodo.findById(args.idTarget, "nombre expertos vinculos").exec();
             }
             catch (error) {
                 console.log(`error . e: ` + error);
             }
 
-            for (var vinculo of elUno.vinculos) {
-                if (vinculo.idRef == args.idTarget) vinculo.remove();
+            //Authorization
+
+            const esExperto = elOtro.expertos.includes(credencialesUsuario.id);
+            if (!credencialesUsuario.permisos.some(p => permisosEspeciales.includes(p)) && !esExperto) {
+                console.log(`El usuario no tenia permisos para efectuar esta operación`);
+                AuthenticationError("No autorizado");
             }
-            for (var vinculo of elOtro.vinculos) {
-                if (vinculo.idRef == args.idSource) vinculo.remove();
-            }
+
+            elUno.vinculos=elUno.vinculos.filter(v=>v.idRef!=elOtro.id);
+            elOtro.vinculos=elOtro.vinculos.filter(v=>v.idRef!=elUno.id);
+
 
             try {
                 await elUno.save();
@@ -514,6 +515,7 @@ export const resolvers = {
             }
             modificados.push(elUno);
             modificados.push(elOtro);
+            console.log("desvinculados");
 
             return { modificados };
 
@@ -709,7 +711,7 @@ export const resolvers = {
                 ApolloError("Error conectando con la base de datos");
             }
 
-            
+
             console.log(`Nodo guardado`);
             return elNodo
 
@@ -823,7 +825,7 @@ export const resolvers = {
                 ApolloError("Error conectando con la base de datos");
             }
 
-         
+
 
             console.log(`Nodo guardado`);
             return elNodo

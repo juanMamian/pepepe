@@ -14,7 +14,10 @@
             alt="Dependencia"
           />
           <Loading v-show="creandoDependencia" />
-          <span> Creando dependencia </span>
+          <span> Conectando dependencia </span>
+          <div class="boton" @click.stop="$emit('cancelarCreandoDependencia')">
+            <img src="@/assets/iconos/equis.svg" alt="Cancelar">
+          </div>
         </div>
 
         <div class="subanuncio"></div>
@@ -182,7 +185,7 @@
               v-if="usuarioSuperadministrador || usuarioExpertoNodo"
               @click.stop="iniciarCrearDependenciaNodo"
             >
-              <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
+              <img src="@/assets/iconos/plugSolid.svg" alt="Nuevo" />
             </div>
           </div>
 
@@ -208,9 +211,9 @@
                 v-for="vinculo of dependenciasNodo"
                 :key="vinculo.id"
               >
-                <NodoConocimientoVistaLista :idNodo="vinculo.idRef" :yo="yo" />
+                <nodo-conocimiento-vista-lista :idNodo="vinculo.idRef" :yo="yo" />
                 <div
-                  v-if="usuarioExperto"
+                  v-if="usuarioExperto || usuarioSuperadministrador"
                   class="botonTexto botonEliminarDependencia"
                   :class="{ deshabilitado: idVinculoEliminando === vinculo.id }"
                   @click.stop="eliminarVinculo(vinculo)"
@@ -750,13 +753,13 @@ export default {
           console.log(`Error eliminando nodo. : ${error}`);
         })
     },
-    crearDependenciaNodo(nodoSource) {
-      if (!nodoSource || !this.elNodo) {
+    crearDependenciaNodo(idNodoSource) {
+      if (!idNodoSource || !this.elNodo) {
         return;
       }
       let nodoTarget = this.elNodo;
 
-      console.log(`Mutando que ${nodoSource.nombre} es dependencia de ${nodoTarget.nombre}`);
+      console.log(`Mutando que ${idNodoSource} es dependencia de ${nodoTarget.nombre}`);
 
       this.creandoDependencia = true;
       this.$apollo.mutate({
@@ -777,7 +780,7 @@ export default {
             `,
         variables: {
           tipo: "continuacion",
-          idSource: nodoSource.id,
+          idSource: idNodoSource,
           idTarget: nodoTarget.id
         }
       }).then(() => {
@@ -993,7 +996,7 @@ export default {
       if (!this.elNodo) {
         return;
       }
-      this.$emit('iniciarCrearDependenciaNodo');
+      this.$emit('iniciarCrearDependenciaNodo', this.elNodo);
     },
     zoomWheel(e) {
       if (!this.hovered) {

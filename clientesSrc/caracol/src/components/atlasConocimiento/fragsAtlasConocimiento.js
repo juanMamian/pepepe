@@ -32,23 +32,10 @@ export const fragmentoNodoConocimiento = gql`
     expertos
     tipoNodo
     nivel   
-    coordsManuales {
-      x
-      y
-    }
-    coords {
-      x
-      y
-    }
     autoCoords {
       x
       y
     }
-    centroMasa {
-      x
-      y
-    }
-    stuck
     angulo
     puntaje
     vinculos {
@@ -64,14 +51,6 @@ export const fragmentoNodoConocimiento = gql`
           y
         }
       }
-    }
-    fuerzaCentroMasa {
-      fuerza
-      direccion
-    }
-    fuerzaColision {
-      fuerza
-      direccion
     }
   }
 
