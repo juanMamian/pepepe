@@ -943,11 +943,7 @@ export default {
       this.showingZoomInfo = true;
     },
     zoomWheel(e) {
-      //Verificar si es para un subnodo.
-      if (this.$refs.controlesNodo?.zoomWheel(e)) {
-        console.log("atrapado en controlesNodo");
-        return;
-      }
+      //Verificar si es para controlesNodo.
 
       if (this.hoveringAnuncioTarget) {
         e.preventDefault();
@@ -1120,21 +1116,18 @@ export default {
     }
     this.montado = true;
   },
-  created() {
-    window.addEventListener("wheel", this.zoomWheel, { passive: false });
-    // watch for resize
+  created(){
     window.addEventListener("resize", function () {
       this.anchoScreen = screen.width;
       this.altoScreen = screen.height;
     });
   },
-  destroyed() {
-    window.removeEventListener("wheel", this.zoomWheel, { passive: false });
+  destroyed(){
     window.removeEventListener("resize", function () {
       this.anchoScreen = screen.width;
       this.altoScreen = screen.height;
     });
-  },
+  }
 };
 </script>
 <style scoped>

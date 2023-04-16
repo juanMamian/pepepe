@@ -443,6 +443,9 @@ export default {
       creandoDependencia: false,
 
       startTouchTargetX: null,
+
+      intervaloEventoWheel: 400,
+      lastEventoWheel:0,
     };
   },
   computed: {
@@ -992,16 +995,22 @@ export default {
       }
       this.$emit('iniciarCrearDependenciaNodo');
     },
-    zoomWheel: throttle(function(e) {
+    zoomWheel(e) {
       if (!this.hovered) {
         return;
       }
       e.preventDefault();
+
+      if(e.timeStamp - this.lastEventoWheel < this.intervaloEventoWheel){
+        return;
+      }
+
       let direccionScroll = e.deltaY;
       let delta = direccionScroll / Math.abs(direccionScroll);
       this.stepFilaMostrada(delta);
+      this.lastEventoWheel=e.timeStamp;
       return true;
-    }, 500)
+    }
   },
   watch: {
     elNodo(nodo) {

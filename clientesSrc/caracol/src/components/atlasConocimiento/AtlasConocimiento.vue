@@ -10,7 +10,10 @@
     <div id="contenedorOverlays">
       <gestor-colecciones
         ref="gestorColecciones"
-        v-show="!conectandoNodosColeccion && $route?.params?.tipoBrowse!='browseNodo'"
+        v-show="
+          !conectandoNodosColeccion &&
+          $route?.params?.tipoBrowse != 'browseNodo'
+        "
         :opcionNull="$route.params?.tipoBrowse === 'mapa' ? 'Atlas' : ''"
         :conectandoNodosColeccion="conectandoNodosColeccion"
         @coleccionSeleccionada="coleccionSeleccionada = $event"
@@ -249,6 +252,15 @@ export default {
     },
   },
   methods: {
+    zoomWheel(e) {
+      if (this.$refs.controlesNodo?.zoomWheel(e)) {
+        console.log("wheel atrapado en controlesNodo");
+        return;
+      }
+      if (this.$refs?.mapaAtlas) {
+        this.$refs.mapaAtlas.zoomWheel(e);
+      }
+    },
     toggleNodoColeccion() {
       if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
         return;
@@ -462,6 +474,13 @@ export default {
       }
     },
   },
+  created() {
+    window.addEventListener("wheel", this.zoomWheel, { passive: false });
+    // watch for resize
+  },
+  destroyed() {
+    window.removeEventListener("wheel", this.zoomWheel, { passive: false });
+  },
 };
 </script>
 
@@ -501,7 +520,7 @@ export default {
   position: relative;
 }
 
-#viewerNodo{
+#viewerNodo {
   height: 100%;
 }
 
@@ -566,7 +585,6 @@ export default {
   margin: 0px auto;
   z-index: 1;
 }
-
 
 #botonToggleNodoColeccion {
   pointer-events: all;
