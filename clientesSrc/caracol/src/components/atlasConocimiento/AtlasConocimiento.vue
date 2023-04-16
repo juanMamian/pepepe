@@ -169,15 +169,15 @@
       v-if="tipoBrowse === 'browseColeccion' && $route?.params?.idBrowsed"
       :idNodoSeleccionado="idNodoSeleccionado"
       @seleccionNodo="seleccionNodo"
-      :idColeccion="$route.params.idColeccion"
+      :idColeccion="$route.params.idBrowsed"
     />
     <browse-nodo
       @seleccionNodo="seleccionNodo"
       :idNodoSeleccionado="idNodoSeleccionado"
       v-if="
-        $route?.params?.tipoBrowse === 'browseNodo' && $route?.params?.idNodo
+        $route?.params?.tipoBrowse === 'browseNodo' && $route?.params?.idBrowsed
       "
-      :idNodo="$route.params.idNodo"
+      :idNodo="$route.params.idBrowsed"
     />
 
     <controles-nodo

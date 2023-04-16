@@ -28,5 +28,6 @@ export default {
 .browseNodo{
     display: flex;
     flex-direction: column;
+    padding-top: 80px;
 }
 </style>

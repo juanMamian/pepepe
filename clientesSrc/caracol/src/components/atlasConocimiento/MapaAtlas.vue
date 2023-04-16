@@ -290,7 +290,6 @@ export default {
       seleccionandoColeccion: false,
       mostrandoOpcionesColeccion: false,
 
-
       idColeccionTargetOnLastLocalizacion: null,
 
       nivelesUnderTarget: 1,
@@ -669,13 +668,6 @@ export default {
     },
     clickNodo(nodo) {
       this.$emit("seleccionNodo", nodo.id);
-    },
-    clickFuera() {
-      this.seleccionNodo({});
-      this.$refs.controlesNodo.clickFuera();
-      if (this.$refs?.buscadorNodos) {
-        this.$refs.buscadorNodos.cerrarBusqueda();
-      }
     },
     togglePosicionamiento() {
       this.enviandoQueryConfiguracionAtlas = true;

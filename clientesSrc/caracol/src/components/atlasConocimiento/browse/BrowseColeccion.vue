@@ -1,18 +1,12 @@
 <template>
   <div class="browseColeccion">
-    <gestor-colecciones
-      v-if="idColeccion"
-      :idColeccionInicial="idColeccion"
-      @coleccionSeleccionada="cambiarDeColeccion"
-    >
-    </gestor-colecciones>
     <div
       id="iconoProgresoUsuario"
       :style="[estiloIconoProgresoUsuario]"
-      v-if="coleccionSeleccionada"
+      v-if="coleccionSeleccionadaNullificable"
     >
       <pie-progreso
-        :progreso="coleccionSeleccionada.progreso"
+        :progreso="coleccionSeleccionadaNullificable.progreso"
         :size="120"
         :factorArco="0.1"
         v-if="usuario?.id"
@@ -28,17 +22,17 @@
       </pie-progreso>
       <div
         id="indicadorProgreso"
-        v-if="coleccionSeleccionada"
-        v-show="coleccionSeleccionada?.progreso"
+        v-if="coleccionSeleccionadaNullificable"
+        v-show="coleccionSeleccionadaNullificable?.progreso"
       >
-        {{ coleccionSeleccionada.progreso }}%
+        {{ coleccionSeleccionadaNullificable.progreso }}%
       </div>
     </div>
     <diagrama-arbol
-      v-if="coleccionSeleccionada"
+      v-if="coleccionSeleccionadaNullificable"
       ref="diagramaArbol"
-      :idsRoot="coleccionSeleccionada.idsNodos"
-      :idsRed="coleccionSeleccionada.idsRed"
+      :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
+      :idsRed="coleccionSeleccionadaNullificable.idsRed"
     ></diagrama-arbol>
   </div>
 </template>
@@ -76,7 +70,24 @@ export default {
       type: String,
     },
   },
-  apollo: {},
+  apollo: {
+    coleccionSeleccionada: {
+      query: QUERY_COLECCION,
+      variables() {
+        return {
+          idColeccion: this.idColeccion,
+          idUsuario: this.usuario?.id,
+        };
+      },
+      skip() {
+        return !this.usuario?.id || !this.idColeccion;
+      },
+      update({ coleccionNodosConocimiento }) {
+        return coleccionNodosConocimiento;
+      },
+      fetchPolicy: "cache-first",
+    },
+  },
   data() {
     return {
       coleccionSeleccionada: {
@@ -87,6 +98,12 @@ export default {
     };
   },
   computed: {
+    coleccionSeleccionadaNullificable() {
+      if (this.$apollo.queries?.coleccionSeleccionada?.skip) {
+        return null;
+      }
+      return this.coleccionSeleccionada;
+    },
     estiloIconoProgresoUsuario() {
       let left = "50%";
       let anchoAjustado = this.anchoContenedorArbol;
@@ -98,20 +115,9 @@ export default {
       };
     },
   },
-  methods: {
-    cambiarDeColeccion(coleccion) {
-      if (coleccion?.id) {
-        this.coleccionSeleccionada = coleccion;
-        this.$router.push({
-          name: "browseColeccion",
-          params: { idColeccion: coleccion.id },
-        });
-      } else {
-      }
-    },
-  },
+  methods: {},
   watch: {
-    coleccionSeleccionada: {
+    coleccionSeleccionadaNullificable: {
       handler: function (col) {
         if (col?.nombre) {
           document.title = col.nombre;
@@ -128,12 +134,18 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 30px;
+  padding-top:100px;
 }
 #iconoProgresoUsuario {
   align-self: flex-start;
   width: fit-content;
   position: relative;
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+
 }
 #contenedorFotoUsuario {
   border-radius: 50%;

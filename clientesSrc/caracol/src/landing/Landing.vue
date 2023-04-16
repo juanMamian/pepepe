@@ -64,7 +64,7 @@
             nodoOlvidado?.id
               ? {
                   name: 'visorNodoConocimiento',
-                  params: { idNodo: nodoOlvidado.id },
+                  params: { tipoBrowse: 'mapa', idBrowsed: nodoOlvidado.id, idNodo: nodoOlvidado.id },
                 }
               : ''
           "
@@ -98,8 +98,8 @@
           :to="
             coleccionMostrada?.id
               ? {
-                  name: 'browseColeccion',
-                  params: { idColeccion: coleccionMostrada.id },
+                  name: 'atlas',
+                  params: { tipoBrowse: 'browseColeccion', idBrowsed: coleccionMostrada.id },
                 }
               : ''
           "

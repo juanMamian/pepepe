@@ -302,20 +302,6 @@ export default {
     },
   },
   methods: {
-    toggleMostrandoArbol() {
-      if (!this.idColeccionSeleccionada) {
-        return;
-      }
-      if (!this.mostrandoArbol) {
-        this.$router.push({
-          name: "coleccionNodosConocimiento",
-          params: { idColeccion: this.idColeccionSeleccionada },
-        });
-        return;
-      }
-      console.log("regresando ruta");
-      this.$router.push({ name: "atlas" });
-    },
     iniciarEdicionNombreColeccion() {
       if (!this.coleccionSeleccionadaNullificable) {
         console.log(

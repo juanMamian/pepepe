@@ -265,7 +265,13 @@
             </router-link>
           </div>
           <div class="bloqueControl" id="bloqueControlBrowse" v-if="elNodo?.id">
-            <router-link :to="'verNodo' + elNodo.id" class="botonTexto">
+            <router-link
+              :to="{
+                name: 'atlas',
+                params: { tipoBrowse: 'browseNodo', idBrowsed: elNodo.id },
+              }"
+              class="botonTexto"
+            >
               <img src="@/assets/iconos/codeBranch.svg" alt="Ramas" />
               Explorar
             </router-link>
