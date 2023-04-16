@@ -4,8 +4,8 @@
     @touchmove="touchMoveDiagrama"
     @touchstart="touchStartDiagrama"
     @contextmenu.self.exact.stop.prevent="abrirMenuContextual"
-    @mouseenter="hovered=true"
-    @mouseleave="hovered=true"
+    @mouseenter="hovered = true"
+    @mouseleave="hovered = true"
   >
     <div
       id="contenedorElementosDiagrama"
@@ -43,7 +43,12 @@
           texto=""
           v-if="posicionCreandoNodo"
           style="position: absolute"
-          :style="[{top: (posicionCreandoNodo.y - esquinasDiagrama.y1)+ 'px', left: (posicionCreandoNodo.x - esquinasDiagrama.x1) + 'px'}]"
+          :style="[
+            {
+              top: posicionCreandoNodo.y - esquinasDiagrama.y1 + 'px',
+              left: posicionCreandoNodo.x - esquinasDiagrama.x1 + 'px',
+            },
+          ]"
         />
 
         <nodo-conocimiento-atlas
@@ -305,18 +310,18 @@ export default {
       creandoDependencia: false,
       editandoVinculos: false,
 
-      posMenuContextual:{
-        x:0,
-        y:0,
-      }
+      posMenuContextual: {
+        x: 0,
+        y: 0,
+      },
     };
   },
   computed: {
-    offsetMenuContextual(){
-     return {
-      left: this.posMenuContextual.x + "px",
-      top: this.posMenuContextual.y + "px"
-     }
+    offsetMenuContextual() {
+      return {
+        left: this.posMenuContextual.x + "px",
+        top: this.posMenuContextual.y + "px",
+      };
     },
     idsNodosTop() {
       if (!this.coleccionSeleccionada) {
@@ -672,28 +677,35 @@ export default {
       let contenedor = this.$refs.contenedorElementosDiagrama;
       let posDiagrama = contenedor.getBoundingClientRect();
 
-      let topClick = Math.round(e.pageY + contenedor.scrollTop - posDiagrama.top);
-      let leftClick = Math.round(e.pageX + contenedor.scrollLeft - posDiagrama.left);
-      
-      this.posMenuContextual={
+      let topClick = Math.round(
+        e.pageY + contenedor.scrollTop - posDiagrama.top
+      );
+      let leftClick = Math.round(
+        e.pageX + contenedor.scrollLeft - posDiagrama.left
+      );
+
+      this.posMenuContextual = {
         x: leftClick,
-        y: topClick
-      }
+        y: topClick,
+      };
       this.mostrandoMenuContextual = true;
       //this.crearNodo({x: leftClick, y: topClick});
     },
     crearNodoEnMenuContextual() {
-      let contenedor=this.$refs.contenedorElementosDiagrama;
-      
+      let contenedor = this.$refs.contenedorElementosDiagrama;
 
       var posicionNuevoNodo = {
-        x: parseInt(this.posMenuContextual.x / this.factorZoom + this.esquinasDiagrama.x1),
-        y: parseInt(this.posMenuContextual.y / this.factorZoom + this.esquinasDiagrama.y1),
+        x: parseInt(
+          this.posMenuContextual.x / this.factorZoom + this.esquinasDiagrama.x1
+        ),
+        y: parseInt(
+          this.posMenuContextual.y / this.factorZoom + this.esquinasDiagrama.y1
+        ),
       };
 
       console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
 
-       this.crearNodo(posicionNuevoNodo);
+      this.crearNodo(posicionNuevoNodo);
     },
 
     centrarEnNodo(n) {

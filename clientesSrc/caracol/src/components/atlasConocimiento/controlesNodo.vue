@@ -16,7 +16,7 @@
           <Loading v-show="creandoDependencia" />
           <span> Conectando dependencia </span>
           <div class="boton" @click.stop="$emit('cancelarCreandoDependencia')">
-            <img src="@/assets/iconos/equis.svg" alt="Cancelar">
+            <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
           </div>
         </div>
 
@@ -211,7 +211,10 @@
                 v-for="vinculo of dependenciasNodo"
                 :key="vinculo.id"
               >
-                <nodo-conocimiento-vista-lista :idNodo="vinculo.idRef" :yo="yo" />
+                <nodo-conocimiento-vista-lista
+                  :idNodo="vinculo.idRef"
+                  :yo="yo"
+                />
                 <div
                   v-if="usuarioExperto || usuarioSuperadministrador"
                   class="botonTexto botonEliminarDependencia"

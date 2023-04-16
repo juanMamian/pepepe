@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="atlasConocimiento"
-    @click="clickFuera"
-  >
+  <div class="atlasConocimiento" @click="clickFuera">
     <RouterView id="viewerNodo" />
 
     <div id="contenedorOverlays">
@@ -253,7 +250,7 @@ export default {
         console.log("wheel atrapado en controlesNodo");
         return;
       }
-      if (this.tipoBrowse==='mapa' && this.$refs?.mapaAtlas) {
+      if (this.tipoBrowse === "mapa" && this.$refs?.mapaAtlas) {
         this.$refs.mapaAtlas.zoomWheel(e);
       }
     },
@@ -297,7 +294,7 @@ export default {
       if (this.$refs?.buscadorNodos) {
         this.$refs.buscadorNodos.cerrarBusqueda();
       }
-      if(this.$refs.mapaAtlas){
+      if (this.$refs.mapaAtlas) {
         this.$refs.mapaAtlas.cerrarMenuContextual();
       }
     },
@@ -446,7 +443,7 @@ export default {
       if (this.$refs?.mapaAtlas) {
         this.$refs.mapaAtlas.reactToNodoEliminado(idNodo);
       }
-      if(idNodo===this.idNodoSeleccionado){
+      if (idNodo === this.idNodoSeleccionado) {
         this.seleccionNodo(null);
       }
     },
