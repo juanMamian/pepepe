@@ -127,6 +127,12 @@ var apuntadorChunkNodosVisibles = 0;
 export default {
   name: "MapaAtlas",
   props: {
+    nodoSeleccionadoBelongsColeccionSeleccionada:{
+        type: Boolean,
+    },
+    conectandoNodosColeccion:{
+        type: Boolean,
+    },
     nodoCreandoDependencia: {
       type: Object,
     },
@@ -218,7 +224,6 @@ export default {
   },
   data() {
     return {
-      togglingNodoColeccion: false,
 
       nodoSeleccionadoDB: {
         vinculos: [],
@@ -299,7 +304,6 @@ export default {
       editandoVinculos: false,
 
       gestorColeccionesMostrandoArbol: false,
-      conectandoNodosColeccion: false,
     };
   },
   computed: {
@@ -308,14 +312,6 @@ export default {
         return [];
       }
       return this.coleccionSeleccionada.idsNodos;
-    },
-    nodoSeleccionadoBelongsColeccionSeleccionada() {
-      if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
-        return false;
-      }
-      return this.coleccionSeleccionada.idsNodos.includes(
-        this.idNodoSeleccionado
-      );
     },
     nodoTargetRelevante() {
       if (!this.idNodoTarget) {
@@ -524,40 +520,6 @@ export default {
     },
   },
   methods: {
-    toggleNodoColeccion() {
-      if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
-        return;
-      }
-      this.togglingNodoColeccion = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idColeccion: ID!, $idNodo: ID!, $idUsuario: ID!) {
-              toggleNodoColeccionNodosAtlasConocimientoUsuario(
-                idColeccion: $idColeccion
-                idNodo: $idNodo
-                idUsuario: $idUsuario
-              ) {
-                id
-                idsNodos
-                idsRed
-              }
-            }
-          `,
-          variables: {
-            idColeccion: this.coleccionSeleccionada.id,
-            idNodo: this.idNodoSeleccionado,
-            idUsuario: this.usuario.id,
-          },
-        })
-        .then(() => {
-          this.togglingNodoColeccion = false;
-        })
-        .catch((error) => {
-          console.log("Error: " + error);
-          this.togglingNodoColeccion = false;
-        });
-    },
     stepNivelesUnderTarget: throttle(function (step) {
       let nuevoNiveles = this.nivelesUnderTarget + step;
       if (nuevoNiveles < 0) {
@@ -982,13 +944,11 @@ export default {
     },
     zoomWheel(e) {
       //Verificar si es para un subnodo.
-      console.log("Wheel");
       if (this.$refs.controlesNodo?.zoomWheel(e)) {
         console.log("atrapado en controlesNodo");
         return;
       }
 
-      console.log("wheel en atlas");
       if (this.hoveringAnuncioTarget) {
         e.preventDefault();
         let direccionScroll = e.deltaY;
@@ -1114,22 +1074,14 @@ export default {
         this.firstLoad = true;
       }
       if (val != oldVal) {
-        console.log(
-          "Recalculando nodos visibles after cambio en nodos activos length"
-        );
         this.iniciarCalculoNodosVisibles();
       }
     },
     coleccionSeleccionada() {
       this.iniciarCalculoNodosVisibles();
     },
-    idNodoTarget(idNodoTarget) {
-      localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
-    },
     domAndNodosReady() {
-      console.log("Cambio en domAndNodosReady");
       let contenedor = this.$refs.contenedorElementosDiagrama;
-      console.log("scrollWidth: " + contenedor.scrollWidth);
       this.$nextTick(() => {
         contenedor.scrollLeft = contenedor.scrollWidth / 2;
         contenedor.scrollTop = contenedor.scrollHeight / 2;

@@ -39,6 +39,7 @@
           </div>
         </template>
       </gestor-colecciones>
+
       <div
         class="anuncio anuncioSeleccion"
         id="anuncioConectandoNodos"
@@ -157,6 +158,7 @@
       :idNodoSeleccionado="idNodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
       :coleccionSeleccionada="coleccionSeleccionada"
+      :conectandoNodosColeccion="conectandoNodosColeccion"
       ref="mapaAtlas"
       @settedIdsNodosActivosAccesiblesInexplorados="
         setIdsNodosActivosAccesiblesInexplorados($event, 'mapaAtlas')
@@ -226,12 +228,14 @@ export default {
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
       skip() {
-        return !this.usuarioLogeado;
+        return !this.usuario?.id;
       },
     },
   },
   data() {
     return {
+      togglingNodoColeccion: false,
+
       gettingNodoNext: false,
       indexLocalizadorAccesibles: 0,
       indexLocalizadorOlvidados: 0,
@@ -251,6 +255,14 @@ export default {
     };
   },
   computed: {
+    nodoSeleccionadoBelongsColeccionSeleccionada() {
+      if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
+        return false;
+      }
+      return this.coleccionSeleccionada.idsNodos.includes(
+        this.idNodoSeleccionado
+      );
+    },
     tipoBrowse() {
       return this.$route?.params?.tipoBrowse;
     },
@@ -259,6 +271,40 @@ export default {
     },
   },
   methods: {
+    toggleNodoColeccion() {
+      if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
+        return;
+      }
+      this.togglingNodoColeccion = true;
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation ($idColeccion: ID!, $idNodo: ID!, $idUsuario: ID!) {
+              toggleNodoColeccionNodosAtlasConocimientoUsuario(
+                idColeccion: $idColeccion
+                idNodo: $idNodo
+                idUsuario: $idUsuario
+              ) {
+                id
+                idsNodos
+                idsRed
+              }
+            }
+          `,
+          variables: {
+            idColeccion: this.coleccionSeleccionada.id,
+            idNodo: this.idNodoSeleccionado,
+            idUsuario: this.usuario.id,
+          },
+        })
+        .then(() => {
+          this.togglingNodoColeccion = false;
+        })
+        .catch((error) => {
+          console.log("Error: " + error);
+          this.togglingNodoColeccion = false;
+        });
+    },
     clickFuera() {
       this.seleccionNodo();
       this.$refs.controlesNodo.clickFuera();
@@ -402,7 +448,7 @@ export default {
     centerEnTarget() {
       if (this.$route?.params?.tipoBrowse === "mapa" && this.$refs?.mapaAtlas) {
         if (this.idNodoTarget) {
-          this.$refs.mapaAtlas.centrarEnNodoById(idNodoTarget);
+          this.$refs.mapaAtlas.centrarEnNodoById(this.idNodoTarget);
         }
       }
     },
@@ -423,6 +469,13 @@ export default {
     },
     marcarNodoEsperandoDependencia(nodo) {
       this.nodoCreandoDependencia = nodo;
+    },
+  },
+  watch: {
+    coleccionSeleccionada(col, prev) {
+      if (!col || !prev || col.id != prev.id) {
+        this.idNodoSeleccionado = null;
+      }
     },
   },
 };
@@ -473,6 +526,15 @@ export default {
   left: 0px;
   z-index: 1;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+#anuncioConectandoNodos {
+  pointer-events: all;
+  width: fit-content;
 }
 
 #zonaNodoTarget {
@@ -524,6 +586,7 @@ export default {
 }
 
 #botonToggleNodoColeccion {
+  pointer-events: all;
   width: fit-content;
   margin: 10px auto;
 }

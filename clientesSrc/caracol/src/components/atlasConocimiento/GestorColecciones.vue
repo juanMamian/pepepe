@@ -628,10 +628,6 @@ export default {
 #contenedorOpciones .botonOpcion {
   height: 20px;
 }
-#anuncioConectandoNodos {
-  top: 10px;
-  position: relative;
-}
 #botonCancelarConectarNodosColeccion {
   background-color: var(--mainColor);
   position: absolute;
