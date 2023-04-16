@@ -556,6 +556,9 @@ export default {
         });
         return nuevoNodo;
       },
+      skip(){
+        return !this.$route?.params?.idNodo
+      }
     },
   },
   data() {

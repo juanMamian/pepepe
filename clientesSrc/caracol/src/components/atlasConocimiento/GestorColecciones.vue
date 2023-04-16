@@ -199,6 +199,9 @@ export default {
     opcionNull: {
       type: String,
     },
+    conectandoNodosColeccion:{
+      type: Boolean,
+    }
   },
   apollo: {
     coleccionSeleccionada: {
@@ -257,7 +260,6 @@ export default {
       desplegandoLista: false,
       idColeccionSeleccionada: null,
       mostrandoOpcionesColeccion: false,
-      conectandoNodosColeccion: false,
     };
   },
   computed: {

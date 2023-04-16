@@ -15,28 +15,26 @@
       >
       </nodo-conocimiento-vista-arbol>
     </div>
+    <visor-nodo-conocimiento :idNodo="idNodoVisor" v-if="idNodoVisor">
 
-    <teleport to="body">
-      <controles-nodo
-        v-show="visible"
-        :yo="yo"
-        :idNodoSeleccionado="idNodoSeleccionado"
-        :nodoTargetRelevante="nodoTargetRelevante"
-      ></controles-nodo>
-    </teleport>
+    </visor-nodo-conocimiento>
+
   </div>
 </template>
 <script>
 import { gql } from "@apollo/client/core";
 import NodoConocimientoVistaArbol from "./NodoConocimientoVistaArbol.vue";
 import ControlesNodo from "./controlesNodo.vue";
+import VisorNodoConocimiento from "./visorNodo/VisorNodoConocimiento.vue"
 import { QUERY_DATOS_USUARIO_NODOS, QUERY_NODO_CONOCIMIENTO_ESTANDAR } from "./fragsAtlasConocimiento";
+
 
 export default {
   name: "DiagramaArbol",
   components: {
     NodoConocimientoVistaArbol,
     ControlesNodo,
+    VisorNodoConocimiento
   },
   props: {
     visible: {
@@ -78,6 +76,7 @@ export default {
   },
   data() {
     return {
+      idNodoVisor: null,
       yo: {
         atlas: {
           datosNodos: [],

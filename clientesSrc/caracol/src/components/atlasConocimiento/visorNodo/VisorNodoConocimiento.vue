@@ -375,13 +375,16 @@ export default {
       query: QUERY_NODO,
       variables() {
         return {
-          idNodo: this.$route.params.idNodo,
+          idNodo: this.idNodo
         };
       },
       update({ nodo }) {
         document.title = nodo.nombre;
         return nodo;
       },
+      skip(){
+        return !this.idNodo
+      }
     },
   },
   data() {
@@ -843,6 +846,9 @@ export default {
     },
   },
   computed: {
+    idNodo(){
+      return this.$route?.params?.idNodo;
+    },
     indexSeccionSeleccionada() {
       if (!this.seccionSeleccionada) {
         return null;

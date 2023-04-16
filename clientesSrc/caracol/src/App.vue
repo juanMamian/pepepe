@@ -29,7 +29,7 @@
           <img src="@/assets/iconos/home.svg" alt="Compás" />
           Inicio
         </router-link>
-        <router-link to="/atlas" class="botonNav" id="navAtlas">
+        <router-link :to="{name: 'atlas', params: {tipoBrowse: 'mapa', idBrowsed: '123'}}" class="botonNav" id="navAtlas">
           <img src="@/assets/iconos/compassRegular.svg" alt="Compás" />
           Atlas de conocimientos
         </router-link>

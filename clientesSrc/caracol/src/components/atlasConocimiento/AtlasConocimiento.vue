@@ -1,51 +1,29 @@
 <template>
   <div
     class="atlasConocimiento"
-    @mousedown.left.exact.stop="panningVista = true"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
     @click="clickFuera"
   >
-    <div
-      id="menuContextual"
-      :style="[offsetMenuContextual]"
-      v-show="mostrandoMenuContextual"
-    >
-      <div
-        class="botonMenuContextual"
-        id="botonCrearNuevoNodo"
-        :class="{ deshabilitado: posicionCreandoNodo }"
-        v-if="usuarioProfe"
-        @click="crearNodoEnMenuContextual"
-      >
-        Crear Nodo de conocimiento
-      </div>
-    </div>
-
     <RouterView />
-    <div
-      id="contenedorOverlays"
-      v-if="$route.name === 'atlas'"
-      :style="[estiloContenedorOverlays]"
-    >
+
+    <div id="contenedorOverlays">
       <gestor-colecciones
         ref="gestorColecciones"
-        :style="[estiloGestor]"
         v-show="!conectandoNodosColeccion"
-        :opcionNull="'Atlas'"
+        :opcionNull="$route.params?.tipoBrowse === 'mapa' ? 'Atlas' : ''"
+        :conectandoNodosColeccion="conectandoNodosColeccion"
         @coleccionSeleccionada="coleccionSeleccionada = $event"
-        @mostrandoArbol="gestorColeccionesMostrandoArbol = $event"
-        @idNodoSeleccionado="nodoSeleccionadoEnColecciones"
-        @conectandoNodosColeccion="conectandoNodosColeccion = $event"
       >
         <template #botonesOpcion>
           <router-link
             class="boton botonOpcion"
             v-if="coleccionSeleccionada?.id"
             :to="{
-              name: 'browseColeccion',
+              name: 'atlas',
               params: {
-                idColeccion: coleccionSeleccionada.id,
+                tipoBrowse: 'browseColeccion',
+                idBrowsed: coleccionSeleccionada.id,
               },
             }"
           >
@@ -61,7 +39,6 @@
           </div>
         </template>
       </gestor-colecciones>
-
       <div
         class="anuncio anuncioSeleccion"
         id="anuncioConectandoNodos"
@@ -85,7 +62,6 @@
           <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
         </div>
       </div>
-
       <div
         v-if="
           conectandoNodosColeccion &&
@@ -119,789 +95,219 @@
             : "Conectar"
         }}</span>
       </div>
-    </div>
+      <buscador-nodos-conocimiento
+        @nodoSeleccionado="reactToNodoBuscadoSeleccionado"
+        ref="buscadorNodos"
+      />
 
-    <div
-      id="botonCallingPosiciones"
-      v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
-      @click.stop="iniciarCallingPosiciones"
-      :class="{ deshabilitado: callingPosiciones }"
-      :style="[
-        { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
-      ]"
-    ></div>
-    <buscador-nodos-conocimiento
-      @nodoSeleccionado="centrarEnNodo"
-      ref="buscadorNodos"
-    />
-    <div
-      v-show="$route.name === 'atlas'"
-      id="contenedorDiagrama"
-      ref="contenedorDiagrama"
-      @scroll="setCentroZonaNodosVisibles(true)"
-      @touchmove="touchMoveDiagrama"
-      @touchstart="touchStartDiagrama"
-    >
-      <div id="contenedorElementosDiagrama">
+      <div
+        id="botonCallingPosiciones"
+        v-if="usuarioSuperadministrador && usuario.username == 'juanMamian'"
+        @click.stop="iniciarCallingPosiciones"
+        :class="{ deshabilitado: callingPosiciones }"
+        :style="[
+          { backgroundColor: callingPosiciones ? 'green' : 'transparent' },
+        ]"
+      ></div>
+
+      <div id="zonaLocalizadores" @click.stop="">
         <div
-          id="contenedorNodos"
-          @contextmenu.self.exact.prevent="abrirMenuContextual"
-          ref="contenedorNodos"
-          :style="[
-            { transform: 'scale(' + factorZoom + ')' },
-            sizeContenedorNodos,
-          ]"
+          class="boton controlColeccion"
+          :class="{
+            deshabilitado: idsNodosActivosAccesiblesInexplorados.length < 1,
+          }"
+          @click="localizarNext('accesible')"
         >
-          <loading
-            texto=""
-            v-show="posicionCreandoNodo"
-            style="position: absolute"
+          <img
+            src="@/assets/iconos/atlas/locationCrosshair.svg"
+            alt="Localizar"
           />
-
-          <nodo-conocimiento-atlas
-            v-for="(nodo, index) in nodosVisibles"
-            :key="nodo.id"
-            :idNodo="nodo.id"
-            :seleccionado="idNodoSeleccionado === nodo.id"
-            :yo="yo"
-            :idsNodosAprendidos="idsNodosActivosAprendidos"
-            :idsNodosOlvidados="idsNodosActivosOlvidados"
-            :idsNodosEstudiados="idsNodosActivosEstudiados"
-            :idsNodosAccesibles="idsNodosActivosAccesibles"
-            :idsUnderTargetActivos="idsUnderTargetActivos"
-            :class="{
-              esperandoClick: conectandoNodosColeccion,
-              conectadoSeleccionado:
-                nodoTarget &&
-                idsUnderTarget[nivelesUnderTarget] &&
-                idsUnderTarget[nivelesUnderTarget].includes(nodo.id),
-              activoSeleccion:
-                conectandoNodosColeccion &&
-                coleccionSeleccionada?.idsNodos.includes(nodo.id),
-              activoSubseleccion:
-                conectandoNodosColeccion &&
-                coleccionSeleccionada?.idsRed.includes(nodo.id),
-            }"
-            :idNodoTarget="idNodoTarget"
-            :style="[
-              {
-                top: nodo.coords.y - esquinasDiagrama.y1 + 'px',
-                left: nodo.coords.x - esquinasDiagrama.x1 + 'px',
-              },
-            ]"
-            @dblclick="
-              $router.push({
-                name: 'visorNodoConocimiento',
-                params: { idNodo: nodo.id },
-              })
-            "
-            @click.stop="clickNodo(nodo)"
-          >
-            <template
-              #imagenBolita
-              v-if="
-                conectandoNodosColeccion &&
-                coleccionSeleccionada?.idsNodos.includes(nodo.id)
-              "
-            >
-              <img
-                src="@/assets/iconos/plugSolid.svg"
-                style="transform: scale(0.7); filter: invert(1)"
-                alt="Conectado"
-              />
-            </template>
-          </nodo-conocimiento-atlas>
         </div>
         <div
-          id="indicadorCentroNodosVisibles"
-          :style="[estiloIndicadorCentroZonasVisibles]"
-          v-if="false && usuarioSuperadministrador"
+          class="boton controlColeccion"
+          @click="localizarNext('olvidado')"
+          :class="{
+            deshabilitado: idsNodosActivosOlvidados.length < 1,
+          }"
         >
-          {{ centroZonaNodosVisibles.x + " " + centroZonaNodosVisibles.y }}
-          {{ nodosVisibles.length }}
+          <img
+            src="@/assets/iconos/atlas/locationCrosshair.svg"
+            alt="Localizar"
+            style="filter: var(--filtroAtlasRepaso)"
+          />
+        </div>
+        <div
+          class="boton controlColeccion"
+          @click="localizarNext('top')"
+          :class="{
+            deshabilitado: !idsNodosTop || idsNodosTop.length < 1,
+          }"
+        >
+          <img
+            src="@/assets/iconos/atlas/locationCrosshair.svg"
+            alt="Localizar"
+            style="filter: var(--filtroAtlasTop)"
+          />
         </div>
       </div>
     </div>
-    <transition name="fadeOut">
-      <div v-show="showingZoomInfo" id="infoZoom">x{{ factorZoom }}</div>
-    </transition>
+
+    <mapa-atlas
+      v-if="$route.params?.tipoBrowse === 'mapa'"
+      :idNodoSeleccionado="idNodoSeleccionado"
+      :nodoCreandoDependencia="nodoCreandoDependencia"
+      :coleccionSeleccionada="coleccionSeleccionada"
+      ref="mapaAtlas"
+      @settedIdsNodosActivosAccesiblesInexplorados="
+        setIdsNodosActivosAccesiblesInexplorados($event, 'mapaAtlas')
+      "
+      @settedIdsNodosTop="setIdsNodosActivosTop($event, 'mapaAtlas')"
+      @seleccionNodo="seleccionNodo"
+    />
+
+    <browse-coleccion
+      v-if="tipoBrowse === 'browseColeccion' && $route?.params?.idBrowsed"
+      :idNodoSeleccionado="idNodoSeleccionado"
+      @seleccionNodo="seleccionNodo"
+      :idColeccion="$route.params.idColeccion"
+    />
+    <browse-nodo
+      @seleccionNodo="seleccionNodo"
+      :idNodoSeleccionado="idNodoSeleccionado"
+      v-if="
+        $route?.params?.tipoBrowse === 'browseNodo' && $route?.params?.idNodo
+      "
+      :idNodo="$route.params.idNodo"
+    />
 
     <controles-nodo
       :yo="yo"
       ref="controlesNodo"
       :idNodoSeleccionado="idNodoSeleccionado"
       :nodoCreandoDependencia="nodoCreandoDependencia"
-      :idNodoTarget="idNodoTarget"
-      :nodoTargetRelevante="nodoTargetRelevante"
-      v-show="!gestorColeccionesMostrandoArbol"
-      @nivelesConexion="nivelesConexion = $event"
       @click.stop=""
       @iniciarCrearDependenciaNodo="
         marcarNodoEsperandoDependencia(nodoSeleccionado)
       "
       @cancelarCreandoDependencia="nodoCreandoDependencia = null"
       @nodoEliminado="reactToNodoEliminado"
-      @centerEnTarget="centrarEnNodoById(idNodoTarget)"
-      @hoveringAnuncioTarget="hoveringAnuncioTarget = $event"
-      @stepNivelesUnderTarget="stepNivelesUnderTarget"
+      @centerEnTarget="centerEnTarget"
     />
-
-    <div id="zonaLocalizadores" @click.stop="">
-      <div
-        class="boton controlColeccion"
-        :class="{
-          deshabilitado: idsNodosActivosAccesiblesInexplorados.length < 1,
-        }"
-        @click="localizarNext('accesible')"
-      >
-        <img
-          src="@/assets/iconos/atlas/locationCrosshair.svg"
-          alt="Localizar"
-        />
-      </div>
-      <div
-        class="boton controlColeccion"
-        @click="localizarNext('olvidado')"
-        :class="{
-          deshabilitado: idsNodosActivosOlvidados.length < 1,
-        }"
-      >
-        <img
-          src="@/assets/iconos/atlas/locationCrosshair.svg"
-          alt="Localizar"
-          style="filter: var(--filtroAtlasRepaso)"
-        />
-      </div>
-      <div
-        class="boton controlColeccion"
-        @click="localizarNext('top')"
-        :class="{
-          deshabilitado: !idsNodosTop || idsNodosTop.length < 1,
-        }"
-      >
-        <img
-          src="@/assets/iconos/atlas/locationCrosshair.svg"
-          alt="Localizar"
-          style="filter: var(--filtroAtlasTop)"
-        />
-      </div>
-    </div>
   </div>
 </template>
 
-<script lang="js">
-import gql from "graphql-tag";
-import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
-import Loading from "../utilidades/Loading.vue";
-import PanelConjuntosNodos from "./PanelConjuntosNodos.vue";
-import EnlacesNodoConocimiento from "./EnlacesNodoConocimiento.vue";
-import PieProgreso from "../utilidades/PieProgreso.vue";
-import debounce from "debounce";
-import throttle from "lodash/throttle";
+<script>
+import { gql } from "@apollo/client/core";
 import ControlesNodo from "./controlesNodo.vue";
-import {
-  QUERY_DATOS_USUARIO_NODOS,
-  QUERY_NODOS,
-  fragmentoNodoConocimiento,
-QUERY_NODO_CONOCIMIENTO_ATLAS,
-} from "./fragsAtlasConocimiento";
-import NodoConocimientoAtlas from "./NodoConocimientoAtlas.vue";
-import GestorColecciones from "./GestorColecciones.vue";
+import BrowseColeccion from "./browse/BrowseColeccion.vue";
+import BrowseNodo from "./browse/BrowseNodo.vue";
+import MapaAtlas from "./MapaAtlas.vue";
 import { RouterView } from "vue-router";
-
-var idTimeoutNodosVisibles = null;
-var apuntadorChunkNodosVisibles = 0;
+import PieProgreso from "../utilidades/PieProgreso.vue";
+import { QUERY_DATOS_USUARIO_NODOS } from "./fragsAtlasConocimiento";
+import GestorColecciones from "./GestorColecciones.vue";
+import Loading from "../utilidades/Loading.vue";
+import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
 
 export default {
   components: {
-    BuscadorNodosConocimiento,
-    Loading,
-    PanelConjuntosNodos,
-    EnlacesNodoConocimiento,
+    MapaAtlas,
     PieProgreso,
     ControlesNodo,
-    NodoConocimientoAtlas,
+    RouterView,
+    BrowseColeccion,
+    BrowseNodo,
     GestorColecciones,
-    RouterView
+    Loading,
+    BuscadorNodosConocimiento,
   },
   name: "AtlasConocimiento",
   apollo: {
-    nodoSeleccionadoDB:{
-      query: QUERY_NODO_CONOCIMIENTO_ATLAS,
-      variables(){
-        return {
-          idNodo: this.idNodoSeleccionado,
-        }
-      },
-      skip(){
-        return !this.idNodoSeleccionado;
-      },
-      update({nodo}){
-        return nodo
-      },
-      fetchPolicy: "cache-first",
-    },
-    todosNodos: {
-      query: QUERY_NODOS,
-      update({ todosNodos }) {
-        this.nodosDescargados = true;
-        var nuevoTodosNodos = JSON.parse(JSON.stringify(todosNodos));
-        nuevoTodosNodos.forEach((nodo) => {
-          nodo.coordsManuales = nodo.autoCoords;
-          nodo.coords = nodo.autoCoords;
-        });
-
-        return nuevoTodosNodos;
-      },
-      fetchPolicy: "cache-and-network",
-    },
     yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
       skip() {
-        return !this.usuarioLogeado || this.todosNodos.length < 1;
-      },
-      update({ yo }) {
-        const idLastColeccionTarget = localStorage.getItem(
-          "atlasConocimientoIdLastColeccionTarget"
-        );
-
-        if (idLastColeccionTarget && yo.atlas?.colecciones) {
-          const coleccionLast = yo.atlas?.colecciones.find(
-            (col) => col.id === idLastColeccionTarget
-          );
-          if (coleccionLast) {
-            this.idColeccionSeleccionada = coleccionLast.id;
-          }
-        }
-        return yo;
-      },
-      fetchPolicy: "cache-and-network",
-    },
-    configuracionAtlas: {
-      query: gql`
-        query ($nombreAtlas: String!) {
-          configuracionAtlas(nombreAtlas: $nombreAtlas) {
-            id
-            posicionando
-          }
-        }
-      `,
-      variables: {
-        nombreAtlas: "conocimiento",
-      },
-      fetchPolicy: "network-only",
-    },
-    progresoNodoTarget: {
-      query: gql`
-        query ($idNodo: ID!) {
-          nodo(idNodo: $idNodo) {
-            id
-            porcentajeCompletado
-          }
-        }
-      `,
-      variables() {
-        return {
-          idNodo: this.idNodoTarget,
-        };
-      },
-      skip() {
-        return !this.idNodoTarget;
-      },
-      update({ nodo }) {
-        return nodo.porcentajeCompletado;
+        return !this.usuarioLogeado;
       },
     },
   },
   data() {
     return {
-      gettingNodoNext:false,
-      togglingNodoColeccion: false,
-
-      idNodoSeleccionado: null,
-      nodoSeleccionadoDB:{
-        vinculos:[],
-        expertos:[],
-      },
-
-      montado: false,
-      firstLoad: false,
-
-      configuracionAtlas: {
-        posicionando: false,
-      },
-      hovered: false,
-      todosNodos: [],
-      nodosDescargados: false,
-      posicionCreandoNodo: null,
-      coleccionSeleccionada: null,
-      nivelesConexion: 0,
-      factorEscalera: 0.2,
-      idsNodosCadenaPreviaSeleccionado: [],
-      idNodoMenuCx: null,
-      idsNecesariosParaTarget: [],
-      enviandoQueryModo: false,
-      enviandoQueryTarget: false,
-
-      redibujarEnlacesNodos: 0,
-
-      yo: {
-        atlas: {
-          datosNodos: [],
-          configuracion: {
-            modo: "estudiante",
-          },
-        },
-      },
-
-      idsNodosVisibles: [],
-      nodosVisibles: [],
-      idsNodosAlreadyRendered: [],
-      apuntadorDeFrontera: 0,
-      centroZonaNodosVisibles: {
-        x: 218,
-        y: 39,
-      },
-      factorZonaVisible: 1,
-      paddingRefreshZonaVisible: 0.5,
-      anchoScreen: 0,
-      altoScreen: 0,
-
-
-      showingZoomInfo: false,
-      zoom: 60,
-      minZoom: 20,
-      maxZoom: 70,
-      pinching: false,
-      lastPinchDistance: 0,
-      panningVista: false,
-      vistaPanned: false,
-
-      actualizarVinculosGrises: 0,
-
-      ultimoTouchX: 0,
-      ultimoTouchY: 0,
-
-      cerrarBusqueda: 0,
-
-      callingPosiciones: false,
-
-      mostrandoMenuContextual: false,
-      offsetMenuContextual: {
-        top: "0px",
-        left: "0px",
-      },
-      enviandoQueryConfiguracionAtlas: false,
-
-      seleccionandoColeccion: false,
-      mostrandoOpcionesColeccion: false,
-
+      gettingNodoNext: false,
       indexLocalizadorAccesibles: 0,
       indexLocalizadorOlvidados: 0,
       indexLocalizadorTops: 0,
 
-      idColeccionTargetOnLastLocalizacion: null,
+      callingPosiciones: false,
 
-      nivelesUnderTarget: 1,
-      hoveringAnuncioTarget: false,
-
-      nodoCreandoDependencia: null,
-      creandoDependencia: false,
-      editandoVinculos: false,
-
-      gestorColeccionesMostrandoArbol: false,
+      coleccionSeleccionada: null,
       conectandoNodosColeccion: false,
+
+      idNodoSeleccionado: null,
+      nodoCreandoDependencia: null,
+
+      idsNodosActivosAccesiblesInexplorados: [],
+      idsNodosActivosOlvidados: [],
+      idsNodosTop: [],
     };
   },
   computed: {
-    idsNodosTop(){
-      if(!this.coleccionSeleccionada){
-        return [];
-      }
-      return this.coleccionSeleccionada.idsNodos;
-    },
-    nodoSeleccionadoBelongsColeccionSeleccionada() {
-      if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
-        return false;
-      }
-      return this.coleccionSeleccionada.idsNodos.includes(
-        this.idNodoSeleccionado
-      );
-    },
-    nodoTargetRelevante() {
-      if (!this.idNodoTarget) {
-        return false;
-      }
-
-      if (!this.coleccionSeleccionada) {
-        return true
-      }
-      return this.coleccionSeleccionada.idsRed.includes(this.idNodoTarget);
-
+    tipoBrowse() {
+      return this.$route?.params?.tipoBrowse;
     },
     idNodoTarget() {
       return this.yo?.atlas?.idNodoTarget;
     },
-    estiloGestor() {
-      let height = 'unset';
-      let color = "transparent";
-      if (this.gestorColeccionesMostrandoArbol) {
-        height = '100%';
-        color = "var(--colorFondoGestionColecciones)";
-      }
-      return {
-        backgroundColor: color,
-        height,
-
-      }
-    },
-    idsUnderTarget() {
-      // Array de arrays. Cada array es los ids de un nivel de nodos under target.
-      if (!this.nodoTarget) {
-        return [];
-      }
-
-      let nodosActuales = [this.nodoTarget];
-      let nivelCero = [this.nodoTarget.id];
-      let todosIds = [nivelCero];
-      for (let i = 1; i <= this.nivelesUnderTarget + 1; i++) { //Se calcula un nivel extra para saber en todo momento si se puede ampliar el rango de nodos under Target.
-        let siguientesIds = nodosActuales.map(n => n.vinculos.filter(v => v.tipo === 'continuacion' && v.rol === 'target').map(v => v.idRef)).flat();
-        let nuevosIds = siguientesIds.filter(id => !todosIds.includes(id));
-        todosIds.push(nuevosIds);
-        nodosActuales = this.todosNodos.filter(n => nuevosIds.includes(n.id));
-      }
-      return todosIds;
-    },
-    idsUnderTargetActivos() {
-      return this.idsUnderTarget.slice(0, this.nivelesUnderTarget + 1).flat();
-    },
-    estiloContenedorOverlays() {
-      let width = "fit-content";
-      let height = 'unset';
-      if (this.gestorColeccionesMostrandoArbol) {
-        width = "100%";
-        height = "100%";
-      }
-      return {
-        width,
-        height,
-      }
-    },
-    domAndNodosReady() {
-      return this.montado && this.firstLoad;
-    },
-    estiloIndicadorCentroZonasVisibles() {
-      return {
-        left: (this.centroZonaNodosVisibles.x - this.esquinasDiagrama.x1) * this.factorZoom + "px",
-        top: (this.centroZonaNodosVisibles.y - this.esquinasDiagrama.y1) * this.factorZoom + "px",
-      }
-    },
-    sizeZonaVisible() {
-      //Un cinturón alrededor del centro que marca una región de nodos visibles. x y Y marcan el ancho del cinturón. No de la zona.
-      return {
-        x: (this.anchoScreen / this.factorZoom) * this.factorZonaVisible,
-        y: (this.altoScreen / this.factorZoom) * this.factorZonaVisible,
-      }
-    },
-
-    nodoSeleccionado: function () {
-      if (!this.idNodoSeleccionado) {
-        return null;
-      }
-      return this.nodoSeleccionadoDB;
-    },
-    nodoTarget() {
-      if (!this.idNodoTarget) return null;
-      return this.todosNodos.find((n) => n.id === this.idNodoTarget);
-    },
-
-    idsTodosNodos() {
-      if (!this.todosNodos) {
-        return [];
-
-      }
-      return this.todosNodos.map(n => n.id);
-
-    },
-    idsTodosNodosEstudiados() {
-      if (!this.yo?.atlas?.datosNodos) {
-        return []
-      }
-      return this.yo.atlas.datosNodos.filter(dn => dn.estadoAprendizaje === 'ESTUDIADO').map(dn => dn.idNodo);
-
-    },
-    idsTodosNodosAprendidos() {
-      if (!this.yo?.atlas?.datosNodos) {
-        return []
-      }
-      return this.yo.atlas.datosNodos.filter(dn => dn.estadoAprendizaje === 'APRENDIDO').map(dn => dn.idNodo);
-    },
-    idsTodosNodosOlvidados() {
-      if (!this.yo?.atlas?.datosNodos) {
-        return []
-      }
-      return this.yo.atlas.datosNodos.filter(dn => dn.estadoAprendizaje === 'OLVIDADO').map(dn => dn.idNodo);
-    },
-    idsTodosNodosAccesibles() {
-      return this.todosNodos.filter(n => !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !this.idsTodosNodosAprendidos.includes(v.idRef) && !this.idsTodosNodosEstudiados.includes(v.idRef))).map(nA => nA.id);
-    },
-
-    nodosActivos() {
-      console.log("gestor conectando nodos " + this.conectandoNodosColeccion);
-      if(this.$route.name!='atlas'){
-        return [];
-      }
-      if (!this.todosNodos) {
-        return [];
-      }
-      let campo = this.todosNodos;
-
-      if (this.coleccionSeleccionada && !this.conectandoNodosColeccion) {
-        console.log("Filtrando nodos. Solo siguen los que salen en la red de la colección seleccionada");
-        campo = campo.filter(n => this.coleccionSeleccionada.idsRed.includes(n.id));
-      }
-      return campo;
-    },
-
-    idsNodosActivos() {
-      return this.nodosActivos.map(na => na.id);
-    },
-    idsNodosActivosEstudiados() {
-      return this.idsNodosActivos.filter(idN => this.idsTodosNodosEstudiados.includes(idN));
-    },
-    idsNodosActivosAprendidos() {
-      return this.idsNodosActivos.filter(idN => this.idsTodosNodosAprendidos.includes(idN));
-    },
-    idsNodosActivosOlvidados() {
-      return this.idsNodosActivos.filter(idN => this.idsTodosNodosOlvidados.includes(idN));
-    },
-    idsNodosActivosAccesibles() {
-      return this.idsTodosNodosAccesibles.filter(idN => this.idsNodosActivos.includes(idN));
-    },
-    idsNodosActivosAccesiblesInexplorados() {
-      return this.idsNodosActivosAccesibles.filter(id => !this.idsNodosActivosAprendidos.includes(id) && !this.idsNodosActivosEstudiados.includes(id) && !this.idsNodosActivosOlvidados.includes(id));
-    },
-
-    factorZoom() {
-      return Number((this.zoom / 100).toFixed(2));
-    },
-    sizeContenedorNodos() {
-      return {
-        width: (this.esquinasDiagrama.x2 - this.esquinasDiagrama.x1) + 'px',
-        height: (this.esquinasDiagrama.y2 - this.esquinasDiagrama.y1) + 'px',
-      }
-    },
-    esquinasDiagrama() {
-      const maxX = this.todosNodos.reduce(
-        (acc, n) => (n.autoCoords.x > acc ? n.autoCoords.x : acc),
-        0
-      );
-      const maxY = this.todosNodos.reduce(
-        (acc, n) => (n.autoCoords.y > acc ? n.autoCoords.y : acc),
-        0
-      );
-      const minX = this.todosNodos.reduce(
-        (acc, n) => (n.autoCoords.x < acc ? n.autoCoords.x : acc),
-        0
-      );
-      const minY = this.todosNodos.reduce(
-        (acc, n) => (n.autoCoords.y < acc ? n.autoCoords.y : acc),
-        0
-      );
-
-      let padding = 400;
-
-      return {
-        x1: minX - padding,
-        y1: minY - padding,
-
-        x2: maxX + padding,
-        y2: maxY + padding,
-      };
-    },
-
   },
   methods: {
-    toggleNodoColeccion() {
-      if (!this.idNodoSeleccionado || !this.coleccionSeleccionada) {
-        return;
-      }
-      this.togglingNodoColeccion = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idColeccion: ID!, $idNodo: ID!, $idUsuario: ID!) {
-              toggleNodoColeccionNodosAtlasConocimientoUsuario(
-                idColeccion: $idColeccion
-                idNodo: $idNodo
-                idUsuario: $idUsuario
-              ) {
-                id
-                idsNodos
-                idsRed
-              }
-            }
-          `,
-          variables: {
-            idColeccion: this.coleccionSeleccionada.id,
-            idNodo: this.idNodoSeleccionado,
-            idUsuario: this.usuario.id,
-          },
-        })
-        .then(() => {
-          this.togglingNodoColeccion = false;
-        })
-        .catch((error) => {
-          console.log("Error: " + error);
-          this.togglingNodoColeccion = false;
-        });
-    },
-    stepNivelesUnderTarget: throttle(function (step) {
-      let nuevoNiveles = this.nivelesUnderTarget + step;
-      if (nuevoNiveles < 0) {
-        nuevoNiveles = 0;
-      }
-      if (this.idsUnderTarget[nuevoNiveles]) {
-        this.nivelesUnderTarget = nuevoNiveles;
-      }
-    }, 800),
-    nodoEnRangoVista(nodo) {
-      let posNodo = nodo.autoCoords;
-      let limiteIzquierdo = this.centroZonaNodosVisibles.x - (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
-      let limiteDerecho = this.centroZonaNodosVisibles.x + (this.factorZonaVisible * this.anchoScreen / this.factorZoom);
-      let limiteSuperior = this.centroZonaNodosVisibles.y - (this.factorZonaVisible * this.altoScreen / this.factorZoom);
-      let limiteInferior = this.centroZonaNodosVisibles.y + (this.factorZonaVisible * this.altoScreen / this.factorZoom);
-      return posNodo.x > limiteIzquierdo && posNodo.x < limiteDerecho && posNodo.y > limiteSuperior && posNodo.y < limiteInferior;
-
-    },
-    nodoSeleccionadoEnColecciones(idNodo) {
-      this.idNodoSeleccionado = idNodo;
-
-    },
-    reactToNodoEliminado(idNodo) {
-      let indexN = this.nodosVisibles.findIndex(n => n.id === idNodo);
-      if (indexN > -1) {
-        this.nodosVisibles.splice(indexN, 1);
-      }
-    },
-    idsRedUnderNodo(nodo) {
-      let guarda = 0;
-      let idsNodosActuales = [nodo.id];
-      let idsCompletos = [...idsNodosActuales];
-      while (guarda < 100 && idsNodosActuales.length > 0) {
-        guarda++;
-        let nodosActuales = this.todosNodos.filter((nodo) => idsNodosActuales.includes(nodo.id));
-        let idsSiguientes = nodosActuales.map((nodo) => nodo.vinculos.filter(v => v.tipo === 'continuacion' && v.rol == 'target').map((vinculo) => vinculo.idRef)).flat();
-        idsNodosActuales = idsSiguientes; idsCompletos.push(...idsSiguientes);
-      }
-      return idsCompletos;
-    },
-    touchStartDiagrama(e) {
-      if (e.touches.length === 2) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        // get distance between fingers
-        let distance = Math.sqrt(Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) + Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2));
-
-        this.lastPinchingDistance = distance;
-      }
-    },
-    touchMoveDiagrama(e) {
-      if (e.touches.length === 2) {
-        e.stopPropagation();
-        e.preventDefault();
-        let center = {
-          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
-        }
-
-        let posContenedor = this.$refs.contenedorDiagrama.getBoundingClientRect();
-        let zoomPosPx = {
-          x: center.x - posContenedor.left,
-          y: center.y - posContenedor.top
-        }
-
-        let distance = Math.sqrt(Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) + Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2));
-
-        if (!this.lastPinchingDistance) {
-          this.lastPinchingDistance = distance;
-          return;
-        }
-        let zoomChange = distance - this.lastPinchingDistance;
-
-        //set to 1 if postive, -1 if negative
-        if (zoomChange != 0) {
-          zoomChange = zoomChange / Math.abs(zoomChange);
-
-          throttle(this.zoomVista(zoomChange, zoomPosPx), 1000);
-        }
-
-        this.lastPinchingDistance = distance;
-
-
-      }
-    },
-    clickNodo(nodo) {
-      if (this.nodoCreandoDependencia) {
-        if (nodo.id === this.nodoCreandoDependencia.id) {
-          return;
-        }
-        this.$refs.controlesNodo.crearDependenciaNodo(nodo);
-        return;
-      }
-
-
-      this.idNodoSeleccionado = nodo.id;
-    },
-    marcarNodoEsperandoDependencia(nodo) {
-      this.nodoCreandoDependencia = nodo;
-    },
-
     clickFuera() {
-      this.seleccionNodo({});
+      this.seleccionNodo();
       this.$refs.controlesNodo.clickFuera();
-      this.$refs.buscadorNodos.cerrarBusqueda();
+      if (this.$refs?.buscadorNodos) {
+        this.$refs.buscadorNodos.cerrarBusqueda();
+      }
     },
     localizarNext(tipo) {
-
       let nodoNext = null;
-      let idNodoNext=null;
+      let idNodoNext = null;
       if (tipo === "accesible") {
         if (this.idsNodosActivosAccesiblesInexplorados.length < 1) {
           return;
         }
         this.indexLocalizadorAccesibles++;
-        if (this.indexLocalizadorAccesibles >= this.idsNodosActivosAccesiblesInexplorados.length) {
+        if (
+          this.indexLocalizadorAccesibles >=
+          this.idsNodosActivosAccesiblesInexplorados.length
+        ) {
           this.indexLocalizadorAccesibles = 0;
         }
-        nodoNext = this.nodosActivos.find(na => na.id === this.idsNodosActivosAccesiblesInexplorados[this.indexLocalizadorAccesibles]);
-
+        idNodoNext =
+          this.idsNodosActivosAccesiblesInexplorados[
+            this.indexLocalizadorAccesibles
+          ];
       } else if (tipo === "olvidado") {
         if (this.idsNodosActivosOlvidados.length < 1) {
           return;
         }
         this.indexLocalizadorOlvidados++;
-        if (this.indexLocalizadorOlvidados >= this.idsNodosActivosOlvidados.length) {
+        if (
+          this.indexLocalizadorOlvidados >= this.idsNodosActivosOlvidados.length
+        ) {
           this.indexLocalizadorOlvidados = 0;
         }
-        nodoNext = this.nodosActivos.find(na => na.id === this.idsNodosActivosOlvidados[this.indexLocalizadorOlvidados]);
-      }
-      else if(tipo==='top'){
-        if(!this.idsNodosTop || this.idsNodosTop.length < 1){
+        idNodoNext =
+          this.idsNodosActivosOlvidados[this.indexLocalizadorOlvidados];
+      } else if (tipo === "top") {
+        if (!this.idsNodosTop || this.idsNodosTop.length < 1) {
           return;
         }
         this.indexLocalizadorTops++;
-        if(this.indexLocalizadorTops >= this.idsNodosTop.length){
-          this.indexLocalizadorTops=0;
+        if (this.indexLocalizadorTops >= this.idsNodosTop.length) {
+          this.indexLocalizadorTops = 0;
         }
         console.log("saltando al nodo top " + this.indexLocalizadorTops);
         console.log(`De ${this.idsNodosTop.length}`);
-        idNodoNext=this.idsNodosTop[this.indexLocalizadorTops];
+        idNodoNext = this.idsNodosTop[this.indexLocalizadorTops];
         console.log(`Con id ${idNodoNext}`);
-        if(this.coleccionSeleccionada){//Buscar en los nodos activos
-          nodoNext=this.nodosActivos.find(n=>n.id===idNodoNext);
-        }
       }
 
       if (nodoNext) {
@@ -909,29 +315,51 @@ export default {
         this.seleccionNodo(nodoNext);
         return;
       }
-      if(idNodoNext){
-        this.gettingNodoNext=true;
-        this.$apollo.query({
-          query: gql`
-            query($idNodo:ID!){
-              nodo(idNodo:$idNodo){
-                ...fragNodoConocimiento
+      var dis = this;
+
+      if (idNodoNext) {
+        this.gettingNodoNext = true;
+        this.$apollo
+          .query({
+            query: gql`
+              query ($idNodo: ID!) {
+                nodo(idNodo: $idNodo) {
+                  id
+                  nombre
+                  autoCoords
+                }
               }
-            }
-            ${fragmentoNodoConocimiento}
-          `,
-          variables:{
-            idNodo: idNodoNext,
-          }
-        }).then(({data:{nodo}})=>{
-          this.gettingNodoNext=false;
-          this.centrarEnNodo(nodoNext);
-          this.seleccionNodo(nodoNext);
-          return;
-        }).catch((error)=>{
-          this.gettingNodoNext=false;
-          console.log(`Error getting nodo next: ${error}`);
-        });
+            `,
+            variables: {
+              idNodo: idNodoNext,
+            },
+            fetchPolicy: "cache-first",
+          })
+          .then(({ data: { nodo } }) => {
+            this.gettingNodoNext = false;
+            this.centrarEnNodo(nodo);
+            this.seleccionNodo(nodo.id);
+            return;
+          })
+          .catch((error) => {
+            this.gettingNodoNext = false;
+            console.log(`Error getting nodo next: ${error}`);
+          });
+      }
+    },
+    centrarEnNodo(nodo) {
+      if (this.tipoBrowse === "mapa") {
+        this.$refs.mapaAtlas.centrarEnNodo(nodo);
+      }
+    },
+    setIdsNodosActivosAccesiblesInexplorados(ids, source) {
+      if (source === "mapaAtlas" && this.tipoBrowse === "mapa") {
+        this.idsNodosActivosAccesiblesInexplorados = ids;
+      }
+    },
+    setIdsNodosActivosTop(ids, source) {
+      if (source === "mapaAtlas" && this.tipoBrowse === "mapa") {
+        this.idsNodosTop = ids;
       }
     },
     iniciarCallingPosiciones() {
@@ -966,490 +394,36 @@ export default {
           console.log(`Error: ${error}`);
         });
     },
-    togglePosicionamiento() {
-      this.enviandoQueryConfiguracionAtlas = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($nombreAtlas: String!) {
-              togglePosicionamientoAutomaticoAtlas(nombreAtlas: $nombreAtlas) {
-                id
-                posicionando
-              }
-            }
-          `,
-          variables: {
-            nombreAtlas: "conocimiento",
-          },
-        })
-        .then(() => {
-          this.enviandoQueryConfiguracionAtlas = false;
-        })
-        .catch(() => {
-          this.enviandoQueryConfiguracionAtlas = false;
-        });
+    reactToNodoBuscadoSeleccionado(nodo) {
+      if (this.$route.tipoBrowse === "mapa") {
+        this.$refs.mapaAtlas.centrarEnNodoById(nodo.id);
+      }
     },
-    abrirMenuContextual(e) {
-      let posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();
-
-      let topClick = Math.round(e.pageY - posDiagrama.top);
-      let leftClick = Math.round(e.pageX - posDiagrama.left);
-
-      this.offsetMenuContextual.top = topClick + "px";
-      this.offsetMenuContextual.left = leftClick + "px";
-
-      this.mostrandoMenuContextual = true;
-      //this.crearNodo({x: leftClick, y: topClick});
-    },
-    crearNodoEnMenuContextual() {
-      const posContenedorNodos =
-        this.$refs.contenedorNodos.getBoundingClientRect();
-      const distanciaLeftPx =
-        parseInt(this.offsetMenuContextual.left) -
-        parseInt(posContenedorNodos.left);
-      const distanciaTopPx =
-        parseInt(this.offsetMenuContextual.top) -
-        (parseInt(posContenedorNodos.top) - parseInt(this.$el.offsetTop));
-
-      const posPxX = distanciaLeftPx;
-      const posPxY = distanciaTopPx;
-
-      console.log(`xPix: ${parseInt(this.offsetMenuContextual.left)}`);
-      console.log(
-        `posXContenedorNodos: ${parseInt(posContenedorNodos.left)}, ${posContenedorNodos.top
-        }`
-      );
-      console.log(`distanciaLeftPx: ${distanciaLeftPx}`);
-      console.log(`distanciaTopPx: ${distanciaTopPx}`);
-      console.log(
-        `Scroll x contenedorDiagrama: ${this.$refs.contenedorDiagrama.scrollLeft}`
-      );
-
-      var posicionNuevoNodo = {
-        x: parseInt(posPxX / this.factorZoom + this.esquinasDiagrama.x1),
-        y: parseInt(posPxY / this.factorZoom + this.esquinasDiagrama.y1),
-      };
-
-      console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
-
-      this.crearNodo(posicionNuevoNodo);
-    },
-
-    centrarEnNodo(n) {
-      const posDiagrama = this.$refs.contenedorDiagrama.getBoundingClientRect();
-      const posNodo = {
-        x: (n.autoCoords.x - this.esquinasDiagrama.x1) * this.factorZoom,
-        y: (n.autoCoords.y - this.esquinasDiagrama.y1) * this.factorZoom,
-      };
-
-      const posIdealScroll = {
-        x: parseInt(posNodo.x - posDiagrama.width / 2),
-        y: parseInt(posNodo.y - posDiagrama.height / 2),
-      };
-
-      this.$refs.contenedorDiagrama.scrollLeft = posIdealScroll.x;
-      this.$refs.contenedorDiagrama.scrollTop = posIdealScroll.y;
-
-      this.seleccionNodo(n);
-    },
-    centrarEnNodoById(idNodo) {
-      if (!idNodo) {
-        return
-      }
-      console.log(`Centrando en nodo con id ${idNodo}`);
-      var elNodo = this.todosNodos.find((n) => n.id === idNodo);
-      if (elNodo) {
-        this.centrarEnNodo(elNodo);
-        return;
-      }
-      this.$apollo
-        .query({
-          query: gql`
-            query ($idNodo: ID!) {
-              nodo(idNodo: $idNodo) {
-                id
-                autoCoords {
-                  x
-                  y
-                }
-              }
-            }
-          `,
-          variables: {
-            idNodo,
-          },
-        })
-        .then(({ data: { nodo } }) => {
-          console.log(`Recibido nodo así: ${JSON.stringify(nodo)}`);
-          this.centrarEnNodo(nodo);
-        })
-        .catch((error) => {
-          console.log(`Error: ${error}`);
-        });
-    },
-    cambiarCoordsManualesNodo(idNodo, coordsManuales) {
-      if (!this.usuarioSuperadministrador) {
-        console.log(`No autorizado`);
-        return;
-      }
-      this.todosNodos[this.todosNodos.findIndex((n) => n.id == idNodo)].coords =
-        coordsManuales;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idNodo: String, $coordsManuales: CoordsInput) {
-              setCoordsManuales(
-                idNodo: $idNodo
-                coordsManuales: $coordsManuales
-              ) {
-                modificados {
-                  id
-                  coordsManuales {
-                    x
-                    y
-                  }
-                  coords {
-                    x
-                    y
-                  }
-                }
-              }
-            }
-          `,
-          variables: {
-            idNodo,
-            coordsManuales,
-          },
-        })
-        .then(() => {
-          this.$refs.canvases.crearImagenTodosVinculos();
-        })
-        .catch((error) => {
-          console.log(`Error: ${error}`);
-        });
-    },
-    crearNodo(posicion) {
-      if (!this.usuarioSuperadministrador) {
-        console.log(`Error usuario no autorizado`);
-        return;
-      }
-      console.log(`enviando una mutación de crear nodo`);
-
-      let infoNodo = {
-        coordsManuales: {
-          x: posicion.x,
-          y: posicion.y,
-        },
-        coords: {
-          x: posicion.x,
-          y: posicion.y,
-        },
-        autoCoords: {
-          x: posicion.x,
-          y: posicion.y,
-        },
-      };
-      console.log(`en las coordenadas: ${posicion.x}, ${posicion.y} `);
-      this.posicionCreandoNodo = {
-        x: posicion.x,
-        y: posicion.y,
-      };
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($infoNodo: NodoConocimientoInput) {
-              crearNodo(infoNodo: $infoNodo) {
-                ...fragNodoConocimiento
-              }
-            }
-            ${fragmentoNodoConocimiento}
-          `,
-          variables: {
-            infoNodo,
-          },
-        })
-        .then(({ data: { crearNodo } }) => {
-          console.log(`Creado ${crearNodo.id}`);
-          const store = this.$apollo.provider.defaultClient;
-          const cache = store.readQuery({
-            query: QUERY_NODOS,
-          });
-          var nuevoCache = JSON.parse(JSON.stringify(cache));
-          console.log(`1`);
-          var losNodos = nuevoCache.todosNodos;
-          console.log(`2`);
-
-          const indexN = losNodos.findIndex((n) => n.id === crearNodo.id);
-          if (indexN > -1) {
-            console.log(`El nodo ya estaba en caché`);
-          } else {
-            losNodos.push(crearNodo);
-            store.writeQuery({
-              query: QUERY_NODOS,
-              data: nuevoCache,
-            });
-          }
-          this.posicionCreandoNodo = null;
-          //this.$router.push("/nodoConocimiento/"+crearNodo.id);
-        })
-        .catch((error) => {
-          this.posicionCreandoNodo = null;
-          console.log(`Error. E: ${error}`);
-        });
-    },
-    seleccionNodo(nodo) {
-      this.idNodoSeleccionado = nodo.id;
-    },
-    async eliminarVinculo(idNodoFrom, idNodoTo) {
-      if (!this.usuarioSuperadministrador) {
-        console.log(`No autorizado`);
-        return;
-      }
-      console.log(
-        `eliminando un vinculo entre ${idNodoFrom} y ${idNodoTo} `
-      );
-
-      this.editandoVinculos = true;
-      this.$apollo
-        .mutate({
-          mutation: gql`
-            mutation ($idNodoFrom: ID!, $idNodoTo: ID!) {
-              eliminarVinculoFromTo(
-                idSource: $idNodoFrom
-                idTarget: $idNodoTo
-              ) {
-                modificados {
-                  id
-                  vinculos {
-                    id
-                    idRef
-                    tipo
-                    rol
-                  }
-                }
-              }
-            }
-          `,
-          variables: {
-            idNodoFrom,
-            idNodoTo,
-          },
-        })
-        .then(() => {
-          this.editandoVinculos = false;
-        })
-        .catch((error) => {
-          console.log(`error: ${error}`);
-          this.editandoVinculos = false;
-        });
-    },
-    zoomVista(cantidad, posicionPx) {
-      let contenedor = this.$refs.contenedorDiagrama;
-
-      let posicionTotalPx = {
-        x: posicionPx.x + this.$refs.contenedorDiagrama.scrollLeft,
-        y: posicionPx.y + this.$refs.contenedorDiagrama.scrollTop,
-      };
-
-      let step = 8 * cantidad;
-      let nuevoZoom = this.zoom + step;
-      if (nuevoZoom < this.minZoom) {
-        nuevoZoom = this.minZoom;
-      } else if (nuevoZoom > this.maxZoom) {
-        nuevoZoom = this.maxZoom;
-      }
-      let cambioZoom = nuevoZoom / this.zoom;
-      this.zoom = nuevoZoom;
-
-      let posicionTotalPxPrima = {
-        x: posicionTotalPx.x * cambioZoom,
-        y: posicionTotalPx.y * cambioZoom,
-      };
-
-      let nuevoScrollLeft = posicionTotalPxPrima.x - posicionPx.x;
-      let nuevoScrollTop = posicionTotalPxPrima.y - posicionPx.y;
-
-      this.$nextTick(() => {
-        contenedor.scrollLeft = Math.round(nuevoScrollLeft);
-        contenedor.scrollTop = Math.round(nuevoScrollTop);
-        this.setCentroZonaNodosVisibles();
-      });
-      this.showingZoomInfo = true;
-    },
-    zoomWheel(e) {
-      //Verificar si es para un subnodo.
-      console.log("Wheel");
-      if(this.$refs.controlesNodo?.zoomWheel(e)){
-        console.log("atrapado en controlesNodo");
-        return;
-      }
-
-      console.log("wheel en atlas");
-      if (this.hoveringAnuncioTarget) {
-        e.preventDefault();
-        let direccionScroll = e.deltaY;
-        let delta = direccionScroll / Math.abs(direccionScroll);
-        this.stepNivelesUnderTarget(delta);
-        return;
-      }
-
-      if (!this.hovered || !e.ctrlKey) {
-        return;
-      }
-      e.preventDefault();
-
-      var contenedor = this.$refs.contenedorDiagrama;
-      let posContenedor = contenedor.getBoundingClientRect();
-
-      let posMousePx = {
-        x: e.clientX - posContenedor.left,
-        y: e.clientY - posContenedor.top,
-      };
-
-      //Check wheel direction
-      if (e.deltaY > 0) {
-        this.zoomVista(-1, posMousePx);
-      } else {
-        this.zoomVista(1, posMousePx);
-      }
-
-      // const factorZoom = 0.05;
-      // this.zoomVista(-Math.round(e.deltaY * factorZoom), posMousePx);
-    },
-    hideZoomInfo: debounce(function () {
-      this.showingZoomInfo = false;
-    }, 1000),
-    setCentroZonaNodosVisibles: throttle(function (padded) {
-      let nuevoCentroX = Math.round(this.esquinasDiagrama.x1 + (this.$refs.contenedorDiagrama.scrollLeft / this.factorZoom) + (this.$refs.contenedorDiagrama.clientWidth / (2 * this.factorZoom)));
-      let nuevoCentroY = Math.round(this.esquinasDiagrama.y1 + (this.$refs.contenedorDiagrama.scrollTop / this.factorZoom) + (this.$refs.contenedorDiagrama.clientHeight / (2 * this.factorZoom)));
-
-      // Padded indica que se respetará un padding respecto del último centro. Si !padded entonces se hace un nuevo set de centro no matter what.
-      if (padded && Math.abs(nuevoCentroX - this.centroZonaNodosVisibles.x) < (1 - this.paddingRefreshZonaVisible) * this.sizeZonaVisible.x && Math.abs(nuevoCentroY - this.centroZonaNodosVisibles.y) < (1 - this.paddingRefreshZonaVisible) * this.sizeZonaVisible.y) {
-        return;
-      }
-
-      this.centroZonaNodosVisibles = {
-        x: nuevoCentroX,
-        y: nuevoCentroY,
-      }
-    }, 1000),
-    iniciarCalculoNodosVisibles: debounce(function () {
-
-      // Sacando del array de nodos visibles a todos los que no están en el rango.
-      this.idsNodosAlreadyRendered = [];
-      for (let i = this.nodosVisibles.length - 1; i >= 0; i--) {
-        let elNodo = this.nodosVisibles[i];
-        if (!this.nodoEnRangoVista(elNodo) || !this.idsNodosActivos.includes(elNodo.id)) {
-          this.nodosVisibles.splice(i, 1);
+    centerEnTarget() {
+      if (this.$route?.params?.tipoBrowse === "mapa" && this.$refs?.mapaAtlas) {
+        if (this.idNodoTarget) {
+          this.$refs.mapaAtlas.centrarEnNodoById(idNodoTarget);
         }
-        else {
-          this.idsNodosAlreadyRendered.push(elNodo.id);
+      }
+    },
+    reactToNodoEliminado(idNodo) {
+      if (this.$refs?.mapaAtlas) {
+        this.$refs.mapaAtlas.reactToNodoEliminado(idNodo);
+      }
+    },
+    seleccionNodo(idNodo) {
+      if (this.nodoCreandoDependencia) {
+        if (nodo.id === this.nodoCreandoDependencia.id) {
+          return;
         }
-
+        this.$refs.controlesNodo.crearDependenciaNodo(nodo);
+        return;
       }
-      clearTimeout(idTimeoutNodosVisibles);
-      apuntadorChunkNodosVisibles = 0;
-      this.$nextTick(() => {
-        this.introducirChunkNodosVisibles()
-      })
-    }, 700),
-    introducirChunkNodosVisibles() {
-      let chunkSize = 20;
-
-      for (let i = apuntadorChunkNodosVisibles; i < apuntadorChunkNodosVisibles + chunkSize; i++) {
-        if (i >= this.nodosActivos.length) {
-
-          break;
-        }
-        let esteNodo = this.nodosActivos[i];
-
-        //Check if nodo already in nodosVisibles
-        if (this.idsNodosAlreadyRendered.includes(esteNodo.id)) {
-          continue;
-        }
-
-        if (this.nodoEnRangoVista(esteNodo)) {
-          this.nodosVisibles.push(esteNodo);
-          this.idsNodosVisibles.push(esteNodo.id);
-        }
-
-      }
-
-      apuntadorChunkNodosVisibles += chunkSize;
-
-      if (apuntadorChunkNodosVisibles < this.nodosActivos.length) {
-        this.$nextTick(() => {
-          idTimeoutNodosVisibles = setTimeout(() => {
-            this.introducirChunkNodosVisibles();
-          }, 100)
-        })
-      }
+      this.idNodoSeleccionado = idNodo;
     },
-
-  },
-  watch: {
-    "nodosActivos.length": function (val, oldVal) {
-      if (val > 0) {
-        this.firstLoad = true;
-      }
-      if (val != oldVal) {
-        console.log("Recalculando nodos visibles after cambio en nodos activos length");
-        this.iniciarCalculoNodosVisibles();
-      }
-
+    marcarNodoEsperandoDependencia(nodo) {
+      this.nodoCreandoDependencia = nodo;
     },
-    coleccionSeleccionada() {
-      this.iniciarCalculoNodosVisibles();
-    },
-    idNodoTarget(idNodoTarget) {
-      localStorage.setItem("atlasConocimientoIdLastNodoTarget", idNodoTarget);
-    },
-    domAndNodosReady() {
-      console.log("Cambio en domAndNodosReady");
-      let contenedor = this.$refs.contenedorDiagrama;
-      console.log("scrollWidth: " + contenedor.scrollWidth);
-      this.$nextTick(() => {
-        contenedor.scrollLeft = contenedor.scrollWidth / 2;
-        contenedor.scrollTop = contenedor.scrollHeight / 2;
-        this.setCentroZonaNodosVisibles();
-      })
-    },
-    nodoTarget() {
-      this.nivelesUnderTarget = 1;
-      this.iniciarCalculoNodosVisibles();
-    },
-    zoom() {
-      this.showingZoomInfo = true;
-      this.hideZoomInfo();
-    },
-    centroZonaNodosVisibles() {
-
-      this.iniciarCalculoNodosVisibles();
-    },
-  },
-  mounted() {
-    this.anchoScreen = screen.width;
-    this.altoScreen = screen.height;
-    if (screen.width < 600) {
-      this.zoom = 40;
-    }
-    this.montado = true;
-  },
-  created() {
-    window.addEventListener("wheel", this.zoomWheel, { passive: false });
-    // watch for resize
-    window.addEventListener("resize", function () {
-      this.anchoScreen = screen.width;
-      this.altoScreen = screen.height;
-    });
-
-  },
-  destroyed() {
-    window.removeEventListener("wheel", this.zoomWheel, {passive: false});
-    window.removeEventListener("resize", function () {
-      this.anchoScreen = screen.width;
-      this.altoScreen = screen.height;
-    });
   },
 };
 </script>
@@ -1493,10 +467,12 @@ export default {
 
 #contenedorOverlays {
   position: absolute;
+  height: 100%;
+  width: 100%;
   top: 0px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0px;
   z-index: 1;
+  pointer-events: none;
 }
 
 #zonaNodoTarget {
@@ -1537,74 +513,29 @@ export default {
 }
 
 .gestorColecciones {
+  pointer-events: all;
   margin: 0px auto;
   z-index: 1;
 }
+
 #botonConectarNodosColeccion {
   background-color: transparent;
   box-shadow: none;
 }
+
 #botonToggleNodoColeccion {
   width: fit-content;
   margin: 10px auto;
 }
 
-#menuContextual {
-  position: absolute;
-  background-color: gray;
-  z-index: 110;
-}
-
-.botonMenuContextual {
-  font-size: 12px;
-  color: rgb(221, 221, 221);
-  cursor: pointer;
-  padding: 10px;
-}
-
-.botonMenuContextual:hover {
-  background-color: rgb(68, 68, 68);
-}
-
-#contenedorDiagrama {
-  position: relative;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 100%;
-  overflow: scroll;
-  z-index: 0;
-}
-
-#contenedorNodos {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  transform-origin: left top;
-  user-select: none;
-
-  z-index: 0;
-}
-
 #buscadorNodosConocimiento {
+  pointer-events: all;
   position: absolute;
   top: 1%;
   right: 1%;
   /* transform: translateX(-50%); */
   z-index: 1;
   width: min(100vh, 350px);
-}
-
-#infoZoom {
-  position: absolute;
-  bottom: 2%;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px;
-  display: inline-block;
-  font-weight: bold;
-  z-index: 10;
-  color: rgb(102, 102, 102);
 }
 
 #botonCallingPosiciones {
@@ -1680,6 +611,7 @@ export default {
   justify-content: center;
   align-items: center;
   padding: 20px 20px;
+  pointer-events: all;
 }
 
 /* #endregion */

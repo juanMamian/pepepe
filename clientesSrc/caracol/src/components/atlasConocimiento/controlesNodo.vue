@@ -72,7 +72,11 @@
           v-show="filaMostrada === 2"
         >
           <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
-            <img src="@/assets/iconos/lockSolid.svg" alt="Bloqueo" style="height: 15px" />
+            <img
+              src="@/assets/iconos/lockSolid.svg"
+              alt="Bloqueo"
+              style="height: 15px"
+            />
             ¡Tienes nodos por completar que son necesarios para este!
           </div>
           <div class="bloqueControl" style="">
@@ -153,7 +157,7 @@
         <div
           class="filaControles"
           :class="[direccionTransicion]"
-          key="fila2"
+          key="fila3"
           v-show="filaMostrada === 3"
         >
           <div class="bloqueControl" id="bloqueControlDependencias">
@@ -232,7 +236,7 @@
         <div
           class="filaControles"
           :class="[direccionTransicion]"
-          key="fila3"
+          key="fila1"
           v-show="filaMostrada === 1"
         >
           <div id="zonaDescripcionNodo">
@@ -261,13 +265,7 @@
             </router-link>
           </div>
           <div class="bloqueControl" id="bloqueControlBrowse" v-if="elNodo?.id">
-            <router-link
-              :to="{
-                name: 'browseNodoConocimiento',
-                params: { idNodo: elNodo.id },
-              }"
-              class="botonTexto"
-            >
+            <router-link :to="'verNodo' + elNodo.id" class="botonTexto">
               <img src="@/assets/iconos/codeBranch.svg" alt="Ramas" />
               Explorar
             </router-link>
@@ -356,7 +354,6 @@ import Loading from '../utilidades/Loading.vue';
 import throttle from 'lodash/throttle';
 
 export default {
-
   props: {
     nodoCreandoDependencia: {
       type: Object,
@@ -367,6 +364,10 @@ export default {
     },
     idNodoSeleccionado: {
       type: String,
+    },
+    emitOpenNodo:{// Para dar la órden de emitir el evento de open nodo en vez de hacer la operación default que es navegar a la ruta del visor de nodos.
+      type: Boolean,
+      default: false,
     }
   },
   apollo: {
@@ -399,6 +400,7 @@ export default {
   name: "ControlesNodo",
   data() {
     return {
+      nodoTarget:null,
       hovered:false,
       direccionTransicion: 'normal',
       elNodoDB: {
@@ -430,7 +432,6 @@ export default {
       guardandoDiasRepaso: false,
       settingEstadoAprendido: false,
 
-      nivelesConexion: 0,
 
       idVinculoEliminando: null,
       creandoDependencia: false,
@@ -474,22 +475,6 @@ export default {
         transform: `translate(-50%, -${translation}px)`,
       };
       return estilo;
-    },
-    posSignaler() {
-
-
-      let step = 0;
-      if (this.nivelesConexion != 0) {
-        step = 30;
-      }
-
-      if (this.nivelesConexion < 0) {
-        step = -step;
-      }
-
-      return {
-        transform: `translateX(calc(-50% + ${step}px))`,
-      }
     },
     datoUsuarioEsteNodo() {
       if (!this.elNodo || !this.yo?.atlas?.datosNodos) {
@@ -593,6 +578,12 @@ export default {
     }
   },
   methods: {
+    emitirOpenNodo(e){
+      console.log("Emitiendo el open nodo");
+      this.$emit('openNodoCaptured', this.elNodo.id);
+      e.preventDefault();
+
+    },
     setFilaMostrada(index) {
       if (this.filaMostrada < index || this.filaMostrada === 1) {
         this.direccionTransicion = 'left';
@@ -1017,7 +1008,6 @@ export default {
         this.mostrando = '';
         this.heightNombre = 0;
         this.heigthAll = 0;
-        this.nivelesConexion = 0;
         this.$emit("cancelarCreandoDependencia");
       }
     },
@@ -1025,12 +1015,6 @@ export default {
       if (datos) {
         this.diasRepaso = datos.diasRepaso || 0;
       }
-    },
-    nivelesConexion: {
-      handler(niveles) {
-        this.$emit('nivelesConexion', niveles)
-      },
-      immediate: true
     },
     mostrando(mostrando) {
       this.recalcularHeights();

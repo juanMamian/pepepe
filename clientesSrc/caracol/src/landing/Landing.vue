@@ -34,7 +34,7 @@
             nodoTarget.id
               ? {
                   name: 'visorNodoConocimiento',
-                  params: { idNodo: nodoTarget.id },
+                  params: {tipoBrowse: 'mapa', idBrowsed:'idNodo', idNodo: nodoTarget.id },
                 }
               : ''
           "
@@ -128,7 +128,7 @@
         </router-link>
       </div>
     </div>
-    <router-link :to="{ name: 'atlas' }" id="bigBotonAtlas" class="bigBoton">
+    <router-link :to="{ name: 'atlas', params:{tipoBrowse: 'mapa', idBrowsed: '123'} }" id="bigBotonAtlas" class="bigBoton">
       <div class="ladoTexto">
         <div class="tituloBigBoton">Atlas de conocimiento</div>
         <div class="subtituloBigBoton">

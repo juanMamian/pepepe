@@ -28,24 +28,12 @@ const router = createRouter({
     },
     { path: "/logout", name: "logoutScreen", component: LogoutScreen },
     {
-      path: "/atlas", name: "atlas", component: atlasConocimiento, children: [
+      path: "/atlas/:tipoBrowse/:idBrowsed", name: "atlas", component: atlasConocimiento, children: [
         {
-          path: "nodoConocimiento/:idNodo",
+          path: "verNodo/:idNodo",
+          name: "visorNodoConocimiento",
           component: VisorNodoConocimiento,
-          name: "visorNodoConocimiento"
-        },
-        {
-          path: "browse/nodoConocimiento/:idNodo",
-          component: BrowseNodo,
-          props: true,
-          name: "browseNodoConocimiento",
-        },
-        {
-          path: "browse/coleccion/:idColeccion",
-          component: BrowseColeccion,
-          props: true,
-          name: "browseColeccion",
-        },
+        }
       ]
     },
     {
