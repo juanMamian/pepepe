@@ -113,7 +113,7 @@ import BuscadorNodosConocimiento from "./BuscadorNodosConocimiento.vue";
 import Loading from "../utilidades/Loading.vue";
 import debounce from "debounce";
 import throttle from "lodash/throttle";
-import { fragmentoNodoConocimiento } from "./fragsAtlasConocimiento";
+import { QUERY_NODO_CONOCIMIENTO_ESTANDAR, fragmentoNodoConocimiento } from "./fragsAtlasConocimiento";
 import {
   QUERY_NODOS,
   QUERY_DATOS_USUARIO_NODOS,
@@ -151,7 +151,7 @@ export default {
   },
   apollo: {
     nodoSeleccionadoDB: {
-      query: QUERY_NODO_CONOCIMIENTO_ATLAS,
+      query: QUERY_NODO_CONOCIMIENTO_ESTANDAR,
       variables() {
         return {
           idNodo: this.idNodoSeleccionado,
