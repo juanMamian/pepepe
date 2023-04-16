@@ -33,6 +33,8 @@
       ref="diagramaArbol"
       :idsRoot="coleccionSeleccionadaNullificable.idsNodos"
       :idsRed="coleccionSeleccionadaNullificable.idsRed"
+      :idNodoSeleccionado="idNodoSeleccionado"
+      @seleccionNodo="$emit('seleccionNodo', $event)"
     ></diagrama-arbol>
   </div>
 </template>
@@ -69,6 +71,9 @@ export default {
     idColeccion: {
       type: String,
     },
+    idNodoSeleccionado:{
+      type: String,
+    }
   },
   apollo: {
     coleccionSeleccionada: {
@@ -135,6 +140,8 @@ export default {
   align-items: center;
   gap: 30px;
   padding-top:100px;
+  position: relative;
+  z-index: 1;
 }
 #iconoProgresoUsuario {
   align-self: flex-start;

@@ -48,6 +48,9 @@ export default {
     idsRed:{
       type: Array,
       default:[],
+    },
+    idNodoSeleccionado:{
+      type: String,
     }
   },
   apollo: {
@@ -82,7 +85,6 @@ export default {
           datosNodos: [],
         },
       },
-      idNodoSeleccionado: null,
       cadenaUnfold: [],
       refreshLineaHorizontal: 0,
     };
@@ -95,16 +97,15 @@ export default {
       return this.idNodoTarget && this.idsRed.includes(this.idNodoTarget);
     },
     nodoSeleccionadoNullificable() {
-      return this.idNodoSeleccionado ? this.nodoSeleccionado : null;
+      return this.$apollo?.queries?.nodoSeleccionado?.skip ? null: this.nodoSeleccionado;
     },
   },
   methods: {
     clickFondo(){
-      this.idNodoSeleccionado=null;
+      this.$emit('seleccionNodo', null);
     },
     clickEnNodo(idNodo) {
-      this.idNodoSeleccionado =
-        this.idNodoSeleccionado === idNodo ? null : idNodo;
+      this.$emit('seleccionNodo', idNodo);
     },
     scrollNodoIntoView({ elem, xCentro }) {
       this.$nextTick(() => {

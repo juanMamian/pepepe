@@ -78,7 +78,31 @@
       v-show="mostrandoOpcionesColeccion && !conectandoNodosColeccion"
       v-if="coleccionSeleccionadaNullificable"
     >
-      <slot name="botonesOpcion"> </slot>
+      <router-link
+        class="boton botonOpcion"
+        v-if="
+          coleccionSeleccionada?.id &&
+          $route.params?.tipoBrowse != 'browseColeccion'
+        "
+        :to="{
+          name: 'atlas',
+          params: {
+            tipoBrowse: 'browseColeccion',
+            idBrowsed: coleccionSeleccionada.id,
+          },
+        }"
+      >
+        <img src="@/assets/iconos/codeBranch.svg" alt="Red" />
+      </router-link>
+      <div
+        class="botonOpcion botonTexto selector"
+        id="botonConectarNodosColeccion"
+        v-if="$route.params?.tipoBrowse === 'mapa'"
+        v-show="!conectandoNodosColeccion"
+        @click.stop="$emit('setConectandoNodosColeccion', true)"
+      >
+        <img src="@/assets/iconos/plugSolid.svg" alt="Conectar" />
+      </div>
       <div
         class="botonOpcion boton"
         @click.stop="iniciarEdicionNombreColeccion"
@@ -193,15 +217,12 @@ export default {
     DiagramaArbol,
   },
   props: {
-    idColeccionInicial: {
-      type: String,
-    },
     opcionNull: {
       type: String,
     },
-    conectandoNodosColeccion:{
+    conectandoNodosColeccion: {
       type: Boolean,
-    }
+    },
   },
   apollo: {
     coleccionSeleccionada: {
@@ -431,8 +452,6 @@ export default {
             if (siguienteIndex < 0) {
               siguienteIndex = nuevoCache.yo.atlas.colecciones.length - 1;
             }
-            console.log("pasando a la coleccion " + siguienteIndex);
-            console.table(nuevoCache.yo.atlas.colecciones);
             this.idColeccionSeleccionada =
               nuevoCache.yo.atlas.colecciones[siguienteIndex].id;
           }
@@ -564,6 +583,10 @@ export default {
   watch: {
     coleccionSeleccionadaNullificable: {
       handler: function (col) {
+        if (col?.id) {
+          console.log("cambio a coleccion " + col?.id);
+        }
+
         this.$emit("coleccionSeleccionada", col);
         this.desplegandoLista = false;
         if (!col) {
@@ -572,12 +595,14 @@ export default {
       },
       immediate: true,
     },
-    idColeccionInicial: {
-      handler: function (idCol) {
-        this.idColeccionSeleccionada = idCol;
-      },
-      immediate: true,
+    "$route.path": function () {
+      this.mostrandoOpcionesColeccion = false;
     },
+  },
+  mounted() {
+    if (this.$route?.params?.tipoBrowse === "browseColeccion") {
+      this.idColeccionSeleccionada = this.$route.params.idBrowsed;
+    }
   },
 };
 </script>
@@ -689,6 +714,10 @@ export default {
 .controlColeccion {
   background-color: rgba(58, 58, 58, 0.445);
   box-shadow: 2px 2px 2px gray;
+}
+#botonConectarNodosColeccion {
+  background-color: transparent;
+  box-shadow: none;
 }
 
 .selectorColeccion {

@@ -5,39 +5,17 @@
     @mouseleave="hovered = false"
     @click="clickFuera"
   >
-    <RouterView />
+    <RouterView id="viewerNodo" />
 
     <div id="contenedorOverlays">
       <gestor-colecciones
         ref="gestorColecciones"
-        v-show="!conectandoNodosColeccion"
+        v-show="!conectandoNodosColeccion && $route?.params?.tipoBrowse!='browseNodo'"
         :opcionNull="$route.params?.tipoBrowse === 'mapa' ? 'Atlas' : ''"
         :conectandoNodosColeccion="conectandoNodosColeccion"
         @coleccionSeleccionada="coleccionSeleccionada = $event"
+        @setConectandoNodosColeccion="conectandoNodosColeccion = $event"
       >
-        <template #botonesOpcion>
-          <router-link
-            class="boton botonOpcion"
-            v-if="coleccionSeleccionada?.id"
-            :to="{
-              name: 'atlas',
-              params: {
-                tipoBrowse: 'browseColeccion',
-                idBrowsed: coleccionSeleccionada.id,
-              },
-            }"
-          >
-            <img src="@/assets/iconos/codeBranch.svg" alt="Red" />
-          </router-link>
-          <div
-            class="botonOpcion botonTexto selector"
-            id="botonConectarNodosColeccion"
-            v-show="!conectandoNodosColeccion"
-            @click.stop="conectandoNodosColeccion = true"
-          >
-            <img src="@/assets/iconos/plugSolid.svg" alt="Conectar" />
-          </div>
-        </template>
       </gestor-colecciones>
 
       <div
@@ -476,6 +454,12 @@ export default {
       if (!col || !prev || col.id != prev.id) {
         this.idNodoSeleccionado = null;
       }
+      if (this.$route.params?.tipoBrowse === "browseColeccion" && col?.id) {
+        this.$router.push({
+          name: "atlas",
+          params: { idBrowsed: col.id, tipoBrowse: "browseColeccion" },
+        });
+      }
     },
   },
 };
@@ -515,7 +499,10 @@ export default {
 <style scoped>
 .atlasConocimiento {
   position: relative;
-  overflow-x: hidden;
+}
+
+#viewerNodo{
+  height: 100%;
 }
 
 #contenedorOverlays {
@@ -524,7 +511,7 @@ export default {
   width: 100%;
   top: 0px;
   left: 0px;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -580,10 +567,6 @@ export default {
   z-index: 1;
 }
 
-#botonConectarNodosColeccion {
-  background-color: transparent;
-  box-shadow: none;
-}
 
 #botonToggleNodoColeccion {
   pointer-events: all;
