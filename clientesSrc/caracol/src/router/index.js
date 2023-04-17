@@ -16,27 +16,24 @@ import VentanaEventoPersonal from '../components/utilidades/VentanaEventoPersona
 import Landing from "../landing/Landing.vue"
 import LoginScreen from "../landing/LoginScreen.vue"
 import LogoutScreen from "../landing/LogoutScreen.vue"
+import BrowseNodo from "../components/atlasConocimiento/browse/BrowseNodo.vue"
+import BrowseColeccion from "../components/atlasConocimiento/browse/BrowseColeccion.vue"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path:"/", name: "home", component: Landing, children:[{path: "login", name: "loginScreen", component: LoginScreen}],
+      path: "/", name: "home", component: Landing, children: [{ path: "login", name: "loginScreen", component: LoginScreen }],
 
     },
-    {path: "/logout", name: "logoutScreen", component: LogoutScreen},
+    { path: "/logout", name: "logoutScreen", component: LogoutScreen },
     {
-      path: "/atlas", name: "atlas", component: atlasConocimiento, children: [
+      path: "/atlas/:tipoBrowse/:idBrowsed", name: "atlas", component: atlasConocimiento, children: [
         {
-          path: "nodoConocimiento/:idNodo",
+          path: "verNodo/:idNodo",
+          name: "visorNodoConocimiento",
           component: VisorNodoConocimiento,
-          name: "visorNodoConocimiento"
-        },
-        {
-          path: "coleccion/:idColeccion",
-          name: "coleccionNodosConocimiento"
         }
-       
       ]
     },
     {

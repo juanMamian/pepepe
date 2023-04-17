@@ -6,37 +6,32 @@
         :key="idNodo"
         :idNodo="idNodo"
         :idNodoSeleccionado="idNodoSeleccionado"
-        :cadenaUnfold="cadenaUnfold"
         :nivelArbol="0"
         :refreshLineaHorizontal="refreshLineaHorizontal"
-        @updateCadenaUnfold="updateCadenaUnfold"
         @scrollMe="scrollNodoIntoView"
         @clickEnNodo="clickEnNodo"
       >
       </nodo-conocimiento-vista-arbol>
     </div>
+    <visor-nodo-conocimiento :idNodo="idNodoVisor" v-if="idNodoVisor">
 
-    <teleport to="body">
-      <controles-nodo
-        v-show="visible"
-        :yo="yo"
-        :idNodoSeleccionado="idNodoSeleccionado"
-        :nodoTargetRelevante="nodoTargetRelevante"
-      ></controles-nodo>
-    </teleport>
+    </visor-nodo-conocimiento>
+
   </div>
 </template>
 <script>
-import { gql } from "@apollo/client/core";
 import NodoConocimientoVistaArbol from "./NodoConocimientoVistaArbol.vue";
 import ControlesNodo from "./controlesNodo.vue";
+import VisorNodoConocimiento from "./visorNodo/VisorNodoConocimiento.vue"
 import { QUERY_DATOS_USUARIO_NODOS, QUERY_NODO_CONOCIMIENTO_ESTANDAR } from "./fragsAtlasConocimiento";
+
 
 export default {
   name: "DiagramaArbol",
   components: {
     NodoConocimientoVistaArbol,
     ControlesNodo,
+    VisorNodoConocimiento
   },
   props: {
     visible: {
@@ -50,6 +45,9 @@ export default {
     idsRed:{
       type: Array,
       default:[],
+    },
+    idNodoSeleccionado:{
+      type: String,
     }
   },
   apollo: {
@@ -78,13 +76,12 @@ export default {
   },
   data() {
     return {
+      idNodoVisor: null,
       yo: {
         atlas: {
           datosNodos: [],
         },
       },
-      idNodoSeleccionado: null,
-      cadenaUnfold: [],
       refreshLineaHorizontal: 0,
     };
   },
@@ -96,16 +93,15 @@ export default {
       return this.idNodoTarget && this.idsRed.includes(this.idNodoTarget);
     },
     nodoSeleccionadoNullificable() {
-      return this.idNodoSeleccionado ? this.nodoSeleccionado : null;
+      return this.$apollo?.queries?.nodoSeleccionado?.skip ? null: this.nodoSeleccionado;
     },
   },
   methods: {
     clickFondo(){
-      this.idNodoSeleccionado=null;
+      this.$emit('seleccionNodo', null);
     },
     clickEnNodo(idNodo) {
-      this.idNodoSeleccionado =
-        this.idNodoSeleccionado === idNodo ? null : idNodo;
+      this.$emit('seleccionNodo', idNodo);
     },
     scrollNodoIntoView({ elem, xCentro }) {
       this.$nextTick(() => {
@@ -115,9 +111,6 @@ export default {
         let scroll = nuevoXCentro - xCentro;
         this.$refs.elDiagrama.scrollLeft += nuevoXCentro - xCentro;
       });
-    },
-    updateCadenaUnfold(nuevaCadena) {
-      this.cadenaUnfold = nuevaCadena;
     },
   },
 };

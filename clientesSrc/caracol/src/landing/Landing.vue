@@ -34,7 +34,7 @@
             nodoTarget.id
               ? {
                   name: 'visorNodoConocimiento',
-                  params: { idNodo: nodoTarget.id },
+                  params: {tipoBrowse: 'mapa', idBrowsed:'idNodo', idNodo: nodoTarget.id },
                 }
               : ''
           "
@@ -64,7 +64,7 @@
             nodoOlvidado?.id
               ? {
                   name: 'visorNodoConocimiento',
-                  params: { idNodo: nodoOlvidado.id },
+                  params: { tipoBrowse: 'mapa', idBrowsed: nodoOlvidado.id, idNodo: nodoOlvidado.id },
                 }
               : ''
           "
@@ -94,11 +94,12 @@
           </div>
         </router-link>
         <router-link
+          v-if="coleccionMostrada"
           :to="
             coleccionMostrada?.id
               ? {
-                  name: 'coleccionNodosConocimiento',
-                  params: { idColeccion: coleccionMostrada.id },
+                  name: 'atlas',
+                  params: { tipoBrowse: 'browseColeccion', idBrowsed: coleccionMostrada.id },
                 }
               : ''
           "
@@ -127,7 +128,7 @@
         </router-link>
       </div>
     </div>
-    <router-link :to="{ name: 'atlas' }" id="bigBotonAtlas" class="bigBoton">
+    <router-link :to="{ name: 'atlas', params:{tipoBrowse: 'mapa', idBrowsed: '123'} }" id="bigBotonAtlas" class="bigBoton">
       <div class="ladoTexto">
         <div class="tituloBigBoton">Atlas de conocimiento</div>
         <div class="subtituloBigBoton">

@@ -28,8 +28,17 @@
             @click="guardarNuevoNombre"
           />
         </div>
-        <p id="nombre" v-show="!editandoNombre && !$apollo.queries.esteNodo.loading">{{ esteNodo.nombre }}</p>
-        <loading id="loadingInfoNodo" texto="Cargando información..." v-show="$apollo.queries.esteNodo.loading"/>
+        <p
+          id="nombre"
+          v-show="!editandoNombre && !$apollo.queries.esteNodo.loading"
+        >
+          {{ esteNodo.nombre }}
+        </p>
+        <loading
+          id="loadingInfoNodo"
+          texto="Cargando información..."
+          v-show="$apollo.queries.esteNodo.loading"
+        />
         <input
           type="text"
           id="inputNuevoNombre"
@@ -484,7 +493,7 @@
 </template>
 
 <script>
-import {gql} from "@apollo/client/core";
+import { gql } from "@apollo/client/core";
 import Loading from "../../utilidades/Loading.vue";
 import IconoPersonaAutonomo from "../../usuario/IconoPersonaAutonomo.vue";
 import axios from "axios";
@@ -545,7 +554,7 @@ export default {
         };
       },
       update({ nodo }) {
-        var nuevoNodo=JSON.parse(JSON.stringify(nodo));
+        var nuevoNodo = JSON.parse(JSON.stringify(nodo));
         nuevoNodo.secciones.forEach((seccion) => {
           seccion.subiendoArchivo = false;
           seccion.editandose = false;
@@ -555,6 +564,9 @@ export default {
           });
         });
         return nuevoNodo;
+      },
+      skip() {
+        return !this.$route?.params?.idNodo;
       },
     },
   },
@@ -1415,7 +1427,7 @@ export default {
   height: 100px;
   width: 100%;
 }
-#loadingInfoNodo{
+#loadingInfoNodo {
   margin: 10px auto;
 }
 #nombre {

@@ -375,13 +375,16 @@ export default {
       query: QUERY_NODO,
       variables() {
         return {
-          idNodo: this.$route.params.idNodo,
+          idNodo: this.idNodo
         };
       },
       update({ nodo }) {
         document.title = nodo.nombre;
         return nodo;
       },
+      skip(){
+        return !this.idNodo
+      }
     },
   },
   data() {
@@ -758,7 +761,6 @@ export default {
         console.log(`Caracteres ilegales`);
         return;
       }
-      console.log(`guardando nuevo nombre`);
       this.enviandoNuevoNombre = true;
       this.$apollo
         .mutate({
@@ -778,7 +780,6 @@ export default {
           },
         })
         .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
           this.enviandoNuevoNombre = false;
           this.editandoNombre = false;
         })
@@ -843,6 +844,9 @@ export default {
     },
   },
   computed: {
+    idNodo(){
+      return this.$route?.params?.idNodo;
+    },
     indexSeccionSeleccionada() {
       if (!this.seccionSeleccionada) {
         return null;

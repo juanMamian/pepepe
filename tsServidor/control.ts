@@ -106,8 +106,11 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
     }
 
     var nodosRelevantes = todosNodos.filter(n => idsNodosRelevantes.includes(n.id));
+    setFuerzaColisionNodo(nodo, nodosRelevantes);
+}
 
-    const rangoColision = 400; //Rango de acción de colisión
+function setFuerzaColisionNodo(nodo, nodosRelevantes) {
+    const rangoColision = 600; //Rango de acción de colisión
     const colisionMaxima = 500; //Colision maxima generada en distancia 0
     const factorFuerza = colisionMaxima / Math.pow(rangoColision, 2);
 
@@ -139,7 +142,10 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
         let fuerzaColision = factorFuerza * Math.pow(rangoColision - vectorDistancia.fuerza, 2);
 
         if (!nodo.idsNodosConectados.includes(nodoR.id)) {//Colisión con un nodo no conectado (Mayor colisión)
-            fuerzaColision = fuerzaColision * 1.1;
+            fuerzaColision = fuerzaColision * 1.3;
+            if(nodo.vinculos.map(v=>v.idRef).some(id=>nodoR.vinculos.map(v=>v.idRef).includes(id))){//Tampoco tienen un vínculo en común.
+                fuerzaColision=fuerzaColision*1.3;
+            }
         }
 
 
@@ -157,6 +163,7 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
     nodo.fuerzaColision = fuerzaPolar;
 }
 
+
 function setFuerzaCentroMasa(nodo, todosNodos) {
 
     if (nodoDeInteres === nodo.nombre) {
@@ -164,8 +171,13 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
         console.log(`Nodo autoCoords: ${nodo.autoCoords}`);
     }
     var nodosRelevantes = todosNodos.filter(n => nodo.idsNodosConectados.includes(n.id));
+    setFuerzaCentroMasaNodo(nodo, nodosRelevantes);
 
-    const distanciaUmbral = 400;
+}
+
+function setFuerzaCentroMasaNodo(nodo, nodosRelevantes){
+
+    const distanciaUmbral = 400; 
     const factorFuerza = 100 / Math.pow(distanciaUmbral, 2);
 
     var coordsFuerzaTotal = {
@@ -240,8 +252,7 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
     if (nodoDeInteres === nodo.nombre) {
         console.log(`Fuerza centro masa queda: ${JSON.stringify(nodo.fuerzaCentroMasa)}`);
     }
-}
-
+};
 
 function filtrarVinculosHuerfanos(todosNodos) {
     todosNodos.forEach(nodo => {
@@ -295,8 +306,8 @@ async function uploadNodos(todosNodos) {
     todosNodos.forEach(async function (nodo) {
         if (nodo.nombre === nodoDeInteres || !nodoDeInteres) {
             try {
-                nodo.fuerzaColision.fuerza=Math.round(nodo.fuerzaColision.fuerza);
-                nodo.fuerzaCentroMasa.fuerza=Math.round(nodo.fuerzaCentroMasa.fuerza);
+                nodo.fuerzaColision.fuerza = Math.round(nodo.fuerzaColision.fuerza);
+                nodo.fuerzaCentroMasa.fuerza = Math.round(nodo.fuerzaCentroMasa.fuerza);
                 nodo.posicionadoByFuerzas = true;
                 await nodo.save();
             }

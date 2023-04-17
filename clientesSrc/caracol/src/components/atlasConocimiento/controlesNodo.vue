@@ -14,7 +14,10 @@
             alt="Dependencia"
           />
           <Loading v-show="creandoDependencia" />
-          <span> Creando dependencia </span>
+          <span> Conectando dependencia </span>
+          <div class="boton" @click.stop="$emit('cancelarCreandoDependencia')">
+            <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
+          </div>
         </div>
 
         <div class="subanuncio"></div>
@@ -39,14 +42,7 @@
       </div>
     </div>
 
-    <div
-      id="nombre"
-      ref="nombre"
-      @touchstart.stop="inicioTouch"
-      @touchmove.stop="movimientoTouch"
-      @touchend.stop="finTouch"
-      @click="toggleDespliege"
-    >
+    <div id="nombre" ref="nombre" @click="toggleDespliege">
       <img
         v-if="elNodo && elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
@@ -60,214 +56,262 @@
       id="zonaControles"
       @click=""
       v-if="elNodo && !$apollo.queries.elNodoDB.loading"
+      @mouseenter="hovered = true"
+      @mouseleave="hovered = false"
+      @touchstart.stop="inicioTouch"
+      @touchmove.stop="movimientoTouch"
+      @touchend.stop="finTouch"
     >
-      <div class="filaControles" v-show="filaMostrada === 2">
-        <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
-          <img src="@/assets/iconos/exclamationCircle.svg" alt="Alerta" />
-          ¡Tienes nodos por completar que son necesarios para este!
-        </div>
-        <div class="bloqueControl" style="">
-          <div
-            class="botonTexto selector botonControl"
-            :class="{
-              deshabilitado: nodoAprendido,
-              checked: nodoFresco,
-            }"
-            @click="marcarEstudiado"
-            @dblclick="marcarAprendido"
-            style="
-              align-self: normal;
-              border-top-right-radius: 0px;
-              border-bottom-right-radius: 0px;
-              flex-grow: 1;
-              flex-shrink: 1;
-            "
-          >
-            <loading v-show="settingDateEstudiado" />
-
+      <transition-group
+        name="pan"
+        @after-leave="recalcularHeights"
+        tag="div"
+        id="transicionFilas"
+      >
+        <div
+          class="filaControles"
+          :class="[direccionTransicion]"
+          key="fila1"
+          v-show="filaMostrada === 2"
+        >
+          <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
             <img
-              src="@/assets/iconos/bookSolid.svg"
-              v-show="!settingDateEstudiado"
-              alt="Repaso"
+              src="@/assets/iconos/lockSolid.svg"
+              alt="Bloqueo"
+              style="height: 15px"
             />
-
-            Estudiado
+            ¡Tienes nodos por completar que son necesarios para este!
           </div>
-          <div
-            class="botonTexto botonControl"
-            style="
-              border-top-left-radius: 0px;
-              border-bottom-left-radius: 0px;
-              align-self: normal;
-            "
-            v-show="
-              datoUsuarioEsteNodo &&
-              datoUsuarioEsteNodo.estudiado &&
-              datoUsuarioEsteNodo.diasRepaso &&
-              !nodoAprendido
-            "
-            @click.stop="
-              mostrando = mostrando === 'tiempoRepaso' ? '' : 'tiempoRepaso'
-            "
-          >
-            <pie-progreso
-              :mostrarNumero="false"
-              :color-progreso="'#3f7d20'"
-              :color-fondo="'transparent'"
-              :progreso="porcentajeRepaso"
-              :size="40"
+          <div class="bloqueControl" style="">
+            <div
+              class="botonTexto selector botonControl"
+              :class="{
+                deshabilitado: nodoAprendido,
+                checked: nodoFresco,
+              }"
+              @click="marcarEstudiado"
+              @dblclick="marcarAprendido"
+              style="
+                align-self: normal;
+                border-top-right-radius: 0px;
+                border-bottom-right-radius: 0px;
+                flex-grow: 1;
+                flex-shrink: 1;
+              "
             >
-              <img src="@/assets/iconos/stopwatchSolid.svg" alt="Repaso" />
-            </pie-progreso>
+              <loading v-show="settingDateEstudiado" />
 
-            {{ datoUsuarioEsteNodo ? datoUsuarioEsteNodo.diasRepaso : "" }}
-          </div>
-          <div
-            class="botonTexto selector botonControl"
-            id="botonMarcarAprendido"
-            :class="{ checked: nodoAprendido }"
-            style="width: 100%"
-            @click="marcarAprendido"
-          >
-            <loading v-show="settingEstadoAprendido" />
-            <img
-              src="@/assets/iconos/circlecheckSolid.svg"
-              v-show="!settingEstadoAprendido"
-              alt="Check"
-            />
+              <img
+                src="@/assets/iconos/bookSolid.svg"
+                v-show="!settingDateEstudiado"
+                alt="Repaso"
+              />
 
-            {{ "Aprendido" }}
-          </div>
-        </div>
-      </div>
+              Estudiado
+            </div>
+            <div
+              class="botonTexto botonControl"
+              style="
+                border-top-left-radius: 0px;
+                border-bottom-left-radius: 0px;
+                align-self: normal;
+              "
+              v-show="
+                datoUsuarioEsteNodo &&
+                datoUsuarioEsteNodo.estudiado &&
+                datoUsuarioEsteNodo.diasRepaso &&
+                !nodoAprendido
+              "
+              @click.stop="
+                mostrando = mostrando === 'tiempoRepaso' ? '' : 'tiempoRepaso'
+              "
+            >
+              <pie-progreso
+                :mostrarNumero="false"
+                :color-progreso="'#3f7d20'"
+                :color-fondo="'transparent'"
+                :progreso="porcentajeRepaso"
+                :size="40"
+              >
+                <img src="@/assets/iconos/stopwatchSolid.svg" alt="Repaso" />
+              </pie-progreso>
 
-      <div class="filaControles" v-show="filaMostrada === 3">
-        <div class="bloqueControl" id="bloqueControlDependencias">
-          <div
-            class="botonTexto selector botonControl"
-            :class="{
-              activo: mostrando === 'dependenciasNodo',
-              deshabilitado: dependenciasNodo.length === 0,
-            }"
-            @click="
-              mostrando =
-                mostrando === 'dependenciasNodo' ? null : 'dependenciasNodo'
-            "
-          >
-            <img src="@/assets/iconos/codeBranch.svg" alt="Repaso" />
-            Dependencias
-          </div>
-          <div
-            class="botonTexto"
-            :class="{ deshabilitado: nodoCreandoDependencia }"
-            id="botonCrearDependenciaNodo"
-            v-if="usuarioSuperadministrador || usuarioExpertoNodo"
-            @click.stop="iniciarCrearDependenciaNodo"
-          >
-            <img src="@/assets/iconos/plusCircle.svg" alt="Nuevo" />
-          </div>
-        </div>
+              {{ datoUsuarioEsteNodo ? datoUsuarioEsteNodo.diasRepaso : "" }}
+            </div>
+            <div
+              class="botonTexto selector botonControl"
+              id="botonMarcarAprendido"
+              :class="{ checked: nodoAprendido }"
+              style="width: 100%"
+              @click="marcarAprendido"
+            >
+              <loading v-show="settingEstadoAprendido" />
+              <img
+                src="@/assets/iconos/circlecheckSolid.svg"
+                v-show="!settingEstadoAprendido"
+                alt="Check"
+              />
 
-        <div class="bloqueControl" v-if="usuarioSuperadministrador">
-          <Loading v-show="eliminandose" />
-          <div
-            class="boton botonControl"
-            v-show="!eliminandose"
-            @click="eliminarNodo"
-          >
-            <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
+              {{ "Aprendido" }}
+            </div>
           </div>
         </div>
 
         <div
-          class="contenidoMostrado"
-          id="zonaGestionDependencias"
-          v-show="mostrando === 'dependenciasNodo'"
+          class="filaControles"
+          :class="[direccionTransicion]"
+          key="fila3"
+          v-show="filaMostrada === 3"
         >
-          <div id="listaDependencias" v-if="elNodo && elNodo.vinculos">
+          <div class="bloqueControl" id="bloqueControlDependencias">
             <div
-              class="dependencia"
-              v-for="vinculo of dependenciasNodo"
-              :key="vinculo.id"
+              class="botonTexto selector botonControl"
+              :class="{
+                activo: mostrando === 'dependenciasNodo',
+                deshabilitado: dependenciasNodo.length === 0,
+              }"
+              @click="
+                mostrando =
+                  mostrando === 'dependenciasNodo' ? null : 'dependenciasNodo'
+              "
             >
-              <NodoConocimientoVistaLista :idNodo="vinculo.idRef" :yo="yo" />
+              <img src="@/assets/iconos/codeBranch.svg" alt="Repaso" />
+              Dependencias
+            </div>
+            <div
+              class="botonTexto"
+              :class="{ deshabilitado: nodoCreandoDependencia }"
+              id="botonCrearDependenciaNodo"
+              v-if="usuarioSuperadministrador || usuarioExpertoNodo"
+              @click.stop="iniciarCrearDependenciaNodo"
+            >
+              <img src="@/assets/iconos/plugSolid.svg" alt="Nuevo" />
+            </div>
+            <div class="botonTexto" @click="crearNodoDependencia">
+              <img src="@/assets/iconos/plusCircle.svg" alt="Crear" />
+            </div>
+          </div>
+
+          <div class="bloqueControl" v-if="usuarioSuperadministrador">
+            <Loading v-show="eliminandose" />
+            <div
+              class="boton botonControl"
+              v-show="!eliminandose"
+              @click="eliminarNodo"
+            >
+              <img src="@/assets/iconos/trash.svg" alt="Eliminar" />
+            </div>
+          </div>
+
+          <div
+            class="contenidoMostrado"
+            id="zonaGestionDependencias"
+            v-show="mostrando === 'dependenciasNodo'"
+          >
+            <div id="listaDependencias" v-if="elNodo && elNodo.vinculos">
               <div
-                v-if="usuarioExperto"
-                class="botonTexto botonEliminarDependencia"
-                :class="{ deshabilitado: idVinculoEliminando === vinculo.id }"
-                @click.stop="eliminarVinculo(vinculo)"
+                class="dependencia"
+                v-for="vinculo of dependenciasNodo"
+                :key="vinculo.id"
               >
-                <Loading v-show="idVinculoEliminando === vinculo.id" />
-                <img
-                  v-show="idVinculoEliminando != vinculo.id"
-                  src="@/assets/iconos/equis.svg"
-                  alt="Eliminar"
+                <nodo-conocimiento-vista-lista
+                  :idNodo="vinculo.idRef"
+                  :yo="yo"
                 />
+                <div
+                  v-if="usuarioExperto || usuarioSuperadministrador"
+                  class="botonTexto botonEliminarDependencia"
+                  :class="{ deshabilitado: idVinculoEliminando === vinculo.id }"
+                  @click.stop="eliminarVinculo(vinculo)"
+                >
+                  <Loading v-show="idVinculoEliminando === vinculo.id" />
+                  <img
+                    v-show="idVinculoEliminando != vinculo.id"
+                    src="@/assets/iconos/equis.svg"
+                    alt="Eliminar"
+                  />
+                </div>
+              </div>
+              <div
+                class="anuncioZonaVacia"
+                v-show="dependenciasNodo.length === 0"
+              >
+                Este nodo no tiene dependencias
               </div>
             </div>
-            <div
-              class="anuncioZonaVacia"
-              v-show="dependenciasNodo.length === 0"
-            >
-              Este nodo no tiene dependencias
-            </div>
           </div>
         </div>
-      </div>
 
-      <div class="filaControles" v-show="filaMostrada === 1">
-        <div id="zonaDescripcionNodo">
-          <div id="descripcionNodo">
-            {{ elNodo.descripcion || "" }}
-            <div
-              class="anuncioZonaVacia"
-              v-if="!elNodo?.descripcion?.length > 0"
+        <div
+          class="filaControles"
+          :class="[direccionTransicion]"
+          key="fila1"
+          v-show="filaMostrada === 1"
+        >
+          <div id="zonaDescripcionNodo">
+            <div id="descripcionNodo">
+              {{ elNodo.descripcion || "" }}
+              <div
+                class="anuncioZonaVacia"
+                v-if="!elNodo?.descripcion?.length > 0"
+              >
+                Aún no hay descripción
+              </div>
+            </div>
+          </div>
+          <div class="bloqueControl">
+            <router-link
+              v-if="elNodo?.id"
+              :to="{
+                name: 'visorNodoConocimiento',
+                params: { idNodo: elNodo.id },
+              }"
             >
-              Aún no hay descripción
+              <div class="botonTexto">
+                <img src="@/assets/iconos/expandSolid.svg" alt="Expandir" />
+                Visitar
+              </div>
+            </router-link>
+          </div>
+          <div class="bloqueControl" id="bloqueControlBrowse" v-if="elNodo?.id">
+            <router-link
+              :to="{
+                name: 'atlas',
+                params: { tipoBrowse: 'browseNodo', idBrowsed: elNodo.id },
+              }"
+              class="botonTexto"
+            >
+              <img src="@/assets/iconos/codeBranch.svg" alt="Ramas" />
+              Explorar
+            </router-link>
+          </div>
+          <div class="bloqueControl" id="bloqueControlTarget">
+            <div
+              class="botonTexto selector"
+              :class="{ activo: elNodo.id === idNodoTarget }"
+              @click="setNodoTarget(elNodo.id)"
+            >
+              <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
+              En la mira
+            </div>
+            <div
+              class="botonTexto"
+              v-show="elNodo.id === idNodoTarget"
+              style="align-self: stretch"
+              @click="setNodoTarget(null)"
+            >
+              <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
             </div>
           </div>
         </div>
-        <div class="bloqueControl">
-          <router-link
-            v-if="elNodo?.id"
-            :to="{
-              name: 'visorNodoConocimiento',
-              params: { idNodo: elNodo.id },
-            }"
-          >
-            <div class="botonTexto">
-              <img src="@/assets/iconos/expandSolid.svg" alt="Expandir" />
-              Visitar
-            </div>
-          </router-link>
-        </div>
-        <div class="bloqueControl" id="bloqueControlTarget">
-          <div
-            class="botonTexto selector"
-            :class="{ activo: elNodo.id === idNodoTarget }"
-            @click="setNodoTarget(elNodo.id)"
-          >
-            <img src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" />
-            En la mira
-          </div>
-          <div
-            class="botonTexto"
-            v-show="elNodo.id === idNodoTarget"
-            style="align-self: stretch"
-            @click="setNodoTarget(null)"
-          >
-            <img src="@/assets/iconos/equis.svg" alt="Cancelar" />
-          </div>
-        </div>
-      </div>
-
+      </transition-group>
       <div id="zonaSelectorFilas">
         <div
           class="selectorFila boton selector"
           :class="{ activo: filaMostrada === index }"
           v-for="index of cantidadFilas"
           :key="'selectorFila' + index"
-          @click.stop="filaMostrada = index"
+          @click.stop="setFilaMostrada(index)"
         ></div>
       </div>
     </div>
@@ -322,9 +366,9 @@ import { fragmentoDatoNodoConocimiento } from './fragsAtlasConocimiento';
 import PieProgreso from '../utilidades/PieProgreso.vue';
 import NodoConocimientoVistaLista from './NodoConocimientoVistaLista.vue';
 import Loading from '../utilidades/Loading.vue';
+import throttle from 'lodash/throttle';
 
 export default {
-
   props: {
     nodoCreandoDependencia: {
       type: Object,
@@ -333,8 +377,12 @@ export default {
       type: Boolean,
       default: true,
     },
-    idNodoSeleccionado:{
+    idNodoSeleccionado: {
       type: String,
+    },
+    emitOpenNodo:{// Para dar la órden de emitir el evento de open nodo en vez de hacer la operación default que es navegar a la ruta del visor de nodos.
+      type: Boolean,
+      default: false,
     }
   },
   apollo: {
@@ -342,17 +390,17 @@ export default {
       query: QUERY_DATOS_USUARIO_NODOS,
       fetchPolicy: "cache-first"
     },
-    elNodoDB:{
+    elNodoDB: {
       query: QUERY_NODO_CONOCIMIENTO_ESTANDAR,
-      variables(){
+      variables() {
         return {
           idNodo: this.idNodoSeleccionado,
         }
       },
-      skip(){
+      skip() {
         return !this.idNodoSeleccionado;
       },
-      update({nodo}){
+      update({ nodo }) {
         return nodo
       },
       fetchPolicy: "cache-first"
@@ -367,9 +415,13 @@ export default {
   name: "ControlesNodo",
   data() {
     return {
-      elNodoDB:{
-        vinculos:[],
-        expertos:[],
+      creandoNodoUnder:false,
+      nodoTarget:null,
+      hovered:false,
+      direccionTransicion: 'normal',
+      elNodoDB: {
+        vinculos: [],
+        expertos: [],
       },
 
       yo: {
@@ -396,19 +448,21 @@ export default {
       guardandoDiasRepaso: false,
       settingEstadoAprendido: false,
 
-      nivelesConexion: 0,
 
       idVinculoEliminando: null,
       creandoDependencia: false,
 
       startTouchTargetX: null,
+
+      intervaloEventoWheel: 400,
+      lastEventoWheel:0,
     };
   },
   computed: {
-    elNodo(){
-    if(!this.idNodoSeleccionado){
-      return null
-    }
+    elNodo() {
+      if (!this.idNodoSeleccionado) {
+        return null
+      }
       return this.elNodoDB;
     },
     idNodoTarget() {
@@ -440,22 +494,6 @@ export default {
         transform: `translate(-50%, -${translation}px)`,
       };
       return estilo;
-    },
-    posSignaler() {
-
-
-      let step = 0;
-      if (this.nivelesConexion != 0) {
-        step = 30;
-      }
-
-      if (this.nivelesConexion < 0) {
-        step = -step;
-      }
-
-      return {
-        transform: `translateX(calc(-50% + ${step}px))`,
-      }
     },
     datoUsuarioEsteNodo() {
       if (!this.elNodo || !this.yo?.atlas?.datosNodos) {
@@ -559,6 +597,59 @@ export default {
     }
   },
   methods: {
+    crearNodoDependencia(){
+      console.log("creando nodo dependencia");
+      if(!this.usuarioExperto && !this.usuarioSuperadministrador){
+        console.log("No autorizado");
+        return;
+      }
+
+        this.creandoNodoUnder=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodoTarget: ID!){
+            crearNodoConocimientoUnderNodo(idNodoTarget: $idNodoTarget){
+              id
+              vinculos{
+                id
+                idRef
+                tipo
+                rol
+              }
+              autoCoords{
+                x
+                y
+              }
+            }
+          }
+        `,
+        variables:{
+          idNodoTarget: this.elNodo.id,
+        }
+      }).then(({data: {crearNodoConocimientoUnderNodo}})=>{
+        this.creandoNodoUnder=false;
+        console.log("creado nodo " + crearNodoConocimientoUnderNodo[1].id);
+      }).catch((error)=>{
+        console.log("Error: " + error);
+        this.creandoNodoUnder=false;
+      })
+    },
+    emitirOpenNodo(e){
+      console.log("Emitiendo el open nodo");
+      this.$emit('openNodoCaptured', this.elNodo.id);
+      e.preventDefault();
+
+    },
+    setFilaMostrada(index) {
+      if (this.filaMostrada < index || this.filaMostrada === 1) {
+        this.direccionTransicion = 'left';
+      }
+      else {
+        this.direccionTransicion = 'right'
+      }
+      this.filaMostrada = index;
+
+    },
     setNodoTarget(nuevoIdNodoTarget = this.idNodo) {
       const QUERY_NODO_TARGET = gql`
           query{
@@ -596,11 +687,11 @@ export default {
             setNodoAtlasTarget(idNodo:$idNodo)
           }
         `,
-        variables:{
+        variables: {
           idNodo: nuevoIdNodoTarget
         }
 
-      }).catch((error)=>{
+      }).catch((error) => {
         console.log(`Error sincronizando nodo target: ${error}`);
       })
     },
@@ -626,21 +717,25 @@ export default {
     movimientoTouch(e) {
       let minMov = 60;
       if (this.touchStartX) {
-
         let mov = e.touches[0].clientX - this.touchStartX;
         console.log(`mov de ${mov}`);
         if (Math.abs(mov) > minMov) {
           let delta = -mov / Math.abs(mov);
-          this.filaMostrada += delta;
+          this.stepFilaMostrada(delta);
+          this.touchStartX = null;
+        }
+      }
+    },
+    stepFilaMostrada(step){
+          this.direccionTransicion = step > 0 ? 'left' : 'right'
+          this.filaMostrada += step;
           if (this.filaMostrada > this.cantidadFilas) {
             this.filaMostrada = 1;
           }
           if (this.filaMostrada < 1) {
             this.filaMostrada = this.cantidadFilas;
           }
-          this.touchStartX = null;
-        }
-      }
+
     },
     finTouch() {
       this.touchStartX = null;
@@ -663,7 +758,16 @@ export default {
         .mutate({
           mutation: gql`
             mutation ($idNodo: ID!) {
-              eliminarNodo(idNodo: $idNodo)
+              eliminarNodo(idNodo: $idNodo){
+                id
+                vinculos{
+                  id
+                  idRef
+                  tipo
+                  rol
+                }
+
+              }
             }
           `,
           variables: {
@@ -671,29 +775,8 @@ export default {
           },
         })
         .then(({ data: { eliminarNodo } }) => {
+          console.log(eliminarNodo.length + " nodos afectados por la eliminación de un nodo");
           this.eliminandose = false;
-          if (!eliminarNodo) {
-            console.log(`Nodo no fue eliminado`);
-            return;
-          }
-          const store = this.$apollo.provider.defaultClient;
-          const cache = store.readQuery({
-            query: QUERY_NODOS,
-          });
-          var nuevoCache = JSON.parse(JSON.stringify(cache));
-          const indexN = nuevoCache.todosNodos.findIndex(
-            (n) => n.id == idNodo
-          );
-
-          if (indexN === -1) {
-            console.log(`el nodo no estaba presente`);
-            return;
-          }
-          nuevoCache.todosNodos.splice(indexN, 1);
-          store.writeQuery({
-            query: QUERY_NODOS,
-            data: nuevoCache,
-          });
           this.$emit("nodoEliminado", idNodo);
 
         })
@@ -702,13 +785,13 @@ export default {
           console.log(`Error eliminando nodo. : ${error}`);
         })
     },
-    crearDependenciaNodo(nodoSource) {
-      if (!nodoSource || !this.elNodo) {
+    crearDependenciaNodo(idNodoSource) {
+      if (!idNodoSource || !this.elNodo) {
         return;
       }
       let nodoTarget = this.elNodo;
 
-      console.log(`Mutando que ${nodoSource.nombre} es dependencia de ${nodoTarget.nombre}`);
+      console.log(`Mutando que ${idNodoSource} es dependencia de ${nodoTarget.nombre}`);
 
       this.creandoDependencia = true;
       this.$apollo.mutate({
@@ -729,7 +812,7 @@ export default {
             `,
         variables: {
           tipo: "continuacion",
-          idSource: nodoSource.id,
+          idSource: idNodoSource,
           idTarget: nodoTarget.id
         }
       }).then(() => {
@@ -945,8 +1028,24 @@ export default {
       if (!this.elNodo) {
         return;
       }
-      this.$emit('iniciarCrearDependenciaNodo');
+      this.$emit('iniciarCrearDependenciaNodo', this.elNodo);
     },
+    zoomWheel(e) {
+      if (!this.hovered) {
+        return;
+      }
+      e.preventDefault();
+
+      if(e.timeStamp - this.lastEventoWheel < this.intervaloEventoWheel){
+        return;
+      }
+
+      let direccionScroll = e.deltaY;
+      let delta = direccionScroll / Math.abs(direccionScroll);
+      this.stepFilaMostrada(delta);
+      this.lastEventoWheel=e.timeStamp;
+      return true;
+    }
   },
   watch: {
     elNodo(nodo) {
@@ -959,7 +1058,6 @@ export default {
         this.mostrando = '';
         this.heightNombre = 0;
         this.heigthAll = 0;
-        this.nivelesConexion = 0;
         this.$emit("cancelarCreandoDependencia");
       }
     },
@@ -968,16 +1066,7 @@ export default {
         this.diasRepaso = datos.diasRepaso || 0;
       }
     },
-    nivelesConexion: {
-      handler(niveles) {
-        this.$emit('nivelesConexion', niveles)
-      },
-      immediate: true
-    },
-    filaMostrada() {
-      this.recalcularHeights();
-    },
-    mostrando() {
+    mostrando(mostrando) {
       this.recalcularHeights();
     },
   },
@@ -1047,6 +1136,15 @@ export default {
   justify-content: center;
   gap: 20px;
   padding: 20px 20px;
+  overflow-x: hidden;
+}
+
+#transicionFilas.normal .filaControles {
+  animation-direction: normal;
+}
+
+#transicionFilas.reverse .filaControles {
+  animation-direction: reverse;
 }
 
 .filaControles {

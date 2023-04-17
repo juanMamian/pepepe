@@ -17,8 +17,6 @@ const iniciarVue = async function () {
 };
 
 const app = createApp(App)
-console.log("Incorporando mixin");
-console.table(globalMixin.methods);
 app.mixin(globalMixin);
 app.use(router);
 app.use(apolloProvider);

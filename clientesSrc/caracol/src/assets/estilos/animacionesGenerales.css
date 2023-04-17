@@ -1,9 +1,8 @@
 .travelBottom-enter-active {
   animation: trasladoBottom 0.5s reverse ease-out;
-
 }
-.travelBottom-leave-active{
-    animation: trasladoBottom 0.5s ease-out;
+.travelBottom-leave-active {
+  animation: trasladoBottom 0.5s ease-out;
 }
 @keyframes trasladoBottom {
   0% {
@@ -18,56 +17,91 @@
   }
 }
 
-.unfoldHorizontally-enter-active{
+.unfoldHorizontally-enter-active {
   animation: foldHorizontally 0.4s reverse ease-in;
 }
 
-.unfoldHorizontally-leave-active{
+.unfoldHorizontally-leave-active {
   animation: foldHorizontally 0.1s ease-in;
 }
 
-@keyframes foldHorizontally{
-  0%{
+@keyframes foldHorizontally {
+  0% {
     transform: scaleX(1);
   }
-  100%{
+  100% {
     transform: scaleX(0);
   }
 }
 
-.unfoldVertically-enter-active{
+.unfoldVertically-enter-active {
   animation: foldVertically 0.4s reverse ease-in;
 }
 
-.unfoldVertically-leave-active{
+.unfoldVertically-leave-active {
   animation: foldVertically 0.1s ease-in;
 }
 
-@keyframes foldVertically{
-  0%{
+@keyframes foldVertically {
+  0% {
     transform: scaleY(1);
   }
-  100%{
+  100% {
     transform: scaleY(0);
   }
 }
 
-.cascade-enter-active{
+.cascade-enter-active {
   animation: foldVertically 0.4s reverse ease-in;
 }
 
-.cascade-leave-active{
+.cascade-leave-active {
   animation: foldVertically 0.1s ease-in;
 }
 
-@keyframes foldVertically{
-  0%{
+@keyframes foldVertically {
+  0% {
     transform: scaleY(1);
-  transform-origin: top center;
-
+    transform-origin: top center;
   }
-  100%{
+  100% {
     transform: scaleY(0);
-  transform-origin: top center;
+    transform-origin: top center;
+  }
+}
+
+.left.pan-enter-active {
+  animation: panInFromLeft 0.1s linear;
+  filter: blur(2px);
+  
+}
+.right.pan-enter-active {
+  animation: panInFromRight 0.1s linear;
+}
+.pan-leave-active {
+}
+
+@keyframes panInFromRight {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+@keyframes panInFromLeft {
+  0% {
+    transform: translateX(50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+@keyframes panOutToLeft {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
   }
 }

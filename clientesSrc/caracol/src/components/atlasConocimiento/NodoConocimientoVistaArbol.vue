@@ -6,20 +6,32 @@
       (datosUsuarioEsteNodo?.estadoAprendizaje || '').toLowerCase(),
     ]"
     @click.stop="$emit('clickEnNodo', idNodo)"
+    @dblclick.stop="
+      $router.push({
+        name: 'visorNodoConocimiento',
+        params: { idNodo: idNodo },
+      })
+    "
   >
     <div
       id="lineaReceptora"
       :style="[estiloLineaReceptora]"
       v-show="nivelArbol > 0"
     ></div>
-      <img
-        src="@/assets/iconos/crosshairsSolid.svg"
-        alt="Mira"
-        id="iconoTargeted"
-        v-if="targeted"
-      />
+    <img
+      src="@/assets/iconos/crosshairsSolid.svg"
+      alt="Mira"
+      id="iconoTargeted"
+      v-if="targeted"
+    />
 
     <div class="bolita">
+      <img
+        src="@/assets/iconos/lockSolid.svg"
+        alt="Lock"
+        id="iconoInaccesible"
+        v-if="!accesible"
+      />
       <img
         v-if="elNodo.tipoNodo === 'concepto'"
         src="@/assets/iconos/atlas/lightbulbEmpty.svg"
@@ -84,6 +96,8 @@
           style="display: flex; gap: 100px; align-items: flex-start"
           tag="div"
           name="unfoldVertically"
+          @enter="calcularAnchoMiArbol"
+          @afterLeave="calcularAnchoMiArbol"
         >
           <nodo-conocimiento-vista-arbol
             ref="subnodo"
@@ -95,11 +109,9 @@
             :nivelArbol="nivelArbol + 1"
             :idNodoUp="idNodo"
             :refreshLineaHorizontal="refreshLineaHorizontal"
-            :cadenaUnfold="cadenaUnfold"
             @scrollMe="forwardScrollMe"
             @componentUpdated="$emit('componentUpdated')"
             @clickEnNodo="$emit('clickEnNodo', $event)"
-            @updateCadenaUnfold="middlewareUpdateCadenaUnfold"
             @anchoUpdated="calcularAnchoMiArbol"
           />
         </transition-group>
@@ -123,9 +135,6 @@ const QUERY_NODO = gql`
                 tipo
                 rol
                 idRef
-                nodoContraparte{
-                    id
-                }
             }
         }
     }
@@ -148,10 +157,6 @@ export default {
       type: String,
       default: null,
     },
-    cadenaUnfold: {
-      type: Array,
-      default: [],
-    },
     nivelArbol: {
       type: Number,
       default: 0,
@@ -162,10 +167,10 @@ export default {
     }
   },
   apollo: {
-    yo:{
+    yo: {
       query: QUERY_DATOS_USUARIO_NODOS,
       fetchPolicy: "cache-first",
-      skip(){
+      skip() {
         return !this.usuario?.id
 
       }
@@ -197,120 +202,83 @@ export default {
       paddingLateralArbol: 30,
       montado: false,
 
-      selfUnfolded:false,
+      selfUnfolded: false,
 
-      xCentro:0,
-      yCentro:0,
+      xCentro: 0,
+      yCentro: 0,
 
       anchosSubnodos: [],
-      gapSubnodos:100,
-      anchoMiArbol:100,
-      anchoMiLinea:0,
-      leftMiLinea:0,
+      gapSubnodos: 100,
+      anchoMiArbol: 100,
+      anchoMiLinea: 0,
+      leftMiLinea: 0,
 
     }
 
   },
 
   methods: {
-    updateMeasurements(){
-      if(!this.$refs?.contenedorArbol){
-        this.anchoMiArbol=0;
+    updateMeasurements() {
+      if (!this.$refs?.contenedorArbol) {
+        this.anchoMiArbol = 0;
         return
       }
 
-      this.anchoMiArbol=this.$refs.contenedorArbol.offsetWidth;
+      this.anchoMiArbol = this.$refs.contenedorArbol.offsetWidth;
 
-      if(!this.$refs?.subnodo){
+      if (!this.$refs?.subnodo) {
         return;
       }
-      let subnodos=this.$refs.subnodo;
+      let subnodos = this.$refs.subnodo;
 
-      if(subnodos.length < 2){
-       this.anchoMiLinea = 0;
-       return
+      if (subnodos.length < 2) {
+        this.anchoMiLinea = 0;
+        return
       }
 
-      let primero=subnodos[0];
-      let segundo=subnodos[subnodos.length-1];
-      let anchoPrimero=primero.$el.offsetWidth;
-      let anchoSegundo=segundo.$el.offsetWidth;
-      this.anchoMiLinea=this.anchoMiArbol - (anchoPrimero/2) - (anchoSegundo/2) - (2 * this.paddingLateralArbol);
-      this.leftMiLinea=(anchoPrimero/2) + this.paddingLateralArbol;
+      let primero = subnodos[0];
+      let segundo = subnodos[subnodos.length - 1];
+      let anchoPrimero = primero.$el.offsetWidth;
+      let anchoSegundo = segundo.$el.offsetWidth;
+      this.anchoMiLinea = this.anchoMiArbol - (anchoPrimero / 2) - (anchoSegundo / 2) - (2 * this.paddingLateralArbol);
+      this.leftMiLinea = (anchoPrimero / 2) + this.paddingLateralArbol;
 
     },
-    calcularAnchoMiArbol(){
+    calcularAnchoMiArbol:debounce(function() {
       this.updateMeasurements();
 
-      this.$nextTick(()=>{
+      this.$nextTick(() => {
         this.$emit('anchoUpdated');
       })
+    }, 300),
+    prepareDataScroll() {
+      let layoutElem = this.$el.getBoundingClientRect();
+      this.xCentro = layoutElem.left + (layoutElem.width / 2);
+      this.yCentro = layoutElem.top + (layoutElem.height / 2);
     },
-    prepareDataScroll(){
-      let layoutElem=this.$el.getBoundingClientRect();
-      this.xCentro=layoutElem.left+(layoutElem.width/2);
-      this.yCentro=layoutElem.top+(layoutElem.height/2);
-    },
-    forwardScrollMe(elem){
+    forwardScrollMe(elem) {
       this.$emit('scrollMe', elem);
     },
-    askScrollMe(){
-      let elem=this;
+    askScrollMe() {
+      let elem = this;
 
       this.$emit('scrollMe', {
         elem,
-        xCentro:this.xCentro,
+        xCentro: this.xCentro,
         yCentro: this.yCentro,
 
       });
     },
-    toggleSelfUnfolded(){
+    toggleSelfUnfolded() {
 
-      this.selfUnfolded=!this.selfUnfolded;
-
-    },
-    middlewareUpdateCadenaUnfold(cadena){
-     this.$emit('updateCadenaUnfold', cadena);
-    },
-    updateCadenaUnfold(){
-
-      let indexT = this.cadenaUnfold.indexOf(this.idNodo);
-      let nuevaCadena = [...this.cadenaUnfold];
-      if (indexT > -1) {
-        nuevaCadena = nuevaCadena.slice(0, indexT);
-      }
-      else {//Entrando a la cadena. Solo lo puede hacer si su nodo up está en la cadena. O si es el primer nodo del árbol.
-        if (this.cadenaUnfold.length > 0) {
-          let indexUp = this.cadenaUnfold.indexOf(this.idNodoUp);
-          if (indexUp < 0) {//Este nodo se está intentando introducir a la cadena unfold pero su nodo up no está en la cadena.
-            console.log('Error. tratando de push nuevo item unfolded que no estaba bajo un nodo de la cadena');
-            return;
-          }
-          nuevaCadena = nuevaCadena.slice(0, indexUp + 1);
-        }
-        else {//La cadena estaba vacía. Sólo debería poder entrar el primer nodo del árbol.
-          if (this.nivelArbol > 0) { //Está entrando un nodo que no es el primero.
-            console.log("Error: tratando de introducir a la cadena unfold un nodo que no es el primero cuando la cadena estaba vacía");
-
-            return;
-          }
-        }
-        nuevaCadena.push(this.idNodo);
-      }
-      this.$emit('updateCadenaUnfold', nuevaCadena);
+      this.selfUnfolded = !this.selfUnfolded;
 
     },
-
-
   },
   computed: {
-    targeted(){
-      return this.yo?.atlas?.idNodoTarget===this.elNodo.id;
+    targeted() {
+      return this.yo?.atlas?.idNodoTarget === this.elNodo.id;
     },
-   passedOver() {
-
-      return this.nivelArbol < this.cadenaUnfold.length - 1; //En el siguiente nivel hay unfolding. Este sólo debe presentar su nodo unfolded.
-   },
     estiloLineaReceptora() {
       let heightLinea = this.paddingTopArbol;
       return {
@@ -320,7 +288,7 @@ export default {
     estiloLineaHorizontalContenedorArbol() {
 
       return {
-        width: this.anchoMiLinea+ 'px',
+        width: this.anchoMiLinea + 'px',
         left: this.leftMiLinea + 'px',
       }
     },
@@ -329,7 +297,7 @@ export default {
       let paddingBottom = 100;
       let paddingLeft = this.paddingLateralArbol;
       let paddingRight = this.paddingLateralArbol;
-      let gap=this.gapSubnodos;
+      let gap = this.gapSubnodos;
 
       return {
         paddingTop: paddingTop + 'px',
@@ -352,9 +320,6 @@ export default {
     },
     seleccionado() {
       return this.idNodoSeleccionado === this.idNodo;
-    },
-    unfolded() {
-      return this.cadenaUnfold.includes(this.idNodo);
     },
     accesible() {
       return !this.elNodo.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !this.idsNodosVerdes.includes(v.idRef));
@@ -385,11 +350,12 @@ export default {
         }
       }, 700);
     },
+
   },
 
 }
 </script>
-<style scoped lang="css">
+<style scoped>
 @import url("@/assets/estilos/nodoConocimientoBola.css");
 
 .nodoConocimientoVistaArbol {

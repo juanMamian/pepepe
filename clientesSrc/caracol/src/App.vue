@@ -29,7 +29,7 @@
           <img src="@/assets/iconos/home.svg" alt="Compás" />
           Inicio
         </router-link>
-        <router-link to="/atlas" class="botonNav" id="navAtlas">
+        <router-link :to="{name: 'atlas', params: {tipoBrowse: 'mapa', idBrowsed: '123'}}" class="botonNav" id="navAtlas">
           <img src="@/assets/iconos/compassRegular.svg" alt="Compás" />
           Atlas de conocimientos
         </router-link>
@@ -192,7 +192,7 @@ export default {
   },
   computed: {
     estiloBackground() {
-      let primerColor = "#fcff77";
+      let primerColor = "";
 
       let segundoColor = "rgba(235, 85, 21, 0.75) 73.16%";
 
@@ -317,7 +317,7 @@ export default {
 }
 #app:not(.landing) {
   background: "unset";
-  background-color: whitesmoke;
+  background-color: #d7d7d7;
 }
 
 #navBar {
@@ -423,7 +423,6 @@ export default {
     top: 0px;
     display: flex;
     flex-direction: row;
-    gap: 30px;
     background-color: transparent;
     box-shadow: none;
   }
