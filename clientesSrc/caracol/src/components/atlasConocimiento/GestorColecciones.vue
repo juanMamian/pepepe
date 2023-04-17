@@ -264,6 +264,12 @@ export default {
   },
   data() {
     return {
+      yo:{
+        atlas:{
+          colecciones:[],
+          datosNodo:[],
+        }
+      },
       editandoColeccion: false,
       guardandoNuevoNombreColeccion: false,
 

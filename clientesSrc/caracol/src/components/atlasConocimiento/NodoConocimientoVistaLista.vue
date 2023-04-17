@@ -34,7 +34,7 @@ export default {
     elNodoDB: {
       query: gql`
         query ($idNodo: ID!) {
-          nodo(id: $idNodo) {
+          nodo(idNodo: $idNodo) {
             id
             nombre
             tipoNodo
@@ -54,6 +54,9 @@ export default {
       },
       update({nodo}) {
         return nodo;
+      },
+      skip(){
+        return !this.idNodo;
       },
       fetchPolicy: "cache-first",
     },
@@ -114,7 +117,7 @@ export default {
   align-items: center;
 }
 
-#iconoNodo img{
-    height: 20px;
+#iconoNodo img {
+  height: 20px;
 }
 </style>
