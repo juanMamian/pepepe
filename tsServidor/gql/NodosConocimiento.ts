@@ -181,20 +181,22 @@ export const resolvers = {
             if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
             }
+            let opciones:DocNodoConocimiento[]=[];
 
             try {
-                var opciones: any = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
+                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log(". E: " + error);
-                ApolloError("");
+                ApolloError("Error conectando con la base de datos");
             }
             return opciones
         },
         todosNodos: async function () {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
+            let todosNodos:DocNodoConocimiento[]=[];
             try {
-                var todosNodos = await Nodo.find({}).populate("vinculos.nodoContraparte", "nombre autoCoords").exec();
+                todosNodos = await Nodo.find({}).populate("vinculos.nodoContraparte", "nombre autoCoords").exec();
                 console.log(`encontrados ${todosNodos.length} nodos`);
             }
             catch (error) {
@@ -209,7 +211,7 @@ export const resolvers = {
         },
         nodo: async function (_: any, { idNodo }: { idNodo: ObjectId }) {
             console.log(`Buscando el nodo con id ${idNodo}`);
-            let elNodo: NodoConocimiento | null = null;
+            let elNodo: DocNodoConocimiento | null = null;
             try {
                 elNodo = await Nodo.findById(idNodo).select("-icono").exec();
                 if (!elNodo) throw "Nodo no encontrado";
@@ -228,7 +230,7 @@ export const resolvers = {
             const credencialesUsuario = contexto.usuario;
             console.log("Getting nodos con ids " + idsNodos);
 
-            let losNodos: NodoConocimiento[] = [];
+            let losNodos: DocNodoConocimiento[] = [];
 
             try {
                 losNodos = await Nodo.find({ "_id": { $in: idsNodos } }).exec();
@@ -290,7 +292,7 @@ export const resolvers = {
 
             let vinculosRelevantes = losNodosSabidos.map((nodo) => nodo.vinculos.filter((vinculo) => vinculo.tipo == "continuacion" && vinculo.rol === 'source')).flat();
             let idsNodosContinuacion = vinculosRelevantes.map((vinculo) => vinculo.idRef);
-            let losNodosContinuacion: NodoConocimiento[] = [];
+            let losNodosContinuacion: DocNodoConocimiento[] = [];
             try {
                 losNodosContinuacion = await Nodo.find({ "_id": { $in: idsNodosContinuacion } }).exec();
             } catch (error) {
@@ -332,7 +334,7 @@ export const resolvers = {
                 AuthenticationError("No autorizado");
             }
 
-            let elNodo: mongoose.Document<unknown, {}, NodoConocimiento> | null = null;
+            let elNodo: DocNodoConocimiento | null = null;
 
             try {
                 elNodo = await Nodo.findById(idNodo).exec();
@@ -429,12 +431,22 @@ export const resolvers = {
                 console.log(`El usuario no tenia permisos para efectuar esta operación`);
                 AuthenticationError("No autorizado");
             }
+            let nodoSource:DocNodoConocimiento | null = null;
+            let nodoTarget:DocNodoConocimiento | null = null;
             try {
-                var nodoSource: any = await Nodo.findById(idSource, "vinculos nombre").exec();
-                var nodoTarget: any = await Nodo.findById(idTarget, "vinculos nombre").exec();
+                nodoSource= await Nodo.findById(idSource, "vinculos nombre").exec();
+                nodoTarget= await Nodo.findById(idTarget, "vinculos nombre").exec();
             }
             catch (error) {
                 console.log(`error consiguiendo los nodos para crear el vínculo . e: ` + error);
+                return ApolloError("Error conectando con la base de datos");
+
+            }
+            if(!nodoSource){
+                return UserInputError("Nodo no encontrado en la base de datos");
+            }
+            if(!nodoTarget){
+                return UserInputError("Nodo no encontrado en la base de datos");
             }
 
             //Prevenir loop.
