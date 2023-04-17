@@ -89,7 +89,10 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
         idsNodosRelevantes.splice(indexN, 1);
     }
     var nodosRelevantes = todosNodos.filter(n => idsNodosRelevantes.includes(n.id));
-    const rangoColision = 400; //Rango de acción de colisión
+    setFuerzaColisionNodo(nodo, nodosRelevantes);
+}
+function setFuerzaColisionNodo(nodo, nodosRelevantes) {
+    const rangoColision = 600; //Rango de acción de colisión
     const colisionMaxima = 500; //Colision maxima generada en distancia 0
     const factorFuerza = colisionMaxima / Math.pow(rangoColision, 2);
     var coordsFuerzaTotal = {
@@ -120,7 +123,10 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
         // console.log(`Se suma ${JSON.stringify(vectorDistancia)}`);
         let fuerzaColision = factorFuerza * Math.pow(rangoColision - vectorDistancia.fuerza, 2);
         if (!nodo.idsNodosConectados.includes(nodoR.id)) { //Colisión con un nodo no conectado (Mayor colisión)
-            fuerzaColision = fuerzaColision * 1.1;
+            fuerzaColision = fuerzaColision * 1.3;
+            if (nodo.vinculos.map(v => v.idRef).some(id => nodoR.vinculos.map(v => v.idRef).includes(id))) { //Tampoco tienen un vínculo en común.
+                fuerzaColision = fuerzaColision * 1.3;
+            }
         }
         let compx = Math.cos(vectorDistancia.direccion) * fuerzaColision;
         let compy = Math.sin(vectorDistancia.direccion) * fuerzaColision;
@@ -140,6 +146,9 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
         console.log(`Nodo autoCoords: ${nodo.autoCoords}`);
     }
     var nodosRelevantes = todosNodos.filter(n => nodo.idsNodosConectados.includes(n.id));
+    setFuerzaCentroMasaNodo(nodo, nodosRelevantes);
+}
+function setFuerzaCentroMasaNodo(nodo, nodosRelevantes) {
     const distanciaUmbral = 400;
     const factorFuerza = 100 / Math.pow(distanciaUmbral, 2);
     var coordsFuerzaTotal = {
@@ -209,6 +218,7 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
         console.log(`Fuerza centro masa queda: ${JSON.stringify(nodo.fuerzaCentroMasa)}`);
     }
 }
+;
 function filtrarVinculosHuerfanos(todosNodos) {
     todosNodos.forEach(nodo => {
         let idsVinculos = nodo.vinculos.map(v => v.idRef);
