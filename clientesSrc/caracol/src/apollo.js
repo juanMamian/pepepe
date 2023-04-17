@@ -56,7 +56,6 @@ const splitLink = split(
 );
 
 export const errorLink = onError(({ graphQLErrors, networkError }) => {
-  console.log("NODE_ENV: " + process.env.NODE_ENV);
   if (process.env.NODE_ENV !== "production") {
     if (graphQLErrors)
       graphQLErrors.forEach(({ message, locations, path, extensions }) => {
@@ -82,7 +81,7 @@ export const errorLink = onError(({ graphQLErrors, networkError }) => {
         }
 
         console.log(
-          `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+          `[GraphQL error]: Message: ${message}, Location: ${JSON.stringify(locations)}, Path: ${path}, extensions: ${JSON.stringify(extensions)}`
         )
       });
 

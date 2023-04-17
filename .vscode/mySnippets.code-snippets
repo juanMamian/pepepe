@@ -38,7 +38,7 @@
 		"prefix": "requerirLogin",
 		"body": [
 			"if(!contexto.usuario?.id){",
-			"\tthrow new AuthenticationError('loginRequerido');",
+			"\tAuthenticationError('loginRequerido');",
 			"}",
 			"",
 			"const credencialesUsuario=contexto.usuario;",
@@ -51,7 +51,7 @@
 		"prefix": "apollerror",
 		"body": [
 			"console.log(`Error $1 : `+ error);",
-			"throw new ${2:ApolloError}('${3:Error conectando con la base de datos}');",
+			"return ${2:ApolloError}('${3:Error conectando con la base de datos}');",
 			"$0"
 		]
 	},

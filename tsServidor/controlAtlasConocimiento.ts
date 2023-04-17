@@ -6,7 +6,7 @@ const nodoDeInteres = null;
 
 export async function ejecutarPosicionamientoNodosConocimientoByFuerzas(ciclos, timeCalled, force) {
 
-  
+
     const maxCiclos = 1000;
     if (ciclos > maxCiclos) ciclos = maxCiclos;
     console.log(`Iniciando un posicionamiento de fuerzas de ${ciclos} ciclos`);
@@ -63,25 +63,7 @@ function moverNodo(nodo, celdas) {
         y: getCeldaV(nodo.autoCoords),
     }
 
-
-
-    const maxDesplazamiento = 50;
-
-    var movimiento = {
-        x: (nodo.fuerzaCentroMasa.fuerza * Math.cos(nodo.fuerzaCentroMasa.direccion)) + (nodo.fuerzaColision.fuerza * Math.cos(nodo.fuerzaColision.direccion)),
-        y: (nodo.fuerzaCentroMasa.fuerza * Math.sin(nodo.fuerzaCentroMasa.direccion)) + (nodo.fuerzaColision.fuerza * Math.sin(nodo.fuerzaColision.direccion))
-    };
-
-    if (movimiento.x > maxDesplazamiento) movimiento.x = maxDesplazamiento;
-    if (movimiento.x < -maxDesplazamiento) movimiento.x = -maxDesplazamiento;
-
-    if (movimiento.y > maxDesplazamiento) movimiento.y = maxDesplazamiento;
-    if (movimiento.y < -maxDesplazamiento) movimiento.y = -maxDesplazamiento;
-
-    nodo.autoCoords.x = Math.round(nodo.autoCoords.x + movimiento.x);
-    nodo.autoCoords.y = Math.round(nodo.autoCoords.y + movimiento.y);
-
-
+    desplazarNodo(nodo);
 
     const nuevaCelda = {
         x: getCeldaH(nodo.autoCoords),
@@ -114,6 +96,32 @@ function moverNodo(nodo, celdas) {
         }
     }
 
+}
+export function desplazarNodo(nodo) {
+
+    const maxDesplazamiento = 50;
+
+    if (nodo.nombre === nodoDeInteres) {
+        console.log("con fuerza centro masa: " + JSON.stringify(nodo.fuerzaCentroMasa));
+        console.log("con fuerza colision: " + JSON.stringify(nodo.fuerzaColision));
+
+    }
+
+    var movimiento = {
+        x: (nodo.fuerzaCentroMasa.modulo * Math.cos(nodo.fuerzaCentroMasa.direccion)) + (nodo.fuerzaColision.modulo * Math.cos(nodo.fuerzaColision.direccion)),
+        y: (nodo.fuerzaCentroMasa.modulo * Math.sin(nodo.fuerzaCentroMasa.direccion)) + (nodo.fuerzaColision.modulo * Math.sin(nodo.fuerzaColision.direccion))
+    };
+
+
+
+    if (movimiento.x > maxDesplazamiento) movimiento.x = maxDesplazamiento;
+    if (movimiento.x < -maxDesplazamiento) movimiento.x = -maxDesplazamiento;
+
+    if (movimiento.y > maxDesplazamiento) movimiento.y = maxDesplazamiento;
+    if (movimiento.y < -maxDesplazamiento) movimiento.y = -maxDesplazamiento;
+
+    nodo.autoCoords.x = Math.round(nodo.autoCoords.x + movimiento.x);
+    nodo.autoCoords.y = Math.round(nodo.autoCoords.y + movimiento.y);
 }
 
 
@@ -187,13 +195,15 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
 
     var nodosRelevantes = todosNodos.filter(n => idsNodosRelevantes.includes(n.id));
 
+    setFuerzaColisionNodo(nodo, nodosRelevantes);
+}
+export function setFuerzaColisionNodo(nodo, nodosRelevantes) {
+    console.log("Calculando fuerza de colisión de " + nodo.nombre);
     const rangoColision = 600; //Rango de acción de colisión
     const colisionMaxima = 900; //Colision maxima generada en distancia 0
-    let factorFuerza = colisionMaxima / Math.pow(rangoColision, 2);
+    const pendiente = -colisionMaxima / rangoColision;
 
     //FactorFuerza grows linearlly in such a way that doubles if nivel is 3
-    factorFuerza = factorFuerza * (1 + nodo.nivel / 3);
-
 
     var coordsFuerzaTotal = {
         x: 0,
@@ -212,11 +222,14 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
         let vectorDistancia = cartesian2Polar(coordsDistancia.x, coordsDistancia.y);
         if (nodoDeInteres === nodo.nombre) {
         }
-        if (vectorDistancia.fuerza > rangoColision) vectorDistancia.fuerza = rangoColision;
-        let fuerzaColision = factorFuerza * Math.pow(rangoColision - vectorDistancia.fuerza, 2);
+        if (vectorDistancia.modulo > rangoColision) vectorDistancia.modulo = rangoColision;
+        let fuerzaColision = pendiente * vectorDistancia.modulo + colisionMaxima;
 
-        if (!nodo.idsNodosConectados.includes(nodoR.id)) {//Colisión con un nodo no conectado (Mayor colisión)
+        if (!nodo.vinculos.map(v=>v.idRef).includes(nodoR.id)) {//Colisión con un nodo no conectado (Mayor colisión)
             fuerzaColision = fuerzaColision * 1.1;
+            if (!nodo.vinculos.map(v => v.idRef).some(id => nodoR.vinculos.map(v => v.idRef).includes(id))) {//Colisión con un nodo que no comparte vínculo. También genera mayor colisión.
+                fuerzaColision = fuerzaColision * 1.1;
+            }
         }
 
 
@@ -228,24 +241,30 @@ function setFuerzaColision(nodo, celdas, todosNodos) {
     })
 
     var fuerzaPolar = cartesian2Polar(coordsFuerzaTotal.x, coordsFuerzaTotal.y);
+    console.log("quedó : " + JSON.stringify(fuerzaPolar));
     nodo.fuerzaColision = fuerzaPolar;
 }
 
 function setFuerzaCentroMasa(nodo, todosNodos) {
-
-
     var nodosRelevantes = todosNodos.filter(n => nodo.idsNodosConectados.includes(n.id));
+    setFuerzaCentroMasaNodo(nodo, nodosRelevantes);
+}
 
-    const distanciaUmbral = 400;
-    const factorFuerza = 100 / Math.pow(distanciaUmbral, 2);
+
+export function setFuerzaCentroMasaNodo(nodo, nodosRelevantes) {
+    console.log("setting fuerza centro masa de " + nodo.nombre);
+    const umbralCercano = 600; //Zona demasiado cercana al nodo. Debería haber baja atracción.
+    const puntoMil = 1000; //Distancia a la cual ya se tiene 1000N de atracción.
+    const pendiente = puntoMil / (puntoMil - umbralCercano)
+    const cruceEje = -pendiente * umbralCercano;
 
     var vectorCentro = cartesian2Polar(-nodo.autoCoords.x, -nodo.autoCoords.y);
-    vectorCentro.fuerza = 2;
+    vectorCentro.modulo = 2;
 
     //Fuerza default hacia el centro del diagrama
     var coordsFuerzaTotal = {
-        x: vectorCentro.fuerza * Math.cos(vectorCentro.direccion),
-        y: vectorCentro.fuerza * Math.sin(vectorCentro.direccion),
+        x: vectorCentro.modulo * Math.cos(vectorCentro.direccion),
+        y: vectorCentro.modulo * Math.sin(vectorCentro.direccion),
     }
 
     nodosRelevantes.forEach(nodoR => {
@@ -257,24 +276,10 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
 
         let vectorDistancia = cartesian2Polar(coordsDistancia.x, coordsDistancia.y);
 
-        let fuerzaCentroMasa = factorFuerza * Math.pow(vectorDistancia.fuerza, 2);
+        if (vectorDistancia.modulo < 0) vectorDistancia.modulo = 0;
 
-        if (nodo.idsRequeridos.includes(nodoR.id)) {//Fuerza de atracción de nodos requeridos
-            if (nodoR.nodoParent === nodo.id) {//Fuerza de atracción de nodos chidlren.
-                fuerzaCentroMasa = fuerzaCentroMasa * 0.9;
-            }
-            else {//Fuerza de atracción de requeridos pero no children
-                fuerzaCentroMasa = fuerzaCentroMasa * 0.7;
-            }
-        }
-        else {//Fuerza de atracción de requirientes
-            if (nodoR.id === nodo.nodoParent) {//Fuerza de atracción del parent
-                fuerzaCentroMasa = fuerzaCentroMasa * 1.1;
-            }
-            else {//Fuerza de atracción de requiriente no-parent
-                fuerzaCentroMasa = fuerzaCentroMasa * 0.9
-            }
-        }
+        let fuerzaCentroMasa = vectorDistancia.modulo * pendiente + cruceEje;
+
         let compx = Math.cos(vectorDistancia.direccion) * fuerzaCentroMasa;
         let compy = Math.sin(vectorDistancia.direccion) * fuerzaCentroMasa;
         coordsFuerzaTotal.x += compx;
@@ -282,13 +287,11 @@ function setFuerzaCentroMasa(nodo, todosNodos) {
 
     })
 
-
     var fuerzaPolar = cartesian2Polar(coordsFuerzaTotal.x, coordsFuerzaTotal.y);
 
     nodo.fuerzaCentroMasa = fuerzaPolar;
-
+    console.log("quedó: " + JSON.stringify(nodo.fuerzaCentroMasa));
 }
-
 
 function filtrarVinculosHuerfanos(todosNodos) {
     todosNodos.forEach(nodo => {
@@ -343,8 +346,8 @@ async function uploadNodos(todosNodos) {
     todosNodos.forEach(async function (nodo) {
         if (nodo.nombre === nodoDeInteres || !nodoDeInteres) {
             try {
-                nodo.fuerzaColision.fuerza = Math.round(nodo.fuerzaColision.fuerza);
-                nodo.fuerzaCentroMasa.fuerza = Math.round(nodo.fuerzaCentroMasa.fuerza);
+                nodo.fuerzaColision.modulo = Math.round(nodo.fuerzaColision.modulo);
+                nodo.fuerzaCentroMasa.modulo = Math.round(nodo.fuerzaCentroMasa.modulo);
                 nodo.posicionadoByFuerzas = true;
                 console.log(`Guardando ${nodo.nombre} con nivel ${nodo.nivel}`);
                 await nodo.save();
@@ -386,6 +389,6 @@ function setNodosConectados(nodo, todosNodos) {
 function cartesian2Polar(x, y) {
     const distance = Math.sqrt(x * x + y * y)
     const radians = Math.atan2(y, x) //This takes y first
-    const polarCoor = { fuerza: distance, direccion: radians }
+    const polarCoor = { modulo: distance, direccion: radians }
     return polarCoor
 }

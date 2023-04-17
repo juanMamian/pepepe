@@ -187,6 +187,9 @@
             >
               <img src="@/assets/iconos/plugSolid.svg" alt="Nuevo" />
             </div>
+            <div class="botonTexto" @click="crearNodoDependencia">
+              <img src="@/assets/iconos/plusCircle.svg" alt="Crear" />
+            </div>
           </div>
 
           <div class="bloqueControl" v-if="usuarioSuperadministrador">
@@ -412,6 +415,7 @@ export default {
   name: "ControlesNodo",
   data() {
     return {
+      creandoNodoUnder:false,
       nodoTarget:null,
       hovered:false,
       direccionTransicion: 'normal',
@@ -593,6 +597,43 @@ export default {
     }
   },
   methods: {
+    crearNodoDependencia(){
+      console.log("creando nodo dependencia");
+      if(!this.usuarioExperto && !this.usuarioSuperadministrador){
+        console.log("No autorizado");
+        return;
+      }
+
+        this.creandoNodoUnder=true;
+      this.$apollo.mutate({
+        mutation: gql`
+          mutation($idNodoTarget: ID!){
+            crearNodoConocimientoUnderNodo(idNodoTarget: $idNodoTarget){
+              id
+              vinculos{
+                id
+                idRef
+                tipo
+                rol
+              }
+              autoCoords{
+                x
+                y
+              }
+            }
+          }
+        `,
+        variables:{
+          idNodoTarget: this.elNodo.id,
+        }
+      }).then(({data: {crearNodoConocimientoUnderNodo}})=>{
+        this.creandoNodoUnder=false;
+        console.log("creado nodo " + crearNodoConocimientoUnderNodo[1].id);
+      }).catch((error)=>{
+        console.log("Error: " + error);
+        this.creandoNodoUnder=false;
+      })
+    },
     emitirOpenNodo(e){
       console.log("Emitiendo el open nodo");
       this.$emit('openNodoCaptured', this.elNodo.id);
@@ -717,7 +758,16 @@ export default {
         .mutate({
           mutation: gql`
             mutation ($idNodo: ID!) {
-              eliminarNodo(idNodo: $idNodo)
+              eliminarNodo(idNodo: $idNodo){
+                id
+                vinculos{
+                  id
+                  idRef
+                  tipo
+                  rol
+                }
+
+              }
             }
           `,
           variables: {
@@ -725,11 +775,8 @@ export default {
           },
         })
         .then(({ data: { eliminarNodo } }) => {
+          console.log(eliminarNodo.length + " nodos afectados por la eliminación de un nodo");
           this.eliminandose = false;
-          if (!eliminarNodo) {
-            console.log(`Nodo no fue eliminado`);
-            return;
-          }
           const store = this.$apollo.provider.defaultClient;
           const cache = store.readQuery({
             query: QUERY_NODOS,

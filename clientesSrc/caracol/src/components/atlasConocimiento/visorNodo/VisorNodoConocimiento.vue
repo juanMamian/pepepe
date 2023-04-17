@@ -761,7 +761,6 @@ export default {
         console.log(`Caracteres ilegales`);
         return;
       }
-      console.log(`guardando nuevo nombre`);
       this.enviandoNuevoNombre = true;
       this.$apollo
         .mutate({
@@ -781,7 +780,6 @@ export default {
           },
         })
         .then((data) => {
-          console.log(`fin de la mutacion. Data: ${JSON.stringify(data)} `);
           this.enviandoNuevoNombre = false;
           this.editandoNombre = false;
         })

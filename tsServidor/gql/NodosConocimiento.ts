@@ -5,7 +5,7 @@ import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
 import { EsquemaVinculosNodosProyecto } from "../model/VinculosNodosProyecto";
 import { ModeloEventoPublico as EventoPublico } from "../model/Evento";
-import { ejecutarPosicionamientoNodosConocimientoByFuerzas } from "../controlAtlasConocimiento";
+import { desplazarNodo, ejecutarPosicionamientoNodosConocimientoByFuerzas, setFuerzaCentroMasaNodo, setFuerzaColisionNodo } from "../controlAtlasConocimiento";
 import { charProhibidosNombreCosa } from "../model/config";
 import { purgarIdNodo } from "./Usuarios";
 import { ApolloError, AuthenticationError, UserInputError } from "./misc";
@@ -154,7 +154,8 @@ extend type Mutation{
     eliminarVinculoFromTo(idSource:ID!, idTarget:ID!):infoNodosModificados,
     editarNombreNodo(idNodo: ID!, nuevoNombre: String!):infoNodosModificados,
     crearNodo(infoNodo:NodoConocimientoInput):NodoConocimiento
-    eliminarNodo(idNodo:ID!):ID,
+    crearNodoConocimientoUnderNodo(idNodoTarget: ID!):[NodoConocimiento]
+    eliminarNodo(idNodo:ID!):[NodoConocimiento],
     editarDescripcionNodoConocimiento(idNodo:ID!, nuevoDescripcion:String!):NodoConocimiento,
     editarKeywordsNodoConocimiento(idNodo:ID!, nuevoKeywords:String!):NodoConocimiento,
     setTipoNodo(idNodo: ID!, nuevoTipoNodo: String!):NodoConocimiento,
@@ -343,8 +344,11 @@ export const resolvers = {
                 var elNodo: any = await Nodo.findById(idNodo);
                 if (!elNodo) throw "Nodo a eliminar no encontrado"
             } catch (error) {
+                console.log("Error buscando el nodo a eliminar: " + error);
                 ApolloError("Error buscando el nodo a eliminar");
             }
+
+            let idsConectados = elNodo.vinculos.map(v => v.idRef);
 
             try {
                 await Nodo.deleteOne({ _id: idNodo }).exec();
@@ -352,11 +356,31 @@ export const resolvers = {
                 console.log(`error eliminando nodo`);
             }
             purgarIdNodo(idNodo);
+
+
             console.log(`nodo ${idNodo} eliminado`);
 
             //Eliminar vinculos que lo tuvieran en idRef.
+            let losNodosConectados: any = [];
+            try {
+                losNodosConectados = await Nodo.find({ "_id": { $in: idsConectados } }).exec();
+            } catch (error) {
+                console.log(`Error  : ` + error);
+                return ApolloError('Error conectando con la base de datos');
+            }
 
-            return idNodo;
+            for (let nodoC of losNodosConectados) {
+                console.log("Eliminando vínculos de " + nodoC.nombre);
+                nodoC.vinculos = nodoC.vinculos.filter(v => v.idRef != idNodo);
+                try {
+                    nodoC.save();
+                } catch (error) {
+                    console.log("Error guardando nodo " + nodoC.id + " después de purgarlo de vínculos con el nodo " + idNodo + " eliminado: " + error);
+                }
+            }
+
+            console.log("Nodo eliminado");
+            return losNodosConectados;
 
         },
         async crearNodo(_: any, { infoNodo }: any, contexto: contextoQuery) {
@@ -380,6 +404,52 @@ export const resolvers = {
             }
             console.log(`nuevo nodo de conocimiento creado: ${nuevoNodo} `);
             return nuevoNodo
+        },
+        async crearNodoConocimientoUnderNodo(_: any, { idNodoTarget }: { idNodoTarget: string }, contexto: contextoQuery) {
+            console.log('\x1b[35m%s\x1b[0m', `Solicitud de crear un nuevo nodo under el nodo ${idNodoTarget}`);
+            if (!contexto.usuario?.id) {
+                AuthenticationError('loginRequerido');
+            }
+
+            const credencialesUsuario = contexto.usuario;
+
+            let elNodoTarget: any = null;
+            try {
+                elNodoTarget = await Nodo.findById(idNodoTarget).exec();
+            } catch (error) {
+                console.log("Error getting nodo target: " + error);
+                return ApolloError("Error conectando con la base de datos");
+            }
+            if (!elNodoTarget) {
+                console.log("Nodo target no encontrado");
+                return UserInputError("Nodo no encontrado");
+            }
+            let nuevoNodo = new Nodo({
+                autoCoords: elNodoTarget.autoCoords,
+            });
+
+            elNodoTarget.vinculos.push({
+                idRef: nuevoNodo.id,
+                rol: "target"
+            });
+            nuevoNodo.vinculos.push({
+                idRef: elNodoTarget.id,
+                rol: "source",
+            });
+
+            await movimientoAutomaticoNodo(nuevoNodo, 5);
+
+            try {
+                await elNodoTarget.save();
+                await nuevoNodo.save();
+            } catch (error) {
+                console.log("Error guardando nodos: " + error);
+                return ApolloError("Error realizando operación en la base de datos");
+            }
+            console.log("Nodo creado");
+
+            let infoNodosModificados = [elNodoTarget, nuevoNodo];
+            return infoNodosModificados;
         },
         setCoordsManuales: async function (_: any, { idNodo, coordsManuales }: any, contexto: contextoQuery) {
             console.log(`peticion de movimiento de coords manuales`);
@@ -442,18 +512,9 @@ export const resolvers = {
             console.log(`Los ids previos de la red son: ${idsRedPrevia}`);
 
             //Buscar y eliminar vinculos previos entre estos dos nodos.
-            for (var vinculo of nodoSource.vinculos) {
-                if (vinculo.idRef == idTarget) {
-                    vinculo.remove();
-                    console.log(`encontrado un vinculo viejo en el Source. Eliminando`);
-                }
-            }
-            for (var vinculo of nodoTarget.vinculos) {
-                if (vinculo.idRef == idSource) {
-                    vinculo.remove();
-                    console.log(`encontrado un vinculo viejo en el target. Eliminando`);
-                }
-            }
+            nodoSource.vinculos = nodoSource.vinculos.filter(v => v.idRef != idTarget);
+            nodoTarget.vinculos = nodoTarget.vinculos.filter(v => v.idRef != idSource);
+
             const vinculoSourceTarget = {
                 idRef: idTarget,
                 rol: "source"
@@ -501,8 +562,8 @@ export const resolvers = {
                 AuthenticationError("No autorizado");
             }
 
-            elUno.vinculos=elUno.vinculos.filter(v=>v.idRef!=elOtro.id);
-            elOtro.vinculos=elOtro.vinculos.filter(v=>v.idRef!=elUno.id);
+            elUno.vinculos = elUno.vinculos.filter(v => v.idRef != elOtro.id);
+            elOtro.vinculos = elOtro.vinculos.filter(v => v.idRef != elUno.id);
 
 
             try {
@@ -1621,3 +1682,31 @@ export async function getIdsRedContinuacionesNodo(nodo) {
 }
 
 
+export async function movimientoAutomaticoNodo(nodo, ciclos = 1) {
+    console.log("Realizando movimiento individual de nodo " + nodo.nombre)
+    let radioZona = 700;
+    let nodosZona: any[] = [];
+    try {
+        nodosZona = await Nodo.find({ "_id": { $ne: nodo.id }, "autoCoords.x": { $lt: nodo.autoCoords.x + radioZona, $gt: nodo.autoCoords.x - radioZona }, "autoCoords.y": { $lt: nodo.autoCoords.y + radioZona, $gt: nodo.autoCoords.y - radioZona } }).exec();
+    } catch (error) {
+        console.log("Error getting nodos de zona: " + error);
+        return;
+    }
+
+    console.log("hay " + nodosZona.length + " nodos en la zona");
+
+    for (let i = 0; i < ciclos; i++) {
+        console.log("Ciclo " + i);
+        setFuerzaCentroMasaNodo(nodo, nodosZona);
+        setFuerzaColisionNodo(nodo, nodosZona);
+        desplazarNodo(nodo);
+    }
+    try {
+        await nodo.save();
+    } catch (error) {
+        console.log("Error salvando nodo " + nodo.nombre + " después de movimiento individual: " + error);
+        return
+    }
+    console.log("El nodo fue ubicado automáticamente con " + ciclos + "ciclos");
+
+}

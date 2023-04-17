@@ -134,7 +134,7 @@ var esquemaNodo = new mongoose.Schema({
         default: []
     },
     fuerzaCentroMasa: {
-        fuerza: {
+        modulo: {
             type: Number,
             default: 0
         },
@@ -144,7 +144,7 @@ var esquemaNodo = new mongoose.Schema({
         }
     },
     fuerzaColision: {
-        fuerza: {
+        modulo: {
             type: Number,
             default: 0
         },
