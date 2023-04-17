@@ -1,5 +1,5 @@
 import mongoose, { ObjectId } from "mongoose"
-import { ModeloNodo as Nodo, NodoConocimiento } from "../model/atlas/Nodo";
+import { type DocNodoConocimiento, ModeloNodo as Nodo, NodoConocimiento } from "../model/atlas/Nodo";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloUsuario as Usuario } from "../model/Usuario";
 import { ModeloCarpetaArchivos as CarpetasArchivos } from "../model/CarpetaArchivos";
@@ -276,7 +276,7 @@ export const resolvers = {
 
             console.log(`Retornando ${idsTodosNodosSabidos.length} ids de nodos sabidos`);
 
-            let losNodosSabidos: NodoConocimiento[] = [];
+            let losNodosSabidos: DocNodoConocimiento[] = [];
             try {
                 losNodosSabidos = await Nodo.find({ "_id": { $in: idsTodosNodosSabidos } }).exec();
             } catch (error) {
@@ -392,12 +392,10 @@ export const resolvers = {
             }
             let modificados: Array<NodoConocimiento> = new Array();
 
-            let elNodo: mongoose.Document<unknown, {}, NodoConocimiento> | null = null;
+            let elNodo: DocNodoConocimiento | null = null;
 
             try {
-                let elNodoQueried = await Nodo.findById(idNodo, "nombre coordsManuales").exec();
-                elNodoQueried.autoCoords = coordsManuales;
-                elNodo = elNodoQueried;
+                elNodo = await Nodo.findById(idNodo, "nombre coordsManuales").exec();
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
