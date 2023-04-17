@@ -777,24 +777,6 @@ export default {
         .then(({ data: { eliminarNodo } }) => {
           console.log(eliminarNodo.length + " nodos afectados por la eliminación de un nodo");
           this.eliminandose = false;
-          const store = this.$apollo.provider.defaultClient;
-          const cache = store.readQuery({
-            query: QUERY_NODOS,
-          });
-          var nuevoCache = JSON.parse(JSON.stringify(cache));
-          const indexN = nuevoCache.todosNodos.findIndex(
-            (n) => n.id == idNodo
-          );
-
-          if (indexN === -1) {
-            console.log(`el nodo no estaba presente`);
-            return;
-          }
-          nuevoCache.todosNodos.splice(indexN, 1);
-          store.writeQuery({
-            query: QUERY_NODOS,
-            data: nuevoCache,
-          });
           this.$emit("nodoEliminado", idNodo);
 
         })

@@ -6,10 +6,8 @@
         :key="idNodo"
         :idNodo="idNodo"
         :idNodoSeleccionado="idNodoSeleccionado"
-        :cadenaUnfold="cadenaUnfold"
         :nivelArbol="0"
         :refreshLineaHorizontal="refreshLineaHorizontal"
-        @updateCadenaUnfold="updateCadenaUnfold"
         @scrollMe="scrollNodoIntoView"
         @clickEnNodo="clickEnNodo"
       >
@@ -22,7 +20,6 @@
   </div>
 </template>
 <script>
-import { gql } from "@apollo/client/core";
 import NodoConocimientoVistaArbol from "./NodoConocimientoVistaArbol.vue";
 import ControlesNodo from "./controlesNodo.vue";
 import VisorNodoConocimiento from "./visorNodo/VisorNodoConocimiento.vue"
@@ -85,7 +82,6 @@ export default {
           datosNodos: [],
         },
       },
-      cadenaUnfold: [],
       refreshLineaHorizontal: 0,
     };
   },
@@ -115,9 +111,6 @@ export default {
         let scroll = nuevoXCentro - xCentro;
         this.$refs.elDiagrama.scrollLeft += nuevoXCentro - xCentro;
       });
-    },
-    updateCadenaUnfold(nuevaCadena) {
-      this.cadenaUnfold = nuevaCadena;
     },
   },
 };

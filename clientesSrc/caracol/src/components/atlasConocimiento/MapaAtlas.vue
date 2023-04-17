@@ -525,9 +525,25 @@ export default {
       );
     },
     reactToNodoEliminado(idNodo) {
-      let indexN = this.nodosVisibles.findIndex((n) => n.id === idNodo);
-      if (indexN > -1) {
-        this.nodosVisibles.splice(indexN, 1);
+      const store = this.$apollo.provider.defaultClient;
+      const cache = store.readQuery({
+        query: QUERY_NODOS,
+      });
+      var nuevoCache = JSON.parse(JSON.stringify(cache));
+      const indexN = nuevoCache.todosNodos.findIndex((n) => n.id == idNodo);
+
+      if (indexN === -1) {
+        console.log(`el nodo no estaba presente`);
+        return;
+      }
+      nuevoCache.todosNodos.splice(indexN, 1);
+      store.writeQuery({
+        query: QUERY_NODOS,
+        data: nuevoCache,
+      });
+      const indexV = this.nodosVisibles.findIndex((n) => n.id === idNodo);
+      if (indexV > -1) {
+        this.nodosVisibles.splice(indexV, 1);
       }
     },
     idsRedUnderNodo(nodo) {
