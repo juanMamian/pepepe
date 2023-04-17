@@ -13,6 +13,7 @@ import { ModeloNodoSolidaridad } from "../model/atlasSolidaridad/NodoSolidaridad
 
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs";
+import { ObjectId } from "mongoose";
 
 
 interface Usuario {
@@ -563,7 +564,7 @@ export const resolvers = {
         },
 
 
-        setNodoAtlasTarget: async function (_: any, { idNodo }: any, contexto: contextoQuery) {
+        setNodoAtlasTarget: async function (_: any, { idNodo }: {idNodo: ObjectId}, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario || !credencialesUsuario.id) {
                 AuthenticationError("No autenticado");
