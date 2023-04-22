@@ -52,7 +52,7 @@
         v-show="seleccionado"
       >
         <div
-          class="boton"
+          class="boton selector"
           @click="mostrando = mostrando === 'rutaGrado' ? null : 'rutaGrado'"
           :class="{ activo: mostrando === 'rutaGrado' }"
         >
@@ -101,7 +101,7 @@
           <img src="@/assets/iconos/alienar.svg" alt="Virus" />
         </div>
         <div
-          class="boton selector"
+          class="botonTexto selector"
           v-if="usuarioLogeado && usuarioProfe"
           style="width: 100px"
           :title="
@@ -116,7 +116,6 @@
         <div
           class="boton selector"
           v-if="usuarioLogeado && usuarioProfe"
-          style="width: 100px"
           :title="
             mostrando === 'objetivos'
               ? 'Ocultar objetivos'
@@ -773,8 +772,6 @@ export default {
 
       this.creandoDocumentoInforme = true;
 
-      console.log("informesObjetivos " + informesObjetivos.length);
-
       var filaObjetivos = new TableRow({
         children: [
           new TableCell({
@@ -1350,6 +1347,13 @@ function saveDocumentToFile(doc, fileName) {
 
 #contenedorControlesPersona {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: black;
+}
+#contenedorControlesPersona .boton{
+    border-radius: 5px;
 }
 
 #listaPermisos {

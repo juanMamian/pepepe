@@ -538,10 +538,13 @@ export default {
 <style scoped>
 .atlasConocimiento {
   position: relative;
+  display: flex;
+  flex-direction:column;
 }
 
 #viewerNodo {
-  height: 100%;
+ flex-grow: 1;
+
 }
 
 #contenedorOverlays {

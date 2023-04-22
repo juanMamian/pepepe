@@ -2,9 +2,6 @@ import mongoose, { InferSchemaType } from "mongoose";
 
 
 const EsquemaVinculo = new mongoose.Schema({
-    id: {
-        type: mongoose.Types.ObjectId,
-    },
     idRef: {
         type: String,
         required: true
@@ -42,9 +39,6 @@ EsquemaVinculo.pre("save", function (this: any, next) {
 
 
 var esquemaNodo = new mongoose.Schema({
-    id: {
-        type: mongoose.Types.ObjectId,
-    },
     nombre: {
         type: String,
         min: 3,

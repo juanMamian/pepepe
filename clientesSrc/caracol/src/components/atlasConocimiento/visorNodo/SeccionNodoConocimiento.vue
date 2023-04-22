@@ -275,13 +275,12 @@ export default {
     srcIframe(){
       if(this.estaSeccion.modo==='enlace' && this.estaSeccion.enlace){
         var elEnlace=this.estaSeccion.enlace;
-        let laUrl=window.location.href;
-        if(elEnlace.substring(0, 25) === 'http://192.168.1.100:3000' && laUrl.substring(0, 20) != "http://192.168.1.100") {
-          elEnlace="https://pe-pe-pe.herokuapp.com"+elEnlace.substring(25);
-          console.log("Enlace queda: "+ elEnlace)
-        }
-        console.log("El enlace es: "+elEnlace);
+        console.log("Server URL: " + this.serverUrl);
+        console.log("elEnlace: " + elEnlace);
 
+        elEnlace= elEnlace.replace("192.168.1.100", "192.168.1.105");
+        
+        console.log("Queda " + elEnlace);
         return elEnlace;
       }
       return this.direccionNodo + '/' + this.estaSeccion.id + '/?v=' + this.versionArchivo;

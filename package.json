@@ -1,12 +1,12 @@
 {
   "name": "gestorproyectos",
   "version": "1.0.0",
-  "type":"module",
+  "type": "module",
   "description": "Una aplicacion para gestionar ppp y conocimientos en Maestra Vida",
   "main": "comunaBuild/index.js",
   "scripts": {
     "devBuild": "nodemon comunaBuild/index.js",
-    "start": "node --experimental-specifier-resolution=node comunaBuild/index.js",    
+    "start": "node --experimental-specifier-resolution=node comunaBuild/index.js",
     "dev": "nodemon --experimental-specifier-resolution=node tsServidor/index.ts",
     "build": "npx tsc -p ."
   },
@@ -29,6 +29,9 @@
     "sharp": "^0.32.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.13",
+    "@types/multer": "^1.4.7",
     "mongoose-tsgen": "^9.1.0",
     "nodemon": "^2.0.22",
     "ts-node": "^10.9.1",

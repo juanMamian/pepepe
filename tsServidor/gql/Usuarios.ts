@@ -1031,6 +1031,9 @@ export const resolvers = {
 
                 const idsRedPrevia = await getIdsRedRequerimentosNodo(elNodo);
 
+                if(!idsRedPrevia){
+                    return ApolloError("Error getting red previa de nodo");
+                }
 
                 laColeccion.idsNodos = laColeccion.idsNodos.filter(idN => !idsRedPrevia.includes(idN));
             }

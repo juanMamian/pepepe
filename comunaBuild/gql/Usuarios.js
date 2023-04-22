@@ -898,6 +898,9 @@ export const resolvers = {
                 }
                 laColeccion.idsNodos.push(idNodo);
                 const idsRedPrevia = await getIdsRedRequerimentosNodo(elNodo);
+                if (!idsRedPrevia) {
+                    return ApolloError("Error getting red previa de nodo");
+                }
                 laColeccion.idsNodos = laColeccion.idsNodos.filter(idN => !idsRedPrevia.includes(idN));
             }
             else {

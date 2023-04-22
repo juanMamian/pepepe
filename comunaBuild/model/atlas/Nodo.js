@@ -1,16 +1,4 @@
 import mongoose from "mongoose";
-const esquemaClase = new mongoose.Schema({
-    idExperto: String,
-    interesados: [String],
-    nombre: {
-        type: String,
-        default: "Nombre"
-    },
-    descripion: {
-        type: String,
-        default: ""
-    },
-});
 const EsquemaVinculo = new mongoose.Schema({
     idRef: {
         type: String,
@@ -94,10 +82,6 @@ var esquemaNodo = new mongoose.Schema({
         required: true,
         default: []
     },
-    clases: {
-        type: [esquemaClase],
-        default: [],
-    },
     posiblesExpertos: {
         type: [String],
         required: true,
@@ -152,20 +136,5 @@ var esquemaNodo = new mongoose.Schema({
     direccion: Number,
     ubicado: Boolean
 });
-esquemaNodo.methods.verificarVinculo = function (idRef, eliminar) {
-    console.log(`${this.nombre} está buscando un vinculo con ${idRef}. Eliminar es ${eliminar}`);
-    var respuesta = false;
-    for (var vinculo of this.vinculos) {
-        if (vinculo.idRef == idRef) {
-            console.log(`encontrado`);
-            respuesta = true;
-            if (eliminar) {
-                console.log(`eliminando`);
-                vinculo.remove();
-            }
-        }
-    }
-    return respuesta;
-};
 esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" });
 export const ModeloNodo = mongoose.model("Nodo", esquemaNodo);
