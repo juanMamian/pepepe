@@ -174,6 +174,7 @@
         </div>
       </div>
       <div id="zonaInforme" v-show="mostrando === 'informe'">
+
         <loading v-show="$apollo.queries.informes.loading" />
         <div
           v-if="!$apollo.queries.informes.loading"

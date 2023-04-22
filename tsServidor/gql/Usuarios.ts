@@ -1,15 +1,14 @@
 // import { ModeloUsuario as Usuario, permisosDeUsuario,  validarDatosUsuario} from "../model/Usuario"
-import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario, charProhibidosNombresUsuario, charProhibidosUsername, minLengthNombresUsuario, minLengthApellidosUsuario, minLengthUsername, minLengthEmail, minLengthPassword, maxLengthPassword, charProhibidosPassword, emailValidator } from "../model/Usuario"
+import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario, charProhibidosNombresUsuario, charProhibidosUsername, minLengthNombresUsuario, minLengthApellidosUsuario, minLengthUsername, minLengthEmail, minLengthPassword, maxLengthPassword, charProhibidosPassword, emailValidator, type DocUsuario } from "../model/Usuario"
 
-import { ModeloGrupoEstudiantil as GrupoEstudiantil } from "../model/actividadesProfes/GrupoEstudiantil";
 import { contextoQuery } from "./tsObjetos"
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { permisosEspecialesDefault } from "./Schema";
-import { getIdsRedContinuacionesNodo, getIdsRedRequerimentosNodo, getNodosRedPreviaNodo } from "./NodosConocimiento";
 import { validatorNombreCosa } from "../model/config";
 import { ApolloError, AuthenticationError, UserInputError } from "./misc";
 import { ModeloNodoSolidaridad } from "../model/atlasSolidaridad/NodoSolidaridad";
+import {getIdsRedRequerimentosNodo} from "./NodosConocimiento"
 
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs";
@@ -159,6 +158,7 @@ APRENDIDO
 
     extend type Query {
         todosUsuarios(dateActual: Date):[Usuario],
+        usuariosByPermisos(listaPermisos:[String]):[Usuario],
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
@@ -225,6 +225,21 @@ export const resolvers = {
                 ApolloError("Error conectando con la base de datos");
             }
             return profes;
+        },
+        usuariosByPermisos: async function (_:any, {listaPermisos}: {listaPermisos:string[]} , context: contextoQuery){
+            let losUsuarios: DocUsuario[]  = [];
+
+            try{
+                losUsuarios=await Usuario.find({"permisos": {$in: listaPermisos}}).exec();
+            }
+            catch(error){
+                console.log("error getting la lista de usuarios: " + error);
+                return ApolloError("Error descargando la lista de usuarios");
+            }
+
+            return losUsuarios;
+
+
         },
         todosUsuarios: async function (_: any, args: any, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
