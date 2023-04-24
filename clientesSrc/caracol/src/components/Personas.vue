@@ -15,7 +15,6 @@
 
     <div class="zonaConfiguracion" v-show="mostrandoConfiguracion">
       <div class="barraSeccion">Configuración</div>
-
       <div class="contenedorBloquesConfiguracion">
         <div class="bloqueConfiguracion">
           <div class="campoConfiguracion">
@@ -89,6 +88,13 @@
         </div>
       </div>
     </div>
+    <div
+      class="botonTexto"
+      id="botonDescargarLista"
+      @click.stop="descargarListaPersonasSeleccionadas"
+    >
+      Descargar lista
+    </div>
     <div id="zonaBuscar">
       <div class="barraSuperior">
         <input
@@ -144,8 +150,17 @@ import PersonaVistaLista from "./usuario/personaVistaLista.vue";
 import debounce from "debounce";
 // import { similarity } from "./utilidades/funciones";
 import stringSimilarity from "string-similarity";
-
+import {Document, Paragraph, Packer} from "docx";
+import {saveAs} from "file-saver";
 const charProhibidosPermiso = /[^ a-zA-Z-]/;
+
+function saveDocumentToFile(doc, filename){
+    const mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    Packer.toBlob(doc).then((blob)=>{
+        const docblob = blob.slice(0, blob.size, mimeType);
+        saveAs(docblob, filename);
+    });
+    }
 
 export const QUERY_PERSONAS = gql`
   query {
@@ -227,6 +242,22 @@ export default {
     };
   },
   methods: {
+      descargarListaPersonasSeleccionadas(){
+          let archivo=new Document({
+              sections:[
+                  {
+                      children:this.personasVisibles.map(pv=>{
+                          return new Paragraph({
+                              text: pv.nombres + pv.apellidos,
+                          })
+                      })
+                  }
+                  ]
+          });
+              saveDocumentToFile(archivo, "lista.docx");
+
+          
+      },
     setLocalStorageConfiguracion() {
       const objeto = {
         mostrarEspacioActual: this.mostrarEspacioActual,

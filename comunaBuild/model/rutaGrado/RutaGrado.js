@@ -1,16 +1,5 @@
-<<<<<<< HEAD
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModeloSubrutaGrado = exports.laRutaProyectoMediaTecnica = exports.laRutaProyectoSocial = exports.laRutaNodosConocimiento = exports.EsquemaRutaGrado = void 0;
-const mongoose_1 = __importDefault(require("mongoose"));
-const EsquemaNodoRutaGrado = new mongoose_1.default.Schema({
-=======
 import mongoose from "mongoose";
 const EsquemaNodoRutaGrado = new mongoose.Schema({
->>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205
     nombre: {
         type: String,
         required: true,
@@ -22,11 +11,7 @@ const EsquemaNodoRutaGrado = new mongoose.Schema({
         maxLength: 5000,
     },
 });
-<<<<<<< HEAD
-const EsquemaSubrutaGrado = new mongoose_1.default.Schema({
-=======
 const EsquemaSubrutaGrado = new mongoose.Schema({
->>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205
     nombre: {
         type: String,
         required: true,
@@ -39,27 +24,16 @@ const EsquemaSubrutaGrado = new mongoose.Schema({
         type: String,
     }
 });
-<<<<<<< HEAD
-exports.EsquemaRutaGrado = new mongoose_1.default.Schema({
-=======
 export const EsquemaRutaGrado = new mongoose.Schema({
->>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205
     subrutas: {
         type: [EsquemaSubrutaGrado],
         default: [],
     }
 });
-<<<<<<< HEAD
-exports.EsquemaRutaGrado.virtual("idUsuario").get(function () {
-    return this.parent()._id;
-});
-exports.laRutaNodosConocimiento = {
-=======
 EsquemaRutaGrado.virtual("idUsuario").get(function () {
     return this.parent()._id;
 });
 export const laRutaNodosConocimiento = {
->>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205
     nombre: "Los nodos de conocimiento",
     nodos: [
         {
@@ -76,11 +50,7 @@ export const laRutaNodosConocimiento = {
         },
     ]
 };
-<<<<<<< HEAD
-exports.laRutaProyectoSocial = {
-=======
 export const laRutaProyectoSocial = {
->>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205
     nombre: "Proyecto social",
     nodos: [
         {
@@ -113,11 +83,7 @@ export const laRutaProyectoSocial = {
         },
     ]
 };
-<<<<<<< HEAD
-exports.laRutaProyectoMediaTecnica = {
-=======
 export const laRutaProyectoMediaTecnica = {
->>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205
     nombre: "Proyecto agroecológico de media técnica",
     nodos: [
         {
@@ -150,8 +116,4 @@ export const laRutaProyectoMediaTecnica = {
         },
     ]
 };
-<<<<<<< HEAD
-exports.ModeloSubrutaGrado = mongoose_1.default.model("SubrutaGrado", EsquemaSubrutaGrado);
-=======
 export const ModeloSubrutaGrado = mongoose.model("SubrutaGrado", EsquemaSubrutaGrado);
->>>>>>> 5e189828d6dd86bdccadb62738a42a8cd12c5205
