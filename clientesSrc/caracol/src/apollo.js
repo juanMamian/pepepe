@@ -81,7 +81,7 @@ export const errorLink = onError(({ graphQLErrors, networkError }) => {
         }
 
         console.log(
-          `[GraphQL error]: Message: ${message}, Location: ${JSON.stringify(locations)}, Path: ${path}, extensions: ${JSON.stringify(extensions)}`
+          `[GraphQL error]: Message: ${message}, Location: ${JSON.stringify(locations)}, Path: ${path} `
         )
       });
 

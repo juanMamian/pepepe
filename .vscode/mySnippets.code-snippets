@@ -55,6 +55,15 @@
 			"$0"
 		]
 	},
+	"Anunciar error de nodoConocimiento no encontrado en DB":{
+		"scope": "typescript",
+		"prefix": "nodonoencontrado",
+		"body":[
+			"if(!elNodo){",
+			"\treturn UserInputError('Nodo no encontrado en la base de datos');",
+			"}"
+		]
+	},
 	"Bajar nodo de conocimiento": {
 		"scope": "typescript",
 		"prefix": "descargarNodo",

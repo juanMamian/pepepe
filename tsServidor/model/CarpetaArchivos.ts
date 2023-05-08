@@ -28,3 +28,4 @@ const esquemaCarpetaArchivos=new mongoose.Schema({
 });
 
 export const ModeloCarpetaArchivos=mongoose.model("carpetasArchivosContenidosNodos", esquemaCarpetaArchivos, "carpetasArchivosContenidosNodos");
+export type DocCarpetaArchivos = InstanceType<typeof ModeloCarpetaArchivos>;

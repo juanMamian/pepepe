@@ -557,4 +557,5 @@ export const minLengthUsername = 7;
 
 
 export const ModeloUsuario = mongoose.model("Usuario", esquemaUsuario);
+export type DocUsuario = InstanceType<typeof ModeloUsuario>;
 
