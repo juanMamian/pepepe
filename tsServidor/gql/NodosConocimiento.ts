@@ -141,7 +141,7 @@ extend type Query{
 extend type Mutation{
     posicionarNodosConocimientoByFuerzas(ciclos:Int!):Boolean,
 
-    setCoordsManuales(idNodo: String, coordsManuales:CoordsInput):infoNodosModificados,
+    setCoordsManuales(idNodo: ID!, coordsManuales:CoordsInput!):infoNodosModificados,
     crearVinculo(tipo:String!, idSource:ID!, idTarget:ID!):infoNodosModificados,
     eliminarVinculoFromTo(idSource:ID!, idTarget:ID!):infoNodosModificados,
     editarNombreNodo(idNodo: ID!, nuevoNombre: String!):infoNodosModificados,
@@ -493,7 +493,7 @@ export const resolvers = {
             let elNodo: DocNodoConocimiento | null = null;
 
             try {
-                elNodo = await Nodo.findById(idNodo, "nombre coordsManuales").exec();
+                elNodo = await Nodo.findById(idNodo, "nombre autoCoords").exec();
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);

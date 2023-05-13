@@ -33,7 +33,7 @@
                     :idNodoTarget="idNodoTarget"
                     :style="[{ top: nodo.autoCoords.y - centroDescarga.y + 'px', left: nodo.autoCoords.x - centroDescarga.x + 'px', },]"
                     @dblclick="$router.push({ name: 'visorNodoConocimiento', params: { idNodo: nodo.id }, })"
-                    @click.stop="clickNodo(nodo)" @click.ctrl.exact.stop.prevent="iniciarDragNodo"
+                    @click.stop="clickNodo(nodo)" @click.stop.ctrl.exact="iniciarDragNodo(nodo.id)" @mousedown.stop=""
                     @abrirMyControles="$emit('abrirControlesNodo')">
                     <template #imagenBolita v-if="conectandoNodosColeccion &&
                         coleccionSeleccionada?.idsNodos.includes(nodo.id)
@@ -484,12 +484,52 @@ export default {
         },
 
         mouseUpDiagrama(e) {
+            if (this.elementoDragged?.tipo === 'nodoConocimiento') {
+                console.log("Soltando nodo conocimiento")
+                const posContenedor = this.$el.getBoundingClientRect();
+
+                let posicion = {
+                    x: Math.round(this.centroVista.x + (e.clientX - posContenedor.left - (posContenedor.width / 2)) / this.factorZoom),
+                    y: Math.round(this.centroVista.y + (e.clientY - posContenedor.top - (posContenedor.height / 2)) / this.factorZoom),
+                }
+
+                console.table(posicion);
+
+                this.$apollo.mutate({
+                    mutation: gql`
+                    mutation($idNodo: ID!, $coordsManuales: CoordsInput!){
+                        setCoordsManuales(idNodo: $idNodo, coordsManuales: $coordsManuales){
+                            modificados{
+                            id
+                                autoCoords{
+                                    x
+                                    y
+                                }
+                            }
+                        }
+                    }
+                    `,
+                    variables: {
+                        idNodo: this.elementoDragged.id,
+                        coordsManuales: posicion,
+                    }
+
+                }).then(() => {
+                    console.log("hecho");
+                }).catch((error) => {
+                    console.log("Error: " + error);
+                })
+
+            }
             this.elementoDragged = null;
             this.lastPointerMoveX = null;
             this.lastPointerMoveY = null;
         },
 
         iniciarDragMapa() {
+            if (this.elementoDragged) {
+                return;
+            }
             this.elementoDragged = {
                 tipo: "mapa",
             }
@@ -526,12 +566,6 @@ export default {
                     return;
                 }
 
-                let posDiagrama = this.$refs.contenedorElementosDiagrama.getBoundingClientRect();
-                let centroToMove = {
-                    x: (dragClientX - posDiagrama.width / 2) / this.factorZoom,
-                    y: (dragClientY - posDiagrama.height / 2) / this.factorZoom,
-                }
-                console.table(centroToMove);
             }
             else if (this.elementoDragged.tipo === 'mapa') {
                 if (!this.lastPointerMoveX || !this.lastPointerMoveY) {
@@ -665,7 +699,7 @@ export default {
 
                 //set to 2 if postive, -2 if negative
                 if (zoomChange != 0) {
-                    zoomChange = 2*zoomChange / Math.abs(zoomChange);
+                    zoomChange = 2 * zoomChange / Math.abs(zoomChange);
 
                     throttle(this.zoomVista(zoomChange, centroAccion), 1000);
                 }
@@ -707,8 +741,8 @@ export default {
         },
         abrirMenuContextual(e) {
             const posContenedor = this.$el.getBoundingClientRect();
-            let clientX=e.touches?e.touches[0].clientX : e.clientX;
-            let clientY=e.touches?e.touches[0].clientY : e.clientY;
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
             let pxToCentroX = clientX - posContenedor.left - (this.$el.offsetWidth / 2);
             let pxToCentroY = clientY - posContenedor.top - (this.$el.offsetHeight / 2)
@@ -969,9 +1003,9 @@ export default {
 
                 //Check wheel direction
                 if (e.deltaY > 0) {
-                    this.zoomVista(-1, centroAccion);
+                    this.zoomVista(-5, centroAccion);
                 } else {
-                    this.zoomVista(1, centroAccion);
+                    this.zoomVista(5, centroAccion);
                 }
                 return;
             }
