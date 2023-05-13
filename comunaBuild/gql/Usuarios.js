@@ -3,10 +3,10 @@ import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario, charP
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { permisosEspecialesDefault } from "./Schema";
-import { getIdsRedRequerimentosNodo } from "./NodosConocimiento";
 import { validatorNombreCosa } from "../model/config";
 import { ApolloError, AuthenticationError, UserInputError } from "./misc";
 import { ModeloNodoSolidaridad } from "../model/atlasSolidaridad/NodoSolidaridad";
+import { getIdsRedRequerimentosNodo } from "./NodosConocimiento";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 export const typeDefs = `#graphql
@@ -145,6 +145,7 @@ APRENDIDO
 
     extend type Query {
         todosUsuarios(dateActual: Date):[Usuario],
+        usuariosByPermisos(listaPermisos:[String]):[Usuario],
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
@@ -210,6 +211,17 @@ export const resolvers = {
                 ApolloError("Error conectando con la base de datos");
             }
             return profes;
+        },
+        usuariosByPermisos: async function (_, { listaPermisos }, context) {
+            let losUsuarios = [];
+            try {
+                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).exec();
+            }
+            catch (error) {
+                console.log("error getting la lista de usuarios: " + error);
+                return ApolloError("Error descargando la lista de usuarios");
+            }
+            return losUsuarios;
         },
         todosUsuarios: async function (_, args, context) {
             console.log(`Solicitud de la lista de todos los usuarios`);

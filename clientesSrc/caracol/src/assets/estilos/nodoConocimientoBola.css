@@ -24,6 +24,15 @@
   height: 30px;
 }
 
+#botonAbrirOpciones{
+    height: 40px;
+    width: 40px;
+    position: absolute;
+    left: calc(100% + 5px);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 .nodoConocimientoConBola > .bolita {
   width: calc(var(--sizeBola) * 1px);
   height: calc(var(--sizeBola) * 1px);

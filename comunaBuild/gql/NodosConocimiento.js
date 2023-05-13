@@ -1180,6 +1180,7 @@ export const resolvers = {
                 return [];
             }
             let laCarpeta = null;
+            console.log("Buscando carpetaa " + parent.idCarpeta);
             try {
                 laCarpeta = await CarpetasArchivos.findById(parent.idCarpeta, "archivos").exec();
             }
@@ -1188,7 +1189,8 @@ export const resolvers = {
                 return [];
             }
             if (!laCarpeta) {
-                return UserInputError('Carpeta no encontrada en la base de datos');
+                console.log("No encontrada.");
+                return [];
             }
             const infoArchivos = laCarpeta.archivos.map(a => { return { nombre: a.nombre, primario: a.primario }; });
             return infoArchivos;
@@ -1207,7 +1209,7 @@ export const resolvers = {
                 return null;
             }
             if (!laCarpeta) {
-                return UserInputError('Carpeta no encontrada en la base de datos');
+                return null;
             }
             var elPrimario = laCarpeta.archivos.find(a => a.primario == true);
             if (!elPrimario) {
