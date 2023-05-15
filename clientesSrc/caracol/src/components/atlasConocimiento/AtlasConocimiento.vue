@@ -47,6 +47,13 @@
                         ]"></div>
 
             <div id="zonaLocalizadores" @click.stop="">
+                Localizar: 
+                <div class="botonTexto" title="Localizar el nodo en la mira" @click="centerEnTarget" v-if="idNodoTarget" :class="{deshabilitado: !nodoTargetPresente}">
+                    <span>
+                    En la mira
+                    </span>
+                    <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Crosshairs">
+                </div>
                 <div class="boton controlColeccion" :class="{
                             deshabilitado: idsNodosColeccionEstudiables.length < 1,
                         }" @click="localizarNext('estudiable')">
@@ -85,7 +92,7 @@
             :nodoCreandoDependencia="nodoCreandoDependencia" :nodoTargetRelevante="nodoTargetRelevante" @click.stop=""
             @iniciarCrearDependenciaNodo="marcarNodoEsperandoDependencia($event)"
             @cancelarCreandoDependencia="nodoCreandoDependencia = null" @nodoEliminado="reactToNodoEliminado"
-            @localizeMe="centrarEnNodoById(idNodoSeleccionado)" @centerEnTarget="centerEnTarget" />
+            @localizeMe="centrarEnNodoById(idNodoSeleccionado)" />
     </div>
 </template>
 
@@ -147,6 +154,17 @@ export default {
         };
     },
     computed: {
+        nodoTargetPresente(){
+            if(!this.idNodoTarget){
+                return false;
+            }
+            if(this.coleccionSeleccionada?.id){
+                return this.coleccionSeleccionada.idsRed.includes(this.idNodoTarget);
+            }
+
+            //Retornar true pues está activo el mapa completo.
+            return true;
+        },
         idsTodosNodosOlvidados() {
             if (!this.yo?.atlas?.datosNodos) {
                 return [];
