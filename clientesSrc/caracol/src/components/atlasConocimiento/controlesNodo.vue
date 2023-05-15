@@ -492,6 +492,7 @@ export default {
                 }
             }).then(({ data: { crearNodoConocimientoUnderNodo } }) => {
                 this.creandoNodoUnder = false;
+                this.$emit("nodoCreado", crearNodoConocimientoUnderNodo[1]);
                 console.log("creado nodo " + crearNodoConocimientoUnderNodo[1].id);
             }).catch((error) => {
                 console.log("Error: " + error);

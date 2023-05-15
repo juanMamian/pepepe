@@ -996,6 +996,16 @@ export default {
   width: min(300px, 90vw);
   margin: 0px auto;
 }
+#inputNuevoDescripcion {
+    padding: 10px;
+    border-radius: 10px;
+  width: min(600px, 90%);
+  font-size: 19px;
+  height: 70px;
+  display: block;
+  margin: 5px auto;
+  resize: vertical;
+}
 #contenedorSteppersSeccion {
   display: flex;
   align-items: center;

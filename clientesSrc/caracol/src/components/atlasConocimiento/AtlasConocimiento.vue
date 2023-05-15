@@ -92,6 +92,7 @@
             :nodoCreandoDependencia="nodoCreandoDependencia" :nodoTargetRelevante="nodoTargetRelevante" @click.stop=""
             @iniciarCrearDependenciaNodo="marcarNodoEsperandoDependencia($event)"
             @cancelarCreandoDependencia="nodoCreandoDependencia = null" @nodoEliminado="reactToNodoEliminado"
+            @nodoCreado="reactToNodoCreado"
             @localizeMe="centrarEnNodoById(idNodoSeleccionado)" />
     </div>
 </template>
@@ -218,6 +219,12 @@ export default {
         },
     },
     methods: {
+        reactToNodoCreado(nodo){
+            if(this.$route.params?.tipoBrowse==='mapa' && this.$refs.mapaAtlas){
+                this.$refs.mapaAtlas.$apollo.queries.nodosZona.refetch();
+            }
+        },
+        
         descargarNodosColeccionEstudiables() {
             if (!this.coleccionSeleccionada?.id) {
                 return;

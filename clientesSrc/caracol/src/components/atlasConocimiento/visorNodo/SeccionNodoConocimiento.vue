@@ -294,7 +294,7 @@ export default {
     width: 100%;
     min-height: 100px;
 }
-
+h
 #zonaAdministracion {
     width: min(500px, 90vw);
     border-radius: 10px;
