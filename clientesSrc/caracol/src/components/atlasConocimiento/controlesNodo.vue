@@ -33,9 +33,8 @@
         </div>
 
         <div id="zonaControles" @click="" v-if="elNodo && !$apollo.queries.elNodoDB.loading" @mouseenter="hovered = true"
-            v-show="desplegado"
-            @mouseleave="hovered = false" @touchstart.stop="inicioTouch" @touchmove.stop="movimientoTouch"
-            @touchend.stop="finTouch">
+            v-show="desplegado" @mouseleave="hovered = false" @touchstart.stop="inicioTouch"
+            @touchmove.stop="movimientoTouch" @touchend.stop="finTouch">
             <transition-group name="pan" @after-leave="recalcularHeights" tag="div" id="transicionFilas">
                 <div class="filaControles" :class="[direccionTransicion]" key="fila1" v-show="filaMostrada === 2">
                     <div class="anuncio" style="opacity: 0.7" v-show="!nodoAccesible">
@@ -134,7 +133,10 @@
                     </div>
                 </div>
 
-                <div class="filaControles" :class="[direccionTransicion]" key="fila1" v-show="filaMostrada === 1">
+                <div class="filaControles" :class="[direccionTransicion]" key="fila1" v-show="filaMostrada === 1" style="gap: 10px">
+                    <div id="botonLocalizarNodo" class="boton" style="height: 20px; " @click.stop="$emit('localizeMe')">
+                        <img src="@/assets/iconos/crosshairsSolid.svg" alt="Crosshair">
+                    </div>
                     <div id="zonaDescripcionNodo">
                         <div id="descripcionNodo">
                             {{ elNodo.descripcion || "" }}

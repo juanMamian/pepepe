@@ -85,7 +85,7 @@
             :nodoCreandoDependencia="nodoCreandoDependencia" :nodoTargetRelevante="nodoTargetRelevante" @click.stop=""
             @iniciarCrearDependenciaNodo="marcarNodoEsperandoDependencia($event)"
             @cancelarCreandoDependencia="nodoCreandoDependencia = null" @nodoEliminado="reactToNodoEliminado"
-            @centerEnTarget="centerEnTarget" />
+            @localizeMe="centrarEnNodoById(idNodoSeleccionado)" @centerEnTarget="centerEnTarget" />
     </div>
 </template>
 
@@ -325,12 +325,6 @@ export default {
                 console.log(`Con id ${idNodoNext}`);
             }
 
-            if (nodoNext) {
-                this.centrarEnNodo(nodoNext);
-                this.seleccionNodo(nodoNext);
-                return;
-            }
-            var dis = this;
 
             if (idNodoNext) {
                 this.gettingNodoNext = true;
@@ -353,7 +347,7 @@ export default {
                     .then(({ data: { nodo } }) => {
                         this.gettingNodoNext = false;
                         this.centrarEnNodo(nodo);
-                        this.seleccionNodo({idNodo: nodo.id, programmatic: true});
+                        this.seleccionNodo({ idNodo: nodo.id, programmatic: true });
                         return;
                     })
                     .catch((error) => {
@@ -411,16 +405,18 @@ export default {
         },
         reactToNodoBuscadoSeleccionado(nodo) {
             console.log("reacting to nodo buscado seleccionado");
-            if (this.$route?.params?.tipoBrowse === "mapa" && this.$refs?.mapaAtlas) {
-                this.$refs.mapaAtlas.centrarEnNodoById(nodo.id);
+            this.centrarEnNodoById(nodo.id);
+        },
+        centrarEnNodoById(idNodo) {
+            if (this.$route?.params?.tipoBrowse === 'mapa' && this.$refs?.mapaAtlas) {
+                this.$refs.mapaAtlas.centrarEnNodoById(idNodo);
             }
         },
         centerEnTarget() {
-            if (this.$route?.params?.tipoBrowse === "mapa" && this.$refs?.mapaAtlas) {
-                if (this.idNodoTarget) {
-                    this.$refs.mapaAtlas.centrarEnNodoById(this.idNodoTarget);
-                }
+            if (!this.idNodoTarget) {
+                return;
             }
+            this.centrarEnNodoById(this.idNodoTarget);
         },
         reactToNodoEliminado(idNodo) {
             if (this.$refs?.mapaAtlas) {
