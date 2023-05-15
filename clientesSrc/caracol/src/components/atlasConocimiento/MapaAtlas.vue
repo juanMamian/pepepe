@@ -97,6 +97,10 @@ export default {
         coleccionSeleccionada: {
             type: Object,
         },
+        idsNodosActivosOlvidados:{
+            type: Array,
+            default: [],
+        }
     },
     components: {
         BuscadorNodosConocimiento,
@@ -285,6 +289,10 @@ export default {
     },
     computed: {
         nodosVisibles() {
+            if(!this.nodosZona){
+                return [];
+            }
+
             if (this.conectandoNodosColeccion) {
                 return this.nodosZona;
             }
@@ -362,14 +370,6 @@ export default {
                 .filter((dn) => dn.estadoAprendizaje === "APRENDIDO")
                 .map((dn) => dn.idNodo);
         },
-        idsTodosNodosOlvidados() {
-            if (!this.yo?.atlas?.datosNodos) {
-                return [];
-            }
-            return this.yo.atlas.datosNodos
-                .filter((dn) => dn.estadoAprendizaje === "OLVIDADO")
-                .map((dn) => dn.idNodo);
-        },
         idsNodosActivosEstudiados() {
             let listaCompleta = this.idsTodosNodosEstudiados;
             if (this.coleccionSeleccionada?.id) {
@@ -382,12 +382,6 @@ export default {
                 return this.idsTodosNodosAprendidos.filter(id => this.coleccionSeleccionada.idsRed.includes(id));
             }
             return this.idsTodosNodosAprendidos;
-        },
-        idsNodosActivosOlvidados() {
-            if (this.coleccionSeleccionada) {
-                return this.idsTodosNodosOlvidados.filter(id => this.coleccionSeleccionada.idsRed.includes(id));
-            }
-            return this.idsTodosNodosOlvidados;
         },
         idsNodosColeccionAccesibles() {
             return this.nodosColeccionAccesibles.map(n => n.id);

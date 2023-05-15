@@ -52,17 +52,17 @@
                         }" @click="localizarNext('estudiable')">
                     <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Localizar" />
                 </div>
-                <div class="boton controlColeccion" @click="localizarNext('olvidado')" :class="{
-                            deshabilitado: idsNodosActivosOlvidados.length < 1,
-                        }">
-                    <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Localizar"
-                        style="filter: var(--filtroAtlasRepaso)" />
-                </div>
                 <div class="boton controlColeccion" @click="localizarNext('top')" :class="{
                             deshabilitado: !idsNodosTop || idsNodosTop.length < 1,
                         }">
                     <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Localizar"
                         style="filter: var(--filtroAtlasTop)" />
+                </div>
+                <div class="boton controlColeccion" @click="localizarNext('olvidado')" :class="{
+                            deshabilitado: !idsNodosActivosOlvidados || idsNodosActivosOlvidados.length < 1,
+                        }">
+                    <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Localizar"
+                        style="filter: var(--filtroAtlasRepaso)" />
                 </div>
             </div>
         </div>
@@ -71,7 +71,7 @@
             :nodoCreandoDependencia="nodoCreandoDependencia" :coleccionSeleccionada="coleccionSeleccionada"
             :conectandoNodosColeccion="conectandoNodosColeccion" ref="mapaAtlas"
             :idsNodosColeccionEstudiables="idsNodosColeccionEstudiables"
-            @abrirControlesNodo="$refs.controlesNodo.desplegar()"
+            :idsNodosActivosOlvidados="idsNodosActivosOlvidados" @abrirControlesNodo="$refs.controlesNodo.desplegar()"
             @settedIdsNodosActivosAccesiblesInexplorados="setIdsNodosActivosAccesiblesInexplorados($event, 'mapaAtlas')"
             @settedIdsNodosTop="setIdsNodosActivosTop($event, 'mapaAtlas')" @seleccionNodo="seleccionNodo" />
 
@@ -141,13 +141,26 @@ export default {
             nodoCreandoDependencia: null,
 
             idsNodosActivosAccesiblesInexplorados: [],
-            idsNodosActivosOlvidados: [],
             idsNodosTop: [],
 
             nodosColeccionEstudiables: [],
         };
     },
     computed: {
+        idsTodosNodosOlvidados() {
+            if (!this.yo?.atlas?.datosNodos) {
+                return [];
+            }
+            return this.yo.atlas.datosNodos
+                .filter((dn) => dn.estadoAprendizaje === "OLVIDADO")
+                .map((dn) => dn.idNodo);
+        },
+        idsNodosActivosOlvidados() {
+            if (this.coleccionSeleccionada?.id) {
+                return this.idsTodosNodosOlvidados.filter(id => this.coleccionSeleccionada.idsRed.includes(id));
+            }
+            return this.idsTodosNodosOlvidados;
+        },
         idsNodosColeccionEstudiables() {
             if (!this.nodosColeccionEstudiables) return [];
             return this.nodosColeccionEstudiables.map(nc => nc.id);
