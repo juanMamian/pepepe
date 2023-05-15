@@ -4,6 +4,7 @@ Atlas de conocimiento.
 -Revisar qué pasa si se usa el localizador mientras se está creando dependencia de nodo. Creo que el método seleccionNodo de AtlasConocimiento termina asignándo el nodo localizado como dependencia de manera automática.
 -Que en browseNodo también salga el anuncio de nodoTarget relevante.
 -Que en la vista mapa otra vez se pueda recorrer hacia atrás la lista de dependencias. O hacia adelante.
+-Set que coleccionSeleccionada pueda valer null. Actualmente al menos en atlasConocimiento.vue, cuando no hay colección seleccionada es un objeto sin id y con idsRed e idsNodos setted en empty array.
 
 -En maestra vida asegurarse de que se hace la migración de objetivos de chicxs, periodoRepaso y de objetivos y de personas.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.

@@ -5,7 +5,7 @@
             //   nivelesConexion &&
             //   !idsRedSeleccion.includes(elNodo.id),
             seleccionado,
-            accesible: idsNodosAccesibles.includes(elNodo.id),
+            estudiable,
             aprendido: idsNodosAprendidos.includes(elNodo.id),
             estudiado: idsNodosEstudiados.includes(elNodo.id),
             olvidado: idsNodosOlvidados.includes(elNodo.id),
@@ -14,8 +14,6 @@
         <img id="iconoTargeted" src="@/assets/iconos/crosshairsSolid.svg" alt="Mira" v-if="idNodoTarget === elNodo.id" />
         <div class="bolita">
             <slot name="imagenBolita">
-                <img src="@/assets/iconos/lockSolid.svg" alt="Lock" id="iconoInaccesible"
-                    v-if="!idsNodosAccesibles.includes(elNodo.id)" style="height: 30px">
                 <img v-if="elNodo.tipoNodo === 'concepto'" src="@/assets/iconos/atlas/lightbulbEmpty.svg" alt="Skill" />
                 <img v-else src="@/assets/iconos/atlas/fireSolid.svg" alt="Skill" />
             </slot>
@@ -23,9 +21,6 @@
 
         <div class="cajaTexto">
             {{ elNodo.nombre }}
-            <br>
-            {{ elNodo.autoCoords.x }}, {{ elNodo.autoCoords.y }}
-
             <div class="boton" id="botonAbrirOpciones" @click.stop="$emit('abrirMyControles')" v-show="seleccionado">
                 <img src="@/assets/iconos/ellipsisVertical.svg" alt="Ellipsis">
             </div>
@@ -96,7 +91,7 @@ export default {
             type: Array,
             default: () => [],
         },
-        idsNodosAccesibles: {
+        idsNodosEstudiables: {
             type: Array,
             default: [],
         },
@@ -133,6 +128,9 @@ export default {
         };
     },
     computed: {
+        estudiable() {
+            return !this.elNodo.vinculos.some(v => v.tipo === 'continuacion' && v.rol === "target" && !this.idsNodosAprendidos.includes(v.idRef) && !this.idsNodosEstudiados.includes(v.idRef));
+        },
         targeted() {
             return this.idNodoTarget === this.elNodo.id;
         },
@@ -148,6 +146,7 @@ export default {
                         ...vinculo,
                     };
                 }
+                //Solo se dibujaran los vínculos entrantes. Que tienen rol "target"
 
                 if (!vinculo.nodoContraparte?.autoCoords) {
                     return {
@@ -177,13 +176,13 @@ export default {
                     paddingRight: Math.round(diametroBolitas / 2) + "px",
                     width: Math.round(largoLinea) + "px",
                     transform: "rotate(" + angle + "rad)",
+                    opacity: "1",
                 };
                 if (
-                    this.idNodoTarget &&
-                    this.idsUnderTargetActivos &&
-                    !this.idsUnderTargetActivos.includes(vinculo.idRef)
+                    !this.idsNodosAprendidos.includes(vinculo.idRef) &&
+                    !this.idsNodosEstudiados.includes(vinculo.idRef)
                 ) {
-                    estilo.opacity = 0.1;
+                    estilo.opacity = 0.2;
                 }
 
                 return {

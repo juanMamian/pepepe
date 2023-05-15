@@ -48,8 +48,8 @@
 
             <div id="zonaLocalizadores" @click.stop="">
                 <div class="boton controlColeccion" :class="{
-                            deshabilitado: idsNodosActivosAccesiblesInexplorados.length < 1,
-                        }" @click="localizarNext('accesible')">
+                            deshabilitado: idsNodosColeccionEstudiables.length < 1,
+                        }" @click="localizarNext('estudiable')">
                     <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Localizar" />
                 </div>
                 <div class="boton controlColeccion" @click="localizarNext('olvidado')" :class="{
@@ -70,6 +70,7 @@
         <mapa-atlas v-if="$route.params?.tipoBrowse === 'mapa'" :idNodoSeleccionado="idNodoSeleccionado"
             :nodoCreandoDependencia="nodoCreandoDependencia" :coleccionSeleccionada="coleccionSeleccionada"
             :conectandoNodosColeccion="conectandoNodosColeccion" ref="mapaAtlas"
+            :idsNodosColeccionEstudiables="idsNodosColeccionEstudiables"
             @abrirControlesNodo="$refs.controlesNodo.desplegar()"
             @settedIdsNodosActivosAccesiblesInexplorados="setIdsNodosActivosAccesiblesInexplorados($event, 'mapaAtlas')"
             @settedIdsNodosTop="setIdsNodosActivosTop($event, 'mapaAtlas')" @seleccionNodo="seleccionNodo" />
@@ -80,8 +81,7 @@
         <browse-nodo @seleccionNodo="seleccionNodo" :idNodoSeleccionado="idNodoSeleccionado" v-if="$route?.params?.tipoBrowse === 'browseNodo' && $route?.params?.idBrowsed
                 " :idNodo="$route.params.idBrowsed" />
 
-        <controles-nodo :yo="yo" ref="controlesNodo" :idNodoSeleccionado="idNodoSeleccionado"
-            v-show="idNodoSeleccionado"
+        <controles-nodo :yo="yo" ref="controlesNodo" :idNodoSeleccionado="idNodoSeleccionado" v-show="idNodoSeleccionado"
             :nodoCreandoDependencia="nodoCreandoDependencia" :nodoTargetRelevante="nodoTargetRelevante" @click.stop=""
             @iniciarCrearDependenciaNodo="marcarNodoEsperandoDependencia($event)"
             @cancelarCreandoDependencia="nodoCreandoDependencia = null" @nodoEliminado="reactToNodoEliminado"
@@ -128,7 +128,7 @@ export default {
             togglingNodoColeccion: false,
 
             gettingNodoNext: false,
-            indexLocalizadorAccesibles: 0,
+            indexLocalizadorEstudiables: 0,
             indexLocalizadorOlvidados: 0,
             indexLocalizadorTops: 0,
 
@@ -143,9 +143,15 @@ export default {
             idsNodosActivosAccesiblesInexplorados: [],
             idsNodosActivosOlvidados: [],
             idsNodosTop: [],
+
+            nodosColeccionEstudiables: [],
         };
     },
     computed: {
+        idsNodosColeccionEstudiables() {
+            if (!this.nodosColeccionEstudiables) return [];
+            return this.nodosColeccionEstudiables.map(nc => nc.id);
+        },
         nodoTargetRelevante() {
             if (!this.idNodoTarget) {
                 return false;
@@ -181,6 +187,34 @@ export default {
         },
     },
     methods: {
+        descargarNodosColeccionEstudiables() {
+            if (!this.coleccionSeleccionada?.id) {
+                return;
+            }
+            let idColeccion = this.coleccionSeleccionada.id;
+            console.log("Descargando nodos estudiables");
+            this.$apollo.query({
+                query: gql`
+                query($idColeccion: ID!){
+                    nodosEstudiablesColeccion(idColeccion:$idColeccion){
+                    id
+                    nombre
+                    }
+                }
+                `,
+                fetchPolicy: "network-only",
+                variables: {
+                    idColeccion: idColeccion,
+                }
+            }).then(({ data: { nodosEstudiablesColeccion } }) => {
+                if (this.coleccionSeleccionada?.id === idColeccion) {
+                    this.nodosColeccionEstudiables = nodosEstudiablesColeccion || [];
+                }
+            }).catch((error) => {
+                console.log("error: " + error);
+            })
+        },
+
         zoomWheel(e) {
             if (this.$refs.controlesNodo?.zoomWheel(e)) {
                 console.log("wheel atrapado en controlesNodo");
@@ -237,20 +271,20 @@ export default {
         localizarNext(tipo) {
             let nodoNext = null;
             let idNodoNext = null;
-            if (tipo === "accesible") {
-                if (this.idsNodosActivosAccesiblesInexplorados.length < 1) {
+            if (tipo === "estudiable") {
+                if (this.idsNodosColeccionEstudiables.length < 1) {
                     return;
                 }
-                this.indexLocalizadorAccesibles++;
+                this.indexLocalizadorEstudiables++;
                 if (
-                    this.indexLocalizadorAccesibles >=
-                    this.idsNodosActivosAccesiblesInexplorados.length
+                    this.indexLocalizadorEstudiables >=
+                    this.idsNodosColeccionEstudiables.length
                 ) {
-                    this.indexLocalizadorAccesibles = 0;
+                    this.indexLocalizadorEstudiables = 0;
                 }
                 idNodoNext =
-                    this.idsNodosActivosAccesiblesInexplorados[
-                    this.indexLocalizadorAccesibles
+                    this.idsNodosColeccionEstudiables[
+                    this.indexLocalizadorEstudiables
                     ];
             } else if (tipo === "olvidado") {
                 if (this.idsNodosActivosOlvidados.length < 1) {
@@ -399,6 +433,12 @@ export default {
     },
     watch: {
         coleccionSeleccionada(col, prev) {
+            if (!col) {
+                this.nodosColeccionEstudiables = [];
+            }
+            else {
+                this.descargarNodosColeccionEstudiables();
+            }
             if (!col || !prev || col.id != prev.id) {
                 this.idNodoSeleccionado = null;
             }

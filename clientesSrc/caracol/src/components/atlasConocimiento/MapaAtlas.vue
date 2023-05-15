@@ -28,7 +28,7 @@
                 <nodo-conocimiento-atlas v-for="(nodo) in nodosVisibles" :key="nodo.id" :idNodo="nodo.id"
                     :seleccionado="idNodoSeleccionado === nodo.id" :yo="yo" :idsNodosAprendidos="idsNodosActivosAprendidos"
                     :idsNodosOlvidados="idsNodosActivosOlvidados" :idsNodosEstudiados="idsNodosActivosEstudiados"
-                    :idsNodosAccesibles="idsNodosActivosAccesibles"
+                    :idsNodosEstudiables="idsNodosColeccionEstudiables"
                     :class="{ esperandoClick: conectandoNodosColeccion, activoSeleccion: conectandoNodosColeccion && coleccionSeleccionada?.idsNodos.includes(nodo.id), activoSubseleccion: conectandoNodosColeccion && coleccionSeleccionada?.idsRed.includes(nodo.id), }"
                     :idNodoTarget="idNodoTarget"
                     :style="[{ top: nodo.autoCoords.y - centroDescarga.y + 'px', left: nodo.autoCoords.x - centroDescarga.x + 'px', },]"
@@ -75,11 +75,13 @@ query($centro: CoordsInput!, $radioX: Int!, $radioY: Int!){
     ${fragmentoNodoConocimientoMinimoAtlas}
 `
 
-var idTimeoutNodosVisibles = null;
-var apuntadorChunkNodosVisibles = 0;
 export default {
     name: "MapaAtlas",
     props: {
+        idsNodosColeccionEstudiables: {
+            type: Array,
+            default: [],
+        },
         nodoSeleccionadoBelongsColeccionSeleccionada: {
             type: Boolean,
         },
@@ -344,12 +346,6 @@ export default {
             return this.todosNodos.find((n) => n.id === this.idNodoTarget);
         },
 
-        idsTodosNodos() {
-            if (!this.todosNodos) {
-                return [];
-            }
-            return this.todosNodos.map((n) => n.id);
-        },
         idsTodosNodosEstudiados() {
             if (!this.yo?.atlas?.datosNodos) {
                 return [];
@@ -374,70 +370,28 @@ export default {
                 .filter((dn) => dn.estadoAprendizaje === "OLVIDADO")
                 .map((dn) => dn.idNodo);
         },
-        idsTodosNodosAccesibles() {
-            return this.todosNodos
-                .filter(
-                    (n) =>
-                        !n.vinculos.some(
-                            (v) =>
-                                v.tipo === "continuacion" &&
-                                v.rol === "target" &&
-                                !this.idsTodosNodosAprendidos.includes(v.idRef) &&
-                                !this.idsTodosNodosEstudiados.includes(v.idRef)
-                        )
-                )
-                .map((nA) => nA.id);
-        },
-
-        nodosActivos() {
-            if (this.$route.name != "atlas") {
-                return [];
-            }
-            if (!this.todosNodos) {
-                return [];
-            }
-            let campo = this.todosNodos;
-
-            if (this.coleccionSeleccionada && !this.conectandoNodosColeccion) {
-                campo = campo.filter((n) =>
-                    this.coleccionSeleccionada.idsRed.includes(n.id)
-                );
-            }
-            return campo;
-        },
-
-        idsNodosActivos() {
-            return this.nodosActivos.map((na) => na.id);
-        },
         idsNodosActivosEstudiados() {
-            return this.idsNodosActivos.filter((idN) =>
-                this.idsTodosNodosEstudiados.includes(idN)
-            );
+            let listaCompleta = this.idsTodosNodosEstudiados;
+            if (this.coleccionSeleccionada?.id) {
+                listaCompleta = listaCompleta.filter(id => this.coleccionSeleccionada.idsRed.includes(id));
+            }
+            return listaCompleta;
         },
         idsNodosActivosAprendidos() {
-            return this.idsNodosActivos.filter((idN) =>
-                this.idsTodosNodosAprendidos.includes(idN)
-            );
+            if (this.coleccionSeleccionada) {
+                return this.idsTodosNodosAprendidos.filter(id => this.coleccionSeleccionada.idsRed.includes(id));
+            }
+            return this.idsTodosNodosAprendidos;
         },
         idsNodosActivosOlvidados() {
-            return this.idsNodosActivos.filter((idN) =>
-                this.idsTodosNodosOlvidados.includes(idN)
-            );
+            if (this.coleccionSeleccionada) {
+                return this.idsTodosNodosOlvidados.filter(id => this.coleccionSeleccionada.idsRed.includes(id));
+            }
+            return this.idsTodosNodosOlvidados;
         },
-        idsNodosActivosAccesibles() {
-            return this.idsTodosNodosAccesibles.filter((idN) =>
-                this.idsNodosActivos.includes(idN)
-            );
+        idsNodosColeccionAccesibles() {
+            return this.nodosColeccionAccesibles.map(n => n.id);
         },
-        idsNodosActivosAccesiblesInexplorados() {
-            return this.idsNodosActivosAccesibles.filter(
-                (id) =>
-                    !this.idsNodosActivosAprendidos.includes(id) &&
-                    !this.idsNodosActivosEstudiados.includes(id) &&
-                    !this.idsNodosActivosOlvidados.includes(id)
-            );
-        },
-
         factorZoom() {
             return Number((this.zoom / 100).toFixed(2));
         },
@@ -1056,12 +1010,6 @@ export default {
             this.hideZoomInfo();
 
             this.setRadiosDescarga();
-        },
-        idsNodosActivosAccesiblesInexplorados: {
-            handler: function (ids) {
-                this.$emit("settedIdsNodosActivosAccesiblesInexplorados", ids);
-            },
-            immediate: true,
         },
         idsNodosTop: {
             handler: function (ids) {
