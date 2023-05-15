@@ -659,7 +659,7 @@ export default {
 
         },
         clickNodo(nodo) {
-            this.$emit("seleccionNodo", nodo.id);
+            this.$emit("seleccionNodo", {idNodo: nodo.id, programmatic: false});
         },
         togglePosicionamiento() {
             this.enviandoQueryConfiguracionAtlas = true;
@@ -715,7 +715,6 @@ export default {
 
         centrarEnNodo(n) {
             this.centrarVista(n.autoCoords.x, n.autoCoords.y);
-            this.seleccionNodo(n);
         },
         centrarEnNodoById(idNodo) {
             if (!idNodo) {
@@ -856,8 +855,8 @@ export default {
                     console.log(`Error. E: ${error}`);
                 });
         },
-        seleccionNodo(nodo) {
-            this.$emit("seleccionNodo", nodo.id);
+        seleccionNodo(nodo, programatic) {
+            this.$emit("seleccionNodo", {idNodo: nodo.id, programatic});
         },
         async eliminarVinculo(idNodoFrom, idNodoTo) {
             if (!this.usuarioSuperadministrador) {

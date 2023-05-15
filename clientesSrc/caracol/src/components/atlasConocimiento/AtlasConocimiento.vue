@@ -353,7 +353,7 @@ export default {
                     .then(({ data: { nodo } }) => {
                         this.gettingNodoNext = false;
                         this.centrarEnNodo(nodo);
-                        this.seleccionNodo(nodo.id);
+                        this.seleccionNodo({idNodo: nodo.id, programmatic: true});
                         return;
                     })
                     .catch((error) => {
@@ -430,12 +430,19 @@ export default {
                 this.seleccionNodo(null);
             }
         },
-        seleccionNodo(idNodo) {
+        seleccionNodo(datosSeleccion) {
+            if (!datosSeleccion) {
+                this.idNodoSeleccionado = null;
+                return;
+            }
+            const { idNodo, programmatic } = datosSeleccion;
             if (this.nodoCreandoDependencia) {
                 if (idNodo === this.nodoCreandoDependencia.id) {
                     return;
                 }
-                this.$refs.controlesNodo.crearDependenciaNodo(idNodo);
+                if (!programmatic) {
+                    this.$refs.controlesNodo.crearDependenciaNodo(idNodo);
+                }
                 return;
             }
             this.idNodoSeleccionado = idNodo;

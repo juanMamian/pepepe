@@ -292,6 +292,7 @@ export default {
 
 #iframeSeccion {
     width: 100%;
+    min-height: 100px;
 }
 
 #zonaAdministracion {
