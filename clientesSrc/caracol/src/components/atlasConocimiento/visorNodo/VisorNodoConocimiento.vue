@@ -893,7 +893,6 @@ export default {
         if (elNombre.length > 20) {
           elNombre = elNombre.slice(0, 20) + "...";
         }
-        window.title = elNombre;
       }
     },
   },
