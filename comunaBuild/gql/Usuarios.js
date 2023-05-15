@@ -9,6 +9,7 @@ import { ModeloNodoSolidaridad } from "../model/atlasSolidaridad/NodoSolidaridad
 import { getIdsRedRequerimentosNodo } from "./NodosConocimiento";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+const millisDia = 86400000;
 export const typeDefs = `#graphql
     scalar Date   
 
@@ -151,6 +152,7 @@ APRENDIDO
         Usuario(idUsuario:ID!): Usuario,
         buscarPersonas(textoBuscar:String!):[Usuario],
         participantesCasaMaestraVida:[Usuario],
+        nodosEstudiablesColeccion(idColeccion: ID!): [NodoConocimiento]
 
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
@@ -388,6 +390,40 @@ export const resolvers = {
                 UserInputError('Colección no encontrada');
             }
             return laColeccion;
+        },
+        async nodosEstudiablesColeccion(_, { idColeccion }, contexto) {
+            console.log("Descargando nodos estudiables para colección " + idColeccion);
+            if (!contexto.usuario?.id) {
+                AuthenticationError('loginRequerido');
+            }
+            const credencialesUsuario = contexto.usuario;
+            let elUsuario = null;
+            try {
+                elUsuario = await Usuario.findById(credencialesUsuario.id).exec();
+            }
+            catch (error) {
+                console.log("Error getting usuario: " + error);
+                ApolloError("Error conectando con la base de datos");
+            }
+            if (!elUsuario) {
+                return ApolloError("Error conectando con la base de datos");
+            }
+            let laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+            if (!laColeccion) {
+                return UserInputError("Colección no encontrada");
+            }
+            let nodosRed = await getNodosRedByOriginalIds(laColeccion.idsNodos);
+            console.log(laColeccion.nombre);
+            let idsHabilitantes = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido || (dn.estudiado && ((new Date(dn.estudiado)).getTime() + (dn.diasRepaso * millisDia) > Date.now()))).map(dn => dn.idNodo);
+            console.log(idsHabilitantes.length + " ids habilitantes");
+            let nodosEstudiables = nodosRed.filter(n => !idsHabilitantes.includes(n.id) && !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !idsHabilitantes.includes(v.idRef)));
+            console.log("Encontrados " + nodosEstudiables.length + " nodos estudiables");
+            console.table(nodosEstudiables.map(n => {
+                return {
+                    nombre: n.nombre
+                };
+            }));
+            return nodosEstudiables;
         },
     },
     Mutation: {

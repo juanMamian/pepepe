@@ -152,7 +152,7 @@ esquemaDatoNodo.pre("save", function (next) {
         this.diasRepaso = this.periodoRepaso / 86400000;
     }
     if (this.estudiado && !this.diasRepaso) {
-        this.diastRepaso = 2;
+        this.diasRepaso = 2;
     }
     next();
 });
