@@ -15,7 +15,7 @@
                     Crear Nodo de conocimiento
                 </div>
             </div>
-            <div id="contenedorNodos" ref="contenedorNodos" :style="[posContenedorNodos, sizeContenedorNodos, ]">
+            <div id="contenedorNodos" ref="contenedorNodos" :style="[posContenedorNodos, sizeContenedorNodos,]">
                 <loading texto="" v-if="posicionCreandoNodo" style="position: absolute" :style="[
                         {
                             top: posicionCreandoNodo.y - esquinasDiagrama.y1 + 'px',
@@ -95,7 +95,7 @@ export default {
         coleccionSeleccionada: {
             type: Object,
         },
-        idsNodosActivosOlvidados:{
+        idsNodosActivosOlvidados: {
             type: Array,
             default: [],
         }
@@ -110,8 +110,13 @@ export default {
         nodosZona: {
             query: QUERY_NODOS_ZONA,
             variables() {
+                let gridSize = Math.round(150 / this.factorZoom);//Ancho de una grid cuyos vértices son los posibles centros de descarga. Esto eleva la posiblidad de que haya querys en cache.
+
                 return {
-                    centro: this.centroDescarga,
+                    centro: {
+                        x: Math.round(this.centroDescarga.x / gridSize) * gridSize,
+                        y: Math.round(this.centroDescarga.y / gridSize) * gridSize,
+                    },
                     radioX: this.radioDescargaX,
                     radioY: this.radioDescargaY,
                 }
@@ -123,7 +128,7 @@ export default {
             fetchPolicy: "cache-first",
             debounce: 1000,
             skip() {
-                return !this.centroDescarga || !this.radioDescargaX || !this.radioDescargaY
+                return !this.centroDescarga || !this.radioDescargaX || !this.radioDescargaY || !this.factorZoom;
             }
         },
         nodoSeleccionadoDB: {
@@ -287,7 +292,7 @@ export default {
     },
     computed: {
         nodosVisibles() {
-            if(!this.nodosZona){
+            if (!this.nodosZona) {
                 return [];
             }
 
@@ -315,10 +320,10 @@ export default {
                 transform: "translate(" + Math.round(deltaCentroVista.x * this.factorZoom) + "px, " + Math.round(deltaCentroVista.y * this.factorZoom) + "px) scale(" + this.factorZoom + ")",
             }
 
-//            return {
-//                top: Math.round(heightScreen / 2) + (deltaCentroVista.y * this.factorZoom) + 'px',
-//                left: Math.round(widthScreen / 2) + (deltaCentroVista.x * this.factorZoom) + 'px',
-//            }
+            //            return {
+            //                top: Math.round(heightScreen / 2) + (deltaCentroVista.y * this.factorZoom) + 'px',
+            //                left: Math.round(widthScreen / 2) + (deltaCentroVista.x * this.factorZoom) + 'px',
+            //            }
 
         },
         offsetMenuContextual() {
@@ -660,7 +665,7 @@ export default {
 
         },
         clickNodo(nodo) {
-            this.$emit("seleccionNodo", {idNodo: nodo.id, programmatic: false});
+            this.$emit("seleccionNodo", { idNodo: nodo.id, programmatic: false });
         },
         togglePosicionamiento() {
             this.enviandoQueryConfiguracionAtlas = true;
@@ -857,7 +862,7 @@ export default {
                 });
         },
         seleccionNodo(nodo, programatic) {
-            this.$emit("seleccionNodo", {idNodo: nodo.id, programatic});
+            this.$emit("seleccionNodo", { idNodo: nodo.id, programatic });
         },
         async eliminarVinculo(idNodoFrom, idNodoTo) {
             if (!this.usuarioSuperadministrador) {
@@ -989,7 +994,6 @@ export default {
                     console.log("refrescando la zona de descarga");
                     this.centroDescarga.x = this.centroVista.x;
                     this.centroDescarga.y = this.centroVista.y;
-                    this.$apollo.queries.nodosZona.refetch();
                 }
             },
             deep: true,
@@ -1044,12 +1048,13 @@ export default {
     pointer-events: none;
 }
 
-#loadingNodosZona{
+#loadingNodosZona {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
 #contenedorNodos {
     position: absolute;
     top: 50%;
