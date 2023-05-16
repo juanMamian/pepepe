@@ -8,16 +8,14 @@
             <transition name="fadeOut">
                 <div v-show="showingZoomInfo || true" id="infoZoom">x{{ factorZoom }}</div>
             </transition>
+            <loading v-show="$apollo.queries.nodosZona.loading" id="loadingNodosZona" />
             <div id="menuContextual" :style="[offsetMenuContextual]" v-show="mostrandoMenuContextual">
                 <div class="botonMenuContextual" id="botonCrearNuevoNodo" :class="{ deshabilitado: posicionCreandoNodo }"
                     v-if="usuarioProfe" @click="crearNodoEnMenuContextual">
                     Crear Nodo de conocimiento
                 </div>
             </div>
-            <div id="contenedorNodos" ref="contenedorNodos" :style="[posContenedorNodos,
-                    { transform: 'scale(' + factorZoom + ')' },
-                    sizeContenedorNodos,
-                ]">
+            <div id="contenedorNodos" ref="contenedorNodos" :style="[posContenedorNodos, sizeContenedorNodos, ]">
                 <loading texto="" v-if="posicionCreandoNodo" style="position: absolute" :style="[
                         {
                             top: posicionCreandoNodo.y - esquinasDiagrama.y1 + 'px',
@@ -313,11 +311,14 @@ export default {
                 y: this.centroDescarga.y - this.centroVista.y,
 
             }
-
             return {
-                top: Math.round(heightScreen / 2) + (deltaCentroVista.y * this.factorZoom) + 'px',
-                left: Math.round(widthScreen / 2) + (deltaCentroVista.x * this.factorZoom) + 'px',
+                transform: "translate(" + Math.round(deltaCentroVista.x * this.factorZoom) + "px, " + Math.round(deltaCentroVista.y * this.factorZoom) + "px) scale(" + this.factorZoom + ")",
             }
+
+//            return {
+//                top: Math.round(heightScreen / 2) + (deltaCentroVista.y * this.factorZoom) + 'px',
+//                left: Math.round(widthScreen / 2) + (deltaCentroVista.x * this.factorZoom) + 'px',
+//            }
 
         },
         offsetMenuContextual() {
@@ -1043,10 +1044,16 @@ export default {
     pointer-events: none;
 }
 
+#loadingNodosZona{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
 #contenedorNodos {
     position: absolute;
-    top: 0px;
-    left: 0px;
+    top: 50%;
+    left: 50%;
     user-select: none;
     z-index: 0;
     transform-origin: top left;
