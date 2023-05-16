@@ -15,13 +15,8 @@
                     Crear Nodo de conocimiento
                 </div>
             </div>
+            <loading texto="" v-if="posicionCreandoNodo" style="position: absolute" :style="[offsetMenuContextual]" />
             <div id="contenedorNodos" ref="contenedorNodos" :style="[posContenedorNodos, sizeContenedorNodos,]">
-                <loading texto="" v-if="posicionCreandoNodo" style="position: absolute" :style="[
-                        {
-                            top: posicionCreandoNodo.y - esquinasDiagrama.y1 + 'px',
-                            left: posicionCreandoNodo.x - esquinasDiagrama.x1 + 'px',
-                        },
-                    ]" />
 
                 <nodo-conocimiento-atlas v-for="(nodo) in nodosVisibles" :key="nodo.id" :idNodo="nodo.id"
                     :seleccionado="idNodoSeleccionado === nodo.id" :yo="yo" :idsNodosAprendidos="idsNodosActivosAprendidos"
@@ -110,12 +105,12 @@ export default {
         nodosZona: {
             query: QUERY_NODOS_ZONA,
             variables() {
-                let gridSize = Math.round(150 / this.factorZoom);//Ancho de una grid cuyos vértices son los posibles centros de descarga. Esto eleva la posiblidad de que haya querys en cache.
-
+                console.log("centro: ");
+                console.table(this.centroDescarga);
                 return {
                     centro: {
-                        x: Math.round(this.centroDescarga.x / gridSize) * gridSize,
-                        y: Math.round(this.centroDescarga.y / gridSize) * gridSize,
+                        x: this.centroDescarga.x,
+                        y: this.centroDescarga.y
                     },
                     radioX: this.radioDescargaX,
                     radioY: this.radioDescargaY,
@@ -128,7 +123,7 @@ export default {
             fetchPolicy: "cache-first",
             debounce: 1000,
             skip() {
-                return !this.centroDescarga || !this.radioDescargaX || !this.radioDescargaY || !this.factorZoom;
+                return !this.centroDescarga || !this.radioDescargaX || !this.radioDescargaY;
             }
         },
         nodoSeleccionadoDB: {
@@ -145,20 +140,6 @@ export default {
                 return nodo;
             },
             fetchPolicy: "cache-first",
-        },
-        todosNodos: {
-            query: QUERY_NODOS,
-            update({ todosNodos }) {
-                this.nodosDescargados = true;
-                var nuevoTodosNodos = JSON.parse(JSON.stringify(todosNodos));
-                nuevoTodosNodos.forEach((nodo) => {
-                    nodo.coordsManuales = nodo.autoCoords;
-                    nodo.coords = nodo.autoCoords;
-                });
-
-                return nuevoTodosNodos;
-            },
-            fetchPolicy: "cache-and-network",
         },
         configuracionAtlas: {
             query: gql`
@@ -202,9 +183,33 @@ export default {
                 return nodo.porcentajeCompletado;
             },
         },
+        nodoTarget: {
+            query: gql`
+            query($idNodo: ID!){
+                nodo(idNodo: $idNodo){
+                    id
+                    nombre
+                }
+            }
+            `,
+            variables() {
+                return {
+                    idNodo: this.idNodoTarget
+                }
+            },
+            fetchPolicy: "cache-first",
+            skip() {
+                return !this.idNodoTarget
+            },
+            update({ nodo }) {
+                return nodo;
+            }
+        }
     },
     data() {
         return {
+            nodoTarget: {
+            },
             lastPointerMoveX: null,
             lastPointerMoveY: null,
             centroVista: {
@@ -232,7 +237,6 @@ export default {
                 posicionando: false,
             },
             hovered: false,
-            todosNodos: [],
             nodosDescargados: false,
             posicionCreandoNodo: null,
             factorEscalera: 0.2,
@@ -291,6 +295,9 @@ export default {
         };
     },
     computed: {
+        sizeGridDescarga() {
+            return Math.round(150 / this.factorZoom);
+        },
         nodosVisibles() {
             if (!this.nodosZona) {
                 return [];
@@ -355,11 +362,6 @@ export default {
             }
             return this.nodoSeleccionadoDB;
         },
-        nodoTarget() {
-            if (!this.idNodoTarget) return null;
-            return this.todosNodos.find((n) => n.id === this.idNodoTarget);
-        },
-
         idsTodosNodosEstudiados() {
             if (!this.yo?.atlas?.datosNodos) {
                 return [];
@@ -399,34 +401,6 @@ export default {
             return {
                 width: this.radioDescargaX + "px",
                 height: this.radioDescargaY + "px",
-            };
-        },
-        esquinasDiagrama() {
-            const maxX = this.todosNodos.reduce(
-                (acc, n) => (n.autoCoords.x > acc ? n.autoCoords.x : acc),
-                0
-            );
-            const maxY = this.todosNodos.reduce(
-                (acc, n) => (n.autoCoords.y > acc ? n.autoCoords.y : acc),
-                0
-            );
-            const minX = this.todosNodos.reduce(
-                (acc, n) => (n.autoCoords.x < acc ? n.autoCoords.x : acc),
-                0
-            );
-            const minY = this.todosNodos.reduce(
-                (acc, n) => (n.autoCoords.y < acc ? n.autoCoords.y : acc),
-                0
-            );
-
-            let padding = 400;
-
-            return {
-                x1: minX - padding,
-                y1: minY - padding,
-
-                x2: maxX + padding,
-                y2: maxY + padding,
             };
         },
     },
@@ -757,8 +731,6 @@ export default {
                 console.log(`No autorizado`);
                 return;
             }
-            this.todosNodos[this.todosNodos.findIndex((n) => n.id == idNodo)].coords =
-                coordsManuales;
             this.$apollo
                 .mutate({
                     mutation: gql`
@@ -992,13 +964,13 @@ export default {
                 if (this.centroVista.x > this.centroDescarga.x + radioPermitidoX || this.centroVista.x < this.centroDescarga.x - radioPermitidoX || this.centroVista.y < this.centroDescarga.y - radioPermitidoY || this.centroVista.y > this.centroDescarga.y + radioPermitidoY) {
                     //Refresh de descarga.
                     console.log("refrescando la zona de descarga");
-                    this.centroDescarga.x = this.centroVista.x;
-                    this.centroDescarga.y = this.centroVista.y;
+
+                    this.centroDescarga.x = Math.round(this.centroVista.x / this.sizeGridDescarga) * this.sizeGridDescarga;
+                    this.centroDescarga.y = Math.round(this.centroVista.y / this.sizeGridDescarga) * this.sizeGridDescarga;
+                    console.table(this.centroDescarga);
                 }
             },
             deep: true,
-        },
-        coleccionSeleccionada(col) {
         },
         nodoTarget() {
             this.nivelesUnderTarget = 1;
