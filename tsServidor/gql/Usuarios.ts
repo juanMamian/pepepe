@@ -115,6 +115,18 @@ APRENDIDO
         categoria:String,
         texto:String
     }
+    input InputBloqueSubscripcion{
+        dateInicio: Date,
+        duracion: Int,
+        valorPagado: Int,
+    }
+
+    type BloqueSubscripcion{
+        id: ID,
+        dateInicio: Date,
+        duracion: Int,
+        valorPagado: Int,
+    }
 
     type Usuario{
         id: ID,
@@ -136,6 +148,7 @@ APRENDIDO
         responsablesAmplio:[String],
         administradores:[String],
         permisos:[String]
+        bloquesSubscripcion:[BloqueSubscripcion],
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
         foros:[InfoForosUsuario],
@@ -173,6 +186,8 @@ APRENDIDO
         coleccionNodosConocimiento(idUsuario: ID!, idColeccion: ID!):ColeccionNodosAtlasConocimiento,
     }
     extend type Mutation{
+        crearBloqueSubscripcionUsuario(idUsuario: ID!, infoBloque: InputBloqueSubscripcion): BloqueSubscripcion,
+
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
         editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
         addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
@@ -473,7 +488,7 @@ export const resolvers = {
 
             console.log(idsHabilitantes.length + " ids habilitantes");
 
-            let nodosEstudiables = nodosRed.filter(n => !idsHabilitantes.includes(n.id) &&  !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !idsHabilitantes.includes(v.idRef)));
+            let nodosEstudiables = nodosRed.filter(n => !idsHabilitantes.includes(n.id) && !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !idsHabilitantes.includes(v.idRef)));
 
             console.log("Encontrados " + nodosEstudiables.length + " nodos estudiables");
             console.table(nodosEstudiables.map(n => {
@@ -488,6 +503,49 @@ export const resolvers = {
 
     },
     Mutation: {
+        crearBloqueSubscripcionUsuario: async function(_: never, { idUsuario, infoBloque }: { idUsuario: string, infoBloque: any }, context: contextoQuery) {
+            if (!context?.usuario?.id) {
+                return UserInputError("Autenticación requerida");
+            }
+            const credencialesUsuario = context.usuario;
+
+            console.log("permisos: " + credencialesUsuario.permisos);
+            if (!credencialesUsuario.permisos.includes("superadministrador")) {
+                return AuthenticationError();
+            }
+
+            let elUsuario: DocUsuario | null = null;
+            try {
+                elUsuario = await Usuario.findById(idUsuario).exec();
+            }
+            catch (error) {
+                console.log("error getting usuario: " + error);
+                return ApolloError("Error conectando con la base de datos");
+            }
+            if (!elUsuario) {
+                return UserInputError();
+            }
+
+            let nuevoBloque = elUsuario.bloquesSubscripcion.create(infoBloque);
+            if (elUsuario.bloquesSubscripcion?.length > 0) {
+                let lastBloqueSubscripcion = elUsuario.bloquesSubscripcion[elUsuario.bloquesSubscripcion.length - 1];
+                let lastTimeSubscripcion = lastBloqueSubscripcion.dateInicio.getTime() + lastBloqueSubscripcion.duracion * (millisDia * 30);
+                if (nuevoBloque.dateInicio.getTime() <= lastTimeSubscripcion) {
+                    return UserInputError("Fecha de inicio no permitida pues se superpone con la supscripción actual");
+                }
+            }
+            elUsuario.bloquesSubscripcion.push(nuevoBloque);
+            try {
+                await elUsuario.save();
+            }
+            catch (error) {
+                console.log("Error guardando usuario " + error);
+                return ApolloError();
+            }
+            console.log("Bloque de subscripción creado");
+            return nuevoBloque;
+        },
+
         editarDatosUsuario: async function(_: any, { nuevosDatos }: any, context: contextoQuery) {
             console.log(`solicitud de edicion de datos de usuario`);
             let credencialesUsuario = context.usuario;
@@ -500,7 +558,7 @@ export const resolvers = {
             try {
                 var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
                 if (!elUsuario) {
-                    throw "Usuario no encontrado"
+                    throw "Usuario no encontrad"
                 }
             }
             catch (error) {

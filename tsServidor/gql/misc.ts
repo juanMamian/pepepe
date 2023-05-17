@@ -1,14 +1,14 @@
 import { GraphQLError } from "graphql";
 import { GraphQLScalarType } from "graphql";
 
-export function AuthenticationError(mensaje) {
+export function AuthenticationError(mensaje= "No autorizado") {
   throw new GraphQLError(mensaje, {
     extensions: {
       code: "UNAUTHENTICATED",
     },
   });
 }
-export function ApolloError(mensaje) {
+export function ApolloError(mensaje = "Error conectando con la base de datos") {
   throw new GraphQLError(mensaje, {
     extensions: {
       code: "INTERNAL_SERVER_ERROR",
@@ -16,7 +16,7 @@ export function ApolloError(mensaje) {
   });
 }
 
-export function UserInputError(mensaje) {
+export function UserInputError(mensaje="Datos inválidos") {
   throw new GraphQLError(mensaje, {
     extensions: {
       code: "BAD_USER_INPUT",

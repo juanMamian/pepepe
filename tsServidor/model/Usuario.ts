@@ -3,6 +3,7 @@ import { EsquemaRutaGrado } from "./rutaGrado/RutaGrado";
 
 export const permisosDeUsuario = [
     "usuario",
+    "subscripcion-ilimitada",
     "administrador",
     "atlasAdministrador",
     "superadministrador",
@@ -18,6 +19,20 @@ export const permisosDeUsuario = [
     "comunere"
 ];
 
+const esquemaBloqueSubscripcion= new mongoose.Schema({
+    dateInicio:{
+        type: Date,
+        required: true,
+    },
+    duracion:{
+        type: Number,
+        required: true,
+    },
+    valorPagado:{
+        type: Number,
+        required: true,
+    }
+});
 const esquemaIteracionRepaso = new mongoose.Schema({
     intervalo: {
         type: Number,
@@ -292,6 +307,10 @@ const esquemaUsuario = new mongoose.Schema({
         min: 2,
         default: ["usuario"],
         enum: permisosDeUsuario
+    },
+    bloquesSubscripcion:{
+        type: [esquemaBloqueSubscripcion],
+        default:[],
     },
     atlas: {
         type: esquemaEstadoAtlas,
