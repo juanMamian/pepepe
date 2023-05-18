@@ -149,6 +149,7 @@ APRENDIDO
         administradores:[String],
         permisos:[String]
         bloquesSubscripcion:[BloqueSubscripcion],
+        finSubscripcion: Date,
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
         foros:[InfoForosUsuario],
@@ -504,45 +505,45 @@ export const resolvers = {
 
     },
     Mutation: {
-        eliminarBloqueSubscripcionUsuario: async function(_:never, {idUsuario, idBloque}: {idUsuario: string, idBloque: string}, context: contextoQuery){
+        eliminarBloqueSubscripcionUsuario: async function(_: never, { idUsuario, idBloque }: { idUsuario: string, idBloque: string }, context: contextoQuery) {
             console.log("Petición de elimar bloque de subscripcion");
-            if(!context?.usuario?.id){
+            if (!context?.usuario?.id) {
                 return AuthenticationError();
             }
             const credencialesUsuario = context.usuario;
 
-            if(!credencialesUsuario.permisos.includes("superadministrador")){
+            if (!credencialesUsuario.permisos.includes("superadministrador")) {
                 return AuthenticationError();
             }
 
             let elUsuario: DocUsuario | null = null;
-            try{
+            try {
                 elUsuario = await Usuario.findById(idUsuario).exec();
             }
-            catch(error){
+            catch (error) {
                 console.log("Error descargando usuario: " + error);
                 return ApolloError();
             }
-            if(!elUsuario){
+            if (!elUsuario) {
                 return UserInputError();
             }
 
-            let indexB=elUsuario.bloquesSubscripcion.findIndex(b=>b.id===idBloque);
-            if(indexB < 0){
+            let indexB = elUsuario.bloquesSubscripcion.findIndex(b => b.id === idBloque);
+            if (indexB < 0) {
                 return UserInputError();
             }
             elUsuario.bloquesSubscripcion.splice(indexB, 1);
 
-            try{
+            try {
                 await elUsuario.save()
             }
-            catch(error){
+            catch (error) {
                 console.log("Error guardando usuario: " + error);
                 return ApolloError();
             }
             console.log("Eliminado");
             return true;
-        
+
         },
         crearBloqueSubscripcionUsuario: async function(_: never, { idUsuario, infoBloque }: { idUsuario: string, infoBloque: any }, context: contextoQuery) {
             if (!context?.usuario?.id) {
@@ -1702,6 +1703,15 @@ export const resolvers = {
         nombre: function(parent: any, _: any, __: any) {
             return parent.username;
         },
+        finSubscripcion(parent: DocUsuario, _: never, __: never) {
+            if (!(parent.bloquesSubscripcion?.length > 0)) {
+                return null;
+            }
+            let ultimoBloqueSubscripcion = parent.bloquesSubscripcion[0];
+            let dateFinSubscripcion = new Date(ultimoBloqueSubscripcion.dateInicio.getTime() + (ultimoBloqueSubscripcion.duracion * millisDia * 30));
+            return dateFinSubscripcion;
+        },
+
         espacioActual: async function(parent: any, { dateActual }: any, __: any) {
             try {
                 var losEspacios: any = await Espacio.find({ "iteracionesSemanales.idsAsistentesConstantes": parent.id }).exec();

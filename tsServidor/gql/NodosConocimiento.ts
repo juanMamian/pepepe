@@ -180,18 +180,21 @@ export const resolvers = {
     Query: {
         busquedaAmplia: async function(_: any, { palabrasBuscadas }: { palabrasBuscadas: string }, __: any) {
             // console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
+            // con
+            console.log("Buscando " + palabrasBuscadas);
             if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
             }
             let opciones: DocNodoConocimiento[] = [];
 
             try {
-                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
+                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "es", strength: 1 }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log(". E: " + error);
                 ApolloError("Error conectando con la base de datos");
             }
+            console.log("retornando " + opciones.length + " opciones");
             return opciones
         },
         todosNodos: async function() {

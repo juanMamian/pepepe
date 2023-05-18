@@ -1,9 +1,9 @@
 Atlas de conocimiento.
 
--Que en la vista mapa otra vez se pueda recorrer hacia atrás la lista de dependencias. O hacia adelante.
--Que se cambie el nombre de la pestaña en todas las secciones.
--Crash cuando se sube foto.
 -String similarity en el buscador de nodos con las tildes.
+-No está funcionando el buscador de personas.
+-En firefox no se ven los enlaces de los nodos.
+-Cuando se hace pan vista del mapaAtlas se pierde el nodoSeleccionado.
 
 -En maestra vida asegurarse de que se hace la migración de objetivos de chicxs, periodoRepaso y de objetivos y de personas.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.

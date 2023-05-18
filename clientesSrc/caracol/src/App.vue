@@ -52,7 +52,8 @@
 
             <div id="botonMenuNavUsuario" @click.stop="mostrandoNavUsuario = !mostrandoNavUsuario" v-if="usuarioLogeado">
                 <span>{{ yo.nombres }}</span>
-                <img src="@/assets/iconos/user.svg" alt="Usuario" />
+                <img src="@/assets/iconos/user.svg" alt="Usuario" v-if="subscripcionActiva" />
+                <img src="@/assets/iconos/userLock.svg" alt="Locked user" v-if="!subscripcionActiva">
             </div>
             <div v-if="usuarioLogeado" id="contenedorBotonesUsuario" class="menuNavDesplegable"
                 :class="{ desplegado: mostrandoNavUsuario }" @click.stop="cerrarMenus">
@@ -66,7 +67,29 @@
             </div>
         </div>
 
-        <router-view @logearse="logearUsuario" @alienandoPersona="alienarPersona" id="visorRouter" :yo="yo"></router-view>
+        <div class="ventanaSplash" v-if="!subscripcionActiva">
+            <div class="bloqueSplash">
+                <img src="@/assets/iconos/userLock.svg" alt="UserLocked" style="height: 30px">
+                <div class="tituloSplash">
+                    Tu cuenta no está activa
+                </div>
+            </div>
+        </div>
+
+        <div class="ventanaSplash" v-if="mostrandoInfoFinSubscripcion">
+            <div class="bloqueSplash">
+                <div class="botonEquis" @click.stop="mostrandoInfoFinSubscripcion = false;">
+                    <img src="@/assets/iconos/equis.svg" alt="X">
+                </div>
+                <img src="@/assets/iconos/relojArena.svg" alt="Sand timer" style="height: 30px">
+                <div class="tituloSplash">
+                    Tu subscripción termina {{yo.finSubscripcion?enrichedToReadableDate(yo.finSubscripcion):'pronto'}}
+                </div>
+            </div>
+        </div>
+
+        <router-view @logearse=" logearUsuario " @alienandoPersona=" alienarPersona " id="visorRouter"
+            :yo=" yo "></router-view>
         <gestor-acciones />
     </div>
 </template>
@@ -88,6 +111,7 @@ export const QUERY_YO = gql`
       nombres
       apellidos
       permisos
+        finSubscripcion
     }
   }
 `;
@@ -123,6 +147,7 @@ export default {
     },
     data() {
         return {
+            mostrandoInfoFinSubscripcion: false,
             mostrandoNavUsuario: false,
             accionesLogeado: false,
 
@@ -140,6 +165,15 @@ export default {
         };
     },
     computed: {
+        subscripcionActiva() {
+            if (this.usuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || this.usuario.permisos.includes("subscripcion-ilimitada")) {
+                return true;
+            }
+            if (!this.yo.finSubscripcion) {
+                return false;
+            }
+            return Date.now() < (new Date(this.yo.finSubscripcion)).getTime();
+        },
         estiloBackground() {
             let primerColor = "";
 
@@ -241,6 +275,11 @@ export default {
             }
 
         },
+    },
+    mounted() {
+        if (this.yo?.finSubscripcion && (this.yo.finSubscripcion).getTime() < Date.now()) {
+            this.mostrandoInfoFinSubscripcion = true;
+        }
     },
     created() {
         this.setEstadoRed();
