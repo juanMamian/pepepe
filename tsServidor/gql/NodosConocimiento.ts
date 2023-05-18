@@ -132,6 +132,7 @@ extend type Query{
     nodo(idNodo: ID!): NodoConocimiento,
     nodosConocimientoByIds(idsNodos: [ID!]!):[NodoConocimiento],
     busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento],
+    nodosConocimientoAroundCentro(centro: CoordsInput!, radioX: Int!, radioY: Int!):[NodoConocimiento],
 
     idsMisNodosEstudiables:[String],
 
@@ -140,7 +141,7 @@ extend type Query{
 extend type Mutation{
     posicionarNodosConocimientoByFuerzas(ciclos:Int!):Boolean,
 
-    setCoordsManuales(idNodo: String, coordsManuales:CoordsInput):infoNodosModificados,
+    setCoordsManuales(idNodo: ID!, coordsManuales:CoordsInput!):infoNodosModificados,
     crearVinculo(tipo:String!, idSource:ID!, idTarget:ID!):infoNodosModificados,
     eliminarVinculoFromTo(idSource:ID!, idTarget:ID!):infoNodosModificados,
     editarNombreNodo(idNodo: ID!, nuevoNombre: String!):infoNodosModificados,
@@ -177,7 +178,7 @@ export const NODOS_ATLAS_CONOCIMIENTO_POSICIONADOS = "nodos_de_atlas_conocimient
 
 export const resolvers = {
     Query: {
-        busquedaAmplia: async function (_: any, { palabrasBuscadas }: { palabrasBuscadas: string }, __: any) {
+        busquedaAmplia: async function(_: any, { palabrasBuscadas }: { palabrasBuscadas: string }, __: any) {
             // console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
             if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
@@ -193,7 +194,7 @@ export const resolvers = {
             }
             return opciones
         },
-        todosNodos: async function () {
+        todosNodos: async function() {
             console.log(`enviando todos los nombres, vinculos y coordenadas`);
             let todosNodos: DocNodoConocimiento[] = [];
             try {
@@ -210,7 +211,7 @@ export const resolvers = {
             console.log(`Enviando ${todosNodos.length}`);
             return todosNodos;
         },
-        nodo: async function (_: any, { idNodo }: { idNodo: string }) {
+        nodo: async function(_: any, { idNodo }: { idNodo: string }) {
             let elNodo: DocNodoConocimiento | null = null;
             try {
                 elNodo = await Nodo.findById(idNodo).select("-icono").exec();
@@ -226,6 +227,20 @@ export const resolvers = {
             console.log("enviando con id " + elNodo.id);
             // console.log("Enviando " + JSON.stringify(elNodo));
             return elNodo;
+        },
+        async nodosConocimientoAroundCentro(_: never, { centro, radioX, radioY }: { centro: Coords, radioX: number, radioY: number }, contexto: contextoQuery) {
+            console.log("petición de nodos around " + JSON.stringify(centro) + " con radioX " + radioX + " y radioY: " + radioY);
+            let losNodos: NodoConocimiento[] = [];
+            try {
+                losNodos = await Nodo.find({ "autoCoords.x": { $lt: centro.x + radioX, $gt: centro.x - radioX }, "autoCoords.y": { $lt: centro.y + radioY, $gt: centro.y - radioY } }).exec();
+            }
+            catch (error) {
+                console.log("Error descargando los nodos by centro: " + error);
+                return ApolloError("Error conectando con la base de datos");
+            }
+            console.log("retornando " + losNodos.length + "nodos");
+            return losNodos;
+
         },
         async nodosConocimientoByIds(_: any, { idsNodos }: { idsNodos: ObjectId[] }, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
@@ -462,7 +477,7 @@ export const resolvers = {
             let infoNodosModificados = [elNodoTarget, nuevoNodo];
             return infoNodosModificados;
         },
-        setCoordsManuales: async function (_: any, { idNodo, coordsManuales }: any, contexto: contextoQuery) {
+        setCoordsManuales: async function(_: any, { idNodo, coordsManuales }: any, contexto: contextoQuery) {
             console.log(`peticion de movimiento de coords manuales`);
 
             let credencialesUsuario = contexto.usuario;
@@ -478,7 +493,7 @@ export const resolvers = {
             let elNodo: DocNodoConocimiento | null = null;
 
             try {
-                elNodo = await Nodo.findById(idNodo, "nombre coordsManuales").exec();
+                elNodo = await Nodo.findById(idNodo, "nombre autoCoords").exec();
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
@@ -499,7 +514,7 @@ export const resolvers = {
             return { modificados };
 
         },
-        crearVinculo: async function (_: any, { idSource, idTarget }: any, contexto: contextoQuery) {
+        crearVinculo: async function(_: any, { idSource, idTarget }: any, contexto: contextoQuery) {
             let modificados: DocNodoConocimiento[] = [];
             console.log(`recibida una peticion de vincular nodos  ${idSource} y ${idTarget}`);
             let credencialesUsuario = contexto.usuario;
@@ -569,7 +584,7 @@ export const resolvers = {
             console.log(`vinculo entre ${idSource} y ${idTarget} creado`);
             return { modificados };
         },
-        eliminarVinculoFromTo: async function (_: any, args: { idSource: string, idTarget: string }, contexto: contextoQuery) {
+        eliminarVinculoFromTo: async function(_: any, args: { idSource: string, idTarget: string }, contexto: contextoQuery) {
             let modificados: DocNodoConocimiento[] = [];
             console.log(`desvinculando ${args.idSource} de ${args.idTarget}`);
             let credencialesUsuario = contexto.usuario;
@@ -631,7 +646,7 @@ export const resolvers = {
             return { modificados };
 
         },
-        editarNombreNodo: async function (_: any, { idNodo, nuevoNombre }: any, contexto: contextoQuery) {
+        editarNombreNodo: async function(_: any, { idNodo, nuevoNombre }: any, contexto: contextoQuery) {
             let modificados: DocNodoConocimiento[] = [];
 
             let elNodo: DocNodoConocimiento | null = null;
@@ -671,7 +686,7 @@ export const resolvers = {
             modificados.push(elNodo);
             return { modificados }
         },
-        editarDescripcionNodoConocimiento: async function (_: any, { idNodo, nuevoDescripcion }: any, contexto: contextoQuery) {
+        editarDescripcionNodoConocimiento: async function(_: any, { idNodo, nuevoDescripcion }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||`);
             console.log(`Solicitud de set descripcion del nodo con id ${idNodo}`);
 
@@ -715,7 +730,7 @@ export const resolvers = {
             console.log(`Descripcion guardado`);
             return resNodo;
         },
-        editarKeywordsNodoConocimiento: async function (_: any, { idNodo, nuevoKeywords }: any, contexto: contextoQuery) {
+        editarKeywordsNodoConocimiento: async function(_: any, { idNodo, nuevoKeywords }: any, contexto: contextoQuery) {
             console.log(`|||||||||||||||||||`);
             console.log(`Solicitud de set keywords del nodo con id ${idNodo}`);
 
@@ -760,7 +775,7 @@ export const resolvers = {
             console.log(`Keywords guardado`);
             return resNodo;
         },
-        addExpertoNodo: async function (_: any, { idNodo, idUsuario }: any, contexto: contextoQuery) {
+        addExpertoNodo: async function(_: any, { idNodo, idUsuario }: any, contexto: contextoQuery) {
             console.log('\x1b[35m%s\x1b[0m', `Solicitud de add un usuario con id ${idUsuario} como experto a un nodo con id ${idNodo}`);
 
             if (!contexto.usuario) {
@@ -839,7 +854,7 @@ export const resolvers = {
             return elNodo
 
         },
-        addPosibleExpertoNodo: async function (_: any, { idNodo, idUsuario }: any, contexto: contextoQuery) {
+        addPosibleExpertoNodo: async function(_: any, { idNodo, idUsuario }: any, contexto: contextoQuery) {
             console.log(`añadiendo usuario ${idUsuario} a la lista de posibles expertos del nodo ${idNodo}`);
             let credencialesUsuario = contexto.usuario;
             let elNodo: DocNodoConocimiento | null = null;
@@ -889,7 +904,7 @@ export const resolvers = {
             console.log(`Nodo guardado`);
             return elNodo
         },
-        removeExpertoNodo: async function (_: any, { idNodo, idUsuario }: any, contexto: contextoQuery) {
+        removeExpertoNodo: async function(_: any, { idNodo, idUsuario }: any, contexto: contextoQuery) {
             console.log('\x1b[35m%s\x1b[0m', `Solicitud de remover un usuario con id ${idUsuario} de la lista de expertos de un nodo con id ${idNodo}`);
             if (!contexto.usuario || !contexto.usuario.id) {
                 console.log(`Usuario no logeado`);
@@ -956,7 +971,7 @@ export const resolvers = {
             return elNodo
 
         },
-        setTipoNodo: async function (_: any, { idNodo, nuevoTipoNodo }: any, contexto: contextoQuery) {
+        setTipoNodo: async function(_: any, { idNodo, nuevoTipoNodo }: any, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
                 AuthenticationError('loginRequerido');
             }
@@ -994,7 +1009,7 @@ export const resolvers = {
             return elNodo;
         },
 
-        eliminarArchivoSeccionNodo: async function (_: any, { idNodo, idSeccion, nombreArchivo }: any, contexto: contextoQuery) {
+        eliminarArchivoSeccionNodo: async function(_: any, { idNodo, idSeccion, nombreArchivo }: any, contexto: contextoQuery) {
             console.log(`Solicitud de eliminar archivo ${nombreArchivo}`);
             let elNodo: DocNodoConocimiento | null = null;
             try {
@@ -1064,7 +1079,7 @@ export const resolvers = {
             console.log(`Archivo eliminado`);
             return true;
         },
-        marcarPrimarioArchivoSeccionNodo: async function (_: any, { idNodo, idSeccion, nombreArchivo }: any, contexto: contextoQuery) {
+        marcarPrimarioArchivoSeccionNodo: async function(_: any, { idNodo, idSeccion, nombreArchivo }: any, contexto: contextoQuery) {
 
             let elNodo: DocNodoConocimiento | null = null;
             try {
@@ -1143,7 +1158,7 @@ export const resolvers = {
             return encontrado;
         },
 
-        crearNuevaSeccionNodoConocimiento: async function (_: any, { idNodo }: { idNodo: ObjectId }, contexto: contextoQuery) {
+        crearNuevaSeccionNodoConocimiento: async function(_: any, { idNodo }: { idNodo: ObjectId }, contexto: contextoQuery) {
             if (!contexto.usuario) {
                 AuthenticationError("Login requerido");
             }
@@ -1181,7 +1196,7 @@ export const resolvers = {
 
             return nuevaSeccion;
         },
-        eliminarSeccionNodoConocimiento: async function (_: any, { idNodo, idSeccion }: any, contexto: contextoQuery) {
+        eliminarSeccionNodoConocimiento: async function(_: any, { idNodo, idSeccion }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             let elNodo: DocNodoConocimiento | null = null;
             try {
@@ -1227,7 +1242,7 @@ export const resolvers = {
 
             return true;
         },
-        moverSeccionNodoConocimiento: async function (_: any, { idNodo, idSeccion, movimiento }: { idNodo: string, idSeccion: string, movimiento: number }, contexto: contextoQuery) {
+        moverSeccionNodoConocimiento: async function(_: any, { idNodo, idSeccion, movimiento }: { idNodo: string, idSeccion: string, movimiento: number }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             console.log(`Peticion de mover una sección ${movimiento}`);
 

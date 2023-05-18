@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 import { EsquemaRutaGrado } from "./rutaGrado/RutaGrado";
 
 export const permisosDeUsuario = [
@@ -172,11 +172,12 @@ esquemaDatoNodo.pre("save", function (this: any, next) {
     }
 
     if (this.estudiado && !this.diasRepaso) {
-        this.diastRepaso = 2;
+        this.diasRepaso = 2;
     }
     next();
 
-})
+});
+
 
 const esquemaEstadoAtlas = new mongoose.Schema({
     centroVista: {

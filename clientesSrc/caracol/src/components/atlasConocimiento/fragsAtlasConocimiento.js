@@ -1,4 +1,21 @@
 import gql from "graphql-tag"
+export const fragmentoNodoConocimientoMinimoAtlas = gql`
+fragment fragNodoConocimientoMinimoAtlas on NodoConocimiento{
+    id
+    nombre
+    expertos
+    tipoNodo
+    autoCoords{
+        x
+        y
+    }
+    vinculos{
+        id
+        idRef
+        rol
+        tipo
+    }
+} `
 
 export const fragmentoDatoNodoConocimiento = gql`
   fragment fragDatoNodoConocimiento on DatoNodoUsuario {

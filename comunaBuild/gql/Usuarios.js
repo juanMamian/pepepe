@@ -3,12 +3,13 @@ import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario, charP
 import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { permisosEspecialesDefault } from "./Schema";
-import { getIdsRedRequerimentosNodo } from "./NodosConocimiento";
 import { validatorNombreCosa } from "../model/config";
 import { ApolloError, AuthenticationError, UserInputError } from "./misc";
 import { ModeloNodoSolidaridad } from "../model/atlasSolidaridad/NodoSolidaridad";
+import { getIdsRedRequerimentosNodo } from "./NodosConocimiento";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+const millisDia = 86400000;
 export const typeDefs = `#graphql
     scalar Date   
 
@@ -145,11 +146,13 @@ APRENDIDO
 
     extend type Query {
         todosUsuarios(dateActual: Date):[Usuario],
+        usuariosByPermisos(listaPermisos:[String]):[Usuario],
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
         buscarPersonas(textoBuscar:String!):[Usuario],
         participantesCasaMaestraVida:[Usuario],
+        nodosEstudiablesColeccion(idColeccion: ID!): [NodoConocimiento]
 
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
@@ -210,6 +213,17 @@ export const resolvers = {
                 ApolloError("Error conectando con la base de datos");
             }
             return profes;
+        },
+        usuariosByPermisos: async function (_, { listaPermisos }, context) {
+            let losUsuarios = [];
+            try {
+                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).exec();
+            }
+            catch (error) {
+                console.log("error getting la lista de usuarios: " + error);
+                return ApolloError("Error descargando la lista de usuarios");
+            }
+            return losUsuarios;
         },
         todosUsuarios: async function (_, args, context) {
             console.log(`Solicitud de la lista de todos los usuarios`);
@@ -376,6 +390,40 @@ export const resolvers = {
                 UserInputError('Colección no encontrada');
             }
             return laColeccion;
+        },
+        async nodosEstudiablesColeccion(_, { idColeccion }, contexto) {
+            console.log("Descargando nodos estudiables para colección " + idColeccion);
+            if (!contexto.usuario?.id) {
+                AuthenticationError('loginRequerido');
+            }
+            const credencialesUsuario = contexto.usuario;
+            let elUsuario = null;
+            try {
+                elUsuario = await Usuario.findById(credencialesUsuario.id).exec();
+            }
+            catch (error) {
+                console.log("Error getting usuario: " + error);
+                ApolloError("Error conectando con la base de datos");
+            }
+            if (!elUsuario) {
+                return ApolloError("Error conectando con la base de datos");
+            }
+            let laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+            if (!laColeccion) {
+                return UserInputError("Colección no encontrada");
+            }
+            let nodosRed = await getNodosRedByOriginalIds(laColeccion.idsNodos);
+            console.log(laColeccion.nombre);
+            let idsHabilitantes = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido || (dn.estudiado && ((new Date(dn.estudiado)).getTime() + (dn.diasRepaso * millisDia) > Date.now()))).map(dn => dn.idNodo);
+            console.log(idsHabilitantes.length + " ids habilitantes");
+            let nodosEstudiables = nodosRed.filter(n => !idsHabilitantes.includes(n.id) && !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !idsHabilitantes.includes(v.idRef)));
+            console.log("Encontrados " + nodosEstudiables.length + " nodos estudiables");
+            console.table(nodosEstudiables.map(n => {
+                return {
+                    nombre: n.nombre
+                };
+            }));
+            return nodosEstudiables;
         },
     },
     Mutation: {

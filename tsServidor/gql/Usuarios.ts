@@ -2,18 +2,19 @@
 import { ModeloUsuario as Usuario, permisosDeUsuario, validarDatosUsuario, charProhibidosNombresUsuario, charProhibidosUsername, minLengthNombresUsuario, minLengthApellidosUsuario, minLengthUsername, minLengthEmail, minLengthPassword, maxLengthPassword, charProhibidosPassword, emailValidator, type DocUsuario } from "../model/Usuario"
 
 import { contextoQuery } from "./tsObjetos"
-import { ModeloNodo as Nodo } from "../model/atlas/Nodo";
+import { DocNodoConocimiento, ModeloNodo as Nodo, type NodoConocimiento } from "../model/atlas/Nodo";
 import { ModeloEspacio as Espacio } from "../model/Espacio";
 import { permisosEspecialesDefault } from "./Schema";
 import { validatorNombreCosa } from "../model/config";
 import { ApolloError, AuthenticationError, UserInputError } from "./misc";
 import { ModeloNodoSolidaridad } from "../model/atlasSolidaridad/NodoSolidaridad";
-import {getIdsRedRequerimentosNodo} from "./NodosConocimiento"
+import { getIdsRedRequerimentosNodo } from "./NodosConocimiento"
 
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs";
 import { ObjectId } from "mongoose";
 
+const millisDia = 86400000;
 
 interface Usuario {
     username: string,
@@ -164,6 +165,7 @@ APRENDIDO
         Usuario(idUsuario:ID!): Usuario,
         buscarPersonas(textoBuscar:String!):[Usuario],
         participantesCasaMaestraVida:[Usuario],
+        nodosEstudiablesColeccion(idColeccion: ID!): [NodoConocimiento]
 
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
@@ -215,7 +217,8 @@ APRENDIDO
 
 export const resolvers = {
     Query: {
-        usuariosProfe: async function (_: any, args: any, context: contextoQuery) {
+
+        usuariosProfe: async function(_: any, args: any, context: contextoQuery) {
             console.log(`Fetching la lista de todos los profes`);
             var profes: any;
             try {
@@ -226,13 +229,13 @@ export const resolvers = {
             }
             return profes;
         },
-        usuariosByPermisos: async function (_:any, {listaPermisos}: {listaPermisos:string[]} , context: contextoQuery){
-            let losUsuarios: DocUsuario[]  = [];
+        usuariosByPermisos: async function(_: any, { listaPermisos }: { listaPermisos: string[] }, context: contextoQuery) {
+            let losUsuarios: DocUsuario[] = [];
 
-            try{
-                losUsuarios=await Usuario.find({"permisos": {$in: listaPermisos}}).exec();
+            try {
+                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).exec();
             }
-            catch(error){
+            catch (error) {
                 console.log("error getting la lista de usuarios: " + error);
                 return ApolloError("Error descargando la lista de usuarios");
             }
@@ -241,7 +244,7 @@ export const resolvers = {
 
 
         },
-        todosUsuarios: async function (_: any, args: any, context: contextoQuery) {
+        todosUsuarios: async function(_: any, args: any, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
 
             try {
@@ -260,7 +263,7 @@ export const resolvers = {
             // }
             return todosUsuarios;
         },
-        Usuario: async function (_: any, { idUsuario }: any, context: contextoQuery) {
+        Usuario: async function(_: any, { idUsuario }: any, context: contextoQuery) {
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
             } catch (error) {
@@ -269,7 +272,7 @@ export const resolvers = {
             }
             return elUsuario;
         },
-        yo: async function (_: any, __: any, context: contextoQuery) {
+        yo: async function(_: any, __: any, context: contextoQuery) {
 
             let credencialesUsuario = context.usuario;
             console.log('\x1b[35m%s\x1b[0m', `Query for yo de ${context.usuario.id}`);
@@ -283,7 +286,7 @@ export const resolvers = {
             }
             return elUsuario;
         },
-        buscarPersonas: async function (_: any, { textoBuscar }: any, context: contextoQuery) {
+        buscarPersonas: async function(_: any, { textoBuscar }: any, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
             textoBuscar = textoBuscar.trim();
             textoBuscar = new RegExp(textoBuscar, "i");
@@ -302,7 +305,7 @@ export const resolvers = {
             console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
             return usuariosMatch;
         },
-        login: async function (_: any, { username, password }: any, context: contextoQuery) {
+        login: async function(_: any, { username, password }: any, context: contextoQuery) {
             let credencialesUsuario = context.usuario;
             console.log(`Solicitud de login`);
 
@@ -346,7 +349,7 @@ export const resolvers = {
 
             return token;
         },
-        alienarUsuario: async function (_: any, { idAlienado }: any, context: contextoQuery) {
+        alienarUsuario: async function(_: any, { idAlienado }: any, context: contextoQuery) {
             console.log('\x1b[35m%s\x1b[0m', `Query de alienar usuario con id ${idAlienado}`);
 
             if (!context.usuario) {
@@ -390,7 +393,7 @@ export const resolvers = {
 
             return token;
         },
-        participantesCasaMaestraVida: async function (_: any, __: any, contexto: contextoQuery) {
+        participantesCasaMaestraVida: async function(_: any, __: any, contexto: contextoQuery) {
             if (!contexto.usuario?.id) {
                 AuthenticationError('loginRequerido');
             }
@@ -434,11 +437,58 @@ export const resolvers = {
 
             return laColeccion;
         },
+        async nodosEstudiablesColeccion(_: never, { idColeccion }: { idColeccion: string }, contexto: contextoQuery) {
+
+            console.log("Descargando nodos estudiables para colección " + idColeccion);
+            if (!contexto.usuario?.id) {
+                AuthenticationError('loginRequerido');
+            }
+            const credencialesUsuario = contexto.usuario;
+
+            let elUsuario: DocUsuario | null = null;
+            try {
+                elUsuario = await Usuario.findById(credencialesUsuario.id).exec();
+            }
+            catch (error) {
+                console.log("Error getting usuario: " + error);
+                ApolloError("Error conectando con la base de datos");
+            }
+            if (!elUsuario) {
+                return ApolloError("Error conectando con la base de datos");
+            }
+            let laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+            if (!laColeccion) {
+                return UserInputError("Colección no encontrada");
+            }
+            let nodosRed = await getNodosRedByOriginalIds(laColeccion.idsNodos);
+
+            console.log(laColeccion.nombre);
+            let idsHabilitantes = elUsuario.atlas.datosNodos.filter(
+                dn => dn.aprendido || (
+                    dn.estudiado && (
+                        (new Date(dn.estudiado)).getTime() + (dn.diasRepaso * millisDia) > Date.now()
+                    )
+                )
+            ).map(dn => dn.idNodo);
+
+            console.log(idsHabilitantes.length + " ids habilitantes");
+
+            let nodosEstudiables = nodosRed.filter(n => !idsHabilitantes.includes(n.id) &&  !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !idsHabilitantes.includes(v.idRef)));
+
+            console.log("Encontrados " + nodosEstudiables.length + " nodos estudiables");
+            console.table(nodosEstudiables.map(n => {
+                return {
+                    nombre: n.nombre
+                }
+            }))
+
+            return nodosEstudiables;
+        },
 
 
     },
     Mutation: {
-        editarDatosUsuario: async function (_: any, { nuevosDatos }: any, context: contextoQuery) {
+        editarDatosUsuario: async function(_: any, { nuevosDatos }: any, context: contextoQuery) {
             console.log(`solicitud de edicion de datos de usuario`);
             let credencialesUsuario = context.usuario;
             console.log(`Usuario: Id: ${credencialesUsuario.id}, username: ${credencialesUsuario.username}`);
@@ -478,7 +528,7 @@ export const resolvers = {
             return elUsuario;
 
         },
-        setCentroVista: async function (_: any, { idUsuario, centroVista }: any, context: contextoQuery) {
+        setCentroVista: async function(_: any, { idUsuario, centroVista }: any, context: contextoQuery) {
             console.log(`Seting centro vista en ${JSON.stringify(centroVista)} para el usuario ${idUsuario}`);
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario, "atlas").exec();
@@ -501,7 +551,7 @@ export const resolvers = {
             console.log(`Set`);
             return true;
         },
-        addPermisoUsuario: async function (_: any, { idUsuario, nuevoPermiso }, contexto: contextoQuery) {
+        addPermisoUsuario: async function(_: any, { idUsuario, nuevoPermiso }, contexto: contextoQuery) {
             console.log(`Peticion de dar permiso ${nuevoPermiso} a un usuario con id ${idUsuario}`);
             let credencialesUsuario = contexto.usuario;
 
@@ -545,7 +595,7 @@ export const resolvers = {
             console.log(`Permiso añadido.Quedó con: ${elUsuario.permisos}`);
             return elUsuario;
         },
-        eliminarUsuario: async function (_: any, { idUsuario }, contexto: contextoQuery) {
+        eliminarUsuario: async function(_: any, { idUsuario }, contexto: contextoQuery) {
             console.log(`||||||||||||||||||||||`);
             console.log(`Solicitud de eliminar un usuario con id ${idUsuario} de la base de datos`);
 
@@ -579,7 +629,7 @@ export const resolvers = {
         },
 
 
-        setNodoAtlasTarget: async function (_: any, { idNodo }: {idNodo: ObjectId}, contexto: contextoQuery) {
+        setNodoAtlasTarget: async function(_: any, { idNodo }: { idNodo: ObjectId }, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario || !credencialesUsuario.id) {
                 AuthenticationError("No autenticado");
@@ -599,7 +649,7 @@ export const resolvers = {
             return true;
 
         },
-        nulificarNodoTargetUsuarioAtlas: async function (_: any, __: any, contexto: contextoQuery) {
+        nulificarNodoTargetUsuarioAtlas: async function(_: any, __: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario || !credencialesUsuario.id) {
                 AuthenticationError("No autenticado");
@@ -617,7 +667,7 @@ export const resolvers = {
             }
             return true;
         },
-        setModoUsuarioAtlas: async function (_: any, { idUsuario, nuevoModo }: any, contexto: contextoQuery) {
+        setModoUsuarioAtlas: async function(_: any, { idUsuario, nuevoModo }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario || !credencialesUsuario.id) {
                 AuthenticationError("No autenticado");
@@ -710,7 +760,7 @@ export const resolvers = {
 
         },
 
-        guardarInformeEstudianteMaestraVida: async function (_: any, { idUsuario, year, periodo, idProfe, categoria, texto }: any, contexto: contextoQuery) {
+        guardarInformeEstudianteMaestraVida: async function(_: any, { idUsuario, year, periodo, idProfe, categoria, texto }: any, contexto: contextoQuery) {
             console.log('\x1b[35m%s\x1b[0m', `Solicitud de guardar informe del periodo ${periodo} de ${year} maestra vida del estudiante con id ${idUsuario} con texto: ${texto}`);
             try {
                 var elUsuario: any = await Usuario.findById(idUsuario).exec();
@@ -1046,7 +1096,7 @@ export const resolvers = {
 
                 const idsRedPrevia = await getIdsRedRequerimentosNodo(elNodo);
 
-                if(!idsRedPrevia){
+                if (!idsRedPrevia) {
                     return ApolloError("Error getting red previa de nodo");
                 }
 
@@ -1269,7 +1319,7 @@ export const resolvers = {
 
             return elDatoNodo;
         },
-        setNodoAtlasAprendidoUsuario: async function (_: any, { idNodo, nuevoEstadoAprendido }: any, contexto: contextoQuery) {
+        setNodoAtlasAprendidoUsuario: async function(_: any, { idNodo, nuevoEstadoAprendido }: any, contexto: contextoQuery) {
             let credencialesUsuario = contexto.usuario;
             if (!credencialesUsuario || !credencialesUsuario.id) {
                 AuthenticationError("No autenticado");
@@ -1344,7 +1394,7 @@ export const resolvers = {
             return datosNodoAfectados;
 
         },
-        setDiasRepasoNodoConocimientoUsuario: async function (_: any, { idNodo, nuevoDiasRepaso }: any, contexto: contextoQuery) {
+        setDiasRepasoNodoConocimientoUsuario: async function(_: any, { idNodo, nuevoDiasRepaso }: any, contexto: contextoQuery) {
 
             console.log('\x1b[35m%s\x1b[0m', `Peticion de set dias de repaso en ${nuevoDiasRepaso} para el nodo ${idNodo}`);
             if (!contexto.usuario?.id) {
@@ -1540,7 +1590,7 @@ export const resolvers = {
 
     },
     Usuario: {
-        edad: function (parent: any, _: any, __: any) {
+        edad: function(parent: any, _: any, __: any) {
             if (!parent.fechaNacimiento) {
                 return 0;
             }
@@ -1550,10 +1600,10 @@ export const resolvers = {
             edadAños = parseInt(edadAños.toFixed());
             return edadAños;
         },
-        nombre: function (parent: any, _: any, __: any) {
+        nombre: function(parent: any, _: any, __: any) {
             return parent.username;
         },
-        espacioActual: async function (parent: any, { dateActual }: any, __: any) {
+        espacioActual: async function(parent: any, { dateActual }: any, __: any) {
             try {
                 var losEspacios: any = await Espacio.find({ "iteracionesSemanales.idsAsistentesConstantes": parent.id }).exec();
             }
@@ -1574,7 +1624,7 @@ export const resolvers = {
         }
     },
     ColeccionNodosAtlasConocimiento: {
-        nodos: async function (parent: any, _: any, __: any) {
+        nodos: async function(parent: any, _: any, __: any) {
             // console.log(`Resolviendo nodos de coleccion con parent: ${parent}`);
             try {
                 var losNodos: any = await Nodo.find({ _id: { $in: parent.idsNodos } }).exec();
@@ -1584,7 +1634,7 @@ export const resolvers = {
             if (!losNodos) losNodos = [];
             return losNodos;
         },
-        progreso: async function (parent: any, _: any, __: any) {
+        progreso: async function(parent: any, _: any, __: any) {
             console.log('\x1b[35m%s\x1b[0m', `Calculando progreso de colección ${parent.nombre} en usuario ${parent.idUsuario}`);
 
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
@@ -1631,13 +1681,13 @@ export const resolvers = {
                 return Number(progreso.toFixed(2));
             }
         },
-        idsRed: async function (parent: any, _: any, __: any) {
+        idsRed: async function(parent: any, _: any, __: any) {
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
             return nodosRed.map(n => n.id);
         }
     },
     DatoNodoUsuario: {
-        nombreNodo: async function (parent: any, _: any, __: any) {
+        nombreNodo: async function(parent: any, _: any, __: any) {
             try {
                 var elNodo: any = await Nodo.findById(parent.idNodo).select("nombre").exec();
                 if (!elNodo) throw "Nodo no encontrado resolviendo nombre de dato nodo con id " + parent.idNodo
@@ -1663,7 +1713,7 @@ export const resolvers = {
         },
     },
     InformeEstudianteMaestraVida: {
-        nombreProfe: async function (parent: any) {
+        nombreProfe: async function(parent: any) {
             try {
                 var elProfe: any = await Usuario.findById(parent.idProfe).select("nombres apellidos").exec();
                 if (!elProfe) throw "Profe no encontrado";
@@ -1676,7 +1726,7 @@ export const resolvers = {
     },
 }
 
-async function getNodosRedByOriginalIds(idsNodos) {
+async function getNodosRedByOriginalIds(idsNodos: string[]): Promise<DocNodoConocimiento[]> {
     let idsNodosActuales = idsNodos;
 
     let todosNodos: any[] = [];
@@ -1685,7 +1735,7 @@ async function getNodosRedByOriginalIds(idsNodos) {
 
     while (guarda < 100 && idsNodosActuales.length > 0) {
         guarda++;
-        let estosNodos: any = [];
+        let estosNodos: DocNodoConocimiento[] = [];
         try {
             estosNodos = await Nodo.find({ "_id": { $in: idsNodosActuales } }).exec();
         } catch (error) {

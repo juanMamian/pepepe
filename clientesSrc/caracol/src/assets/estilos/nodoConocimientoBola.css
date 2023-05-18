@@ -24,6 +24,15 @@
   height: 30px;
 }
 
+#botonAbrirOpciones{
+    height: 40px;
+    width: 40px;
+    position: absolute;
+    left: calc(100% + 5px);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 .nodoConocimientoConBola > .bolita {
   width: calc(var(--sizeBola) * 1px);
   height: calc(var(--sizeBola) * 1px);
@@ -56,6 +65,7 @@
   z-index: 1;
   color: #030303;
   background-color: #f2f2f2;
+  opacity: 0.5;
 }
 
 .nodoConocimientoConBola > .cajaTexto #botonAbrir {
@@ -82,12 +92,15 @@
 
 /* #endregion */
 
-/* #region accesible */
-.nodoConocimientoConBola.accesible > .bolita {
+/* #region estudiable */
+.nodoConocimientoConBola.estudiable > .bolita {
 
   box-shadow: 2px 2px 2px 4px rgba(128, 128, 128, 0.281);
 }
-.nodoConocimientoConBola.accesible > .bolita img {
+.nodoConocimientoConBola.estudiable > .bolita img {
+  opacity: 1;
+}
+.nodoConocimientoConBola.estudiable > .cajaTexto{
   opacity: 1;
 }
 
@@ -163,17 +176,18 @@
 
 .nodoConocimientoConBola.seleccionado .lineaVinculo .laLinea {
   background-color: var(--atlasConocimientoSeleccion);
+  height: 4px;
 }
 
 .nodoConocimientoConBola .lineaVinculo .laLinea::after {
   position: absolute;
   top: 50%;
-  left: 50%;
+  left: 00%;
   transform: translateX(-50%) translateY(-50%);
   content: "";
   width: 1px;
-  border: 10px solid transparent;
-  border-right: 10px solid black;
+  border: 13px solid transparent;
+  border-right: 13px solid black;
 }
 .nodoConocimientoConBola.seleccionado .lineaVinculo .laLinea::after {
   border-right: 10px solid var(--atlasConocimientoSeleccion);

@@ -94,6 +94,7 @@ extend type Query{
     nodo(idNodo: ID!): NodoConocimiento,
     nodosConocimientoByIds(idsNodos: [ID!]!):[NodoConocimiento],
     busquedaAmplia(palabrasBuscadas:String!):[NodoConocimiento],
+    nodosConocimientoAroundCentro(centro: CoordsInput!, radioX: Int!, radioY: Int!):[NodoConocimiento],
 
     idsMisNodosEstudiables:[String],
 
@@ -102,7 +103,7 @@ extend type Query{
 extend type Mutation{
     posicionarNodosConocimientoByFuerzas(ciclos:Int!):Boolean,
 
-    setCoordsManuales(idNodo: String, coordsManuales:CoordsInput):infoNodosModificados,
+    setCoordsManuales(idNodo: ID!, coordsManuales:CoordsInput!):infoNodosModificados,
     crearVinculo(tipo:String!, idSource:ID!, idTarget:ID!):infoNodosModificados,
     eliminarVinculoFromTo(idSource:ID!, idTarget:ID!):infoNodosModificados,
     editarNombreNodo(idNodo: ID!, nuevoNombre: String!):infoNodosModificados,
@@ -182,6 +183,19 @@ export const resolvers = {
             console.log("enviando con id " + elNodo.id);
             // console.log("Enviando " + JSON.stringify(elNodo));
             return elNodo;
+        },
+        async nodosConocimientoAroundCentro(_, { centro, radioX, radioY }, contexto) {
+            console.log("petición de nodos around " + JSON.stringify(centro) + " con radioX " + radioX + " y radioY: " + radioY);
+            let losNodos = [];
+            try {
+                losNodos = await Nodo.find({ "autoCoords.x": { $lt: centro.x + radioX, $gt: centro.x - radioX }, "autoCoords.y": { $lt: centro.y + radioY, $gt: centro.y - radioY } }).exec();
+            }
+            catch (error) {
+                console.log("Error descargando los nodos by centro: " + error);
+                return ApolloError("Error conectando con la base de datos");
+            }
+            console.log("retornando " + losNodos.length + "nodos");
+            return losNodos;
         },
         async nodosConocimientoByIds(_, { idsNodos }, contexto) {
             if (!contexto.usuario?.id) {
@@ -398,7 +412,7 @@ export const resolvers = {
             let modificados = [];
             let elNodo = null;
             try {
-                elNodo = await Nodo.findById(idNodo, "nombre coordsManuales").exec();
+                elNodo = await Nodo.findById(idNodo, "nombre autoCoords").exec();
             }
             catch (error) {
                 console.log(`error buscando el nodo. E: ` + error);
@@ -1180,6 +1194,7 @@ export const resolvers = {
                 return [];
             }
             let laCarpeta = null;
+            console.log("Buscando carpetaa " + parent.idCarpeta);
             try {
                 laCarpeta = await CarpetasArchivos.findById(parent.idCarpeta, "archivos").exec();
             }
@@ -1188,7 +1203,8 @@ export const resolvers = {
                 return [];
             }
             if (!laCarpeta) {
-                return UserInputError('Carpeta no encontrada en la base de datos');
+                console.log("No encontrada.");
+                return [];
             }
             const infoArchivos = laCarpeta.archivos.map(a => { return { nombre: a.nombre, primario: a.primario }; });
             return infoArchivos;
@@ -1207,7 +1223,7 @@ export const resolvers = {
                 return null;
             }
             if (!laCarpeta) {
-                return UserInputError('Carpeta no encontrada en la base de datos');
+                return null;
             }
             var elPrimario = laCarpeta.archivos.find(a => a.primario == true);
             if (!elPrimario) {

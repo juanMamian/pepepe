@@ -101,7 +101,7 @@ export default {
       this.$emit('seleccionNodo', null);
     },
     clickEnNodo(idNodo) {
-      this.$emit('seleccionNodo', idNodo);
+        this.$emit('seleccionNodo', {idNodo: idNodo});
     },
     scrollNodoIntoView({ elem, xCentro }) {
       this.$nextTick(() => {
