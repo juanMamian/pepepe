@@ -187,6 +187,7 @@ APRENDIDO
     }
     extend type Mutation{
         crearBloqueSubscripcionUsuario(idUsuario: ID!, infoBloque: InputBloqueSubscripcion): BloqueSubscripcion,
+        eliminarBloqueSubscripcionUsuario(idUsuario: ID!, idBloque: ID!): Boolean,
 
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
         editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
@@ -503,13 +504,52 @@ export const resolvers = {
 
     },
     Mutation: {
+        eliminarBloqueSubscripcionUsuario: async function(_:never, {idUsuario, idBloque}: {idUsuario: string, idBloque: string}, context: contextoQuery){
+            console.log("Petición de elimar bloque de subscripcion");
+            if(!context?.usuario?.id){
+                return AuthenticationError();
+            }
+            const credencialesUsuario = context.usuario;
+
+            if(!credencialesUsuario.permisos.includes("superadministrador")){
+                return AuthenticationError();
+            }
+
+            let elUsuario: DocUsuario | null = null;
+            try{
+                elUsuario = await Usuario.findById(idUsuario).exec();
+            }
+            catch(error){
+                console.log("Error descargando usuario: " + error);
+                return ApolloError();
+            }
+            if(!elUsuario){
+                return UserInputError();
+            }
+
+            let indexB=elUsuario.bloquesSubscripcion.findIndex(b=>b.id===idBloque);
+            if(indexB < 0){
+                return UserInputError();
+            }
+            elUsuario.bloquesSubscripcion.splice(indexB, 1);
+
+            try{
+                await elUsuario.save()
+            }
+            catch(error){
+                console.log("Error guardando usuario: " + error);
+                return ApolloError();
+            }
+            console.log("Eliminado");
+            return true;
+        
+        },
         crearBloqueSubscripcionUsuario: async function(_: never, { idUsuario, infoBloque }: { idUsuario: string, infoBloque: any }, context: contextoQuery) {
             if (!context?.usuario?.id) {
                 return UserInputError("Autenticación requerida");
             }
             const credencialesUsuario = context.usuario;
 
-            console.log("permisos: " + credencialesUsuario.permisos);
             if (!credencialesUsuario.permisos.includes("superadministrador")) {
                 return AuthenticationError();
             }
@@ -528,13 +568,14 @@ export const resolvers = {
 
             let nuevoBloque = elUsuario.bloquesSubscripcion.create(infoBloque);
             if (elUsuario.bloquesSubscripcion?.length > 0) {
-                let lastBloqueSubscripcion = elUsuario.bloquesSubscripcion[elUsuario.bloquesSubscripcion.length - 1];
+                let lastBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
                 let lastTimeSubscripcion = lastBloqueSubscripcion.dateInicio.getTime() + lastBloqueSubscripcion.duracion * (millisDia * 30);
-                if (nuevoBloque.dateInicio.getTime() <= lastTimeSubscripcion) {
+                console.log("El nuevo bloque inicia en : " + nuevoBloque.dateInicio);
+                if (nuevoBloque.dateInicio.getTime() < lastTimeSubscripcion) {
                     return UserInputError("Fecha de inicio no permitida pues se superpone con la supscripción actual");
                 }
             }
-            elUsuario.bloquesSubscripcion.push(nuevoBloque);
+            elUsuario.bloquesSubscripcion.splice(0, 0, nuevoBloque);
             try {
                 await elUsuario.save();
             }

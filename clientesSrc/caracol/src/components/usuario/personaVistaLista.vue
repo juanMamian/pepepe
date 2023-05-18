@@ -85,7 +85,8 @@
                         @click="resetearPassword">
                         <img src="@/assets/iconos/key.svg" alt="Llave" />
                     </div>
-                    <div class="boton selector" title="Subscripción" :class="{ activo: mostrandoBloquesSubscripcion }"
+                    <div v-if="usuarioSuperadministrador" class="boton selector" title="Subscripción"
+                        :class="{ activo: mostrandoBloquesSubscripcion }"
                         @click="mostrandoBloquesSubscripcion = !mostrandoBloquesSubscripcion">
                         <img src="@/assets/iconos/creditcardSolid.svg" alt="Credit card">
                     </div>
@@ -100,15 +101,16 @@
                     </div>
                 </div>
 
-                <div id="zonaPagos" v-show="mostrandoBloquesSubscripcion">
-                    <div class="botonTexto" @click.stop="iniciarCrearBloqueSub" style="margin: 10px auto; width: 150px">
+                <div id="zonaPagos" v-show="mostrandoBloquesSubscripcion" v-if="usuarioSuperadministrador">
+                    <div class="botonTexto" @click.stop="iniciarCrearBloqueSub" style="margin: 10px auto; width: 150px"
+                        :class="{ deshabilitado: guardandoBloqueSub || escribiendoBloqueSub }">
                         Crear pago
                     </div>
 
-                    <div class="ventanaSplash" v-if="creandoBloqueSub">
+                    <div class="ventanaSplash" v-if="escribiendoBloqueSub">
 
                         <div class="bloqueSplash">
-                            <div class="botonEquis" @click="creandoBloqueSub = false">
+                            <div class="botonEquis" @click="escribiendoBloqueSub = false">
                                 <img src="@/assets/iconos/equis.svg" alt="x">
                             </div>
                             <div class="tituloSplash">
@@ -117,8 +119,8 @@
                             </div>
                             <div id="zonaDateInicioCrearBloqueSubscripcion">
                                 <label for="dateInicioCrearBloqueSubscripcion">Fecha de inicio</label>
-                                <input name="dateInicioCrearBloqueSubscripcion" ref="dateInicioCrearBloqueSubscripcion"
-                                    type="date" v-model="dateInicioCrearBloqueSubscripcion">
+                                <input name="dateInicioCrearBloqueSubscripcion" ref="inputDateInicioCrearBloqueSubscripcion"
+                                    type="date">
                             </div>
 
                             <div id="zonaDuracionCrearBloqueSubscripcion">
@@ -143,10 +145,14 @@
 
                         </div>
                     </div>
+                    <loading v-show="guardandoBloqueSub" style="margin: 2px auto" />
 
-                    <div id="listaPagos" v-show="mostrandoBloquesSubscripcion">
+                    <div id="listaPagos" v-show="mostrandoBloquesSubscripcion" v-if="usuarioSuperadministrador">
+                        <div class="anuncioZonaVacia" v-if="bloquesSubscripcion.length === 0">
+                            Aun no hay bloques de subscripción registrados.
+                        </div>
                         <BloqueSubscripcion v-for="bloqueSub of bloquesSubscripcion" :key="bloqueSub.id"
-                            :esteBloque="bloqueSub" />
+                            :esteBloque="bloqueSub" :idPersona="estaPersona.id" />
 
                     </div>
                 </div>
@@ -273,6 +279,7 @@ import gql from "graphql-tag";
 import Calendario from "../utilidades/Calendario.vue";
 import BloqueSubscripcion from "./BloqueSubscripcion.vue"
 import Loading from "../utilidades/Loading.vue";
+import { QUERY_BLOQUES_SUBSCRIPCION } from "../frags/fragsSubscripciones.js"
 import {
     AlignmentType,
     Document,
@@ -288,6 +295,7 @@ import {
 import { saveAs } from "file-saver";
 import RutaGrado from "./RutaGrado.vue";
 
+const millisDia = 86400000;
 const fragmentoBloqueSubscripcion = gql`
 fragment fragBloqueSubscripcion on BloqueSubscripcion{
 id
@@ -317,7 +325,6 @@ const QUERY_INFORMES = gql`
 export default {
     components: { Calendario, Loading, RutaGrado, BloqueSubscripcion },
     props: {
-
         personasConEspacio: Array,
         mostrarEspacioActual: Boolean,
         estaPersona: Object,
@@ -341,18 +348,7 @@ export default {
             fetchPolicy: "network-only",
         },
         bloquesSubscripcion: {
-            query: gql`
-            query($idUsuario: ID!){
-                Usuario(idUsuario: $idUsuario){
-                    id
-                    bloquesSubscripcion{
-                        ...fragBloqueSubscripcion
-                    }
-
-                }
-            }
-            ${fragmentoBloqueSubscripcion}
-            `,
+            query: QUERY_BLOQUES_SUBSCRIPCION,
             variables() {
                 return {
                     idUsuario: this.estaPersona.id,
@@ -370,10 +366,11 @@ export default {
     data() {
         return {
             dateInicioCrearBloqueSubscripcion: null,
-            duracionCrearBloqueSubscripcion: null,
-            valorCrearBloqueSubscripcion: null,
+            duracionCrearBloqueSubscripcion: 1,
+            valorCrearBloqueSubscripcion: 25000,
             bloquesSubscripcion: [],
-            creandoBloqueSub: false,
+            guardandoBloqueSub: false,
+            escribiendoBloqueSub: false,
             mostrandoBloquesSubscripcion: false,
             permisosPosibles: [
                 "usuario",
@@ -417,10 +414,11 @@ export default {
     },
     methods: {
         crearBloqueSubscripcion() {
-            let dateInicio = new Date(this.$refs.dateInicioCrearBloqueSubscripcion.value);
+            let dateInicio = new Date(this.$refs.inputDateInicioCrearBloqueSubscripcion.value);
             let duracion = parseInt(this.$refs.duracionCrearBloqueSubscripcion.value);
             let valor = parseInt(this.$refs.valorCrearBloqueSubscripcion.value);
 
+            this.guardandoBloqueSub = true;
             this.$apollo.mutate({
                 mutation: gql`
                 mutation($idUsuario: ID!, $infoBloque: InputBloqueSubscripcion!){
@@ -440,12 +438,50 @@ export default {
                 }
             }).then(({ data: { crearBloqueSubscripcionUsuario } }) => {
                 console.log("creada nueva subscripcion con id " + crearBloqueSubscripcionUsuario.id);
+                this.escribiendoBloqueSub = false;
+                this.guardandoBloqueSub = false;
+                const store = this.$apollo.provider.defaultClient;
+                const cache = store.readQuery({
+                    query: QUERY_BLOQUES_SUBSCRIPCION,
+                    variables: {
+                        idUsuario: this.estaPersona.id
+                    }
+                });
+                let nuevoCache = JSON.parse(JSON.stringify(cache));
+                if (nuevoCache.Usuario.bloquesSubscripcion?.some(bl => bl.id === crearBloqueSubscripcionUsuario.id)) {
+                    console.log("El bloque ya estaba en caché");
+                    return;
+                }
+                nuevoCache.Usuario.bloquesSubscripcion.splice(0, 0, crearBloqueSubscripcionUsuario);
+                store.writeQuery({
+                    query: QUERY_BLOQUES_SUBSCRIPCION,
+                    variables: {
+                        idUsuario: this.estaPersona.id
+                    },
+                    data: nuevoCache,
+                })
+
             }).catch((error) => {
                 console.log("Error: " + error);
+                this.guardandoBloqueSub = false;
             })
         },
         iniciarCrearBloqueSub() {
-            this.creandoBloqueSub = true;
+            let nuevaDateInicio = new Date();
+            if (this.bloquesSubscripcion.length > 0) {
+                nuevaDateInicio = new Date(new Date(this.bloquesSubscripcion[0].dateInicio).getTime() + this.bloquesSubscripcion[0].duracion * millisDia * 31);
+            }
+            this.escribiendoBloqueSub = true;
+            this.$nextTick(() => {
+                console.log("Setting");
+                let year = nuevaDateInicio.getFullYear();
+                let mes = ("0" + (Number(nuevaDateInicio.getMonth()) + 1)).slice(-2);
+                let dia = ("0" + nuevaDateInicio.getDate()).slice(-2);
+                console.log(year);
+                console.log(mes);
+                console.log(dia);
+                this.$refs.inputDateInicioCrearBloqueSubscripcion.value = year + "-" + mes + "-" + dia;
+            })
         },
         resetearPassword() {
             if (
@@ -1347,12 +1383,13 @@ function saveDocumentToFile(doc, fileName) {
     color: whitesmoke;
 }
 
-#listaPagos{
+#listaPagos {
     display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 0px 3vw;
 }
+
 #zonaObjetivos {
     display: flex;
     flex-direction: column;
