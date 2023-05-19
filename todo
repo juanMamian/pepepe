@@ -4,6 +4,7 @@ Atlas de conocimiento.
 -No está funcionando el buscador de personas.
 -En firefox no se ven los enlaces de los nodos.
 -Cuando se hace pan vista del mapaAtlas se pierde el nodoSeleccionado.
+-Cuando el contenido de un nodo crece en height, se tiene otra vez scroll del contenido de la sección.
 
 -En maestra vida asegurarse de que se hace la migración de objetivos de chicxs, periodoRepaso y de objetivos y de personas.
 -Introducir un cuadro de texto para escribir el prompt que se enviara a una IA para generar la explicación.

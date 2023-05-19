@@ -181,6 +181,7 @@ APRENDIDO
         participantesCasaMaestraVida:[Usuario],
         nodosEstudiablesColeccion(idColeccion: ID!): [NodoConocimiento]
 
+        refreshToken:String,
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
 
@@ -322,6 +323,48 @@ export const resolvers = {
             console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
             return usuariosMatch;
         },
+        async refreshToken(_: never, __: never, context: contextoQuery) {
+            if (!context?.usuario?.id) {
+                return AuthenticationError("Autenticación requerida");
+            }
+            const credencialesUsuario = context.usuario;
+            console.log("Refreshing token de " + credencialesUsuario.username);
+
+            let elUsuario: DocUsuario | null = null;
+            try {
+                elUsuario = await Usuario.findById(credencialesUsuario.id).exec();
+            }
+            catch (error) {
+                console.log("Error getting usuario: " + error);
+                return ApolloError();
+            }
+            if (!elUsuario) {
+                return UserInputError("Usuario no reconocido");
+            }
+
+            let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
+
+            let millisFinSubscripcion: number | null = null;
+            if (elUsuario.bloquesSubscripcion && elUsuario.bloquesSubscripcion.length > 0) {
+                let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+                millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
+            }
+            const datosToken = {
+                id: elUsuario._id,
+                permisos: elUsuario.permisos,
+                username: elUsuario.username,
+                subscripcionIlimitada,
+                millisFinSubscripcion,
+                version: 1,
+            }
+
+            if (!process.env.JWT_SECRET) {
+                throw "ENV DE JWT SECRET NO CONFIGURADO";
+            }
+            const token = jwt.sign(datosToken, process.env.JWT_SECRET,);
+            return token;
+        },
+
         login: async function(_: any, { username, password }: any, context: contextoQuery) {
             let credencialesUsuario = context.usuario;
             console.log(`Solicitud de login`);
@@ -333,7 +376,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario: any = await Usuario.findOne({ username }, "username password permisos").exec();
+                var elUsuario: any = await Usuario.findOne({ username }, "username password permisos bloquesSubscripcion").exec();
             } catch (error) {
                 console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
                 ApolloError("Error conectando con la base de datos");
@@ -348,21 +391,26 @@ export const resolvers = {
             }
 
             console.log(`login correcto de ${username}. Enviando JWT`);
+            let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
+
+            let millisFinSubscripcion: number | null = null;
+            if ((elUsuario.bloquesSubscripcion?.length) > 0) {
+                let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+                millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
+            }
+
             const datosToken = {
                 id: elUsuario._id,
                 permisos: elUsuario.permisos,
                 username: elUsuario.username,
+                subscripcionIlimitada,
+                millisFinSubscripcion,
                 version: 1,
             }
             if (!process.env.JWT_SECRET) {
                 throw "ENV DE JWT SECRET NO CONFIGURADO";
             }
             const token = jwt.sign(datosToken, process.env.JWT_SECRET,);
-            const respuesta = {
-                username: elUsuario.username,
-                permisos: elUsuario.permisos,
-                token
-            }
 
             return token;
         },

@@ -17,6 +17,8 @@ export const QUERY_AUTH_USUARIO = gql`
       id
       username
       permisos
+      subscripcionIlimitada
+      millisFinSubscripcion
       token
     }
   }
@@ -67,7 +69,7 @@ export const globalMixin = {
         usuarioEscuelaMaestraVida() {
             return this.usuario?.permisos.includes("maestraVida-profesor") || this.usuario?.permisos.includes("maestraVida-estudiante") || this.usuario?.permisos.includes("maestraVida-acompañante");
         },
-        deviceMobile(){
+        deviceMobile() {
         }
     },
     methods: {

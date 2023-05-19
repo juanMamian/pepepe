@@ -67,27 +67,6 @@
             </div>
         </div>
 
-        <div class="ventanaSplash" v-if="!subscripcionActiva">
-            <div class="bloqueSplash">
-                <img src="@/assets/iconos/userLock.svg" alt="UserLocked" style="height: 30px">
-                <div class="tituloSplash">
-                    Tu cuenta no está activa
-                </div>
-            </div>
-        </div>
-
-        <div class="ventanaSplash" v-if="mostrandoInfoFinSubscripcion">
-            <div class="bloqueSplash">
-                <div class="botonEquis" @click.stop="mostrandoInfoFinSubscripcion = false;">
-                    <img src="@/assets/iconos/equis.svg" alt="X">
-                </div>
-                <img src="@/assets/iconos/relojArena.svg" alt="Sand timer" style="height: 30px">
-                <div class="tituloSplash">
-                    Tu subscripción termina {{yo.finSubscripcion?enrichedToReadableDate(yo.finSubscripcion):'pronto'}}
-                </div>
-            </div>
-        </div>
-
         <router-view @logearse=" logearUsuario " @alienandoPersona=" alienarPersona " id="visorRouter"
             :yo=" yo "></router-view>
         <gestor-acciones />
@@ -116,6 +95,12 @@ export const QUERY_YO = gql`
   }
 `;
 
+const QUERY_REFRESH_TOKEN = gql`
+query{
+    refreshToken
+}
+`
+
 function parseJwt(token) {
     var base64Url = token.split(".")[1];
     var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
@@ -141,12 +126,46 @@ export default {
                 return !this.usuario?.id;
             },
         },
+        token: {
+            query: QUERY_REFRESH_TOKEN,
+            update({ refreshToken }) {
+                console.log("Refreshing token");
+                let datosUsuario = parseJwt(refreshToken);
+
+                const store = this.$apollo.provider.defaultClient;
+
+                let nuevosDatos = {
+                    id: datosUsuario.id,
+                    username: datosUsuario.username,
+                    permisos: datosUsuario.permisos,
+                    subscripcionIlimitada: datosUsuario.subscripcionIlimitada,
+                    millisFinSubscripcion: datosUsuario.millisFinSubscripcion,
+                    token: refreshToken,
+                };
+
+                store.writeQuery({
+                    query: QUERY_AUTH_USUARIO,
+                    data: { auth_usuario: nuevosDatos },
+                });
+
+                console.log("Refreshed");
+                return refreshToken;
+            },
+            skip(){
+                return !this.usuarioLogeado
+
+            },
+            fetchPolicy: "network-only",
+            pollInterval: 600000*10,
+        }
+
     },
     components: {
         GestorAcciones,
     },
     data() {
         return {
+            token: null,
             mostrandoInfoFinSubscripcion: false,
             mostrandoNavUsuario: false,
             accionesLogeado: false,
@@ -166,6 +185,9 @@ export default {
     },
     computed: {
         subscripcionActiva() {
+            if (!this.usuario?.permisos) {
+                return false;
+            }
             if (this.usuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || this.usuario.permisos.includes("subscripcion-ilimitada")) {
                 return true;
             }
@@ -240,6 +262,8 @@ export default {
                 id: datosUsuario.id,
                 username: datosUsuario.username,
                 permisos: datosUsuario.permisos,
+                subscripcionIlimitada: datosUsuario.subscripcionIlimitada,
+                millisFinSubscripcion: datosUsuario.millisFinSubscripcion,
                 token,
             };
 

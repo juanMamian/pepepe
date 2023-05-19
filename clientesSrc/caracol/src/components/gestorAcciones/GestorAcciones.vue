@@ -55,8 +55,8 @@ export default {
     }, 2600),
   },
   watch: {
-    lastAccion() {
-      if(Date.now() - this.lastAccion.timestamp > 10000){ //Para evitar que notificaciones de más de 10 segundos de antiguedad aparezcan en pantalla.
+    lastAccion(lastAccion) {
+      if(lastAccion && Date.now() - lastAccion.timestamp > 10000){ //Para evitar que notificaciones de más de 10 segundos de antiguedad aparezcan en pantalla.
         return
 
       }

@@ -85,6 +85,7 @@ export default {
           },
         })
         .then(({ data: { login } }) => {
+            console.log("logeado");
           this.$emit("logearse", login);
           this.$router.push({ name: "home" });
           this.enviandoLogin = false;
