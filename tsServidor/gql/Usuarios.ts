@@ -495,7 +495,7 @@ export const resolvers = {
             var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
 
             if (!laColeccion) {
-                console.log(`Error getting la colección : `);
+                console.log(`Error getting la colección ${idColeccion} : `);
                 UserInputError('Colección no encontrada');
 
             }

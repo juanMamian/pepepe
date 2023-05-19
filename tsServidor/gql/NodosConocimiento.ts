@@ -188,7 +188,7 @@ export const resolvers = {
             let opciones: DocNodoConocimiento[] = [];
 
             try {
-                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "es", strength: 1 }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
+                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log(". E: " + error);

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { esquemaArchivo } from "../Misc";
- const EsquemaVinculosNodosSolidaridad = new mongoose.Schema(
+const EsquemaVinculosNodosSolidaridad = new mongoose.Schema(
     {
         idRef: {
             type: String,
@@ -10,79 +10,79 @@ import { esquemaArchivo } from "../Misc";
             type: String,
             required: true,
             enum: ["requiere"]
-        },       
+        },
     });
 
 
 
-const EsquemaEvento=new mongoose.Schema({
-    fecha:{
+const EsquemaEvento = new mongoose.Schema({
+    fecha: {
         type: Date,
-        required:true,
+        required: true,
         default: Date.now
     },
-    nombre:{
-        type:String,
-        required:true,
-        min:2,
-        maxLength:50,
-        default:"Nuevo evento",
+    nombre: {
+        type: String,
+        required: true,
+        min: 2,
+        maxLength: 50,
+        default: "Nuevo evento",
     },
-    tipo:{
-        type:String,        
-        required:true,
-        min:2,
-        maxLength:50,
-        default:"Default",
+    tipo: {
+        type: String,
+        required: true,
+        min: 2,
+        maxLength: 50,
+        default: "Default",
     },
-    descripcion:{
-        type:String,
+    descripcion: {
+        type: String,
         maxLength: 500,
     },
 })
 
-const esquemaMovimientoDinero=new mongoose.Schema({
-    fecha:{
+const esquemaMovimientoDinero = new mongoose.Schema({
+    fecha: {
         type: Date,
-        required:true,
+        required: true,
         default: Date.now
     },
-    articulo:{
-        type:String,
-        required:true,
-        min:2,
-        maxLength:150,
-        default:"Artículo",
+    articulo: {
+        type: String,
+        required: true,
+        min: 2,
+        maxLength: 150,
+        default: "Artículo",
     },
-    unidad:{
-        type:String,
-        default:"Unidad",
-        min:2,
-        maxLength:50,
+    unidad: {
+        type: String,
+        default: "Unidad",
+        min: 2,
+        maxLength: 50,
     },
-    cantidad:{
-        type:Number,
-        default:1,
-        min:0,
+    cantidad: {
+        type: Number,
+        default: 1,
+        min: 0,
     },
-    movimientoUnitario:{
+    movimientoUnitario: {
         type: Number,
         default: 1000,
-        
+
     },
-    movimientoTotal:{
-        type:Number,
-        default:1000,
+    movimientoTotal: {
+        type: Number,
+        default: 1000,
     },
-    informacion:{
-        type:String,
+    informacion: {
+        type: String,
         maxLength: 500,
     },
-    realizado:{
+    realizado: {
         type: Boolean,
         default: false,
     },
-    adjuntos:{
+    adjuntos: {
         type: [esquemaArchivo],
         default: []
     }
@@ -186,37 +186,37 @@ esquemaNodoSolidaridad.add({
     nodoParent: {
         type: String,
     },
-    tipoParent:{
+    tipoParent: {
         type: String,
         enum: ["nodoSolidaridad", "usuario"],
         default: "nodoSolidaridad"
     },
-    publicitado:{
+    publicitado: {
         type: Boolean,
-        default:false,
+        default: false,
     },
-    propietario:{
-        type:String,        
+    propietario: {
+        type: String,
     },
     idForoResponsables: {
         type: String,
     },
     vinculos: {
-        type: [EsquemaVinculosNodosSolidaridad],        
+        type: [EsquemaVinculosNodosSolidaridad],
         default: []
     },
     keywords: {
         type: String,
     },
-    movimientosDinero:{
-        type:[esquemaMovimientoDinero],
-        default:[]
+    movimientosDinero: {
+        type: [esquemaMovimientoDinero],
+        default: []
     },
-    eventos:{
+    eventos: {
         type: [EsquemaEvento],
         default: []
     },
-    
+
     coords: {
         x: {
             type: Number,
@@ -309,23 +309,24 @@ esquemaNodoSolidaridad.add({
     }
 
 });
-esquemaMovimientoDinero.pre("save", function(this:any, next){
-    if(this.movimientoUnitario*this.cantidad!=this.movimientoTotal){
-        throw new Error("El gasto total("+this.movimientoTotal+") no coincidía con el gasto unitario ("+this.movimientoUnitario+") y la cantidad ("+this.cantidad+")");
+esquemaMovimientoDinero.pre("save", function(this: any, next) {
+    if (this.movimientoUnitario * this.cantidad != this.movimientoTotal) {
+        throw new Error("El gasto total(" + this.movimientoTotal + ") no coincidía con el gasto unitario (" + this.movimientoUnitario + ") y la cantidad (" + this.cantidad + ")");
         return;
     }
     next();
-    
+
 });
 
-esquemaNodoSolidaridad.post("save", function (nodo) {
-    if(!nodo.posicionadoByFuerzas){    
+esquemaNodoSolidaridad.post("save", function(nodo) {
+    if (!nodo.posicionadoByFuerzas) {
     }
-    
+
 });
-esquemaNodoSolidaridad.post("remove", function(nodo){ 
-    console.log(`Publicando la removida de un nodo`);   
+esquemaNodoSolidaridad.post("remove", function(nodo) {
+    console.log(`Publicando la removida de un nodo`);
 });
 
-esquemaNodoSolidaridad.index({ nombre: "text", keywords: "text", descripcion: "text" });
+esquemaNodoSolidaridad.index({ nombre: "text", keywords: "text", descripcion: "text" }, { weights: { nombre: 4, keywords: 3, descripcion: 1 }, default_language: "spanish", name: "indexBusqueda" });
+
 export const ModeloNodoSolidaridad = mongoose.model("NodoSolidaridad", esquemaNodoSolidaridad);
