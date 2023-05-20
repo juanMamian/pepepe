@@ -250,7 +250,7 @@ export const resolvers = {
         usuariosByPermisos: async function(_: any, { listaPermisos, pagina }: { listaPermisos: string[], pagina: number }, context: contextoQuery) {
             let losUsuarios: DocUsuario[] = [];
             console.log("grabbing página " + pagina + " de usuarios");
-            let sizePagina=10;
+            let sizePagina = 10;
 
             try {
                 losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).skip(pagina * sizePagina).limit(sizePagina).exec();
@@ -309,21 +309,19 @@ export const resolvers = {
         buscarPersonas: async function(_: any, { textoBuscar }: any, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
             textoBuscar = textoBuscar.trim();
-            textoBuscar = new RegExp(textoBuscar, "i");
 
-            var todosUsuarios: any;
+            var losBuscados: DocUsuario[] = [];
 
             try {
-                todosUsuarios = await Usuario.find({}).select("nombres apellidos permisos fechaNacimiento email username numeroTel email").exec();
+                losBuscados = await Usuario.find({ $text: { $search: textoBuscar } }, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).exec();
             }
             catch (error) {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
-                ApolloError("Error de conexión a la base de datos");
+                return ApolloError("Error de conexión a la base de datos");
             }
 
-            var usuariosMatch = todosUsuarios.filter((u: any) => (u.nombres + u.apellidos).search(textoBuscar) > -1);
-            console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
-            return usuariosMatch;
+            console.log(`Enviando lista de matchs de los usuarios: ${losBuscados.length}`);
+            return losBuscados;
         },
         async refreshToken(_: never, __: never, context: contextoQuery) {
             if (!context?.usuario?.id) {

@@ -57,7 +57,7 @@
         </div>
         <div id="zonaBuscar">
             <div class="barraSuperior">
-                <input type="text" ref="inputBuscar" v-model="textoBuscar" @input="calcularBuscados"
+                <input type="text" ref="inputBuscar" v-model="textoBuscar" @keypress.enter="getBuscados"
                     v-show="mostrandoInputBuscar" />
                 <div class="boton" @click="iniciarBuscar" v-show="!mostrandoInputBuscar">
                     <img src="@/assets/iconos/search.svg" alt="Lupa" />
@@ -69,12 +69,16 @@
             </div>
         </div>
 
+
         <div ref="listaPersonas" id="listaPersonas" @click="idPersonaMenuCx = null">
+            <loading v-show="mostrandoInputBuscar && descargandoBuscados" />
+            <div class="anuncioZonaVacia" v-show="personasVisibles.length < 1">
+            ...
+            </div>
             <persona-vista-lista v-for="persona of personasVisibles" :key="persona.id"
                 :seleccionado="idPersonaSeleccionada === persona.id" :estaPersona="persona"
-                :nodosSolidaridadPublicitados="nodosSolidaridadPublicitados" :personasConEspacio="personasConEspacio"
-                :mostrarEspacioActual="mostrarEspacioActual" @click.native="idPersonaSeleccionada = persona.id"
-                @alienandoPersona="$emit('alienandoPersona', $event)" />
+                :personasConEspacio="personasConEspacio" :mostrarEspacioActual="mostrarEspacioActual"
+                @click.native="idPersonaSeleccionada = persona.id" @alienandoPersona="$emit('alienandoPersona', $event)" />
         </div>
         <loading v-show="$apollo.queries.personas.loading" texto="Cargando lista de personas..." />
     </div>
@@ -173,7 +177,7 @@ export default {
             hayMasPaginasPersonas: true,
             sizePaginaPersonas: 10,
             personas: [],
-            arrayPermisosDescargarPersonas:[],
+            arrayPermisosDescargarPersonas: [],
             paginaFetchMorePersonas: 0,
             personasConEspacio: [],
             nodosSolidaridadPublicitados: [],
@@ -183,11 +187,9 @@ export default {
 
             permisoInput: "",
             textoBuscar: null,
-            textoBusquedaUsado: null,
             mostrandoInputBuscar: false,
-            buscados: [],
-
-            debouncingBusqueda: false,
+            personasBuscadas: [],
+            descargandoBuscados: false,
 
             mostrarEspacioActual:
                 configuracion.mostrarEspacioActual != null &&
@@ -222,7 +224,7 @@ export default {
                     permisos: this.arrayPermisosDescargarPersonas,
                     pagina: this.paginaFetchMorePersonas,
                 },
-                updateQuery:(prev, { fetchMoreResult }) => {
+                updateQuery: (prev, { fetchMoreResult }) => {
                     console.log("Updating query")
                     if (fetchMoreResult.usuariosByPermisos.length < this.sizePaginaPersonas) {
                         this.hayMasPaginasPersonas = false;
@@ -340,16 +342,47 @@ export default {
             this.$nextTick(() => {
                 this.$refs.inputBuscar.focus();
             });
+
         },
         cancelarBusqueda() {
-            this.buscados = [];
             this.textoBuscar = null;
             this.mostrandoInputBuscar = false;
-            this.textoBusquedaUsado = null;
         },
-        calcularBuscados: debounce(function () {
-            this.textoBusquedaUsado = this.textoBuscar;
-        }, 500),
+        getBuscados() {
+            this.textoBuscar = this.$refs.inputBuscar.value;
+            if (!this.textoBuscar || this.textoBuscar.length < 3) {
+                console.log("Demasiado corto");
+                return;
+            }
+            this.textoBuscar = this.textoBuscar.trim();
+            console.log("Descargando lista de personas buscadas");
+
+            this.descargandoBuscados = true;
+            this.$apollo.query({
+                query: gql`
+                query($textoBuscar: String!){
+                    buscarPersonas(textoBuscar: $textoBuscar){
+            id
+            nombres
+            apellidos
+            permisos
+            username
+            objetivos
+                    }
+                }
+                `,
+                variables: {
+                    textoBuscar: this.textoBuscar,
+                }
+            }).then(({ data: { buscarPersonas } }) => {
+                this.descargandoBuscados = false;
+                this.personasBuscadas = buscarPersonas;
+            }).catch((error) => {
+                this.descargandoBuscados = false;
+                console.log("Error getting personas buscadas: " + error);
+            })
+
+        }
     },
     computed: {
         opcionesEspecialesPersona: function () {
@@ -378,24 +411,11 @@ export default {
             return false;
         },
         personasVisibles() {
-            var visibles = JSON.parse(JSON.stringify(this.personas));
-
-            if (this.textoBusquedaUsado) {
-                visibles.sort((a, b) => {
-                    let res =
-                        stringSimilarity.compareTwoStrings(
-                            b.nombres + b.apellidos,
-                            this.textoBusquedaUsado
-                        ) -
-                        stringSimilarity.compareTwoStrings(
-                            a.nombres + a.apellidos,
-                            this.textoBusquedaUsado
-                        );
-                    return res;
-                });
+            if (this.mostrandoInputBuscar) {
+                return this.personasBuscadas;
             }
 
-            return visibles;
+            return this.personas;
         },
     },
     watch: {
@@ -414,8 +434,8 @@ export default {
                 else if (tipo === 'todos') {
                     arrayPermisos = ["usuario"];
                 }
-                this.paginaFetchMorePersonas=0;
-                this.hayMasPaginasPersonas=true;
+                this.paginaFetchMorePersonas = 0;
+                this.hayMasPaginasPersonas = true;
 
                 this.arrayPermisosDescargarPersonas = arrayPermisos;
             },
