@@ -173,7 +173,7 @@ APRENDIDO
 
     extend type Query {
         todosUsuarios(dateActual: Date):[Usuario],
-        usuariosByPermisos(listaPermisos:[String]):[Usuario],
+        usuariosByPermisos(listaPermisos:[String], pagina: Int!):[Usuario],
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
@@ -247,11 +247,13 @@ export const resolvers = {
             }
             return profes;
         },
-        usuariosByPermisos: async function(_: any, { listaPermisos }: { listaPermisos: string[] }, context: contextoQuery) {
+        usuariosByPermisos: async function(_: any, { listaPermisos, pagina }: { listaPermisos: string[], pagina: number }, context: contextoQuery) {
             let losUsuarios: DocUsuario[] = [];
+            console.log("grabbing página " + pagina + " de usuarios");
+            let sizePagina=10;
 
             try {
-                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).exec();
+                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).skip(pagina * sizePagina).limit(sizePagina).exec();
             }
             catch (error) {
                 console.log("error getting la lista de usuarios: " + error);

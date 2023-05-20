@@ -1,5 +1,5 @@
 <template>
-    <div class="personas">
+    <div class="personas" @scroll="checkIfFetchMore">
         <router-view> </router-view>
 
         <div class="barraSeccion">
@@ -69,14 +69,14 @@
             </div>
         </div>
 
-        <div id="listaPersonas" @click="idPersonaMenuCx = null">
-            <loading v-show="$apollo.queries.personas.loading" texto="Cargando lista de personas..." />
+        <div ref="listaPersonas" id="listaPersonas" @click="idPersonaMenuCx = null">
             <persona-vista-lista v-for="persona of personasVisibles" :key="persona.id"
                 :seleccionado="idPersonaSeleccionada === persona.id" :estaPersona="persona"
                 :nodosSolidaridadPublicitados="nodosSolidaridadPublicitados" :personasConEspacio="personasConEspacio"
                 :mostrarEspacioActual="mostrarEspacioActual" @click.native="idPersonaSeleccionada = persona.id"
                 @alienandoPersona="$emit('alienandoPersona', $event)" />
         </div>
+        <loading v-show="$apollo.queries.personas.loading" texto="Cargando lista de personas..." />
     </div>
 </template>
 
@@ -104,8 +104,8 @@ export const QUERY_PERSONAS = gql`
     `;
 
 export const QUERY_PERSONAS_BY_PERMISOS = gql`
-    query($listaPermisos: [String]){
-        usuariosByPermisos(listaPermisos: $listaPermisos){
+    query($listaPermisos: [String], $pagina: Int!){
+        usuariosByPermisos(listaPermisos: $listaPermisos, pagina: $pagina){
             id
             nombres
             apellidos
@@ -126,25 +126,15 @@ export default {
         personas: {
             query: QUERY_PERSONAS_BY_PERMISOS,
             variables() {
-                let arrayPermisos = [];
-                if (this.tipoMostrarUsuarios === 'estudiantes') {
-                    arrayPermisos = ["maestraVida-estudiante"];
-                }
-                else if (this.tipoMostrarUsuarios === 'profesores') {
-                    arrayPermisos = ["maestraVida-profesor"];
-                }
-                else if (this.tipoMostrarUsuarios === 'graduados') {
-                    arrayPermisos = ["maestraVida-graduado"];
-                }
-                else if (this.tipoMostrarUsuarios === 'todos') {
-                    arrayPermisos = ["usuario"];
-                }
-
                 return {
-                    listaPermisos: arrayPermisos
+                    listaPermisos: this.arrayPermisosDescargarPersonas,
+                    pagina: 0,
                 }
             },
             update: function ({ usuariosByPermisos }) {
+                if (usuariosByPermisos.length < this.sizePaginaPersonas) {
+                    this.hayMasPaginasPersonas = false;
+                }
                 return usuariosByPermisos;
             },
             skip() {
@@ -180,7 +170,11 @@ export default {
             configuracion = JSON.parse(stringConfiguracion);
         }
         return {
+            hayMasPaginasPersonas: true,
+            sizePaginaPersonas: 10,
             personas: [],
+            arrayPermisosDescargarPersonas:[],
+            paginaFetchMorePersonas: 0,
             personasConEspacio: [],
             nodosSolidaridadPublicitados: [],
             idPersonaMenuCx: null,
@@ -205,6 +199,45 @@ export default {
         };
     },
     methods: {
+        checkIfFetchMore() {
+            let rect = this.$refs.listaPersonas.getBoundingClientRect();
+            if (rect.bottom <= window.innerHeight) {
+                this.fetchMorePersonas();
+            }
+        },
+
+        fetchMorePersonas() {
+            console.log("Refetching more personas");
+            if (this.$apollo.queries.personas.loading) {
+                return;
+            }
+            if (!this.hayMasPaginasPersonas) {
+                return;
+            }
+            this.paginaFetchMorePersonas++;
+            console.log("De página " + this.paginaFetchMorePersonas);
+
+            this.$apollo.queries.personas.fetchMore({
+                variables: {
+                    permisos: this.arrayPermisosDescargarPersonas,
+                    pagina: this.paginaFetchMorePersonas,
+                },
+                updateQuery:(prev, { fetchMoreResult }) => {
+                    console.log("Updating query")
+                    if (fetchMoreResult.usuariosByPermisos.length < this.sizePaginaPersonas) {
+                        this.hayMasPaginasPersonas = false;
+                    }
+
+                    return {
+                        usuariosByPermisos: [
+                            ...prev.usuariosByPermisos,
+                            ...fetchMoreResult.usuariosByPermisos,
+                        ]
+                    }
+                }
+            })
+
+        },
         setLocalStorageConfiguracion() {
             const objeto = {
                 mostrarEspacioActual: this.mostrarEspacioActual,
@@ -366,6 +399,29 @@ export default {
         },
     },
     watch: {
+        tipoMostrarUsuarios: {
+            handler: function (tipo, prev) {
+                let arrayPermisos = [];
+                if (tipo === 'estudiantes') {
+                    arrayPermisos = ["maestraVida-estudiante"];
+                }
+                else if (tipo === 'profesores') {
+                    arrayPermisos = ["maestraVida-profesor"];
+                }
+                else if (tipo === 'graduados') {
+                    arrayPermisos = ["maestraVida-graduado"];
+                }
+                else if (tipo === 'todos') {
+                    arrayPermisos = ["usuario"];
+                }
+                this.paginaFetchMorePersonas=0;
+                this.hayMasPaginasPersonas=true;
+
+                this.arrayPermisosDescargarPersonas = arrayPermisos;
+            },
+            immediate: true,
+        },
+
         mostrarEspacioActual() {
             this.setLocalStorageConfiguracion();
         },
@@ -374,6 +430,10 @@ export default {
 </script>
 
 <style scoped>
+.personas {
+    overflow-y: scroll;
+}
+
 #listaPersonas {
     display: flex;
     padding-bottom: 50px;
