@@ -129,7 +129,6 @@ export default {
         token: {
             query: QUERY_REFRESH_TOKEN,
             update({ refreshToken }) {
-                console.log("Refreshing token");
                 let datosUsuario = parseJwt(refreshToken);
 
                 const store = this.$apollo.provider.defaultClient;
@@ -148,7 +147,6 @@ export default {
                     data: { auth_usuario: nuevosDatos },
                 });
 
-                console.log("Refreshed");
                 return refreshToken;
             },
             skip(){
@@ -230,7 +228,6 @@ export default {
     },
     methods: {
         alienarPersona(token) {
-            console.log("alienando persona");
             this.$router.push("/home");
             this.logearUsuario(token);
         },
@@ -239,7 +236,6 @@ export default {
             this.mostrandoNavUsuario = false;
         },
         setEstadoRed() {
-            console.log(`Detectado estado de red en ${navigator.onLine}`);
             const store = this.$apollo.provider.defaultClient;
 
             store.writeQuery({
@@ -253,7 +249,6 @@ export default {
             // }
         },
         logearUsuario(token) {
-            console.log("Logeando usuario");
             let datosUsuario = parseJwt(token);
 
             const store = this.$apollo.provider.defaultClient;
@@ -292,9 +287,7 @@ export default {
             }
         },
         $route(ruta) {
-            console.log("cambio de ruta a " + ruta.name);
             if (ruta.name != 'visorNodoConocimiento') {
-                console.log("setting title");
                 document.title = "La estrategia del caracol";
             }
 

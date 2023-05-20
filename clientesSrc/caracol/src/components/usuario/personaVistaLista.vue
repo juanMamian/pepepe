@@ -355,7 +355,6 @@ export default {
                 }
             },
             update({ Usuario }) {
-                console.log("descargados " + Usuario.bloquesSubscripcion.length + " bloques de subscripción");
                 return Usuario.bloquesSubscripcion;
             },
             skip() {

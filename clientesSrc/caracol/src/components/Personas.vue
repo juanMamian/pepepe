@@ -315,7 +315,6 @@ export default {
             this.textoBusquedaUsado = null;
         },
         calcularBuscados: debounce(function () {
-            console.log(`Setting textoBusquedaUsado`);
             this.textoBusquedaUsado = this.textoBuscar;
         }, 500),
     },

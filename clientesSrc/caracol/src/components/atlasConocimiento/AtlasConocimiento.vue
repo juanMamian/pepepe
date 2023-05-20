@@ -255,7 +255,6 @@ export default {
 
         zoomWheel(e) {
             if (this.$refs.controlesNodo?.zoomWheel(e)) {
-                console.log("wheel atrapado en controlesNodo");
                 return;
             }
             if (this.tipoBrowse === "mapa" && this.$refs?.mapaAtlas) {

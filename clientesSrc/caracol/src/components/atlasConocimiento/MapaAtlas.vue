@@ -105,8 +105,6 @@ export default {
         nodosZona: {
             query: QUERY_NODOS_ZONA,
             variables() {
-                console.log("centro: ");
-                console.table(this.centroDescarga);
                 return {
                     centro: {
                         x: this.centroDescarga.x,
@@ -117,7 +115,6 @@ export default {
                 }
             },
             update({ nodosConocimientoAroundCentro }) {
-                console.log(nodosConocimientoAroundCentro.length + " nodos en zona");
                 return nodosConocimientoAroundCentro;
             },
             fetchPolicy: "cache-first",
@@ -406,14 +403,12 @@ export default {
     },
     methods: {
         scrollMapa(e) {
-            console.log("scrollMapa")
             e.stopPropagation();
             e.preventDefault();
         },
 
         mouseUpDiagrama(e) {
             if (this.elementoDragged?.tipo === 'nodoConocimiento') {
-                console.log("Soltando nodo conocimiento")
                 const posContenedor = this.$el.getBoundingClientRect();
 
                 let posicion = {
@@ -489,7 +484,6 @@ export default {
             let dragClientX = e.touches ? e.touches[0].clientX : e.clientX;
             let dragClientY = e.touches ? e.touches[0].clientY : e.clientY;
             if (this.elementoDragged.tipo === 'nodoConocimiento') {
-                console.log("dragging nodo");
                 if (!this.usuarioSuperadministrador) {
                     return;
                 }
@@ -497,7 +491,6 @@ export default {
             }
             else if (this.elementoDragged.tipo === 'mapa') {
                 if (!this.lastPointerMoveX || !this.lastPointerMoveY) {
-                    console.log("No había last move coordinates");
                     this.lastPointerMoveX = dragClientX;
                     this.lastPointerMoveY = dragClientY;
                     return;
@@ -543,7 +536,6 @@ export default {
             );
         },
         reactToNodoEliminado(idNodo) {
-            console.log("Reaccionar to nodo eliminado");
             const store = this.$apollo.provider.defaultClient;
             const cache = store.readQuery({
                 query: QUERY_NODOS_ZONA,
@@ -557,7 +549,6 @@ export default {
             let listaNodos = nuevoCache.nodosConocimientoAroundCentro;
             const indexN = listaNodos.findIndex(n => n.id === idNodo);
             if (indexN < 0) {
-                console.log("el nodo ni estaba en el caché");
                 return
             }
             listaNodos.splice(indexN, 1);
@@ -688,7 +679,6 @@ export default {
                 y: this.posMenuContextual.y,
             };
 
-            console.log(`Creando nuevo nodo en ${JSON.stringify(posicionNuevoNodo)}`);
 
             this.crearNodo(posicionNuevoNodo);
         },
@@ -700,7 +690,6 @@ export default {
             if (!idNodo) {
                 return;
             }
-            console.log(`Centrando en nodo con id ${idNodo}`);
             this.$apollo
                 .query({
                     query: gql`
@@ -719,7 +708,6 @@ export default {
                     },
                 })
                 .then(({ data: { nodo } }) => {
-                    console.log(`Recibido nodo así: ${JSON.stringify(nodo)}`);
                     this.centrarEnNodo(nodo);
                 })
                 .catch((error) => {
@@ -770,7 +758,6 @@ export default {
                 console.log(`Error. Usuario no autorizado`);
                 return;
             }
-            console.log(`enviando una mutación de crear nodo`);
 
             let infoNodo = {
                 autoCoords: {
@@ -797,7 +784,6 @@ export default {
                     },
                 })
                 .then(({ data: { crearNodo } }) => {
-                    console.log(`Creado ${crearNodo.id}`);
                     const store = this.$apollo.provider.defaultClient;
                     const cache = store.readQuery({
                         query: QUERY_NODOS_ZONA,
@@ -812,7 +798,6 @@ export default {
 
                     const indexN = losNodos.findIndex((n) => n.id === crearNodo.id);
                     if (indexN > -1) {
-                        console.log(`El nodo ya estaba en caché`);
                     } else {
                         losNodos.push(crearNodo);
                         store.writeQuery({
@@ -841,7 +826,6 @@ export default {
                 console.log(`No autorizado`);
                 return;
             }
-            console.log(`eliminando un vinculo entre ${idNodoFrom} y ${idNodoTo} `);
 
             this.editandoVinculos = true;
             this.$apollo
@@ -963,7 +947,6 @@ export default {
 
                 if (this.centroVista.x > this.centroDescarga.x + radioPermitidoX || this.centroVista.x < this.centroDescarga.x - radioPermitidoX || this.centroVista.y < this.centroDescarga.y - radioPermitidoY || this.centroVista.y > this.centroDescarga.y + radioPermitidoY) {
                     //Refresh de descarga.
-                    console.log("refrescando la zona de descarga");
 
                     this.centroDescarga.x = Math.round(this.centroVista.x / this.sizeGridDescarga) * this.sizeGridDescarga;
                     this.centroDescarga.y = Math.round(this.centroVista.y / this.sizeGridDescarga) * this.sizeGridDescarga;
