@@ -342,21 +342,7 @@ export const resolvers = {
                 return UserInputError("Usuario no reconocido");
             }
 
-            let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
-
-            let millisFinSubscripcion: number | null = null;
-            if (elUsuario.bloquesSubscripcion && elUsuario.bloquesSubscripcion.length > 0) {
-                let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
-                millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
-            }
-            const datosToken = {
-                id: elUsuario._id,
-                permisos: elUsuario.permisos,
-                username: elUsuario.username,
-                subscripcionIlimitada,
-                millisFinSubscripcion,
-                version: 1,
-            }
+            const datosToken = crearDatosTokenUsuario(elUsuario);
 
             if (!process.env.JWT_SECRET) {
                 throw "ENV DE JWT SECRET NO CONFIGURADO";
@@ -399,14 +385,7 @@ export const resolvers = {
                 millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
             }
 
-            const datosToken = {
-                id: elUsuario._id,
-                permisos: elUsuario.permisos,
-                username: elUsuario.username,
-                subscripcionIlimitada,
-                millisFinSubscripcion,
-                version: 1,
-            }
+            const datosToken = crearDatosTokenUsuario(elUsuario);
             if (!process.env.JWT_SECRET) {
                 throw "ENV DE JWT SECRET NO CONFIGURADO";
             }
@@ -445,12 +424,7 @@ export const resolvers = {
                 UserInputError("No permitido");
             }
 
-            const datosToken = {
-                id: elUsuario._id,
-                permisos: elUsuario.permisos,
-                username: elUsuario.username,
-                version: 1,
-            }
+            const datosToken = crearDatosTokenUsuario(elUsuario);
             if (!process.env.JWT_SECRET) {
                 throw "JWT ENV NO CONFIGURADO"
             }
@@ -2078,6 +2052,23 @@ async function resetInfoAtlas() {
             console.log("Error guardando usuario: " + error);
             return;
         }
+    }
+}
+
+function crearDatosTokenUsuario(elUsuario) {
+    let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
+    let millisFinSubscripcion: number | null = null;
+    if (elUsuario.bloquesSubscripcion && elUsuario.bloquesSubscripcion.length > 0) {
+        let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+        millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
+    }
+    return {
+        id: elUsuario._id,
+        permisos: elUsuario.permisos,
+        username: elUsuario.username,
+        subscripcionIlimitada,
+        millisFinSubscripcion,
+        version: 1,
     }
 }
 
