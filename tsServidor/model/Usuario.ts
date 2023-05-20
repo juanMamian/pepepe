@@ -576,6 +576,7 @@ export const minLengthEmail = 7;
 export const minLengthUsername = 7;
 
 
+esquemaUsuario.index({ nombres: "text", apellidos: "text"}, {name: "indexBusqueda"} );
 export const ModeloUsuario = mongoose.model("Usuario", esquemaUsuario);
 export type DocUsuario = InstanceType<typeof ModeloUsuario>;
 

@@ -152,7 +152,7 @@ var esquemaNodo = new mongoose.Schema({
 export type NodoConocimiento = InferSchemaType<typeof esquemaNodo>;
 
 
-esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" }, { default_language: "spanish" });
+esquemaNodo.index({ nombre: "text", descripcion: "text" },{name: 'indexBusqueda'} );
 
 export const ModeloNodo = mongoose.model("Nodo", esquemaNodo);
 
