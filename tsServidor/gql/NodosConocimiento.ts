@@ -217,7 +217,7 @@ export const resolvers = {
         nodo: async function(_: any, { idNodo }: { idNodo: string }) {
             let elNodo: DocNodoConocimiento | null = null;
             try {
-                elNodo = await Nodo.findById(idNodo).select("-icono").exec();
+                elNodo = await Nodo.findById(idNodo).select("-icono").populate("vinculos.nodoContraparte", "nombre autoCoords").exec();
             } catch (error) {
                 console.log(`error buscando el nodo. e: ` + error);
                 ApolloError("Error conectando con la base de datos");

@@ -1,6 +1,5 @@
 Atlas de conocimiento.
 
--No está funcionando el buscador de personas.
 -En firefox no se ven los enlaces de los nodos.
 -Cuando se hace pan vista del mapaAtlas se pierde el nodoSeleccionado.
 -Cuando el contenido de un nodo crece en height, se tiene otra vez scroll del contenido de la sección.
