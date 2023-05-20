@@ -47,10 +47,11 @@
                         ]"></div>
 
             <div id="zonaLocalizadores" @click.stop="">
-                Localizar: 
-                <div class="botonTexto" title="Localizar el nodo en la mira" @click="centerEnTarget" v-if="idNodoTarget" :class="{deshabilitado: !nodoTargetPresente}">
+                Localizar:
+                <div class="botonTexto" title="Localizar el nodo en la mira" @click="centerEnTarget" v-if="idNodoTarget"
+                    :class="{ deshabilitado: !nodoTargetPresente }">
                     <span>
-                    En la mira
+                        En la mira
                     </span>
                     <img src="@/assets/iconos/atlas/locationCrosshair.svg" alt="Crosshairs">
                 </div>
@@ -79,6 +80,7 @@
             :conectandoNodosColeccion="conectandoNodosColeccion" ref="mapaAtlas"
             :idsNodosColeccionEstudiables="idsNodosColeccionEstudiables"
             :idsNodosActivosOlvidados="idsNodosActivosOlvidados" @abrirControlesNodo="$refs.controlesNodo.desplegar()"
+            @click.stop="" @clickFuera="clickFuera"
             @settedIdsNodosActivosAccesiblesInexplorados="setIdsNodosActivosAccesiblesInexplorados($event, 'mapaAtlas')"
             @settedIdsNodosTop="setIdsNodosActivosTop($event, 'mapaAtlas')" @seleccionNodo="seleccionNodo" />
 
@@ -92,8 +94,7 @@
             :nodoCreandoDependencia="nodoCreandoDependencia" :nodoTargetRelevante="nodoTargetRelevante" @click.stop=""
             @iniciarCrearDependenciaNodo="marcarNodoEsperandoDependencia($event)"
             @cancelarCreandoDependencia="nodoCreandoDependencia = null" @nodoEliminado="reactToNodoEliminado"
-            @nodoCreado="reactToNodoCreado"
-            @localizeMe="centrarEnNodoById(idNodoSeleccionado)" />
+            @nodoCreado="reactToNodoCreado" @localizeMe="centrarEnNodoById(idNodoSeleccionado)" />
     </div>
 </template>
 
@@ -155,11 +156,11 @@ export default {
         };
     },
     computed: {
-        nodoTargetPresente(){
-            if(!this.idNodoTarget){
+        nodoTargetPresente() {
+            if (!this.idNodoTarget) {
                 return false;
             }
-            if(this.coleccionSeleccionada?.id){
+            if (this.coleccionSeleccionada?.id) {
                 return this.coleccionSeleccionada.idsRed.includes(this.idNodoTarget);
             }
 
@@ -219,12 +220,12 @@ export default {
         },
     },
     methods: {
-        reactToNodoCreado(nodo){
-            if(this.$route.params?.tipoBrowse==='mapa' && this.$refs.mapaAtlas){
+        reactToNodoCreado(nodo) {
+            if (this.$route.params?.tipoBrowse === 'mapa' && this.$refs.mapaAtlas) {
                 this.$refs.mapaAtlas.$apollo.queries.nodosZona.refetch();
             }
         },
-        
+
         descargarNodosColeccionEstudiables() {
             if (!this.coleccionSeleccionada?.id) {
                 return;

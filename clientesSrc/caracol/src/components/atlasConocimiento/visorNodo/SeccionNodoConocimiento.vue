@@ -7,7 +7,6 @@
         </div>
         <div id="zonaFront" class="frontDeSeccion" v-show="!editando" :key="versionArchivo">
             <iframe ref="iframeSeccion" id="iframeSeccion" @load="reheight(); startObserving()" :src="srcIframe" :style="[offsetIframe]"
-                @click=" clickSeccion "
                 v-if="estaSeccion.modo === 'enlace' || (estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0, 5) != 'image')"
                 frameborder="0"></iframe>
             <img :src=" direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo "
@@ -100,22 +99,15 @@ export default {
     methods: {
         startObserving() {
             ro = new ResizeObserver(lista => {
-                console.log("mutación observada")
                 this.reheight();
 
             })
 
-            let elIframeBody = document.getElementById("iframeSeccion").contentWindow.document.body;
-            console.log("Setting observación en " + elIframeBody);
             ro.observe(document.getElementById("iframeSeccion").contentWindow.document.body);
-        },
-        clickSeccion() {
-            console.log("handling click sección");
         },
         reheight() {
             let nuevoHeight = this.$refs.iframeSeccion.contentWindow.document.body.scrollHeight;
-            console.log("Setting height of the iframe en " + nuevoHeight);
-            this.offsetIframe.height = Math.round(nuevoHeight * 1.1) + "px";
+            this.offsetIframe.height = Math.round(nuevoHeight +40) + "px";
         },
 
         subirArchivoContenido(e) {

@@ -205,6 +205,7 @@ export default {
     },
     data() {
         return {
+            panned: false,
             nodoTarget: {
             },
             lastPointerMoveX: null,
@@ -447,9 +448,13 @@ export default {
             this.elementoDragged = null;
             this.lastPointerMoveX = null;
             this.lastPointerMoveY = null;
+            if(!this.panned){
+                this.$emit("clickFuera");
+            }
         },
 
-        iniciarDragMapa() {
+        iniciarDragMapa(e) {
+            this.panned=false;
             if (this.elementoDragged) {
                 return;
             }
@@ -503,6 +508,7 @@ export default {
                 this.panVista(-deltaX, -deltaY);
                 this.lastPointerMoveX = dragClientX;
                 this.lastPointerMoveY = dragClientY;
+                this.panned=true;
             }
         }, 50),
         stepNivelesUnderTarget: throttle(function (step) {
