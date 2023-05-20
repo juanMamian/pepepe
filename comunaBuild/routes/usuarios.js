@@ -128,15 +128,15 @@ router.post("/login", async (req, res) => {
     }
 });
 router.post("/updatePassword", async (req, res) => {
-    if (!req.user) {
+    if (!req.auth) {
         console.log(`No habia info del bearer`);
         return res.status(401).send('No autorizado');
     }
-    if (!req.user.id) {
+    if (!req.auth.id) {
         console.log(`no había id del usuario`);
         return res.status(401).send('No autorizado');
     }
-    let idUsuario = req.user.id;
+    let idUsuario = req.auth.id;
     let datosUpdatePass = {
         viejoPassword: req.body.viejoPassword,
         nuevoPassword: req.body.nuevoPassword,
@@ -184,20 +184,20 @@ router.post("/updatePassword", async (req, res) => {
     }
 });
 router.post("/resetearPassUsuario", async (req, res) => {
-    if (!req.user) {
+    if (!req.auth) {
         console.log(`No habia info del bearer`);
         return res.status(401).send('No autorizado');
     }
-    if (!req.user.permisos) {
+    if (!req.auth.permisos) {
         console.log(`no había permisos del usuario`);
         return res.status(401).send('No autorizado');
     }
-    let idUsuario = req.user.id;
+    let idUsuario = req.auth.id;
     let idReseteado = req.body.idUsuario;
     console.log(`Usario con id ${idUsuario} solicita reseteo de pass de usuario con id ${idReseteado}`);
     let permisosValidos = ["superadministrador"];
-    if (!req.user.permisos.some(p => permisosValidos.includes(p))) {
-        console.log(`Permisos ${req.user.permisos} insuficientes`);
+    if (!req.auth.permisos.some(p => permisosValidos.includes(p))) {
+        console.log(`Permisos ${req.auth.permisos} insuficientes`);
         return res.status(401).send({ msjUsuario: "No autorizado" });
     }
     let passDefault = "123456";
@@ -213,16 +213,16 @@ router.post("/resetearPassUsuario", async (req, res) => {
     return res.send({ respuesta: "ok", msjUsuario: "Contraseña reseteada" });
 });
 router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res) {
-    console.log(`Recibida peticion de subir foto por el usuario ${req.user.username}`);
-    if (!req.user) {
+    console.log(`Recibida peticion de subir foto por el usuario ${req.auth.username}`);
+    if (!req.auth) {
         console.log(`No habia info del bearer`);
         return res.status(401).send('No autorizado');
     }
-    if (!req.user.id) {
+    if (!req.auth.id) {
         console.log(`no había id del usuario`);
         return res.status(401).send('No autorizado');
     }
-    let idUsuario = req.user.id;
+    let idUsuario = req.auth.id;
     try {
         var elUsuario = await Usuario.findById(idUsuario, "username fotografia");
     }
@@ -231,7 +231,7 @@ router.post("/updateFoto", upload.single("nuevaFoto"), async function (req, res)
         return res.status(400).send('');
     }
     try {
-        const imagen = await sharp(req.file.buffer);
+        const imagen = sharp(req.file.buffer);
         const imagenPeque = await imagen
             .resize({ width: 300, height: 300, fit: "outside" })
             .rotate()

@@ -950,7 +950,6 @@ export default {
 
                     this.centroDescarga.x = Math.round(this.centroVista.x / this.sizeGridDescarga) * this.sizeGridDescarga;
                     this.centroDescarga.y = Math.round(this.centroVista.y / this.sizeGridDescarga) * this.sizeGridDescarga;
-                    console.table(this.centroDescarga);
                 }
             },
             deep: true,

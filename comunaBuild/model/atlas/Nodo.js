@@ -136,5 +136,5 @@ var esquemaNodo = new mongoose.Schema({
     direccion: Number,
     ubicado: Boolean
 });
-esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" });
+esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" }, { default_language: "spanish" });
 export const ModeloNodo = mongoose.model("Nodo", esquemaNodo);

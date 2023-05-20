@@ -102,6 +102,18 @@ APRENDIDO
         categoria:String,
         texto:String
     }
+    input InputBloqueSubscripcion{
+        dateInicio: Date,
+        duracion: Int,
+        valorPagado: Int,
+    }
+
+    type BloqueSubscripcion{
+        id: ID,
+        dateInicio: Date,
+        duracion: Int,
+        valorPagado: Int,
+    }
 
     type Usuario{
         id: ID,
@@ -123,6 +135,8 @@ APRENDIDO
         responsablesAmplio:[String],
         administradores:[String],
         permisos:[String]
+        bloquesSubscripcion:[BloqueSubscripcion],
+        finSubscripcion: Date,
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
         foros:[InfoForosUsuario],
@@ -154,12 +168,16 @@ APRENDIDO
         participantesCasaMaestraVida:[Usuario],
         nodosEstudiablesColeccion(idColeccion: ID!): [NodoConocimiento]
 
+        refreshToken:String,
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
 
         coleccionNodosConocimiento(idUsuario: ID!, idColeccion: ID!):ColeccionNodosAtlasConocimiento,
     }
     extend type Mutation{
+        crearBloqueSubscripcionUsuario(idUsuario: ID!, infoBloque: InputBloqueSubscripcion): BloqueSubscripcion,
+        eliminarBloqueSubscripcionUsuario(idUsuario: ID!, idBloque: ID!): Boolean,
+
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
         editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
         addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
@@ -280,6 +298,43 @@ export const resolvers = {
             console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
             return usuariosMatch;
         },
+        async refreshToken(_, __, context) {
+            if (!context?.usuario?.id) {
+                return AuthenticationError("Autenticación requerida");
+            }
+            const credencialesUsuario = context.usuario;
+            console.log("Refreshing token de " + credencialesUsuario.username);
+            let elUsuario = null;
+            try {
+                elUsuario = await Usuario.findById(credencialesUsuario.id).exec();
+            }
+            catch (error) {
+                console.log("Error getting usuario: " + error);
+                return ApolloError();
+            }
+            if (!elUsuario) {
+                return UserInputError("Usuario no reconocido");
+            }
+            let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
+            let millisFinSubscripcion = null;
+            if (elUsuario.bloquesSubscripcion && elUsuario.bloquesSubscripcion.length > 0) {
+                let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+                millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
+            }
+            const datosToken = {
+                id: elUsuario._id,
+                permisos: elUsuario.permisos,
+                username: elUsuario.username,
+                subscripcionIlimitada,
+                millisFinSubscripcion,
+                version: 1,
+            };
+            if (!process.env.JWT_SECRET) {
+                throw "ENV DE JWT SECRET NO CONFIGURADO";
+            }
+            const token = jwt.sign(datosToken, process.env.JWT_SECRET);
+            return token;
+        },
         login: async function (_, { username, password }, context) {
             let credencialesUsuario = context.usuario;
             console.log(`Solicitud de login`);
@@ -289,7 +344,7 @@ export const resolvers = {
                 UserInputError("Datos inválidos");
             }
             try {
-                var elUsuario = await Usuario.findOne({ username }, "username password permisos").exec();
+                var elUsuario = await Usuario.findOne({ username }, "username password permisos bloquesSubscripcion").exec();
             }
             catch (error) {
                 console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
@@ -303,21 +358,24 @@ export const resolvers = {
                 UserInputError("Datos incorrectos");
             }
             console.log(`login correcto de ${username}. Enviando JWT`);
+            let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
+            let millisFinSubscripcion = null;
+            if ((elUsuario.bloquesSubscripcion?.length) > 0) {
+                let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+                millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
+            }
             const datosToken = {
                 id: elUsuario._id,
                 permisos: elUsuario.permisos,
                 username: elUsuario.username,
+                subscripcionIlimitada,
+                millisFinSubscripcion,
                 version: 1,
             };
             if (!process.env.JWT_SECRET) {
                 throw "ENV DE JWT SECRET NO CONFIGURADO";
             }
             const token = jwt.sign(datosToken, process.env.JWT_SECRET);
-            const respuesta = {
-                username: elUsuario.username,
-                permisos: elUsuario.permisos,
-                token
-            };
             return token;
         },
         alienarUsuario: async function (_, { idAlienado }, context) {
@@ -386,7 +444,7 @@ export const resolvers = {
             ;
             var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
             if (!laColeccion) {
-                console.log(`Error getting la colección : `);
+                console.log(`Error getting la colección ${idColeccion} : `);
                 UserInputError('Colección no encontrada');
             }
             return laColeccion;
@@ -427,6 +485,80 @@ export const resolvers = {
         },
     },
     Mutation: {
+        eliminarBloqueSubscripcionUsuario: async function (_, { idUsuario, idBloque }, context) {
+            console.log("Petición de elimar bloque de subscripcion");
+            if (!context?.usuario?.id) {
+                return AuthenticationError();
+            }
+            const credencialesUsuario = context.usuario;
+            if (!credencialesUsuario.permisos.includes("superadministrador")) {
+                return AuthenticationError();
+            }
+            let elUsuario = null;
+            try {
+                elUsuario = await Usuario.findById(idUsuario).exec();
+            }
+            catch (error) {
+                console.log("Error descargando usuario: " + error);
+                return ApolloError();
+            }
+            if (!elUsuario) {
+                return UserInputError();
+            }
+            let indexB = elUsuario.bloquesSubscripcion.findIndex(b => b.id === idBloque);
+            if (indexB < 0) {
+                return UserInputError();
+            }
+            elUsuario.bloquesSubscripcion.splice(indexB, 1);
+            try {
+                await elUsuario.save();
+            }
+            catch (error) {
+                console.log("Error guardando usuario: " + error);
+                return ApolloError();
+            }
+            console.log("Eliminado");
+            return true;
+        },
+        crearBloqueSubscripcionUsuario: async function (_, { idUsuario, infoBloque }, context) {
+            if (!context?.usuario?.id) {
+                return UserInputError("Autenticación requerida");
+            }
+            const credencialesUsuario = context.usuario;
+            if (!credencialesUsuario.permisos.includes("superadministrador")) {
+                return AuthenticationError();
+            }
+            let elUsuario = null;
+            try {
+                elUsuario = await Usuario.findById(idUsuario).exec();
+            }
+            catch (error) {
+                console.log("error getting usuario: " + error);
+                return ApolloError("Error conectando con la base de datos");
+            }
+            if (!elUsuario) {
+                return UserInputError();
+            }
+            let nuevoBloque = elUsuario.bloquesSubscripcion.create(infoBloque);
+            if (elUsuario.bloquesSubscripcion?.length > 0) {
+                let lastBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+                let lastTimeSubscripcion = lastBloqueSubscripcion.dateInicio.getTime() + lastBloqueSubscripcion.duracion * (millisDia * 30);
+                console.log("El nuevo bloque inicia en : " + nuevoBloque.dateInicio);
+                if (nuevoBloque.dateInicio.getTime() < lastTimeSubscripcion) {
+                    return UserInputError("Fecha de inicio no permitida pues se superpone con la supscripción actual");
+                }
+            }
+            elUsuario.bloquesSubscripcion.splice(0, 0, nuevoBloque);
+            try {
+                await elUsuario.save();
+            }
+            catch (error) {
+                console.log("Error guardando usuario " + error);
+                return ApolloError();
+            }
+            console.log("Bloque de subscripción creado");
+            return nuevoBloque;
+        },
         editarDatosUsuario: async function (_, { nuevosDatos }, context) {
             console.log(`solicitud de edicion de datos de usuario`);
             let credencialesUsuario = context.usuario;
@@ -438,7 +570,7 @@ export const resolvers = {
             try {
                 var elUsuario = await Usuario.findById(credencialesUsuario.id).exec();
                 if (!elUsuario) {
-                    throw "Usuario no encontrado";
+                    throw "Usuario no encontrad";
                 }
             }
             catch (error) {
@@ -1381,6 +1513,14 @@ export const resolvers = {
         },
         nombre: function (parent, _, __) {
             return parent.username;
+        },
+        finSubscripcion(parent, _, __) {
+            if (!(parent.bloquesSubscripcion?.length > 0)) {
+                return null;
+            }
+            let ultimoBloqueSubscripcion = parent.bloquesSubscripcion[0];
+            let dateFinSubscripcion = new Date(ultimoBloqueSubscripcion.dateInicio.getTime() + (ultimoBloqueSubscripcion.duracion * millisDia * 30));
+            return dateFinSubscripcion;
         },
         espacioActual: async function (parent, { dateActual }, __) {
             try {

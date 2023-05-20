@@ -139,17 +139,20 @@ export const resolvers = {
     Query: {
         busquedaAmplia: async function (_, { palabrasBuscadas }, __) {
             // console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
+            // con
+            console.log("Buscando " + palabrasBuscadas);
             if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
             }
             let opciones = [];
             try {
-                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
+                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log(". E: " + error);
                 ApolloError("Error conectando con la base de datos");
             }
+            console.log("retornando " + opciones.length + " opciones");
             return opciones;
         },
         todosNodos: async function () {
@@ -171,7 +174,7 @@ export const resolvers = {
         nodo: async function (_, { idNodo }) {
             let elNodo = null;
             try {
-                elNodo = await Nodo.findById(idNodo).select("-icono").exec();
+                elNodo = await Nodo.findById(idNodo).select("-icono").populate("vinculos.nodoContraparte", "nombre autoCoords").exec();
             }
             catch (error) {
                 console.log(`error buscando el nodo. e: ` + error);
