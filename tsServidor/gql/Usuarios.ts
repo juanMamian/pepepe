@@ -177,7 +177,7 @@ APRENDIDO
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
-        buscarPersonas(textoBuscar:String!):[Usuario],
+        buscarPersonas(textoBuscar:String!, permisos: [String!]):[Usuario],
         participantesCasaMaestraVida:[Usuario],
         nodosEstudiablesColeccion(idColeccion: ID!): [NodoConocimiento]
 
@@ -306,14 +306,14 @@ export const resolvers = {
             }
             return elUsuario;
         },
-        buscarPersonas: async function(_: any, { textoBuscar }: any, context: contextoQuery) {
+        buscarPersonas: async function(_: any, { textoBuscar, permisos }: {textoBuscar: string, permisos: string[]}, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
             textoBuscar = textoBuscar.trim();
 
             var losBuscados: DocUsuario[] = [];
 
             try {
-                losBuscados = await Usuario.find({ $text: { $search: textoBuscar } }, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).exec();
+                losBuscados = await Usuario.find({ $text: { $search: textoBuscar }, permisos: {$in: permisos} }, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);

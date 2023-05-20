@@ -360,8 +360,8 @@ export default {
             this.descargandoBuscados = true;
             this.$apollo.query({
                 query: gql`
-                query($textoBuscar: String!){
-                    buscarPersonas(textoBuscar: $textoBuscar){
+                query($textoBuscar: String!, $permisos: [String!]){
+                    buscarPersonas(textoBuscar: $textoBuscar, permisos: $permisos){
             id
             nombres
             apellidos
@@ -373,6 +373,7 @@ export default {
                 `,
                 variables: {
                     textoBuscar: this.textoBuscar,
+                    permisos: this.arrayPermisosDescargarPersonas,
                 }
             }).then(({ data: { buscarPersonas } }) => {
                 this.descargandoBuscados = false;
@@ -436,6 +437,8 @@ export default {
                 }
                 this.paginaFetchMorePersonas = 0;
                 this.hayMasPaginasPersonas = true;
+                this.mostrandoInputBuscar = false;
+                this.textoBuscar=null;
 
                 this.arrayPermisosDescargarPersonas = arrayPermisos;
             },
