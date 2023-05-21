@@ -1443,7 +1443,8 @@ export const resolvers = {
             }
             var elPrimario = laCarpeta.archivos.find(a => a.primario == true);
             if (!elPrimario) {
-                return UserInputError("Archivo primario no encontrado");
+                console.log("Archivo primario no encontrado");
+                return null;
             }
 
             if (!elPrimario.mimetype) {
