@@ -111,17 +111,20 @@
                     @subiArchivo="addArchivoSeccionCache($event, seccionSeleccionada.id)" @archivoEliminado="deleteArchivoSeccionCache($event, seccionSeleccionada.id)
                         " @tengoNuevoPrimario="setPrimarioSeccionCache($event, seccionSeleccionada.id)
         " />
-                <div id="contenedorSteppersSeccion" v-if="esteNodo?.secciones?.length > 0">
-                    <div class="stepperSeccion boton" :class="{ deshabilitado: !seccionSeleccionada }"
+                <div id="contenedorSteppersSeccion" v-if="esteNodo?.secciones?.length > 0" v-show="!mostrandoMenuSecciones">
+                    <div class="stepperSeccion botonTexto" :class="{ deshabilitado: !seccionSeleccionada }"
                         @click="stepSeccionVisible(-1)">
                         <img src="@/assets/iconos/step.svg" style="transform: rotate(180deg)" alt="step" />
+                        {{ nombreAnteriorSeccion }}
                     </div>
-                    <div class="stepperSeccion boton" :class="{
-                            deshabilitado:
-                                indexSeccionSeleccionada != null &&
-                                indexSeccionSeleccionada >= esteNodo.secciones.length - 1,
-                        }" @click="stepSeccionVisible(1)">
+                    <div class="stepperSeccion botonTexto" :class="{
+                        deshabilitado:
+                            indexSeccionSeleccionada != null &&
+                            indexSeccionSeleccionada >= esteNodo.secciones.length - 1,
+                    }" @click="stepSeccionVisible(1)">
                         <img src="@/assets/iconos/step.svg" alt="step" />
+
+                        {{ nombreSiguienteSeccion }}
                     </div>
                 </div>
             </div>
@@ -699,6 +702,37 @@ export default {
     computed: {
         idNodo() {
             return this.$route?.params?.idNodo;
+        },
+        nombreSiguienteSeccion() {
+            let indexSiguiente = 0;
+            if (this.indexSeccionSeleccionada != null) {
+                indexSiguiente = this.indexSeccionSeleccionada + 1;
+            }
+            console.log("Index siguiente: " + indexSiguiente);
+
+            if (!this.esteNodo.secciones[indexSiguiente]) {
+                return null;
+            }
+            console.log(this.esteNodo.secciones[indexSiguiente].nombre);
+            return this.esteNodo.secciones[indexSiguiente].nombre;
+
+        },
+        nombreAnteriorSeccion() {
+            if (this.indexSeccionSeleccionada == null) {
+                return null;
+            }
+            if (this.indexSeccionSeleccionada === 0) {
+                return 'Descripción'
+            }
+            let indexAnterior = this.indexSeccionSeleccionada - 1;
+            console.log("Index anterior: " + indexAnterior);
+
+            if (!this.esteNodo.secciones[indexAnterior]) {
+                return null;
+            }
+            console.log(this.esteNodo.secciones[indexAnterior].nombre);
+            return this.esteNodo.secciones[indexAnterior].nombre;
+
         },
         indexSeccionSeleccionada() {
             if (!this.seccionSeleccionada) {
