@@ -306,14 +306,14 @@ export const resolvers = {
             }
             return elUsuario;
         },
-        buscarPersonas: async function(_: any, { textoBuscar, permisos }: {textoBuscar: string, permisos: string[]}, context: contextoQuery) {
+        buscarPersonas: async function(_: any, { textoBuscar, permisos }: { textoBuscar: string, permisos: string[] }, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
             textoBuscar = textoBuscar.trim();
 
             var losBuscados: DocUsuario[] = [];
 
             try {
-                losBuscados = await Usuario.find({ $text: { $search: textoBuscar }, permisos: {$in: permisos} }, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).limit(10).exec();
+                losBuscados = await Usuario.find({ $text: { $search: textoBuscar }, permisos: { $in: permisos } }, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
@@ -1770,47 +1770,22 @@ export const resolvers = {
 
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
 
-
-
-            for (const nodo of nodosRed) {
-
-                if (nodosRed.length < 1) {
-                    return 0;
-                }
-                try {
-                    var elUsuario: any = await Usuario.findById(parent.idUsuario).exec();
-                    if (!elUsuario) throw 'usuario no encontrado';
-                }
-                catch (error) {
-                    console.log("Error getting usuario: " + error);
-                    ApolloError('Error conectando con la base de datos');
-                }
-                let idsNodosRed = nodosRed.map(n => n.id);
-
-                const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsNodosRed.includes(dn.idNodo));
-                const nodosFrescos = elUsuario.atlas.datosNodos.filter(dn => idsNodosRed.includes(dn.idNodo)).filter(dn => {
-                    if (!dn.estudiado || !dn.diasRepaso) {
-                        return false;
-                    }
-
-                    let tiempoLimite = (new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000);
-                    if (tiempoLimite > Date.now()) {
-                        return true;
-                    }
-
-                    return false;
-
-                })
-                let nodosProgreso = nodosAprendidos.concat(nodosFrescos.filter(n => !nodosAprendidos.map(n => n.id).includes(n.id)));
-
-                console.log(`nodos en coleccion: ${nodosRed.length}`);
-                console.log(`${nodosAprendidos.length} nodos aprendidos de la colección. Nodos frescos en la coleccion: ${nodosFrescos.length}`);
-                console.table(nodosFrescos.map(n => { return { nombre: n.nombre } }));
-
-                const progreso = (100 / nodosRed.length) * (nodosProgreso.length);
-
-                return Number(progreso.toFixed(2));
+            let elUsuario:DocUsuario | null = null;
+            try{
+                elUsuario= await Usuario.findById(parent.idUsuario).exec();
             }
+            catch(error){
+                console.log("Error getting usuario para calcular progreso: " + error);
+                return null;
+            }
+            if(!elUsuario){
+                console.log("Error getting usuario para calcular progreso: Usuario no encontrado en db " );
+                return null;
+            }
+
+            const progreso = await calcularProgresoUsuarioNodos(elUsuario, nodosRed);
+
+            return Number(progreso.toFixed(2));
         },
         idsRed: async function(parent: any, _: any, __: any) {
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
@@ -1857,7 +1832,7 @@ export const resolvers = {
     },
 }
 
-async function getNodosRedByOriginalIds(idsNodos: string[]): Promise<DocNodoConocimiento[]> {
+export async function getNodosRedByOriginalIds(idsNodos: string[]): Promise<DocNodoConocimiento[]> {
     let idsNodosActuales = idsNodos;
 
     let todosNodos: any[] = [];
@@ -2053,6 +2028,48 @@ async function resetInfoAtlas() {
             return;
         }
     }
+}
+
+export async function calcularProgresoUsuarioNodos(elUsuario: DocUsuario, listaNodos: DocNodoConocimiento[]) { // Calcula el progreso de un usuario en la lista de nodos dada.
+    if (listaNodos.length < 1) {
+        return 0;
+    }
+    let idsNodosRed = listaNodos.map(n => n.id);
+
+    const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsNodosRed.includes(dn.idNodo));
+    const nodosFrescos = elUsuario.atlas.datosNodos.filter(dn => idsNodosRed.includes(dn.idNodo)).filter(dn => {
+        if (!dn.estudiado || !dn.diasRepaso) {
+            return false;
+        }
+
+        let tiempoLimite = (new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000);
+        if (tiempoLimite > Date.now()) {
+            return true;
+        }
+
+        return false;
+
+    })
+    let nodosProgreso = nodosAprendidos.concat(nodosFrescos.filter(n => !nodosAprendidos.map(n => n.id).includes(n.id)));
+    return (100 / listaNodos.length) * (nodosProgreso.length); //Progreso del usuario en estos nodos.
+}
+
+async function crearSnapshotProgresoColeccionUsuario(elUsuario: DocUsuario, idColeccion: string) {
+    let laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+    if (!laColeccion) {
+        console.log("Error: la colección no existe");
+        return;
+    }
+
+    let nodosRed = await getNodosRedByOriginalIds(laColeccion.idsNodos);
+
+
+    let nuevoSnapshot = laColeccion.snapshotsProgreso.create({
+        dateRegistro: Date.now(),
+        progreso: await calcularProgresoUsuarioNodos(elUsuario.id, nodosRed),
+    });
+    laColeccion.snapshotsProgreso.push(nuevoSnapshot);
+    return elUsuario;
 }
 
 function crearDatosTokenUsuario(elUsuario) {

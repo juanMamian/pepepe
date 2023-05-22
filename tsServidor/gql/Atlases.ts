@@ -1,7 +1,10 @@
-import { ModeloConfiguracionAtlas as ConfiguracionAtlas } from "../model/ConfiguracionAtlas"
+import { ModeloConfiguracionAtlas as ConfiguracionAtlas, type DocAtlas, type tConfiguracionAtlas } from "../model/ConfiguracionAtlas"
+import { DocUsuario, ModeloUsuario as Usuario } from "../model/Usuario";
+import { calcularProgresoUsuarioNodos, getNodosRedByOriginalIds } from "./Usuarios";
 import { ApolloError, AuthenticationError } from "./misc";
 import { contextoQuery } from "./tsObjetos"
 
+let millisDia = 86400000;
 
 export const typeDefs = `#graphql
 
@@ -19,21 +22,21 @@ export const typeDefs = `#graphql
 `
 
 export const resolvers = {
-    Query:{
-        async configuracionAtlas(_:any, {nombreAtlas}:any, contexto: contextoQuery){
+    Query: {
+        async configuracionAtlas(_: any, { nombreAtlas }: any, contexto: contextoQuery) {
             console.log(`Query de configuracion del atlas de ${nombreAtlas}`);
             try {
-                var configuracion:any=await ConfiguracionAtlas.findOne({nombre: nombreAtlas}).exec();
+                var configuracion: any = await ConfiguracionAtlas.findOne({ nombre: nombreAtlas }).exec();
             } catch (error) {
                 console.log(`Error buscando la configuración del atlas: ${error}`);
             }
-            
+
 
             return configuracion;
         }
     },
     Mutation: {
-        async togglePosicionamientoAutomaticoAtlas(_: any, {nombreAtlas}: any, contexto: contextoQuery) {
+        async togglePosicionamientoAutomaticoAtlas(_: any, { nombreAtlas }: any, contexto: contextoQuery) {
             console.log(`Toggling posicionamiento automatico del atlas ${nombreAtlas}`);
             const credencialesUsuario = contexto.usuario;
 
@@ -67,6 +70,95 @@ export const resolvers = {
 
         },
     }
+}
 
+ensureAtlas();
+async function ensureAtlas() {
+    let atlasConocimiento: DocAtlas | null = null;
+    try {
+        atlasConocimiento = await ConfiguracionAtlas.findOne({ nombre: "conocimiento" }).exec();
+    }
+    catch (error) {
+        console.log("Error descargando configuarción de atlas: " + error);
+        return;
+    }
+    if (!atlasConocimiento) {
+        console.log("No había atlas conocimiento. Creando");
+
+        let atlasConocimiento = new ConfiguracionAtlas({
+            nombre: "conocimiento"
+        });
+
+        try {
+            await atlasConocimiento.save();
+        }
+        catch (error) {
+            console.log("Error guardando el atlas recién creado: " + error);
+            return;
+        }
+    }
 
 }
+
+trySnapshots();
+
+async function trySnapshots() {
+    let atlasConocimiento: DocAtlas | null = null;
+    try {
+        atlasConocimiento = await ConfiguracionAtlas.findOne({ nombre: "conocimiento" }).exec();
+    }
+    catch (error) {
+        console.log("Error getting configuración de atlas " + error);
+        return;
+    }
+    if (!atlasConocimiento) {
+        console.log("Error: Atlas de conocimiento no encontrado");
+        return;
+    }
+
+    if (!atlasConocimiento.lastGeneralSnapshot || atlasConocimiento.lastGeneralSnapshot.getTime() < Date.now() - millisDia * 7) {
+        console.log("Es hora de un snapshot de avances en colecciones");
+        await snapshotGeneral();
+        atlasConocimiento.lastGeneralSnapshot = new Date();
+
+        try {
+            await atlasConocimiento.save();
+        }
+        catch (error) {
+            console.log("Error guardando configuración de atlas después de last snapshot: " + error);
+        }
+    }
+}
+
+async function snapshotGeneral() {
+    console.log("Realizando snapshot general");
+    let losUsuarios: DocUsuario[] = [];
+    try {
+        losUsuarios = await Usuario.find({ "atlas.colecciones": { $exists: true, $type: "array", $ne: [] } }).exec();
+    }
+    catch (error) {
+        console.log("Error getting usuarios: " + error);
+        return;
+    }
+
+    for (let usuario of losUsuarios) {
+        for (let coleccion of usuario.atlas.colecciones) {
+            let nodosRed = await getNodosRedByOriginalIds(coleccion.idsNodos);
+            let nuevoSnapshot = coleccion.snapshotsProgreso.create({
+                progreso: await calcularProgresoUsuarioNodos(usuario, nodosRed),
+                dateRegistro: new Date(),
+            });
+            coleccion.snapshotsProgreso.push(nuevoSnapshot);
+        }
+        try {
+            await usuario.save();
+        }
+        catch (error) {
+            console.log("Error guardando usuario con snapshots de colecciones: " + error);
+        }
+    }
+
+    console.log("Hecho");
+
+}
+
