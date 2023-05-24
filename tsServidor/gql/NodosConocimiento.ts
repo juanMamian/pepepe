@@ -180,18 +180,21 @@ export const resolvers = {
     Query: {
         busquedaAmplia: async function(_: any, { palabrasBuscadas }: { palabrasBuscadas: string }, __: any) {
             // console.log(`tipo de input: ${typeof (palabrasBuscadas)}`);
+            // con
+            console.log("Buscando " + palabrasBuscadas);
             if (palabrasBuscadas.length < 1) {
                 console.log(`No habia palabras buscadas`);
             }
             let opciones: DocNodoConocimiento[] = [];
 
             try {
-                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).collation({ locale: "en", strength: 1 }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
+                opciones = await Nodo.find({ $text: { $search: palabrasBuscadas } }, { score: { $meta: 'textScore' } }).select("nombre descripcion autoCoords").sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log(". E: " + error);
                 ApolloError("Error conectando con la base de datos");
             }
+            console.log("retornando " + opciones.length + " opciones");
             return opciones
         },
         todosNodos: async function() {
@@ -214,7 +217,7 @@ export const resolvers = {
         nodo: async function(_: any, { idNodo }: { idNodo: string }) {
             let elNodo: DocNodoConocimiento | null = null;
             try {
-                elNodo = await Nodo.findById(idNodo).select("-icono").exec();
+                elNodo = await Nodo.findById(idNodo).select("-icono").populate("vinculos.nodoContraparte", "nombre autoCoords").exec();
             } catch (error) {
                 console.log(`error buscando el nodo. e: ` + error);
                 ApolloError("Error conectando con la base de datos");
@@ -1440,7 +1443,8 @@ export const resolvers = {
             }
             var elPrimario = laCarpeta.archivos.find(a => a.primario == true);
             if (!elPrimario) {
-                return UserInputError("Archivo primario no encontrado");
+                console.log("Archivo primario no encontrado");
+                return null;
             }
 
             if (!elPrimario.mimetype) {

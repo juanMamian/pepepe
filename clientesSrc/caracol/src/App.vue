@@ -52,7 +52,8 @@
 
             <div id="botonMenuNavUsuario" @click.stop="mostrandoNavUsuario = !mostrandoNavUsuario" v-if="usuarioLogeado">
                 <span>{{ yo.nombres }}</span>
-                <img src="@/assets/iconos/user.svg" alt="Usuario" />
+                <img src="@/assets/iconos/user.svg" alt="Usuario" v-if="subscripcionActiva" />
+                <img src="@/assets/iconos/userLock.svg" alt="Locked user" v-if="!subscripcionActiva">
             </div>
             <div v-if="usuarioLogeado" id="contenedorBotonesUsuario" class="menuNavDesplegable"
                 :class="{ desplegado: mostrandoNavUsuario }" @click.stop="cerrarMenus">
@@ -66,7 +67,8 @@
             </div>
         </div>
 
-        <router-view @logearse="logearUsuario" @alienandoPersona="alienarPersona" id="visorRouter" :yo="yo"></router-view>
+        <router-view @logearse=" logearUsuario " @alienandoPersona=" alienarPersona " id="visorRouter"
+            :yo=" yo "></router-view>
         <gestor-acciones />
     </div>
 </template>
@@ -88,9 +90,16 @@ export const QUERY_YO = gql`
       nombres
       apellidos
       permisos
+        finSubscripcion
     }
   }
 `;
+
+const QUERY_REFRESH_TOKEN = gql`
+query{
+    refreshToken
+}
+`
 
 function parseJwt(token) {
     var base64Url = token.split(".")[1];
@@ -117,12 +126,45 @@ export default {
                 return !this.usuario?.id;
             },
         },
+        token: {
+            query: QUERY_REFRESH_TOKEN,
+            update({ refreshToken }) {
+                let datosUsuario = parseJwt(refreshToken);
+
+                const store = this.$apollo.provider.defaultClient;
+
+                let nuevosDatos = {
+                    id: datosUsuario.id,
+                    username: datosUsuario.username,
+                    permisos: datosUsuario.permisos,
+                    subscripcionIlimitada: datosUsuario.subscripcionIlimitada,
+                    millisFinSubscripcion: datosUsuario.millisFinSubscripcion,
+                    token: refreshToken,
+                };
+
+                store.writeQuery({
+                    query: QUERY_AUTH_USUARIO,
+                    data: { auth_usuario: nuevosDatos },
+                });
+
+                return refreshToken;
+            },
+            skip(){
+                return !this.usuarioLogeado
+
+            },
+            fetchPolicy: "network-only",
+            pollInterval: 600000*10,
+        }
+
     },
     components: {
         GestorAcciones,
     },
     data() {
         return {
+            token: null,
+            mostrandoInfoFinSubscripcion: false,
             mostrandoNavUsuario: false,
             accionesLogeado: false,
 
@@ -140,6 +182,18 @@ export default {
         };
     },
     computed: {
+        subscripcionActiva() {
+            if (!this.usuario?.permisos) {
+                return false;
+            }
+            if (this.usuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || this.usuario.permisos.includes("subscripcion-ilimitada")) {
+                return true;
+            }
+            if (!this.yo.finSubscripcion) {
+                return false;
+            }
+            return Date.now() < (new Date(this.yo.finSubscripcion)).getTime();
+        },
         estiloBackground() {
             let primerColor = "";
 
@@ -174,7 +228,6 @@ export default {
     },
     methods: {
         alienarPersona(token) {
-            console.log("alienando persona");
             this.$router.push("/home");
             this.logearUsuario(token);
         },
@@ -183,7 +236,6 @@ export default {
             this.mostrandoNavUsuario = false;
         },
         setEstadoRed() {
-            console.log(`Detectado estado de red en ${navigator.onLine}`);
             const store = this.$apollo.provider.defaultClient;
 
             store.writeQuery({
@@ -197,7 +249,6 @@ export default {
             // }
         },
         logearUsuario(token) {
-            console.log("Logeando usuario");
             let datosUsuario = parseJwt(token);
 
             const store = this.$apollo.provider.defaultClient;
@@ -206,6 +257,8 @@ export default {
                 id: datosUsuario.id,
                 username: datosUsuario.username,
                 permisos: datosUsuario.permisos,
+                subscripcionIlimitada: datosUsuario.subscripcionIlimitada,
+                millisFinSubscripcion: datosUsuario.millisFinSubscripcion,
                 token,
             };
 
@@ -234,13 +287,16 @@ export default {
             }
         },
         $route(ruta) {
-            console.log("cambio de ruta a " + ruta.name);
             if (ruta.name != 'visorNodoConocimiento') {
-                console.log("setting title");
                 document.title = "La estrategia del caracol";
             }
 
         },
+    },
+    mounted() {
+        if (this.yo?.finSubscripcion && (this.yo.finSubscripcion).getTime() < Date.now()) {
+            this.mostrandoInfoFinSubscripcion = true;
+        }
     },
     created() {
         this.setEstadoRed();

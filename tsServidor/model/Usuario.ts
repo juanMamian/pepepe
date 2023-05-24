@@ -3,6 +3,7 @@ import { EsquemaRutaGrado } from "./rutaGrado/RutaGrado";
 
 export const permisosDeUsuario = [
     "usuario",
+    "subscripcion-ilimitada",
     "administrador",
     "atlasAdministrador",
     "superadministrador",
@@ -18,6 +19,31 @@ export const permisosDeUsuario = [
     "comunere"
 ];
 
+const esquemaSnapshotProgreso = new mongoose.Schema({
+    dateRegistro: {
+        type: Date,
+        default: Date.now
+    },
+    progreso: {
+        type: Number,
+        required: true,
+    },
+})
+
+const esquemaBloqueSubscripcion = new mongoose.Schema({
+    dateInicio: {
+        type: Date,
+        required: true,
+    },
+    duracion: {
+        type: Number,
+        required: true,
+    },
+    valorPagado: {
+        type: Number,
+        required: true,
+    }
+});
 const esquemaIteracionRepaso = new mongoose.Schema({
     intervalo: {
         type: Number,
@@ -62,11 +88,15 @@ const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({
         type: [String],
         default: []
     },
+    snapshotsProgreso: {
+        type: [esquemaSnapshotProgreso],
+        default: [],
+    }
 },
     { strict: true }
 );
 
-esquemaColeccionNodosAtlasConocimiento.virtual("idUsuario").get(function (this: any) {
+esquemaColeccionNodosAtlasConocimiento.virtual("idUsuario").get(function(this: any) {
     return this.ownerDocument()._id;
 })
 
@@ -162,7 +192,7 @@ const esquemaDatoNodo = new mongoose.Schema({
     },
 })
 
-esquemaDatoNodo.pre("save", function (this: any, next) {
+esquemaDatoNodo.pre("save", function(this: any, next) {
 
     if (!this.diasRepaso && this.periodoRepaso) {
 
@@ -293,11 +323,15 @@ const esquemaUsuario = new mongoose.Schema({
         default: ["usuario"],
         enum: permisosDeUsuario
     },
+    bloquesSubscripcion: {
+        type: [esquemaBloqueSubscripcion],
+        default: [],
+    },
     atlas: {
         type: esquemaEstadoAtlas,
         default: {
-           datosNodos:[],
-           colecciones:[],
+            datosNodos: [],
+            colecciones: [],
 
         },
     },
@@ -418,17 +452,17 @@ const esquemaUsuario = new mongoose.Schema({
 
 });
 
-esquemaUsuario.pre("save", function (this: any, next) {
+esquemaUsuario.pre("save", function(this: any, next) {
     var nuevoDatosNodos: Array<any> = [];
-    if(!this.atlas){
-        this.atlas={}
+    if (!this.atlas) {
+        this.atlas = {}
     }
-    if(!this.atlas.datosNodos){
-        this.atlas.datosNodos=[]
+    if (!this.atlas.datosNodos) {
+        this.atlas.datosNodos = []
     }
 
-    if(!this.atlas.colecciones){
-        this.atlas.colecciones=[]
+    if (!this.atlas.colecciones) {
+        this.atlas.colecciones = []
     }
     if (!this.atlas.datosNodos) {
         next();
@@ -446,7 +480,7 @@ esquemaUsuario.pre("save", function (this: any, next) {
     next();
 })
 
-esquemaUsuario.methods.getEdad = function (this: any) {
+esquemaUsuario.methods.getEdad = function(this: any) {
     console.log(`convirtiendo ${this.fechaNacimiento} a edad`);
     let hoy = new Date();
     let edad = hoy.getTime() - this.fechaNacimiento.getTime();
@@ -461,7 +495,7 @@ var emailChars = /\S+@\S+\.\S+/;
 var dateChars = /[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]/;
 
 
-export const validarDatosUsuario = function (datosUsuario) {
+export const validarDatosUsuario = function(datosUsuario) {
     var errores: Array<string> = [];
 
     for (let dato in datosUsuario) {
@@ -557,6 +591,7 @@ export const minLengthEmail = 7;
 export const minLengthUsername = 7;
 
 
+esquemaUsuario.index({ nombres: "text", apellidos: "text" }, { name: "indexBusqueda" });
 export const ModeloUsuario = mongoose.model("Usuario", esquemaUsuario);
 export type DocUsuario = InstanceType<typeof ModeloUsuario>;
 

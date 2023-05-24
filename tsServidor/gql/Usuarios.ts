@@ -115,6 +115,18 @@ APRENDIDO
         categoria:String,
         texto:String
     }
+    input InputBloqueSubscripcion{
+        dateInicio: Date,
+        duracion: Int,
+        valorPagado: Int,
+    }
+
+    type BloqueSubscripcion{
+        id: ID,
+        dateInicio: Date,
+        duracion: Int,
+        valorPagado: Int,
+    }
 
     type Usuario{
         id: ID,
@@ -136,6 +148,8 @@ APRENDIDO
         responsablesAmplio:[String],
         administradores:[String],
         permisos:[String]
+        bloquesSubscripcion:[BloqueSubscripcion],
+        finSubscripcion: Date,
         idGrupoEstudiantil:String,       
         nombreGrupoEstudiantil:String,
         foros:[InfoForosUsuario],
@@ -159,20 +173,24 @@ APRENDIDO
 
     extend type Query {
         todosUsuarios(dateActual: Date):[Usuario],
-        usuariosByPermisos(listaPermisos:[String]):[Usuario],
+        usuariosByPermisos(listaPermisos:[String], pagina: Int!):[Usuario],
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
-        buscarPersonas(textoBuscar:String!):[Usuario],
+        buscarPersonas(textoBuscar:String!, permisos: [String!]):[Usuario],
         participantesCasaMaestraVida:[Usuario],
         nodosEstudiablesColeccion(idColeccion: ID!): [NodoConocimiento]
 
+        refreshToken:String,
         login(username: String!, password:String!):String,
         alienarUsuario(idAlienado: ID!):String!,
 
         coleccionNodosConocimiento(idUsuario: ID!, idColeccion: ID!):ColeccionNodosAtlasConocimiento,
     }
     extend type Mutation{
+        crearBloqueSubscripcionUsuario(idUsuario: ID!, infoBloque: InputBloqueSubscripcion): BloqueSubscripcion,
+        eliminarBloqueSubscripcionUsuario(idUsuario: ID!, idBloque: ID!): Boolean,
+
         setCentroVista(idUsuario:ID, centroVista: CoordsInput):Boolean,
         editarDatosUsuario(nuevosDatos: DatosEditablesUsuario):Usuario,
         addPermisoUsuario(nuevoPermiso:String!, idUsuario:ID!):Usuario,  
@@ -229,11 +247,13 @@ export const resolvers = {
             }
             return profes;
         },
-        usuariosByPermisos: async function(_: any, { listaPermisos }: { listaPermisos: string[] }, context: contextoQuery) {
+        usuariosByPermisos: async function(_: any, { listaPermisos, pagina }: { listaPermisos: string[], pagina: number }, context: contextoQuery) {
             let losUsuarios: DocUsuario[] = [];
+            console.log("grabbing página " + pagina + " de usuarios");
+            let sizePagina = 10;
 
             try {
-                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).exec();
+                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).skip(pagina * sizePagina).limit(sizePagina).exec();
             }
             catch (error) {
                 console.log("error getting la lista de usuarios: " + error);
@@ -286,25 +306,51 @@ export const resolvers = {
             }
             return elUsuario;
         },
-        buscarPersonas: async function(_: any, { textoBuscar }: any, context: contextoQuery) {
+        buscarPersonas: async function(_: any, { textoBuscar, permisos }: { textoBuscar: string, permisos: string[] }, context: contextoQuery) {
             console.log(`Solicitud de la lista de todos los usuarios`);
             textoBuscar = textoBuscar.trim();
-            textoBuscar = new RegExp(textoBuscar, "i");
 
-            var todosUsuarios: any;
+            var losBuscados: DocUsuario[] = [];
 
             try {
-                todosUsuarios = await Usuario.find({}).select("nombres apellidos permisos fechaNacimiento email username numeroTel email").exec();
+                losBuscados = await Usuario.find({ $text: { $search: textoBuscar }, permisos: { $in: permisos } }, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
-                ApolloError("Error de conexión a la base de datos");
+                return ApolloError("Error de conexión a la base de datos");
             }
 
-            var usuariosMatch = todosUsuarios.filter((u: any) => (u.nombres + u.apellidos).search(textoBuscar) > -1);
-            console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
-            return usuariosMatch;
+            console.log(`Enviando lista de matchs de los usuarios: ${losBuscados.length}`);
+            return losBuscados;
         },
+        async refreshToken(_: never, __: never, context: contextoQuery) {
+            if (!context?.usuario?.id) {
+                return AuthenticationError("Autenticación requerida");
+            }
+            const credencialesUsuario = context.usuario;
+            console.log("Refreshing token de " + credencialesUsuario.username);
+
+            let elUsuario: DocUsuario | null = null;
+            try {
+                elUsuario = await Usuario.findById(credencialesUsuario.id).exec();
+            }
+            catch (error) {
+                console.log("Error getting usuario: " + error);
+                return ApolloError();
+            }
+            if (!elUsuario) {
+                return UserInputError("Usuario no reconocido");
+            }
+
+            const datosToken = crearDatosTokenUsuario(elUsuario);
+
+            if (!process.env.JWT_SECRET) {
+                throw "ENV DE JWT SECRET NO CONFIGURADO";
+            }
+            const token = jwt.sign(datosToken, process.env.JWT_SECRET,);
+            return token;
+        },
+
         login: async function(_: any, { username, password }: any, context: contextoQuery) {
             let credencialesUsuario = context.usuario;
             console.log(`Solicitud de login`);
@@ -316,7 +362,7 @@ export const resolvers = {
             }
 
             try {
-                var elUsuario: any = await Usuario.findOne({ username }, "username password permisos").exec();
+                var elUsuario: any = await Usuario.findOne({ username }, "username password permisos bloquesSubscripcion").exec();
             } catch (error) {
                 console.log(`Error buscando el usuario en la base de datos. E: ${error}`);
                 ApolloError("Error conectando con la base de datos");
@@ -331,21 +377,19 @@ export const resolvers = {
             }
 
             console.log(`login correcto de ${username}. Enviando JWT`);
-            const datosToken = {
-                id: elUsuario._id,
-                permisos: elUsuario.permisos,
-                username: elUsuario.username,
-                version: 1,
+            let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
+
+            let millisFinSubscripcion: number | null = null;
+            if ((elUsuario.bloquesSubscripcion?.length) > 0) {
+                let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+                millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
             }
+
+            const datosToken = crearDatosTokenUsuario(elUsuario);
             if (!process.env.JWT_SECRET) {
                 throw "ENV DE JWT SECRET NO CONFIGURADO";
             }
             const token = jwt.sign(datosToken, process.env.JWT_SECRET,);
-            const respuesta = {
-                username: elUsuario.username,
-                permisos: elUsuario.permisos,
-                token
-            }
 
             return token;
         },
@@ -380,12 +424,7 @@ export const resolvers = {
                 UserInputError("No permitido");
             }
 
-            const datosToken = {
-                id: elUsuario._id,
-                permisos: elUsuario.permisos,
-                username: elUsuario.username,
-                version: 1,
-            }
+            const datosToken = crearDatosTokenUsuario(elUsuario);
             if (!process.env.JWT_SECRET) {
                 throw "JWT ENV NO CONFIGURADO"
             }
@@ -430,7 +469,7 @@ export const resolvers = {
             var laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
 
             if (!laColeccion) {
-                console.log(`Error getting la colección : `);
+                console.log(`Error getting la colección ${idColeccion} : `);
                 UserInputError('Colección no encontrada');
 
             }
@@ -473,7 +512,7 @@ export const resolvers = {
 
             console.log(idsHabilitantes.length + " ids habilitantes");
 
-            let nodosEstudiables = nodosRed.filter(n => !idsHabilitantes.includes(n.id) &&  !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !idsHabilitantes.includes(v.idRef)));
+            let nodosEstudiables = nodosRed.filter(n => !idsHabilitantes.includes(n.id) && !n.vinculos.some(v => v.tipo === 'continuacion' && v.rol === 'target' && !idsHabilitantes.includes(v.idRef)));
 
             console.log("Encontrados " + nodosEstudiables.length + " nodos estudiables");
             console.table(nodosEstudiables.map(n => {
@@ -488,6 +527,89 @@ export const resolvers = {
 
     },
     Mutation: {
+        eliminarBloqueSubscripcionUsuario: async function(_: never, { idUsuario, idBloque }: { idUsuario: string, idBloque: string }, context: contextoQuery) {
+            console.log("Petición de elimar bloque de subscripcion");
+            if (!context?.usuario?.id) {
+                return AuthenticationError();
+            }
+            const credencialesUsuario = context.usuario;
+
+            if (!credencialesUsuario.permisos.includes("superadministrador")) {
+                return AuthenticationError();
+            }
+
+            let elUsuario: DocUsuario | null = null;
+            try {
+                elUsuario = await Usuario.findById(idUsuario).exec();
+            }
+            catch (error) {
+                console.log("Error descargando usuario: " + error);
+                return ApolloError();
+            }
+            if (!elUsuario) {
+                return UserInputError();
+            }
+
+            let indexB = elUsuario.bloquesSubscripcion.findIndex(b => b.id === idBloque);
+            if (indexB < 0) {
+                return UserInputError();
+            }
+            elUsuario.bloquesSubscripcion.splice(indexB, 1);
+
+            try {
+                await elUsuario.save()
+            }
+            catch (error) {
+                console.log("Error guardando usuario: " + error);
+                return ApolloError();
+            }
+            console.log("Eliminado");
+            return true;
+
+        },
+        crearBloqueSubscripcionUsuario: async function(_: never, { idUsuario, infoBloque }: { idUsuario: string, infoBloque: any }, context: contextoQuery) {
+            if (!context?.usuario?.id) {
+                return UserInputError("Autenticación requerida");
+            }
+            const credencialesUsuario = context.usuario;
+
+            if (!credencialesUsuario.permisos.includes("superadministrador")) {
+                return AuthenticationError();
+            }
+
+            let elUsuario: DocUsuario | null = null;
+            try {
+                elUsuario = await Usuario.findById(idUsuario).exec();
+            }
+            catch (error) {
+                console.log("error getting usuario: " + error);
+                return ApolloError("Error conectando con la base de datos");
+            }
+            if (!elUsuario) {
+                return UserInputError();
+            }
+
+            let nuevoBloque = elUsuario.bloquesSubscripcion.create(infoBloque);
+            if (elUsuario.bloquesSubscripcion?.length > 0) {
+                let lastBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+                let lastTimeSubscripcion = lastBloqueSubscripcion.dateInicio.getTime() + lastBloqueSubscripcion.duracion * (millisDia * 30);
+                console.log("El nuevo bloque inicia en : " + nuevoBloque.dateInicio);
+                if (nuevoBloque.dateInicio.getTime() < lastTimeSubscripcion) {
+                    return UserInputError("Fecha de inicio no permitida pues se superpone con la supscripción actual");
+                }
+            }
+            elUsuario.bloquesSubscripcion.splice(0, 0, nuevoBloque);
+            try {
+                await elUsuario.save();
+            }
+            catch (error) {
+                console.log("Error guardando usuario " + error);
+                return ApolloError();
+            }
+            console.log("Bloque de subscripción creado");
+            return nuevoBloque;
+        },
+
         editarDatosUsuario: async function(_: any, { nuevosDatos }: any, context: contextoQuery) {
             console.log(`solicitud de edicion de datos de usuario`);
             let credencialesUsuario = context.usuario;
@@ -500,7 +622,7 @@ export const resolvers = {
             try {
                 var elUsuario: any = await Usuario.findById(credencialesUsuario.id).exec();
                 if (!elUsuario) {
-                    throw "Usuario no encontrado"
+                    throw "Usuario no encontrad"
                 }
             }
             catch (error) {
@@ -1603,6 +1725,15 @@ export const resolvers = {
         nombre: function(parent: any, _: any, __: any) {
             return parent.username;
         },
+        finSubscripcion(parent: DocUsuario, _: never, __: never) {
+            if (!(parent.bloquesSubscripcion?.length > 0)) {
+                return null;
+            }
+            let ultimoBloqueSubscripcion = parent.bloquesSubscripcion[0];
+            let dateFinSubscripcion = new Date(ultimoBloqueSubscripcion.dateInicio.getTime() + (ultimoBloqueSubscripcion.duracion * millisDia * 30));
+            return dateFinSubscripcion;
+        },
+
         espacioActual: async function(parent: any, { dateActual }: any, __: any) {
             try {
                 var losEspacios: any = await Espacio.find({ "iteracionesSemanales.idsAsistentesConstantes": parent.id }).exec();
@@ -1639,47 +1770,22 @@ export const resolvers = {
 
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
 
-
-
-            for (const nodo of nodosRed) {
-
-                if (nodosRed.length < 1) {
-                    return 0;
-                }
-                try {
-                    var elUsuario: any = await Usuario.findById(parent.idUsuario).exec();
-                    if (!elUsuario) throw 'usuario no encontrado';
-                }
-                catch (error) {
-                    console.log("Error getting usuario: " + error);
-                    ApolloError('Error conectando con la base de datos');
-                }
-                let idsNodosRed = nodosRed.map(n => n.id);
-
-                const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsNodosRed.includes(dn.idNodo));
-                const nodosFrescos = elUsuario.atlas.datosNodos.filter(dn => idsNodosRed.includes(dn.idNodo)).filter(dn => {
-                    if (!dn.estudiado || !dn.diasRepaso) {
-                        return false;
-                    }
-
-                    let tiempoLimite = (new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000);
-                    if (tiempoLimite > Date.now()) {
-                        return true;
-                    }
-
-                    return false;
-
-                })
-                let nodosProgreso = nodosAprendidos.concat(nodosFrescos.filter(n => !nodosAprendidos.map(n => n.id).includes(n.id)));
-
-                console.log(`nodos en coleccion: ${nodosRed.length}`);
-                console.log(`${nodosAprendidos.length} nodos aprendidos de la colección. Nodos frescos en la coleccion: ${nodosFrescos.length}`);
-                console.table(nodosFrescos.map(n => { return { nombre: n.nombre } }));
-
-                const progreso = (100 / nodosRed.length) * (nodosProgreso.length);
-
-                return Number(progreso.toFixed(2));
+            let elUsuario:DocUsuario | null = null;
+            try{
+                elUsuario= await Usuario.findById(parent.idUsuario).exec();
             }
+            catch(error){
+                console.log("Error getting usuario para calcular progreso: " + error);
+                return null;
+            }
+            if(!elUsuario){
+                console.log("Error getting usuario para calcular progreso: Usuario no encontrado en db " );
+                return null;
+            }
+
+            const progreso = await calcularProgresoUsuarioNodos(elUsuario, nodosRed);
+
+            return Number(progreso.toFixed(2));
         },
         idsRed: async function(parent: any, _: any, __: any) {
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
@@ -1726,7 +1832,7 @@ export const resolvers = {
     },
 }
 
-async function getNodosRedByOriginalIds(idsNodos: string[]): Promise<DocNodoConocimiento[]> {
+export async function getNodosRedByOriginalIds(idsNodos: string[]): Promise<DocNodoConocimiento[]> {
     let idsNodosActuales = idsNodos;
 
     let todosNodos: any[] = [];
@@ -1921,6 +2027,65 @@ async function resetInfoAtlas() {
             console.log("Error guardando usuario: " + error);
             return;
         }
+    }
+}
+
+export async function calcularProgresoUsuarioNodos(elUsuario: DocUsuario, listaNodos: DocNodoConocimiento[]) { // Calcula el progreso de un usuario en la lista de nodos dada.
+    if (listaNodos.length < 1) {
+        return 0;
+    }
+    let idsNodosRed = listaNodos.map(n => n.id);
+
+    const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsNodosRed.includes(dn.idNodo));
+    const nodosFrescos = elUsuario.atlas.datosNodos.filter(dn => idsNodosRed.includes(dn.idNodo)).filter(dn => {
+        if (!dn.estudiado || !dn.diasRepaso) {
+            return false;
+        }
+
+        let tiempoLimite = (new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000);
+        if (tiempoLimite > Date.now()) {
+            return true;
+        }
+
+        return false;
+
+    })
+    let nodosProgreso = nodosAprendidos.concat(nodosFrescos.filter(n => !nodosAprendidos.map(n => n.id).includes(n.id)));
+    return (100 / listaNodos.length) * (nodosProgreso.length); //Progreso del usuario en estos nodos.
+}
+
+async function crearSnapshotProgresoColeccionUsuario(elUsuario: DocUsuario, idColeccion: string) {
+    let laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+    if (!laColeccion) {
+        console.log("Error: la colección no existe");
+        return;
+    }
+
+    let nodosRed = await getNodosRedByOriginalIds(laColeccion.idsNodos);
+
+
+    let nuevoSnapshot = laColeccion.snapshotsProgreso.create({
+        dateRegistro: Date.now(),
+        progreso: await calcularProgresoUsuarioNodos(elUsuario.id, nodosRed),
+    });
+    laColeccion.snapshotsProgreso.push(nuevoSnapshot);
+    return elUsuario;
+}
+
+function crearDatosTokenUsuario(elUsuario) {
+    let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
+    let millisFinSubscripcion: number | null = null;
+    if (elUsuario.bloquesSubscripcion && elUsuario.bloquesSubscripcion.length > 0) {
+        let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+        millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
+    }
+    return {
+        id: elUsuario._id,
+        permisos: elUsuario.permisos,
+        username: elUsuario.username,
+        subscripcionIlimitada,
+        millisFinSubscripcion,
+        version: 1,
     }
 }
 

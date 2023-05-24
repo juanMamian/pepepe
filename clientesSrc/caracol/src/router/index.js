@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { apolloClient } from '../apollo'
 import { QUERY_AUTH_USUARIO } from '../globalMixin'
-
+import { fragmentoBloqueSubscripcion } from '../components/frags/fragsSubscripciones'
 import atlasConocimiento from '../components/atlasConocimiento/AtlasConocimiento.vue'
 import adminNodosConocimiento from '../components/atlasConocimiento/adminNodosConocimiento.vue'
 import VisorNodoConocimiento from '../components/atlasConocimiento/visorNodo/VisorNodoConocimiento.vue'
@@ -16,106 +16,118 @@ import VentanaEventoPersonal from '../components/utilidades/VentanaEventoPersona
 import Landing from "../landing/Landing.vue"
 import LoginScreen from "../landing/LoginScreen.vue"
 import LogoutScreen from "../landing/LogoutScreen.vue"
-import BrowseNodo from "../components/atlasConocimiento/browse/BrowseNodo.vue"
-import BrowseColeccion from "../components/atlasConocimiento/browse/BrowseColeccion.vue"
+import PromptSubscripcion from "../components/usuario/PromptSubscripcion.vue"
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: "/", name: "home", component: Landing, children: [{ path: "login", name: "loginScreen", component: LoginScreen }],
+    history: createWebHistory(import.meta.env.BASE_URL),
+    routes: [
+        {
+            path: "/", name: "home", component: Landing, children: [{ path: "login", name: "loginScreen", component: LoginScreen }],
 
-    },
-    { path: "/logout", name: "logoutScreen", component: LogoutScreen },
-    {
-      path: "/atlas/:tipoBrowse/:idBrowsed", name: "atlas", component: atlasConocimiento, children: [
+        },
+        { path: "/logout", name: "logoutScreen", component: LogoutScreen },
         {
-          path: "verNodo/:idNodo",
-          name: "visorNodoConocimiento",
-          component: VisorNodoConocimiento,
-        }
-      ]
-    },
-    {
-      path: "/rutaGrado/:idUsuario", name: "rutaGrado", component: RutaGrado, props: true
-    },
-    { path: "/adminNodosConocimiento", name: "adminNodosConocimiento", component: adminNodosConocimiento },
-    {
-      path: "/login", name: "loginArea",
-      component: loginArea,
-    },
-    {
-      path: "/miperfil",
-      name: "perfilPersonal",
-      component: perfilPersonal,
-      children: [
-        {
-          path: "ventanaEventoPublico/:idEvento",
-          component: VentanaEventoPublico,
-          name: "VentanaEventoPublico",
+            path: "/atlas/:tipoBrowse/:idBrowsed", name: "atlas", component: atlasConocimiento, children: [
+                {
+                    path: "verNodo/:idNodo",
+                    name: "visorNodoConocimiento",
+                    component: VisorNodoConocimiento,
+                }
+            ]
         },
         {
-          path: "ventanaEventoPersonal/:idEvento",
-          component: VentanaEventoPersonal,
-          name: "VentanaEventoPersonal",
-        }
-      ]
-    },
-    // { path: "/foros", component: ForosGenerales },
-    { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
-    { path: "/registro", name: "registro", component: Registro },
-    {
-      path: "/personas", name: "personas", component: Personas,
-      children: [
+            path: "/rutaGrado/:idUsuario", name: "rutaGrado", component: RutaGrado, props: true
+        },
+        { path: "/adminNodosConocimiento", name: "adminNodosConocimiento", component: adminNodosConocimiento },
         {
-          path: "ventanaEventoPublico/:idEvento",
-          component: VentanaEventoPublico,
-          name: "VentanaEventoPublico",
+            path: "/login", name: "loginArea",
+            component: loginArea,
         },
         {
-          path: "ventanaEventoPersonal/:idEvento",
-          component: VentanaEventoPersonal,
-          name: "VentanaEventoPersonal",
-        }
-      ]
-    },
-    {
-      path: "/espacios", name: "espacios", component: Espacios, children: [
+            path: "/miperfil",
+            name: "perfilPersonal",
+            component: perfilPersonal,
+            children: [
+                {
+                    path: "ventanaEventoPublico/:idEvento",
+                    component: VentanaEventoPublico,
+                    name: "VentanaEventoPublico",
+                },
+                {
+                    path: "ventanaEventoPersonal/:idEvento",
+                    component: VentanaEventoPersonal,
+                    name: "VentanaEventoPersonal",
+                }
+            ]
+        },
+        // { path: "/foros", component: ForosGenerales },
+        { path: "/nodoConocimiento/:idNodo", component: VisorNodoConocimiento },
+        { path: "/registro", name: "registro", component: Registro },
         {
-          path: "ventanaEventoPublico/:idEvento",
-          component: VentanaEventoPublico,
-          name: "VentanaEventoPublico",
+            path: "/personas", name: "personas", component: Personas,
+            children: [
+                {
+                    path: "ventanaEventoPublico/:idEvento",
+                    component: VentanaEventoPublico,
+                    name: "VentanaEventoPublico",
+                },
+                {
+                    path: "ventanaEventoPersonal/:idEvento",
+                    component: VentanaEventoPersonal,
+                    name: "VentanaEventoPersonal",
+                }
+            ]
         },
         {
-          path: "ventanaEventoPersonal/:idEvento",
-          component: VentanaEventoPersonal,
-          name: "VentanaEventoPersonal",
-        }
-      ]
-    },
-    { path: "/:catchAll(.*)", redirect() { return "/" } },
-  ]
+            path: "/espacios", name: "espacios", component: Espacios, children: [
+                {
+                    path: "ventanaEventoPublico/:idEvento",
+                    component: VentanaEventoPublico,
+                    name: "VentanaEventoPublico",
+                },
+                {
+                    path: "ventanaEventoPersonal/:idEvento",
+                    component: VentanaEventoPersonal,
+                    name: "VentanaEventoPersonal",
+                }
+            ]
+        },
+        {
+            path:"/subscripcionVencida",
+            name: "promptSubscripcion",
+            component: PromptSubscripcion,
+        },
+        { path: "/:catchAll(.*)", redirect() { return "/" } },
+    ]
 })
 
 
 router.beforeEach(async (to, from) => {
-  if (!apolloClient) {
-    return false;
-  }
-
-  let datosUsuario = apolloClient.readQuery({
-    query: QUERY_AUTH_USUARIO
-  });
-
-  if (datosUsuario?.auth_usuario?.id) {
-    if (to.name == 'loginScreen') {
-      return { name: "home" }
+    if (!apolloClient) {
+        return false;
     }
-  }
-  else {
-    if (to.name != 'loginScreen') {
-      return { name: "loginScreen" }
+
+    let datosUsuario = apolloClient.readQuery({
+        query: QUERY_AUTH_USUARIO
+    });
+
+    if (datosUsuario?.auth_usuario && !datosUsuario.auth_usuario.subscripcionIlimitada && (!datosUsuario.auth_usuario.millisFinSubscripcion || datosUsuario.auth_usuario.millisFinSubscripcion < Date.now())) {
+        let rutasAllowed = ["home", "perfilPersonal", "logoutScreen", "promptSubscripcion"];
+        if (!rutasAllowed.includes(to.name)) {
+            return { name: "promptSubscripcion" };
+
+        }
     }
-  }
+
+    if (datosUsuario?.auth_usuario?.id) {
+        if (to.name == 'loginScreen') {
+            return { name: "home" }
+        }
+    }
+    else {
+        if (to.name != 'loginScreen') {
+            return { name: "loginScreen" }
+        }
+    }
 })
 export default router

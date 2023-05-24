@@ -337,12 +337,8 @@ export default {
             return this.elNodo.expertos?.includes(this.usuario.id);
         },
         estiloPos() {
-            console.log("height all: ");
-            console.log(this.heightAll);
-            console.log("height nombre: " + this.heightNombre);
             let translation = 0;
 
-            console.log("Setting con translation " + translation);
             let estilo = {
                 transform: `translate(-50%, ${translation}px)`,
             };

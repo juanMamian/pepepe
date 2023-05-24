@@ -52,6 +52,7 @@ const QUERY_ESTE_NODO = gql`
         rol
         tipo
         nodoContraparte {
+            id
           autoCoords {
             x
             y

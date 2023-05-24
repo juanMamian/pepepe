@@ -6,45 +6,47 @@
             </div>
         </div>
         <div id="zonaFront" class="frontDeSeccion" v-show="!editando" :key="versionArchivo">
-            <iframe id="iframeSeccion" @load="reheight" :src="srcIframe" :style="[offsetIframe]"
+            <iframe ref="iframeSeccion" id="iframeSeccion" @load="reheight(); startObserving()" :src="srcIframe" :style="[offsetIframe]"
                 v-if="estaSeccion.modo === 'enlace' || (estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0, 5) != 'image')"
                 frameborder="0"></iframe>
-            <img :src="direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo"
-                v-if="estaSeccion.modo === 'archivo' && estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0, 5) === 'image'" />
+            <img :src=" direccionNodo + '/' + estaSeccion.id + '/?v=' + versionArchivo "
+                v-if=" estaSeccion.modo === 'archivo' && estaSeccion.tipoPrimario && estaSeccion.tipoPrimario.substring(0, 5) === 'image' " />
         </div>
 
-        <div id="zonaAdministracion" v-if="usuarioExperto || usuarioSuperadministrador" v-show="editando">
-            <div id="nombre" v-show="!editandoNombre" @click="iniciarEdicionNombre">
+        <div id="zonaAdministracion" v-if=" usuarioExperto || usuarioSuperadministrador " v-show=" editando ">
+            <div id="nombre" v-show=" !editandoNombre " @click=" iniciarEdicionNombre ">
                 {{ estaSeccion.nombre }}
             </div>
-            <input v-show="editandoNombre" type="text" name="" :value="estaSeccion.nombre" id="inputNuevoNombre"
-                ref="inputNuevoNombre" :class="{ deshabilitado: enviandoNuevoNombre }" @blur="guardarNuevoNombre"
-                @keypress.enter="guardarNuevoNombre" />
-            <loading texto="" v-show="enviandoNuevoNombre" />
+            <input v-show=" editandoNombre " type="text" name="" :value=" estaSeccion.nombre " id="inputNuevoNombre"
+                ref="inputNuevoNombre" :class=" { deshabilitado: enviandoNuevoNombre } " @blur=" guardarNuevoNombre "
+                @keypress.enter=" guardarNuevoNombre " />
+            <loading texto="" v-show=" enviandoNuevoNombre " />
             <div class="contenedorControles">
-                <div class="boton" title="Subir un archivo" @click="$refs.inputArchivoContenido.click()"
-                    v-if="modo === 'archivo'" v-show="!subiendoArchivo">
+                <div class="boton" title="Subir un archivo" @click=" $refs.inputArchivoContenido.click() "
+                    v-if=" modo === 'archivo' " v-show=" !subiendoArchivo ">
                     <img src="@/assets/iconos/plusCircle.svg" alt="Plus" />
                 </div>
-                <loading texto="" v-show="subiendoArchivo" />
+                <loading texto="" v-show=" subiendoArchivo " />
 
-                <div class="boton" :title="estaSeccion.modo === 'archivo'
-                        ? 'Cambiar modo a enlace'
-                        : 'Cambiar modo a archivo'
-                    " @click.stop="toggleModo">
-                    <img src="@/assets/iconos/file.svg" v-show="modo === 'archivo'" alt="Archivo" />
-                    <img src="@/assets/iconos/link.svg" v-show="modo === 'enlace'" alt="Archivo" />
+                <div class="boton" :title="
+                    estaSeccion.modo === 'archivo'
+                    ? 'Cambiar modo a enlace'
+                    : 'Cambiar modo a archivo'
+                " @click.stop=" toggleModo ">
+                    <img src="@/assets/iconos/file.svg" v-show=" modo === 'archivo' " alt="Archivo" />
+                    <img src="@/assets/iconos/link.svg" v-show=" modo === 'enlace' " alt="Archivo" />
                 </div>
             </div>
 
-            <div id="listaArchivos" v-show="modo === 'archivo'">
-                <input type="file" class="inputArchivoContenido" ref="inputArchivoContenido" v-show="false"
-                    @change="subirArchivoContenido($event)" />
-                <archivo-seccion-nodo :esteArchivo="archivo" :usuarioExperto="usuarioExperto" :idNodo="idNodo"
-                    :idSeccion="estaSeccion.id" v-for="archivo of  archivosOrdenados " :key="archivo.id"
-                    @meElimine="$emit('archivoEliminado', archivo.nombre)" @soyPrimario="$emit('tengoNuevoPrimario', archivo.nombre);
-                    versionArchivo++;
-                              " />
+            <div id="listaArchivos" v-show=" modo === 'archivo' ">
+                <input type="file" class="inputArchivoContenido" ref="inputArchivoContenido" v-show=" false "
+                    @change=" subirArchivoContenido($event) " />
+                <archivo-seccion-nodo :esteArchivo=" archivo " :usuarioExperto=" usuarioExperto " :idNodo=" idNodo "
+                    :idSeccion=" estaSeccion.id " v-for=" archivo  of     archivosOrdenados    " :key=" archivo.id "
+                    @meElimine=" $emit('archivoEliminado', archivo.nombre) " @soyPrimario="
+                        $emit('tengoNuevoPrimario', archivo.nombre);
+                        versionArchivo++;
+                    " />
             </div>
 
             <div id="zonaEnlace" v-show=" modo === 'enlace' ">
@@ -64,6 +66,8 @@ import Loading from "../../utilidades/Loading.vue";
 import { charProhibidosNombreCosa } from "../../configs";
 import { gql } from "@apollo/client/core";
 
+let ro = null;
+
 export default {
     props: {
         estaSeccion: Object,
@@ -77,6 +81,7 @@ export default {
     name: "SeccionNodoConocimiento",
     data() {
         return {
+            observer: null,
             editando: false,
             subiendoArchivo: false,
             versionArchivo: 0,
@@ -86,16 +91,23 @@ export default {
             guardandoNuevoEnlace: false,
             inputNuevoEnlace: this.estaSeccion.enlace,
             modo: "",
-            offsetIframe:{
+            offsetIframe: {
                 height: '900px',
             }
         };
     },
     methods: {
-        reheight(e) {
-            let nuevoHeight=e.target.contentWindow.document.body.scrollHeight;
-            console.log("Setting height of the iframe en " + nuevoHeight);
-            this.offsetIframe.height = Math.round(nuevoHeight * 1.1) + "px";
+        startObserving() {
+            ro = new ResizeObserver(lista => {
+                this.reheight();
+
+            })
+
+            ro.observe(document.getElementById("iframeSeccion").contentWindow.document.body);
+        },
+        reheight() {
+            let nuevoHeight = this.$refs.iframeSeccion.contentWindow.document.body.scrollHeight;
+            this.offsetIframe.height = Math.round(nuevoHeight +40) + "px";
         },
 
         subirArchivoContenido(e) {
@@ -260,6 +272,10 @@ export default {
             },
             immediate: true,
         }
+    },
+    mounted() {
+
+
     }
 };
 </script>
@@ -294,8 +310,8 @@ export default {
     width: 100%;
     min-height: 100px;
 }
-h
-#zonaAdministracion {
+
+h #zonaAdministracion {
     width: min(500px, 90vw);
     border-radius: 10px;
     margin: 0px auto;

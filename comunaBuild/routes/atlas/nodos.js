@@ -66,12 +66,12 @@ router.post("/subirArchivoContenidoSeccionNodo", upload.single("nuevoArchivo"), 
         console.log(`No habia info del bearer`);
         return res.status(401).send('');
     }
-    if (!("id" in req.user)) {
+    if (!("id" in req.auth)) {
         console.log(`no había id del usuario`);
         return res.status(401).send('');
     }
-    let idUsuario = req.user.id;
-    console.log(`Recibida peticion de subir archivo por el usuario ${req.user.username}`);
+    let idUsuario = req.auth.id;
+    console.log(`Recibida peticion de subir archivo por el usuario ${req.auth.username}`);
     try {
         var elUsuario = await Usuario.findById(idUsuario, "permisos").exec();
         if (!elUsuario)

@@ -110,7 +110,7 @@
 import gql from "graphql-tag";
 import IconoPersonaAutonomo from "../usuario/IconoPersonaAutonomo.vue";
 import Loading from "../utilidades/Loading.vue";
-import {stringSimilarity} from "string-similarity";
+import stringSimilarity from "string-similarity";
 
 const diasSemana = [
   "Lunes",

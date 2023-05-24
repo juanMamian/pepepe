@@ -25,7 +25,7 @@ const EsquemaVinculo = new mongoose.Schema({
 type Vinculo = InferSchemaType<typeof EsquemaVinculo>
 
 
-EsquemaVinculo.pre("save", function (this: any, next) {
+EsquemaVinculo.pre("save", function(this: any, next) {
     if (this.tipo = "requiere") {
         this.tipo = "continuacion";
     }
@@ -152,8 +152,9 @@ var esquemaNodo = new mongoose.Schema({
 export type NodoConocimiento = InferSchemaType<typeof esquemaNodo>;
 
 
-esquemaNodo.index({ nombre: "text", keywords: "text", descripcion: "text" });
+esquemaNodo.index({ nombre: "text", descripcion: "text" },{name: 'indexBusqueda'} );
 
 export const ModeloNodo = mongoose.model("Nodo", esquemaNodo);
 
-export type DocNodoConocimiento=InstanceType<typeof ModeloNodo>
+
+export type DocNodoConocimiento = InstanceType<typeof ModeloNodo>
