@@ -79,6 +79,11 @@
                 :seleccionado="idPersonaSeleccionada === persona.id" :estaPersona="persona"
                 :personasConEspacio="personasConEspacio" :mostrarEspacioActual="mostrarEspacioActual"
                 @click.native="idPersonaSeleccionada = persona.id" @alienandoPersona="$emit('alienandoPersona', $event)" />
+
+                <div class="botonTexto" @click.stop="fetchMorePersonas" :class="{deshabilitado: $apollo.queries.personas.loading}">
+                    Cargar mas...
+                </div>
+
         </div>
         <loading v-show="$apollo.queries.personas.loading" texto="Cargando lista de personas..." />
     </div>

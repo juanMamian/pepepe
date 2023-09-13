@@ -8,6 +8,9 @@ export const esquemaConfiguracionAtlas = new mongoose.Schema({
     posicionando: {
         type: Boolean,
         default: false,
+    },
+    lastGeneralSnapshot: {
+        type: Date,
     }
 });
 export const ModeloConfiguracionAtlas = mongoose.model("ConfiguracionAtlas", esquemaConfiguracionAtlas, "configuracionesAtlas");

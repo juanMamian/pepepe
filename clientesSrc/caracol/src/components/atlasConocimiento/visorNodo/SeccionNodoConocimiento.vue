@@ -256,7 +256,7 @@ export default {
                 console.log("Server URL: " + this.serverUrl);
                 console.log("elEnlace: " + elEnlace);
 
-                elEnlace = elEnlace.replace("192.168.1.100", "192.168.1.105");
+                //elEnlace = elEnlace.replace("192.168.1.100", "192.168.1.105");
 
                 console.log("Queda " + elEnlace);
                 return elEnlace;

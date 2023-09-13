@@ -16,6 +16,16 @@ export const permisosDeUsuario = [
     "maestraVida-graduado",
     "comunere"
 ];
+const esquemaSnapshotProgreso = new mongoose.Schema({
+    dateRegistro: {
+        type: Date,
+        default: Date.now
+    },
+    progreso: {
+        type: Number,
+        required: true,
+    },
+});
 const esquemaBloqueSubscripcion = new mongoose.Schema({
     dateInicio: {
         type: Date,
@@ -70,6 +80,10 @@ const esquemaColeccionNodosAtlasConocimiento = new mongoose.Schema({
         type: [String],
         default: []
     },
+    snapshotsProgreso: {
+        type: [esquemaSnapshotProgreso],
+        default: [],
+    }
 }, { strict: true });
 esquemaColeccionNodosAtlasConocimiento.virtual("idUsuario").get(function () {
     return this.ownerDocument()._id;
@@ -523,4 +537,5 @@ export const minLengthPassword = 6;
 export const maxLengthPassword = 40;
 export const minLengthEmail = 7;
 export const minLengthUsername = 7;
+esquemaUsuario.index({ nombres: "text", apellidos: "text" }, { name: "indexBusqueda" });
 export const ModeloUsuario = mongoose.model("Usuario", esquemaUsuario);

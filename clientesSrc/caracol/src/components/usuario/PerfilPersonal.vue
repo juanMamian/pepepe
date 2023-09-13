@@ -20,7 +20,7 @@
                 Subscripción activa hasta {{ enrichedToReadableDate(esteUsuario.finSubscripcion) }}
             </div>
             <div id="zonaInformacionPersonal" v-show="seccion === 'informacionPersonal'">
-                <div id="fotografia" @click="$refs.inputFotoUsuario.click()">
+                <div id="fotografia">
                     <img :src="serverUrl +
                         '/api/usuarios/fotografias/' +
                         usuario.id +

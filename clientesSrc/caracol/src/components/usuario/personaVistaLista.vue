@@ -407,7 +407,7 @@ export default {
             nuevoInformeEspacios: null,
             nuevoInformeComentario: null,
 
-            periodoInforme: "primero",
+            periodoInforme: "segundo",
             activable: 0,
         };
     },
@@ -995,23 +995,23 @@ export default {
                 ],
             });
 
-            var filaAprobado = new TableRow({
-                children: [
-                    new TableCell({
-                        children: [
-                            new Paragraph({
-                                text: "Promocionado: SI",
-                                style: "nombreSeccion",
-                                alignment: AlignmentType.CENTER,
-                            }),
-                        ],
-                        width: {
-                            size: 300,
-                            type: WidthType.DXA,
-                        },
-                    }),
-                ],
-            });
+//            var filaAprobado = new TableRow({
+//                children: [
+//                    new TableCell({
+//                        children: [
+//                            new Paragraph({
+//                                text: "Promocionado: SI",
+//                                style: "nombreSeccion",
+//                                alignment: AlignmentType.CENTER,
+//                            }),
+//                        ],
+//                        width: {
+//                            size: 300,
+//                            type: WidthType.DXA,
+//                        },
+//                    }),
+//                ],
+//            });
 
             var tablaFinal = new Table({
                 rows: [
@@ -1019,7 +1019,7 @@ export default {
                     filaProyectos,
                     filaEspacios,
                     filaComentario,
-                    filaAprobado,
+//                    filaAprobado,
                 ],
                 width: {
                     size: 8500,
@@ -1134,7 +1134,7 @@ export default {
                                 alignment: AlignmentType.CENTER,
                             }),
                             new Paragraph({
-                                text: "PERIODO AGOSTO - OCTUBRE DE 2023",
+                                text: "PERIODO MAYO - JULIO DE 2023",
                                 style: "titulos",
                                 alignment: AlignmentType.CENTER,
                             }),

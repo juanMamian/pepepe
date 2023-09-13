@@ -160,11 +160,11 @@ APRENDIDO
 
     extend type Query {
         todosUsuarios(dateActual: Date):[Usuario],
-        usuariosByPermisos(listaPermisos:[String]):[Usuario],
+        usuariosByPermisos(listaPermisos:[String], pagina: Int!):[Usuario],
         usuariosProfe:[Usuario],
         yo:Usuario,
         Usuario(idUsuario:ID!): Usuario,
-        buscarPersonas(textoBuscar:String!):[Usuario],
+        buscarPersonas(textoBuscar:String!, permisos: [String!]):[Usuario],
         participantesCasaMaestraVida:[Usuario],
         nodosEstudiablesColeccion(idColeccion: ID!): [NodoConocimiento]
 
@@ -232,10 +232,12 @@ export const resolvers = {
             }
             return profes;
         },
-        usuariosByPermisos: async function (_, { listaPermisos }, context) {
+        usuariosByPermisos: async function (_, { listaPermisos, pagina }, context) {
             let losUsuarios = [];
+            console.log("grabbing página " + pagina + " de usuarios");
+            let sizePagina = 10;
             try {
-                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).exec();
+                losUsuarios = await Usuario.find({ "permisos": { $in: listaPermisos } }).skip(pagina * sizePagina).limit(sizePagina).exec();
             }
             catch (error) {
                 console.log("error getting la lista de usuarios: " + error);
@@ -282,21 +284,19 @@ export const resolvers = {
             }
             return elUsuario;
         },
-        buscarPersonas: async function (_, { textoBuscar }, context) {
+        buscarPersonas: async function (_, { textoBuscar, permisos }, context) {
             console.log(`Solicitud de la lista de todos los usuarios`);
             textoBuscar = textoBuscar.trim();
-            textoBuscar = new RegExp(textoBuscar, "i");
-            var todosUsuarios;
+            var losBuscados = [];
             try {
-                todosUsuarios = await Usuario.find({}).select("nombres apellidos permisos fechaNacimiento email username numeroTel email").exec();
+                losBuscados = await Usuario.find({ $text: { $search: textoBuscar }, permisos: { $in: permisos } }, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).limit(10).exec();
             }
             catch (error) {
                 console.log("Error fetching la lista de usuarios de la base de datos. E: " + error);
-                ApolloError("Error de conexión a la base de datos");
+                return ApolloError("Error de conexión a la base de datos");
             }
-            var usuariosMatch = todosUsuarios.filter((u) => (u.nombres + u.apellidos).search(textoBuscar) > -1);
-            console.log(`Enviando lista de matchs de los usuarios: ${usuariosMatch.length}`);
-            return usuariosMatch;
+            console.log(`Enviando lista de matchs de los usuarios: ${losBuscados.length}`);
+            return losBuscados;
         },
         async refreshToken(_, __, context) {
             if (!context?.usuario?.id) {
@@ -315,20 +315,7 @@ export const resolvers = {
             if (!elUsuario) {
                 return UserInputError("Usuario no reconocido");
             }
-            let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
-            let millisFinSubscripcion = null;
-            if (elUsuario.bloquesSubscripcion && elUsuario.bloquesSubscripcion.length > 0) {
-                let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
-                millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
-            }
-            const datosToken = {
-                id: elUsuario._id,
-                permisos: elUsuario.permisos,
-                username: elUsuario.username,
-                subscripcionIlimitada,
-                millisFinSubscripcion,
-                version: 1,
-            };
+            const datosToken = crearDatosTokenUsuario(elUsuario);
             if (!process.env.JWT_SECRET) {
                 throw "ENV DE JWT SECRET NO CONFIGURADO";
             }
@@ -364,14 +351,7 @@ export const resolvers = {
                 let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
                 millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
             }
-            const datosToken = {
-                id: elUsuario._id,
-                permisos: elUsuario.permisos,
-                username: elUsuario.username,
-                subscripcionIlimitada,
-                millisFinSubscripcion,
-                version: 1,
-            };
+            const datosToken = crearDatosTokenUsuario(elUsuario);
             if (!process.env.JWT_SECRET) {
                 throw "ENV DE JWT SECRET NO CONFIGURADO";
             }
@@ -401,12 +381,7 @@ export const resolvers = {
                 console.log(`El usuario no podía ser alienado`);
                 UserInputError("No permitido");
             }
-            const datosToken = {
-                id: elUsuario._id,
-                permisos: elUsuario.permisos,
-                username: elUsuario.username,
-                version: 1,
-            };
+            const datosToken = crearDatosTokenUsuario(elUsuario);
             if (!process.env.JWT_SECRET) {
                 throw "JWT ENV NO CONFIGURADO";
             }
@@ -1555,38 +1530,20 @@ export const resolvers = {
         progreso: async function (parent, _, __) {
             console.log('\x1b[35m%s\x1b[0m', `Calculando progreso de colección ${parent.nombre} en usuario ${parent.idUsuario}`);
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
-            for (const nodo of nodosRed) {
-                if (nodosRed.length < 1) {
-                    return 0;
-                }
-                try {
-                    var elUsuario = await Usuario.findById(parent.idUsuario).exec();
-                    if (!elUsuario)
-                        throw 'usuario no encontrado';
-                }
-                catch (error) {
-                    console.log("Error getting usuario: " + error);
-                    ApolloError('Error conectando con la base de datos');
-                }
-                let idsNodosRed = nodosRed.map(n => n.id);
-                const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsNodosRed.includes(dn.idNodo));
-                const nodosFrescos = elUsuario.atlas.datosNodos.filter(dn => idsNodosRed.includes(dn.idNodo)).filter(dn => {
-                    if (!dn.estudiado || !dn.diasRepaso) {
-                        return false;
-                    }
-                    let tiempoLimite = (new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000);
-                    if (tiempoLimite > Date.now()) {
-                        return true;
-                    }
-                    return false;
-                });
-                let nodosProgreso = nodosAprendidos.concat(nodosFrescos.filter(n => !nodosAprendidos.map(n => n.id).includes(n.id)));
-                console.log(`nodos en coleccion: ${nodosRed.length}`);
-                console.log(`${nodosAprendidos.length} nodos aprendidos de la colección. Nodos frescos en la coleccion: ${nodosFrescos.length}`);
-                console.table(nodosFrescos.map(n => { return { nombre: n.nombre }; }));
-                const progreso = (100 / nodosRed.length) * (nodosProgreso.length);
-                return Number(progreso.toFixed(2));
+            let elUsuario = null;
+            try {
+                elUsuario = await Usuario.findById(parent.idUsuario).exec();
             }
+            catch (error) {
+                console.log("Error getting usuario para calcular progreso: " + error);
+                return null;
+            }
+            if (!elUsuario) {
+                console.log("Error getting usuario para calcular progreso: Usuario no encontrado en db ");
+                return null;
+            }
+            const progreso = await calcularProgresoUsuarioNodos(elUsuario, nodosRed);
+            return Number(progreso.toFixed(2));
         },
         idsRed: async function (parent, _, __) {
             let nodosRed = await getNodosRedByOriginalIds(parent.idsNodos);
@@ -1634,7 +1591,7 @@ export const resolvers = {
         }
     },
 };
-async function getNodosRedByOriginalIds(idsNodos) {
+export async function getNodosRedByOriginalIds(idsNodos) {
     let idsNodosActuales = idsNodos;
     let todosNodos = [];
     let guarda = 0;
@@ -1805,5 +1762,54 @@ async function resetInfoAtlas() {
             return;
         }
     }
+}
+export async function calcularProgresoUsuarioNodos(elUsuario, listaNodos) {
+    if (listaNodos.length < 1) {
+        return 0;
+    }
+    let idsNodosRed = listaNodos.map(n => n.id);
+    const nodosAprendidos = elUsuario.atlas.datosNodos.filter(dn => dn.aprendido).filter(dn => idsNodosRed.includes(dn.idNodo));
+    const nodosFrescos = elUsuario.atlas.datosNodos.filter(dn => idsNodosRed.includes(dn.idNodo)).filter(dn => {
+        if (!dn.estudiado || !dn.diasRepaso) {
+            return false;
+        }
+        let tiempoLimite = (new Date(dn.estudiado).getTime() + dn.diasRepaso * 86400000);
+        if (tiempoLimite > Date.now()) {
+            return true;
+        }
+        return false;
+    });
+    let nodosProgreso = nodosAprendidos.concat(nodosFrescos.filter(n => !nodosAprendidos.map(n => n.id).includes(n.id)));
+    return (100 / listaNodos.length) * (nodosProgreso.length); //Progreso del usuario en estos nodos.
+}
+async function crearSnapshotProgresoColeccionUsuario(elUsuario, idColeccion) {
+    let laColeccion = elUsuario.atlas.colecciones.id(idColeccion);
+    if (!laColeccion) {
+        console.log("Error: la colección no existe");
+        return;
+    }
+    let nodosRed = await getNodosRedByOriginalIds(laColeccion.idsNodos);
+    let nuevoSnapshot = laColeccion.snapshotsProgreso.create({
+        dateRegistro: Date.now(),
+        progreso: await calcularProgresoUsuarioNodos(elUsuario.id, nodosRed),
+    });
+    laColeccion.snapshotsProgreso.push(nuevoSnapshot);
+    return elUsuario;
+}
+function crearDatosTokenUsuario(elUsuario) {
+    let subscripcionIlimitada = elUsuario.permisos.some(p => p.substring(0, 11) === 'maestraVida') || elUsuario.permisos.includes("subscripcion-ilimitada");
+    let millisFinSubscripcion = null;
+    if (elUsuario.bloquesSubscripcion && elUsuario.bloquesSubscripcion.length > 0) {
+        let ultimoBloqueSubscripcion = elUsuario.bloquesSubscripcion[0];
+        millisFinSubscripcion = ultimoBloqueSubscripcion.dateInicio.getTime() + ultimoBloqueSubscripcion.duracion * millisDia * 30;
+    }
+    return {
+        id: elUsuario._id,
+        permisos: elUsuario.permisos,
+        username: elUsuario.username,
+        subscripcionIlimitada,
+        millisFinSubscripcion,
+        version: 1,
+    };
 }
 resetInfoAtlas();
