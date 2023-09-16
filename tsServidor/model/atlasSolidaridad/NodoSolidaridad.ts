@@ -323,9 +323,6 @@ esquemaNodoSolidaridad.post("save", function(nodo) {
     }
 
 });
-esquemaNodoSolidaridad.post("remove", function(nodo) {
-    console.log(`Publicando la removida de un nodo`);
-});
 
 esquemaNodoSolidaridad.index({ nombre: "text", keywords: "text", descripcion: "text" }, { weights: { nombre: 4, keywords: 3, descripcion: 1 }, default_language: "spanish", name: "indexBusqueda" });
 

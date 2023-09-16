@@ -304,8 +304,5 @@ esquemaNodoSolidaridad.post("save", function (nodo) {
     if (!nodo.posicionadoByFuerzas) {
     }
 });
-esquemaNodoSolidaridad.post("remove", function (nodo) {
-    console.log(`Publicando la removida de un nodo`);
-});
 esquemaNodoSolidaridad.index({ nombre: "text", keywords: "text", descripcion: "text" }, { weights: { nombre: 4, keywords: 3, descripcion: 1 }, default_language: "spanish", name: "indexBusqueda" });
 export const ModeloNodoSolidaridad = mongoose.model("NodoSolidaridad", esquemaNodoSolidaridad);

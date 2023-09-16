@@ -257,6 +257,7 @@ export default {
                 console.log("elEnlace: " + elEnlace);
 
                 //elEnlace = elEnlace.replace("192.168.1.100", "192.168.1.105");
+                elEnlace=elEnlace.replace("http://192.168.1.100:3000", "https://pe-pe-pe.herokuapp.com" );
 
                 console.log("Queda " + elEnlace);
                 return elEnlace;

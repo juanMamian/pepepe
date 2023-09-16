@@ -2,12 +2,12 @@ import mongoose from "mongoose"
 
 export var dbConectada=false;
 export const iniciarMongoose = async () => {
-    if(!process.env.DB_CONNECT){
+    if(!process.env.DB_CONNECT_ONLINE){
         throw "ENV DE CONEXION A DB NO CONFIGURADO"
     }
     try {
         await mongoose.connect(
-            process.env.DB_CONNECT,            
+            process.env.DB_CONNECT_ONLINE,            
         );
     } catch (error) {
         console.log(`Error conectando con la base de datos: E:${error}`);
