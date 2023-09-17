@@ -9,8 +9,6 @@ tsServidor/archivosDeUsuario/evidencias/*
 
 tsServidor/public/atlasConocimiento/recursos
 tsServidor/public/atlasConocimiento/nodosConocimiento
-comunaBuild/public/atlasConocimiento/recursos
-comunaBuild/public/atlasConocimiento/nodosConocimiento
 
 credencialesServicioGoogleDrive.json
 pruebaApiDrive.js
