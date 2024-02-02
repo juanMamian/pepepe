@@ -16,7 +16,7 @@
                 <router-link :to="{ name: 'atlas', params: { tipoBrowse: 'mapa', idBrowsed: '123' } }" class="botonNav"
                     id="navAtlas">
                     <img src="@/assets/iconos/compassRegular.svg" alt="Compás" />
-                    Atlas de conocimientos
+                    Atlas del conocimiento
                 </router-link>
 
                 <router-link to="/personas" v-if="usuarioLogeado" class="botonNav" id="navActividadesVirtuales">
